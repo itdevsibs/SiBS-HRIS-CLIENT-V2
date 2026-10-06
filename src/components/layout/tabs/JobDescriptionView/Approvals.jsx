@@ -225,7 +225,7 @@ function ApproverStatusBadge({ status = "Pending" }) {
         ? "border-red-200 bg-red-50 text-red-700"
         : cleanStatus === "For Revision"
           ? "border-amber-200 bg-amber-50 text-amber-700"
-          : "border-[#DDE7F3] bg-[#F8FAFC] text-sibs-tertiary-5";
+          : "border-sibs-border bg-sibs-surface text-sibs-tertiary-5";
 
   return (
     <span
@@ -272,13 +272,13 @@ const Approvals = ({ onStatus, onRequestRevision }) => {
 
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-[280px_1fr]">
-      <section className="rounded-xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
-        <h3 className="mb-5 text-sm font-extrabold text-[#101828]">
+      <section className="rounded-xl border border-sibs-border bg-white p-5 shadow-sm">
+        <h3 className="mb-5 text-sm font-extrabold text-sibs-navy">
           Approval Flow
         </h3>
 
         <div className="relative pl-10">
-          <div className="absolute bottom-[30px] left-[14px] top-[14px] w-px bg-[#DDE7F3]" />
+          <div className="absolute bottom-[30px] left-[14px] top-[14px] w-px bg-sibs-border" />
 
           <div className="space-y-10">
             {approvalSteps.map((step) => {
@@ -296,19 +296,19 @@ const Approvals = ({ onStatus, onRequestRevision }) => {
                           ? "text-blue-600"
                           : isRevision
                             ? "text-amber-700"
-                            : "text-[#101828]"
+                            : "text-sibs-navy"
                       }`}
                     >
                       {step.title}
                     </p>
 
                     {step.date && (
-                      <p className="mt-1 text-xs font-semibold text-[#1E5A92]">
+                      <p className="mt-1 text-xs font-semibold text-sibs-text-secondary">
                         {formatDateTime(step.date)}
                       </p>
                     )}
 
-                    <p className="mt-1 text-xs font-bold text-[#344054]">
+                    <p className="mt-1 text-xs font-bold text-sibs-text-secondary">
                       {step.owner || "Pending"}
                     </p>
                   </div>
@@ -320,8 +320,8 @@ const Approvals = ({ onStatus, onRequestRevision }) => {
       </section>
 
       <section className="space-y-4">
-        <div className="rounded-xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
-          <h3 className="mb-5 text-sm font-extrabold text-[#101828]">
+        <div className="rounded-xl border border-sibs-border bg-white p-5 shadow-sm">
+          <h3 className="mb-5 text-sm font-extrabold text-sibs-navy">
             Approver
           </h3>
 
@@ -331,11 +331,11 @@ const Approvals = ({ onStatus, onRequestRevision }) => {
                 key={`${approver.name}-${index}`}
                 className="grid grid-cols-1 items-center gap-3 md:grid-cols-[140px_minmax(0,1fr)_120px]"
               >
-                <p className="text-sm font-bold text-[#344054]">
+                <p className="text-sm font-bold text-sibs-navy">
                   {approver.role || "Approver"}
                 </p>
 
-                <div className="min-h-10 rounded-md border border-[#DDE7F3] bg-[#F8FAFC] px-3 py-2 text-sm font-semibold text-[#344054]">
+                <div className="min-h-10 rounded-md border border-sibs-border bg-sibs-surface px-3 py-2 text-sm font-semibold text-sibs-text-secondary">
                   {approver.name || "Pending"}
                 </div>
 
@@ -345,12 +345,12 @@ const Approvals = ({ onStatus, onRequestRevision }) => {
           </div>
         </div>
 
-        <div className="rounded-xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
-          <h3 className="text-sm font-extrabold text-[#101828]">
+        <div className="rounded-xl border border-sibs-border bg-white p-5 shadow-sm">
+          <h3 className="text-sm font-extrabold text-sibs-navy">
             Revision Request
           </h3>
 
-          <p className="mt-2 text-xs font-semibold text-[#344054]">
+          <p className="mt-2 text-xs font-semibold text-sibs-muted">
             If revision is needed, please specify the reason.
           </p>
 
@@ -359,7 +359,7 @@ const Approvals = ({ onStatus, onRequestRevision }) => {
             onChange={(e) => setRevisionReason(e.target.value)}
             rows={4}
             placeholder="Enter reason..."
-            className="mt-3 w-full resize-none rounded-md border border-[#DDE7F3] bg-white px-3 py-2 text-sm text-[#344054] outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+            className="mt-3 w-full resize-none rounded-md border border-sibs-border bg-white px-3 py-2 text-sm text-sibs-text-secondary outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
           />
 
           <div className="mt-3 flex justify-end">

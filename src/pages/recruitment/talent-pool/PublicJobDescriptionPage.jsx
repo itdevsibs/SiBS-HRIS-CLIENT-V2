@@ -476,7 +476,7 @@ function RichTextBlock({ value, emptyText, className = "" }) {
         >
           <span
             aria-hidden="true"
-            className="absolute bottom-0 left-0 top-0 w-[3px] rounded-full bg-[#FF5C28]"
+            className="absolute bottom-0 left-0 top-0 w-[3px] rounded-full bg-sibs-orange"
           />
 
           {numberedContent.intro ? (
@@ -491,7 +491,7 @@ function RichTextBlock({ value, emptyText, className = "" }) {
                 key={`${item.number}-${index}`}
                 className="grid grid-cols-[28px_minmax(0,1fr)] items-start gap-3 text-xs font-medium leading-6 text-slate-700 sm:grid-cols-[30px_minmax(0,1fr)] sm:text-sm"
               >
-                <span className="mt-0.5 flex h-7 w-7 items-center justify-center rounded-lg border border-[#D9E6F0] bg-[#F0F6FA] text-[11px] font-black text-[#07345D]">
+                <span className="mt-0.5 flex h-7 w-7 items-center justify-center rounded-[10px] border border-sibs-border bg-sibs-surface text-[11px] font-black text-sibs-navy">
                   {item.number}
                 </span>
 
@@ -501,7 +501,7 @@ function RichTextBlock({ value, emptyText, className = "" }) {
           </ol>
 
           {numberedContent.outro ? (
-            <p className="mt-5 border-t border-[#E5ECF3] pt-4 text-xs font-medium leading-6 text-slate-600 sm:text-sm">
+            <p className="mt-5 border-t border-sibs-border pt-4 text-xs font-medium leading-6 text-slate-600 sm:text-sm">
               {numberedContent.outro}
             </p>
           ) : null}
@@ -540,8 +540,8 @@ function AdditionalInformationBlock({ value }) {
 function PublicApplicationHeaderLogo() {
   return (
     <div className="flex min-w-0 select-none items-center gap-3">
-      <div className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-[15px] bg-[#FF5C28] shadow-[0_10px_24px_rgba(255,92,40,0.22)]">
-        <span className="absolute -right-1 -top-1 h-3.5 w-3.5 rounded-full border-2 border-[#042C51] bg-white" />
+      <div className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] bg-sibs-orange shadow-[0_10px_24px_rgba(255,92,40,0.22)]">
+        <span className="absolute -right-1 -top-1 h-3.5 w-3.5 rounded-full border-2 border-sibs-navy bg-white" />
 
         <span className="relative text-[20px] font-semibold leading-none tracking-[-0.04em] text-white">
           S
@@ -554,7 +554,7 @@ function PublicApplicationHeaderLogo() {
             SiBS&nbsp;
           </span>
 
-          <span className="text-[22px] font-semibold tracking-[-0.035em] text-[#FF5C28]">
+          <span className="text-[22px] font-semibold tracking-[-0.035em] text-sibs-orange">
             HRIS
           </span>
         </div>
@@ -570,8 +570,8 @@ function PublicApplicationHeaderLogo() {
 function PublicLogo() {
   return (
     <div className="flex min-w-0 select-none items-center gap-3">
-      <div className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-[15px] bg-[#FF5C28] shadow-[0_10px_24px_rgba(255,92,40,0.22)]">
-        <span className="absolute -right-1 -top-1 h-3.5 w-3.5 rounded-full border-2 border-[#042C51] bg-white" />
+      <div className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] bg-sibs-orange shadow-[0_10px_24px_rgba(255,92,40,0.22)]">
+        <span className="absolute -right-1 -top-1 h-3.5 w-3.5 rounded-full border-2 border-sibs-navy bg-white" />
 
         <span className="text-[20px] font-semibold leading-none text-white">
           S
@@ -584,7 +584,7 @@ function PublicLogo() {
             SiBS&nbsp;
           </span>
 
-          <span className="text-[22px] font-semibold tracking-[-0.035em] text-[#FF5C28]">
+          <span className="text-[22px] font-semibold tracking-[-0.035em] text-sibs-orange">
             HRIS
           </span>
         </div>
@@ -600,14 +600,14 @@ function PublicLogo() {
 function CareerSection({ icon: Icon, title, children, noBorder = false }) {
   return (
     <section
-      className={`py-5 sm:py-6 ${noBorder ? "" : "border-b border-[#E5ECF3]"}`}
+      className={`py-5 sm:py-6 ${noBorder ? "" : "border-b border-sibs-border"}`}
     >
       <div className="mb-4 flex items-center gap-3">
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#FFF0EA] text-[#F05223]">
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-sibs-cream-light text-sibs-orange">
           <Icon size={16} />
         </div>
 
-        <h2 className="text-sm font-extrabold uppercase tracking-[0.045em] text-[#07345D] sm:text-[15px]">
+        <h2 className="text-sm font-extrabold uppercase tracking-[0.045em] text-sibs-navy sm:text-[15px]">
           {title}
         </h2>
       </div>
@@ -620,7 +620,7 @@ function CareerSection({ icon: Icon, title, children, noBorder = false }) {
 function SimpleFact({ icon: Icon, label, value }) {
   return (
     <div className="flex min-w-0 items-start gap-3">
-      <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#EEF5FA] text-[#07345D]">
+      <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-sibs-surface text-sibs-navy">
         <Icon size={15} />
       </div>
 
@@ -629,7 +629,7 @@ function SimpleFact({ icon: Icon, label, value }) {
           {label}
         </p>
 
-        <p className="mt-1 break-words text-sm font-extrabold leading-6 text-[#07345D]">
+        <p className="mt-1 break-words text-sm font-extrabold leading-6 text-sibs-navy">
           {value}
         </p>
       </div>
@@ -640,10 +640,10 @@ function SimpleFact({ icon: Icon, label, value }) {
 function LoadingState() {
   return (
     <div className="flex min-h-full items-center justify-center p-6">
-      <div className="w-full max-w-lg rounded-2xl border border-[#E3EAF1] bg-white p-8 text-center shadow-[0_18px_60px_rgba(4,44,81,0.12)]">
-        <Loader2 className="mx-auto animate-spin text-[#FF5C28]" size={34} />
+      <div className="w-full max-w-lg rounded-2xl border border-sibs-border bg-white p-8 text-center shadow-[0_18px_60px_rgba(4,44,81,0.12)]">
+        <Loader2 className="mx-auto animate-spin text-sibs-orange" size={34} />
 
-        <h1 className="mt-5 text-lg font-extrabold text-[#07345D]">
+        <h1 className="mt-5 text-lg font-extrabold text-sibs-navy">
           Loading job description
         </h1>
 
@@ -663,7 +663,7 @@ function ErrorState({ title, message, onBack, onRetry }) {
           <AlertTriangle size={28} />
         </div>
 
-        <h1 className="mt-5 text-xl font-extrabold text-[#07345D]">{title}</h1>
+        <h1 className="mt-5 text-xl font-extrabold text-sibs-navy">{title}</h1>
 
         <p className="mx-auto mt-3 max-w-md text-sm font-semibold leading-6 text-slate-500">
           {message}
@@ -673,7 +673,7 @@ function ErrorState({ title, message, onBack, onRetry }) {
           <button
             type="button"
             onClick={onBack}
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#CAD6E2] bg-white px-5 text-sm font-extrabold text-[#07345D] transition hover:bg-slate-50"
+            className="inline-flex h-11 items-center justify-center gap-2 rounded-[10px] border border-sibs-border bg-white px-5 text-sm font-extrabold text-sibs-navy transition hover:bg-sibs-surface"
           >
             <ArrowLeft size={16} />
             Back to application
@@ -683,7 +683,7 @@ function ErrorState({ title, message, onBack, onRetry }) {
             <button
               type="button"
               onClick={onRetry}
-              className="inline-flex h-11 items-center justify-center rounded-xl bg-[#07345D] px-5 text-sm font-extrabold text-white transition hover:bg-[#0A416F]"
+              className="inline-flex h-11 items-center justify-center rounded-[10px] bg-sibs-orange px-5 text-sm font-extrabold text-white transition hover:bg-sibs-orange-hover"
             >
               Try again
             </button>
@@ -736,7 +736,7 @@ export default function PublicJobDescriptionPage() {
         margin: 0 !important;
         min-height: 100% !important;
         overflow: hidden !important;
-        background: #f3f7fb !important;
+        background: rgb(243, 247, 251) !important;
       }
 
       body.public-job-description-page aside,
@@ -780,7 +780,7 @@ export default function PublicJobDescriptionPage() {
       .public-jd-rich-text h5,
       .public-jd-rich-text h6 {
         margin: 1.35rem 0 0.55rem;
-        color: #07345d;
+        color: rgb(7, 52, 93);
         font-weight: 800;
         line-height: 1.45;
       }
@@ -821,7 +821,7 @@ export default function PublicJobDescriptionPage() {
         left: 0;
         width: 3px;
         border-radius: 9999px;
-        background: #ff5c28;
+        background: rgb(255, 92, 40);
       }
 
       .public-jd-rich-text ol > li {
@@ -842,10 +842,10 @@ export default function PublicJobDescriptionPage() {
         height: 1.75rem;
         align-items: center;
         justify-content: center;
-        border: 1px solid #d9e6f0;
+        border: 1px solid rgb(217, 230, 240);
         border-radius: 0.5rem;
-        background: #f0f6fa;
-        color: #07345d;
+        background: rgb(240, 246, 250);
+        color: rgb(7, 52, 93);
         font-size: 0.7rem;
         font-weight: 900;
         line-height: 1;
@@ -854,7 +854,7 @@ export default function PublicJobDescriptionPage() {
       .public-jd-rich-text strong,
       .public-jd-rich-text b {
         font-weight: 800;
-        color: #07345d;
+        color: rgb(7, 52, 93);
       }
 
       .public-jd-rich-text em,
@@ -863,7 +863,7 @@ export default function PublicJobDescriptionPage() {
       }
 
       .public-jd-rich-text a {
-        color: #e84a17;
+        color: rgb(232, 74, 23);
         font-weight: 700;
         text-decoration: underline;
         text-underline-offset: 2px;
@@ -871,9 +871,9 @@ export default function PublicJobDescriptionPage() {
 
       .public-jd-rich-text blockquote {
         margin: 1rem 0;
-        border-left: 3px solid #ff5c28;
+        border-left: 3px solid rgb(255, 92, 40);
         padding-left: 1rem;
-        color: #475569;
+        color: rgb(71, 85, 105);
       }
 
       .public-jd-rich-text table {
@@ -885,15 +885,15 @@ export default function PublicJobDescriptionPage() {
 
       .public-jd-rich-text th,
       .public-jd-rich-text td {
-        border: 1px solid #dfe7ef;
+        border: 1px solid rgb(223, 231, 239);
         padding: 0.65rem 0.75rem;
         text-align: left;
         vertical-align: top;
       }
 
       .public-jd-rich-text th {
-        background: #f4f8fb;
-        color: #07345d;
+        background: rgb(244, 248, 251);
+        color: rgb(7, 52, 93);
         font-weight: 800;
       }
 
@@ -1009,7 +1009,7 @@ export default function PublicJobDescriptionPage() {
 
   if (requestState.loading) {
     return (
-      <div className="fixed inset-0 z-[10000] overflow-y-auto bg-[#F3F7FB] font-jakarta">
+      <div className="fixed inset-0 z-[10000] overflow-y-auto bg-sibs-surface font-jakarta">
         <LoadingState />
       </div>
     );
@@ -1017,7 +1017,7 @@ export default function PublicJobDescriptionPage() {
 
   if (requestState.error || !jobDescription) {
     return (
-      <div className="fixed inset-0 z-[10000] overflow-y-auto bg-[#F3F7FB] font-jakarta">
+      <div className="fixed inset-0 z-[10000] overflow-y-auto bg-sibs-surface font-jakarta">
         <ErrorState
           title="Job description unavailable"
           message={
@@ -1043,18 +1043,18 @@ export default function PublicJobDescriptionPage() {
     Boolean(jobDescription.account) || Boolean(effectiveDate);
 
   return (
-    <div className="fixed inset-0 z-[10000] overflow-y-auto bg-[#F3F7FB] font-jakarta text-slate-800">
+    <div className="fixed inset-0 z-[10000] overflow-y-auto bg-sibs-surface font-jakarta text-slate-800">
       {/* =================================================
           EXISTING HEADER — KEPT
       ================================================= */}
 
-      <header className="sticky top-0 z-[500] border-b border-[#083A69] bg-[#042C51] text-white shadow-md">
+      <header className="sticky top-0 z-[500] border-b border-white/10 bg-sibs-navy text-white shadow-md">
         <div className="mx-auto flex w-full max-w-[1060px] items-center justify-between gap-4 px-4 py-3 sm:px-6">
           <div className="flex min-w-0 items-center gap-3">
             <PublicApplicationHeaderLogo />
 
             <div className="min-w-0 border-l border-white/10 pl-3">
-              <span className="rounded-full border border-[#FF5C28]/40 bg-[#FF5C28]/15 px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-[#FF8A63] sm:text-[10px]">
+              <span className="rounded-full border border-sibs-orange/40 bg-sibs-orange/15 px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-sibs-orange sm:text-[10px]">
                 Public Portal
               </span>
 
@@ -1065,7 +1065,7 @@ export default function PublicJobDescriptionPage() {
           </div>
         </div>
 
-        <div className="h-1.5 bg-[#02172C]" />
+        <div className="h-1.5 bg-sibs-navy/80" />
       </header>
 
       <main className="mx-auto w-full max-w-[1060px] px-4 py-6 sm:px-6 sm:py-8">
@@ -1073,8 +1073,8 @@ export default function PublicJobDescriptionPage() {
             EXISTING JOB TITLE HERO — KEPT
         ================================================= */}
 
-        <section className="relative overflow-hidden rounded-2xl border border-[#0A467E] bg-[#07345D] p-5 text-white shadow-lg sm:p-6">
-          <div className="pointer-events-none absolute -right-20 -top-28 h-72 w-72 rounded-full bg-[#FF5C28]/18 blur-2xl" />
+        <section className="relative overflow-hidden rounded-2xl border border-sibs-navy bg-sibs-navy p-5 text-white shadow-lg sm:p-6">
+          <div className="pointer-events-none absolute -right-20 -top-28 h-72 w-72 rounded-full bg-sibs-orange/20 blur-2xl" />
 
           <div className="pointer-events-none absolute -bottom-24 left-1/3 h-60 w-60 rounded-full bg-sky-300/10 blur-3xl" />
 
@@ -1122,7 +1122,7 @@ export default function PublicJobDescriptionPage() {
             <button
               type="button"
               onClick={handleReturnToApplication}
-              className="inline-flex h-11 w-full shrink-0 items-center justify-center gap-2 rounded-xl bg-[#FF5C28] px-5 text-xs font-extrabold sm:text-sm text-white shadow-[0_12px_28px_rgba(255,92,40,0.30)] transition hover:bg-[#F04F1B] active:scale-[0.99] sm:w-auto"
+              className="inline-flex h-11 w-full shrink-0 items-center justify-center gap-2 rounded-[10px] bg-sibs-orange px-5 text-xs font-extrabold sm:text-sm text-white shadow-[0_12px_28px_rgba(255,92,40,0.30)] transition hover:bg-sibs-orange-hover active:scale-[0.99] sm:w-auto"
             >
               <Send size={17} />
               Continue Application
@@ -1135,7 +1135,7 @@ export default function PublicJobDescriptionPage() {
         ================================================= */}
 
         <div className="mt-6 w-full">
-          <article className="overflow-hidden rounded-2xl border border-[#E0E8F0] bg-white px-5 shadow-sm sm:px-6">
+          <article className="overflow-hidden rounded-2xl border border-sibs-border bg-white px-5 shadow-sm sm:px-6">
             {/* POSITION OVERVIEW */}
 
             <CareerSection icon={FileText} title="Position Overview">
@@ -1202,15 +1202,15 @@ export default function PublicJobDescriptionPage() {
                         key={competency.id || `competency-${index}`}
                         className="relative pl-5 sm:pl-6"
                       >
-                        <span className="absolute bottom-0 left-0 top-0 w-[3px] rounded-full bg-[#FF5C28]" />
+                        <span className="absolute bottom-0 left-0 top-0 w-[3px] rounded-full bg-sibs-orange" />
 
                         <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-5">
-                          <h3 className="text-sm font-extrabold leading-6 text-[#07345D]">
+                          <h3 className="text-sm font-extrabold leading-6 text-sibs-navy">
                             {competency.title}
                           </h3>
 
                           {competency.level ? (
-                            <span className="w-fit shrink-0 rounded-full bg-[#EEF5FA] px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.1em] text-[#07345D]">
+                            <span className="w-fit shrink-0 rounded-full bg-sibs-surface px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.1em] text-sibs-navy">
                               {competency.level}
                             </span>
                           ) : null}
@@ -1227,9 +1227,9 @@ export default function PublicJobDescriptionPage() {
                             {tierDescriptions.map(([label, value]) => (
                               <div
                                 key={label}
-                                className="rounded-xl bg-[#F6F9FC] px-4 py-3"
+                                className="rounded-[10px] bg-sibs-surface px-4 py-3"
                               >
-                                <p className="text-[10px] font-extrabold uppercase tracking-[0.11em] text-[#F05223]">
+                                <p className="text-[10px] font-extrabold uppercase tracking-[0.11em] text-sibs-orange">
                                   {label}
                                 </p>
 
@@ -1258,9 +1258,9 @@ export default function PublicJobDescriptionPage() {
                   {personalityTypes.map((personality, index) => (
                     <div
                       key={`${personality.raw}-${index}`}
-                      className="group flex min-w-[155px] items-center gap-2.5 rounded-xl border border-[#D6E3EF] bg-gradient-to-br from-[#F8FBFE] to-[#EEF5FA] px-3.5 py-3 shadow-[0_6px_18px_rgba(7,52,93,0.045)] transition duration-200 hover:-translate-y-0.5 hover:border-[#B9D1E5] hover:shadow-[0_10px_24px_rgba(7,52,93,0.08)]"
+                      className="group flex min-w-[155px] items-center gap-2.5 rounded-[10px] border border-sibs-border bg-sibs-surface px-3.5 py-3 shadow-[0_6px_18px_rgba(7,52,93,0.045)] transition duration-200 hover:-translate-y-0.5 hover:border-sibs-orange/40 hover:shadow-[0_10px_24px_rgba(7,52,93,0.08)]"
                     >
-                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#07345D] shadow-[0_6px_14px_rgba(7,52,93,0.16)]">
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-sibs-navy shadow-[0_6px_14px_rgba(7,52,93,0.16)]">
                         <span className="text-[11px] font-black tracking-[0.055em] text-white">
                           {personality.code || "TYPE"}
                         </span>
@@ -1269,21 +1269,21 @@ export default function PublicJobDescriptionPage() {
                       <div className="min-w-0">
                         {personality.code ? (
                           <>
-                            <p className="text-[11px] font-black uppercase tracking-[0.12em] text-[#FF5C28]">
+                            <p className="text-[11px] font-black uppercase tracking-[0.12em] text-sibs-orange">
                               {personality.code}
                             </p>
 
-                            <p className="mt-0.5 text-xs font-extrabold leading-5 text-[#07345D] sm:text-sm">
+                            <p className="mt-0.5 text-xs font-extrabold leading-5 text-sibs-navy sm:text-sm">
                               {personality.label}
                             </p>
                           </>
                         ) : (
                           <>
-                            <p className="text-[10px] font-black uppercase tracking-[0.12em] text-[#FF5C28]">
+                            <p className="text-[10px] font-black uppercase tracking-[0.12em] text-sibs-orange">
                               Personality Type
                             </p>
 
-                            <p className="mt-0.5 break-words text-xs font-extrabold leading-5 text-[#07345D] sm:text-sm">
+                            <p className="mt-0.5 break-words text-xs font-extrabold leading-5 text-sibs-navy sm:text-sm">
                               {personality.raw}
                             </p>
                           </>
@@ -1312,14 +1312,14 @@ export default function PublicJobDescriptionPage() {
               READY TO APPLY CTA
           ================================================= */}
 
-          <section className="relative mt-6 overflow-hidden rounded-2xl bg-[#07345D] p-5 text-white shadow-lg sm:p-6">
-            <div className="pointer-events-none absolute -right-14 -top-20 h-52 w-52 rounded-full bg-[#FF5C28]/20 blur-2xl" />
+          <section className="relative mt-6 overflow-hidden rounded-2xl bg-sibs-navy p-5 text-white shadow-lg sm:p-6">
+            <div className="pointer-events-none absolute -right-14 -top-20 h-52 w-52 rounded-full bg-sibs-orange/20 blur-2xl" />
 
             <div className="pointer-events-none absolute -bottom-24 left-1/4 h-48 w-48 rounded-full bg-sky-300/10 blur-3xl" />
 
             <div className="relative flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
               <div className="max-w-xl">
-                <p className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-[#FF9A79]">
+                <p className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-sibs-orange">
                   SiBS Careers
                 </p>
 
@@ -1336,7 +1336,7 @@ export default function PublicJobDescriptionPage() {
               <button
                 type="button"
                 onClick={handleReturnToApplication}
-                className="inline-flex h-11 w-full shrink-0 items-center justify-center gap-2 rounded-xl bg-[#FF5C28] px-5 text-xs font-extrabold sm:text-sm text-white shadow-[0_12px_28px_rgba(255,92,40,0.28)] transition hover:bg-[#F04F1B] active:scale-[0.99] sm:w-auto"
+                className="inline-flex h-11 w-full shrink-0 items-center justify-center gap-2 rounded-[10px] bg-sibs-orange px-5 text-xs font-extrabold sm:text-sm text-white shadow-[0_12px_28px_rgba(255,92,40,0.28)] transition hover:bg-sibs-orange-hover active:scale-[0.99] sm:w-auto"
               >
                 <Send size={17} />
                 Apply Now
@@ -1350,7 +1350,7 @@ export default function PublicJobDescriptionPage() {
           CAREERS FOOTER
       ================================================= */}
 
-      <footer className="border-t border-white/10 bg-[#052F55]">
+      <footer className="border-t border-white/10 bg-sibs-navy">
         <div className="mx-auto flex w-full max-w-[1060px] flex-col gap-3 px-4 py-5 text-center sm:px-6 md:flex-row md:items-center md:justify-between md:text-left">
           <PublicLogo />
 

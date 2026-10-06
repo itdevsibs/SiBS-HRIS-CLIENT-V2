@@ -198,7 +198,7 @@ function openCenteredFullPageFileViewer({
             margin: 0;
             padding: 0;
             overflow: hidden;
-            background: #f8fafc;
+            background: rgb(248, 250, 252);
             font-family:
               "Plus Jakarta Sans",
               Inter,
@@ -217,16 +217,16 @@ function openCenteredFullPageFileViewer({
             align-items: center;
             justify-content: center;
             padding: 0;
-            background: #f8fafc;
+            background: rgb(248, 250, 252);
           }
 
           .image-viewer {
             background:
               radial-gradient(
                 circle at center,
-                #ffffff 0%,
-                #f8fafc 54%,
-                #e9eff6 100%
+                rgb(255, 255, 255) 0%,
+                rgb(248, 250, 252) 54%,
+                rgb(233, 239, 246) 100%
               );
           }
 
@@ -242,14 +242,14 @@ function openCenteredFullPageFileViewer({
 
           .frame-viewer {
             position: relative;
-            background: #f8fafc;
+            background: rgb(248, 250, 252);
           }
 
           .frame-viewer iframe {
             width: 100vw;
             height: 100vh;
             border: 0;
-            background: #ffffff;
+            background: rgb(255, 255, 255);
           }
 
           .audio-viewer {
@@ -257,17 +257,17 @@ function openCenteredFullPageFileViewer({
             background:
               radial-gradient(
                 circle at center,
-                #ffffff 0%,
-                #f8fafc 55%,
-                #e7eef7 100%
+                rgb(255, 255, 255) 0%,
+                rgb(248, 250, 252) 55%,
+                rgb(231, 238, 247) 100%
               );
           }
 
           .audio-card {
             width: min(720px, calc(100vw - 32px));
-            border: 1px solid #d9e2ec;
+            border: 1px solid rgb(217, 226, 236);
             border-radius: 24px;
-            background: #ffffff;
+            background: rgb(255, 255, 255);
             padding: 28px;
             box-shadow: 0 24px 70px rgba(15, 23, 42, 0.14);
             display: flex;
@@ -283,8 +283,8 @@ function openCenteredFullPageFileViewer({
             display: flex;
             align-items: center;
             justify-content: center;
-            background: #eef6ff;
-            color: #0d4676;
+            background: rgb(238, 246, 255);
+            color: rgb(13, 70, 118);
             font-size: 34px;
             font-weight: 900;
           }
@@ -300,8 +300,8 @@ function openCenteredFullPageFileViewer({
             align-items: center;
             justify-content: center;
             border-radius: 14px;
-            background: #0d4676;
-            color: #ffffff;
+            background: rgb(13, 70, 118);
+            color: rgb(255, 255, 255);
             padding: 0 18px;
             text-decoration: none;
             font-size: 14px;
@@ -354,12 +354,12 @@ export function FieldLabel({ children }) {
 export function DetailRow({ label, value, stacked = false }) {
   if (stacked) {
     return (
-      <div className="border-b border-[#E6ECF2] py-3 last:border-b-0">
+      <div className="border-b border-sibs-border py-3 last:border-b-0">
         <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
           {label}
         </p>
 
-        <p className="mt-1 whitespace-pre-line break-words text-sm font-bold leading-6 text-[#344054]">
+        <p className="mt-1 whitespace-pre-line break-words text-sm font-bold leading-6 text-sibs-navy">
           {value || "—"}
         </p>
       </div>
@@ -367,12 +367,12 @@ export function DetailRow({ label, value, stacked = false }) {
   }
 
   return (
-    <div className="grid grid-cols-[130px_minmax(0,1fr)] items-start gap-4 border-b border-[#E6ECF2] py-3 last:border-b-0">
+    <div className="grid grid-cols-[130px_minmax(0,1fr)] items-start gap-4 border-b border-sibs-border py-3 last:border-b-0">
       <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
         {label}
       </p>
 
-      <p className="min-w-0 whitespace-pre-line break-words text-right text-sm font-bold leading-6 text-[#344054]">
+      <p className="min-w-0 whitespace-pre-line break-words text-right text-sm font-bold leading-6 text-sibs-navy">
         {value || "—"}
       </p>
     </div>
@@ -389,7 +389,7 @@ export function SectionTitle({ icon: Icon, title, description }) {
       )}
 
       <div className="min-w-0">
-        <h3 className="text-base font-extrabold text-[#101828]">{title}</h3>
+        <h3 className="text-base font-extrabold text-sibs-navy">{title}</h3>
 
         {description && (
           <p className="mt-1 text-sm font-semibold leading-5 text-sibs-primary-1/80">
@@ -411,7 +411,7 @@ export function InfoTile({
 }) {
   return (
     <div
-      className={`rounded-2xl border border-[#E6ECF2] bg-[#F8FAFC] p-4 transition hover:border-[#C9D6E4] ${className}`}
+      className={`rounded-2xl border border-sibs-border bg-sibs-surface p-4 transition hover:border-sibs-border-strong ${className}`}
     >
       <div className="flex items-start gap-3">
         {Icon && (
@@ -431,7 +431,7 @@ export function InfoTile({
             {label}
           </p>
 
-          <p className="mt-1 break-words text-sm font-extrabold leading-6 text-[#101828]">
+          <p className="mt-1 break-words text-sm font-extrabold leading-6 text-sibs-navy">
             {value || "—"}
           </p>
 
@@ -451,13 +451,13 @@ export function StatusTile({ label, value }) {
   const isYes = normalizedValue.toLowerCase() === "yes";
 
   return (
-    <div className="rounded-2xl border border-[#E6ECF2] bg-[#F8FAFC] p-4">
+    <div className="rounded-2xl border border-sibs-border bg-sibs-surface p-4">
       <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
         {label}
       </p>
 
       <div className="mt-2 flex items-center justify-between gap-3">
-        <p className="truncate text-sm font-extrabold text-[#101828]">
+        <p className="truncate text-sm font-extrabold text-sibs-navy">
           {normalizedValue || "—"}
         </p>
 
@@ -479,12 +479,12 @@ export function StatusTile({ label, value }) {
 
 export function ReferenceCard({ reference, index }) {
   return (
-    <div className="rounded-2xl border border-[#E6ECF2] bg-[#F8FAFC] p-4">
+    <div className="rounded-2xl border border-sibs-border bg-sibs-surface p-4">
       <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
         Reference {index + 1}
       </p>
 
-      <p className="mt-2 truncate text-sm font-extrabold text-[#101828]">
+      <p className="mt-2 truncate text-sm font-extrabold text-sibs-navy">
         {reference?.name || "—"}
       </p>
 
@@ -500,14 +500,14 @@ export function ExperienceCard({ experience, index, formatCurrency }) {
     experience?.role || experience?.industry || `Experience ${index + 1}`;
 
   return (
-    <div className="rounded-2xl border border-[#E6ECF2] bg-[#F8FAFC] p-4">
+    <div className="rounded-2xl border border-sibs-border bg-sibs-surface p-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
             Experience {index + 1}
           </p>
 
-          <p className="mt-1 truncate text-sm font-extrabold text-[#101828]">
+          <p className="mt-1 truncate text-sm font-extrabold text-sibs-navy">
             {title}
           </p>
 
@@ -527,7 +527,7 @@ export function ExperienceCard({ experience, index, formatCurrency }) {
             Industry
           </p>
 
-          <p className="mt-1 text-sm font-bold text-[#344054]">
+          <p className="mt-1 text-sm font-bold text-sibs-navy">
             {experience?.industry || "—"}
           </p>
         </div>
@@ -537,7 +537,7 @@ export function ExperienceCard({ experience, index, formatCurrency }) {
             Compensation
           </p>
 
-          <p className="mt-1 text-sm font-bold text-[#344054]">
+          <p className="mt-1 text-sm font-bold text-sibs-navy">
             {experience?.monthlyCompensation
               ? formatCurrency(experience.monthlyCompensation)
               : "—"}
@@ -549,7 +549,7 @@ export function ExperienceCard({ experience, index, formatCurrency }) {
             Reason for Leaving
           </p>
 
-          <p className="mt-1 text-sm font-bold leading-6 text-[#344054]">
+          <p className="mt-1 text-sm font-bold leading-6 text-sibs-navy">
             {experience?.reasonForLeaving || "—"}
           </p>
         </div>
@@ -574,7 +574,7 @@ export function TimelineSectionHeader({
         <div className="flex items-center gap-2">
           {Icon && <Icon size={17} className="shrink-0 text-sibs-primary-1" />}
 
-          <h3 className="text-sm font-extrabold text-[#101828]">{title}</h3>
+          <h3 className="text-sm font-extrabold text-sibs-navy">{title}</h3>
         </div>
 
         {description && (
@@ -619,14 +619,14 @@ export function ViewableFileRow({
   }
 
   return (
-    <div className="rounded-2xl border border-[#E6ECF2] bg-[#F8FAFC] p-4">
+    <div className="rounded-2xl border border-sibs-border bg-sibs-surface p-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
           <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
             {label}
           </p>
 
-          <p className="mt-1 break-words text-sm font-bold text-[#344054]">
+          <p className="mt-1 break-words text-sm font-bold text-sibs-navy">
             {hasFile ? fileName || "Uploaded file" : "No file uploaded"}
           </p>
 
@@ -642,7 +642,7 @@ export function ViewableFileRow({
           <button
             type="button"
             onClick={handleOpenFile}
-            className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-4 text-sm font-bold text-sibs-primary-1 transition hover:border-sibs-primary-1 hover:bg-sibs-primary-1/5 hover:shadow-sm"
+            className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl border border-sibs-border bg-white px-4 text-sm font-bold text-sibs-primary-1 transition hover:border-sibs-primary-1 hover:bg-sibs-primary-1/5 hover:shadow-sm"
           >
             <Eye size={16} />
             {canPreview ? "View" : "Open"}
@@ -682,7 +682,7 @@ export function MultiCheckGroup({
       {options.map((option) => (
         <label
           key={option}
-          className="flex items-center gap-3 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-4 py-3 text-sm font-semibold text-[#344054] transition hover:border-[#C9D6E4] hover:bg-white"
+          className="flex items-center gap-3 rounded-xl border border-sibs-border bg-sibs-surface px-4 py-3 text-sm font-semibold text-sibs-navy transition hover:border-sibs-border-strong hover:bg-white"
         >
           <input
             type="checkbox"

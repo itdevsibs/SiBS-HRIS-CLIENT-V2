@@ -11,7 +11,7 @@ const fieldLabelClass =
   "mb-1.5 flex items-center justify-between gap-3 text-xs font-extrabold text-sibs-primary-1";
 
 const inputClass =
-  "h-10 w-full rounded-[10px] border border-sibs-tertiary-8 bg-[#F8FAFC] px-3 text-xs font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:bg-[#EEF2F6] disabled:text-sibs-primary-1";
+  "h-10 w-full rounded-[10px] border border-sibs-border bg-sibs-surface px-3 text-xs font-semibold text-sibs-navy outline-none transition placeholder:text-sibs-faint hover:border-sibs-orange/40 hover:bg-white focus:border-sibs-orange focus:bg-white focus:ring-4 focus:ring-sibs-orange/10 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-sibs-navy";
 
 const locationWorkSetupOptions = [
   { value: "Davao Site (On-Site)", label: "Davao Site (On-Site)" },
@@ -99,33 +99,33 @@ function DateDropdown({ label, required = false, value, onChange }) {
         onClick={() => setOpen((prev) => !prev)}
         className={`flex h-10 w-full items-center justify-between rounded-[10px] border px-3 text-left text-xs font-semibold outline-none transition-all duration-200 ${
           open
-            ? "border-[#FF5C28] bg-white text-[#042C51] ring-4 ring-[#FF5C28]/10"
-            : "border-sibs-tertiary-8 bg-[#F8FAFC] text-[#042C51] hover:border-[#FF5C28]/40 hover:bg-white"
+            ? "border-sibs-orange bg-white text-sibs-navy ring-4 ring-sibs-orange/10"
+            : "border-sibs-border bg-sibs-surface text-sibs-navy hover:border-sibs-orange/40 hover:bg-white"
         }`}
       >
         <span className="truncate">{displayValue}</span>
-        <CalendarDays size={16} className="shrink-0 text-[#667085]" />
+        <CalendarDays size={16} className="shrink-0 text-sibs-muted" />
       </button>
 
       {open && (
-        <div className="absolute left-0 top-full z-[9999] mt-2 w-[280px] rounded-2xl border border-[#E6ECF2] bg-white p-3.5 shadow-[0_18px_40px_rgba(15,23,42,0.16)] transition-all duration-200">
-          <div className="mb-3 flex items-center justify-between rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-3 py-2">
+        <div className="absolute left-0 top-full z-[9999] mt-2 w-[280px] rounded-2xl border border-sibs-border bg-white p-3.5 shadow-[0_18px_40px_rgba(15,23,42,0.16)] transition-all duration-200">
+          <div className="mb-3 flex items-center justify-between rounded-xl border border-sibs-border bg-sibs-surface px-3 py-2">
             <button
               type="button"
               onClick={() =>
                 setViewDate((p) => new Date(p.getFullYear(), p.getMonth() - 1, 1))
               }
-              className="flex h-7 w-7 items-center justify-center rounded-lg border border-[#E6ECF2] bg-white text-[#042C51] transition hover:bg-[#FFF0EB] hover:text-[#FF5C28]"
+              className="flex h-7 w-7 items-center justify-center rounded-lg border border-sibs-border bg-white text-sibs-navy transition hover:bg-sibs-cream-light hover:text-sibs-orange"
             >
               <ChevronLeft size={15} />
             </button>
-            <p className="text-xs font-extrabold text-[#042C51]">{monthTitle}</p>
+            <p className="text-xs font-extrabold text-sibs-navy">{monthTitle}</p>
             <button
               type="button"
               onClick={() =>
                 setViewDate((p) => new Date(p.getFullYear(), p.getMonth() + 1, 1))
               }
-              className="flex h-7 w-7 items-center justify-center rounded-lg border border-[#E6ECF2] bg-white text-[#042C51] transition hover:bg-[#FFF0EB] hover:text-[#FF5C28]"
+              className="flex h-7 w-7 items-center justify-center rounded-lg border border-sibs-border bg-white text-sibs-navy transition hover:bg-sibs-cream-light hover:text-sibs-orange"
             >
               <ChevronRight size={15} />
             </button>
@@ -135,7 +135,7 @@ function DateDropdown({ label, required = false, value, onChange }) {
             {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((day) => (
               <div
                 key={day}
-                className="py-1 text-center text-[10px] font-extrabold uppercase text-[#98A2B3]"
+                className="py-1 text-center text-[10px] font-extrabold uppercase text-sibs-faint"
               >
                 {day}
               </div>
@@ -156,11 +156,11 @@ function DateDropdown({ label, required = false, value, onChange }) {
                   }}
                   className={`flex h-8 w-full items-center justify-center rounded-lg text-xs font-bold transition ${
                     isSelected
-                      ? "bg-[#FF5C28] text-white shadow-sm"
+                      ? "bg-sibs-orange text-white shadow-sm"
                       : isTodayDate
-                        ? "bg-[#FFF0EB] text-[#FF5C28] font-extrabold"
+                        ? "bg-sibs-cream-light text-sibs-orange font-extrabold"
                         : isCurrentMonth
-                          ? "text-[#042C51] hover:bg-[#FFF0EB] hover:text-[#FF5C28]"
+                          ? "text-sibs-navy hover:bg-sibs-cream-light hover:text-sibs-orange"
                           : "text-slate-300 hover:bg-slate-50"
                   }`}
                 >
@@ -170,14 +170,14 @@ function DateDropdown({ label, required = false, value, onChange }) {
             })}
           </div>
 
-          <div className="mt-3 flex items-center justify-between border-t border-[#E6ECF2] pt-2.5">
+          <div className="mt-3 flex items-center justify-between border-t border-sibs-border pt-2.5">
             <button
               type="button"
               onClick={() => {
                 onChange("");
                 setOpen(false);
               }}
-              className="rounded-full px-2.5 py-1 text-[11px] font-extrabold text-[#667085] transition hover:bg-[#FFF0EB] hover:text-[#FF5C28]"
+              className="rounded-full px-2.5 py-1 text-[11px] font-extrabold text-sibs-muted transition hover:bg-sibs-cream-light hover:text-sibs-orange"
             >
               Clear
             </button>
@@ -188,7 +188,7 @@ function DateDropdown({ label, required = false, value, onChange }) {
                 setViewDate(today);
                 setOpen(false);
               }}
-              className="rounded-full px-2.5 py-1 text-[11px] font-extrabold text-[#042C51] transition hover:bg-[#FFF0EB] hover:text-[#FF5C28]"
+              className="rounded-full px-2.5 py-1 text-[11px] font-extrabold text-sibs-navy transition hover:bg-sibs-cream-light hover:text-sibs-orange"
             >
               Today
             </button>

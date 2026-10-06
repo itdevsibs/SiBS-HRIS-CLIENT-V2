@@ -21,6 +21,7 @@ function DetailArticleSection({
   disableComment = false,
   canManageJdDetails = false,
   approvalPage = false,
+  onOpenRevision,
 }) {
   function getEditTitle() {
     if (!canManageJdDetails) {
@@ -57,9 +58,9 @@ function DetailArticleSection({
 
   return (
     <section>
-      <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between print:break-after-avoid">
+      <div className="jd-details-section-header mb-3 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between print:break-after-avoid">
         <div className="flex min-w-0 flex-wrap items-center gap-2">
-          <h4 className="text-sm font-extrabold uppercase tracking-wide text-[#101828] sm:text-[15px]">
+          <h4 className="text-sm font-extrabold uppercase tracking-wide text-sibs-navy sm:text-[15px]">
             {sectionNumber ? `${sectionNumber}. ${title}` : title}
           </h4>
 
@@ -81,7 +82,7 @@ function DetailArticleSection({
               className={`inline-flex flex-1 items-center justify-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs font-bold transition sm:flex-none ${
                 disableEdit
                   ? "cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400"
-                  : "border-[#D7DEE8] bg-white text-sibs-primary-1 hover:bg-[#F8FAFC]"
+                  : "border-sibs-border-subtle bg-white text-sibs-primary-1 hover:bg-sibs-surface"
               }`}
             >
               <SquarePen size={14} />
@@ -108,7 +109,7 @@ function DetailArticleSection({
       </div>
 
       {isEditing ? (
-        <div className="rounded-xl border border-[#D7DEE8] bg-white p-3 shadow-sm sm:p-4">
+        <div className="rounded-xl border border-sibs-border-subtle bg-white p-3 shadow-sm sm:p-4">
           <RichTextEditor
             id={`jd-details-editor-${sectionKey}`}
             value={editingDraft}
@@ -123,7 +124,7 @@ function DetailArticleSection({
             <button
               type="button"
               onClick={onCancelEdit}
-              className="inline-flex h-10 w-full items-center justify-center rounded-lg border border-[#D7DEE8] bg-white px-4 text-sm font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC] sm:w-auto"
+              className="inline-flex h-10 w-full items-center justify-center rounded-lg border border-sibs-border-subtle bg-white px-4 text-sm font-bold text-sibs-primary-1 transition hover:bg-sibs-surface sm:w-auto"
             >
               Cancel
             </button>
@@ -143,6 +144,8 @@ function DetailArticleSection({
           emptyText={emptyText}
           approvalPage={approvalPage}
           comments={comments}
+          sectionKey={sectionKey}
+          onOpenRevision={onOpenRevision}
         />
       )}
     </section>

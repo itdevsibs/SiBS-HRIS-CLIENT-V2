@@ -80,7 +80,7 @@ export default function ModalShell({
     <div
       role="dialog"
       aria-modal="true"
-      className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-y-auto font-jakarta"
+      className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center p-0 sm:p-4 font-jakarta"
     >
       {/* Backdrop */}
       <div
@@ -91,7 +91,7 @@ export default function ModalShell({
 
       {/* Dialog container */}
       <div
-        className={`relative z-10 w-full ${maxWidth} max-sm:max-h-[92dvh] max-sm:rounded-b-none overflow-hidden rounded-2xl border border-sibs-border bg-white font-jakarta shadow-2xl sibs-modal-pop-in ${className}`}
+        className={`relative z-10 flex flex-col max-h-[92dvh] sm:max-h-[88vh] 2xl:max-h-[86vh] w-full ${maxWidth} max-sm:rounded-b-none overflow-hidden rounded-2xl border border-sibs-border bg-white font-jakarta shadow-2xl sibs-modal-pop-in ${className}`}
       >
         {!isNavy && <span className="sibs-top-accent" aria-hidden="true" />}
 
@@ -100,8 +100,8 @@ export default function ModalShell({
           <div
             className={
               isNavy
-                ? `flex items-center justify-between gap-4 bg-sibs-navy px-5 py-3 text-white sm:px-6 2xl:py-3.5 ${headerClassName}`
-                : `flex items-start justify-between gap-4 border-b border-sibs-border px-5 py-4 2xl:px-6 2xl:py-5 ${headerClassName}`
+                ? `flex shrink-0 items-center justify-between gap-4 bg-sibs-navy px-5 py-3 text-white sm:px-6 2xl:py-3.5 ${headerClassName}`
+                : `flex shrink-0 items-start justify-between gap-4 border-b border-sibs-border px-5 py-4 2xl:px-6 2xl:py-5 ${headerClassName}`
             }
           >
             <div className="flex min-w-0 items-center gap-2.5 2xl:gap-3">
@@ -179,12 +179,14 @@ export default function ModalShell({
         )}
 
         {/* Body */}
-        <div className={`p-5 2xl:p-6 ${bodyClassName}`}>{children}</div>
+        <div className={`min-h-0 flex-1 overflow-y-auto sibs-scrollbar p-5 2xl:p-6 ${bodyClassName}`}>
+          {children}
+        </div>
 
         {/* Footer */}
         {footer && (
           <div
-            className={`flex flex-wrap items-center justify-end gap-2.5 border-t border-sibs-border bg-sibs-surface px-5 py-3.5 2xl:px-6 2xl:py-4 ${footerClassName}`}
+            className={`flex shrink-0 flex-wrap items-center justify-end gap-2.5 border-t border-sibs-border bg-sibs-surface px-5 py-3.5 2xl:px-6 2xl:py-4 ${footerClassName}`}
           >
             {footer}
           </div>

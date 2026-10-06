@@ -32,7 +32,7 @@ function AnimatedDropdown({ open, children, className = "" }) {
     >
       <div className="min-h-0 overflow-hidden">
         <div
-          className={`overflow-hidden ${EDGE} border border-[#D7DEE8] bg-white shadow-[0_18px_40px_rgba(15,23,42,0.16)] transition-all duration-200 ease-out ${
+          className={`overflow-hidden ${EDGE} border border-sibs-border bg-white shadow-[0_18px_40px_rgba(15,23,42,0.16)] transition-all duration-200 ease-out ${
             open
               ? "translate-y-0 scale-100"
               : "-translate-y-1 scale-[0.99]"
@@ -67,7 +67,7 @@ function getSelectedDropdownValues(filter) {
 
 function FieldLabel({ children }) {
   return (
-    <label className="mb-1 block font-jakarta sibs-text-micro font-extrabold tracking-normal text-[#101828]">
+    <label className="mb-1 block font-jakarta sibs-text-micro font-extrabold tracking-normal text-sibs-navy">
       {children}
     </label>
   );
@@ -81,7 +81,7 @@ function DateFilterField({ filter }) {
       <div className="group relative">
         <CalendarDays
           size={16}
-          className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#98A2B3] transition-colors group-focus-within:text-[#FF5C28]"
+          className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sibs-muted transition-colors group-focus-within:text-sibs-orange"
         />
 
         <input
@@ -91,7 +91,7 @@ function DateFilterField({ filter }) {
           min={filter.min}
           max={filter.max}
           disabled={filter.disabled}
-          className={`h-11 w-full ${EDGE} border border-[#E6ECF2] bg-[#F8FAFC] px-3 pl-9 font-jakarta text-xs font-bold text-[#042C51] outline-none transition hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:opacity-50`}
+          className={`h-11 w-full ${EDGE} border border-sibs-border bg-sibs-surface px-3 pl-9 font-jakarta text-xs font-bold text-sibs-navy outline-none transition hover:border-sibs-orange/40 hover:bg-white focus:border-sibs-orange focus:bg-white focus:ring-4 focus:ring-sibs-orange/10 disabled:cursor-not-allowed disabled:opacity-50`}
         />
       </div>
     </div>
@@ -440,7 +440,7 @@ export default function PaginationTable({
             <div className="group relative">
               <Search
                 size={17}
-                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#98A2B3] transition-colors group-focus-within:text-[#FF5C28]"
+                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sibs-muted transition-colors group-focus-within:text-sibs-orange"
               />
 
               <input
@@ -451,7 +451,7 @@ export default function PaginationTable({
                 }
                 onKeyDown={onSearchKeyDown}
                 placeholder={searchPlaceholder}
-                className={`w-full ${EDGE} border border-[#E6ECF2] bg-[#F8FAFC] px-3 pl-9 font-jakarta sibs-text-xs font-semibold text-[#042C51] outline-none transition placeholder:text-[#8A98B8] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 ${
+                className={`w-full ${EDGE} border border-sibs-border bg-sibs-surface px-3 pl-9 font-jakarta sibs-text-xs font-semibold text-sibs-navy outline-none transition placeholder:text-sibs-muted hover:border-sibs-orange/40 hover:bg-white focus:border-sibs-orange focus:bg-white focus:ring-4 focus:ring-sibs-orange/10 ${
                   isTaInlineLayout ? "h-8.5 sm:h-9 2xl:h-10" : "h-9 2xl:h-11"
                 }`}
               />
@@ -503,7 +503,7 @@ export default function PaginationTable({
                     placeholder={filter.placeholder || "Search..."}
                     autoComplete="off"
                     disabled={filter.disabled}
-                    className={`w-full ${EDGE} border border-[#E6ECF2] bg-[#F8FAFC] px-3 pr-10 font-jakarta sibs-text-xs font-bold text-[#042C51] outline-none transition placeholder:text-[#98A2B3] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:opacity-50 ${
+                    className={`w-full ${EDGE} border border-sibs-border bg-sibs-surface px-3 pr-10 font-jakarta sibs-text-xs font-bold text-sibs-navy outline-none transition placeholder:text-sibs-muted hover:border-sibs-orange/40 hover:bg-white focus:border-sibs-orange focus:bg-white focus:ring-4 focus:ring-sibs-orange/10 disabled:cursor-not-allowed disabled:opacity-50 ${
                       isTaInlineLayout ? "h-8.5 sm:h-9 2xl:h-10" : "h-9 2xl:h-11"
                     }`}
                   />
@@ -512,7 +512,7 @@ export default function PaginationTable({
                     type="button"
                     onClick={() => toggleDropdown(filter.key)}
                     disabled={filter.disabled}
-                    className="absolute right-2 top-1/2 flex h-6.5 w-6.5 2xl:h-7 2xl:w-7 -translate-y-1/2 items-center justify-center rounded-md text-[#667085] transition hover:bg-[#FFF0EB] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-50"
+                    className="absolute right-2 top-1/2 flex h-6.5 w-6.5 2xl:h-7 2xl:w-7 -translate-y-1/2 items-center justify-center rounded-md text-sibs-muted transition hover:bg-sibs-cream-light hover:text-sibs-orange disabled:cursor-not-allowed disabled:opacity-50"
                     aria-label={`Toggle ${label || filter.key} dropdown`}
                   >
                     <ChevronDown
@@ -527,7 +527,7 @@ export default function PaginationTable({
                   type="button"
                   onClick={() => toggleDropdown(filter.key)}
                   disabled={filter.disabled}
-                  className={`flex w-full items-center justify-between ${EDGE} border border-[#E6ECF2] bg-[#F8FAFC] px-3 text-left font-jakarta sibs-text-xs font-bold text-[#042C51] outline-none transition hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:opacity-50 ${
+                  className={`flex w-full items-center justify-between ${EDGE} border border-sibs-border bg-sibs-surface px-3 text-left font-jakarta sibs-text-xs font-bold text-sibs-navy outline-none transition hover:border-sibs-orange/40 hover:bg-white focus:border-sibs-orange focus:bg-white focus:ring-4 focus:ring-sibs-orange/10 disabled:cursor-not-allowed disabled:opacity-50 ${
                     isTaInlineLayout ? "h-8.5 sm:h-9 2xl:h-10" : "h-9 2xl:h-11"
                   }`}
                   aria-expanded={isOpen}
@@ -538,7 +538,7 @@ export default function PaginationTable({
 
                   <ChevronDown
                     size={17}
-                    className={`shrink-0 text-[#667085] transition-transform duration-300 ${
+                    className={`shrink-0 text-sibs-muted transition-transform duration-300 ${
                       isOpen ? "rotate-180" : ""
                     }`}
                   />
@@ -563,8 +563,8 @@ export default function PaginationTable({
                              filter.value === "All Accounts" ||
                              filter.value === "All Statuses" ||
                              filter.value === "All Access Levels"))
-                          ? "bg-[#FFF0EB] font-extrabold text-[#FF5C28]"
-                          : "font-semibold text-[#344054] hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
+                          ? "bg-sibs-cream-light font-extrabold text-sibs-orange"
+                          : "font-semibold text-sibs-text-secondary hover:bg-sibs-cream-subtle hover:text-sibs-orange"
                       }`}
                     >
                       <span className="block truncate">
@@ -591,16 +591,16 @@ export default function PaginationTable({
                           }
                           className={`flex w-full items-center gap-2 px-3 py-2 2xl:px-4 2xl:py-2.5 text-left sibs-text-xs transition ${
                             checked
-                              ? "bg-[#FFF0EB] font-extrabold text-[#FF5C28]"
-                              : "font-semibold text-[#344054] hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
+                              ? "bg-sibs-cream-light font-extrabold text-sibs-orange"
+                              : "font-semibold text-sibs-text-secondary hover:bg-sibs-cream-subtle hover:text-sibs-orange"
                           }`}
                         >
                           {filter.multiple ? (
                             <span
                               className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${
                                 checked
-                                  ? "border-[#FF5C28] bg-[#FF5C28] text-white"
-                                  : "border-[#D0D5DD] bg-white text-transparent"
+                                  ? "border-sibs-orange bg-sibs-orange text-white"
+                                  : "border-sibs-border bg-white text-transparent"
                               }`}
                               aria-hidden="true"
                             >
@@ -615,7 +615,7 @@ export default function PaginationTable({
                       );
                     })
                   ) : (
-                    <div className="px-4 py-4 text-xs font-semibold text-[#667085]">
+                    <div className="px-4 py-4 text-xs font-semibold text-sibs-muted">
                       No options found.
                     </div>
                   )}
@@ -649,7 +649,7 @@ export default function PaginationTable({
   }
 
   return (
-    <div className={`relative overflow-visible font-jakarta text-[#042C51] ${className}`}>
+    <div className={`relative overflow-visible font-jakarta text-sibs-navy ${className}`}>
       {hasTopControls ? (
         <div className="relative z-[50] overflow-visible">
           {title || subtitle ? (
@@ -670,16 +670,16 @@ export default function PaginationTable({
 
           {shouldShowFilterPanel ? (
             <div
-              className={`relative overflow-visible rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5 ${filtersPanelClassName}`}
+              className={`relative overflow-visible rounded-2xl border border-sibs-border bg-white p-4 shadow-sm sm:p-5 ${filtersPanelClassName}`}
             >
               {shouldShowFilterHeader ? (
-                <div className="mb-4 flex items-center justify-between gap-3 border-b border-[#F1F5F9] pb-3">
+                <div className="mb-4 flex items-center justify-between gap-3 border-b border-sibs-border pb-3">
                   <div className="flex min-w-0 items-center gap-2">
                     <SlidersHorizontal
                       size={16}
-                      className="shrink-0 text-[#042C51]"
+                      className="shrink-0 text-sibs-navy"
                     />
-              <span className="truncate font-jakarta text-xs font-extrabold uppercase tracking-normal text-[#042C51]">
+              <span className="truncate font-jakarta text-xs font-extrabold uppercase tracking-normal text-sibs-navy">
                       {filterTitle}
                     </span>
                   </div>
@@ -689,7 +689,7 @@ export default function PaginationTable({
                       type="button"
                       onClick={handleReset}
                       disabled={loading}
-                      className="inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-[10px] font-extrabold text-[#FF5C28] transition hover:bg-[#FFF0EB] disabled:cursor-not-allowed disabled:opacity-50"
+                      className="inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-[10px] font-extrabold text-sibs-orange transition hover:bg-sibs-cream-light disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       <RefreshCw size={13} />
                       {resetLabel}

@@ -12,8 +12,7 @@ import {
 
 import { getJobDescriptionApprovalRequests } from "../../../lib/axios/getApprovalRequest";
 import { usePagination } from "../../../services/context/PaginationContext";
-import TableFooter from "../footer/TableFooter";
-import { DataCard, ResponsiveTableShell, TableSkeletonRows } from "@/components/ui";
+import { DataCard, ResponsiveTableShell, TablePagination, TableSkeletonRows } from "@/components/ui";
 
 const JOB_DESCRIPTION_REQUEST_ENTITY = "job-description-approval-requests";
 
@@ -116,10 +115,10 @@ function JobDescriptionMobileCard({ request, onView }) {
   return (
     <DataCard interactive onClick={() => onView?.(request)}>
       <DataCard.Header
-        icon={<FileText className="h-4 w-4 text-[#FF5C28]" />}
+        icon={<FileText className="h-4 w-4 text-sibs-orange" />}
         title={safeText(request.title)}
         subtitle={
-          <span className="truncate font-semibold text-sibs-primary-1">
+          <span className="truncate font-semibold text-sibs-navy">
             {safeText(getRawValue(request, "jdCode", request.id))}
           </span>
         }
@@ -136,11 +135,11 @@ function JobDescriptionMobileCard({ request, onView }) {
       />
 
       <DataCard.ContextRow>
-        <span className="text-[11px] font-extrabold text-[#042C51]">
+        <span className="text-[11px] font-extrabold text-sibs-navy">
           {request.department || getRawValue(request, "department") || "—"}
         </span>
         {getRawValue(request, "linkedHiringRequirement") && (
-          <span className="text-[11px] font-semibold text-[#667085]">
+          <span className="text-[11px] font-semibold text-sibs-muted">
             PRF: {getRawValue(request, "linkedHiringRequirement")}
           </span>
         )}
@@ -178,7 +177,7 @@ function JobDescriptionMobileCard({ request, onView }) {
 }
 
 const JobDescriptionRequestTable = ({ onView }) => {
-  const { setPagination } = usePagination(JOB_DESCRIPTION_REQUEST_ENTITY);
+  const { pagination, setPagination, setPage } = usePagination(JOB_DESCRIPTION_REQUEST_ENTITY);
 
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -262,9 +261,9 @@ const JobDescriptionRequestTable = ({ onView }) => {
           }
           desktopContent={
             <div className="h-full overflow-auto sibs-scrollbar">
-              <table className="w-full min-w-[1120px] table-fixed border-separate border-spacing-0 overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white text-left">
+              <table className="w-full min-w-[1120px] table-fixed border-separate border-spacing-0 overflow-hidden rounded-2xl border border-sibs-border bg-white text-left">
                 <thead className="sticky top-0 z-10">
-                  <tr className="bg-[#F5F7FA] text-xs font-bold uppercase tracking-wide text-[#174A7C]">
+                  <tr className="bg-sibs-surface text-xs font-bold uppercase tracking-wide text-sibs-navy">
                     <th className="w-[24%] px-5 py-4 text-left align-middle first:rounded-tl-2xl">
                       Job Description
                     </th>
@@ -298,7 +297,7 @@ const JobDescriptionRequestTable = ({ onView }) => {
                     <tr>
                       <td
                         colSpan={6}
-                        className="px-5 py-12 text-center text-sm font-bold text-gray-500"
+                        className="px-5 py-12 text-center text-sm font-bold text-sibs-muted"
                       >
                         No approval requests found for Job Description.
                       </td>
@@ -319,18 +318,18 @@ const JobDescriptionRequestTable = ({ onView }) => {
                           key={`${request.source || "job-description"}-${
                             request.id || request.rawId
                           }`}
-                          className="transition-colors hover:bg-[#F8FAFC]"
+                          className="transition-colors hover:bg-sibs-surface/80"
                         >
-                          <td className="border-b border-[#E6ECF2] px-5 py-5 align-middle">
+                          <td className="border-b border-sibs-border px-5 py-5 align-middle">
                             <div className="flex items-center gap-3">
-                              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-50 text-sibs-primary-1">
+                              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-50 text-sibs-orange">
                                 <FileText size={18} />
                               </div>
 
                               <div className="min-w-0">
                                 <p
                                   title={safeText(request.title)}
-                                  className="truncate text-sm font-bold text-[#101828]"
+                                  className="truncate text-sm font-bold text-sibs-navy"
                                 >
                                   {safeText(request.title)}
                                 </p>
@@ -349,7 +348,7 @@ const JobDescriptionRequestTable = ({ onView }) => {
                                     request,
                                     "linkedHiringRequirement",
                                   ) && (
-                                    <span className="inline-flex rounded-full border border-[#E6ECF2] bg-[#F8FAFC] px-2.5 py-0.5 text-xs font-bold text-[#344054]">
+                                    <span className="inline-flex rounded-full border border-sibs-border bg-sibs-surface px-2.5 py-0.5 text-xs font-bold text-sibs-text-secondary">
                                       HR:{" "}
                                       {getRawValue(
                                         request,
@@ -362,12 +361,12 @@ const JobDescriptionRequestTable = ({ onView }) => {
                             </div>
                           </td>
 
-                          <td className="border-b border-[#E6ECF2] px-4 py-5 text-center align-middle">
+                          <td className="border-b border-sibs-border px-4 py-5 text-center align-middle">
                             <span
                               title={safeText(
                                 getRawValue(request, "jdCode", request.id),
                               )}
-                              className="inline-flex rounded-lg bg-[#F8FAFC] px-2.5 py-1 text-xs font-extrabold text-sibs-primary-1"
+                              className="inline-flex rounded-lg bg-sibs-surface px-2.5 py-1 text-xs font-extrabold text-sibs-navy"
                             >
                               {safeText(
                                 getRawValue(request, "jdCode", request.id),
@@ -375,13 +374,13 @@ const JobDescriptionRequestTable = ({ onView }) => {
                             </span>
                           </td>
 
-                          <td className="border-b border-[#E6ECF2] px-5 py-5 align-middle">
+                          <td className="border-b border-sibs-border px-5 py-5 align-middle">
                             <div className="min-w-0">
                               <p
                                 title={safeText(
                                   request.requester || request.employeeSibsId,
                                 )}
-                                className="truncate text-sm font-bold text-[#101828]"
+                                className="truncate text-sm font-bold text-sibs-navy"
                               >
                                 {safeText(
                                   request.requester || request.employeeSibsId,
@@ -397,7 +396,7 @@ const JobDescriptionRequestTable = ({ onView }) => {
                                     request.employeeSibsId,
                                   )
                                 }
-                                className="mt-1 truncate text-xs font-semibold text-sibs-tertiary-5"
+                                className="mt-1 truncate text-xs font-semibold text-sibs-muted"
                               >
                                 Created by:{" "}
                                 {safeText(
@@ -412,12 +411,12 @@ const JobDescriptionRequestTable = ({ onView }) => {
                             </div>
                           </td>
 
-                          <td className="border-b border-[#E6ECF2] px-4 py-5 text-center align-middle">
+                          <td className="border-b border-sibs-border px-4 py-5 text-center align-middle">
                             <p
                               title={formatDate(
                                 request.dateRequested || request.requestDate,
                               )}
-                              className="truncate text-sm font-bold text-[#344054]"
+                              className="truncate text-sm font-bold text-sibs-text-secondary"
                             >
                               {formatDate(
                                 request.dateRequested || request.requestDate,
@@ -425,7 +424,7 @@ const JobDescriptionRequestTable = ({ onView }) => {
                             </p>
                           </td>
 
-                          <td className="border-b border-[#E6ECF2] px-4 py-5 text-center align-middle">
+                          <td className="border-b border-sibs-border px-4 py-5 text-center align-middle">
                             <span
                               title={normalizedStatus}
                               className={`mx-auto inline-flex max-w-full items-center justify-center gap-1.5 truncate rounded-full border px-3 py-1 text-xs font-bold ${getStatusClass(
@@ -437,13 +436,13 @@ const JobDescriptionRequestTable = ({ onView }) => {
                             </span>
                           </td>
 
-                          <td className="border-b border-[#E6ECF2] px-5 py-5 text-center align-middle">
+                          <td className="border-b border-sibs-border px-5 py-5 text-center align-middle">
                             <button
                               type="button"
                               onClick={() => onView?.(request)}
-                              className="mx-auto inline-flex h-10 min-w-[104px] items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-4 text-sm font-bold text-sibs-primary-1 transition hover:border-sibs-primary-1/30 hover:bg-[#F8FAFC] hover:shadow-sm active:scale-[0.98]"
+                              className="mx-auto inline-flex h-8.5 2xl:h-9 min-w-[96px] items-center justify-center gap-1.5 rounded-lg border border-sibs-border bg-white px-3 text-xs font-bold text-sibs-navy transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange active:scale-[0.98]"
                             >
-                              <Eye size={16} />
+                              <Eye size={15} />
                               View
                             </button>
                           </td>
@@ -458,9 +457,19 @@ const JobDescriptionRequestTable = ({ onView }) => {
         />
       </div>
 
-      <TableFooter
-        tableEntity={JOB_DESCRIPTION_REQUEST_ENTITY}
-        totalLabel="Total Job Description Requests"
+      <TablePagination
+        currentPage={pagination?.currentPage || 1}
+        totalPages={pagination?.totalPages || 1}
+        totalRecords={pagination?.total || requests.length}
+        loadedCount={requests.length}
+        limit={pagination?.limit || 15}
+        recordLabel="requests"
+        onPageChange={(page) => {
+          if (typeof setPage === "function") {
+            setPage(page);
+          }
+        }}
+        showCount
       />
     </div>
   );

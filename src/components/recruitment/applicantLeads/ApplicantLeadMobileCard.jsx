@@ -60,7 +60,7 @@ export default function ApplicantLeadMobileCard({
         subtitle={
           <div className="flex flex-wrap items-center gap-1.5">
             {leadId && (
-              <span className="text-[9px] font-bold uppercase tracking-wide text-[#98A2B3]">
+              <span className="text-[9px] font-bold uppercase tracking-wide text-sibs-muted">
                 Lead ID: {leadId}
               </span>
             )}
@@ -127,7 +127,7 @@ export default function ApplicantLeadMobileCard({
       {activeLeadView !== "archive" && !isConvertedApplicant && (
         <DataCard.Footer>
           <div className="flex w-full items-center justify-between gap-2">
-            <span className="text-[10px] font-medium text-[#98A2B3]">
+            <span className="text-[10px] font-medium text-sibs-muted">
               {applicationLinkSent ? "Link email dispatched" : "Awaiting application link"}
             </span>
 

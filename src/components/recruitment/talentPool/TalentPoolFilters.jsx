@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import { Filter } from "lucide-react";
+import { RotateCcw } from "lucide-react";
 import { useTalentPool } from "../../../services/context/TalentPoolContext";
 import PaginationTable from "../../../services/pagination/PaginationTable";
 
@@ -151,9 +151,9 @@ export default function TalentPoolFilters() {
           type="button"
           onClick={clearFilters}
           disabled={!hasActiveFilters || isLoading}
-          className="inline-flex h-8.5 2xl:h-10 w-full items-center justify-center gap-1.5 2xl:gap-2 rounded-lg border border-sibs-border bg-white px-3 sibs-text-xs font-extrabold text-sibs-text-muted outline-none transition hover:border-sibs-orange/40 hover:bg-sibs-cream-subtle hover:text-sibs-orange focus-visible:ring-2 focus-visible:ring-sibs-orange/25 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 xl:w-auto"
+          className="inline-flex h-8.5 2xl:h-10 w-full items-center justify-center gap-1.5 2xl:gap-2 rounded-[10px] border border-sibs-border bg-white px-3 sibs-text-xs font-extrabold text-sibs-text-muted outline-none transition hover:border-sibs-orange/40 hover:bg-sibs-cream-subtle hover:text-sibs-orange focus-visible:ring-2 focus-visible:ring-sibs-orange/25 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 xl:w-auto"
         >
-          <Filter size={14} />
+          <RotateCcw size={14} />
           Clear
         </button>
       }

@@ -49,7 +49,7 @@ function StatCard({
             </p>
           </div>
 
-          <p className="mt-1 line-clamp-1 truncate sibs-text-micro font-semibold leading-tight text-[#667085]">
+          <p className="mt-1 line-clamp-1 truncate sibs-text-micro font-semibold leading-tight text-sibs-muted">
             {description}
           </p>
         </div>

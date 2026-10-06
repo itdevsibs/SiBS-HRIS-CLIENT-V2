@@ -28,13 +28,56 @@ import {
   archiveJobDescription,
   deleteJobDescription,
   getJobDescriptionById,
+  getJobDescriptionDropdowns,
   restoreJobDescription,
   saveJobDescriptionRevision,
 } from "../../lib/axios/getJobDescription";
 import DeleteJobDescriptionModal from "../../components/modals/jobDescription/DeleteJobDescription";
 import JobDescriptionViewSkeleton from "../../components/layout/tabs/JobDescriptionView/JobDescriptionViewSkeleton";
+import { ModalShell } from "../../components/ui";
 
 const detailTabs = ["Details", "Revision History"];
+
+const JD_PRINT_PREVIEW_GEOMETRY_PROPERTIES = [
+  "width",
+  "min-width",
+  "max-width",
+  "height",
+  "min-height",
+  "max-height",
+  "flex-basis",
+  "margin-left",
+  "margin-right",
+  "overflow",
+  "zoom",
+  "transform",
+  "transform-origin",
+];
+
+function clearInlinePrintPreviewGeometry(element) {
+  if (!element?.style) return;
+
+  JD_PRINT_PREVIEW_GEOMETRY_PROPERTIES.forEach((property) => {
+    element.style.removeProperty(property);
+  });
+}
+
+function clearPagedPreviewGeometry(rootElement) {
+  if (!rootElement) return;
+
+  // Preview sizing is applied as inline !important styles by the responsive
+  // Paged.js renderer. Those values are correct on screen, but if they are
+  // cloned into the browser print tree they override the A4 print CSS and
+  // cause Chrome to shrink the page a second time. Strip only preview
+  // geometry here so the print stylesheet is the single source of truth.
+  clearInlinePrintPreviewGeometry(rootElement);
+
+  rootElement
+    .querySelectorAll(
+      ".pagedjs_pages, .pagedjs_page, .pagedjs_sheet, .pagedjs_pagebox",
+    )
+    .forEach(clearInlinePrintPreviewGeometry);
+}
 
 /* =====================================================
 USER ACCESS
@@ -393,8 +436,24 @@ function mapJobDescriptionApprovalToViewItem(request = {}) {
     locationWorkSetup:
       request?.locationWorkSetup ||
       request?.location_work_setup ||
+      request?.workSetup ||
+      request?.work_setup ||
+      request?.workLocation ||
+      request?.work_location ||
+      request?.locationSite ||
+      request?.location_site ||
+      request?.site ||
+      request?.location ||
       raw?.locationWorkSetup ||
       raw?.location_work_setup ||
+      raw?.workSetup ||
+      raw?.work_setup ||
+      raw?.workLocation ||
+      raw?.work_location ||
+      raw?.locationSite ||
+      raw?.location_site ||
+      raw?.site ||
+      raw?.location ||
       "",
 
     account:
@@ -473,7 +532,18 @@ function mapJobDescriptionApprovalToViewItem(request = {}) {
       raw?.currentVersion ||
       "1",
 
-    effectiveDate: request?.effectiveDate || raw?.effectiveDate || "",
+    effectiveDate:
+      request?.effectiveDate ||
+      request?.effective_date ||
+      request?.effectivityDate ||
+      request?.effectivity_date ||
+      request?.effectivity ||
+      raw?.effectiveDate ||
+      raw?.effective_date ||
+      raw?.effectivityDate ||
+      raw?.effectivity_date ||
+      raw?.effectivity ||
+      "",
 
     lastUpdated:
       request?.approveDate ||
@@ -733,12 +803,64 @@ function buildFallbackRevisionDraftPayload(
 
     department: getFirstValue(item.department, raw.department),
 
+    locationWorkSetup: getFirstValue(
+      item.locationWorkSetup,
+      item.location_work_setup,
+      item.workSetup,
+      item.work_setup,
+      raw.locationWorkSetup,
+      raw.location_work_setup,
+      raw.workSetup,
+      raw.work_setup,
+      item.workLocation,
+      item.work_location,
+      item.locationSite,
+      item.location_site,
+      item.location,
+      item.site,
+      raw.workLocation,
+      raw.work_location,
+      raw.locationSite,
+      raw.location_site,
+      raw.location,
+      raw.site,
+    ),
+
+    location_work_setup: getFirstValue(
+      item.location_work_setup,
+      item.locationWorkSetup,
+      raw.location_work_setup,
+      raw.locationWorkSetup,
+      item.work_setup,
+      item.workSetup,
+      raw.work_setup,
+      raw.workSetup,
+      item.workLocation,
+      item.work_location,
+      item.locationSite,
+      item.location_site,
+      item.location,
+      item.site,
+      raw.workLocation,
+      raw.work_location,
+      raw.locationSite,
+      raw.location_site,
+      raw.location,
+      raw.site,
+    ),
+
     effectiveDate: normalizeRevisionDate(
       getFirstValue(
         item.effectiveDate,
         item.effective_date,
         raw.effectiveDate,
         raw.effective_date,
+        item.effectivityDate,
+        item.effectivity_date,
+        raw.effectivityDate,
+        raw.effectivity_date,
+        item.effectivity,
+        raw.effectivity,
       ),
     ),
 
@@ -748,6 +870,12 @@ function buildFallbackRevisionDraftPayload(
         item.effective_date,
         raw.effectiveDate,
         raw.effective_date,
+        item.effectivityDate,
+        item.effectivity_date,
+        raw.effectivityDate,
+        raw.effectivity_date,
+        item.effectivity,
+        raw.effectivity,
       ),
     ),
 
@@ -775,6 +903,17 @@ function buildFallbackRevisionDraftPayload(
     ),
 
     qualifications: getFirstValue(item.qualifications, raw.qualifications),
+
+    education: getFirstValue(item.education, raw.education),
+
+    experience: getFirstValue(item.experience, raw.experience),
+
+    certificationsAffiliations: getFirstValue(
+      item.certificationsAffiliations,
+      item.certifications_affiliations,
+      raw.certificationsAffiliations,
+      raw.certifications_affiliations,
+    ),
 
     personalityType: getFirstValue(
       item.personalityType,
@@ -872,6 +1011,8 @@ export default function JobDescriptionViewPage() {
   const [pageReady, setPageReady] = useState(false);
 
   const [revisionEditorOpen, setRevisionEditorOpen] = useState(false);
+  const [selectedRevisionSection, setSelectedRevisionSection] =
+    useState("recordInformation");
 
   const [revisionForm, setRevisionForm] = useState({
     revisionRemarks: "",
@@ -921,7 +1062,50 @@ export default function JobDescriptionViewPage() {
     clearRevisionComments,
     saveRevisionComments,
     revisionCommentsLoading,
+    accounts = [],
+    setAccounts,
+    departments = [],
+    setDepartments,
+    setRequestedByUsers,
+    setDropdownLoading,
   } = useJobDescription();
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function ensureDropdowns() {
+      if (accounts.length > 0 && departments.length > 0) return;
+
+      try {
+        setDropdownLoading?.(true);
+        const result = await getJobDescriptionDropdowns();
+        if (cancelled || !result?.success) return;
+
+        setAccounts?.(result.accounts || []);
+        setDepartments?.(result.departments || []);
+        setRequestedByUsers?.(result.requestedByUsers || []);
+      } catch (error) {
+        console.error("Failed to load JD dropdowns in view page:", error);
+      } finally {
+        if (!cancelled) {
+          setDropdownLoading?.(false);
+        }
+      }
+    }
+
+    ensureDropdowns();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    accounts.length,
+    departments.length,
+    setAccounts,
+    setDepartments,
+    setRequestedByUsers,
+    setDropdownLoading,
+  ]);
 
   const stateItem =
     location.state?.jobDescription ||
@@ -1559,16 +1743,26 @@ export default function JobDescriptionViewPage() {
         )
         .forEach((el) => el.remove());
 
-      clone.classList.remove("jd-paged-output-compact-hidden");
+      clone.classList.remove(
+        "jd-paged-output-compact-hidden",
+        "jd-paged-output-hidden",
+        "!hidden",
+        "hidden",
+      );
       clone.style.removeProperty("display");
-      clone.style.removeProperty("height");
-      clone.style.removeProperty("overflow");
 
-      const pagesEl = clone.querySelector(".pagedjs_pages");
-      if (pagesEl) {
-        pagesEl.style.removeProperty("zoom");
-        pagesEl.style.removeProperty("transform");
-      }
+      clearPagedPreviewGeometry(clone);
+
+      clone.querySelectorAll(".pagedjs_page").forEach((pageEl) => {
+        const content = pageEl.querySelector(".pagedjs_page_content");
+        if (
+          content &&
+          !content.textContent.trim() &&
+          !content.querySelector("img, svg, table, canvas")
+        ) {
+          pageEl.remove();
+        }
+      });
 
       printRoot.appendChild(clone);
 
@@ -1943,15 +2137,15 @@ export default function JobDescriptionViewPage() {
         return "border-emerald-200 bg-emerald-50 text-emerald-700";
 
       case "For Approval":
-        return "border-[#FFBFA8] bg-[#FFF3ED] text-sibs-primary-2";
+        return "border-orange-200 bg-orange-50 text-sibs-primary-2";
 
       case "New Job Description":
       case "New JD":
       case "Draft":
-        return "border-[#B7D4FF] bg-[#EEF6FF] text-[#1454D9]";
+        return "border-blue-200 bg-blue-50 text-blue-700";
 
       case "For Revision":
-        return "border-[#F6C84C] bg-[#FFF8E6] text-[#9A6400]";
+        return "border-amber-200 bg-amber-50 text-amber-700";
 
       case "Returned for Revision":
       case "Rejected":
@@ -1960,7 +2154,7 @@ export default function JobDescriptionViewPage() {
 
       case "Archived":
       case "Archived JD":
-        return "border-[#D6DEE8] bg-[#F8FAFC] text-[#475467]";
+        return "border-sibs-border-subtle bg-sibs-surface text-sibs-text-secondary";
 
       default:
         return "border-gray-200 bg-gray-50 text-gray-600";
@@ -2416,7 +2610,7 @@ export default function JobDescriptionViewPage() {
     await handleApproveJobDescription();
   }
 
-  function handleOpenRevisionFromDetails(targetItem) {
+  function handleOpenRevisionFromDetails(targetItem, sectionKey) {
     const revisionTarget = targetItem || item;
 
     if (!revisionTarget) return;
@@ -2424,8 +2618,13 @@ export default function JobDescriptionViewPage() {
     updateSelectedJobDescription?.(revisionTarget);
 
     setRevisionForm({
+      ...buildFallbackRevisionDraftPayload(revisionTarget),
       revisionRemarks: "",
     });
+
+    if (sectionKey) {
+      setSelectedRevisionSection(sectionKey);
+    }
 
     setRevisionEditorOpen(true);
   }
@@ -2434,8 +2633,34 @@ export default function JobDescriptionViewPage() {
     setRevisionEditorOpen(false);
   }
 
-  function handleRevisionSaved(result) {
+  async function handleRevisionSaved(result) {
     setRevisionEditorOpen(false);
+
+    const jdId = getJobDescriptionId();
+
+    if (jdId) {
+      try {
+        const freshResult = await getJobDescriptionById(jdId);
+
+        if (freshResult?.success && freshResult?.data) {
+          updateSelectedJobDescription?.(
+            normalizePageJobDescription(freshResult.data, approvalPage),
+          );
+        }
+      } catch (error) {
+        console.error("REFRESH JD AFTER REVISION ERROR:", error);
+      }
+    }
+
+    setRevisionComments?.([]);
+    setRevisionForm({
+      revisionRemarks: "",
+    });
+    setRevisionDraftPayload(null);
+    setHasEditedChanges(false);
+    setEditedChangeDetails([]);
+    setShowEditedChanges(false);
+    setActiveDetailTab("Revision History");
 
     openStatus({
       type: "success",
@@ -2460,15 +2685,15 @@ export default function JobDescriptionViewPage() {
 
   if (!item) {
     return (
-      <div className="jd-view-page-shell fixed inset-0 z-[9999] flex flex-col bg-[#EEF2F6] font-jakarta">
+      <div className="jd-view-page-shell fixed inset-0 z-[9999] flex flex-col bg-sibs-canvas font-jakarta">
         <style>{jdViewAnimationStyles}</style>
 
         <main className="flex min-h-0 flex-1 items-center justify-center p-6">
-          <div className="jd-view-empty-card w-full max-w-3xl rounded-2xl border border-[#E6ECF2] bg-white p-6 shadow-sm">
+          <div className="jd-view-empty-card w-full max-w-3xl rounded-2xl border border-sibs-border bg-white p-6 shadow-sm">
             <button
               type="button"
               onClick={handleBack}
-              className="jd-view-action-button mb-5 inline-flex h-10 items-center gap-2 rounded-lg border border-[#D7DEE8] bg-white px-4 text-sm font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC]"
+              className="jd-view-action-button mb-5 inline-flex h-10 items-center gap-2 rounded-lg border border-sibs-border-subtle bg-white px-4 text-sm font-bold text-sibs-primary-1 transition hover:bg-sibs-surface"
             >
               <ArrowLeft size={16} />
               Back
@@ -2545,7 +2770,7 @@ export default function JobDescriptionViewPage() {
   ===================================================== */
 
   return (
-    <div className="jd-view-page-shell fixed inset-0 z-[9999] flex min-h-0 flex-col overflow-hidden bg-[#EEF2F6] font-jakarta text-sibs-primary-1">
+    <div className="jd-view-page-shell fixed inset-0 z-[9999] flex min-h-0 flex-col overflow-hidden bg-sibs-canvas font-jakarta text-sibs-primary-1">
       <style>{jdViewAnimationStyles}</style>
 
       {/* =================================================
@@ -2567,21 +2792,38 @@ export default function JobDescriptionViewPage() {
         className={`shrink-0 overflow-hidden border-b bg-white transition-all duration-300 ease-in-out ${
           headerHidden
             ? "max-h-0 -translate-y-full border-transparent px-3 py-0 opacity-0 sm:px-6"
-            : "max-h-[230px] translate-y-0 border-[#D9E2EC] px-3 pt-3 opacity-100 sm:max-h-[210px] sm:px-6 sm:pt-4"
+            : "max-h-[230px] translate-y-0 border-sibs-border px-3 pt-3 opacity-100 sm:max-h-[210px] sm:px-6 sm:pt-4"
         }`}
       >
         <div className="jd-view-header-content mx-auto flex w-full max-w-[1760px] flex-col gap-3 sm:gap-4">
           <div className="flex flex-col justify-between gap-3 lg:flex-row lg:items-start">
             <div className="min-w-0">
-              <div className="text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1/80">
-                Job Description Overview
+              <div className="flex min-w-0 flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleBack}
+                  disabled={saving}
+                  className="-ml-2 inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg px-2 text-[11px] font-extrabold text-sibs-muted transition hover:bg-sibs-surface hover:text-sibs-primary-1 disabled:cursor-not-allowed disabled:opacity-60 sm:text-xs"
+                >
+                  <ArrowLeft size={14} strokeWidth={2.4} />
+                  Job Descriptions
+                </button>
+
+                <span
+                  aria-hidden="true"
+                  className="hidden h-4 w-px shrink-0 bg-sibs-border sm:block"
+                />
+
+                <div className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-primary-1/70 sm:text-xs">
+                  Job Description Overview
+                </div>
               </div>
 
               <h1 className="mt-1 min-w-0 break-words text-sm font-extrabold leading-tight text-sibs-primary-1 sm:text-xl">
                 {jdCode} • {jdDisplayTitle}
               </h1>
 
-              <p className="mt-1 text-xs font-semibold text-[#475467] sm:text-sm">
+              <p className="mt-1 text-xs font-semibold text-sibs-text-secondary sm:text-sm">
                 {item.department || "—"} • {item.account || "—"}
               </p>
             </div>
@@ -2597,9 +2839,9 @@ export default function JobDescriptionViewPage() {
             </div>
           </div>
 
-          <div className="relative flex gap-5 overflow-x-auto text-sm font-bold text-[#344054] no-scrollbar sm:gap-8">
+          <div className="relative flex gap-5 overflow-x-auto text-sm font-bold text-sibs-text-secondary no-scrollbar sm:gap-8">
             <span
-              className="absolute bottom-0 h-[2px] rounded-full bg-blue-500 transition-all duration-300 ease-in-out"
+              className="absolute bottom-0 h-[2px] rounded-full bg-sibs-orange transition-all duration-300 ease-in-out"
               style={{
                 left: `${tabIndicator.left}px`,
                 width: `${tabIndicator.width}px`,
@@ -2619,8 +2861,8 @@ export default function JobDescriptionViewPage() {
                   onClick={() => setActiveDetailTab(tab)}
                   className={`jd-view-tab-button relative z-10 whitespace-nowrap px-2 pb-3 transition sm:px-4 ${
                     isActive
-                      ? "text-blue-600"
-                      : "text-[#344054] hover:text-blue-600"
+                      ? "text-sibs-navy font-extrabold"
+                      : "text-sibs-text-secondary hover:text-sibs-navy"
                   }`}
                 >
                   {tab}
@@ -2635,7 +2877,7 @@ export default function JobDescriptionViewPage() {
           CONTENT
       ================================================= */}
 
-      <div className="relative min-h-0 flex-1 overflow-hidden bg-[#EEF2F6]">
+      <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden bg-sibs-canvas">
         {shouldShowDetails && (
           <div
             data-jd-print-fab
@@ -2652,7 +2894,7 @@ export default function JobDescriptionViewPage() {
           ref={contentScrollRef}
           data-jd-scroll-panel
           onScroll={handleContentScroll}
-          className="thin-scroll h-full overscroll-contain overflow-y-auto px-2.5 py-4 sm:px-5 sm:py-7 lg:px-8"
+          className="thin-scroll h-full min-h-0 flex-1 overscroll-contain overflow-y-auto px-2.5 py-4 pb-20 sm:px-5 sm:py-7 sm:pb-24 lg:px-8"
         >
           <div key={activeDetailTab} className="jd-view-content-panel">
             {shouldShowDetails && (
@@ -2691,17 +2933,17 @@ export default function JobDescriptionViewPage() {
         className={`jd-view-footer shrink-0 overflow-hidden border-t bg-white transition-all duration-300 ease-in-out ${
           headerHidden
             ? "max-h-0 translate-y-full border-transparent px-5 py-0 opacity-0 sm:px-7"
-            : "max-h-[140px] translate-y-0 border-[#D9E2EC] px-5 py-3 opacity-100 [padding-bottom:calc(0.75rem+env(safe-area-inset-bottom))] sm:px-7"
+            : "max-h-[140px] translate-y-0 border-sibs-border px-5 py-3 opacity-100 [padding-bottom:calc(0.75rem+env(safe-area-inset-bottom))] sm:px-7"
         }`}
       >
         <div className="mx-auto flex w-full max-w-[1760px] flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">
-            <p className="whitespace-nowrap text-[11px] font-medium text-[#667085] sm:text-xs">
+            <p className="whitespace-nowrap text-[11px] font-medium text-sibs-muted sm:text-xs">
               Document Code:{" "}
               <span className="font-extrabold text-sibs-primary-1">
                 {jdCode}
               </span>
-              <span className="mx-1 text-[#98A2B3]">•</span>
+              <span className="mx-1 text-sibs-faint">•</span>
               Version:{" "}
               <span className="font-extrabold text-sibs-primary-1">
                 v{footerVersion}
@@ -2720,7 +2962,7 @@ export default function JobDescriptionViewPage() {
                 <button
                   type="button"
                   onClick={() => setShowEditedChanges(true)}
-                  className="jd-view-action-button inline-flex h-9 items-center justify-center gap-2 rounded-[10px] border border-[#D7DEE8] bg-white px-3 text-xs font-extrabold text-sibs-primary-1 shadow-sm hover:border-sibs-primary-1 hover:bg-[#F8FAFC]"
+                  className="jd-view-action-button inline-flex h-9 items-center justify-center gap-2 rounded-[10px] border border-sibs-border-subtle bg-white px-3 text-xs font-extrabold text-sibs-primary-1 shadow-sm hover:border-sibs-primary-1 hover:bg-sibs-surface"
                 >
                   <Eye size={15} />
                   View Changes
@@ -2733,7 +2975,7 @@ export default function JobDescriptionViewPage() {
                 type="button"
                 onClick={() => openRecordAction("restore")}
                 disabled={recordActionModal.pending || saving}
-                className="jd-view-action-button inline-flex h-9 items-center justify-center gap-2 rounded-[10px] border border-[#D7DEE8] bg-white px-3.5 text-xs font-extrabold text-sibs-primary-1 shadow-sm hover:border-emerald-400 hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-60"
+                className="jd-view-action-button inline-flex h-9 items-center justify-center gap-2 rounded-[10px] border border-sibs-border-subtle bg-white px-3.5 text-xs font-extrabold text-sibs-primary-1 shadow-sm hover:border-emerald-400 hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <ArchiveRestore size={15} className="text-emerald-700" />
                 Restore
@@ -2745,9 +2987,9 @@ export default function JobDescriptionViewPage() {
                 type="button"
                 onClick={() => openRecordAction("archive")}
                 disabled={recordActionModal.pending || saving}
-                className="jd-view-action-button inline-flex h-9 cursor-pointer items-center justify-center gap-2 rounded-[10px] border border-[#D7DEE8] bg-white px-3.5 text-xs font-extrabold text-sibs-primary-1 shadow-sm transition hover:border-[#FFB000] hover:bg-[#FFFDF5] hover:text-[#042C51] disabled:cursor-not-allowed disabled:opacity-60"
+                className="jd-view-action-button inline-flex h-9 cursor-pointer items-center justify-center gap-2 rounded-[10px] border border-sibs-border-subtle bg-white px-3.5 text-xs font-extrabold text-sibs-primary-1 shadow-sm transition hover:border-amber-400 hover:bg-amber-50/50 hover:text-sibs-primary-1 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                <Archive size={15} className="text-[#FF7A00]" />
+                <Archive size={15} className="text-amber-600" />
                 Archive
               </button>
             )}
@@ -2787,17 +3029,7 @@ export default function JobDescriptionViewPage() {
               </button>
             )}
 
-            <div className="mx-1 hidden h-8 w-px bg-[#D9E2EC] sm:block" />
 
-            <button
-              type="button"
-              onClick={handleBack}
-              disabled={saving}
-              className="jd-view-action-button inline-flex h-9 items-center justify-center gap-2 rounded-[10px] border border-[#D7DEE8] bg-[#F8FAFC] px-4 text-xs font-extrabold text-sibs-primary-1 shadow-sm hover:border-sibs-primary-1 hover:bg-[#F1F5F9] disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              <ArrowLeft size={15} />
-              Back to Job Descriptions
-            </button>
           </div>
         </div>
       </div>
@@ -2806,196 +3038,153 @@ export default function JobDescriptionViewPage() {
           EDITED CHANGES
       ================================================= */}
 
-      {showEditedChanges && (
-        <div className="jd-view-overlay sibs-modal-blur fixed inset-0 z-[10000] flex items-end justify-center px-3 pb-3 pt-6 sm:items-center sm:px-4 sm:py-4">
-          <div
-            className="jd-view-dialog max-h-[94dvh] w-full max-w-3xl overflow-hidden rounded-t-2xl bg-white shadow-2xl sm:rounded-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-start justify-between border-b border-[#E6ECF2] px-5 py-4">
-              <div>
-                <h3 className="text-base font-extrabold text-[#101828]">
-                  Edited Changes
-                </h3>
-
-                <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
-                  Review the fields that will be saved as a new version.
-                </p>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setShowEditedChanges(false)}
-                className="rounded-lg px-3 py-1 text-sm font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC]"
-              >
-                Close
-              </button>
-            </div>
-
-            <div className="thin-scroll max-h-[65dvh] overflow-y-auto p-4 sm:p-5">
-              {visibleEditedChangeDetails.length > 0 ? (
-                <div className="space-y-3">
-                  {visibleEditedChangeDetails.map((change) => (
-                    <div
-                      key={change.key}
-                      className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4"
-                    >
-                      <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                        <h4 className="text-sm font-extrabold text-[#101828]">
-                          {change.label}
-                        </h4>
-
-                        <span className="w-fit rounded-full border border-blue-100 bg-blue-50 px-2.5 py-1 text-[11px] font-extrabold text-sibs-primary-1">
-                          Edited
-                        </span>
-                      </div>
-
-                      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                        <div className="rounded-lg border border-[#E6ECF2] bg-white p-3">
-                          <p className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-primary-1/70">
-                            Previous Value
-                          </p>
-
-                          <p className="mt-2 whitespace-pre-line text-sm font-medium leading-6 text-[#667085]">
-                            {change.oldValue || "—"}
-                          </p>
-                        </div>
-
-                        <div className="rounded-lg border border-blue-100 bg-blue-50 p-3">
-                          <p className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-primary-1/70">
-                            New Value
-                          </p>
-
-                          <p className="mt-2 whitespace-pre-line text-sm font-bold leading-6 text-sibs-primary-1">
-                            {change.newValue || "—"}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-4 py-6 text-center">
-                  <p className="text-sm font-semibold text-sibs-tertiary-5">
-                    No edited changes detected.
-                  </p>
-                </div>
-              )}
-            </div>
-
-            <div className="flex justify-end border-t border-[#E6ECF2] bg-[#F8FAFC] px-4 py-4 sm:px-5">
-              <button
-                type="button"
-                onClick={() => setShowEditedChanges(false)}
-                className="jd-view-action-button inline-flex h-10 w-full items-center justify-center rounded-lg bg-sibs-primary-1 px-5 text-sm font-extrabold text-white hover:opacity-90 sm:w-auto"
-              >
-                Done
-              </button>
-            </div>
+      <ModalShell
+        open={showEditedChanges}
+        onClose={() => setShowEditedChanges(false)}
+        title="Edited Changes"
+        subtitle="Review the fields that will be saved as a new version."
+        variant="navy"
+        maxWidth="max-w-3xl"
+        footer={
+          <div className="flex w-full justify-end">
+            <button
+              type="button"
+              onClick={() => setShowEditedChanges(false)}
+              className="sibs-btn-primary inline-flex h-10 w-full items-center justify-center rounded-lg px-5 text-sm font-extrabold sm:w-auto"
+            >
+              Done
+            </button>
           </div>
+        }
+      >
+        <div className="space-y-3">
+          {visibleEditedChangeDetails.length > 0 ? (
+            visibleEditedChangeDetails.map((change) => (
+              <div
+                key={change.key}
+                className="rounded-xl border border-sibs-border bg-sibs-surface p-4"
+              >
+                <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                  <h4 className="text-sm font-extrabold text-sibs-navy">
+                    {change.label}
+                  </h4>
+
+                  <span className="w-fit rounded-full border border-blue-100 bg-blue-50 px-2.5 py-1 text-[11px] font-extrabold text-sibs-primary-1">
+                    Edited
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                  <div className="rounded-lg border border-sibs-border bg-white p-3">
+                    <p className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-primary-1/70">
+                      Previous Value
+                    </p>
+
+                    <p className="mt-2 whitespace-pre-line text-sm font-medium leading-6 text-sibs-muted">
+                      {change.oldValue || "—"}
+                    </p>
+                  </div>
+
+                  <div className="rounded-lg border border-blue-100 bg-blue-50 p-3">
+                    <p className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-primary-1/70">
+                      New Value
+                    </p>
+
+                    <p className="mt-2 whitespace-pre-line text-sm font-bold leading-6 text-sibs-primary-1">
+                      {change.newValue || "—"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="rounded-xl border border-sibs-border bg-sibs-surface px-4 py-6 text-center">
+              <p className="text-sm font-semibold text-sibs-tertiary-5">
+                No edited changes detected.
+              </p>
+            </div>
+          )}
         </div>
-      )}
+      </ModalShell>
 
       {/* =================================================
           SAVE AS NEW VERSION
       ================================================= */}
 
-      {saveAsNewVersionModal.open && (
-        <div className="jd-view-overlay sibs-modal-blur fixed inset-0 z-[10000] flex items-end justify-center px-3 pb-3 pt-6 sm:items-center sm:px-4 sm:py-4">
-          <div
-            className="jd-view-dialog max-h-[94dvh] w-full max-w-xl overflow-hidden rounded-t-2xl bg-white shadow-2xl sm:rounded-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-start justify-between border-b border-[#E6ECF2] px-5 py-4">
-              <div>
-                <h3 className="text-base font-extrabold text-[#101828]">
-                  Save as New Version
-                </h3>
+      <ModalShell
+        open={saveAsNewVersionModal.open}
+        onClose={saving ? undefined : closeSaveAsNewVersionModal}
+        title="Save as New Version"
+        subtitle="Add a short note explaining what changed in this revision. This is optional."
+        variant="navy"
+        maxWidth="max-w-xl"
+        footer={
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end w-full">
+            <button
+              type="button"
+              onClick={closeSaveAsNewVersionModal}
+              disabled={saving}
+              className="sibs-btn-secondary inline-flex h-10 w-full items-center justify-center rounded-lg px-5 text-sm font-bold disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+            >
+              Cancel
+            </button>
 
-                <p className="mt-1 text-sm font-medium leading-6 text-sibs-tertiary-5">
-                  Add a short note explaining what changed in this revision.
-                  This is optional.
-                </p>
-              </div>
-
-              <button
-                type="button"
-                onClick={closeSaveAsNewVersionModal}
-                disabled={saving}
-                className="rounded-lg px-3 py-1 text-sm font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                Close
-              </button>
-            </div>
-
-            <div className="space-y-4 px-4 py-4 sm:px-5">
-              <div className="rounded-xl border border-blue-100 bg-blue-50 px-4 py-3">
-                <p className="text-sm font-bold leading-6 text-sibs-primary-1">
-                  This will create a new revision history entry, update the JD
-                  record with your saved edits, and resolve open revision
-                  comments for this JD.
-                </p>
-              </div>
-
-              <div>
-                <label className="mb-1.5 block text-sm font-extrabold text-sibs-primary-1">
-                  Revision Remarks{" "}
-                  <span className="text-sibs-tertiary-5">(optional)</span>
-                </label>
-
-                <textarea
-                  value={saveAsNewVersionModal.revisionRemarks}
-                  onChange={(event) =>
-                    setSaveAsNewVersionModal((prev) => ({
-                      ...prev,
-
-                      revisionRemarks: event.target.value,
-                    }))
-                  }
-                  rows={5}
-                  placeholder="Example: Updated record information and revised responsibilities based on reviewer comments."
-                  className="w-full resize-none rounded-xl border border-[#D7DEE8] bg-white px-4 py-3 text-sm font-semibold leading-6 text-sibs-primary-1 outline-none transition placeholder:text-slate-400 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
-                />
-              </div>
-
-              {visibleEditedChangeDetails.length > 0 && (
-                <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-4 py-3">
-                  <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1/70">
-                    Changes to save
-                  </p>
-
-                  <p className="mt-1 text-sm font-bold text-sibs-primary-1">
-                    {visibleEditedChangeDetails.length} edited field
-                    {visibleEditedChangeDetails.length > 1 ? "s" : ""}
-                  </p>
-                </div>
-              )}
-            </div>
-
-            <div className="flex flex-col-reverse gap-2 border-t border-[#E6ECF2] bg-[#F8FAFC] px-4 py-4 sm:flex-row sm:justify-end sm:px-5">
-              <button
-                type="button"
-                onClick={closeSaveAsNewVersionModal}
-                disabled={saving}
-                className="jd-view-action-button inline-flex h-10 w-full items-center justify-center rounded-lg border border-[#D7DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
-              >
-                Cancel
-              </button>
-
-              <button
-                type="button"
-                onClick={handleSaveAsNewVersion}
-                disabled={saving}
-                className="jd-view-action-button inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-sibs-primary-1 px-5 text-sm font-extrabold text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
-              >
-                {saving && <Loader2 size={16} className="animate-spin" />}
-
-                {saving ? "Saving..." : "Save as New Version"}
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={handleSaveAsNewVersion}
+              disabled={saving}
+              className="sibs-btn-primary inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg px-5 text-sm font-extrabold disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+            >
+              {saving && <Loader2 size={16} className="animate-spin" />}
+              {saving ? "Saving..." : "Save as New Version"}
+            </button>
           </div>
+        }
+      >
+        <div className="space-y-4">
+          <div className="rounded-xl border border-blue-100 bg-blue-50 px-4 py-3">
+            <p className="text-sm font-bold leading-6 text-sibs-primary-1">
+              This will create a new revision history entry, update the JD
+              record with your saved edits, and resolve open revision
+              comments for this JD.
+            </p>
+          </div>
+
+          <div>
+            <label className="mb-1.5 block text-sm font-extrabold text-sibs-primary-1">
+              Revision Remarks{" "}
+              <span className="text-sibs-tertiary-5">(optional)</span>
+            </label>
+
+            <textarea
+              value={saveAsNewVersionModal.revisionRemarks}
+              onChange={(event) =>
+                setSaveAsNewVersionModal((prev) => ({
+                  ...prev,
+
+                  revisionRemarks: event.target.value,
+                }))
+              }
+              rows={5}
+              placeholder="Example: Updated record information and revised responsibilities based on reviewer comments."
+              className="w-full resize-none rounded-xl border border-sibs-border-subtle bg-white px-4 py-3 text-sm font-semibold leading-6 text-sibs-primary-1 outline-none transition placeholder:text-slate-400 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+            />
+          </div>
+
+          {visibleEditedChangeDetails.length > 0 && (
+            <div className="rounded-xl border border-sibs-border bg-sibs-surface px-4 py-3">
+              <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1/70">
+                Changes to save
+              </p>
+
+              <p className="mt-1 text-sm font-bold text-sibs-primary-1">
+                {visibleEditedChangeDetails.length} edited field
+                {visibleEditedChangeDetails.length > 1 ? "s" : ""}
+              </p>
+            </div>
+          )}
         </div>
-      )}
+      </ModalShell>
 
       {/* =================================================
           REVISION EDITOR
@@ -3006,6 +3195,7 @@ export default function JobDescriptionViewPage() {
         item={item}
         form={revisionForm}
         setForm={setRevisionForm}
+        initialSection={selectedRevisionSection}
         onClose={handleCloseRevisionEditor}
         onSubmit={handleRevisionSaved}
       />
@@ -3097,7 +3287,7 @@ function PrintApprovalAction({ onClick, disabled = false }) {
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className="pointer-events-auto flex h-12 w-12 flex-col items-center justify-center gap-1 rounded-2xl border border-[#DDE7F3] bg-white text-sibs-primary-1 shadow-[0_10px_24px_rgba(4,44,81,0.12)] transition hover:-translate-y-0.5 hover:border-sibs-primary-1 hover:shadow-[0_18px_36px_rgba(4,44,81,0.18)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 sm:h-[74px] sm:w-[74px] sm:gap-2 sm:shadow-[0_14px_30px_rgba(4,44,81,0.14)]"
+      className="pointer-events-auto flex h-12 w-12 flex-col items-center justify-center gap-1 rounded-2xl border border-sibs-border bg-white text-sibs-primary-1 shadow-[0_10px_24px_rgba(4,44,81,0.12)] transition hover:-translate-y-0.5 hover:border-sibs-primary-1 hover:shadow-[0_18px_36px_rgba(4,44,81,0.18)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 sm:h-[74px] sm:w-[74px] sm:gap-2 sm:shadow-[0_14px_30px_rgba(4,44,81,0.14)]"
       title="Print job description"
     >
       <Printer

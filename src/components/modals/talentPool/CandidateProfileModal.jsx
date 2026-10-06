@@ -55,9 +55,9 @@ import {
 
 function FieldLabel({ children, required = false }) {
   return (
-    <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+    <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-sibs-muted">
       {children}
-      {required && <span className="text-[#FF5C28]"> *</span>}
+      {required && <span className="text-sibs-orange"> *</span>}
     </label>
   );
 }
@@ -3333,7 +3333,7 @@ function SectionTitle({ icon: Icon, title, description }) {
       <div className="min-w-0">
         <div className="flex items-center gap-2">
           {Icon && (
-            <span className="flex h-7 w-7 2xl:h-8 2xl:w-8 shrink-0 items-center justify-center rounded-lg bg-[#E9F0FC] text-sibs-navy shadow-2xs">
+            <span className="flex h-7 w-7 2xl:h-8 2xl:w-8 shrink-0 items-center justify-center rounded-lg bg-sibs-surface text-sibs-navy shadow-2xs">
               <Icon size={15} />
             </span>
           )}
@@ -3373,7 +3373,7 @@ function ProfileDetail({ label, value, mono = false, className = "" }) {
         {label}
       </span>
 
-      <div className="flex min-h-[30px] 2xl:min-h-[34px] items-center rounded-lg border border-sibs-border bg-[#F8FAFC] px-2.5 py-1 transition-colors duration-150">
+      <div className="flex min-h-[30px] 2xl:min-h-[34px] items-center rounded-lg border border-sibs-border bg-sibs-surface px-2.5 py-1 transition-colors duration-150">
         <span
           title={String(displayValue)}
           className={`block min-w-0 break-words text-[11px] 2xl:text-xs font-bold leading-tight ${
@@ -3397,7 +3397,7 @@ function CandidateDraftField({
   className = "",
 }) {
   const controlClass =
-    "w-full rounded-lg border border-[#D6E0EA] bg-white px-3 py-2 text-xs font-semibold text-[#042C51] outline-none transition focus:border-[#042C51] focus:ring-2 focus:ring-[#042C51]/10";
+    "w-full rounded-lg border border-sibs-border bg-white px-3 py-2 text-xs font-semibold text-sibs-navy outline-none transition focus:border-sibs-navy focus:ring-2 focus:ring-sibs-navy/10";
 
   return (
     <label className={`block min-w-0 ${className}`}>
@@ -3435,7 +3435,7 @@ function NhoRequirementCard({
       className={`rounded-xl border p-3.5 2xl:p-4 transition ${
         hasFiles
           ? "border-emerald-200 bg-emerald-50/50"
-          : "border-sibs-border bg-[#F8FAFC]"
+          : "border-sibs-border bg-sibs-surface"
       }`}
     >
       <div className="flex min-w-0 items-start gap-3">
@@ -3443,7 +3443,7 @@ function NhoRequirementCard({
           className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border ${
             hasFiles
               ? "border-emerald-500 bg-emerald-500 text-white"
-              : "border-[#B9C7D6] bg-white"
+              : "border-sibs-border bg-white"
           }`}
         >
           {hasFiles && <Check size={14} strokeWidth={3} />}
@@ -3466,7 +3466,7 @@ function NhoRequirementCard({
           </div>
 
           {!hasFiles && (
-            <div className="mt-2.5 rounded-xl border border-dashed border-[#C9D6E4] bg-white px-3 py-2.5 text-xs font-bold text-sibs-text-muted">
+            <div className="mt-2.5 rounded-xl border border-dashed border-sibs-border bg-white px-3 py-2.5 text-xs font-bold text-sibs-text-muted">
               No uploaded file yet.
             </div>
           )}
@@ -3544,7 +3544,7 @@ function ProfileTextarea({ label, value, className = "" }) {
         {label}
       </span>
 
-      <div className="min-h-[55px] 2xl:min-h-[65px] rounded-lg border border-sibs-border bg-[#F8FAFC] px-2.5 py-1.5 transition-colors duration-150">
+      <div className="min-h-[55px] 2xl:min-h-[65px] rounded-lg border border-sibs-border bg-sibs-surface px-2.5 py-1.5 transition-colors duration-150">
         <p
           className={`whitespace-pre-wrap break-words text-[11px] 2xl:text-xs font-bold leading-5 ${
             hasValue ? "text-sibs-navy" : "text-sibs-text-muted"
@@ -3563,7 +3563,7 @@ function DetailRow({ label, value }) {
 
 function EmptyState({ title, description }) {
   return (
-    <div className="rounded-xl border border-dashed border-[#D9E2EC] bg-[#F8FAFC] px-4 py-8 text-center text-sm font-bold text-sibs-tertiary-5 sm:px-5">
+    <div className="rounded-xl border border-dashed border-sibs-border bg-sibs-surface px-4 py-8 text-center text-sm font-bold text-sibs-tertiary-5 sm:px-5">
       <p>{title}</p>
 
       {description && (
@@ -3592,12 +3592,12 @@ function NhoFilePreviewPanel({
 
   if (!activeFile) {
     return (
-      <div className="flex min-h-[320px] flex-col items-center justify-center rounded-2xl border border-dashed border-[#B9C7D6] bg-[#F8FAFC] p-6 text-center">
-        <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-[#D9E2EC] bg-white text-sibs-primary-1 shadow-sm">
+      <div className="flex min-h-[320px] flex-col items-center justify-center rounded-2xl border border-dashed border-sibs-border bg-sibs-surface p-6 text-center">
+        <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-sibs-border bg-white text-sibs-primary-1 shadow-sm">
           <FileText size={27} />
         </div>
 
-        <p className="mt-4 text-base font-extrabold text-[#101828]">
+        <p className="mt-4 text-base font-extrabold text-sibs-navy">
           No requirement selected
         </p>
 
@@ -3626,13 +3626,13 @@ function NhoFilePreviewPanel({
     !String(resolvedFileUrl).startsWith("blob:");
 
   return (
-    <div className="rounded-2xl border border-[#D9E2EC] bg-[#F8FAFC] p-5">
+    <div className="rounded-2xl border border-sibs-border bg-sibs-surface p-5">
       <div>
         <p className="text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
           Requirement Files
         </p>
 
-        <h3 className="mt-1 break-words text-base font-extrabold text-[#101828]">
+        <h3 className="mt-1 break-words text-base font-extrabold text-sibs-navy">
           {requirement || "Pre-Employment Requirement"}
         </h3>
 
@@ -3653,14 +3653,14 @@ function NhoFilePreviewPanel({
               className={`flex w-full min-w-0 items-center gap-2 rounded-xl border px-3 py-2 text-left transition ${
                 selected
                   ? "border-sibs-primary-1 bg-blue-50"
-                  : "border-[#D9E2EC] bg-white hover:bg-[#F3F8FF]"
+                  : "border-sibs-border bg-white hover:bg-sibs-surface"
               }`}
             >
               <FileTypeIcon
                 fileName={file.fileName || file.savedFileName}
                 size={17}
                 className={`shrink-0 ${
-                  selected ? "text-sibs-primary-1" : "text-[#667085]"
+                  selected ? "text-sibs-primary-1" : "text-sibs-muted"
                 }`}
               />
 
@@ -3668,7 +3668,7 @@ function NhoFilePreviewPanel({
                 <span
                   title={file.fileName || file.savedFileName}
                   className={`block truncate text-xs font-extrabold ${
-                    selected ? "text-sibs-primary-1" : "text-[#344054]"
+                    selected ? "text-sibs-primary-1" : "text-sibs-navy"
                   }`}
                 >
                   {file.fileName || file.savedFileName || "Uploaded file"}
@@ -3683,7 +3683,7 @@ function NhoFilePreviewPanel({
         })}
       </div>
 
-      <div className="mt-5 space-y-3 rounded-xl border border-[#E6ECF2] bg-white p-4">
+      <div className="mt-5 space-y-3 rounded-xl border border-sibs-border bg-white p-4">
         <div>
           <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-tertiary-5">
             Selected File
@@ -3720,7 +3720,7 @@ function NhoFilePreviewPanel({
       </div>
 
       {isImage && (
-        <div className="mt-5 overflow-hidden rounded-xl border border-[#E6ECF2] bg-white">
+        <div className="mt-5 overflow-hidden rounded-xl border border-sibs-border bg-white">
           <img
             src={resolvedFileUrl}
             alt={
@@ -3741,7 +3741,7 @@ function NhoFilePreviewPanel({
             activeFile.savedFileName ||
             "Uploaded PDF"
           }
-          className="mt-5 h-[420px] w-full rounded-xl border border-[#E6ECF2] bg-white"
+          className="mt-5 h-[420px] w-full rounded-xl border border-sibs-border bg-white"
         />
       )}
 
@@ -3751,7 +3751,7 @@ function NhoFilePreviewPanel({
             href={resolvedFileUrl}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#D9E2EC] bg-white px-4 text-sm font-extrabold text-sibs-primary-1 transition hover:bg-[#F8FAFC]"
+            className="inline-flex h-11 items-center justify-center gap-2 rounded-[10px] border border-sibs-border bg-white px-4 text-sm font-extrabold text-sibs-primary-1 transition hover:bg-sibs-surface"
           >
             <Eye size={16} />
             Preview
@@ -3764,7 +3764,7 @@ function NhoFilePreviewPanel({
               activeFile.savedFileName ||
               "candidate-document"
             }
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-4 text-sm font-extrabold text-white transition hover:opacity-90"
+            className="inline-flex h-11 items-center justify-center gap-2 rounded-[10px] bg-sibs-primary-1 px-4 text-sm font-extrabold text-white transition hover:opacity-90"
           >
             <Download size={16} />
             Download
@@ -3795,7 +3795,7 @@ function CandidateNhoFilesSection({
   );
 
   return (
-    <section className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
+    <section className="rounded-2xl border border-sibs-border bg-white p-5 shadow-sm">
       <div className="mb-5 flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
         <SectionTitle
           icon={FileText}
@@ -3807,7 +3807,7 @@ function CandidateNhoFilesSection({
           <button
             type="button"
             onClick={onUploadFollowUp}
-            className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-extrabold text-white shadow-sm transition hover:opacity-90 active:scale-[0.98]"
+            className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-[10px] bg-sibs-primary-1 px-5 text-sm font-extrabold text-white shadow-sm transition hover:opacity-90 active:scale-[0.98]"
           >
             <UploadCloud size={17} />
             Upload Follow-up Requirements
@@ -3817,10 +3817,10 @@ function CandidateNhoFilesSection({
 
       <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
         <div className="min-w-0 space-y-5">
-          <section className="rounded-2xl border border-[#D9E2EC] bg-white p-5 shadow-sm">
+          <section className="rounded-2xl border border-sibs-border bg-white p-5 shadow-sm">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
               <div className="min-w-0">
-                <h3 className="text-lg font-extrabold text-[#101828]">
+                <h3 className="text-lg font-extrabold text-sibs-navy">
                   Candidate Pipeline NHO Uploaded Files
                 </h3>
 
@@ -3845,7 +3845,7 @@ function CandidateNhoFilesSection({
                   {totalProgress.completed} / {totalProgress.total} Total
                 </span>
 
-                <span className="rounded-full bg-[#F2F6FA] px-3 py-1 text-xs font-extrabold text-[#344054]">
+                <span className="rounded-full bg-sibs-surface px-3 py-1 text-xs font-extrabold text-sibs-navy">
                   {isLoading
                     ? "Loading..."
                     : `${files.length} upload${files.length === 1 ? "" : "s"}`}
@@ -3859,7 +3859,7 @@ function CandidateNhoFilesSection({
                 <span>{majorProgress.percent}%</span>
               </div>
 
-              <div className="h-3 overflow-hidden rounded-full bg-[#EEF4FA]">
+              <div className="h-3 overflow-hidden rounded-full bg-sibs-surface">
                 <div
                   className={`h-full rounded-full transition-all duration-300 ${
                     majorProgress.isComplete
@@ -3875,7 +3875,7 @@ function CandidateNhoFilesSection({
                 <span>{totalProgress.percent}%</span>
               </div>
 
-              <div className="h-2 overflow-hidden rounded-full bg-[#EEF4FA]">
+              <div className="h-2 overflow-hidden rounded-full bg-sibs-surface">
                 <div
                   className="h-full rounded-full bg-sibs-primary-1/70 transition-all duration-300"
                   style={{ width: `${totalProgress.percent}%` }}
@@ -3914,8 +3914,8 @@ function CandidateNhoFilesSection({
             )}
           </section>
 
-          <section className="rounded-2xl border border-[#D9E2EC] bg-white p-5 shadow-sm">
-            <h3 className="text-lg font-extrabold text-[#101828]">
+          <section className="rounded-2xl border border-sibs-border bg-white p-5 shadow-sm">
+            <h3 className="text-lg font-extrabold text-sibs-navy">
               Pre-Employment Requirements
             </h3>
 
@@ -3929,7 +3929,7 @@ function CandidateNhoFilesSection({
                 return (
                   <div
                     key={group.id}
-                    className="border-t border-[#E6ECF2] pt-5 first:border-t-0 first:pt-0"
+                    className="border-t border-sibs-border pt-5 first:border-t-0 first:pt-0"
                   >
                     <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                       <div className="flex min-w-0 items-center gap-3">
@@ -3937,7 +3937,7 @@ function CandidateNhoFilesSection({
                           {group.title}
                         </h4>
 
-                        <span className="rounded-full bg-[#F2F6FA] px-3 py-1 text-xs font-extrabold text-sibs-primary-1">
+                        <span className="rounded-full bg-sibs-surface px-3 py-1 text-xs font-extrabold text-sibs-primary-1">
                           {groupCompleted} / {group.requirements.length}
                         </span>
                       </div>
@@ -4039,19 +4039,19 @@ function TalentPoolStatusDropdown({
         onClick={() => setOpen((previous) => !previous)}
         aria-haspopup="listbox"
         aria-expanded={open}
-        className={`flex h-10 2xl:h-11 w-full min-w-0 items-center justify-between gap-3 rounded-xl border bg-[#F8FAFC] px-3.5 text-left text-xs font-semibold shadow-xs outline-none transition ${
+        className={`flex h-10 2xl:h-11 w-full min-w-0 items-center justify-between gap-3 rounded-xl border bg-sibs-surface px-3.5 text-left text-xs font-semibold shadow-xs outline-none transition ${
           open
-            ? "border-[#FF5C28] bg-white ring-4 ring-[#FF5C28]/10"
-            : "border-[#D7DEE8] hover:border-[#FF5C28]/40 hover:bg-white"
+            ? "border-sibs-orange bg-white ring-4 ring-sibs-orange/10"
+            : "border-sibs-border hover:border-sibs-orange/40 hover:bg-white"
         } ${
           disabled
             ? "cursor-not-allowed bg-gray-50 text-gray-400 opacity-70"
-            : "text-[#042C51]"
+            : "text-sibs-navy"
         }`}
       >
         <span
           className={`min-w-0 flex-1 truncate ${
-            selectedOption ? "text-[#042C51] font-bold" : "text-gray-400 font-normal"
+            selectedOption ? "text-sibs-navy font-bold" : "text-gray-400 font-normal"
           }`}
         >
           {selectedOption?.label || placeholder}
@@ -4059,14 +4059,14 @@ function TalentPoolStatusDropdown({
 
         <ChevronDown
           size={16}
-          className={`shrink-0 text-[#FF5C28] transition-transform duration-200 ${
+          className={`shrink-0 text-sibs-orange transition-transform duration-200 ${
             open ? "rotate-180" : ""
           }`}
         />
       </button>
 
       {open && !disabled && (
-        <div className="sibs-animated-dropdown-box absolute left-0 right-0 top-[calc(100%+6px)] z-[100060] overflow-hidden rounded-xl border border-[#DCE6F1] bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)]">
+        <div className="sibs-animated-dropdown-box absolute left-0 right-0 top-[calc(100%+6px)] z-[100060] overflow-hidden rounded-xl border border-sibs-border bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)]">
           <div className="max-h-64 overflow-y-auto" role="listbox">
             {options.length > 0 ? (
               options.map((option) => {
@@ -4082,8 +4082,8 @@ function TalentPoolStatusDropdown({
                     onClick={() => handleSelect(option.value)}
                     className={`block w-full px-3.5 py-2.5 text-left text-xs font-semibold transition ${
                       active
-                        ? "bg-[#FFF0EB] text-[#FF5C28] font-extrabold"
-                        : "bg-white text-[#344054] hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
+                        ? "bg-sibs-cream-light text-sibs-orange font-extrabold"
+                        : "bg-white text-sibs-navy hover:bg-sibs-cream-light hover:text-sibs-orange"
                     }`}
                   >
                     <span className="block min-w-0 truncate">
@@ -6027,7 +6027,7 @@ export default function CandidateProfileModal() {
               ? "No"
               : draftCandidateForm[name] || ""}
           onChange={(event) => setCandidateDraftField(name, event.target.value)}
-          className="w-full rounded-lg border border-[#D6E0EA] bg-white px-3 py-2 text-xs font-semibold text-[#042C51] outline-none focus:border-[#042C51] focus:ring-2 focus:ring-[#042C51]/10"
+          className="w-full rounded-lg border border-sibs-border bg-white px-3 py-2 text-xs font-semibold text-sibs-navy outline-none focus:border-sibs-navy focus:ring-2 focus:ring-sibs-navy/10"
         >
           <option value="">Choose option</option>
           {options.map((option) => <option key={option} value={option}>{option}</option>)}
@@ -6126,7 +6126,7 @@ export default function CandidateProfileModal() {
           <div className={gridClass}>
             <div className="block min-w-0">
               <FieldLabel>Applied Position</FieldLabel>
-              <div className="flex min-h-[34px] items-center rounded-lg border border-[#E6ECF2] bg-[#F8FAFC] px-3 py-2 text-xs font-semibold text-[#667085]">
+              <div className="flex min-h-[34px] items-center rounded-lg border border-sibs-border bg-sibs-surface px-3 py-2 text-xs font-semibold text-sibs-muted">
                 {draftCandidateForm.openPosition || "—"}
               </div>
             </div>
@@ -6138,14 +6138,14 @@ export default function CandidateProfileModal() {
           </div>
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             {[{ kind: "audio", label: "Replace audio response", name: audioName, accept: "audio/*" }, { kind: "attachment", label: "Replace attachment", name: attachmentName, accept: ".pdf,.doc,.docx,.jpg,.jpeg,.png" }].map((item) => (
-              <label key={item.kind} className="block min-w-0 rounded-lg border border-[#D6E0EA] bg-[#F8FAFC] p-3">
+              <label key={item.kind} className="block min-w-0 rounded-lg border border-sibs-border bg-sibs-surface p-3">
                 <FieldLabel>{item.label}</FieldLabel>
-                <span className="mb-2 block truncate text-xs font-semibold text-[#667085]">Current: {item.name || "No file attached"}</span>
+                <span className="mb-2 block truncate text-xs font-semibold text-sibs-muted">Current: {item.name || "No file attached"}</span>
                 <input
                   type="file"
                   accept={item.accept}
                   onChange={(event) => handleCandidateFileChange(event, item.kind, draftCandidateForm, setDraftCandidateForm)}
-                  className="block w-full text-xs font-semibold text-[#344054] file:mr-3 file:rounded-lg file:border-0 file:bg-[#E9F0FC] file:px-3 file:py-1.5 file:text-xs file:font-extrabold file:text-[#042C51] hover:file:bg-[#DCE8FA]"
+                  className="block w-full text-xs font-semibold text-sibs-navy file:mr-3 file:rounded-lg file:border-0 file:bg-sibs-surface file:px-3 file:py-1.5 file:text-xs file:font-extrabold file:text-sibs-navy hover:file:bg-blue-100/60"
                 />
               </label>
             ))}
@@ -6229,10 +6229,10 @@ export default function CandidateProfileModal() {
                 return (
                   <article
                     key={`${record.sectionKey || record.level || "education"}-${record.schoolName || index}-${index}`}
-                    className="overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white"
+                    className="overflow-hidden rounded-2xl border border-sibs-border bg-white"
                   >
-                    <div className="flex items-start gap-3 border-b border-[#E6ECF2] bg-[#F8FAFC] px-4 py-4 sm:px-5">
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#EAF2FB] text-sibs-primary-1">
+                    <div className="flex items-start gap-3 border-b border-sibs-border bg-sibs-surface px-4 py-4 sm:px-5">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sibs-surface text-sibs-primary-1">
                         <GraduationCap size={19} />
                       </div>
 
@@ -6240,7 +6240,7 @@ export default function CandidateProfileModal() {
                         <p className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-primary-1/60 sm:text-[11px]">
                           Academic Record {index + 1}
                         </p>
-                        <h4 className="mt-1 break-words text-sm font-extrabold text-[#101828] sm:text-base">
+                        <h4 className="mt-1 break-words text-sm font-extrabold text-sibs-navy sm:text-base">
                           {record.level || "Educational Background"}
                         </h4>
                       </div>
@@ -6300,7 +6300,7 @@ export default function CandidateProfileModal() {
         <div className="space-y-3">
           {field("Work Experience Summary", "workExperience")}
           {experiences.map((experience, index) => (
-            <div key={`draft-experience-${index}`} className="grid grid-cols-1 gap-3 rounded-lg border border-[#E6ECF2] bg-[#F8FAFC] p-3 sm:grid-cols-2 xl:grid-cols-3">
+            <div key={`draft-experience-${index}`} className="grid grid-cols-1 gap-3 rounded-lg border border-sibs-border bg-sibs-surface p-3 sm:grid-cols-2 xl:grid-cols-3">
               <CandidateDraftField label={`Role ${index + 1}`} value={experience.role} onChange={(value) => setCandidateDraftExperience(index, "role", value)} />
               <CandidateDraftField label="Company" value={experience.company} onChange={(value) => setCandidateDraftExperience(index, "company", value)} />
               <CandidateDraftField label="Industry / Relevant Experience" value={experience.industryRelevantExperience || experience.industry} onChange={(value) => setCandidateDraftExperience(index, "industryRelevantExperience", value)} />
@@ -6310,7 +6310,7 @@ export default function CandidateProfileModal() {
               <CandidateDraftField label="Reason for Leaving" value={experience.reasonForLeaving} onChange={(value) => setCandidateDraftExperience(index, "reasonForLeaving", value)} className="sm:col-span-2" />
               <label className="block min-w-0">
                 <FieldLabel>Other Experience Available</FieldLabel>
-                <select value={experience.hasOtherExperience || "No"} onChange={(event) => setCandidateDraftExperience(index, "hasOtherExperience", event.target.value)} className="w-full rounded-lg border border-[#D6E0EA] bg-white px-3 py-2 text-xs font-semibold text-[#042C51] outline-none focus:border-[#042C51] focus:ring-2 focus:ring-[#042C51]/10">
+                <select value={experience.hasOtherExperience || "No"} onChange={(event) => setCandidateDraftExperience(index, "hasOtherExperience", event.target.value)} className="w-full rounded-lg border border-sibs-border bg-white px-3 py-2 text-xs font-semibold text-sibs-navy outline-none focus:border-sibs-navy focus:ring-2 focus:ring-sibs-navy/10">
                   <option value="Yes">Yes</option>
                   <option value="No">No</option>
                 </select>
@@ -6318,7 +6318,7 @@ export default function CandidateProfileModal() {
               <button type="button" onClick={() => setDraftCandidateForm((current) => ({ ...current, workExperiences: safeArray(current.workExperiences).filter((_, itemIndex) => itemIndex !== index) }))} className="w-fit text-xs font-bold text-red-700 hover:text-red-800">Remove experience</button>
             </div>
           ))}
-          <button type="button" onClick={() => setDraftCandidateForm((current) => ({ ...current, workExperiences: [...safeArray(current.workExperiences), { ...emptyExperience }] }))} className="inline-flex h-8 items-center rounded-lg border border-[#D6E0EA] bg-white px-3 text-xs font-extrabold text-[#042C51] hover:border-[#FF5C28]/50 hover:text-[#FF5C28]">Add experience</button>
+          <button type="button" onClick={() => setDraftCandidateForm((current) => ({ ...current, workExperiences: [...safeArray(current.workExperiences), { ...emptyExperience }] }))} className="inline-flex h-8 items-center rounded-[10px] border border-sibs-border bg-white px-3 text-xs font-extrabold text-sibs-navy hover:border-sibs-orange/50 hover:text-sibs-orange">Add experience</button>
         </div>
       );
     }
@@ -6327,7 +6327,7 @@ export default function CandidateProfileModal() {
       return (
         <div className="space-y-3">
           {safeArray(draftCandidateForm.references).map((reference, index) => (
-            <div key={`draft-reference-${index}`} className="grid grid-cols-1 gap-3 rounded-lg border border-[#E6ECF2] bg-[#F8FAFC] p-3 sm:grid-cols-2">
+            <div key={`draft-reference-${index}`} className="grid grid-cols-1 gap-3 rounded-lg border border-sibs-border bg-sibs-surface p-3 sm:grid-cols-2">
               <CandidateDraftField label={`Reference ${index + 1} Name`} value={reference.name} onChange={(value) => setDraftCandidateForm((current) => ({ ...current, references: safeArray(current.references).map((item, itemIndex) => itemIndex === index ? { ...item, name: value } : item) }))} />
               <CandidateDraftField label="Phone" value={reference.phone} onChange={(value) => setDraftCandidateForm((current) => ({ ...current, references: safeArray(current.references).map((item, itemIndex) => itemIndex === index ? { ...item, phone: value } : item) }))} />
             </div>
@@ -6409,12 +6409,12 @@ export default function CandidateProfileModal() {
     return (
       <div className="space-y-5">
         <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-          <div className="rounded-xl border border-slate-200 bg-[#F8FAFC] p-4">
-            <h3 className="mb-4 flex items-center gap-2 border-b border-slate-200 pb-2.5 text-[11px] font-black uppercase tracking-wider text-[#042C51]">
-              <span className="h-1.5 w-1.5 rounded-full bg-[#FF5C28]" />
+          <div className="rounded-xl border border-slate-200 bg-sibs-surface p-4">
+            <h3 className="mb-4 flex items-center gap-2 border-b border-slate-200 pb-2.5 text-[11px] font-black uppercase tracking-wider text-sibs-navy">
+              <span className="h-1.5 w-1.5 rounded-full bg-sibs-orange" />
               Residential Address
             </h3>
-            <p className="min-h-24 rounded-xl bg-white p-4 text-sm font-bold leading-6 text-[#344054]">
+            <p className="min-h-24 rounded-xl bg-white p-4 text-sm font-bold leading-6 text-sibs-navy">
               {firstCandidateValue(
                 activeCandidate.residentialAddress,
                 activeCandidate.residential_address,
@@ -6424,12 +6424,12 @@ export default function CandidateProfileModal() {
             </p>
           </div>
 
-          <div className="rounded-xl border border-slate-200 bg-[#F8FAFC] p-4">
-            <h3 className="mb-4 flex items-center gap-2 border-b border-slate-200 pb-2.5 text-[11px] font-black uppercase tracking-wider text-[#042C51]">
-              <span className="h-1.5 w-1.5 rounded-full bg-[#042C51]" />
+          <div className="rounded-xl border border-slate-200 bg-sibs-surface p-4">
+            <h3 className="mb-4 flex items-center gap-2 border-b border-slate-200 pb-2.5 text-[11px] font-black uppercase tracking-wider text-sibs-navy">
+              <span className="h-1.5 w-1.5 rounded-full bg-sibs-navy" />
               Permanent Address
             </h3>
-            <p className="min-h-24 rounded-xl bg-white p-4 text-sm font-bold leading-6 text-[#344054]">
+            <p className="min-h-24 rounded-xl bg-white p-4 text-sm font-bold leading-6 text-sibs-navy">
               {firstCandidateValue(
                 activeCandidate.permanentAddress,
                 activeCandidate.permanent_address,
@@ -6635,7 +6635,7 @@ export default function CandidateProfileModal() {
                 return (
                   <div
                     key={`${item.name || "child"}-${index}`}
-                    className="rounded-xl border border-[#D9E2EC] bg-[#F8FAFC] p-4"
+                    className="rounded-xl border border-sibs-border bg-sibs-surface p-4"
                   >
                     <ProfileGrid cols="sm:grid-cols-2">
                       <ProfileDetail
@@ -6819,8 +6819,8 @@ export default function CandidateProfileModal() {
           description="Current pipeline status, assignment, and TA ownership."
         />
 
-        <div className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
-          <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#FF5C28]">
+        <div className="rounded-2xl border border-sibs-border bg-white p-5 shadow-sm">
+          <p className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-orange">
             • Active Recruitment Funnel Tracker
           </p>
           <div className="relative py-6">
@@ -6843,7 +6843,7 @@ export default function CandidateProfileModal() {
                         state === "completed"
                           ? "border-emerald-500 bg-emerald-500 text-white"
                           : state === "active"
-                          ? "border-[#042C51] bg-[#042C51] text-white ring-4 ring-[#E9F0FC]"
+                          ? "border-sibs-navy bg-sibs-navy text-white ring-4 ring-blue-50"
                           : "border-slate-200 bg-white text-slate-400"
                       }`}
                     >
@@ -6855,7 +6855,7 @@ export default function CandidateProfileModal() {
                     </span>
                     <span
                       className={`mt-2 max-w-[110px] text-[10px] font-extrabold ${
-                        state === "active" ? "text-[#042C51]" : "text-[#667085]"
+                        state === "active" ? "text-sibs-navy" : "text-sibs-muted"
                       }`}
                     >
                       {stage}
@@ -6939,10 +6939,10 @@ export default function CandidateProfileModal() {
                 key={`${record.sectionKey || record.level || "education"}-${
                   record.schoolName || index
                 }-${index}`}
-                className="overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white"
+                className="overflow-hidden rounded-2xl border border-sibs-border bg-white"
               >
-                <div className="flex items-start gap-3 border-b border-[#E6ECF2] bg-[#F8FAFC] px-4 py-4 sm:px-5">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#EAF2FB] text-sibs-primary-1">
+                <div className="flex items-start gap-3 border-b border-sibs-border bg-sibs-surface px-4 py-4 sm:px-5">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sibs-surface text-sibs-primary-1">
                     <GraduationCap size={19} />
                   </div>
 
@@ -6950,7 +6950,7 @@ export default function CandidateProfileModal() {
                     <p className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-primary-1/60 sm:text-[11px]">
                       Academic Record {index + 1}
                     </p>
-                    <h4 className="mt-1 break-words text-sm font-extrabold text-[#101828] sm:text-base">
+                    <h4 className="mt-1 break-words text-sm font-extrabold text-sibs-navy sm:text-base">
                       {record.level || "Educational Background"}
                     </h4>
                   </div>
@@ -7029,7 +7029,7 @@ export default function CandidateProfileModal() {
               return (
                 <div
                   key={`${item.title || item.name || "eligibility"}-${index}`}
-                  className="rounded-xl border border-[#D9E2EC] bg-[#F8FAFC] p-4"
+                  className="rounded-xl border border-sibs-border bg-sibs-surface p-4"
                 >
                   <ProfileGrid cols="sm:grid-cols-2 xl:grid-cols-4">
                     <ProfileDetail
@@ -7100,7 +7100,7 @@ export default function CandidateProfileModal() {
               return (
                 <div
                   key={`${item.title || "training"}-${index}`}
-                  className="rounded-xl border border-[#D9E2EC] bg-[#F8FAFC] p-4"
+                  className="rounded-xl border border-sibs-border bg-sibs-surface p-4"
                 >
                   <ProfileGrid cols="sm:grid-cols-2 xl:grid-cols-4">
                     <ProfileDetail label="Training Title" value={item.title} />
@@ -7225,7 +7225,7 @@ export default function CandidateProfileModal() {
             {workExperiences.map((experience, index) => (
               <div
                 key={`experience-${index}`}
-                className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm"
+                className="rounded-2xl border border-sibs-border bg-white p-4 shadow-sm"
               >
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                   <div className="min-w-0">
@@ -7233,7 +7233,7 @@ export default function CandidateProfileModal() {
                       Experience {index + 1}
                     </p>
 
-                    <h5 className="mt-1 break-words text-base font-extrabold text-[#101828]">
+                    <h5 className="mt-1 break-words text-base font-extrabold text-sibs-navy">
                       {experience.role || experience.industry || "—"}
                     </h5>
 
@@ -7242,7 +7242,7 @@ export default function CandidateProfileModal() {
                     </p>
                   </div>
 
-                  <span className="inline-flex w-fit shrink-0 rounded-full border border-[#D6E9FF] bg-blue-50 px-3 py-1 text-xs font-extrabold text-blue-700">
+                  <span className="inline-flex w-fit shrink-0 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold text-blue-700">
                     {experience.years
                       ? `${experience.years} year(s)`
                       : "No duration"}
@@ -7500,10 +7500,10 @@ export default function CandidateProfileModal() {
               return (
                 <article
                   key={`offer-document-${versionNumber}`}
-                  className="flex flex-col gap-3 rounded-xl border border-sibs-border bg-[#F8FAFC] p-3.5 sm:flex-row sm:items-center sm:justify-between"
+                  className="flex flex-col gap-3 rounded-xl border border-sibs-border bg-sibs-surface p-3.5 sm:flex-row sm:items-center sm:justify-between"
                 >
                   <div className="flex min-w-0 items-start gap-3">
-                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-orange-100 bg-[#FFF3ED] text-sibs-orange">
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-sibs-orange/20 bg-sibs-cream-light text-sibs-orange">
                       <FileText size={18} />
                     </span>
 
@@ -7512,7 +7512,7 @@ export default function CandidateProfileModal() {
                         <p className="truncate text-sm font-black text-sibs-navy">
                           Employment Offer - Version {versionNumber}
                         </p>
-                        <span className="rounded-full border border-blue-100 bg-[#E9F0FC] px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-sibs-navy">
+                        <span className="rounded-full border border-blue-100 bg-sibs-surface px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-sibs-navy">
                           V{versionNumber}
                         </span>
                       </div>
@@ -7599,7 +7599,7 @@ export default function CandidateProfileModal() {
         />
 
         <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-          <div className="rounded-xl border border-[#D9E2EC] bg-[#F8FAFC] p-4">
+          <div className="rounded-xl border border-sibs-border bg-sibs-surface p-4">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
@@ -7608,7 +7608,7 @@ export default function CandidateProfileModal() {
 
                 <p
                   title={activeCandidate.audioFileName || "—"}
-                  className="mt-2 truncate text-sm font-extrabold text-[#344054]"
+                  className="mt-2 truncate text-sm font-extrabold text-sibs-navy"
                 >
                   {activeCandidate.audioFileName || "—"}
                 </p>
@@ -7618,7 +7618,7 @@ export default function CandidateProfileModal() {
                 type="button"
                 disabled={!audioFileUrl}
                 onClick={() => openFile(audioFileUrl, activeCandidate.audioFileName, "audio")}
-                className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-4 text-sm font-extrabold text-sibs-primary-1 transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-[10px] border border-sibs-border bg-white px-4 text-sm font-extrabold text-sibs-primary-1 transition hover:bg-sibs-surface disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <Eye size={16} />
                 View
@@ -7634,13 +7634,13 @@ export default function CandidateProfileModal() {
                 Your browser does not support the audio element.
               </audio>
             ) : (
-              <div className="mt-4 rounded-xl border border-dashed border-[#C9D6E4] bg-white px-4 py-3 text-sm font-bold text-sibs-tertiary-5">
+              <div className="mt-4 rounded-xl border border-dashed border-sibs-border bg-white px-4 py-3 text-sm font-bold text-sibs-tertiary-5">
                 No audio recording uploaded.
               </div>
             )}
           </div>
 
-          <div className="rounded-xl border border-[#D9E2EC] bg-[#F8FAFC] p-4">
+          <div className="rounded-xl border border-sibs-border bg-sibs-surface p-4">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
@@ -7649,7 +7649,7 @@ export default function CandidateProfileModal() {
 
                 <p
                   title={activeCandidate.attachmentFileName || "—"}
-                  className="mt-2 truncate text-sm font-extrabold text-[#344054]"
+                  className="mt-2 truncate text-sm font-extrabold text-sibs-navy"
                 >
                   {activeCandidate.attachmentFileName || "—"}
                 </p>
@@ -7659,7 +7659,7 @@ export default function CandidateProfileModal() {
                 type="button"
                 disabled={!attachmentFileUrl}
                 onClick={() => openFile(attachmentFileUrl, activeCandidate.attachmentFileName, "attachment")}
-                className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-4 text-sm font-extrabold text-sibs-primary-1 transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-[10px] border border-sibs-border bg-white px-4 text-sm font-extrabold text-sibs-primary-1 transition hover:bg-sibs-surface disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <Eye size={16} />
                 View
@@ -7667,11 +7667,11 @@ export default function CandidateProfileModal() {
             </div>
 
             {attachmentFileUrl ? (
-              <div className="mt-4 rounded-xl border border-[#E6ECF2] bg-white px-4 py-3 text-sm font-bold text-sibs-primary-1">
+              <div className="mt-4 rounded-xl border border-sibs-border bg-white px-4 py-3 text-sm font-bold text-sibs-primary-1">
                 Click View to open the uploaded attachment.
               </div>
             ) : (
-              <div className="mt-4 rounded-xl border border-dashed border-[#C9D6E4] bg-white px-4 py-3 text-sm font-bold text-sibs-tertiary-5">
+              <div className="mt-4 rounded-xl border border-dashed border-sibs-border bg-white px-4 py-3 text-sm font-bold text-sibs-tertiary-5">
                 No attachment uploaded.
               </div>
             )}
@@ -7752,20 +7752,20 @@ export default function CandidateProfileModal() {
                     >
                       <div className="relative flex justify-center">
                         {index < visibleApplicationHistory.length - 1 && (
-                          <span className="absolute left-1/2 top-10 -bottom-4 w-px -translate-x-1/2 bg-[#DCE8F5]" />
+                          <span className="absolute left-1/2 top-10 -bottom-4 w-px -translate-x-1/2 bg-blue-100" />
                         )}
 
-                        <div className="relative z-10 flex h-10 w-10 items-center justify-center rounded-full border border-blue-100 bg-blue-50 text-sm font-extrabold text-blue-700 shadow-[0_0_0_6px_#FFFFFF]">
+                        <div className="relative z-10 flex h-10 w-10 items-center justify-center rounded-full border border-blue-100 bg-blue-50 text-sm font-extrabold text-blue-700 shadow-[0_0_0_6px_white]">
                           {visibleApplicationHistoryStartIndex + index + 1}
                         </div>
                       </div>
 
-                      <div className="rounded-2xl border border-[#D9E2EC] bg-[#F8FAFC] p-4 transition hover:border-sibs-primary-1/30 hover:bg-white hover:shadow-sm">
+                      <div className="rounded-2xl border border-sibs-border bg-sibs-surface p-4 transition hover:border-sibs-primary-1/30 hover:bg-white hover:shadow-sm">
                         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                           <div className="min-w-0">
                             <h5
                               title={historyTitle}
-                              className="line-clamp-2 text-sm font-extrabold leading-6 text-[#101828]"
+                              className="line-clamp-2 text-sm font-extrabold leading-6 text-sibs-navy"
                             >
                               {historyTitle}
                             </h5>
@@ -7787,19 +7787,19 @@ export default function CandidateProfileModal() {
 
                             <span
                               title={historyOwner}
-                              className="inline-flex max-w-full items-center justify-center truncate rounded-full border border-[#D6DEE8] bg-white px-3 py-1 text-xs font-bold text-[#475467]"
+                              className="inline-flex max-w-full items-center justify-center truncate rounded-full border border-sibs-border bg-white px-3 py-1 text-xs font-bold text-sibs-navy"
                             >
                               {historyOwner}
                             </span>
                           </div>
                         </div>
 
-                        <p className="mt-4 whitespace-pre-line break-words text-sm font-medium leading-6 text-[#475467]">
+                        <p className="mt-4 whitespace-pre-line break-words text-sm font-medium leading-6 text-sibs-navy">
                           {historyDescription}
                         </p>
 
                         {item.remarks && (
-                          <div className="mt-4 rounded-xl bg-white px-4 py-3 text-sm font-semibold leading-6 text-[#344054]">
+                          <div className="mt-4 rounded-xl bg-white px-4 py-3 text-sm font-semibold leading-6 text-sibs-navy">
                             {item.remarks}
                           </div>
                         )}
@@ -7810,7 +7810,7 @@ export default function CandidateProfileModal() {
                         />
 
                         {item.offerDetail && (
-                          <div className="mt-4 rounded-xl bg-white px-4 py-3 text-sm font-semibold leading-6 text-[#344054]">
+                          <div className="mt-4 rounded-xl bg-white px-4 py-3 text-sm font-semibold leading-6 text-sibs-navy">
                             {item.offerDetail}
                           </div>
                         )}
@@ -7827,7 +7827,7 @@ export default function CandidateProfileModal() {
                               rel="noreferrer"
                               title={item.savedFormLink}
                               dir="ltr"
-                              className="mt-2 block w-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap rounded-xl border border-[#D9E2EC] bg-white px-3 py-2 text-left text-sm text-blue-700 underline"
+                              className="mt-2 block w-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap rounded-xl border border-sibs-border bg-white px-3 py-2 text-left text-sm text-blue-700 underline"
                             >
                               {item.savedFormLink.startsWith("http")
                                 ? item.savedFormLink
@@ -7842,7 +7842,7 @@ export default function CandidateProfileModal() {
               </div>
 
               {hasMoreApplicationHistory && (
-                <div className="mt-5 flex justify-center border-t border-[#E6ECF2] pt-4">
+                <div className="mt-5 flex justify-center border-t border-sibs-border pt-4">
                   <button
                     type="button"
                     onClick={() =>
@@ -7850,7 +7850,7 @@ export default function CandidateProfileModal() {
                         (previousValue) => !previousValue,
                       )
                     }
-                    className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-extrabold text-sibs-primary-1 transition hover:border-sibs-primary-1/30 hover:bg-[#F8FAFC]"
+                    className="inline-flex h-11 items-center justify-center gap-2 rounded-[10px] border border-sibs-border bg-white px-5 text-sm font-extrabold text-sibs-primary-1 transition hover:border-sibs-primary-1/30 hover:bg-sibs-surface"
                   >
                     {showFullApplicationHistory
                       ? "Show Less History"
@@ -7896,7 +7896,7 @@ export default function CandidateProfileModal() {
           <EmptyState title="No movement history recorded yet." />
         ) : (
           <div className="relative pl-6">
-            <div className="absolute bottom-2 left-2 top-2 w-[2px] bg-[#E6ECF2]" />
+            <div className="absolute bottom-2 left-2 top-2 w-[2px] bg-sibs-border" />
 
             <div className="space-y-4">
               {personalMovementHistory.map((item, index) => {
@@ -7913,13 +7913,13 @@ export default function CandidateProfileModal() {
                     <span
                       className={`absolute -left-[25px] top-1.5 flex h-3.5 w-3.5 items-center justify-center rounded-full border-2 bg-white ${
                         isLatest
-                          ? "border-[#FF5C28] ring-4 ring-[#FFF0EB]"
-                          : "border-[#98A2B3]"
+                          ? "border-sibs-orange ring-4 ring-sibs-cream-light"
+                          : "border-sibs-muted"
                       }`}
                     >
                       <span
                         className={`h-1.5 w-1.5 rounded-full ${
-                          isLatest ? "bg-[#FF5C28]" : "bg-[#98A2B3]"
+                          isLatest ? "bg-sibs-orange" : "bg-sibs-muted"
                         }`}
                       />
                     </span>
@@ -7927,19 +7927,19 @@ export default function CandidateProfileModal() {
                     <div
                       className={`rounded-2xl border p-4 ${
                         isLatest
-                          ? "border-[#FFD7C8] bg-[#FFFBF9]"
-                          : "border-[#D9E2EC] bg-white"
+                          ? "border-sibs-orange/30 bg-sibs-cream-light"
+                          : "border-sibs-border bg-white"
                       }`}
                     >
                       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                         <div className="min-w-0 flex-1">
                           <div className="flex flex-wrap items-center gap-2">
-                            <h5 className="text-sm font-extrabold text-[#042C51]">
+                            <h5 className="text-sm font-extrabold text-sibs-navy">
                               {item.displayStage || item.stage || "Application Update"}
                             </h5>
 
                             {isLatest && (
-                              <span className="rounded bg-[#FF5C28] px-2 py-0.5 text-[8px] font-extrabold uppercase tracking-wide text-white">
+                              <span className="rounded bg-sibs-orange px-2 py-0.5 text-[8px] font-extrabold uppercase tracking-wide text-white">
                                 Latest
                               </span>
                             )}
@@ -7951,15 +7951,15 @@ export default function CandidateProfileModal() {
                             )}
                           </div>
 
-                          <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[10px] font-semibold text-[#667085]">
+                          <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[10px] font-semibold text-sibs-muted">
                             <span className="inline-flex items-center gap-1.5">
-                              <UserRound size={12} className="text-[#98A2B3]" />
+                              <UserRound size={12} className="text-sibs-muted" />
                               {item.updatedBy || "System"}
                             </span>
 
                             {item.rawDate && (
                               <span className="inline-flex items-center gap-1.5">
-                                <CalendarDays size={12} className="text-[#98A2B3]" />
+                                <CalendarDays size={12} className="text-sibs-muted" />
                                 {formatUploadedDate(item.rawDate)}
                               </span>
                             )}
@@ -7967,7 +7967,7 @@ export default function CandidateProfileModal() {
                         </div>
                       </div>
 
-                      <div className="mt-3 rounded-xl border border-[#E6ECF2] bg-white px-4 py-3 text-sm font-semibold leading-6 text-[#475467]">
+                      <div className="mt-3 rounded-xl border border-sibs-border bg-white px-4 py-3 text-sm font-semibold leading-6 text-sibs-navy">
                         {item.reason || "Candidate pipeline record updated."}
                       </div>
 
@@ -7976,7 +7976,7 @@ export default function CandidateProfileModal() {
                           {nhoFileTracking.map((file, fileIndex) => (
                             <div
                               key={`${file.action}-${file.requirement}-${file.fileName}-${fileIndex}`}
-                              className="overflow-hidden rounded-xl border border-[#E6ECF2] bg-[#F8FAFC]"
+                              className="overflow-hidden rounded-xl border border-sibs-border bg-sibs-surface"
                             >
                               {[
                                 ["Requirement:", file.requirement],
@@ -7986,13 +7986,13 @@ export default function CandidateProfileModal() {
                                 <div
                                   key={label}
                                   className={`flex items-start justify-between gap-3 px-4 py-2.5 ${
-                                    detailIndex < 2 ? "border-b border-[#E6ECF2]" : ""
+                                    detailIndex < 2 ? "border-b border-sibs-border" : ""
                                   }`}
                                 >
-                                  <span className="text-[10px] font-extrabold text-[#667085]">
+                                  <span className="text-[10px] font-extrabold text-sibs-muted">
                                     {label}
                                   </span>
-                                  <span className="min-w-0 break-all text-right text-[10px] font-extrabold text-[#042C51]">
+                                  <span className="min-w-0 break-all text-right text-[10px] font-extrabold text-sibs-navy">
                                     {value || "—"}
                                   </span>
                                 </div>
@@ -8003,7 +8003,7 @@ export default function CandidateProfileModal() {
                       )}
 
                       {Object.keys(offerSummary).length > 0 && (
-                        <div className="mt-3 overflow-hidden rounded-xl border border-[#E6ECF2] bg-[#F8FAFC]">
+                        <div className="mt-3 overflow-hidden rounded-xl border border-sibs-border bg-sibs-surface">
                           {[
                             ["Account", offerSummary.account],
                             ["Basic Pay", offerSummary.basicPay],
@@ -8016,14 +8016,14 @@ export default function CandidateProfileModal() {
                               key={label}
                               className={`flex items-start justify-between gap-3 px-4 py-2.5 ${
                                 detailIndex < 2
-                                  ? "border-b border-[#E6ECF2]"
+                                  ? "border-b border-sibs-border"
                                   : ""
                               }`}
                             >
-                              <span className="text-[10px] font-extrabold text-[#667085]">
+                              <span className="text-[10px] font-extrabold text-sibs-muted">
                                 {label}:
                               </span>
-                              <span className="text-right text-[10px] font-extrabold text-[#042C51]">
+                              <span className="text-right text-[10px] font-extrabold text-sibs-navy">
                                 {value || "—"}
                               </span>
                             </div>
@@ -8032,7 +8032,7 @@ export default function CandidateProfileModal() {
                       )}
 
                       {item.remarks && item.remarks !== item.reason && (
-                        <p className="mt-3 whitespace-pre-line break-words text-[11px] font-semibold leading-5 text-[#667085]">
+                        <p className="mt-3 whitespace-pre-line break-words text-[11px] font-semibold leading-5 text-sibs-muted">
                           {item.remarks}
                         </p>
                       )}
@@ -8041,10 +8041,10 @@ export default function CandidateProfileModal() {
                         <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
                           {details.score && (
                             <div className="rounded-xl border border-blue-100 bg-blue-50 px-3 py-2.5">
-                              <p className="text-[9px] font-extrabold uppercase tracking-wide text-[#174A78]">
+                              <p className="text-[9px] font-extrabold uppercase tracking-wide text-sibs-navy">
                                 Score
                               </p>
-                              <p className="mt-0.5 text-sm font-extrabold text-[#042C51]">
+                              <p className="mt-0.5 text-sm font-extrabold text-sibs-navy">
                                 {details.score}
                               </p>
                             </div>
@@ -8052,10 +8052,10 @@ export default function CandidateProfileModal() {
 
                           {details.result && (
                             <div className="rounded-xl border border-blue-100 bg-white px-3 py-2.5">
-                              <p className="text-[9px] font-extrabold uppercase tracking-wide text-[#174A78]">
+                              <p className="text-[9px] font-extrabold uppercase tracking-wide text-sibs-navy">
                                 Result
                               </p>
-                              <p className="mt-0.5 text-sm font-extrabold text-[#042C51]">
+                              <p className="mt-0.5 text-sm font-extrabold text-sibs-navy">
                                 {details.result}
                               </p>
                             </div>
@@ -8101,14 +8101,14 @@ export default function CandidateProfileModal() {
                             return (
                               <div
                                 key={`${fileName}-${fileIndex}`}
-                                className="flex items-center justify-between gap-3 rounded-xl border border-blue-100 bg-[#F8FAFC] px-3 py-2.5"
+                                className="flex items-center justify-between gap-3 rounded-xl border border-blue-100 bg-sibs-surface px-3 py-2.5"
                               >
                                 <div className="flex min-w-0 items-center gap-2">
                                   <FileText
                                     size={17}
-                                    className="shrink-0 text-[#FF5C28]"
+                                    className="shrink-0 text-sibs-orange"
                                   />
-                                  <p className="truncate text-xs font-extrabold text-[#042C51]">
+                                  <p className="truncate text-xs font-extrabold text-sibs-navy">
                                     {fileName}
                                   </p>
                                 </div>
@@ -8161,20 +8161,20 @@ export default function CandidateProfileModal() {
         </div>
 
         {form.formName ? (
-          <div className="rounded-2xl border border-[#D9E2EC] bg-[#F8FAFC] p-4">
-            <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#8A98B8]">
+          <div className="rounded-2xl border border-sibs-border bg-sibs-surface p-4">
+            <p className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-muted">
               Application Form
             </p>
-            <p className="mt-1 text-sm font-extrabold text-[#042C51]">
+            <p className="mt-1 text-sm font-extrabold text-sibs-navy">
               {form.formName}
             </p>
           </div>
         ) : null}
 
         {applicationAnswersLoading ? (
-          <div className="flex min-h-[180px] items-center justify-center rounded-2xl border border-[#E6ECF2] bg-white p-6">
-            <div className="flex items-center gap-2 text-sm font-bold text-[#667085]">
-              <Loader2 size={18} className="animate-spin text-[#FF5C28]" />
+          <div className="flex min-h-[180px] items-center justify-center rounded-2xl border border-sibs-border bg-white p-6">
+            <div className="flex items-center gap-2 text-sm font-bold text-sibs-muted">
+              <Loader2 size={18} className="animate-spin text-sibs-orange" />
               Loading application questions and answers...
             </div>
           </div>
@@ -8189,12 +8189,12 @@ export default function CandidateProfileModal() {
             {answers.map((answer, index) => (
               <article
                 key={answer.id || `${answer.questionId || "question"}-${index}`}
-                className="rounded-2xl border border-[#D9E2EC] bg-white p-4 shadow-sm sm:p-5"
+                className="rounded-2xl border border-sibs-border bg-white p-4 shadow-sm sm:p-5"
               >
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="inline-flex h-7 min-w-7 items-center justify-center rounded-lg bg-[#FFF0EA] px-2 text-[10px] font-black text-[#FF5C28]">
+                      <span className="inline-flex h-7 min-w-7 items-center justify-center rounded-lg bg-sibs-cream-light px-2 text-[10px] font-black text-sibs-orange">
                         {index + 1}
                       </span>
                       <span
@@ -8208,23 +8208,23 @@ export default function CandidateProfileModal() {
                       </span>
                     </div>
 
-                    <h4 className="mt-3 break-words text-sm font-extrabold leading-6 text-[#042C51]">
+                    <h4 className="mt-3 break-words text-sm font-extrabold leading-6 text-sibs-navy">
                       {answer.questionText || "Application Question"}
                     </h4>
 
                     {answer.helperText ? (
-                      <p className="mt-1 text-xs font-semibold leading-5 text-[#667085]">
+                      <p className="mt-1 text-xs font-semibold leading-5 text-sibs-muted">
                         {answer.helperText}
                       </p>
                     ) : null}
                   </div>
                 </div>
 
-                <div className="mt-4 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4">
-                  <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#8A98B8]">
+                <div className="mt-4 rounded-xl border border-sibs-border bg-sibs-surface p-4">
+                  <p className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-muted">
                     Applicant Answer
                   </p>
-                  <p className="mt-2 whitespace-pre-wrap break-words text-sm font-semibold leading-6 text-[#344054]">
+                  <p className="mt-2 whitespace-pre-wrap break-words text-sm font-semibold leading-6 text-sibs-navy">
                     {cleanText(answer.textAnswer) || "No text answer submitted."}
                   </p>
                 </div>
@@ -8253,19 +8253,19 @@ export default function CandidateProfileModal() {
       activeCandidate.remarks_updated_at;
 
     return (
-      <section className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
-        <div className="flex flex-col gap-2 border-b border-[#E6ECF2] pb-3 sm:flex-row sm:items-center sm:justify-between">
+      <section className="rounded-2xl border border-sibs-border bg-white p-4 shadow-sm sm:p-5">
+        <div className="flex flex-col gap-2 border-b border-sibs-border pb-3 sm:flex-row sm:items-center sm:justify-between">
           <SectionTitle
             icon={FileText}
             title="Notes"
             description="Candidate profile notes and general remarks."
           />
           {remarksAuthor && activeCandidate.remarks ? (
-            <div className="inline-flex items-center gap-1.5 rounded-lg border border-[#E6ECF2] bg-[#F8FAFC] px-2.5 py-1.5 text-xs text-[#667085]">
-              <UserRound size={13} className="text-[#FF5C28]" />
+            <div className="inline-flex items-center gap-1.5 rounded-lg border border-sibs-border bg-sibs-surface px-2.5 py-1.5 text-xs text-sibs-muted">
+              <UserRound size={13} className="text-sibs-orange" />
               <span>
                 Added/Updated by{" "}
-                <strong className="font-extrabold text-[#042C51]">
+                <strong className="font-extrabold text-sibs-navy">
                   {remarksAuthor}
                 </strong>
                 {remarksDate ? ` • ${formatUploadedDate(remarksDate)}` : ""}
@@ -8340,10 +8340,10 @@ export default function CandidateProfileModal() {
         onClick={handleCloseCandidateProfile}
       >
         <div
-          className="sibs-modal-pop-in flex h-[88dvh] xl:h-[92dvh] max-h-[88dvh] xl:max-h-[92dvh] w-full max-w-6xl xl:max-w-7xl 2xl:max-w-[1400px] flex-col overflow-hidden rounded-2xl border border-sibs-border bg-[#F8FAFC] shadow-2xl"
+          className="sibs-modal-pop-in flex h-[88dvh] xl:h-[92dvh] max-h-[88dvh] xl:max-h-[92dvh] w-full max-w-6xl xl:max-w-7xl 2xl:max-w-[1400px] flex-col overflow-hidden rounded-2xl border border-sibs-border bg-sibs-surface shadow-2xl"
           onClick={(event) => event.stopPropagation()}
         >
-          <div className="flex shrink-0 items-center justify-between gap-3 border-b border-[#174A7C] bg-sibs-navy px-3.5 py-2 text-white sm:px-5 xl:px-6 xl:py-3.5">
+          <div className="flex shrink-0 items-center justify-between gap-3 border-b border-white/10 bg-sibs-navy px-3.5 py-2 text-white sm:px-5 xl:px-6 xl:py-3.5">
             <div className="flex min-w-0 items-center gap-2.5">
               <span className="flex h-7.5 w-7.5 xl:h-9 xl:w-9 shrink-0 items-center justify-center rounded-lg bg-sibs-orange text-white shadow-xs">
                 <UserRound size={16} />
@@ -8370,19 +8370,19 @@ export default function CandidateProfileModal() {
             </button>
           </div>
 
-          <div className="thin-scroll flex-1 overflow-y-auto bg-[#F8FAFC] p-2.5 sm:p-3.5 xl:p-5 2xl:p-6">
+          <div className="thin-scroll flex-1 overflow-y-auto bg-sibs-surface p-2.5 sm:p-3.5 xl:p-5 2xl:p-6">
             <div className="space-y-2.5 xl:space-y-4">
               <section className="relative overflow-hidden rounded-xl border border-sibs-border bg-white px-3 py-2 xl:px-5 xl:py-3.5 shadow-2xs">
                 <span
                   className="pointer-events-none absolute left-0 right-0 top-0 h-0.5 overflow-hidden"
                   aria-hidden="true"
                 >
-                  <span className="block h-full w-full bg-gradient-to-r from-[#042C51] via-[#FF5C28] to-[#042C51]" />
+                  <span className="block h-full w-full bg-gradient-to-r from-sibs-navy via-sibs-orange to-sibs-navy" />
                 </span>
 
                 <div className="flex flex-col items-center justify-between gap-2.5 lg:flex-row lg:items-center">
                   <div className="flex min-w-0 flex-col items-center gap-3 text-center sm:flex-row sm:text-left">
-                    <div className="relative flex h-10 w-10 xl:h-12 xl:w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#042C51] to-[#084782] text-sm xl:text-base font-black text-white shadow-xs">
+                    <div className="relative flex h-10 w-10 xl:h-12 xl:w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-sibs-navy to-sibs-navy/90 text-sm xl:text-base font-black text-white shadow-xs">
                       {candidateInitials}
                       <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-white bg-emerald-500" />
                     </div>
@@ -8401,7 +8401,7 @@ export default function CandidateProfileModal() {
                           {candidateDisplayStatus || "—"}
                         </span>
 
-                        <span className="rounded-md border border-blue-100 bg-[#E9F0FC] px-1.5 py-0.2 font-mono text-[8.5px] sm:text-[9px] xl:text-[9.5px] font-extrabold uppercase text-sibs-navy">
+                        <span className="rounded-md border border-blue-100 bg-sibs-surface px-1.5 py-0.2 font-mono text-[8.5px] sm:text-[9px] xl:text-[9.5px] font-extrabold uppercase text-sibs-navy">
                           {activeCandidate.candidateId || "—"}
                         </span>
                       </div>
@@ -8442,7 +8442,7 @@ export default function CandidateProfileModal() {
                           type="button"
                           onClick={handleSaveCandidateEdit}
                           disabled={isCandidateSaving}
-                          className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 rounded-lg bg-emerald-600 px-3 2xl:px-3.5 sibs-text-xs font-extrabold text-white transition hover:bg-emerald-700 focus-visible:ring-2 focus-visible:ring-emerald-500/30 disabled:cursor-not-allowed disabled:opacity-60"
+                          className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 rounded-[10px] bg-emerald-600 px-3 2xl:px-3.5 sibs-text-xs font-extrabold text-white transition hover:bg-emerald-700 focus-visible:ring-2 focus-visible:ring-emerald-500/30 disabled:cursor-not-allowed disabled:opacity-60"
                         >
                           {isCandidateSaving ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />}
                           {isCandidateSaving ? "Saving..." : "Save Profile"}
@@ -8451,7 +8451,7 @@ export default function CandidateProfileModal() {
                           type="button"
                           onClick={handleCancelCandidateEdit}
                           disabled={isCandidateSaving}
-                          className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg bg-slate-100 px-3 2xl:px-3.5 sibs-text-xs font-extrabold text-slate-600 transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-60"
+                          className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-[10px] bg-slate-100 px-3 2xl:px-3.5 sibs-text-xs font-extrabold text-slate-600 transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-60"
                         >
                           Cancel
                         </button>
@@ -8462,7 +8462,7 @@ export default function CandidateProfileModal() {
                         onClick={handleOpenEditCandidate}
                         disabled={isStartingCandidateEdit || !getTalentPoolEditableSectionLabel(activeTab)}
                         title={!getTalentPoolEditableSectionLabel(activeTab) ? "Choose an editable profile section first." : "Edit this candidate profile"}
-                        className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 rounded-lg border border-sibs-border bg-white px-3 2xl:px-3.5 sibs-text-xs font-extrabold text-sibs-navy shadow-2xs transition hover:border-sibs-orange/40 hover:bg-sibs-cream-subtle hover:text-sibs-orange focus-visible:ring-2 focus-visible:ring-sibs-orange/30 disabled:cursor-not-allowed disabled:opacity-50"
+                        className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 rounded-[10px] border border-sibs-border bg-white px-3 2xl:px-3.5 sibs-text-xs font-extrabold text-sibs-navy shadow-2xs transition hover:border-sibs-orange/40 hover:bg-sibs-cream-subtle hover:text-sibs-orange focus-visible:ring-2 focus-visible:ring-sibs-orange/30 disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         {isStartingCandidateEdit ? <Loader2 size={13} className="animate-spin text-sibs-orange" /> : <UserRoundPen size={13} className="text-sibs-orange" />}
                         <span>{isStartingCandidateEdit ? "Loading..." : "Edit Profile Record"}</span>
@@ -8473,7 +8473,7 @@ export default function CandidateProfileModal() {
                       type="button"
                       onClick={handleGenerateResume}
                       disabled={!talentPoolApplicationId || isGeneratingResume}
-                      className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 rounded-lg border border-sibs-border bg-white px-3 2xl:px-3.5 sibs-text-xs font-extrabold text-sibs-navy shadow-2xs transition hover:border-sibs-orange/40 hover:bg-sibs-cream-subtle hover:text-sibs-orange focus-visible:ring-2 focus-visible:ring-sibs-orange/30 disabled:cursor-not-allowed disabled:opacity-60"
+                      className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 rounded-[10px] border border-sibs-border bg-white px-3 2xl:px-3.5 sibs-text-xs font-extrabold text-sibs-navy shadow-2xs transition hover:border-sibs-orange/40 hover:bg-sibs-cream-subtle hover:text-sibs-orange focus-visible:ring-2 focus-visible:ring-sibs-orange/30 disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       {isGeneratingResume ? (
                         <>
@@ -8491,7 +8491,7 @@ export default function CandidateProfileModal() {
                     {!editCandidate && <button
                       type="button"
                       onClick={handleUpdateCandidateStatus}
-                      className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 rounded-lg bg-sibs-navy px-3 2xl:px-3.5 sibs-text-xs font-extrabold text-white shadow-2xs transition hover:bg-sibs-navy/90"
+                      className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 rounded-[10px] bg-sibs-navy px-3 2xl:px-3.5 sibs-text-xs font-extrabold text-white shadow-2xs transition hover:bg-sibs-navy/90"
                     >
                       <RefreshCcw size={13} className="text-sibs-orange" />
                       Status
@@ -8558,8 +8558,8 @@ export default function CandidateProfileModal() {
                           {isCandidateSaving ? "Saving candidate profile..." : `Modified draft: ${getTalentPoolEditableSectionLabel(activeTab)}`}
                         </div>
                         <div className="flex gap-2">
-                          <button type="button" onClick={handleCancelCandidateEdit} disabled={isCandidateSaving} className="h-8 rounded-lg bg-slate-100 px-3 text-[11px] font-black text-slate-600 transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-60">Cancel</button>
-                          <button type="button" onClick={handleSaveCandidateEdit} disabled={isCandidateSaving} className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg bg-sibs-navy px-4 text-[11px] font-black text-white transition hover:bg-[#063560] disabled:cursor-not-allowed disabled:opacity-60">
+                          <button type="button" onClick={handleCancelCandidateEdit} disabled={isCandidateSaving} className="h-8 rounded-[10px] bg-slate-100 px-3 text-[11px] font-black text-slate-600 transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-60">Cancel</button>
+                          <button type="button" onClick={handleSaveCandidateEdit} disabled={isCandidateSaving} className="inline-flex h-8 items-center justify-center gap-1.5 rounded-[10px] bg-sibs-navy px-4 text-[11px] font-black text-white transition hover:bg-sibs-navy/90 disabled:cursor-not-allowed disabled:opacity-60">
                             {isCandidateSaving ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} className="text-sibs-orange" />}
                             {isCandidateSaving ? "Saving..." : "Save Changes"}
                           </button>
@@ -8611,7 +8611,7 @@ export default function CandidateProfileModal() {
                 type="button"
                 onClick={handleCloseCandidateProfile}
                 disabled={Boolean(editCandidate)}
-                className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg border border-sibs-border bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-navy transition hover:border-sibs-orange/40 hover:bg-sibs-cream-subtle hover:text-sibs-orange focus-visible:ring-2 focus-visible:ring-sibs-orange/30 disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-[10px] border border-sibs-border bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-navy transition hover:border-sibs-orange/40 hover:bg-sibs-cream-subtle hover:text-sibs-orange focus-visible:ring-2 focus-visible:ring-sibs-orange/30 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Close
               </button>
@@ -8623,7 +8623,7 @@ export default function CandidateProfileModal() {
                   type="button"
                   onClick={handleOpenDropOff}
                   disabled={dropOffSaving}
-                  className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-red-700 transition hover:-translate-y-0.5 hover:border-red-300 hover:bg-red-100 hover:shadow-2xs disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 rounded-[10px] border border-red-200 bg-red-50 px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-red-700 transition hover:-translate-y-0.5 hover:border-red-300 hover:bg-red-100 hover:shadow-2xs disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   <UserX size={14} />
                   {dropOffSaving ? "Saving..." : "Mark as Drop Off"}
@@ -8635,7 +8635,7 @@ export default function CandidateProfileModal() {
                   type="button"
                   disabled={isMovingToOnboarding}
                   onClick={handleMoveToOnboarding}
-                  className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 rounded-lg bg-sibs-orange px-4 2xl:px-5 sibs-text-xs font-extrabold text-white shadow-2xs transition hover:bg-sibs-orange/90 focus-visible:ring-4 focus-visible:ring-sibs-orange/20 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 rounded-[10px] bg-sibs-orange px-4 2xl:px-5 sibs-text-xs font-extrabold text-white shadow-2xs transition hover:bg-sibs-orange/90 focus-visible:ring-4 focus-visible:ring-sibs-orange/20 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {isMovingToOnboarding ? (
                     <Loader2 size={14} className="animate-spin" />
@@ -8650,7 +8650,7 @@ export default function CandidateProfileModal() {
                 <button
                   type="button"
                   onClick={handleOpenLinkedCandidateDestination}
-                  className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 rounded-lg bg-sibs-orange px-4 2xl:px-5 sibs-text-xs font-extrabold text-white shadow-2xs transition hover:bg-sibs-orange/90 focus-visible:ring-4 focus-visible:ring-sibs-orange/20"
+                  className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 rounded-[10px] bg-sibs-orange px-4 2xl:px-5 sibs-text-xs font-extrabold text-white shadow-2xs transition hover:bg-sibs-orange/90 focus-visible:ring-4 focus-visible:ring-sibs-orange/20"
                 >
                   <ArrowRight size={14} />
                   Already Linked
@@ -8661,7 +8661,7 @@ export default function CandidateProfileModal() {
                 <button
                   type="button"
                   onClick={handleMoveToPipeline}
-                  className="relative z-[60] inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 rounded-lg bg-sibs-orange px-4 2xl:px-5 sibs-text-xs font-extrabold text-white shadow-2xs transition hover:bg-sibs-orange/90 focus-visible:ring-4 focus-visible:ring-sibs-orange/20 active:scale-[0.98]"
+                  className="relative z-[60] inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 rounded-[10px] bg-sibs-orange px-4 2xl:px-5 sibs-text-xs font-extrabold text-white shadow-2xs transition hover:bg-sibs-orange/90 focus-visible:ring-4 focus-visible:ring-sibs-orange/20 active:scale-[0.98]"
                 >
                   <ArrowRight size={14} />
                   {isDropOffCandidate
@@ -8687,10 +8687,10 @@ export default function CandidateProfileModal() {
             onClick={(event) => event.stopPropagation()}
           >
             {/* SiBS Standard Dark Navy Modal Header */}
-            <header className="shrink-0 rounded-t-2xl bg-[#042C51] px-5 py-4 text-white sm:px-6">
+            <header className="shrink-0 rounded-t-2xl bg-sibs-navy px-5 py-4 text-white sm:px-6">
               <div className="flex items-center justify-between gap-3">
                 <div className="flex min-w-0 items-center gap-3">
-                  <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#FF5C28] text-white shadow-sm">
+                  <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-sibs-orange text-white shadow-sm">
                     <RefreshCcw size={17} />
                   </span>
 
@@ -8715,7 +8715,7 @@ export default function CandidateProfileModal() {
                   type="button"
                   onClick={handleCloseStatusUpdate}
                   disabled={statusUpdateSaving}
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-white/15 bg-white/10 text-white/80 transition hover:border-[#FF5C28]/60 hover:bg-[#FF5C28] hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-white/15 bg-white/10 text-white/80 transition hover:border-sibs-orange/60 hover:bg-sibs-orange hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
                   aria-label="Close update candidate status modal"
                 >
                   <X size={16} />
@@ -8724,25 +8724,25 @@ export default function CandidateProfileModal() {
             </header>
 
             {/* Modal Body with Section Cards */}
-            <div className="overflow-visible bg-[#F7F9FC] p-4 sm:p-5 space-y-3.5">
+            <div className="overflow-visible bg-sibs-surface p-4 sm:p-5 space-y-3.5">
               {/* Candidate Summary Card */}
-              <div className="rounded-xl border border-[#E6ECF2] bg-white p-4 shadow-[0_8px_22px_rgba(4,44,81,0.04)]">
+              <div className="rounded-xl border border-sibs-border bg-white p-4 shadow-[0_8px_22px_rgba(4,44,81,0.04)]">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#667085]">
+                    <p className="text-[10px] font-extrabold uppercase tracking-wider text-sibs-muted">
                       Candidate
                     </p>
-                    <h3 className="mt-0.5 truncate text-sm font-extrabold text-[#042C51]">
+                    <h3 className="mt-0.5 truncate text-sm font-extrabold text-sibs-navy">
                       {candidateDisplayName}
                     </h3>
                   </div>
 
                   <div className="shrink-0 text-right">
-                    <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#667085]">
+                    <p className="text-[10px] font-extrabold uppercase tracking-wider text-sibs-muted">
                       Current Status
                     </p>
-                    <span className="mt-1 inline-flex items-center gap-1.5 rounded-full border border-[#DCE6F1] bg-[#F8FAFC] px-2.5 py-1 text-[10px] font-extrabold text-[#042C51]">
-                      <span className="h-1.5 w-1.5 rounded-full bg-[#FF5C28]" />
+                    <span className="mt-1 inline-flex items-center gap-1.5 rounded-full border border-sibs-border bg-sibs-surface px-2.5 py-1 text-[10px] font-extrabold text-sibs-navy">
+                      <span className="h-1.5 w-1.5 rounded-full bg-sibs-orange" />
                       {candidateDisplayStatus || "—"}
                     </span>
                   </div>
@@ -8750,10 +8750,10 @@ export default function CandidateProfileModal() {
               </div>
 
               {/* Status Update Details Card */}
-              <div className="relative z-[50] overflow-visible rounded-xl border border-[#E6ECF2] bg-white p-4 shadow-[0_8px_22px_rgba(4,44,81,0.04)]">
+              <div className="relative z-[50] overflow-visible rounded-xl border border-sibs-border bg-white p-4 shadow-[0_8px_22px_rgba(4,44,81,0.04)]">
                 <form onSubmit={handleSaveCandidateStatus} className="space-y-4">
                   <div className="relative z-[100]">
-                    <label className="mb-1.5 block text-[10px] font-extrabold uppercase tracking-wider text-[#042C51]">
+                    <label className="mb-1.5 block text-[10px] font-extrabold uppercase tracking-wider text-sibs-navy">
                       New Status <span className="text-red-500">*</span>
                     </label>
                     <TalentPoolStatusDropdown
@@ -8781,13 +8781,13 @@ export default function CandidateProfileModal() {
             </div>
 
             {/* Standard SiBS Modal Footer */}
-            <footer className="relative z-[10] shrink-0 rounded-b-2xl border-t border-[#E6ECF2] bg-white px-5 py-3.5 sm:px-6">
+            <footer className="relative z-[10] shrink-0 rounded-b-2xl border-t border-sibs-border bg-white px-5 py-3.5 sm:px-6">
               <div className="flex flex-col-reverse justify-end gap-2 sm:flex-row">
                 <button
                   type="button"
                   onClick={handleCloseStatusUpdate}
                   disabled={statusUpdateSaving}
-                  className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-[#D6E0EA] bg-white px-4 text-xs font-extrabold text-[#042C51] transition hover:border-[#FF5C28]/35 hover:bg-[#FFF8F5] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex h-10 items-center justify-center gap-2 rounded-[10px] border border-sibs-border bg-white px-4 text-xs font-extrabold text-sibs-navy transition hover:border-sibs-orange/35 hover:bg-sibs-cream-light hover:text-sibs-orange disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   Cancel
                 </button>
@@ -8796,7 +8796,7 @@ export default function CandidateProfileModal() {
                   type="button"
                   onClick={handleSaveCandidateStatus}
                   disabled={statusUpdateSaving || !cleanText(statusUpdateValue)}
-                  className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[#FF5C28] px-5 text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E94F1F] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#FF5C28]/20 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex h-10 items-center justify-center gap-2 rounded-[10px] bg-sibs-orange px-5 text-xs font-extrabold text-white shadow-sm transition hover:bg-sibs-orange/90 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-sibs-orange/20 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {statusUpdateSaving ? (
                     <Loader2 size={15} className="animate-spin" />
@@ -8825,7 +8825,7 @@ export default function CandidateProfileModal() {
           >
             <div className="flex items-start justify-between gap-4 border-b border-gray-100 px-5 py-4">
               <div>
-                <h3 className="text-lg font-bold text-[#B42318]">
+                <h3 className="text-lg font-bold text-red-600">
                   Mark as Drop Off
                 </h3>
                 <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
@@ -8845,7 +8845,7 @@ export default function CandidateProfileModal() {
             </div>
 
             <form onSubmit={handleConfirmDropOff} className="space-y-4 p-5">
-              <div className="rounded-xl border border-red-100 bg-red-50 p-4 text-sm font-semibold leading-6 text-[#B42318]">
+              <div className="rounded-xl border border-red-100 bg-red-50 p-4 text-sm font-semibold leading-6 text-red-700">
                 The candidate will remain visible in Talent Pool with the Drop
                 Off status. Enter the reason before confirming.
               </div>
@@ -8886,7 +8886,7 @@ export default function CandidateProfileModal() {
                   type="button"
                   onClick={handleCloseDropOff}
                   disabled={dropOffSaving}
-                  className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg border border-[#E6ECF2] bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-[#042C51] transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-[10px] border border-sibs-border bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-navy transition hover:bg-sibs-surface disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   Cancel
                 </button>
@@ -8895,7 +8895,7 @@ export default function CandidateProfileModal() {
                   type="button"
                   onClick={handleConfirmDropOff}
                   disabled={dropOffSaving || !cleanText(dropOffReason)}
-                  className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 2xl:gap-2 rounded-lg bg-red-600 px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white transition hover:-translate-y-0.5 hover:bg-red-700 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 2xl:gap-2 rounded-[10px] bg-red-600 px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white transition hover:-translate-y-0.5 hover:bg-red-700 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   <UserX size={15} />
                   {dropOffSaving ? "Saving..." : "Confirm Drop Off"}
@@ -8942,9 +8942,9 @@ export default function CandidateProfileModal() {
               </button>
             </div>
 
-            <div className="min-h-0 flex-1 overflow-auto bg-[#F4F7FA] p-5">
+            <div className="min-h-0 flex-1 overflow-auto bg-sibs-surface p-5">
               {uploadedFilePreview.kind === "audio" ? (
-                <div className="mx-auto max-w-2xl rounded-xl border border-[#D9E2EC] bg-white p-5">
+                <div className="mx-auto max-w-2xl rounded-xl border border-sibs-border bg-white p-5">
                   <p className="mb-4 break-all text-sm font-extrabold text-sibs-primary-1">
                     {uploadedFilePreview.filename}
                   </p>
@@ -8957,17 +8957,17 @@ export default function CandidateProfileModal() {
                   <img
                     src={uploadedFilePreview.url}
                     alt={uploadedFilePreview.filename}
-                    className="max-h-[70vh] max-w-full rounded-xl border border-[#D9E2EC] bg-white object-contain shadow-sm"
+                    className="max-h-[70vh] max-w-full rounded-xl border border-sibs-border bg-white object-contain shadow-sm"
                   />
                 </div>
               ) : /\.pdf$/i.test(uploadedFilePreview.filename) ? (
                 <iframe
                   title={uploadedFilePreview.filename}
                   src={uploadedFilePreview.url}
-                  className="h-[70vh] w-full rounded-xl border border-[#D9E2EC] bg-white"
+                  className="h-[70vh] w-full rounded-xl border border-sibs-border bg-white"
                 />
               ) : (
-                <div className="mx-auto max-w-xl rounded-xl border border-[#D9E2EC] bg-white p-8 text-center">
+                <div className="mx-auto max-w-xl rounded-xl border border-sibs-border bg-white p-8 text-center">
                   <FileText size={34} className="mx-auto text-sibs-primary-1" />
                   <p className="mt-3 break-all text-sm font-extrabold text-sibs-primary-1">
                     {uploadedFilePreview.filename}
@@ -8979,13 +8979,13 @@ export default function CandidateProfileModal() {
               )}
             </div>
 
-            <div className="flex justify-end border-t border-[#E6ECF2] bg-white px-5 py-3.5">
+            <div className="flex justify-end border-t border-sibs-border bg-white px-5 py-3.5">
               <button
                 type="button"
                 onClick={() =>
                   setUploadedFilePreview({ open: false, url: "", filename: "", kind: "attachment" })
                 }
-                className="inline-flex h-10 items-center justify-center rounded-lg border border-[#D6DEE8] bg-white px-5 text-sm font-extrabold text-sibs-primary-1 transition hover:bg-[#F8FAFC]"
+                className="inline-flex h-10 items-center justify-center rounded-[10px] border border-sibs-border bg-white px-5 text-sm font-extrabold text-sibs-primary-1 transition hover:bg-sibs-surface"
               >
                 Close
               </button>
