@@ -18,5 +18,4 @@ export { MetricCardSkeleton, MetricGridSkeleton } from "./MetricCardSkeleton";
 export { TableSkeletonRow, TableSkeletonRows } from "./TableSkeleton";
 export { default as PublicRouteFallback } from "./PublicRouteFallback";
 export { default as JobDescriptionViewSkeleton } from "../layout/tabs/JobDescriptionView/JobDescriptionViewSkeleton";
-export { default as DatePicker } from "./DatePicker";
 export { default as MonthYearPicker } from "./MonthYearPicker";

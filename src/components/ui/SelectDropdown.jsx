@@ -137,22 +137,27 @@ export default function SelectDropdown({
     closeMenu();
   }
 
+  // Preserve per-page sizing overrides while keeping the shared SiBS dropdown
+  // design as the default for new pages.
   const customClasses = `${buttonClassName || ""} ${className || ""}`;
-  const hasCustomHeight = /(?:^|\s)(?:[a-z0-9]+:)*!?(?:h-\S+|min-h-\S+)/.test(customClasses);
-  const hasCustomRounded = /(?:^|\s)(?:[a-z0-9]+:)*!?rounded-/.test(customClasses);
-  const hasCustomPadding = /(?:^|\s)(?:[a-z0-9]+:)*!?p[xye]?-/.test(customClasses);
+  const hasCustomHeight =
+    /(?:^|\s)(?:[a-z0-9]+:)*!?(?:h-\S+|min-h-\S+)/.test(customClasses);
+  const hasCustomRounded =
+    /(?:^|\s)(?:[a-z0-9]+:)*!?rounded-\S+/.test(customClasses);
+  const hasCustomPadding =
+    /(?:^|\s)(?:[a-z0-9]+:)*!?p[xy]?\-\S+/.test(customClasses);
 
   const defaultHeightClass = hasCustomHeight ? "" : "h-8.5 2xl:h-10";
   const defaultRoundedClass = hasCustomRounded ? "" : "rounded-[10px]";
   const defaultPaddingClass = hasCustomPadding ? "" : "px-2.5 2xl:px-3";
 
-  const triggerClasses = `flex w-full min-w-0 items-center justify-between gap-2 border font-jakarta sibs-text-xs 2xl:sibs-text-sm font-semibold outline-none transition text-left ${defaultHeightClass} ${defaultRoundedClass} ${defaultPaddingClass} ${
+  const triggerClasses = `flex w-full min-w-0 items-center justify-between gap-2 border bg-white text-left font-jakarta sibs-text-xs 2xl:sibs-text-sm font-semibold text-sibs-navy shadow-sm outline-none transition-all duration-200 ${defaultHeightClass} ${defaultRoundedClass} ${defaultPaddingClass} ${
     disabled
       ? "cursor-not-allowed border-sibs-border bg-sibs-canvas text-sibs-faint opacity-70"
       : open
         ? "border-sibs-orange ring-4 ring-sibs-orange/10"
         : "border-slate-300 hover:border-sibs-orange/50 hover:bg-white"
-  } ${buttonClassName || className}`;
+  } ${buttonClassName || ""} ${className || ""}`;
 
   return (
     <div ref={anchorRef} className="relative min-w-0 w-full font-jakarta">
