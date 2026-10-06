@@ -65,25 +65,25 @@ export default function UpdateStatusModal() {
         </header>
 
         {/* Modal Body with Section Cards */}
-        <div className="overflow-visible bg-[#F7F9FC] p-4 sm:p-5 space-y-3.5">
+        <div className="overflow-visible bg-sibs-surface p-4 sm:p-5 space-y-3.5">
           {/* Candidate Summary Card */}
-          <div className="rounded-xl border border-[#E6ECF2] bg-white p-4 shadow-[0_8px_22px_rgba(4,44,81,0.04)]">
+          <div className="rounded-xl border border-sibs-border bg-white p-4 shadow-[0_8px_22px_rgba(4,44,81,0.04)]">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
-                <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#667085]">
+                <p className="text-[10px] font-extrabold uppercase tracking-wider text-sibs-muted">
                   Candidate
                 </p>
-                <h3 className="mt-0.5 truncate text-sm font-extrabold text-[#042C51]">
+                <h3 className="mt-0.5 truncate text-sm font-extrabold text-sibs-navy">
                   {statusTarget.name}
                 </h3>
               </div>
 
               <div className="shrink-0 text-right">
-                <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#667085]">
+                <p className="text-[10px] font-extrabold uppercase tracking-wider text-sibs-muted">
                   Current Status
                 </p>
-                <span className="mt-1 inline-flex items-center gap-1.5 rounded-full border border-[#DCE6F1] bg-[#F8FAFC] px-2.5 py-1 text-[10px] font-extrabold text-[#042C51]">
-                  <span className="h-1.5 w-1.5 rounded-full bg-[#FF5C28]" />
+                <span className="mt-1 inline-flex items-center gap-1.5 rounded-full border border-sibs-border bg-sibs-surface px-2.5 py-1 text-[10px] font-extrabold text-sibs-navy">
+                  <span className="h-1.5 w-1.5 rounded-full bg-sibs-orange" />
                   {statusTarget.status || "—"}
                 </span>
               </div>
@@ -91,15 +91,15 @@ export default function UpdateStatusModal() {
           </div>
 
           {/* Form Card */}
-          <div className="relative z-[50] overflow-visible rounded-xl border border-[#E6ECF2] bg-white p-4 shadow-[0_8px_22px_rgba(4,44,81,0.04)]">
+          <div className="relative z-[50] overflow-visible rounded-xl border border-sibs-border bg-white p-4 shadow-[0_8px_22px_rgba(4,44,81,0.04)]">
             <form
               id="update-status-form"
               onSubmit={submitStatus}
               className="space-y-4"
             >
               <div>
-                <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
-                  New Status <span className="text-[#FF5C28]">*</span>
+                <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-sibs-muted">
+                  New Status <span className="text-sibs-orange">*</span>
                 </label>
                 <select
                   value={statusForm.status}
@@ -124,7 +124,7 @@ export default function UpdateStatusModal() {
               </div>
 
               <div>
-                <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+                <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-sibs-muted">
                   Remarks
                 </label>
                 <textarea
@@ -151,7 +151,7 @@ export default function UpdateStatusModal() {
               type="button"
               onClick={closeStatus}
               disabled={isSaving}
-              className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 2xl:gap-2 rounded-lg border border-sibs-border bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-navy transition hover:border-sibs-orange/40 hover:bg-sibs-cream-subtle hover:text-sibs-orange disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 2xl:gap-2 rounded-[10px] border border-sibs-border bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-navy transition hover:border-sibs-orange/40 hover:bg-sibs-cream-subtle hover:text-sibs-orange disabled:cursor-not-allowed disabled:opacity-60"
             >
               Cancel
             </button>
@@ -160,7 +160,7 @@ export default function UpdateStatusModal() {
               type="submit"
               form="update-status-form"
               disabled={isSaving || !statusForm.status}
-              className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 2xl:gap-2 rounded-lg bg-sibs-orange px-4 2xl:px-5 sibs-text-xs font-extrabold text-white shadow-xs transition hover:bg-sibs-orange/90 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-sibs-orange/20 disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 2xl:gap-2 rounded-[10px] bg-sibs-orange px-4 2xl:px-5 sibs-text-xs font-extrabold text-white shadow-xs transition hover:bg-sibs-button-hover focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-sibs-orange/20 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {isSaving ? (
                 <Loader2 size={15} className="animate-spin" />

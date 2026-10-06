@@ -6,11 +6,11 @@ import {
 import { readLocalStorage } from "./talentPoolStorage";
 
 export function inputClass(extra = "") {
-  return `h-11 w-full rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-semibold outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${extra}`;
+  return `h-11 w-full rounded-xl border border-sibs-border bg-white px-4 text-sm font-semibold outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${extra}`;
 }
 
 export function textareaClass(extra = "") {
-  return `w-full resize-none rounded-xl border border-[#E6ECF2] bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${extra}`;
+  return `w-full resize-none rounded-xl border border-sibs-border bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${extra}`;
 }
 
 export function getTodayDate() {
@@ -585,8 +585,8 @@ export function openDataUrlInNewTab(dataUrl, fileName = "uploaded-file") {
       <head>
         <title>${fileName}</title>
         <style>
-          body { margin: 0; font-family: Arial, sans-serif; background: #f8fafc; color: #102a43; }
-          header { padding: 14px 18px; background: #fff; border-bottom: 1px solid #e6ecf2; font-weight: 700; }
+          body { margin: 0; font-family: Arial, sans-serif; background: rgb(248, 250, 252); color: rgb(16, 42, 67); }
+          header { padding: 14px 18px; background: rgb(255, 255, 255); border-bottom: 1px solid rgb(230, 236, 242); font-weight: 700; }
           iframe, img { display: block; width: 100%; height: calc(100vh - 52px); border: 0; object-fit: contain; }
           audio { display: block; width: calc(100% - 40px); margin: 40px auto; }
         </style>

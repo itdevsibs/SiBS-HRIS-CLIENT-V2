@@ -42,10 +42,10 @@ const fieldLabelClass =
   "mb-1.5 block text-xs font-extrabold text-sibs-primary-1";
 
 const fieldButtonClass =
-  "flex h-10 w-full items-center justify-between gap-3 rounded-[10px] border border-sibs-tertiary-8 bg-[#F8FAFC] px-3 text-left text-xs font-semibold text-sibs-primary-1 outline-none transition hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:opacity-60";
+  "flex h-10 w-full items-center justify-between gap-3 rounded-[10px] border border-sibs-border bg-sibs-surface px-3 text-left text-xs font-semibold text-sibs-navy outline-none transition hover:border-sibs-orange/40 hover:bg-white focus:border-sibs-orange focus:ring-4 focus:ring-sibs-orange/10 disabled:cursor-not-allowed disabled:opacity-60";
 
 const fieldInputClass =
-  "h-10 w-full rounded-[10px] border border-sibs-tertiary-8 bg-[#F8FAFC] px-3 pr-9 text-xs font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:opacity-60";
+  "h-10 w-full rounded-[10px] border border-sibs-border bg-sibs-surface px-3 pr-9 text-xs font-semibold text-sibs-navy outline-none transition placeholder:text-sibs-faint hover:border-sibs-orange/40 hover:bg-white focus:border-sibs-orange focus:ring-4 focus:ring-sibs-orange/10 disabled:cursor-not-allowed disabled:opacity-60";
 
 function CompactMultiSelect({
   refBox,
@@ -103,27 +103,27 @@ function CompactMultiSelect({
             selectedOptions.map((option) => (
               <span
                 key={option.value}
-                className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-[#D7DEE8] bg-white px-2.5 py-1 text-[10px] font-extrabold text-sibs-primary-1"
+                className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-sibs-border-subtle bg-white px-2.5 py-1 text-[10px] font-extrabold text-sibs-navy"
               >
                 <span className="truncate">{option.label}</span>
                 <span
                   role="button"
                   tabIndex={0}
                   onClick={(event) => removeOption(option.value, event)}
-                  className="inline-flex h-4 w-4 items-center justify-center rounded-full text-sibs-primary-1/70 transition hover:bg-sibs-primary-1 hover:text-white"
+                  className="inline-flex h-4 w-4 items-center justify-center rounded-full text-sibs-muted transition hover:bg-sibs-navy hover:text-white"
                 >
                   <X size={11} />
                 </span>
               </span>
             ))
           ) : (
-            <span className="truncate text-sibs-tertiary-5">{placeholder}</span>
+            <span className="truncate text-sibs-faint">{placeholder}</span>
           )}
         </div>
 
         <ChevronDown
           size={16}
-          className={`shrink-0 text-sibs-primary-1 transition-transform ${
+          className={`shrink-0 text-sibs-navy transition-transform ${
             open ? "rotate-180" : ""
           }`}
         />
@@ -138,7 +138,7 @@ function CompactMultiSelect({
       >
         <div className="min-h-0 overflow-hidden">
           <div
-            className={`max-h-72 overflow-hidden rounded-[10px] border border-[#D7DEE8] bg-white shadow-[0_18px_40px_rgba(15,23,42,0.16)] transition-all duration-200 ease-out ${
+            className={`max-h-72 overflow-hidden rounded-[10px] border border-sibs-border-subtle bg-white shadow-[0_18px_40px_rgba(15,23,42,0.16)] transition-all duration-200 ease-out ${
               open ? "translate-y-0 scale-100" : "-translate-y-1 scale-[0.99]"
             }`}
           >
@@ -153,16 +153,16 @@ function CompactMultiSelect({
                     onClick={() => toggleOption(option.value)}
                     className={`flex w-full items-center justify-between gap-3 px-3 py-2.5 text-left text-xs font-semibold transition ${
                       active
-                        ? "bg-[#EAF2FB] text-sibs-primary-1"
-                        : "text-sibs-primary-1 hover:bg-[#F8FAFC]"
+                        ? "bg-sibs-cream-subtle font-extrabold text-sibs-orange"
+                        : "text-sibs-navy hover:bg-sibs-surface"
                     }`}
                   >
                     <span>{option.label}</span>
                     <span
                       className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border text-[10px] font-extrabold ${
                         active
-                          ? "border-sibs-primary-1 bg-sibs-primary-1 text-white"
-                          : "border-sibs-tertiary-8 bg-white text-transparent"
+                          ? "border-sibs-orange bg-sibs-orange text-white"
+                          : "border-sibs-border bg-white text-transparent"
                       }`}
                     >
                       <Check size={11} />
@@ -317,7 +317,7 @@ export default function JobDescriptionContentSection() {
         .jd-rich-text-editor .ProseMirror p.is-editor-empty:first-child::before {
           float: left;
           height: 0;
-          color: #91A4B7;
+          color: var(--color-sibs-faint);
           content: attr(data-placeholder);
           pointer-events: none;
         }
@@ -380,7 +380,7 @@ export default function JobDescriptionContentSection() {
                   setReportsToOpen((previous) => !previous);
                   setPersonalityTypeOpen(false);
                 }}
-                className="absolute right-1.5 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-sibs-primary-1 transition hover:bg-[#EAF0F7]"
+                className="absolute right-1.5 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-sibs-navy transition hover:bg-sibs-surface"
                 aria-label="Show reporting line suggestions"
               >
                 <ChevronDown
@@ -400,7 +400,7 @@ export default function JobDescriptionContentSection() {
               >
                 <div className="min-h-0 overflow-hidden">
                   <div
-                    className={`max-h-72 overflow-hidden rounded-[10px] border border-[#D7DEE8] bg-white shadow-[0_18px_40px_rgba(15,23,42,0.16)] transition-all duration-200 ease-out ${
+                    className={`max-h-72 overflow-hidden rounded-[10px] border border-sibs-border-subtle bg-white shadow-[0_18px_40px_rgba(15,23,42,0.16)] transition-all duration-200 ease-out ${
                       reportsToOpen
                         ? "translate-y-0 scale-100"
                         : "-translate-y-1 scale-[0.99]"
@@ -424,22 +424,22 @@ export default function JobDescriptionContentSection() {
                               }}
                               className={`flex w-full items-center justify-between gap-3 px-3 py-2.5 text-left text-xs font-semibold transition ${
                                 active
-                                  ? "bg-[#EAF2FB] text-sibs-primary-1"
-                                  : "text-sibs-primary-1 hover:bg-[#F8FAFC]"
+                                  ? "bg-sibs-cream-subtle font-extrabold text-sibs-orange"
+                                  : "text-sibs-navy hover:bg-sibs-surface"
                               }`}
                             >
                               <span>{option.label}</span>
                               {active ? (
                                 <Check
                                   size={14}
-                                  className="shrink-0 text-sibs-primary-1"
+                                  className="shrink-0 text-sibs-orange"
                                 />
                               ) : null}
                             </button>
                           );
                         })
                       ) : (
-                        <div className="px-3 py-3 text-xs font-semibold text-sibs-tertiary-5">
+                        <div className="px-3 py-3 text-xs font-semibold text-sibs-faint">
                           No matching suggestion. Custom value will be saved.
                         </div>
                       )}
@@ -462,7 +462,7 @@ export default function JobDescriptionContentSection() {
               <span className="text-red-500">*</span>
             </label>
 
-            <div className="relative grid h-10 w-full grid-cols-2 overflow-hidden rounded-[10px] border border-sibs-tertiary-8 bg-[#F8FAFC] transition focus-within:border-[#FF5C28] focus-within:ring-4 focus-within:ring-[#FF5C28]/10">
+            <div className="relative grid h-10 w-full grid-cols-2 overflow-hidden rounded-[10px] border border-sibs-border bg-sibs-surface transition focus-within:border-sibs-orange focus-within:ring-4 focus-within:ring-sibs-orange/10">
               <div
                 className={`absolute inset-y-0 left-0 w-1/2 rounded-[9px] bg-sibs-primary-1 transition-transform duration-300 ease-in-out ${
                   form.supervisory === "No"

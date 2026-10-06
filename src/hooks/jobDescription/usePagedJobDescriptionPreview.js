@@ -126,6 +126,28 @@ function createPagedStagingContainer(
   return stagingElement;
 }
 
+function sanitizePrintSourceHtml(sourceElement) {
+  if (!sourceElement) return "";
+  const clone = sourceElement.cloneNode(true);
+
+  // Strip non-printable UI controls: buttons, banners, inputs, comment badges & popovers
+  clone
+    .querySelectorAll(
+      "button, [data-print-hide], .jd-mobile-actions-row, textarea, input, select, .jd-touch-comment-popover, .jd-touch-comment-target > div > span, [class*='border-amber'][class*='bg-amber']"
+    )
+    .forEach((el) => el.remove());
+
+  // In DesiredCompetenciesViewTable: un-hide desktop table and remove mobile cards
+  clone.querySelectorAll(".jd-competencies-mobile-fix .hidden").forEach((el) => {
+    el.classList.remove("hidden");
+  });
+  clone.querySelectorAll(".jd-competencies-mobile-fix [class*='md:hidden']").forEach((el) => {
+    el.remove();
+  });
+
+  return clone.innerHTML;
+}
+
 function replaceElementChildren(
   targetElement,
   sourceElement,
@@ -963,11 +985,6 @@ export default function usePagedJobDescriptionPreview({
    * Resizing changes only its display scale, so tables never reflow or break.
    */
   useEffect(() => {
-    if (approvalPage) {
-      setIsDesktopPreviewLoading(false);
-      return undefined;
-    }
-
     const sourceElement =
       pagedSourceRef.current;
 
@@ -988,7 +1005,7 @@ export default function usePagedJobDescriptionPreview({
       renderToken;
 
     const sourceHtml =
-      sourceElement.innerHTML;
+      sanitizePrintSourceHtml(sourceElement);
 
     let cancelled = false;
     let renderTimer = null;
@@ -1119,7 +1136,7 @@ export default function usePagedJobDescriptionPreview({
       renderToken;
 
     const sourceHtml =
-      sourceElement.innerHTML;
+      sanitizePrintSourceHtml(sourceElement);
 
     const mobileStyles =
       createMobilePagedJobDescriptionStyles({

@@ -23,12 +23,12 @@ export default function ApplicantLeadEmailSendingModal() {
 
   return (
     <div className="sibs-modal-blur sibs-modal-backdrop-in fixed inset-0 z-[1200] flex items-center justify-center p-4">
-      <div className="sibs-modal-pop-in w-full max-w-sm rounded-2xl border border-[#DCE6F1] bg-white p-6 text-center shadow-2xl font-jakarta">
+      <div className="sibs-modal-pop-in w-full max-w-sm rounded-2xl border border-sibs-border bg-white p-6 text-center shadow-2xl font-jakarta">
         <div
           className={`mx-auto flex h-12 w-12 items-center justify-center rounded-full ring-1 ${
             isSent
               ? "bg-emerald-50 text-emerald-600 ring-emerald-200"
-              : "bg-[#EEF6FF] text-[#0B4E8A] ring-[#CFE3F8]"
+              : "bg-blue-50 text-sibs-navy ring-blue-200"
           }`}
         >
           {isSent ? (
@@ -37,17 +37,17 @@ export default function ApplicantLeadEmailSendingModal() {
             <Mail size={20} strokeWidth={2.2} />
           )}
         </div>
-        <h3 className="sibs-modal-title mt-4 text-[#042C51]">
+        <h3 className="sibs-modal-title mt-4 text-sibs-navy">
           {isSent ? "Email sent successfully" : "Sending application link"}
         </h3>
-        <p className="sibs-modal-subtitle mt-2 text-[#667085]">
+        <p className="sibs-modal-subtitle mt-2 text-sibs-muted">
           {isSent
             ? `The application email was sent to ${candidateName}.`
             : `Please wait while HRIS sends the application email to ${candidateName}.`}
         </p>
         <div
           className={`mt-5 flex items-center justify-center gap-2 font-jakarta text-xs font-extrabold uppercase tracking-normal ${
-            isSent ? "text-emerald-600" : "text-[#0B4E8A]"
+            isSent ? "text-emerald-600" : "text-sibs-navy"
           }`}
         >
           {isSent ? (

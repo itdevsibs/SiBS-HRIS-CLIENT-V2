@@ -299,7 +299,12 @@ export const detailsResponsiveAuditStyles = `
     padding-left: clamp(1.25rem, 5vw, 2rem) !important;
   }
 
-  .jd-paged-output-compact-hidden {
+  .jd-paged-output-compact-hidden,
+  .jd-paged-output-hidden,
+  .jd-paged-output.hidden,
+  .jd-mobile-paged-output.hidden,
+  .jd-paged-output.\!hidden,
+  .jd-mobile-paged-output.\!hidden {
     display: none !important;
   }
 
@@ -1569,7 +1574,9 @@ export const pagedJobDescriptionStyles = String.raw`
   .jd-paged-document-body section > div:first-child,
   .jd-paged-document-body section > div:first-child > div:first-child,
   .jd-paged-document-body h4,
-  .jd-details-section-header {
+  .jd-details-section-header,
+  .jd-competencies-mobile-fix section > div:first-child {
+    display: block !important;
     break-after: avoid !important;
     page-break-after: avoid !important;
     break-inside: avoid !important;
@@ -1582,7 +1589,12 @@ export const pagedJobDescriptionStyles = String.raw`
     line-height: 1.35 !important;
   }
 
-  .jd-paged-document-body section > div:first-child + * {
+  .jd-paged-document-body section > div:first-child + *,
+  .jd-paged-document-body section > div:first-child + * > :first-child,
+  .jd-paged-document-body section > div:first-child + * > :first-child > p:first-child,
+  .jd-paged-document-body section > div:first-child + * > :first-child > li:first-child,
+  .jd-details-section-header + *,
+  .jd-details-section-header + * > :first-child {
     break-before: avoid !important;
     page-break-before: avoid !important;
   }
@@ -1686,6 +1698,15 @@ export const pagedJobDescriptionStyles = String.raw`
 
   .jd-competencies-mobile-fix {
     break-inside: auto;
+  }
+
+  .jd-competencies-mobile-fix .hidden,
+  .jd-competencies-mobile-fix [class*="md:block"] {
+    display: block !important;
+  }
+
+  .jd-competencies-mobile-fix [class*="md:hidden"] {
+    display: none !important;
   }
 
   .jd-competencies-mobile-fix tr {
@@ -2175,14 +2196,32 @@ export function createMobilePagedJobDescriptionStyles({
       margin-top: 24px !important;
     }
 
+    .jd-paged-document-body section > div:first-child,
+    .jd-paged-document-body section > div:first-child > div:first-child,
+    .jd-paged-document-body h4,
+    .jd-details-section-header,
+    .jd-competencies-mobile-fix section > div:first-child {
+      display: block !important;
+      break-after: avoid !important;
+      page-break-after: avoid !important;
+      break-inside: avoid !important;
+      page-break-inside: avoid !important;
+    }
+
     .jd-paged-document-body h4 {
       margin: 0 0 12px !important;
       color: #101828 !important;
       font-size: 14px !important;
       font-weight: 800 !important;
       line-height: 1.4 !important;
-      break-after: avoid;
-      page-break-after: avoid;
+    }
+
+    .jd-paged-document-body section > div:first-child + *,
+    .jd-paged-document-body section > div:first-child + * > :first-child,
+    .jd-details-section-header + *,
+    .jd-details-section-header + * > :first-child {
+      break-before: avoid !important;
+      page-break-before: avoid !important;
     }
 
     .jd-paged-document-body
@@ -2255,6 +2294,15 @@ export function createMobilePagedJobDescriptionStyles({
       max-width: 100% !important;
       min-width: 0 !important;
       overflow: hidden !important;
+    }
+
+    .jd-competencies-mobile-fix .hidden,
+    .jd-competencies-mobile-fix [class*="md:block"] {
+      display: block !important;
+    }
+
+    .jd-competencies-mobile-fix [class*="md:hidden"] {
+      display: none !important;
     }
 
     .jd-competencies-mobile-fix table {

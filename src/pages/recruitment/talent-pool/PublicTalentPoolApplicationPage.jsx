@@ -969,13 +969,13 @@ function buildCalendarDays(displayDate) {
 function inputClass(extra = "", options = {}) {
   const shouldUppercase = options.uppercase !== false;
 
-  return `h-9 2xl:h-11 w-full rounded-[10px] border border-[#D7DEE8] bg-[#F8FAFC] px-2.5 2xl:px-3 text-xs font-semibold ${
+  return `h-9 2xl:h-11 w-full rounded-[10px] border border-sibs-border bg-sibs-surface px-2.5 2xl:px-3 text-xs font-semibold ${
     shouldUppercase ? "uppercase" : "normal-case"
-  } text-[#042C51] outline-none transition placeholder:normal-case placeholder:text-[#667085] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:border-[#D7DEE8] disabled:bg-[#F2F4F7] disabled:text-[#667085] ${extra}`;
+  } text-sibs-navy outline-none transition placeholder:normal-case placeholder:text-sibs-muted hover:border-sibs-orange/40 hover:bg-white focus:border-sibs-orange focus:bg-white focus:ring-4 focus:ring-sibs-orange/10 disabled:cursor-not-allowed disabled:border-sibs-border disabled:bg-slate-100 disabled:text-sibs-muted ${extra}`;
 }
 
 function textareaClass(extra = "") {
-  return `w-full resize-none rounded-[10px] border border-[#D7DEE8] bg-[#F8FAFC] px-2.5 py-2 2xl:px-3 2xl:py-2.5 text-xs font-semibold uppercase text-[#042C51] outline-none transition placeholder:normal-case placeholder:text-[#667085] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:border-[#D7DEE8] disabled:bg-[#F2F4F7] disabled:text-[#667085] ${extra}`;
+  return `w-full resize-none rounded-[10px] border border-sibs-border bg-sibs-surface px-2.5 py-2 2xl:px-3 2xl:py-2.5 text-xs font-semibold uppercase text-sibs-navy outline-none transition placeholder:normal-case placeholder:text-sibs-muted hover:border-sibs-orange/40 hover:bg-white focus:border-sibs-orange focus:bg-white focus:ring-4 focus:ring-sibs-orange/10 disabled:cursor-not-allowed disabled:border-sibs-border disabled:bg-slate-100 disabled:text-sibs-muted ${extra}`;
 }
 
 function AutoResizeTextarea({
@@ -1330,17 +1330,17 @@ function getAvailablePositionDisplayLabel(position = {}) {
 
 function FieldLabel({ children }) {
   return (
-    <label className="mb-1.5 block text-xs font-extrabold text-[#042C51]">
+    <label className="mb-1.5 block text-xs font-extrabold text-sibs-navy">
       <span>{children}</span>
     </label>
   );
 }
 
 function RequiredMark() {
-  return <span className="text-[#E5484D]">*</span>;
+  return <span className="text-sibs-orange">*</span>;
 }
 
-function SiBSBrandLogo({ className = "h-6 sm:h-7 w-auto" }) {
+function SiBSBrandLogo({ className = "h-6 sm:h-7 w-auto text-sibs-navy" }) {
   return (
     <svg
       viewBox="0 0 408 135"
@@ -1352,28 +1352,28 @@ function SiBSBrandLogo({ className = "h-6 sm:h-7 w-auto" }) {
       {/* S */}
       <path
         d="M58.9314 133.756C19.108 133.756 0.17858 115.363 0 91.6115H12.5006C13.9292 113.934 31.6086 123.934 59.2885 123.934C89.2899 123.934 103.933 114.291 103.933 96.4331C103.933 74.4678 86.0755 72.3248 58.217 69.6461C21.4296 65.896 4.82166 58.0385 4.82166 35.8946C4.82166 12.322 27.3227 0 58.3956 0C92.3258 0 112.684 15.1793 113.934 37.6804H101.076C100.183 20.3581 82.6825 9.8219 58.7528 9.8219C31.2515 9.8219 18.0366 19.108 18.0366 35.0017C18.0366 51.7882 32.323 55.3598 62.5029 58.7528C88.397 61.4315 117.327 63.2173 117.327 95.7188C117.327 119.291 96.9689 133.756 58.9314 133.756Z"
-        fill="#042C51"
+        fill="currentColor"
       />
       {/* i dot & stem */}
       <path
         fillRule="evenodd"
         clipRule="evenodd"
         d="M130.912 1.78577V22.1439H142.519V1.78577H130.912Z"
-        fill="#042C51"
+        fill="currentColor"
       />
       <path
         d="M130.912 131.97V39.2875H142.519V131.97H130.912Z"
-        fill="#042C51"
+        fill="currentColor"
       />
       {/* B */}
       <path
         d="M165.943 131.97V1.78577H238.267C263.804 1.78577 278.984 11.7862 278.984 34.1087C278.984 49.1094 270.412 61.0743 253.982 64.4673V65.5388C272.019 67.8603 282.912 79.468 282.912 96.7903C282.912 119.113 267.376 131.97 237.732 131.97H165.943ZM238.625 11.4291H177.907V60.8957H238.089C257.554 60.8957 265.769 51.7881 265.769 39.2875V32.3229C265.769 18.0365 255.59 11.4291 238.625 11.4291ZM238.625 70.1819H177.907V122.327H237.732C258.983 122.327 269.34 113.398 269.34 98.576V92.3258C269.34 78.2179 257.911 70.1819 238.625 70.1819Z"
-        fill="#042C51"
+        fill="currentColor"
       />
       {/* S */}
       <path
         d="M349.242 133.756C309.419 133.756 290.489 115.363 290.311 91.6115H302.811C304.24 113.934 321.92 123.934 349.599 123.934C379.601 123.934 394.244 114.291 394.244 96.4331C394.244 74.4678 376.386 72.3248 348.528 69.6461C311.74 65.896 295.133 58.0385 295.133 35.8946C295.133 12.322 317.634 0 348.706 0C382.637 0 402.995 15.1793 404.245 37.6804H391.387C390.494 20.3581 372.993 9.8219 349.064 9.8219C321.562 9.8219 308.347 19.108 308.347 35.0017C308.347 51.7882 322.634 55.3598 352.814 58.7528C378.708 61.4315 407.638 63.2173 407.638 95.7188C407.638 119.291 387.28 133.756 349.242 133.756Z"
-        fill="#042C51"
+        fill="currentColor"
       />
     </svg>
   );
@@ -1381,24 +1381,24 @@ function SiBSBrandLogo({ className = "h-6 sm:h-7 w-auto" }) {
 
 function PublicWebsiteNavbar({ completionPercentage }) {
   return (
-    <header className="sticky top-0 z-[500] border-b border-[#DCE6F1] bg-white text-[#042C51]">
+    <header className="sticky top-0 z-[500] border-b border-sibs-border bg-white text-sibs-navy">
       <div className="mx-auto flex min-h-16 w-full max-w-[1120px] items-center justify-between gap-3 px-4 py-2.5 sm:px-6">
         <div className="flex min-w-0 items-center gap-3">
           <a
             href="https://sibscontactcenter.com"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex min-h-11 items-center rounded-md outline-none transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:ring-[#042C51] focus-visible:ring-offset-2"
+            className="flex min-h-11 items-center rounded-md outline-none transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:ring-sibs-navy focus-visible:ring-offset-2"
             title="SiBS Contact Center"
           >
-            <SiBSBrandLogo className="h-6 w-auto sm:h-7" />
+            <SiBSBrandLogo className="h-6 w-auto sm:h-7 text-sibs-navy" />
           </a>
 
           <div className="min-w-0 border-l border-slate-200 pl-3">
-            <p className="font-heading text-sm font-bold leading-none text-[#042C51] sm:text-base">
+            <p className="font-heading text-sm font-bold leading-none text-sibs-navy sm:text-base">
               Careers
             </p>
-            <p className="mt-1 hidden truncate text-xs font-semibold text-[#667085] sm:block">
+            <p className="mt-1 hidden truncate text-xs font-semibold text-sibs-muted sm:block">
               Candidate application
             </p>
           </div>
@@ -1409,14 +1409,14 @@ function PublicWebsiteNavbar({ completionPercentage }) {
             href="https://sibscontactcenter.com/#faq"
             target="_blank"
             rel="noopener noreferrer"
-            className="hidden min-h-11 items-center rounded-md px-2 text-xs font-bold text-[#344054] transition-colors hover:text-[#FF5C28] focus-visible:ring-2 focus-visible:ring-[#042C51] focus-visible:ring-offset-2 sm:inline-flex"
+            className="hidden min-h-11 items-center rounded-md px-2 text-xs font-bold text-sibs-navy transition-colors hover:text-sibs-orange focus-visible:ring-2 focus-visible:ring-sibs-navy focus-visible:ring-offset-2 sm:inline-flex"
           >
             Help &amp; FAQ
           </a>
-          <span className="inline-flex min-h-9 shrink-0 items-center gap-2 rounded-md border border-[#F2D6CC] bg-[#FFF7F3] px-2.5 text-[10px] font-extrabold text-[#042C51] sm:px-3 sm:text-xs">
+          <span className="inline-flex min-h-9 shrink-0 items-center gap-2 rounded-md border border-sibs-orange/30 bg-sibs-cream-light px-2.5 text-[10px] font-extrabold text-sibs-navy sm:px-3 sm:text-xs">
             <span
               aria-hidden="true"
-              className="h-2 w-2 shrink-0 rounded-full bg-[#FF5C28]"
+              className="h-2 w-2 shrink-0 rounded-full bg-sibs-orange"
             />
             <span className="sm:hidden">In progress</span>
             <span className="hidden sm:inline">Application in progress</span>
@@ -1425,7 +1425,7 @@ function PublicWebsiteNavbar({ completionPercentage }) {
       </div>
 
       <div
-        className="h-0.5 bg-[#EDF1F6]"
+        className="h-0.5 bg-sibs-surface"
         role="progressbar"
         aria-label="Form completion"
         aria-valuemin={0}
@@ -1433,7 +1433,7 @@ function PublicWebsiteNavbar({ completionPercentage }) {
         aria-valuenow={completionPercentage}
       >
         <div
-          className="h-full w-full origin-left bg-[#FF5C28] transition-transform duration-500 ease-out"
+          className="h-full w-full origin-left bg-sibs-orange transition-transform duration-500 ease-out"
           style={{ transform: `scaleX(${completionPercentage / 100})` }}
         />
       </div>
@@ -1455,24 +1455,24 @@ function ApplicationPageTabs({
   const pageTwoActive = currentPage === 2;
 
   const tabClass = (active) =>
-    `flex min-h-[38px] 2xl:min-h-[48px] w-full items-center justify-center gap-2 rounded-xl px-3 py-2 2xl:px-4 2xl:py-3 text-left text-xs font-extrabold transition 2xl:text-sm ${
+    `flex min-h-[38px] 2xl:min-h-[48px] w-full items-center justify-center gap-2 rounded-[10px] px-3 py-2 2xl:px-4 2xl:py-3 text-left text-xs font-extrabold transition 2xl:text-sm ${
       active
-        ? "bg-[#042C51] text-white shadow-[0_8px_20px_rgba(4,44,81,0.18)]"
-        : "bg-white text-[#344054] hover:bg-[#F8FAFC]"
+        ? "bg-sibs-navy text-white shadow-[0_8px_20px_rgba(4,44,81,0.18)]"
+        : "bg-white text-sibs-navy hover:bg-sibs-surface"
     }`;
 
   const numberClass = (active) =>
     `inline-flex h-5 w-5 2xl:h-6 2xl:w-6 shrink-0 items-center justify-center rounded-full text-[10px] 2xl:text-[11px] font-black ${
       active
-        ? "bg-[#FF5C28] text-white"
-        : "bg-[#E9EEF5] text-[#667085]"
+        ? "bg-sibs-orange text-white"
+        : "bg-sibs-surface text-sibs-muted"
     }`;
 
   return (
     <nav
       data-testid="public-application-page-tabs"
       aria-label="Public Talent Pool application pages"
-      className="grid grid-cols-1 gap-2 rounded-2xl border border-[#DCE6F1] bg-white p-1.5 shadow-[0_8px_24px_rgba(4,44,81,0.06)] sm:grid-cols-2 2xl:p-2"
+      className="grid grid-cols-1 gap-2 rounded-2xl border border-sibs-border bg-white p-1.5 shadow-[0_8px_24px_rgba(4,44,81,0.06)] sm:grid-cols-2 2xl:p-2"
     >
       <button
         type="button"
@@ -1500,10 +1500,10 @@ function ApplicationPageTabs({
         <span className={numberClass(pageTwoActive)}>2</span>
         <span className="min-w-0 truncate">Page 2: Position Screening Questions</span>
         <span
-          className={`shrink-0 rounded-md px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wide 2xl:px-2 2xl:py-1 ${
+          className={`shrink-0 rounded-[10px] px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wide 2xl:px-2 2xl:py-1 ${
             pageTwoActive
-              ? "bg-[#FF5C28]/20 text-[#FF8B66]"
-              : "bg-[#FFF0EB] text-[#E6531B]"
+              ? "bg-sibs-orange/20 text-sibs-orange"
+              : "bg-sibs-cream-light text-sibs-orange"
           }`}
         >
           JD FORM
@@ -1524,22 +1524,22 @@ function SectionCard({
   return (
     <section
       data-testid="public-application-section-card"
-      className="sibs-page-card-in relative overflow-visible rounded-2xl border border-[#E6ECF2] bg-white shadow-[0_8px_24px_rgba(4,44,81,0.05)]"
+      className="sibs-page-card-in relative overflow-visible rounded-2xl border border-sibs-border bg-white shadow-[0_8px_24px_rgba(4,44,81,0.05)]"
     >
-      <div className="flex flex-col gap-2.5 border-b border-[#F1F5F9] px-4 py-3 sm:flex-row sm:items-start sm:justify-between sm:px-5 sm:py-3.5 2xl:gap-3 2xl:px-6 2xl:py-4">
+      <div className="flex flex-col gap-2.5 border-b border-sibs-border px-4 py-3 sm:flex-row sm:items-start sm:justify-between sm:px-5 sm:py-3.5 2xl:gap-3 2xl:px-6 2xl:py-4">
         <div className="flex min-w-0 items-start gap-2.5 2xl:gap-3">
           {Icon && (
-            <div className="flex h-8 w-8 2xl:h-10 2xl:w-10 shrink-0 items-center justify-center rounded-lg 2xl:rounded-xl bg-[#FFF0EB] text-[#FF5C28]">
+            <div className="flex h-8 w-8 2xl:h-10 2xl:w-10 shrink-0 items-center justify-center rounded-[10px] bg-sibs-cream-light text-sibs-orange">
               <Icon size={16} className="2xl:h-[18px] 2xl:w-[18px]" />
             </div>
           )}
 
           <div className="min-w-0">
-            <h3 className="text-xs font-extrabold uppercase tracking-wide text-[#042C51] 2xl:text-sm">
+            <h3 className="text-xs font-extrabold uppercase tracking-wide text-sibs-navy 2xl:text-sm">
               {title}
             </h3>
             {description && (
-              <p className="mt-0.5 text-[11px] font-semibold leading-4 text-[#667085] sm:text-xs 2xl:mt-1 2xl:leading-5">
+              <p className="mt-0.5 text-[11px] font-semibold leading-4 text-sibs-muted sm:text-xs 2xl:mt-1 2xl:leading-5">
                 {description}
               </p>
             )}
@@ -1547,7 +1547,7 @@ function SectionCard({
         </div>
 
         {step ? (
-          <span className="inline-flex w-fit shrink-0 items-center rounded-full border border-[#DCE6F1] bg-[#F8FAFC] px-2.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-[#667085] 2xl:px-3 2xl:py-1 2xl:text-[10px]">
+          <span className="inline-flex w-fit shrink-0 items-center rounded-full border border-sibs-border bg-sibs-surface px-2.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-sibs-muted 2xl:px-3 2xl:py-1 2xl:text-[10px]">
             Step {step} of {totalSteps}
           </span>
         ) : null}
@@ -1659,19 +1659,19 @@ function HiringNeedsDropdown({
         type="button"
         disabled={disabled}
         onClick={() => setOpen((previous) => !previous)}
-        className={`flex h-9 2xl:h-10 w-full min-w-0 items-center justify-between gap-2.5 2xl:gap-3 rounded-[10px] border bg-[#F8FAFC] px-2.5 2xl:px-3 text-left text-xs font-semibold outline-none transition ${
+        className={`flex h-9 2xl:h-10 w-full min-w-0 items-center justify-between gap-2.5 2xl:gap-3 rounded-[10px] border bg-sibs-surface px-2.5 2xl:px-3 text-left text-xs font-semibold outline-none transition ${
           open
-            ? "border-[#FF5C28] bg-white ring-4 ring-[#FF5C28]/10"
-            : "border-[#D7DEE8] hover:border-[#FF5C28]/40 hover:bg-white"
+            ? "border-sibs-orange bg-white ring-4 ring-sibs-orange/10"
+            : "border-sibs-border hover:border-sibs-orange/40 hover:bg-white"
         } ${
           disabled
-            ? "cursor-not-allowed bg-[#F8FAFC] text-[#98A2B3] opacity-70"
-            : "text-[#042C51]"
+            ? "cursor-not-allowed bg-sibs-surface text-sibs-muted opacity-70"
+            : "text-sibs-navy"
         }`}
       >
         <span
           className={`min-w-0 flex-1 truncate ${
-            selectedOption ? "text-[#042C51]" : "text-[#98A2B3]"
+            selectedOption ? "text-sibs-navy" : "text-sibs-muted"
           }`}
         >
           {displayText}
@@ -1679,7 +1679,7 @@ function HiringNeedsDropdown({
 
         <ChevronDown
           size={16}
-          className={`shrink-0 text-[#FF5C28] transition-transform duration-200 ${
+          className={`shrink-0 text-sibs-orange transition-transform duration-200 ${
             open ? "rotate-180" : ""
           }`}
         />
@@ -1699,7 +1699,7 @@ function HiringNeedsDropdown({
         ? createPortal(
             <div
               ref={dropdownPanelRef}
-              className="sibs-profile-dropdown-panel fixed z-[100000] overflow-hidden rounded-[10px] border border-[#D9E2EC] bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)]"
+              className="sibs-profile-dropdown-panel fixed z-[100000] overflow-hidden rounded-[10px] border border-sibs-border bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)]"
               style={{
                 left: `${panelPosition.left}px`,
                 top: `${panelPosition.top}px`,
@@ -1714,8 +1714,8 @@ function HiringNeedsDropdown({
                     return (
                       <div
                         key={option.id || option.value}
-                        className={`flex w-full min-w-0 items-stretch border-b border-[#EEF2F6] last:border-b-0 ${
-                          active ? "bg-[#FFF0EB]" : "bg-white"
+                        className={`flex w-full min-w-0 items-stretch border-b border-sibs-border last:border-b-0 ${
+                          active ? "bg-sibs-cream-light" : "bg-white"
                         }`}
                       >
                         <button
@@ -1723,8 +1723,8 @@ function HiringNeedsDropdown({
                           onClick={() => handleSelect(option.value)}
                           className={`min-w-0 flex-1 px-3 py-2.5 text-left text-xs font-semibold transition ${
                             active
-                              ? "text-[#FF5C28]"
-                              : "text-[#344054] hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
+                              ? "text-sibs-orange font-bold"
+                              : "text-sibs-navy hover:bg-sibs-cream-light hover:text-sibs-orange"
                           }`}
                         >
                           <span className="block min-w-0 truncate">
@@ -1733,7 +1733,7 @@ function HiringNeedsDropdown({
                         </button>
 
                         {typeof renderOptionAction === "function" ? (
-                          <div className="flex shrink-0 items-center border-l border-[#EEF2F6] px-1.5">
+                          <div className="flex shrink-0 items-center border-l border-sibs-border px-1.5">
                             {renderOptionAction(option)}
                           </div>
                         ) : null}
@@ -1741,7 +1741,7 @@ function HiringNeedsDropdown({
                     );
                   })
                 ) : (
-                  <div className="px-3 py-2.5 text-xs font-semibold text-[#98A2B3]">
+                  <div className="px-3 py-2.5 text-xs font-semibold text-sibs-muted">
                     No options found.
                   </div>
                 )}
@@ -1854,19 +1854,19 @@ function PositionJobDescriptionDropdown({
         type="button"
         disabled={disabled}
         onClick={() => setOpen((previous) => !previous)}
-        className={`flex h-9 2xl:h-10 w-full min-w-0 items-center justify-between gap-2.5 2xl:gap-3 rounded-[10px] border bg-[#F8FAFC] px-2.5 2xl:px-3 text-left text-xs font-semibold outline-none transition ${
+        className={`flex h-9 2xl:h-10 w-full min-w-0 items-center justify-between gap-2.5 2xl:gap-3 rounded-[10px] border bg-sibs-surface px-2.5 2xl:px-3 text-left text-xs font-semibold outline-none transition ${
           open
-            ? "border-[#FF5C28] bg-white ring-4 ring-[#FF5C28]/10"
-            : "border-[#D7DEE8] hover:border-[#FF5C28]/40 hover:bg-white"
+            ? "border-sibs-orange bg-white ring-4 ring-sibs-orange/10"
+            : "border-sibs-border hover:border-sibs-orange/40 hover:bg-white"
         } ${
           disabled
-            ? "cursor-not-allowed bg-[#F8FAFC] text-[#98A2B3] opacity-70"
-            : "text-[#042C51]"
+            ? "cursor-not-allowed bg-sibs-surface text-sibs-muted opacity-70"
+            : "text-sibs-navy"
         }`}
       >
         <span
           className={`min-w-0 flex-1 truncate ${
-            selectedPosition ? "text-[#042C51]" : "text-[#98A2B3]"
+            selectedPosition ? "text-sibs-navy" : "text-sibs-muted"
           }`}
         >
           {displayText}
@@ -1874,7 +1874,7 @@ function PositionJobDescriptionDropdown({
 
         <ChevronDown
           size={16}
-          className={`shrink-0 text-[#FF5C28] transition-transform duration-200 ${
+          className={`shrink-0 text-sibs-orange transition-transform duration-200 ${
             open ? "rotate-180" : ""
           }`}
         />
@@ -1892,7 +1892,7 @@ function PositionJobDescriptionDropdown({
         ? createPortal(
             <div
               ref={dropdownPanelRef}
-              className="sibs-profile-dropdown-panel fixed z-[100000] overflow-hidden rounded-[10px] border border-[#D9E2EC] bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)]"
+              className="sibs-profile-dropdown-panel fixed z-[100000] overflow-hidden rounded-[10px] border border-sibs-border bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)]"
               style={{
                 left: `${panelPosition.left}px`,
                 top: `${panelPosition.top}px`,
@@ -1917,8 +1917,8 @@ function PositionJobDescriptionDropdown({
                     return (
                       <div
                         key={positionKey}
-                        className={`flex w-full min-w-0 items-center border-b border-[#EEF2F6] last:border-b-0 ${
-                          active ? "bg-[#FFF0EB]" : "bg-white"
+                        className={`flex w-full min-w-0 items-center border-b border-sibs-border last:border-b-0 ${
+                          active ? "bg-sibs-cream-light" : "bg-white"
                         }`}
                       >
                         <button
@@ -1926,8 +1926,8 @@ function PositionJobDescriptionDropdown({
                           onClick={() => handleSelect(position)}
                           className={`min-w-0 flex-1 px-3 py-3 text-left text-xs font-semibold transition ${
                             active
-                              ? "text-[#FF5C28]"
-                              : "text-[#344054] hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
+                              ? "text-sibs-orange font-bold"
+                              : "text-sibs-navy hover:bg-sibs-cream-light hover:text-sibs-orange"
                           }`}
                         >
                           <span className="block min-w-0 truncate">
@@ -1947,7 +1947,7 @@ function PositionJobDescriptionDropdown({
                             disabled={isOpening}
                             title={`Open ${positionTitle} job description`}
                             aria-label={`Open ${positionTitle} job description`}
-                            className="inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-transparent bg-transparent text-[#7A8CA1] transition hover:border-[#E6ECF2] hover:bg-[#F8FAFC] hover:text-[#E84A17] focus:outline-none focus:ring-2 focus:ring-[#FF5C28]/10 disabled:cursor-wait disabled:border-transparent disabled:bg-transparent disabled:text-[#B6C0CC]"
+                            className="inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-[10px] border border-transparent bg-transparent text-sibs-muted transition hover:border-sibs-border hover:bg-sibs-surface hover:text-sibs-orange focus:outline-none focus:ring-2 focus:ring-sibs-orange/10 disabled:cursor-wait disabled:border-transparent disabled:bg-transparent disabled:text-sibs-muted"
                           >
                             {isOpening ? (
                               <Loader2
@@ -1964,7 +1964,7 @@ function PositionJobDescriptionDropdown({
                     );
                   })
                 ) : (
-                  <div className="px-3 py-3 text-xs font-semibold text-[#98A2B3]">
+                  <div className="px-3 py-3 text-xs font-semibold text-sibs-muted">
                     No matching open positions found.
                   </div>
                 )}
@@ -2026,17 +2026,17 @@ function CalendarHeaderDropdown({
       <button
         type="button"
         onClick={() => setOpen((previous) => !previous)}
-        className={`flex h-8 w-full min-w-0 items-center justify-between gap-1.5 rounded-lg border bg-[#F8FAFC] px-2.5 text-left text-xs font-semibold outline-none transition ${
+        className={`flex h-8 w-full min-w-0 items-center justify-between gap-1.5 rounded-[10px] border bg-sibs-surface px-2.5 text-left text-xs font-semibold outline-none transition ${
           open
-            ? "border-[#FF5C28] bg-white ring-2 ring-[#FF5C28]/10"
-            : "border-[#D7DEE8] hover:border-[#FF5C28]/40 hover:bg-white"
-        } text-[#042C51]`}
+            ? "border-sibs-orange bg-white ring-2 ring-sibs-orange/10"
+            : "border-sibs-border hover:border-sibs-orange/40 hover:bg-white"
+        } text-sibs-navy`}
       >
         <span className="min-w-0 flex-1 truncate">{displayText}</span>
 
         <ChevronDown
           size={13}
-          className={`shrink-0 text-[#FF5C28] transition-transform duration-200 ${
+          className={`shrink-0 text-sibs-orange transition-transform duration-200 ${
             open ? "rotate-180" : ""
           }`}
         />
@@ -2044,7 +2044,7 @@ function CalendarHeaderDropdown({
 
       {open && (
         <div
-          className={`sibs-profile-dropdown-panel absolute left-0 top-[calc(100%+6px)] z-[100000] overflow-hidden rounded-xl border border-[#D9E2EC] bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)] ${menuClassName}`}
+          className={`sibs-profile-dropdown-panel absolute left-0 top-[calc(100%+6px)] z-[100000] overflow-hidden rounded-[10px] border border-sibs-border bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)] ${menuClassName}`}
         >
           <div className="max-h-60 overflow-y-auto">
             {options.map((option) => {
@@ -2057,8 +2057,8 @@ function CalendarHeaderDropdown({
                   onClick={() => handleSelect(option.value)}
                   className={`block w-full px-3 py-2 text-left text-xs font-semibold transition ${
                     active
-                      ? "bg-[#FFF0EB] text-[#FF5C28] font-bold"
-                      : "bg-white text-[#344054] hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
+                      ? "bg-sibs-cream-light text-sibs-orange font-bold"
+                      : "bg-white text-sibs-navy hover:bg-sibs-cream-light hover:text-sibs-orange"
                   }`}
                 >
                   <span className="block min-w-0 truncate">{option.label}</span>
@@ -2267,27 +2267,27 @@ function CalendarDatePicker({
         type="button"
         disabled={disabled}
         onClick={handleToggleOpen}
-        className={`flex h-9 2xl:h-11 w-full min-w-0 items-center justify-between gap-2.5 2xl:gap-3 rounded-[10px] border bg-[#F8FAFC] px-2.5 2xl:px-3 text-left text-xs font-semibold outline-none transition ${
+        className={`flex h-9 2xl:h-11 w-full min-w-0 items-center justify-between gap-2.5 2xl:gap-3 rounded-[10px] border bg-sibs-surface px-2.5 2xl:px-3 text-left text-xs font-semibold outline-none transition ${
           open
-            ? "border-[#FF5C28] bg-white ring-4 ring-[#FF5C28]/10"
+            ? "border-sibs-orange bg-white ring-4 ring-sibs-orange/10"
             : hasError
               ? "border-red-300 hover:border-red-500"
-              : "border-[#D7DEE8] hover:border-[#FF5C28]/40 hover:bg-white"
+              : "border-sibs-border hover:border-sibs-orange/40 hover:bg-white"
         } ${
           disabled
-            ? "cursor-not-allowed bg-gray-50 text-gray-400 opacity-70"
-            : "text-[#042C51]"
+            ? "cursor-not-allowed bg-sibs-surface text-sibs-muted opacity-70"
+            : "text-sibs-navy"
         }`}
       >
         <span className="inline-flex min-w-0 flex-1 items-center gap-2 truncate">
           <CalendarDays
             size={15}
-            className="shrink-0 text-[#042C51] 2xl:h-4 2xl:w-4"
+            className="shrink-0 text-sibs-navy 2xl:h-4 2xl:w-4"
           />
 
           <span
             className={`min-w-0 truncate ${
-              value ? "text-[#042C51]" : "text-[#667085]"
+              value ? "text-sibs-navy" : "text-sibs-muted"
             }`}
           >
             {displayText}
@@ -2296,7 +2296,7 @@ function CalendarDatePicker({
 
         <ChevronDown
           size={15}
-          className={`shrink-0 text-[#FF5C28] transition-transform duration-200 ${
+          className={`shrink-0 text-sibs-orange transition-transform duration-200 ${
             open ? "rotate-180" : ""
           }`}
         />
@@ -2306,18 +2306,18 @@ function CalendarDatePicker({
         ? createPortal(
             <div
               ref={calendarPanelRef}
-              className="sibs-profile-dropdown-panel fixed z-[100000] overflow-visible rounded-2xl border border-[#D9E2EC] bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)]"
+              className="sibs-profile-dropdown-panel fixed z-[100000] overflow-visible rounded-2xl border border-sibs-border bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)]"
               style={{
                 left: `${panelPosition.left}px`,
                 top: `${panelPosition.top}px`,
                 width: `${panelPosition.width}px`,
               }}
             >
-              <div className="flex items-center justify-between border-b border-[#E6ECF2] px-3.5 py-2.5">
+              <div className="flex items-center justify-between border-b border-sibs-border px-3.5 py-2.5">
                 <button
                   type="button"
                   onClick={goPreviousMonth}
-                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[#042C51] transition hover:bg-[#FFF0EB] hover:text-[#FF5C28]"
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] text-sibs-navy transition hover:bg-sibs-cream-light hover:text-sibs-orange"
                 >
                   <ChevronLeft size={16} />
                 </button>
@@ -2343,7 +2343,7 @@ function CalendarDatePicker({
                 <button
                   type="button"
                   onClick={goNextMonth}
-                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[#042C51] transition hover:bg-[#FFF0EB] hover:text-[#FF5C28]"
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] text-sibs-navy transition hover:bg-sibs-cream-light hover:text-sibs-orange"
                 >
                   <ChevronRight size={16} />
                 </button>
@@ -2354,7 +2354,7 @@ function CalendarDatePicker({
                   {weekdayLabels.map((dayLabel) => (
                     <div
                       key={dayLabel}
-                      className="flex h-7 items-center justify-center text-[10px] 2xl:text-[11px] font-extrabold uppercase text-[#667085]"
+                      className="flex h-7 items-center justify-center text-[10px] 2xl:text-[11px] font-extrabold uppercase text-sibs-muted"
                     >
                       {dayLabel}
                     </div>
@@ -2370,14 +2370,14 @@ function CalendarDatePicker({
                         key={day.dateValue}
                         type="button"
                         onClick={() => handleSelectDate(day.date)}
-                        className={`flex h-8 w-8 items-center justify-center rounded-lg text-xs font-extrabold transition ${
+                        className={`flex h-8 w-8 items-center justify-center rounded-[10px] text-xs font-extrabold transition ${
                           active
-                            ? "bg-[#FF5C28] text-white shadow-sm ring-2 ring-[#FF5C28]/20"
+                            ? "bg-sibs-orange text-white shadow-sm ring-2 ring-sibs-orange/20"
                             : currentDay
-                              ? "border border-[#FF5C28] bg-[#FFF0EB] text-[#FF5C28]"
+                              ? "border border-sibs-orange bg-sibs-cream-light text-sibs-orange"
                               : day.isCurrentMonth
-                                ? "text-[#042C51] hover:bg-[#FFF0EB] hover:text-[#FF5C28]"
-                                : "text-[#98A2B3] hover:bg-[#F8FAFC]"
+                                ? "text-sibs-navy hover:bg-sibs-cream-light hover:text-sibs-orange"
+                                : "text-sibs-muted hover:bg-sibs-surface"
                         }`}
                       >
                         {day.dayNumber}
@@ -2387,11 +2387,11 @@ function CalendarDatePicker({
                 </div>
               </div>
 
-              <div className="flex items-center justify-between border-t border-[#E6ECF2] px-4 py-2.5">
+              <div className="flex items-center justify-between border-t border-sibs-border px-4 py-2.5">
                 <button
                   type="button"
                   onClick={handleClear}
-                  className="rounded-lg px-2.5 py-1 text-xs font-extrabold text-[#667085] transition hover:bg-red-50 hover:text-[#E74C3C]"
+                  className="rounded-[10px] px-2.5 py-1 text-xs font-extrabold text-sibs-muted transition hover:bg-red-50 hover:text-red-600"
                 >
                   Clear
                 </button>
@@ -2399,7 +2399,7 @@ function CalendarDatePicker({
                 <button
                   type="button"
                   onClick={handleToday}
-                  className="rounded-lg border border-[#FFD6C7] bg-[#FFF0EB] px-3 py-1 text-xs font-extrabold text-[#FF5C28] transition hover:bg-[#FF5C28] hover:text-white"
+                  className="rounded-[10px] border border-sibs-orange/30 bg-sibs-cream-light px-3 py-1 text-xs font-extrabold text-sibs-orange transition hover:bg-sibs-orange hover:text-white"
                 >
                   Today
                 </button>
@@ -2564,13 +2564,13 @@ function SchoolYearSearchableDropdown({
       className={`relative min-w-0 ${open ? zIndex : "z-[1]"}`}
     >
       <div
-        className={`flex h-9 2xl:h-11 w-full min-w-0 items-center gap-2.5 2xl:gap-3 rounded-[10px] border bg-[#F8FAFC] px-2.5 2xl:px-3 text-xs font-semibold outline-none transition ${
+        className={`flex h-9 2xl:h-11 w-full min-w-0 items-center gap-2.5 2xl:gap-3 rounded-[10px] border bg-sibs-surface px-2.5 2xl:px-3 text-xs font-semibold outline-none transition ${
           open
-            ? "border-[#FF5C28] bg-white ring-4 ring-[#FF5C28]/10"
-            : "border-[#D7DEE8] hover:border-[#FF5C28]/40 hover:bg-white"
+            ? "border-sibs-orange bg-white ring-4 ring-sibs-orange/10"
+            : "border-sibs-border hover:border-sibs-orange/40 hover:bg-white"
         }`}
       >
-        <Search size={15} className="shrink-0 text-[#042C51] 2xl:h-4 2xl:w-4" />
+        <Search size={15} className="shrink-0 text-sibs-navy 2xl:h-4 2xl:w-4" />
 
         <input
           ref={searchInputRef}
@@ -2583,8 +2583,8 @@ function SchoolYearSearchableDropdown({
           placeholder={open ? "Search school year" : placeholder}
           aria-expanded={open}
           aria-haspopup="listbox"
-          className={`h-full min-w-0 flex-1 border-0 bg-transparent text-xs font-semibold outline-none placeholder:normal-case placeholder:text-[#667085] ${
-            selectedOption && !open ? "text-[#042C51]" : "text-[#344054]"
+          className={`h-full min-w-0 flex-1 border-0 bg-transparent text-xs font-semibold outline-none placeholder:normal-case placeholder:text-sibs-muted ${
+            selectedOption && !open ? "text-sibs-navy" : "text-sibs-navy"
           }`}
         />
 
@@ -2594,11 +2594,11 @@ function SchoolYearSearchableDropdown({
           aria-label={
             open ? "Close school year options" : "Open school year options"
           }
-          className="flex h-7 w-7 2xl:h-8 2xl:w-8 shrink-0 items-center justify-center rounded-lg transition hover:bg-[#FFF0EB] hover:text-[#FF5C28]"
+          className="flex h-7 w-7 2xl:h-8 2xl:w-8 shrink-0 items-center justify-center rounded-[10px] transition hover:bg-sibs-cream-light hover:text-sibs-orange"
         >
           <ChevronDown
             size={15}
-            className={`text-[#FF5C28] transition-transform duration-200 ${
+            className={`text-sibs-orange transition-transform duration-200 ${
               open ? "rotate-180" : ""
             }`}
           />
@@ -2616,7 +2616,7 @@ function SchoolYearSearchableDropdown({
       )}
 
       {open && (
-        <div className="sibs-profile-dropdown-panel absolute left-0 right-0 top-[calc(100%+8px)] z-[99999] overflow-hidden rounded-[10px] border border-[#D9E2EC] bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)]">
+        <div className="sibs-profile-dropdown-panel absolute left-0 right-0 top-[calc(100%+8px)] z-[99999] overflow-hidden rounded-[10px] border border-sibs-border bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)]">
           <div className="max-h-64 overflow-y-auto" role="listbox">
             {visibleOptions.length > 0 ? (
               visibleOptions.map((option) => {
@@ -2631,8 +2631,8 @@ function SchoolYearSearchableDropdown({
                     onClick={() => handleSelect(option.value)}
                     className={`block w-full px-3 py-2.5 text-left text-xs font-semibold transition ${
                       active
-                        ? "bg-[#FFF0EB] text-[#FF5C28]"
-                        : "bg-white text-[#344054] hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
+                        ? "bg-sibs-cream-light text-sibs-orange font-bold"
+                        : "bg-white text-sibs-navy hover:bg-sibs-cream-light hover:text-sibs-orange"
                     }`}
                   >
                     {option.label}
@@ -2640,7 +2640,7 @@ function SchoolYearSearchableDropdown({
                 );
               })
             ) : (
-              <div className="px-4 py-4 text-sm font-semibold text-gray-400">
+              <div className="px-4 py-4 text-sm font-semibold text-sibs-muted">
                 No school year found.
               </div>
             )}
@@ -2667,12 +2667,12 @@ function EducationSchoolFields({ section, value, onChange }) {
   }
 
   return (
-    <div className="rounded-xl border border-[#DCE6F1] bg-white p-3.5 sm:p-4 2xl:p-5 shadow-[0_2px_8px_rgba(4,44,81,0.03)] font-jakarta">
+    <div className="rounded-xl border border-sibs-border bg-white p-3.5 sm:p-4 2xl:p-5 shadow-[0_2px_8px_rgba(4,44,81,0.03)] font-jakarta">
       <div className="flex flex-col">
-        <h4 className="text-xs sm:text-sm font-extrabold text-[#042C51]">
+        <h4 className="text-xs sm:text-sm font-extrabold text-sibs-navy">
           {section.title}
         </h4>
-        <p className="mt-0.5 text-[11px] sm:text-xs font-semibold leading-4 text-[#667085] 2xl:leading-5">
+        <p className="mt-0.5 text-[11px] sm:text-xs font-semibold leading-4 text-sibs-muted 2xl:leading-5">
           Complete all required information for this school level.
         </p>
       </div>
@@ -2737,7 +2737,7 @@ function EducationSchoolFields({ section, value, onChange }) {
               }
               placeholder="Search and select school year"
             />
-            <p className="mt-1.5 text-[11px] sm:text-xs font-semibold leading-4 text-[#667085]">
+            <p className="mt-1.5 text-[11px] sm:text-xs font-semibold leading-4 text-sibs-muted">
               Search using either the starting or ending year.
             </p>
           </div>
@@ -2778,12 +2778,12 @@ function EducationDetailsFields({ attainment, details, onChange }) {
   };
 
   return (
-    <div className="space-y-3.5 rounded-2xl border border-[#DCE6F1] bg-[#F8FAFC] p-3.5 sm:p-4.5 2xl:p-5 font-jakarta">
+    <div className="space-y-3.5 rounded-2xl border border-sibs-border bg-sibs-surface p-3.5 sm:p-4.5 2xl:p-5 font-jakarta">
       <div>
-        <p className="text-[10px] 2xl:text-[11px] font-extrabold uppercase tracking-wide text-[#E6531B]">
+        <p className="text-[10px] 2xl:text-[11px] font-extrabold uppercase tracking-wide text-sibs-orange">
           Required Education Details
         </p>
-        <p className="mt-0.5 text-[11px] sm:text-xs font-semibold leading-4 text-[#667085] 2xl:leading-5">
+        <p className="mt-0.5 text-[11px] sm:text-xs font-semibold leading-4 text-sibs-muted 2xl:leading-5">
           The school fields below are based on the selected highest educational
           attainment. Every displayed school name and address is required.
         </p>
@@ -2803,20 +2803,20 @@ function EducationDetailsFields({ attainment, details, onChange }) {
             {config.seniorHighMode === "optional" &&
               section.key === "highSchool" && (
                 <>
-                  <label className="group flex cursor-pointer items-start gap-2.5 rounded-xl border border-[#DCE6F1] bg-white p-3 sm:p-3.5 transition hover:border-[#FF5C28]/40 hover:bg-[#FFF9F6]">
+                  <label className="group flex cursor-pointer items-start gap-2.5 rounded-xl border border-sibs-border bg-white p-3 sm:p-3.5 transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light">
                     <input
                       type="checkbox"
                       checked={educationDetails.attendedSeniorHighSchool}
                       onChange={(event) =>
                         handleSeniorHighAttendanceChange(event.target.checked)
                       }
-                      className="mt-0.5 h-3.5 w-3.5 2xl:h-4 2xl:w-4 shrink-0 cursor-pointer rounded border-[#98A2B3] accent-[#FF5C28]"
+                      className="mt-0.5 h-3.5 w-3.5 2xl:h-4 2xl:w-4 shrink-0 cursor-pointer rounded border-sibs-border accent-sibs-orange"
                     />
                     <span>
-                      <span className="block text-xs sm:text-sm font-extrabold text-[#042C51] transition group-hover:text-[#FF5C28]">
+                      <span className="block text-xs sm:text-sm font-extrabold text-sibs-navy transition group-hover:text-sibs-orange">
                         I attended Senior High School
                       </span>
-                      <span className="mt-0.5 block text-[11px] sm:text-xs font-semibold leading-4 text-[#667085]">
+                      <span className="mt-0.5 block text-[11px] sm:text-xs font-semibold leading-4 text-sibs-muted">
                         Check this box to add the required Senior High School
                         name, address, and school year graduated.
                       </span>
@@ -2863,7 +2863,7 @@ function MultiSelectCheckboxGroup({
   }
 
   return (
-    <div className="grid grid-cols-1 gap-1.5 rounded-[12px] border border-[#DCE6F1] bg-[#F8FAFC] p-2.5 sm:grid-cols-2 lg:grid-cols-3 2xl:gap-2 2xl:p-3">
+    <div className="grid grid-cols-1 gap-1.5 rounded-[10px] border border-sibs-border bg-sibs-surface p-2.5 sm:grid-cols-2 lg:grid-cols-3 2xl:gap-2 2xl:p-3">
       {options.map((option) => {
         const optionValue = getOptionValue(option);
         const optionLabel = getOptionLabel(option);
@@ -2876,10 +2876,10 @@ function MultiSelectCheckboxGroup({
               disabled
                 ? checked
                   ? "cursor-not-allowed border-emerald-200 bg-emerald-50 font-extrabold text-emerald-800 shadow-sm"
-                  : "cursor-not-allowed border-[#E6ECF2] bg-[#F8FAFC] font-bold text-[#98A2B3] opacity-70"
+                  : "cursor-not-allowed border-sibs-border bg-sibs-surface font-bold text-sibs-muted opacity-70"
                 : checked
-                  ? "cursor-pointer border-[#FF5C28] bg-[#FFF0EB] font-extrabold text-[#042C51] shadow-sm"
-                  : "cursor-pointer border-[#DCE6F1] bg-white font-bold text-[#344054] hover:border-[#FF5C28]/40 hover:bg-[#FFF9F6] hover:text-[#FF5C28]"
+                  ? "cursor-pointer border-sibs-orange bg-sibs-cream-light font-extrabold text-sibs-navy shadow-sm"
+                  : "cursor-pointer border-sibs-border bg-white font-bold text-sibs-navy hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange"
             }`}
           >
             <input
@@ -2887,10 +2887,10 @@ function MultiSelectCheckboxGroup({
               checked={checked}
               disabled={disabled}
               onChange={() => toggleValue(optionValue)}
-              className={`mt-0.5 h-3.5 w-3.5 2xl:h-4 2xl:w-4 shrink-0 rounded border-[#98A2B3] ${
+              className={`mt-0.5 h-3.5 w-3.5 2xl:h-4 2xl:w-4 shrink-0 rounded border-sibs-border ${
                 disabled
                   ? "cursor-not-allowed accent-emerald-600"
-                  : "cursor-pointer accent-[#FF5C28]"
+                  : "cursor-pointer accent-sibs-orange"
               }`}
             />
             <span className="leading-tight 2xl:leading-5">{optionLabel}</span>
@@ -2926,8 +2926,8 @@ function ChoiceCardGroup({
             onClick={() => onChange(option.value)}
             className={`min-h-9 2xl:min-h-10 rounded-[10px] border px-2.5 py-1.5 2xl:px-3 2xl:py-2 text-xs font-extrabold transition ${
               active
-                ? "border-[#FF5C28] bg-[#FFF0EB] text-[#FF5C28] shadow-sm"
-                : "border-[#DCE6F1] bg-[#F8FAFC] text-[#344054] hover:border-[#FF5C28]/40 hover:bg-[#FFF9F6] hover:text-[#FF5C28]"
+                ? "border-sibs-orange bg-sibs-cream-light text-sibs-orange shadow-sm"
+                : "border-sibs-border bg-sibs-surface text-sibs-navy hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange"
             }`}
             aria-pressed={active}
           >
@@ -2977,10 +2977,10 @@ function RadioCardGroup({
         return (
           <label
             key={option.id || option.value}
-            className={`group inline-flex h-9 cursor-pointer items-center justify-center gap-2 rounded-full border px-4 text-xs font-semibold transition ${optionClassName} ${
+            className={`group inline-flex h-9 cursor-pointer items-center justify-center gap-2 rounded-[10px] border px-4 text-xs font-semibold transition ${optionClassName} ${
               active
-                ? "border-[#FF5C28] bg-[#FFF0EB] text-[#FF5C28] shadow-sm"
-                : "border-[#DCE6F1] bg-white text-[#52637A] hover:border-[#FF5C28]/40 hover:bg-[#FFF9F6] hover:text-[#FF5C28]"
+                ? "border-sibs-orange bg-sibs-cream-light text-sibs-orange shadow-sm"
+                : "border-sibs-border bg-white text-sibs-navy hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange"
             }`}
           >
             <input
@@ -2990,7 +2990,7 @@ function RadioCardGroup({
               checked={active}
               required={required}
               onChange={() => onChange(option.value)}
-              className="h-3.5 w-3.5 shrink-0 cursor-pointer border-[#98A2B3] accent-[#FF5C28]"
+              className="h-3.5 w-3.5 shrink-0 cursor-pointer border-sibs-border accent-sibs-orange"
             />
 
             <span className="whitespace-nowrap">{option.label}</span>
@@ -3014,15 +3014,15 @@ function WorkReadinessQuestion({
 }) {
   return (
     <div
-      className={`grid grid-cols-1 gap-3 rounded-xl border border-[#DCE6F1] bg-white px-4 py-3 transition hover:border-[#C9D7E6] hover:bg-[#FCFDFE] sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center ${className}`}
+      className={`grid grid-cols-1 gap-3 rounded-[10px] border border-sibs-border bg-white px-4 py-3 transition hover:border-sibs-orange/30 hover:bg-sibs-surface sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center ${className}`}
     >
       <div className="flex min-w-0 items-start gap-3">
         <span
           aria-hidden="true"
-          className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-[#D3DEEA]"
+          className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-sibs-border"
         />
 
-        <div className="min-w-0 text-xs font-extrabold leading-5 text-[#042C51]">
+        <div className="min-w-0 text-xs font-extrabold leading-5 text-sibs-navy">
           {question} {required ? <RequiredMark /> : null}
         </div>
       </div>
@@ -3084,9 +3084,9 @@ function ExperienceFields({
   onRemove,
 }) {
   return (
-    <div className="sibs-page-card-in rounded-[12px] border border-[#DCE6F1] bg-[#F8FAFC] p-4 shadow-2xs transition-all duration-200 hover:border-[#C9D7E6] sm:p-5">
+    <div className="sibs-page-card-in rounded-[10px] border border-sibs-border bg-sibs-surface p-4 shadow-2xs transition-all duration-200 hover:border-sibs-orange/30 sm:p-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h4 className="text-sm font-extrabold text-[#042C51]">{title}</h4>
+        <h4 className="text-sm font-extrabold text-sibs-navy">{title}</h4>
 
         {showRemove && (
           <button
@@ -5092,10 +5092,10 @@ export default function PublicTalentPoolApplicationPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col overflow-x-hidden bg-sibs-primary-3 font-jakarta text-[#101828]">
+    <div className="flex min-h-screen flex-col overflow-x-hidden bg-sibs-primary-3 font-jakarta text-sibs-navy">
       <a
         href="#main-content"
-        className="fixed left-4 top-3 z-[1000] -translate-y-20 rounded-md bg-[#042C51] px-4 py-2 text-sm font-bold text-white transition-transform focus:translate-y-0 focus-visible:ring-2 focus-visible:ring-[#FF5C28] focus-visible:ring-offset-2"
+        className="fixed left-4 top-3 z-[1000] -translate-y-20 rounded-[10px] bg-sibs-navy px-4 py-2 text-sm font-bold text-white transition-transform focus:translate-y-0 focus-visible:ring-2 focus-visible:ring-sibs-orange focus-visible:ring-offset-2"
       >
         Skip to application
       </a>
@@ -5108,37 +5108,37 @@ export default function PublicTalentPoolApplicationPage() {
       >
         <section
           data-testid="public-application-hero"
-          className="relative border-b border-[#E5EAEF] bg-white px-4 sm:px-6"
+          className="relative border-b border-sibs-border bg-white px-4 sm:px-6"
         >
           <div className="mx-auto flex min-h-0 w-full max-w-[980px] items-center py-4 sm:py-5 lg:py-6 2xl:min-h-[240px] 2xl:py-10">
             <div className="max-w-[820px]">
-              <h1 className="font-heading text-2xl font-black leading-tight tracking-tight text-[#042C51] sm:text-3xl lg:text-4xl 2xl:text-[3.25rem] 2xl:leading-[1.02]">
+              <h1 className="font-heading text-2xl font-black leading-tight tracking-tight text-sibs-navy sm:text-3xl lg:text-4xl 2xl:text-[3.25rem] 2xl:leading-[1.02]">
                 <span className="relative inline-block">
                   <span
                     aria-hidden="true"
-                    className="absolute bottom-[0.14em] -left-1 -right-1 h-[0.35em] bg-[#FFD400]"
+                    className="absolute bottom-[0.14em] -left-1 -right-1 h-[0.35em] bg-sibs-secondary-gold"
                   />
                   <span className="relative">Apply</span>
                 </span>{" "}
                 to join SiBS
               </h1>
 
-              <p className="mt-2 max-w-[760px] text-xs font-medium leading-5 text-[#243B55] sm:mt-2.5 sm:text-sm sm:leading-6 2xl:mt-4 2xl:text-base 2xl:leading-7">
+              <p className="mt-2 max-w-[760px] text-xs font-medium leading-5 text-sibs-navy sm:mt-2.5 sm:text-sm sm:leading-6 2xl:mt-4 2xl:text-base 2xl:leading-7">
                 Complete your application and take the next step toward joining
                 the SiBS team. Tell us about your experience, qualifications,
                 and the position that fits you best.
               </p>
 
               <div className="mt-2.5 flex flex-wrap gap-2 2xl:mt-4 2xl:gap-2.5">
-                <span className="inline-flex min-h-7 items-center gap-1.5 rounded-[8px] border border-[#E2E8F0] bg-[#F8FAFC] px-2.5 text-[10px] font-bold text-[#042C51] 2xl:min-h-8 2xl:gap-2 2xl:px-3 2xl:text-[11px]">
+                <span className="inline-flex min-h-7 items-center gap-1.5 rounded-[10px] border border-sibs-border bg-sibs-surface px-2.5 text-[10px] font-bold text-sibs-navy 2xl:min-h-8 2xl:gap-2 2xl:px-3 2xl:text-[11px]">
                   <ShieldCheck size={13} className="2xl:h-3.5 2xl:w-3.5" aria-hidden="true" />
                   No account required
                 </span>
-                <span className="inline-flex min-h-7 items-center gap-1.5 rounded-[8px] border border-[#E2E8F0] bg-[#F8FAFC] px-2.5 text-[10px] font-bold text-[#042C51] 2xl:min-h-8 2xl:gap-2 2xl:px-3 2xl:text-[11px]">
+                <span className="inline-flex min-h-7 items-center gap-1.5 rounded-[10px] border border-sibs-border bg-sibs-surface px-2.5 text-[10px] font-bold text-sibs-navy 2xl:min-h-8 2xl:gap-2 2xl:px-3 2xl:text-[11px]">
                   <BriefcaseBusiness size={13} className="2xl:h-3.5 2xl:w-3.5" aria-hidden="true" />
                   Two-part application
                 </span>
-                <span className="inline-flex min-h-7 items-center gap-1.5 rounded-[8px] border border-[#E2E8F0] bg-[#F8FAFC] px-2.5 text-[10px] font-bold text-[#042C51] 2xl:min-h-8 2xl:gap-2 2xl:px-3 2xl:text-[11px]">
+                <span className="inline-flex min-h-7 items-center gap-1.5 rounded-[10px] border border-sibs-border bg-sibs-surface px-2.5 text-[10px] font-bold text-sibs-navy 2xl:min-h-8 2xl:gap-2 2xl:px-3 2xl:text-[11px]">
                   <CircleCheckBig size={13} className="2xl:h-3.5 2xl:w-3.5" aria-hidden="true" />
                   Progress shown as you complete the form
                 </span>
@@ -5186,7 +5186,7 @@ export default function PublicTalentPoolApplicationPage() {
 
           <form onSubmit={handleSubmit} className="mx-auto max-w-[980px] space-y-4 2xl:space-y-6 pt-0">
           {isLoadingData ? (
-            <div className="rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-bold text-[#174A7C] shadow-sm">
+            <div className="rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-bold text-sibs-navy shadow-sm">
               Loading form options and approved open positions from the
               database...
             </div>
@@ -5212,16 +5212,16 @@ export default function PublicTalentPoolApplicationPage() {
             description="Tell us where you learned about SiBS and what position you are applying for."
           >
             <div className="space-y-3.5 2xl:space-y-4">
-              <div className="rounded-2xl border border-[#DCE6F1] bg-[#F8FAFC] p-3.5 sm:p-4 2xl:p-5 shadow-sm">
+              <div className="rounded-2xl border border-sibs-border bg-sibs-surface p-3.5 sm:p-4 2xl:p-5 shadow-sm">
                 <div className="flex flex-col gap-3.5 md:flex-row md:items-center md:justify-between 2xl:gap-4">
                   <div>
-                    <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#E6531B]">
+                    <p className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-orange">
                       Referral
                     </p>
-                    <p className="mt-0.5 text-xs 2xl:text-sm font-extrabold text-[#042C51] 2xl:mt-1">
+                    <p className="mt-0.5 text-xs 2xl:text-sm font-extrabold text-sibs-navy 2xl:mt-1">
                       Do you have a referral code? <RequiredMark />
                     </p>
-                    <p className="mt-0.5 text-[11px] font-semibold leading-4 text-[#667085] 2xl:text-xs 2xl:leading-5">
+                    <p className="mt-0.5 text-[11px] font-semibold leading-4 text-sibs-muted 2xl:text-xs 2xl:leading-5">
                       Select Yes if a referral code was shared with you. Select
                       No to continue with the regular application form.
                     </p>
@@ -5233,8 +5233,8 @@ export default function PublicTalentPoolApplicationPage() {
                       onClick={() => handleReferralChoiceChange("Yes")}
                       className={`h-8.5 2xl:h-10 rounded-[10px] border px-3 2xl:px-4 text-xs font-extrabold transition ${
                         hasReferralCode === "Yes"
-                          ? "border-[#FF5C28] bg-[#FFF0EB] text-[#FF5C28] shadow-sm"
-                          : "border-[#DCE6F1] bg-white text-[#344054] hover:border-[#FF5C28]/40 hover:bg-[#FFF9F6] hover:text-[#FF5C28]"
+                          ? "border-sibs-orange bg-sibs-cream-light text-sibs-orange shadow-sm"
+                          : "border-sibs-border bg-white text-sibs-navy hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange"
                       }`}
                     >
                       Yes
@@ -5244,8 +5244,8 @@ export default function PublicTalentPoolApplicationPage() {
                       onClick={() => handleReferralChoiceChange("No")}
                       className={`h-8.5 2xl:h-10 rounded-[10px] border px-3 2xl:px-4 text-xs font-extrabold transition ${
                         hasReferralCode === "No"
-                          ? "border-[#FF5C28] bg-[#FFF0EB] text-[#FF5C28] shadow-sm"
-                          : "border-[#DCE6F1] bg-white text-[#344054] hover:border-[#FF5C28]/40 hover:bg-[#FFF9F6] hover:text-[#FF5C28]"
+                          ? "border-sibs-orange bg-sibs-cream-light text-sibs-orange shadow-sm"
+                          : "border-sibs-border bg-white text-sibs-navy hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange"
                       }`}
                     >
                       No
@@ -5258,20 +5258,20 @@ export default function PublicTalentPoolApplicationPage() {
                 <div
                   data-testid="referral-gate-status"
                   aria-live="polite"
-                  className="rounded-xl border border-[#DCE6F1] bg-[#F8FAFC] px-4 py-3 text-xs font-semibold leading-5 text-[#667085]"
+                  className="rounded-xl border border-sibs-border bg-sibs-surface px-4 py-3 text-xs font-semibold leading-5 text-sibs-muted"
                 >
                   Select Yes or No above to continue with the application.
                 </div>
               ) : null}
 
               {hasReferralCode === "Yes" ? (
-                <div className="rounded-2xl border border-[#FFB27A] bg-[#FFF7F1] p-4 shadow-sm">
+                <div className="rounded-2xl border border-sibs-orange/40 bg-sibs-cream-light p-4 shadow-sm">
                   <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                     <div>
-                      <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#E6531B]">
+                      <p className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-orange">
                         Referral Code
                       </p>
-                      <p className="mt-1 text-sm font-extrabold text-[#042C51]">
+                      <p className="mt-1 text-sm font-extrabold text-sibs-navy">
                         Enter and match your referral code to continue.
                       </p>
                       {isReferralCodeFromEmail ? (
@@ -5281,7 +5281,7 @@ export default function PublicTalentPoolApplicationPage() {
                             : "This referral code came from your email invitation."}
                         </p>
                       ) : (
-                        <p className="mt-1 text-xs font-semibold text-[#667085]">
+                        <p className="mt-1 text-xs font-semibold text-sibs-muted">
                           The remaining application fields will appear after a
                           valid referral code is matched.
                         </p>
@@ -5296,7 +5296,7 @@ export default function PublicTalentPoolApplicationPage() {
                               ? "text-emerald-700"
                               : referralLookupStatus === "missing"
                                 ? "text-amber-700"
-                                : "text-[#174A7C]",
+                                : "text-sibs-navy",
                           ].join(" ")}
                         >
                           {referralLookupStatus === "checking" ? (
@@ -5323,7 +5323,7 @@ export default function PublicTalentPoolApplicationPage() {
                         }
                         placeholder="e.g. REF-******"
                         className={[
-                          "public-referral-code-input h-10 w-full rounded-[10px] border bg-white px-3 text-xs font-semibold uppercase text-[#042C51] transition placeholder:text-[#98A2B3] disabled:cursor-not-allowed disabled:border-[#D7DEE8] disabled:bg-[#F2F4F7] disabled:text-[#667085] md:w-[260px]",
+                          "public-referral-code-input h-10 w-full rounded-[10px] border border-sibs-border bg-white px-3 text-xs font-semibold uppercase text-sibs-navy transition placeholder:text-sibs-muted disabled:cursor-not-allowed disabled:border-sibs-border disabled:bg-sibs-surface disabled:text-sibs-muted md:w-[260px]",
                           referralLookupStatus === "matched"
                             ? "public-referral-code-input--matched"
                             : referralLookupStatus === "missing"
@@ -5531,7 +5531,7 @@ export default function PublicTalentPoolApplicationPage() {
                   Middle Name, and Last Name cannot be used for another application.
                 </div>
               ) : applicantNameCheck.status === "checking" ? (
-                <div className="md:col-span-4 -mt-1 rounded-[10px] border border-blue-100 bg-blue-50 px-3 py-2.5 text-xs font-bold leading-5 text-[#174A7C]">
+                <div className="md:col-span-4 -mt-1 rounded-[10px] border border-blue-100 bg-blue-50 px-3 py-2.5 text-xs font-bold leading-5 text-sibs-navy">
                   Checking applicant name in Kronos and Talent Pool...
                 </div>
               ) : applicantNameCheck.status === "error" ? (
@@ -5539,7 +5539,7 @@ export default function PublicTalentPoolApplicationPage() {
                   Applicant name could not be verified. Update the name fields to try again.
                 </div>
               ) : !isApplicantNameVerifiedAvailable ? (
-                <div className="md:col-span-4 -mt-1 rounded-[10px] border border-[#DCE6F1] bg-[#F8FAFC] px-3 py-2.5 text-xs font-bold leading-5 text-[#667085]">
+                <div className="md:col-span-4 -mt-1 rounded-[10px] border border-sibs-border bg-sibs-surface px-3 py-2.5 text-xs font-bold leading-5 text-sibs-muted">
                   Complete First Name and Last Name to unlock the rest of the form.
                 </div>
               ) : null}
@@ -5563,7 +5563,7 @@ export default function PublicTalentPoolApplicationPage() {
                 />
 
                 {age !== null && (
-                  <p className="mt-2 text-xs font-bold text-[#667085]">
+                  <p className="mt-2 text-xs font-bold text-sibs-muted">
                     Age as of application date: {age}
                   </p>
                 )}
@@ -5711,7 +5711,7 @@ export default function PublicTalentPoolApplicationPage() {
                       <button
                         type="button"
                         onClick={addOtherExperience}
-                        className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg bg-[#FF5C28] px-4 text-xs font-extrabold text-white shadow-sm transition-colors hover:bg-[#F04B18] focus-visible:ring-2 focus-visible:ring-[#042C51] focus-visible:ring-offset-2"
+                        className="inline-flex h-9 items-center justify-center gap-1.5 rounded-[10px] bg-sibs-orange px-4 text-xs font-extrabold text-white shadow-sm transition-colors hover:bg-sibs-orange-hover focus-visible:ring-2 focus-visible:ring-sibs-navy focus-visible:ring-offset-2"
                       >
                         <Plus size={14} />
                         Add Other Experience
@@ -5787,7 +5787,7 @@ export default function PublicTalentPoolApplicationPage() {
                             <button
                               type="button"
                               onClick={addTrainingAttended}
-                              className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] border border-blue-100 bg-blue-50 text-[#042C51] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
+                              className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] border border-blue-100 bg-blue-50 text-sibs-navy transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange"
                               aria-label="Add training attended"
                               title="Add training"
                             >
@@ -5923,13 +5923,13 @@ export default function PublicTalentPoolApplicationPage() {
               ].map((reference) => (
                 <div
                   key={reference.number}
-                  className="rounded-[12px] border border-[#DCE6F1] bg-[#F8FAFC] p-4"
+                  className="rounded-[10px] border border-sibs-border bg-sibs-surface p-4"
                 >
                   <div className="mb-3 flex items-center gap-2">
-                    <span className="flex h-7 w-7 items-center justify-center rounded-[10px] bg-[#FFF0EB] text-[10px] font-extrabold text-[#FF5C28]">
+                    <span className="flex h-7 w-7 items-center justify-center rounded-[10px] bg-sibs-cream-light text-[10px] font-extrabold text-sibs-orange">
                       {reference.number}
                     </span>
-                    <span className="text-[10px] font-extrabold uppercase tracking-normal text-[#042C51]">
+                    <span className="text-[10px] font-extrabold uppercase tracking-normal text-sibs-navy">
                       Reference {reference.number}
                     </span>
                   </div>
@@ -5984,15 +5984,15 @@ export default function PublicTalentPoolApplicationPage() {
             </div>
           </SectionCard>
 
-          <section className="flex flex-col gap-3 rounded-2xl border border-[#E6ECF2] bg-white p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5 2xl:p-6 shadow-[0_8px_24px_rgba(4,44,81,0.05)]">
+          <section className="flex flex-col gap-3 rounded-2xl border border-sibs-border bg-white p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5 2xl:p-6 shadow-[0_8px_24px_rgba(4,44,81,0.05)]">
             <div className="min-w-0">
-              <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#E6531B]">
+              <p className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-orange">
                 Page 1 complete
               </p>
-              <p className="mt-0.5 text-xs sm:text-sm font-extrabold text-[#042C51] 2xl:mt-1">
+              <p className="mt-0.5 text-xs sm:text-sm font-extrabold text-sibs-navy 2xl:mt-1">
                 Continue to the questions for {form.openPosition || "your selected position"}.
               </p>
-              <p className="mt-0.5 text-[11px] font-semibold leading-4 text-[#667085] sm:text-xs 2xl:mt-1 2xl:leading-5">
+              <p className="mt-0.5 text-[11px] font-semibold leading-4 text-sibs-muted sm:text-xs 2xl:mt-1 2xl:leading-5">
                 Your answers, uploads, consent, and final submission are on the next page.
               </p>
             </div>
@@ -6002,7 +6002,7 @@ export default function PublicTalentPoolApplicationPage() {
                 type="button"
                 onClick={handleReset}
                 disabled={isSubmitting || isLoadingApplicationQuestions}
-                className="inline-flex h-9 2xl:h-11 items-center justify-center gap-2 whitespace-nowrap shrink-0 rounded-lg 2xl:rounded-xl border border-[#D6DEE8] bg-white px-3.5 sm:px-4 2xl:px-5 text-xs 2xl:text-sm font-extrabold text-[#042C51] transition hover:border-[#FF5C28]/50 hover:bg-[#FFF7F3] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex h-9 2xl:h-11 items-center justify-center gap-2 whitespace-nowrap shrink-0 rounded-[10px] border border-sibs-border bg-white px-3.5 sm:px-4 2xl:px-5 text-xs 2xl:text-sm font-extrabold text-sibs-navy transition hover:border-sibs-orange/50 hover:bg-sibs-cream-light hover:text-sibs-orange disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <RotateCcw size={15} className="shrink-0" />
                 Reset Form
@@ -6011,7 +6011,7 @@ export default function PublicTalentPoolApplicationPage() {
               <button
                 type="submit"
                 disabled={!canSubmit || isLoadingApplicationQuestions}
-                className="inline-flex h-9 2xl:h-11 items-center justify-center gap-2 whitespace-nowrap shrink-0 rounded-lg 2xl:rounded-xl bg-[#FF5C28] px-4 sm:px-5 2xl:px-6 text-xs 2xl:text-sm font-extrabold text-white transition-colors hover:bg-[#EB3800] focus-visible:ring-2 focus-visible:ring-[#FF5C28] focus-visible:ring-offset-2 active:bg-[#D94514] disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex h-9 2xl:h-11 items-center justify-center gap-2 whitespace-nowrap shrink-0 rounded-[10px] bg-sibs-orange px-4 sm:px-5 2xl:px-6 text-xs 2xl:text-sm font-extrabold text-white transition-colors hover:bg-sibs-orange-hover focus-visible:ring-2 focus-visible:ring-sibs-orange focus-visible:ring-offset-2 active:bg-sibs-orange-hover disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {isLoadingApplicationQuestions ? (
                   <Loader2 size={15} className="animate-spin shrink-0" />
@@ -6041,11 +6041,11 @@ export default function PublicTalentPoolApplicationPage() {
                 ) : null}
 
                 {applicationForm?.formName ? (
-                  <div className="rounded-2xl border border-[#DCE6F1] bg-[#F8FAFC] px-4 py-3 sm:px-5 sm:py-3.5 2xl:py-4 font-jakarta">
-                    <p className="text-[10px] 2xl:text-[11px] font-extrabold uppercase tracking-wide text-[#E6531B]">
+                  <div className="rounded-2xl border border-sibs-border bg-sibs-surface px-4 py-3 sm:px-5 sm:py-3.5 2xl:py-4 font-jakarta">
+                    <p className="text-[10px] 2xl:text-[11px] font-extrabold uppercase tracking-wide text-sibs-orange">
                       Application Form
                     </p>
-                    <p className="mt-0.5 text-xs sm:text-sm font-extrabold text-[#042C51] 2xl:mt-1">
+                    <p className="mt-0.5 text-xs sm:text-sm font-extrabold text-sibs-navy 2xl:mt-1">
                       {applicationForm.formName}
                     </p>
                   </div>
@@ -6065,11 +6065,11 @@ export default function PublicTalentPoolApplicationPage() {
                       return (
                         <div
                           key={question.id}
-                          className="rounded-2xl border border-[#DCE6F1] bg-[#F8FAFC] p-3.5 sm:p-4.5 2xl:p-5"
+                          className="rounded-2xl border border-sibs-border bg-sibs-surface p-3.5 sm:p-4.5 2xl:p-5"
                         >
                           <div className="min-w-0">
                             <div className="flex flex-wrap items-center gap-2">
-                              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#FFF0EB] text-[10px] font-extrabold text-[#FF5C28]">
+                              <span className="flex h-7 w-7 items-center justify-center rounded-[10px] bg-sibs-cream-light text-[10px] font-extrabold text-sibs-orange">
                                 {index + 1}
                               </span>
                               {question.isRequired ? (
@@ -6077,20 +6077,20 @@ export default function PublicTalentPoolApplicationPage() {
                                   Required
                                 </span>
                               ) : (
-                                <span className="rounded-full bg-white px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-[#667085]">
+                                <span className="rounded-full bg-white px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-sibs-muted">
                                   Optional
                                 </span>
                               )}
                             </div>
-                            <div className="mt-2.5 text-xs sm:text-sm font-extrabold leading-5 text-[#042C51] 2xl:leading-6">
+                            <div className="mt-2.5 text-xs sm:text-sm font-extrabold leading-5 text-sibs-navy 2xl:leading-6">
                               <RichTextViewer
                                 value={question.questionText}
                                 emptyText="Untitled question"
-                                className="text-[#042C51]"
+                                className="text-sibs-navy"
                               />
                             </div>
                             {question.helperText ? (
-                              <p className="mt-0.5 text-[11px] sm:text-xs font-semibold leading-4 text-[#667085] 2xl:leading-5">
+                              <p className="mt-0.5 text-[11px] sm:text-xs font-semibold leading-4 text-sibs-muted 2xl:leading-5">
                                 {question.helperText}
                               </p>
                             ) : null}
@@ -6155,12 +6155,12 @@ export default function PublicTalentPoolApplicationPage() {
               description="Upload a single audio file answering the listed questions and one supporting document/file."
             >
               <div className="space-y-5">
-                <div className="rounded-2xl border border-[#FFD9C7] bg-[#FFFBF9] p-3.5 sm:p-4.5 2xl:p-5 font-jakarta">
+                <div className="rounded-2xl border border-sibs-orange/30 bg-sibs-cream-light p-3.5 sm:p-4.5 2xl:p-5 font-jakarta">
                   <div className="flex items-center gap-2">
-                    <span className="flex h-6 w-6 items-center justify-center rounded-md bg-[#FFF0EB] text-[#FF5C28]">
+                    <span className="flex h-6 w-6 items-center justify-center rounded-[10px] bg-sibs-cream-light text-sibs-orange">
                       <Mic size={14} />
                     </span>
-                    <p className="text-xs sm:text-sm font-extrabold text-[#042C51]">
+                    <p className="text-xs sm:text-sm font-extrabold text-sibs-navy">
                       Your audio file must answer these questions:
                     </p>
                   </div>
@@ -6170,15 +6170,15 @@ export default function PublicTalentPoolApplicationPage() {
                       {formOptions.audioQuestions.map((question) => (
                         <li
                           key={question.id || getOptionValue(question)}
-                          className="flex items-start gap-2 text-xs sm:text-[13px] font-bold text-[#042C51]"
+                          className="flex items-start gap-2 text-xs sm:text-[13px] font-bold text-sibs-navy"
                         >
-                          <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#FF5C28]" />
+                          <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-sibs-orange" />
                           <span>{getOptionLabel(question)}</span>
                         </li>
                       ))}
                     </ul>
                   ) : (
-                    <p className="mt-2 text-xs font-semibold text-[#667085]">
+                    <p className="mt-2 text-xs font-semibold text-sibs-muted">
                       No audio questions configured in the database.
                     </p>
                   )}
@@ -6192,18 +6192,18 @@ export default function PublicTalentPoolApplicationPage() {
                     <button
                       type="button"
                       onClick={() => audioInputRef.current?.click()}
-                      className={`group flex w-full flex-1 min-h-[160px] 2xl:min-h-[180px] cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed px-4 py-5 2xl:px-5 2xl:py-6 text-center transition hover:border-[#FF5C28] hover:bg-[#FFF9F6] ${
+                      className={`group flex w-full flex-1 min-h-[160px] 2xl:min-h-[180px] cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed px-4 py-5 2xl:px-5 2xl:py-6 text-center transition hover:border-sibs-orange hover:bg-sibs-cream-light ${
                         highlightAudio && !selectedAudioFile
                           ? "border-red-300 bg-red-50 ring-4 ring-red-100"
                           : selectedAudioFile
                             ? "border-emerald-300 bg-emerald-50"
-                            : "border-[#D6E0EA] bg-[#F8FAFC]"
+                            : "border-sibs-border bg-sibs-surface"
                       }`}
                     >
-                      <div className="flex h-11 w-11 2xl:h-12 2xl:w-12 items-center justify-center rounded-xl bg-white border border-[#E6ECF2] shadow-sm text-[#FF5C28] group-hover:scale-105 transition-transform">
+                      <div className="flex h-11 w-11 2xl:h-12 2xl:w-12 items-center justify-center rounded-[10px] bg-white border border-sibs-border shadow-sm text-sibs-orange group-hover:scale-105 transition-transform">
                         <Mic size={22} className="2xl:h-6 2xl:w-6" />
                       </div>
-                      <p className="mt-2.5 max-w-full truncate text-xs sm:text-sm font-extrabold text-[#042C51] group-hover:text-[#FF5C28] transition-colors">
+                      <p className="mt-2.5 max-w-full truncate text-xs sm:text-sm font-extrabold text-sibs-navy group-hover:text-sibs-orange transition-colors">
                         {selectedAudioFile?.name || "Choose audio file"}
                       </p>
                       {selectedAudioFile && (
@@ -6211,7 +6211,7 @@ export default function PublicTalentPoolApplicationPage() {
                           Audio selected • {formatFileSize(selectedAudioFile)}
                         </p>
                       )}
-                      <p className="mt-1 text-[10px] 2xl:text-[11px] font-semibold text-[#667085]">
+                      <p className="mt-1 text-[10px] 2xl:text-[11px] font-semibold text-sibs-muted">
                         Accepted: MP3, WAV, M4A, AAC, OGG, WEBM, MP4, FLAC, AMR,
                         3GP, OPUS, AIFF, CAF, WMA
                       </p>
@@ -6250,18 +6250,18 @@ export default function PublicTalentPoolApplicationPage() {
                     <button
                       type="button"
                       onClick={() => attachmentInputRef.current?.click()}
-                      className={`group flex w-full flex-1 min-h-[160px] 2xl:min-h-[180px] cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed px-4 py-5 2xl:px-5 2xl:py-6 text-center transition hover:border-[#FF5C28] hover:bg-[#FFF9F6] ${
+                      className={`group flex w-full flex-1 min-h-[160px] 2xl:min-h-[180px] cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed px-4 py-5 2xl:px-5 2xl:py-6 text-center transition hover:border-sibs-orange hover:bg-sibs-cream-light ${
                         highlightAttachment && !selectedAttachmentFile
                           ? "border-red-300 bg-red-50 ring-4 ring-red-100"
                           : selectedAttachmentFile
                             ? "border-emerald-300 bg-emerald-50"
-                            : "border-[#D6E0EA] bg-[#F8FAFC]"
+                            : "border-sibs-border bg-sibs-surface"
                       }`}
                     >
-                      <div className="flex h-11 w-11 2xl:h-12 2xl:w-12 items-center justify-center rounded-xl bg-white border border-[#E6ECF2] shadow-sm text-[#FF5C28] group-hover:scale-105 transition-transform">
+                      <div className="flex h-11 w-11 2xl:h-12 2xl:w-12 items-center justify-center rounded-[10px] bg-white border border-sibs-border shadow-sm text-sibs-orange group-hover:scale-105 transition-transform">
                         <UploadCloud size={22} className="2xl:h-6 2xl:w-6" />
                       </div>
-                      <p className="mt-2.5 max-w-full truncate text-xs sm:text-sm font-extrabold text-[#042C51] group-hover:text-[#FF5C28] transition-colors">
+                      <p className="mt-2.5 max-w-full truncate text-xs sm:text-sm font-extrabold text-sibs-navy group-hover:text-sibs-orange transition-colors">
                         {selectedAttachmentFile?.name || "Choose file / Resume"}
                       </p>
                       {selectedAttachmentFile && (
@@ -6270,7 +6270,7 @@ export default function PublicTalentPoolApplicationPage() {
                           {formatFileSize(selectedAttachmentFile)}
                         </p>
                       )}
-                      <p className="mt-1 text-[10px] 2xl:text-[11px] font-semibold text-[#667085]">
+                      <p className="mt-1 text-[10px] 2xl:text-[11px] font-semibold text-sibs-muted">
                         Accepted: PDF, DOC/DOCX, XLS/CSV, JPG/JPEG, PNG, GIF
                       </p>
                     </button>
@@ -6317,8 +6317,8 @@ export default function PublicTalentPoolApplicationPage() {
                   highlightConsent && !form.consent
                     ? "border-red-300 bg-red-50 ring-4 ring-red-100"
                     : form.consent
-                      ? "border-[#FF5C28] bg-[#FFF0EB]"
-                      : "border-[#DCE6F1] bg-[#F8FAFC] hover:border-[#FF5C28]/40 hover:bg-[#FFF9F6]"
+                      ? "border-sibs-orange bg-sibs-cream-light"
+                      : "border-sibs-border bg-sibs-surface hover:border-sibs-orange/40 hover:bg-sibs-cream-light"
                 }`}
               >
                 <input
@@ -6328,7 +6328,7 @@ export default function PublicTalentPoolApplicationPage() {
                     updateFormField("consent", event.target.checked);
                     setHighlightConsent(false);
                   }}
-                  className="mt-0.5 h-3.5 w-3.5 2xl:h-4 2xl:w-4 shrink-0 cursor-pointer rounded border-[#98A2B3] accent-[#FF5C28]"
+                  className="mt-0.5 h-3.5 w-3.5 2xl:h-4 2xl:w-4 shrink-0 cursor-pointer rounded border-sibs-border accent-sibs-orange"
                 />
 
                 <span
@@ -6336,8 +6336,8 @@ export default function PublicTalentPoolApplicationPage() {
                     highlightConsent && !form.consent
                       ? "text-red-700"
                       : form.consent
-                        ? "text-[#042C51]"
-                        : "text-[#344054] group-hover:text-[#FF5C28]"
+                        ? "text-sibs-navy"
+                        : "text-sibs-navy group-hover:text-sibs-orange"
                   }`}
                 >
                   I agree to terms &amp; conditions provided by the company. By
@@ -6354,15 +6354,15 @@ export default function PublicTalentPoolApplicationPage() {
             </SectionCard>
           </div>
 
-          <section className="flex flex-col gap-3 rounded-2xl border border-[#E6ECF2] bg-white p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5 2xl:p-6 shadow-[0_8px_24px_rgba(4,44,81,0.05)]">
+          <section className="flex flex-col gap-3 rounded-2xl border border-sibs-border bg-white p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5 2xl:p-6 shadow-[0_8px_24px_rgba(4,44,81,0.05)]">
             <div className="min-w-0">
-              <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#E6531B]">
+              <p className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-orange">
                 Ready to submit
               </p>
-              <p className="mt-0.5 text-xs sm:text-sm font-extrabold text-[#042C51] 2xl:mt-1">
+              <p className="mt-0.5 text-xs sm:text-sm font-extrabold text-sibs-navy 2xl:mt-1">
                 Your form is {completionPercentage}% complete.
               </p>
-              <p className="mt-0.5 text-[11px] font-semibold leading-4 text-[#667085] sm:text-xs 2xl:mt-1 2xl:leading-5">
+              <p className="mt-0.5 text-[11px] font-semibold leading-4 text-sibs-muted sm:text-xs 2xl:mt-1 2xl:leading-5">
                 Review your information and uploaded files before sending the
                 application to Talent Acquisition.
               </p>
@@ -6373,7 +6373,7 @@ export default function PublicTalentPoolApplicationPage() {
                 type="button"
                 onClick={handlePreviousPage}
                 disabled={isSubmitting}
-                className="inline-flex h-9 2xl:h-11 items-center justify-center gap-1.5 2xl:gap-2 whitespace-nowrap shrink-0 rounded-lg 2xl:rounded-xl border border-[#D6DEE8] bg-white px-3 sm:px-3.5 2xl:px-4 text-xs 2xl:text-sm font-extrabold text-[#042C51] transition hover:border-[#174A7C]/50 hover:bg-blue-50 hover:text-[#174A7C] disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex h-9 2xl:h-11 items-center justify-center gap-1.5 2xl:gap-2 whitespace-nowrap shrink-0 rounded-[10px] border border-sibs-border bg-white px-3 sm:px-3.5 2xl:px-4 text-xs 2xl:text-sm font-extrabold text-sibs-navy transition hover:border-sibs-navy/50 hover:bg-blue-50 hover:text-sibs-navy disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <ChevronLeft size={15} className="shrink-0" />
                 Back
@@ -6383,7 +6383,7 @@ export default function PublicTalentPoolApplicationPage() {
                 type="button"
                 onClick={handleReset}
                 disabled={isSubmitting}
-                className="inline-flex h-9 2xl:h-11 items-center justify-center gap-1.5 2xl:gap-2 whitespace-nowrap shrink-0 rounded-lg 2xl:rounded-xl border border-[#D6DEE8] bg-white px-3 sm:px-3.5 2xl:px-4 text-xs 2xl:text-sm font-extrabold text-[#042C51] transition hover:border-[#FF5C28]/50 hover:bg-[#FFF7F3] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex h-9 2xl:h-11 items-center justify-center gap-1.5 2xl:gap-2 whitespace-nowrap shrink-0 rounded-[10px] border border-sibs-border bg-white px-3 sm:px-3.5 2xl:px-4 text-xs 2xl:text-sm font-extrabold text-sibs-navy transition hover:border-sibs-orange/50 hover:bg-sibs-cream-light hover:text-sibs-orange disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <RotateCcw size={15} className="shrink-0" />
                 Reset Form
@@ -6392,7 +6392,7 @@ export default function PublicTalentPoolApplicationPage() {
               <button
                 type="submit"
                 disabled={!canSubmit}
-                className="inline-flex h-9 2xl:h-11 items-center justify-center gap-1.5 2xl:gap-2 whitespace-nowrap shrink-0 rounded-lg 2xl:rounded-xl bg-[#FF5C28] px-3.5 sm:px-4.5 2xl:px-6 text-xs 2xl:text-sm font-extrabold text-white transition-colors hover:bg-[#EB3800] focus-visible:ring-2 focus-visible:ring-[#FF5C28] focus-visible:ring-offset-2 active:bg-[#D94514] disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex h-9 2xl:h-11 items-center justify-center gap-1.5 2xl:gap-2 whitespace-nowrap shrink-0 rounded-[10px] bg-sibs-orange px-3.5 sm:px-4.5 2xl:px-6 text-xs 2xl:text-sm font-extrabold text-white transition-colors hover:bg-sibs-orange-hover focus-visible:ring-2 focus-visible:ring-sibs-orange focus-visible:ring-offset-2 active:bg-sibs-orange-hover disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <Send size={15} className="shrink-0" />
                 {isSubmitting ? "Submitting..." : "Submit Application"}
@@ -6407,27 +6407,27 @@ export default function PublicTalentPoolApplicationPage() {
         </div>
       </main>
 
-      <footer className="mt-10 border-t border-[#E6ECF2] bg-white py-6 text-[#042C51] font-jakarta sm:py-7">
+      <footer className="mt-10 border-t border-sibs-border bg-white py-6 text-sibs-navy font-jakarta sm:py-7">
         <div className="mx-auto flex w-full max-w-[1120px] flex-col items-center justify-between gap-4 px-4 sm:flex-row sm:px-6">
           <div className="flex flex-col items-center gap-1 sm:items-start">
             <div className="flex items-center gap-2.5">
               <SiBSBrandLogo className="h-5.5 w-auto" />
               <span className="text-xs text-slate-400">•</span>
-              <span className="text-xs font-semibold text-[#667085]">
+              <span className="text-xs font-semibold text-sibs-muted">
                 Practice. Purpose. Philosophy.
               </span>
             </div>
-            <p className="text-xs text-[#667085]">
+            <p className="text-xs text-sibs-muted">
               © {new Date().getFullYear()} SiBS Outsourcing Solutions. All rights reserved.
             </p>
           </div>
 
-          <div className="flex items-center gap-5 text-xs font-bold text-[#042C51]">
+          <div className="flex items-center gap-5 text-xs font-bold text-sibs-navy">
             <a
               href="https://sibscontactcenter.com"
               target="_blank"
               rel="noopener noreferrer"
-              className="transition hover:text-[#FF5C28]"
+              className="transition hover:text-sibs-orange"
             >
               About Us
             </a>
@@ -6435,7 +6435,7 @@ export default function PublicTalentPoolApplicationPage() {
               href="https://sibscontactcenter.com/privacy-policy"
               target="_blank"
               rel="noopener noreferrer"
-              className="transition hover:text-[#FF5C28]"
+              className="transition hover:text-sibs-orange"
             >
               Applicant Privacy
             </a>
@@ -6443,7 +6443,7 @@ export default function PublicTalentPoolApplicationPage() {
               href="https://sibscontactcenter.com/#faq"
               target="_blank"
               rel="noopener noreferrer"
-              className="transition hover:text-[#FF5C28]"
+              className="transition hover:text-sibs-orange"
             >
               FAQ &amp; Support
             </a>

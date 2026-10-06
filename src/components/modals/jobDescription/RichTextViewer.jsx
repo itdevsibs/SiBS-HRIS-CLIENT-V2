@@ -85,7 +85,7 @@ export default function RichTextViewer({
     <>
       <style>{`
         .jd-rich-text-viewer {
-          color: #344054;
+          color: var(--color-sibs-text-secondary);
           overflow-wrap: anywhere;
         }
 
@@ -184,9 +184,9 @@ export default function RichTextViewer({
 
         .jd-rich-text-viewer blockquote {
           margin: 0.75rem 0;
-          border-left: 3px solid #9eb9d4;
+          border-left: 3px solid var(--color-sibs-border-subtle);
           padding-left: 1rem;
-          color: #486581;
+          color: var(--color-sibs-muted);
         }
       `}</style>
 

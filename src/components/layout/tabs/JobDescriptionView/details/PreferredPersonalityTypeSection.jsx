@@ -12,6 +12,7 @@ import {
   SquarePen,
   X,
 } from "lucide-react";
+import { StatusBadge } from "../../../../ui";
 
 const PERSONALITY_TYPE_OPTIONS = [
   { value: "INTJ", label: "INTJ (Architect)" },
@@ -101,6 +102,7 @@ function getCommentKey(comment = {}, fallback = "") {
 function PersonalityCommentCard({
   comment,
   compact = false,
+  onOpenRevision,
 }) {
   return (
     <div
@@ -113,9 +115,23 @@ function PersonalityCommentCard({
           Reviewer Comment
         </p>
 
-        <span className="rounded-full border border-amber-200 bg-white px-2 py-0.5 text-[9px] font-extrabold uppercase text-amber-700">
-          {comment?.status || "Open"}
-        </span>
+        <div className="flex items-center gap-1.5">
+          <StatusBadge
+            status={comment?.status || "Open"}
+            className="shrink-0 whitespace-nowrap text-[9px] px-2 py-0.5"
+          />
+
+          {onOpenRevision && (
+            <button
+              type="button"
+              onClick={() => onOpenRevision(null, "personalityType")}
+              className="inline-flex items-center gap-1 rounded-md border border-amber-300 bg-white px-2 py-0.5 text-[10px] font-bold text-orange-800 transition hover:bg-amber-100"
+            >
+              <PencilLine size={11} />
+              Revise
+            </button>
+          )}
+        </div>
       </div>
 
       {getCommentSelectedText(comment) && (
@@ -242,14 +258,18 @@ function PersonalityMultiSelect({
         type="button"
         onClick={() => setOpen((previous) => !previous)}
         aria-expanded={open}
-        className="flex min-h-12 w-full items-center justify-between gap-3 rounded-xl border border-[#C9D8E8] bg-white px-3 py-2 text-left outline-none transition hover:border-sibs-primary-1 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+        className={`flex min-h-12 w-full items-center justify-between gap-3 rounded-xl border bg-white px-3 py-2 text-left outline-none transition ${
+          open
+            ? "border-sibs-orange ring-2 ring-sibs-orange/10"
+            : "border-sibs-border-subtle hover:border-sibs-orange/40"
+        }`}
       >
         <div className="flex min-w-0 flex-1 flex-wrap gap-2">
           {selectedValues.length > 0 ? (
             selectedValues.map((personalityType) => (
               <span
                 key={personalityType}
-                className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-[#BFD6F6] bg-[#EAF2FB] px-3 py-1 text-xs font-bold text-sibs-primary-1"
+                className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-sibs-orange/30 bg-sibs-cream-subtle px-3 py-1 text-xs font-bold text-sibs-navy"
               >
                 <span className="min-w-0 truncate">
                   {formatPersonalityTypeLabel(
@@ -274,7 +294,7 @@ function PersonalityMultiSelect({
                       removeOption(personalityType);
                     }
                   }}
-                  className="rounded-full p-0.5 transition hover:bg-sibs-primary-1/10"
+                  className="rounded-full p-0.5 text-sibs-navy/70 transition hover:bg-sibs-orange/10 hover:text-sibs-orange"
                   aria-label={`Remove ${formatPersonalityTypeLabel(
                     personalityType,
                   )}`}
@@ -284,7 +304,7 @@ function PersonalityMultiSelect({
               </span>
             ))
           ) : (
-            <span className="px-1 text-sm font-medium text-[#90A4B7]">
+            <span className="px-1 text-sm font-medium text-sibs-tertiary-5">
               Select personality types
             </span>
           )}
@@ -292,19 +312,19 @@ function PersonalityMultiSelect({
 
         <ChevronDown
           size={18}
-          className={`shrink-0 text-sibs-primary-1 transition-transform ${
-            open ? "rotate-180" : ""
+          className={`shrink-0 transition-transform ${
+            open ? "rotate-180 text-sibs-orange" : "text-sibs-navy"
           }`}
         />
       </button>
 
       {open && (
-        <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-[99999] overflow-hidden rounded-xl border border-[#D7DEE8] bg-white shadow-2xl">
-          <div className="border-b border-[#E6ECF2] p-3">
-            <div className="flex h-10 items-center gap-2 rounded-lg border border-[#D7DEE8] bg-[#F8FAFC] px-3 focus-within:border-sibs-primary-1">
+        <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-[99999] overflow-hidden rounded-xl border border-sibs-border-subtle bg-white shadow-2xl">
+          <div className="border-b border-sibs-border p-3">
+            <div className="flex h-10 items-center gap-2 rounded-lg border border-sibs-border-subtle bg-sibs-surface px-3 focus-within:border-sibs-orange focus-within:ring-2 focus-within:ring-sibs-orange/10">
               <Search
                 size={16}
-                className="shrink-0 text-[#667085]"
+                className="shrink-0 text-sibs-muted"
               />
 
               <input
@@ -314,7 +334,7 @@ function PersonalityMultiSelect({
                 }
                 autoFocus
                 placeholder="Search personality type"
-                className="h-full min-w-0 flex-1 bg-transparent text-sm font-medium text-[#344054] outline-none placeholder:text-[#98A2B3]"
+                className="h-full min-w-0 flex-1 bg-transparent text-sm font-medium text-sibs-text-secondary outline-none placeholder:text-sibs-faint"
               />
             </div>
           </div>
@@ -334,8 +354,8 @@ function PersonalityMultiSelect({
                     }
                     className={`flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2.5 text-left text-sm transition ${
                       selected
-                        ? "bg-[#EAF2FB] font-extrabold text-sibs-primary-1"
-                        : "font-semibold text-[#344054] hover:bg-[#F8FAFC]"
+                        ? "bg-sibs-cream-subtle font-extrabold text-sibs-orange"
+                        : "font-semibold text-sibs-text-secondary hover:bg-sibs-cream-light hover:text-sibs-orange"
                     }`}
                   >
                     <span>{option.label}</span>
@@ -343,8 +363,8 @@ function PersonalityMultiSelect({
                     <span
                       className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border ${
                         selected
-                          ? "border-sibs-primary-1 bg-sibs-primary-1 text-white"
-                          : "border-[#C9D8E8] bg-white text-transparent"
+                          ? "border-sibs-orange bg-sibs-orange text-white"
+                          : "border-sibs-border bg-white text-transparent"
                       }`}
                     >
                       <Check size={13} />
@@ -353,7 +373,7 @@ function PersonalityMultiSelect({
                 );
               })
             ) : (
-              <p className="px-3 py-6 text-center text-sm font-semibold text-[#667085]">
+              <p className="px-3 py-6 text-center text-sm font-semibold text-sibs-muted">
                 No personality type found.
               </p>
             )}
@@ -510,7 +530,7 @@ export default function PreferredPersonalityTypeSection({
       <div className="jd-details-section-header flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <h4 className="text-sm font-extrabold uppercase tracking-wide text-[#101828] sm:text-[15px]">
+            <h4 className="text-sm font-extrabold uppercase tracking-wide text-sibs-navy sm:text-[15px]">
               7. Preferred Personality Type
             </h4>
 
@@ -522,7 +542,7 @@ export default function PreferredPersonalityTypeSection({
             )}
 
             {hasSelectedTypes && !isEditing && (
-              <span className="rounded-full border border-amber-300 bg-[#FFF3B8] px-2.5 py-1 text-[11px] font-extrabold text-[#101828]">
+              <span className="rounded-full border border-amber-300 bg-amber-100 px-2.5 py-1 text-[11px] font-extrabold text-sibs-navy">
                 {selectedTypes.length} selected
               </span>
             )}
@@ -546,7 +566,7 @@ export default function PreferredPersonalityTypeSection({
                 <button
                   type="button"
                   onClick={clearSelectedTypes}
-                  className="inline-flex flex-1 items-center justify-center rounded-lg border border-[#D7DEE8] bg-white px-2.5 py-1.5 text-xs font-bold text-[#667085] transition hover:bg-[#F8FAFC] hover:text-sibs-primary-1 sm:flex-none"
+                  className="inline-flex flex-1 items-center justify-center rounded-lg border border-sibs-border-subtle bg-white px-2.5 py-1.5 text-xs font-bold text-sibs-muted transition hover:bg-sibs-surface hover:text-sibs-primary-1 sm:flex-none"
                 >
                   Clear
                 </button>
@@ -563,7 +583,7 @@ export default function PreferredPersonalityTypeSection({
                 className={`inline-flex flex-1 items-center justify-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs font-bold transition sm:flex-none ${
                   disableEdit
                     ? "cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400"
-                    : "border-[#D7DEE8] bg-white text-sibs-primary-1 hover:bg-[#F8FAFC]"
+                    : "border-sibs-border-subtle bg-white text-sibs-primary-1 hover:bg-sibs-surface"
                 }`}
               >
                 <SquarePen size={14} />
@@ -585,7 +605,7 @@ export default function PreferredPersonalityTypeSection({
                   disableComment ||
                   !hasSelectedTypes
                     ? "cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400"
-                    : "border-blue-100 bg-blue-50 text-sibs-primary-1 hover:bg-blue-100"
+                    : "border-sibs-border bg-white text-sibs-navy hover:border-sibs-orange/40 hover:bg-sibs-cream-subtle hover:text-sibs-orange"
                 }`}
               >
                 <PencilLine size={14} />
@@ -596,7 +616,7 @@ export default function PreferredPersonalityTypeSection({
       </div>
 
       {isEditing ? (
-        <div className="rounded-xl border border-[#D7DEE8] bg-white p-3 shadow-sm sm:p-4">
+        <div className="rounded-xl border border-sibs-border-subtle bg-white p-3 shadow-sm sm:p-4">
           <label className="mb-2 block text-sm font-extrabold text-sibs-primary-1">
             Preferred Personality Type
           </label>
@@ -608,7 +628,7 @@ export default function PreferredPersonalityTypeSection({
             }
           />
 
-          <p className="mt-2 text-xs font-semibold text-[#667085]">
+          <p className="mt-2 text-xs font-semibold text-sibs-muted">
             Select one or more personality types.
             This uses the same options as Add Job
             Description.
@@ -618,7 +638,7 @@ export default function PreferredPersonalityTypeSection({
             <button
               type="button"
               onClick={onCancelEdit}
-              className="inline-flex h-10 w-full items-center justify-center rounded-lg border border-[#D7DEE8] bg-white px-4 text-sm font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC] sm:w-auto"
+              className="inline-flex h-10 w-full items-center justify-center rounded-lg border border-sibs-border-subtle bg-white px-4 text-sm font-bold text-sibs-primary-1 transition hover:bg-sibs-surface sm:w-auto"
             >
               Cancel
             </button>
@@ -637,7 +657,7 @@ export default function PreferredPersonalityTypeSection({
           className={`rounded-xl border px-3 py-2 ${
             comments.length > 0
               ? "border-amber-200 bg-amber-50/40"
-              : "border-[#D7DEE8] bg-white"
+              : "border-sibs-border-subtle bg-white"
           }`}
         >
           {personalityTypes.length > 0 ? (
@@ -664,10 +684,10 @@ export default function PreferredPersonalityTypeSection({
                       }
                       className={`inline-flex items-center rounded-full border px-3 py-1.5 text-xs font-bold transition active:scale-[0.98] ${
                         selected
-                          ? "border-amber-300 bg-[#FFF3B8] text-[#101828] shadow-sm ring-1 ring-amber-300"
+                          ? "border-amber-300 bg-amber-100 text-sibs-navy shadow-sm ring-1 ring-amber-300"
                           : typeComments.length > 0
-                            ? "border-amber-300 bg-[#FFF3B8] text-[#101828]"
-                            : "border-[#BFD6F6] bg-[#EAF2FB] text-sibs-primary-1 hover:border-sibs-primary-1/40 hover:bg-blue-50"
+                            ? "border-amber-300 bg-amber-100 text-sibs-navy"
+                            : "border-blue-200 bg-blue-50 text-sibs-primary-1 hover:border-sibs-primary-1/40 hover:bg-blue-100"
                       } ${
                         !approvalPage ||
                         disableComment
@@ -693,7 +713,7 @@ export default function PreferredPersonalityTypeSection({
               })}
             </div>
           ) : (
-            <p className="text-sm font-semibold text-[#667085]">
+            <p className="text-sm font-semibold text-sibs-muted">
               No preferred personality type provided.
             </p>
           )}

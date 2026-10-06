@@ -101,11 +101,11 @@ const educationalAttainmentOptions = [
 ];
 
 function inputClass(extra = "") {
-  return `h-11 w-full rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-semibold outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${extra}`;
+  return `h-11 w-full rounded-[10px] border border-sibs-border bg-white px-4 text-sm font-semibold outline-none transition focus:border-sibs-orange focus:ring-4 focus:ring-sibs-orange/10 ${extra}`;
 }
 
 function textareaClass(extra = "") {
-  return `w-full resize-none rounded-xl border border-[#E6ECF2] bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${extra}`;
+  return `w-full resize-none rounded-[10px] border border-sibs-border bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-sibs-orange focus:ring-4 focus:ring-sibs-orange/10 ${extra}`;
 }
 
 function calculateAge(dateOfBirth) {
@@ -160,7 +160,7 @@ function getStatusClass(status) {
 
 function InfoBox({ icon: Icon, label, value }) {
   return (
-    <div className="rounded-xl border border-[#E6ECF2] bg-white p-4 shadow-sm">
+    <div className="rounded-xl border border-sibs-border bg-white p-4 shadow-sm">
       <div className="mb-2 flex items-center gap-2">
         <Icon size={16} className="text-sibs-primary-1" />
 
@@ -169,7 +169,7 @@ function InfoBox({ icon: Icon, label, value }) {
         </p>
       </div>
 
-      <p className="whitespace-pre-line break-words text-sm font-bold text-[#344054]">
+      <p className="whitespace-pre-line break-words text-sm font-bold text-sibs-navy">
         {value || "—"}
       </p>
     </div>
@@ -183,7 +183,7 @@ function DetailRow({ label, value }) {
         {label}
       </p>
 
-      <p className="max-w-[60%] break-words text-right text-sm font-bold text-[#344054]">
+      <p className="max-w-[60%] break-words text-right text-sm font-bold text-sibs-navy">
         {value || "—"}
       </p>
     </div>
@@ -245,8 +245,8 @@ export function AddCandidateModal({ open, form, setForm, onClose, onSubmit, onRe
         <form onSubmit={onSubmit} className="flex-1 overflow-y-auto p-4 sm:p-6">
           <div className="grid grid-cols-1 gap-5 xl:grid-cols-[1fr_340px]">
             <div className="space-y-5">
-              <div className="rounded-xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
-                <h3 className="mb-4 text-sm font-bold text-[#101828]">
+              <div className="rounded-xl border border-sibs-border bg-white p-5 shadow-sm">
+                <h3 className="mb-4 text-sm font-bold text-sibs-navy">
                   Personal Information
                 </h3>
 
@@ -324,7 +324,7 @@ export function AddCandidateModal({ open, form, setForm, onClose, onSubmit, onRe
                       className={`h-11 w-full rounded-xl border bg-white px-4 text-sm font-semibold outline-none transition focus:ring-4 ${
                         isMinor
                           ? "border-red-300 focus:border-red-500 focus:ring-red-500/10"
-                          : "border-[#E6ECF2] focus:border-sibs-primary-1 focus:ring-sibs-primary-1/10"
+                          : "border-sibs-border focus:border-sibs-orange focus:ring-sibs-orange/10"
                       }`}
                     />
 
@@ -404,8 +404,8 @@ export function AddCandidateModal({ open, form, setForm, onClose, onSubmit, onRe
                 </div>
               </div>
 
-              <div className="rounded-xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
-                <h3 className="mb-4 text-sm font-bold text-[#101828]">
+              <div className="rounded-xl border border-sibs-border bg-white p-5 shadow-sm">
+                <h3 className="mb-4 text-sm font-bold text-sibs-navy">
                   Candidate Classification
                 </h3>
 
@@ -518,8 +518,8 @@ export function AddCandidateModal({ open, form, setForm, onClose, onSubmit, onRe
                 </div>
               </div>
 
-              <div className="rounded-xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
-                <h3 className="mb-4 text-sm font-bold text-[#101828]">
+              <div className="rounded-xl border border-sibs-border bg-white p-5 shadow-sm">
+                <h3 className="mb-4 text-sm font-bold text-sibs-navy">
                   Educational Attainment
                 </h3>
 
@@ -527,7 +527,7 @@ export function AddCandidateModal({ open, form, setForm, onClose, onSubmit, onRe
                   {educationalAttainmentOptions.map((item) => (
                     <label
                       key={item}
-                      className="flex items-center gap-3 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4"
+                      className="flex items-center gap-3 rounded-xl border border-sibs-border bg-sibs-surface p-4"
                     >
                       <input
                         type="radio"
@@ -543,7 +543,7 @@ export function AddCandidateModal({ open, form, setForm, onClose, onSubmit, onRe
                         className="h-4 w-4"
                       />
 
-                      <span className="text-sm font-semibold text-[#344054]">
+                      <span className="text-sm font-semibold text-sibs-navy">
                         {item}
                       </span>
                     </label>
@@ -551,8 +551,8 @@ export function AddCandidateModal({ open, form, setForm, onClose, onSubmit, onRe
                 </div>
               </div>
 
-              <div className="rounded-xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
-                <h3 className="mb-4 text-sm font-bold text-[#101828]">
+              <div className="rounded-xl border border-sibs-border bg-white p-5 shadow-sm">
+                <h3 className="mb-4 text-sm font-bold text-sibs-navy">
                   Affiliations and Certifications
                 </h3>
 
@@ -566,7 +566,7 @@ export function AddCandidateModal({ open, form, setForm, onClose, onSubmit, onRe
                   ].map(([field, label]) => (
                     <label
                       key={field}
-                      className="flex items-center gap-3 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4"
+                      className="flex items-center gap-3 rounded-xl border border-sibs-border bg-sibs-surface p-4"
                     >
                       <input
                         type="checkbox"
@@ -577,7 +577,7 @@ export function AddCandidateModal({ open, form, setForm, onClose, onSubmit, onRe
                         className="h-4 w-4"
                       />
 
-                      <span className="text-sm font-semibold text-[#344054]">
+                      <span className="text-sm font-semibold text-sibs-navy">
                         {label}
                       </span>
                     </label>
@@ -598,8 +598,8 @@ export function AddCandidateModal({ open, form, setForm, onClose, onSubmit, onRe
                 </div>
               </div>
 
-              <div className="rounded-xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
-                <h3 className="mb-4 text-sm font-bold text-[#101828]">
+              <div className="rounded-xl border border-sibs-border bg-white p-5 shadow-sm">
+                <h3 className="mb-4 text-sm font-bold text-sibs-navy">
                   Training Attended
                 </h3>
 
@@ -614,8 +614,8 @@ export function AddCandidateModal({ open, form, setForm, onClose, onSubmit, onRe
                 />
               </div>
 
-              <div className="rounded-xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
-                <h3 className="mb-4 text-sm font-bold text-[#101828]">
+              <div className="rounded-xl border border-sibs-border bg-white p-5 shadow-sm">
+                <h3 className="mb-4 text-sm font-bold text-sibs-navy">
                   Work Readiness Questions
                 </h3>
 
@@ -770,12 +770,12 @@ export function AddCandidateModal({ open, form, setForm, onClose, onSubmit, onRe
           </div>
         </form>
 
-        <div className="border-t border-gray-100 px-5 py-4 sm:px-6">
+        <div className="border-t border-sibs-border px-5 py-4 sm:px-6">
           <div className="flex flex-col justify-end gap-2 sm:flex-row">
             <button
               type="button"
               onClick={onReset}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:border-sibs-primary-1 hover:bg-sibs-primary-1/5"
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-[10px] border border-sibs-border bg-white px-5 text-sm font-bold text-sibs-navy transition hover:border-sibs-orange hover:bg-sibs-cream-light hover:text-sibs-orange"
             >
               <RotateCcw size={16} />
               Reset
@@ -785,7 +785,7 @@ export function AddCandidateModal({ open, form, setForm, onClose, onSubmit, onRe
               type="submit"
               onClick={onSubmit}
               disabled={isMinor}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-[10px] bg-sibs-orange px-5 text-sm font-bold text-white transition hover:bg-sibs-orange-hover disabled:cursor-not-allowed disabled:opacity-50"
             >
               <UserPlus size={16} />
               Save Candidate
@@ -883,8 +883,8 @@ export function MoveToPipelineModal({
                 </p>
               </div>
 
-              <div className="rounded-xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
-                <h3 className="mb-4 text-sm font-bold text-[#101828]">
+              <div className="rounded-xl border border-sibs-border bg-white p-5 shadow-sm">
+                <h3 className="mb-4 text-sm font-bold text-sibs-navy">
                   Pipeline Assignment
                 </h3>
 
@@ -915,7 +915,7 @@ export function MoveToPipelineModal({
                     <input
                       readOnly
                       value={form.roleTitle}
-                      className="h-11 w-full cursor-not-allowed rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-4 text-sm font-semibold text-gray-500 outline-none"
+                      className="h-11 w-full cursor-not-allowed rounded-[10px] border border-sibs-border bg-sibs-surface px-4 text-sm font-semibold text-sibs-muted outline-none"
                     />
                   </div>
 
@@ -925,7 +925,7 @@ export function MoveToPipelineModal({
                     <input
                       readOnly
                       value={form.account}
-                      className="h-11 w-full cursor-not-allowed rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-4 text-sm font-semibold text-gray-500 outline-none"
+                      className="h-11 w-full cursor-not-allowed rounded-[10px] border border-sibs-border bg-sibs-surface px-4 text-sm font-semibold text-sibs-muted outline-none"
                     />
                   </div>
 
@@ -935,7 +935,7 @@ export function MoveToPipelineModal({
                     <input
                       readOnly
                       value={selectedRequirement?.jobDescription || ""}
-                      className="h-11 w-full cursor-not-allowed rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-4 text-sm font-semibold text-gray-500 outline-none"
+                      className="h-11 w-full cursor-not-allowed rounded-[10px] border border-sibs-border bg-sibs-surface px-4 text-sm font-semibold text-sibs-muted outline-none"
                     />
                   </div>
 
@@ -989,8 +989,8 @@ export function MoveToPipelineModal({
             </div>
 
             <div className="space-y-5">
-              <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-5">
-                <h3 className="text-sm font-bold text-[#101828]">
+              <div className="rounded-xl border border-sibs-border bg-sibs-surface p-5">
+                <h3 className="text-sm font-bold text-sibs-navy">
                   What will happen?
                 </h3>
 
@@ -1024,12 +1024,12 @@ export function MoveToPipelineModal({
           </div>
         </form>
 
-        <div className="border-t border-gray-100 px-5 py-4 sm:px-6">
+        <div className="border-t border-sibs-border px-5 py-4 sm:px-6">
           <div className="flex flex-col justify-end gap-2 sm:flex-row">
             <button
               type="button"
               onClick={onClose}
-              className="inline-flex h-11 items-center justify-center rounded-xl border border-[#E6ECF2] bg-white px-5 text-sm font-bold text-gray-600 transition hover:bg-gray-50"
+              className="inline-flex h-11 items-center justify-center rounded-[10px] border border-sibs-border bg-white px-5 text-sm font-bold text-sibs-navy transition hover:bg-sibs-surface"
             >
               Cancel
             </button>
@@ -1037,7 +1037,7 @@ export function MoveToPipelineModal({
             <button
               type="submit"
               onClick={onSubmit}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white transition hover:opacity-90"
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-[10px] bg-sibs-orange px-5 text-sm font-bold text-white transition hover:bg-sibs-orange-hover"
             >
               <ArrowRight size={16} />
               Move to Pipeline
@@ -1096,7 +1096,7 @@ export function CandidateProfileModal({
         <div className="flex-1 overflow-y-auto p-4 sm:p-6">
           <div className="grid grid-cols-1 gap-5 xl:grid-cols-[1fr_340px]">
             <div className="space-y-5">
-              <div className="rounded-xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
+              <div className="rounded-xl border border-sibs-border bg-white p-5 shadow-sm">
                 <div className="flex flex-col gap-4 md:flex-row md:items-center">
                   <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl bg-sibs-primary-1 text-xl font-bold text-white">
                     {candidate.name
@@ -1107,7 +1107,7 @@ export function CandidateProfileModal({
                   </div>
 
                   <div className="min-w-0 flex-1">
-                    <h3 className="break-words text-xl font-bold text-[#101828]">
+                    <h3 className="break-words text-xl font-bold text-sibs-navy">
                       {candidate.name}
                     </h3>
 
@@ -1173,10 +1173,10 @@ export function CandidateProfileModal({
                 />
               </div>
 
-              <div className="rounded-xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
+              <div className="rounded-xl border border-sibs-border bg-white p-5 shadow-sm">
                 <div className="mb-4 flex items-center gap-2">
                   <GraduationCap size={18} className="text-sibs-primary-1" />
-                  <h3 className="text-sm font-bold text-[#101828]">
+                  <h3 className="text-sm font-bold text-sibs-navy">
                     Education, Certifications, and Trainings
                   </h3>
                 </div>
@@ -1200,10 +1200,10 @@ export function CandidateProfileModal({
                 </div>
               </div>
 
-              <div className="rounded-xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
+              <div className="rounded-xl border border-sibs-border bg-white p-5 shadow-sm">
                 <div className="mb-4 flex items-center gap-2">
                   <Tags size={18} className="text-sibs-primary-1" />
-                  <h3 className="text-sm font-bold text-[#101828]">
+                  <h3 className="text-sm font-bold text-sibs-navy">
                     Skills / Language Tags
                   </h3>
                 </div>
@@ -1220,10 +1220,10 @@ export function CandidateProfileModal({
                 </div>
               </div>
 
-              <div className="rounded-xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
+              <div className="rounded-xl border border-sibs-border bg-white p-5 shadow-sm">
                 <div className="mb-4 flex items-center gap-2">
                   <History size={18} className="text-sibs-primary-1" />
-                  <h3 className="text-sm font-bold text-[#101828]">
+                  <h3 className="text-sm font-bold text-sibs-navy">
                     Application History
                   </h3>
                 </div>
@@ -1234,11 +1234,11 @@ export function CandidateProfileModal({
                     candidate.applicationHistory.map((item, index) => (
                       <div
                         key={`${item.role}-${index}`}
-                        className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4"
+                        className="rounded-xl border border-sibs-border bg-sibs-surface p-4"
                       >
                         <div className="flex flex-col justify-between gap-2 md:flex-row md:items-center">
                           <div>
-                            <p className="text-sm font-bold text-[#101828]">
+                            <p className="text-sm font-bold text-sibs-navy">
                               {item.role}
                             </p>
 
@@ -1260,7 +1260,7 @@ export function CandidateProfileModal({
                       </div>
                     ))
                   ) : (
-                    <div className="rounded-xl border border-dashed border-[#E6ECF2] bg-[#F8FAFC] p-5 text-center text-xs font-bold text-sibs-tertiary-5">
+                    <div className="rounded-xl border border-dashed border-sibs-border bg-sibs-surface p-5 text-center text-xs font-bold text-sibs-tertiary-5">
                       No application history yet.
                     </div>
                   )}
@@ -1269,8 +1269,8 @@ export function CandidateProfileModal({
             </div>
 
             <div className="space-y-5">
-              <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-5">
-                <h3 className="text-sm font-bold text-[#101828]">
+              <div className="rounded-xl border border-sibs-border bg-sibs-surface p-5">
+                <h3 className="text-sm font-bold text-sibs-navy">
                   Talent Pool Details
                 </h3>
 
@@ -1289,8 +1289,8 @@ export function CandidateProfileModal({
                 </div>
               </div>
 
-              <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-5">
-                <h3 className="text-sm font-bold text-[#101828]">
+              <div className="rounded-xl border border-sibs-border bg-sibs-surface p-5">
+                <h3 className="text-sm font-bold text-sibs-navy">
                   Work Readiness
                 </h3>
 
@@ -1326,20 +1326,20 @@ export function CandidateProfileModal({
                 </div>
               </div>
 
-              <div className="rounded-xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
-                <h3 className="text-sm font-bold text-[#101828]">References</h3>
+              <div className="rounded-xl border border-sibs-border bg-white p-5 shadow-sm">
+                <h3 className="text-sm font-bold text-sibs-navy">References</h3>
 
-                <p className="mt-3 whitespace-pre-line rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4 text-sm leading-6 text-[#344054]">
+                <p className="mt-3 whitespace-pre-line rounded-xl border border-sibs-border bg-sibs-surface p-4 text-sm leading-6 text-sibs-navy">
                   {candidate.references || "No references provided."}
                 </p>
               </div>
 
-              <div className="rounded-xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
-                <h3 className="text-sm font-bold text-[#101828]">
+              <div className="rounded-xl border border-sibs-border bg-white p-5 shadow-sm">
+                <h3 className="text-sm font-bold text-sibs-navy">
                   Recruiter Remarks
                 </h3>
 
-                <p className="mt-3 whitespace-pre-line rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4 text-sm leading-6 text-[#344054]">
+                <p className="mt-3 whitespace-pre-line rounded-xl border border-sibs-border bg-sibs-surface p-4 text-sm leading-6 text-sibs-navy">
                   {candidate.remarks || "No remarks provided."}
                 </p>
               </div>
@@ -1355,14 +1355,14 @@ export function CandidateProfileModal({
                 </p>
               </div>
 
-              <div className="rounded-xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
-                <h3 className="text-sm font-bold text-[#101828]">Actions</h3>
+              <div className="rounded-xl border border-sibs-border bg-white p-5 shadow-sm">
+                <h3 className="text-sm font-bold text-sibs-navy">Actions</h3>
 
                 <div className="mt-4 space-y-2">
                   <button
                     type="button"
                     onClick={() => onOpenStatus(candidate)}
-                    className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:border-sibs-primary-1 hover:bg-sibs-primary-1/5"
+                    className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-[10px] border border-sibs-border bg-white px-5 text-sm font-bold text-sibs-navy transition hover:border-sibs-orange hover:bg-sibs-cream-light hover:text-sibs-orange"
                   >
                     <Pencil size={16} />
                     Update Status
@@ -1372,7 +1372,7 @@ export function CandidateProfileModal({
                     <button
                       type="button"
                       onClick={() => onOpenMoveToPipeline(candidate)}
-                      className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white transition hover:opacity-90"
+                      className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-[10px] bg-sibs-orange px-5 text-sm font-bold text-white transition hover:bg-sibs-orange-hover"
                     >
                       <KanbanSquare size={16} />
                       Move to Pipeline
@@ -1391,12 +1391,12 @@ export function CandidateProfileModal({
           </div>
         </div>
 
-        <div className="border-t border-gray-100 px-5 py-4 sm:px-6">
+        <div className="border-t border-sibs-border px-5 py-4 sm:px-6">
           <div className="flex justify-end">
             <button
               type="button"
               onClick={onClose}
-              className="rounded-xl bg-sibs-primary-1 px-5 py-2.5 text-sm font-bold text-white transition hover:opacity-90"
+              className="rounded-[10px] bg-sibs-orange px-5 py-2.5 text-sm font-bold text-white transition hover:bg-sibs-orange-hover"
             >
               Close
             </button>
@@ -1423,16 +1423,16 @@ export function UpdateStatusModal({
       onClick={onClose}
     >
       <div
-        className="sibs-modal-pop-in relative flex max-h-[92dvh] w-full max-w-xl flex-col overflow-hidden rounded-2xl border border-[#DCE6F1] bg-white shadow-2xl font-jakarta"
+        className="sibs-modal-pop-in relative flex max-h-[92dvh] w-full max-w-xl flex-col overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-2xl font-jakarta"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-start justify-between gap-4 border-b border-[#E6ECF2] bg-white px-5 py-4.5 sm:px-6">
+        <div className="flex items-start justify-between gap-4 border-b border-sibs-border bg-white px-5 py-4.5 sm:px-6">
           <div className="min-w-0">
-            <h2 className="text-lg font-extrabold text-[#042C51]">
+            <h2 className="text-lg font-extrabold text-sibs-navy">
               Update Candidate Status
             </h2>
 
-            <p className="mt-0.5 truncate text-xs font-bold uppercase tracking-wider text-[#FF5C28]">
+            <p className="mt-0.5 truncate text-xs font-bold uppercase tracking-wider text-sibs-orange">
               {candidate.candidateId} — {candidate.name}
             </p>
           </div>
@@ -1440,7 +1440,7 @@ export function UpdateStatusModal({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg border border-[#E6ECF2] p-2 text-[#64748B] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28]"
+            className="rounded-[10px] border border-sibs-border p-2 text-sibs-muted transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange"
             aria-label="Close modal"
           >
             <X size={18} />
@@ -1448,13 +1448,13 @@ export function UpdateStatusModal({
         </div>
 
         <form onSubmit={onSubmit} className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-4">
-          <div className="rounded-xl border border-[#DCE6F1] bg-[#F8FAFC] p-4">
-            <p className="text-[10px] 2xl:text-[11px] font-extrabold uppercase tracking-wide text-[#475569]">
+          <div className="rounded-xl border border-sibs-border bg-sibs-surface p-4">
+            <p className="text-[10px] 2xl:text-[11px] font-extrabold uppercase tracking-wide text-sibs-muted">
               Current Status
             </p>
             <div className="mt-1.5 flex items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 rounded-lg border border-[#DCE6F1] bg-white px-3 py-1 text-xs font-extrabold text-[#042C51] shadow-xs">
-                <span className="h-2 w-2 rounded-full bg-[#FF5C28]" />
+              <span className="inline-flex items-center gap-1.5 rounded-[10px] border border-sibs-border bg-white px-3 py-1 text-xs font-extrabold text-sibs-navy shadow-xs">
+                <span className="h-2 w-2 rounded-full bg-sibs-orange" />
                 {candidate.status || "—"}
               </span>
             </div>
@@ -1492,11 +1492,11 @@ export function UpdateStatusModal({
             />
           </div>
 
-          <div className="mt-6 flex flex-col-reverse justify-end gap-2 border-t border-[#E6ECF2] pt-4 sm:flex-row">
+          <div className="mt-6 flex flex-col-reverse justify-end gap-2 border-t border-sibs-border pt-4 sm:flex-row">
             <button
               type="button"
               onClick={onClose}
-              className="inline-flex h-10 2xl:h-11 items-center justify-center rounded-xl border border-[#DCE6F1] bg-white px-5 text-xs font-extrabold text-[#475569] shadow-xs transition hover:border-[#CBD5E1] hover:bg-[#F8FAFC] hover:text-[#042C51] active:translate-y-px"
+              className="inline-flex h-10 2xl:h-11 items-center justify-center rounded-[10px] border border-sibs-border bg-white px-5 text-xs font-extrabold text-sibs-navy shadow-xs transition hover:bg-sibs-surface active:translate-y-px"
             >
               Cancel
             </button>
@@ -1504,7 +1504,7 @@ export function UpdateStatusModal({
             <button
               type="submit"
               disabled={!form.status}
-              className="inline-flex h-10 2xl:h-11 items-center justify-center gap-2 rounded-xl bg-[#FF5C28] px-5.5 text-xs font-extrabold text-white shadow-sm shadow-[#FF5C28]/25 transition hover:bg-[#E6531B] hover:shadow-md hover:shadow-[#FF5C28]/35 active:translate-y-px disabled:cursor-not-allowed disabled:border-transparent disabled:bg-[#D7DEE8] disabled:text-[#98A2B3] disabled:shadow-none"
+              className="inline-flex h-10 2xl:h-11 items-center justify-center gap-2 rounded-[10px] bg-sibs-orange px-5.5 text-xs font-extrabold text-white shadow-sm shadow-sibs-orange/25 transition hover:bg-sibs-orange-hover hover:shadow-md hover:shadow-sibs-orange/35 active:translate-y-px disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none"
             >
               <RefreshCcw size={15} />
               Save Status

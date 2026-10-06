@@ -22,13 +22,13 @@ import ApplicantLeadMovementHistoryDrawer from "./ApplicantLeadMovementHistoryDr
 import { hearAboutUsOptions } from "../../../lib/utils/talentPool/talentPoolConstants";
 
 const INPUT_CLASS =
-  "h-8.5 2xl:h-10 w-full rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-3 sibs-text-xs font-semibold text-[#042C51] outline-none transition placeholder:text-[#98A2B3] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:bg-[#F2F4F7] disabled:text-[#667085]";
+  "h-8.5 2xl:h-10 w-full rounded-xl border border-sibs-border bg-sibs-surface px-3 sibs-text-xs font-semibold text-sibs-navy outline-none transition placeholder:text-sibs-muted hover:border-sibs-orange/40 hover:bg-white focus:border-sibs-orange focus:bg-white focus:ring-4 focus:ring-sibs-orange/10 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-sibs-muted";
 
 const TEXTAREA_CLASS =
-  "min-h-20 2xl:min-h-24 w-full resize-none rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-3 py-2 text-xs font-semibold text-[#042C51] outline-none transition placeholder:text-[#98A2B3] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:bg-[#F2F4F7] disabled:text-[#667085]";
+  "min-h-20 2xl:min-h-24 w-full resize-none rounded-xl border border-sibs-border bg-sibs-surface px-3 py-2 text-xs font-semibold text-sibs-navy outline-none transition placeholder:text-sibs-muted hover:border-sibs-orange/40 hover:bg-white focus:border-sibs-orange focus:bg-white focus:ring-4 focus:ring-sibs-orange/10 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-sibs-muted";
 
 const AUTO_GROW_TEXTAREA_CLASS =
-  "min-h-10 w-full resize-none overflow-hidden rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-3 py-2 text-xs font-semibold leading-5 text-[#042C51] outline-none transition placeholder:text-[#98A2B3] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:bg-[#F2F4F7] disabled:text-[#667085]";
+  "min-h-10 w-full resize-none overflow-hidden rounded-xl border border-sibs-border bg-sibs-surface px-3 py-2 text-xs font-semibold leading-5 text-sibs-navy outline-none transition placeholder:text-sibs-muted hover:border-sibs-orange/40 hover:bg-white focus:border-sibs-orange focus:bg-white focus:ring-4 focus:ring-sibs-orange/10 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-sibs-muted";
 
 const UPPERCASE_INPUT_CLASS = `${INPUT_CLASS} uppercase placeholder:normal-case`;
 const UPPERCASE_TEXTAREA_CLASS = `${TEXTAREA_CLASS} uppercase placeholder:normal-case`;
@@ -132,7 +132,7 @@ function EditedIndicator({ show }) {
   if (!show) return null;
 
   return (
-    <span className="ml-1 inline-flex items-center rounded-full bg-[#FFF3EE] px-1.5 py-0.5 text-[9px] font-black uppercase tracking-normal text-[#E6531B] ring-1 ring-[#FFD7C8]">
+    <span className="ml-1 inline-flex items-center rounded-full bg-sibs-cream-light px-1.5 py-0.5 text-[9px] font-black uppercase tracking-normal text-sibs-orange ring-1 ring-sibs-orange/30">
       Edited
     </span>
   );
@@ -140,18 +140,18 @@ function EditedIndicator({ show }) {
 
 function FormSection({ title, subtitle, icon: SectionIcon, action, children }) {
   return (
-    <section className="rounded-2xl border border-[#DCE6F1] bg-white p-3.5 sm:p-4 2xl:p-5 shadow-[0_8px_24px_rgba(4,44,81,0.04)] font-jakarta">
-      <div className="mb-3 2xl:mb-4 flex items-start justify-between gap-2 border-b border-[#EEF2F6] pb-2.5 2xl:pb-3">
+    <section className="rounded-2xl border border-sibs-border bg-white p-3.5 sm:p-4 2xl:p-5 shadow-[0_8px_24px_rgba(4,44,81,0.04)] font-jakarta">
+      <div className="mb-3 2xl:mb-4 flex items-start justify-between gap-2 border-b border-sibs-border pb-2.5 2xl:pb-3">
         <div className="flex min-w-0 items-start gap-2.5">
           {React.createElement(SectionIcon, {
             size: 16,
-            className: "mt-0.5 shrink-0 text-[#FF5C28]",
+            className: "mt-0.5 shrink-0 text-sibs-orange",
           })}
           <div className="min-w-0">
-            <h3 className="sibs-modal-section-title text-[#042C51]">
+            <h3 className="sibs-modal-section-title text-sibs-navy">
               {title}
             </h3>
-            <p className="sibs-modal-section-subtitle mt-0.5 text-[#667085]">
+            <p className="sibs-modal-section-subtitle mt-0.5 text-sibs-muted">
               {subtitle}
             </p>
           </div>
@@ -318,10 +318,10 @@ export default function ApplicantLeadModal() {
           className="sibs-modal-pop-in relative flex h-full min-w-0 max-h-[84vh] 2xl:max-h-[86vh] w-full flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
         >
         {/* Modal Header */}
-        <header className="shrink-0 bg-[#042C51] px-4 py-2.5 sm:px-5 2xl:py-3.5 text-white">
+        <header className="shrink-0 bg-sibs-navy px-4 py-2.5 sm:px-5 2xl:py-3.5 text-white">
           <div className="flex items-start justify-between gap-4">
             <div className="flex min-w-0 items-start gap-2.5 sm:gap-3">
-              <span className="flex h-8 w-8 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-lg border border-white/20 bg-white/10 text-[#FF5C28]">
+              <span className="flex h-8 w-8 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-lg border border-white/20 bg-white/10 text-sibs-orange">
                 <UserPlus className="h-4 w-4 2xl:h-4.5 2xl:w-4.5" />
               </span>
 
@@ -336,7 +336,7 @@ export default function ApplicantLeadModal() {
                       : "Log New Applicant Lead"}
                   </h2>
 
-                  <span className="inline-flex rounded-full bg-[#FF5C28] px-2 py-0.5 text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-white">
+                  <span className="inline-flex rounded-full bg-sibs-orange px-2 py-0.5 text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-white">
                     Lead Intake
                   </span>
                 </div>
@@ -359,13 +359,13 @@ export default function ApplicantLeadModal() {
                       ? "Close Movement History"
                       : `Open Movement History, ${leadHistory.length} records`
                   }
-                  className={`inline-flex h-7.5 2xl:h-8 items-center justify-center gap-1.5 rounded-lg border px-2.5 text-[9px] 2xl:text-[10px] font-extrabold text-white shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF5C28]/40 ${
+                  className={`inline-flex h-7.5 2xl:h-8 items-center justify-center gap-1.5 rounded-lg border px-2.5 text-[9px] 2xl:text-[10px] font-extrabold text-white shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sibs-orange/40 ${
                     movementHistoryOpen
-                      ? "border-[#FF5C28] bg-[#0D4676] shadow-[0_0_12px_rgba(255,92,40,0.2)]"
-                      : "border-white/15 bg-[#063560] hover:border-[#FF5C28]/60 hover:bg-[#0D4676]"
+                      ? "border-sibs-orange bg-sibs-navy-light shadow-[0_0_12px_rgba(255,92,40,0.2)]"
+                      : "border-white/15 bg-sibs-navy hover:border-sibs-orange/60 hover:bg-sibs-navy-light"
                   }`}
                 >
-                  <History size={12} className="text-[#FF5C28]" />
+                  <History size={12} className="text-sibs-orange" />
                   <span className="hidden sm:inline">Movement History</span>
                   <span>({leadHistory.length})</span>
                 </button>
@@ -391,29 +391,29 @@ export default function ApplicantLeadModal() {
         >
           <div
             data-dropdown-boundary="true"
-            className="sibs-scrollbar min-h-0 flex-1 space-y-3.5 2xl:space-y-4 overflow-y-auto overscroll-contain bg-[#F7F9FC] p-3 sm:p-4 2xl:p-5"
+            className="sibs-scrollbar min-h-0 flex-1 space-y-3.5 2xl:space-y-4 overflow-y-auto overscroll-contain bg-sibs-surface p-3 sm:p-4 2xl:p-5"
           >
             {/* Auto Logging Account Info Bar */}
-            <div className="flex flex-col gap-2 rounded-xl border border-blue-200 bg-[#E9F0FC] p-3 text-xs sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-center gap-2 font-extrabold text-[#042C51]">
-                <UserCheck size={16} className="text-[#FF5C28]" />
+            <div className="flex flex-col gap-2 rounded-xl border border-blue-200 bg-blue-50 p-3 text-xs sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-2 font-extrabold text-sibs-navy">
+                <UserCheck size={16} className="text-sibs-orange" />
                 <span>Logging Account:</span>
                 <span className="rounded border border-blue-200 bg-white px-2 py-0.5 text-blue-900 font-bold">
                   {loggingAccount}
                 </span>
               </div>
-              <span className="text-[10px] font-semibold text-[#667085]">
+              <span className="text-[10px] font-semibold text-sibs-muted">
                 Auto-captured from active login
               </span>
             </div>
 
             {/* Referral Code (Edit Mode) */}
             {isEditMode ? (
-              <div className="flex flex-col gap-2 rounded-xl border border-[#DCE6F1] bg-white p-3 text-xs sm:flex-row sm:items-center sm:justify-between shadow-xs">
-                <div className="flex min-w-0 items-center gap-1.5 font-extrabold text-[#042C51]">
-                  <KeyRound size={16} className="shrink-0 text-[#FF5C28]" />
+              <div className="flex flex-col gap-2 rounded-xl border border-sibs-border bg-white p-3 text-xs sm:flex-row sm:items-center sm:justify-between shadow-xs">
+                <div className="flex min-w-0 items-center gap-1.5 font-extrabold text-sibs-navy">
+                  <KeyRound size={16} className="shrink-0 text-sibs-orange" />
                   <span className="mr-0.5 shrink-0">Referral Code:</span>
-                  <span className="min-w-0 truncate rounded border border-[#DCE6F1] bg-[#F8FAFC] px-2.5 py-0.5 font-black tracking-[0.08em] text-[#042C51]">
+                  <span className="min-w-0 truncate rounded border border-sibs-border bg-sibs-surface px-2.5 py-0.5 font-black tracking-[0.08em] text-sibs-navy">
                     {referralCode || "Not generated"}
                   </span>
                   <button
@@ -422,7 +422,7 @@ export default function ApplicantLeadModal() {
                     onClick={handleCopyReferralCode}
                     title="Copy referral code"
                     aria-label="Copy referral code"
-                    className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded text-[#6B7A90] transition hover:text-[#042C51] hover:cursor-pointer disabled:cursor-not-allowed disabled:text-[#98A2B3]"
+                    className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded text-sibs-muted transition hover:text-sibs-navy hover:cursor-pointer disabled:cursor-not-allowed disabled:text-sibs-muted"
                   >
                     <Copy size={13} strokeWidth={2.2} />
                   </button>
@@ -433,7 +433,7 @@ export default function ApplicantLeadModal() {
                     </span>
                   ) : null}
                 </div>
-                <span className="text-[10px] font-semibold text-[#667085]">
+                <span className="text-[10px] font-semibold text-sibs-muted">
                   Generated by HRIS
                 </span>
               </div>
@@ -447,8 +447,8 @@ export default function ApplicantLeadModal() {
             >
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <label className="block">
-                  <span className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
-                    First Name <span className="text-[#FF5C28]">*</span>
+                  <span className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-sibs-muted">
+                    First Name <span className="text-sibs-orange">*</span>
                     <EditedIndicator show={editedFields.firstName} />
                   </span>
                   <input
@@ -463,8 +463,8 @@ export default function ApplicantLeadModal() {
                 </label>
 
                 <label className="block">
-                  <span className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
-                    Last Name <span className="text-[#FF5C28]">*</span>
+                  <span className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-sibs-muted">
+                    Last Name <span className="text-sibs-orange">*</span>
                     <EditedIndicator show={editedFields.lastName} />
                   </span>
                   <input
@@ -479,7 +479,7 @@ export default function ApplicantLeadModal() {
                 </label>
 
                 <label className="block">
-                  <span className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+                  <span className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-sibs-muted">
                     Middle Name
                     <EditedIndicator show={editedFields.middleName} />
                   </span>
@@ -494,7 +494,7 @@ export default function ApplicantLeadModal() {
                 </label>
 
                 <label className="block">
-                  <span className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+                  <span className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-sibs-muted">
                     Suffix
                     <EditedIndicator show={editedFields.suffix} />
                   </span>
@@ -509,8 +509,8 @@ export default function ApplicantLeadModal() {
                 </label>
 
                 <label className="block">
-                  <span className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
-                    Cellphone / CP Number <span className="text-[#FF5C28]">*</span>
+                  <span className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-sibs-muted">
+                    Cellphone / CP Number <span className="text-sibs-orange">*</span>
                     <EditedIndicator show={editedFields.cpNum} />
                   </span>
                   <input
@@ -538,8 +538,8 @@ export default function ApplicantLeadModal() {
                 </label>
 
                 <label className="block">
-                  <span className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
-                    Email Address <span className="text-[#FF5C28]">*</span>
+                  <span className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-sibs-muted">
+                    Email Address <span className="text-sibs-orange">*</span>
                     <EditedIndicator show={editedFields.email} />
                   </span>
                   <input
@@ -555,8 +555,8 @@ export default function ApplicantLeadModal() {
                 </label>
 
                 <div className="sm:col-span-2">
-                  <label className="mb-1.5 block text-xs font-extrabold text-[#042C51]">
-                    Applicant Source <span className="text-[#FF5C28]">*</span>
+                  <label className="mb-1.5 block text-xs font-extrabold text-sibs-navy">
+                    Applicant Source <span className="text-sibs-orange">*</span>
                     <EditedIndicator show={editedFields.source} />
                   </label>
                   <DropdownField
@@ -576,8 +576,8 @@ export default function ApplicantLeadModal() {
                 </div>
 
                 <label className="block">
-                  <span className="mb-1.5 block text-xs font-extrabold text-[#042C51]">
-                    Facebook Name <span className="text-[#FF5C28]">*</span>
+                  <span className="mb-1.5 block text-xs font-extrabold text-sibs-navy">
+                    Facebook Name <span className="text-sibs-orange">*</span>
                     <EditedIndicator show={editedFields.facebookName} />
                   </span>
                   <input
@@ -592,8 +592,8 @@ export default function ApplicantLeadModal() {
                 </label>
 
                 <label className="block">
-                  <span className="mb-1.5 block text-xs font-extrabold text-[#042C51]">
-                    Facebook Link <span className="text-[#FF5C28]">*</span>
+                  <span className="mb-1.5 block text-xs font-extrabold text-sibs-navy">
+                    Facebook Link <span className="text-sibs-orange">*</span>
                     <EditedIndicator show={editedFields.facebookLink} />
                   </span>
                   <input
@@ -608,7 +608,7 @@ export default function ApplicantLeadModal() {
                 </label>
 
                 <label className="block sm:col-span-2">
-                  <span className="mb-1.5 block text-xs font-extrabold text-[#042C51]">
+                  <span className="mb-1.5 block text-xs font-extrabold text-sibs-navy">
                     School
                     <EditedIndicator show={editedFields.school} />
                   </span>
@@ -640,9 +640,9 @@ export default function ApplicantLeadModal() {
                     }
                     aria-expanded={isCommentComposerOpen}
                     aria-controls="applicant-lead-inquiry-comment-composer"
-                    className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-[#D7DEE8] bg-white px-3.5 text-[11px] font-extrabold text-[#042C51] transition hover:border-[#FF5C28]/50 hover:bg-[#F8FAFC] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF5C28]/40"
+                    className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-sibs-border bg-white px-3.5 text-[11px] font-extrabold text-sibs-navy transition hover:border-sibs-orange/50 hover:bg-sibs-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sibs-orange/40"
                   >
-                    <MessageSquareText size={13} className="text-[#FF5C28]" />
+                    <MessageSquareText size={13} className="text-sibs-orange" />
                     {isCommentComposerOpen ? "Hide Comment Form" : "Add Comment"}
                   </button>
                 ) : null
@@ -650,13 +650,13 @@ export default function ApplicantLeadModal() {
             >
               <label className="block">
                 <div className="mb-1.5 flex items-center justify-between">
-                  <span className="block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+                  <span className="block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-sibs-muted">
                     HR Notes
                     <EditedIndicator show={editedFields.notes} />
                   </span>
                   {(editingLead?.logged_by_name || editingLead?.loggedByName) && (
-                    <span className="text-[9px] font-semibold text-[#667085] flex items-center gap-1">
-                      <UserRound size={11} className="text-[#FF5C28]" />
+                    <span className="text-[9px] font-semibold text-sibs-muted flex items-center gap-1">
+                      <UserRound size={11} className="text-sibs-orange" />
                       Logged by {editingLead.logged_by_name || editingLead.loggedByName}
                     </span>
                   )}
@@ -677,19 +677,19 @@ export default function ApplicantLeadModal() {
                   {isCommentComposerOpen ? (
                     <div
                       id="applicant-lead-inquiry-comment-composer"
-                      className="mt-4 space-y-2 border-t border-[#EEF2F6] pt-3.5"
+                      className="mt-4 space-y-2 border-t border-sibs-border pt-3.5"
                     >
                       <div className="flex items-center justify-between gap-3">
                         <label
                           htmlFor="applicant-lead-inquiry-comment"
-                          className="inline-flex items-center gap-1.5 text-xs font-extrabold text-[#042C51]"
+                          className="inline-flex items-center gap-1.5 text-xs font-extrabold text-sibs-navy"
                         >
-                          <MessageSquareText size={14} className="text-[#FF5C28]" />
+                          <MessageSquareText size={14} className="text-sibs-orange" />
                           Add Comment
                         </label>
                         <span
                           aria-live="polite"
-                          className="text-[10px] font-semibold text-[#667085]"
+                          className="text-[10px] font-semibold text-sibs-muted"
                         >
                           {String(leadComment || "").length} / 3000
                         </span>
@@ -710,7 +710,7 @@ export default function ApplicantLeadModal() {
                             setLeadComment("");
                             setIsCommentComposerOpen(false);
                           }}
-                          className="inline-flex h-8 items-center justify-center rounded-lg border border-[#D7DEE8] bg-white px-3 text-[11px] font-extrabold text-[#344054] transition hover:bg-[#F8FAFC] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF5C28]/40"
+                          className="inline-flex h-8 items-center justify-center rounded-lg border border-sibs-border bg-white px-3 text-[11px] font-extrabold text-sibs-navy transition hover:bg-sibs-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sibs-orange/40"
                         >
                           Cancel
                         </button>
@@ -721,7 +721,7 @@ export default function ApplicantLeadModal() {
                             isAddingLeadComment ||
                             !String(leadComment || "").trim()
                           }
-                          className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg bg-[#042C51] px-3.5 text-[11px] font-extrabold text-white transition hover:bg-[#073A69] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF5C28]/40 disabled:cursor-not-allowed disabled:bg-[#DDE5EE] disabled:text-[#7B8DB3]"
+                          className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg bg-sibs-navy px-3.5 text-[11px] font-extrabold text-white transition hover:bg-sibs-navy-light focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sibs-orange/40 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-sibs-muted"
                         >
                           {isAddingLeadComment ? (
                             <Loader2 size={12} className="animate-spin" />
@@ -734,24 +734,24 @@ export default function ApplicantLeadModal() {
                     </div>
                   ) : null}
 
-                  <div className="mt-4 border-t border-[#EEF2F6] pt-3.5">
+                  <div className="mt-4 border-t border-sibs-border pt-3.5">
                     <div className="mb-2 flex items-center justify-between gap-3">
-                      <div className="flex items-center gap-1.5 text-xs font-extrabold text-[#042C51]">
-                        <MessageSquareText size={14} className="text-[#FF5C28]" />
+                      <div className="flex items-center gap-1.5 text-xs font-extrabold text-sibs-navy">
+                        <MessageSquareText size={14} className="text-sibs-orange" />
                         Comments
                       </div>
-                      <span className="rounded-full bg-[#EEF4FA] px-2 py-0.5 text-[9px] font-extrabold text-[#174A7C]">
+                      <span className="rounded-full bg-sibs-cream-light px-2 py-0.5 text-[9px] font-extrabold text-sibs-orange ring-1 ring-sibs-orange/30">
                         {leadComments.length}
                       </span>
                     </div>
 
                     {isLeadHistoryLoading ? (
-                      <div className="flex items-center gap-2 rounded-lg border border-[#E6ECF2] bg-[#F8FAFC] px-3 py-3 text-[11px] font-semibold text-[#667085]">
-                        <Loader2 size={13} className="animate-spin text-[#FF5C28]" />
+                      <div className="flex items-center gap-2 rounded-lg border border-sibs-border bg-sibs-surface px-3 py-3 text-[11px] font-semibold text-sibs-muted">
+                        <Loader2 size={13} className="animate-spin text-sibs-orange" />
                         Loading comments...
                       </div>
                     ) : leadComments.length === 0 ? (
-                      <div className="rounded-lg border border-dashed border-[#D7DEE8] bg-[#F8FAFC] px-3 py-3 text-center text-[11px] font-semibold text-[#667085]">
+                      <div className="rounded-lg border border-dashed border-sibs-border bg-sibs-surface px-3 py-3 text-center text-[11px] font-semibold text-sibs-muted">
                         No comments yet.
                       </div>
                     ) : (
@@ -759,21 +759,21 @@ export default function ApplicantLeadModal() {
                         {leadComments.map((item, index) => (
                           <div
                             key={item.id || `lead-comment-${index}`}
-                            className="rounded-lg border border-[#E6ECF2] bg-[#F8FAFC] p-3"
+                            className="rounded-lg border border-sibs-border bg-sibs-surface p-3"
                           >
-                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[9px] font-semibold text-[#667085]">
-                              <span className="inline-flex items-center gap-1 font-extrabold text-[#042C51]">
-                                <UserRound size={11} className="text-[#FF5C28]" />
+                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[9px] font-semibold text-sibs-muted">
+                              <span className="inline-flex items-center gap-1 font-extrabold text-sibs-navy">
+                                <UserRound size={11} className="text-sibs-orange" />
                                 {formatLeadCommentActor(item)}
                               </span>
                               {(item.createdAt || item.created_at) ? (
                                 <span className="inline-flex items-center gap-1">
-                                  <Clock3 size={11} className="text-[#98A2B3]" />
+                                  <Clock3 size={11} className="text-sibs-muted" />
                                   {formatLeadCommentDateTime(item.createdAt || item.created_at)}
                                 </span>
                               ) : null}
                             </div>
-                            <p className="mt-2 whitespace-pre-wrap break-words text-[11px] font-semibold leading-5 text-[#344054]">
+                            <p className="mt-2 whitespace-pre-wrap break-words text-[11px] font-semibold leading-5 text-sibs-navy">
                               {item.comment || item.comment_text}
                             </p>
                           </div>
@@ -787,13 +787,13 @@ export default function ApplicantLeadModal() {
           </div>
 
           {/* Footer Actions */}
-          <footer className="shrink-0 border-t border-[#E6ECF2] bg-white px-4 py-3 sm:px-5">
+          <footer className="shrink-0 border-t border-sibs-border bg-white px-4 py-3 sm:px-5">
             <div className="flex items-center justify-end gap-2.5">
               <button
                 type="button"
                 onClick={closeLeadModal}
                 disabled={isSaving}
-                className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg border border-[#D7DEE8] bg-[#F8FAFC] px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-[#344054] transition hover:bg-white hover:text-[#042C51]"
+                className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-[10px] border border-sibs-border bg-sibs-surface px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-navy transition hover:bg-white"
               >
                 Cancel
               </button>
@@ -802,7 +802,7 @@ export default function ApplicantLeadModal() {
                 <button
                   type="submit"
                   disabled={isSubmitDisabled}
-                  className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 2xl:gap-2 rounded-lg bg-[#FF5C28] px-4 2xl:px-5 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E95324] disabled:cursor-not-allowed disabled:border disabled:border-[#D6E0EA] disabled:bg-[#EEF3F8] disabled:text-[#6F8196] disabled:shadow-none"
+                  className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 2xl:gap-2 rounded-[10px] bg-sibs-orange px-4 2xl:px-5 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-sibs-button-hover disabled:cursor-not-allowed disabled:border disabled:border-sibs-border disabled:bg-slate-100 disabled:text-sibs-muted disabled:shadow-none"
                 >
                   {isSaving ? (
                     <Loader2 size={13} className="animate-spin text-white" />

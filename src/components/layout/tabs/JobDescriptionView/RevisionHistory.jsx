@@ -247,7 +247,7 @@ function pluralize(count, singular, plural = `${singular}s`) {
 
 function StatCard({ label, value }) {
   return (
-    <div className="min-w-0 rounded-xl border border-[#D9E2EC] bg-white px-3 py-3 shadow-sm sm:rounded-2xl sm:px-4">
+    <div className="min-w-0 rounded-xl border border-sibs-border bg-white px-3 py-3 shadow-sm sm:rounded-2xl sm:px-4">
       <p className="break-words text-[9px] font-extrabold uppercase leading-4 tracking-wide text-sibs-tertiary-5 sm:text-[10px]">
         {label}
       </p>
@@ -451,8 +451,8 @@ function SnapshotRichContent({ value = "" }) {
         if (block.type === "list") {
           const ListTag = block.ordered ? "ol" : "ul";
           const listClassName = block.ordered
-            ? "list-decimal space-y-3 pl-5 text-sm font-medium leading-7 text-[#344054] sm:pl-6 sm:text-[15px]"
-            : "list-disc space-y-3 pl-5 text-sm font-medium leading-7 text-[#344054] sm:pl-6 sm:text-[15px]";
+            ? "list-decimal space-y-3 pl-5 text-sm font-medium leading-7 text-sibs-text-secondary sm:pl-6 sm:text-[15px]"
+            : "list-disc space-y-3 pl-5 text-sm font-medium leading-7 text-sibs-text-secondary sm:pl-6 sm:text-[15px]";
 
           return (
             <ListTag key={`snapshot-list-${index}`} className={listClassName}>
@@ -469,7 +469,7 @@ function SnapshotRichContent({ value = "" }) {
                         >
                           <div className="flex gap-2">
                             {child.prefix && (
-                              <span className="shrink-0 font-semibold text-[#344054]">
+                              <span className="shrink-0 font-semibold text-sibs-text-secondary">
                                 {child.prefix}
                               </span>
                             )}
@@ -489,7 +489,7 @@ function SnapshotRichContent({ value = "" }) {
         return (
           <p
             key={`snapshot-paragraph-${index}`}
-            className="text-sm font-medium leading-7 text-[#344054] sm:text-[15px] sm:leading-8"
+            className="text-sm font-medium leading-7 text-sibs-text-secondary sm:text-[15px] sm:leading-8"
           >
             {block.text}
           </p>
@@ -501,12 +501,12 @@ function SnapshotRichContent({ value = "" }) {
 
 function SnapshotCell({ label, value, className = "" }) {
   return (
-    <div className={`min-h-[70px] border-[#D6E3F0] px-3 py-3 sm:min-h-[78px] sm:px-4 ${className}`}>
-      <p className="break-words text-[9px] font-extrabold uppercase tracking-wide text-[#315F8C] sm:text-[10px]">
+    <div className={`min-h-[70px] border-sibs-border-panel px-3 py-3 sm:min-h-[78px] sm:px-4 ${className}`}>
+      <p className="break-words text-[9px] font-extrabold uppercase tracking-wide text-sibs-text-secondary sm:text-[10px]">
         {label}
       </p>
 
-      <p className="mt-2 whitespace-pre-line break-words text-sm font-extrabold leading-6 text-[#344054]">
+      <p className="mt-2 whitespace-pre-line break-words text-sm font-extrabold leading-6 text-sibs-navy">
         {value || "—"}
       </p>
     </div>
@@ -517,8 +517,8 @@ function SnapshotContentSection({ number, title, value }) {
   if (!String(value || "").trim()) return null;
 
   return (
-    <section className="border-t border-[#D9E2EC] pt-5">
-      <h4 className="text-sm font-extrabold uppercase tracking-wide text-[#101828]">
+    <section className="border-t border-sibs-border pt-5">
+      <h4 className="text-sm font-extrabold uppercase tracking-wide text-sibs-navy">
         {number}. {title}
       </h4>
 
@@ -535,8 +535,8 @@ function SnapshotCompetencies({ competencies = [] }) {
   if (!list.length) return null;
 
   return (
-    <section className="border-t border-[#D9E2EC] pt-5">
-      <h4 className="text-sm font-extrabold uppercase tracking-wide text-[#101828]">
+    <section className="border-t border-sibs-border pt-5">
+      <h4 className="text-sm font-extrabold uppercase tracking-wide text-sibs-navy">
         5. Desired Competencies
       </h4>
 
@@ -567,17 +567,17 @@ function SnapshotCompetencies({ competencies = [] }) {
           return (
             <div
               key={`snapshot-competency-${index}`}
-              className="rounded-xl border border-[#D9E2EC] bg-[#F8FAFC] px-4 py-3"
+              className="rounded-xl border border-sibs-border bg-sibs-surface px-4 py-3"
             >
               <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                 <div className="min-w-0">
                   {title && (
-                    <p className="text-sm font-extrabold text-[#101828]">
+                    <p className="text-sm font-extrabold text-sibs-navy">
                       {title}
                     </p>
                   )}
 
-                  <p className="mt-1 whitespace-pre-line text-sm font-medium leading-6 text-[#344054]">
+                  <p className="mt-1 whitespace-pre-line text-sm font-medium leading-6 text-sibs-text-secondary">
                     {description || "—"}
                   </p>
                 </div>
@@ -601,8 +601,8 @@ function RevisionDocumentSnapshot({ revision = {}, item = {}, revisionLabel = ""
 
   if (!snapshot) {
     return (
-      <div className="rounded-2xl border border-[#D9E2EC] bg-[#F8FAFC] p-4">
-        <p className="text-sm font-extrabold text-[#101828]">
+      <div className="rounded-2xl border border-sibs-border bg-sibs-surface p-4">
+        <p className="text-sm font-extrabold text-sibs-navy">
           No document snapshot saved for this revision.
         </p>
 
@@ -682,13 +682,13 @@ function RevisionDocumentSnapshot({ revision = {}, item = {}, revisionLabel = ""
     [];
 
   return (
-    <div className="w-full max-w-full overflow-hidden rounded-[16px] border border-[#D9E2EC] bg-white p-3 shadow-sm sm:rounded-[18px] sm:p-4">
+    <div className="w-full max-w-full overflow-hidden rounded-[16px] border border-sibs-border bg-white p-3 shadow-sm sm:rounded-[18px] sm:p-4">
       <div className="mb-4 flex min-w-0 flex-col gap-1">
         <p className="break-words text-[10px] font-extrabold uppercase tracking-[0.14em] text-sibs-primary-1/70 sm:text-[11px] sm:tracking-[0.16em]">
           Document Snapshot
         </p>
 
-        <h4 className="break-words text-base font-extrabold text-[#101828]">
+        <h4 className="break-words text-base font-extrabold text-sibs-navy">
           {revisionLabel} Job Description Version
         </h4>
 
@@ -697,22 +697,22 @@ function RevisionDocumentSnapshot({ revision = {}, item = {}, revisionLabel = ""
         </p>
       </div>
 
-      <div className="overflow-hidden rounded-xl border border-[#D6E3F0] bg-white">
-        <div className="border-b border-[#D6E3F0] px-3 py-4 sm:px-5 sm:py-5">
-          <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#315F8C]">
+      <div className="overflow-hidden rounded-xl border border-sibs-border-panel bg-white">
+        <div className="border-b border-sibs-border-panel px-3 py-4 sm:px-5 sm:py-5">
+          <p className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-text-secondary">
             Document Title
           </p>
 
           <div className="relative mt-4 pl-4">
-            <span className="absolute bottom-1 left-0 top-1 w-[3px] rounded-full bg-[#0D4676]" />
+            <span className="absolute bottom-1 left-0 top-1 w-[3px] rounded-full bg-sibs-primary-1" />
 
-            <p className="break-words text-base font-extrabold leading-7 text-[#101828] sm:text-lg">
+            <p className="break-words text-base font-extrabold leading-7 text-sibs-navy sm:text-lg">
               {documentTitle || "—"}
             </p>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 border-b border-[#D6E3F0] md:grid-cols-2">
+        <div className="grid grid-cols-1 border-b border-sibs-border-panel md:grid-cols-2">
           <SnapshotCell
             label="Position"
             value={roleTitle}
@@ -722,7 +722,7 @@ function RevisionDocumentSnapshot({ revision = {}, item = {}, revisionLabel = ""
           <SnapshotCell label="Department" value={department} />
         </div>
 
-        <div className="grid grid-cols-1 border-b border-[#D6E3F0] sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 border-b border-sibs-border-panel sm:grid-cols-2 lg:grid-cols-4">
           <SnapshotCell
             label="Document Code"
             value={jdCode}
@@ -757,7 +757,7 @@ function RevisionDocumentSnapshot({ revision = {}, item = {}, revisionLabel = ""
           />
         </div>
 
-        <div className="grid grid-cols-1 border-b border-[#D6E3F0] sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 border-b border-sibs-border-panel sm:grid-cols-2 lg:grid-cols-4">
           <SnapshotCell
             label="Date Requested"
             value={formatDateOnly(
@@ -880,8 +880,8 @@ const RevisionHistory = ({
   }
 
   return (
-    <section className="w-full max-w-full overflow-hidden rounded-[18px] border border-[#D9E2EC] bg-white p-3 shadow-[0_18px_55px_rgba(15,23,42,0.10)] sm:rounded-[24px] sm:p-6">
-      <div className="rounded-[16px] border border-[#E6ECF2] bg-[#F8FAFC] p-3 sm:rounded-[20px] sm:p-5">
+    <section className="w-full max-w-full overflow-hidden rounded-[18px] border border-sibs-border bg-white p-3 shadow-[0_18px_55px_rgba(15,23,42,0.10)] sm:rounded-[24px] sm:p-6">
+      <div className="rounded-[16px] border border-sibs-border bg-sibs-surface p-3 sm:rounded-[20px] sm:p-5">
         <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
           <div className="flex min-w-0 items-start gap-3 sm:gap-4">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sibs-primary-1 text-white shadow-sm sm:h-12 sm:w-12 sm:rounded-2xl">
@@ -893,7 +893,7 @@ const RevisionHistory = ({
                 Version Tracking
               </p>
 
-              <h3 className="mt-1 break-words text-lg font-extrabold leading-tight text-[#101828] sm:text-2xl">
+              <h3 className="mt-1 break-words text-lg font-extrabold leading-tight text-sibs-navy sm:text-2xl">
                 Revision History
               </h3>
 
@@ -934,8 +934,8 @@ const RevisionHistory = ({
                 key={revisionKey}
                 className={`relative overflow-hidden rounded-[16px] border bg-white p-3 shadow-sm transition-all duration-200 ease-out sm:rounded-[20px] sm:p-5 ${
                   isOpen
-                    ? "border-[#BFD6F6] ring-4 ring-[#EAF2FB]"
-                    : "border-[#E6ECF2] hover:border-[#C9D8EA]"
+                    ? "border-sibs-border ring-4 ring-blue-50"
+                    : "border-sibs-border hover:border-sibs-border-subtle"
                 }`}
               >
                 <span
@@ -952,7 +952,7 @@ const RevisionHistory = ({
                   <div className="flex flex-col gap-3 sm:gap-4 xl:flex-row xl:items-start xl:justify-between">
                     <div className="min-w-0 flex-1 pl-2">
                       <div className="flex min-w-0 items-start gap-3">
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#BFD6F6] bg-[#EAF2FB] text-sm font-extrabold text-sibs-primary-1 sm:h-12 sm:w-12 sm:rounded-2xl sm:text-base">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-blue-200 bg-blue-50 text-sm font-extrabold text-sibs-primary-1 sm:h-12 sm:w-12 sm:rounded-2xl sm:text-base">
                           {cleanRevisionNumber || "—"}
                         </div>
 
@@ -969,26 +969,26 @@ const RevisionHistory = ({
                               </span>
                             )}
 
-                            <span className="inline-flex items-center gap-1 rounded-full border border-[#CFE0F3] bg-[#EDF4FB] px-2 py-0.5 text-[10px] font-extrabold text-sibs-primary-1 sm:px-2.5 sm:py-1 sm:text-[11px]">
+                            <span className="inline-flex items-center gap-1 rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 text-[10px] font-extrabold text-sibs-primary-1 sm:px-2.5 sm:py-1 sm:text-[11px]">
                               <GitBranch size={12} />
                               {changeDetails.length}{" "}
                               {pluralize(changeDetails.length, "change")}
                             </span>
                           </div>
 
-                          <div className="mt-2 flex flex-col gap-1 text-xs font-semibold text-[#344054] sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-4 sm:text-sm">
+                          <div className="mt-2 flex flex-col gap-1 text-xs font-semibold text-sibs-text-secondary sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-4 sm:text-sm">
                             <span className="inline-flex items-center gap-1.5">
                               <UserRound
                                 size={14}
                                 className="text-sibs-tertiary-5"
                               />
                               Revised by:
-                              <span className="font-extrabold text-[#101828]">
+                              <span className="font-extrabold text-sibs-navy">
                                 {revisedBy}
                               </span>
                             </span>
 
-                            <span className="inline-flex items-center gap-1.5 text-sm font-bold text-[#315F8C]">
+                            <span className="inline-flex items-center gap-1.5 text-sm font-bold text-sibs-text-secondary">
                               <Clock3 size={14} />
                               {revisionDate}
                             </span>
@@ -997,7 +997,7 @@ const RevisionHistory = ({
                       </div>
 
                       {remarks && (
-                        <div className="mt-3 rounded-xl border border-[#D9E2EC] bg-[#F8FAFC] px-3 py-3 sm:mt-4 sm:rounded-2xl sm:px-4">
+                        <div className="mt-3 rounded-xl border border-sibs-border bg-sibs-surface px-3 py-3 sm:mt-4 sm:rounded-2xl sm:px-4">
                           <div className="mb-2 flex items-center gap-2">
                             <MessageSquareText
                               size={15}
@@ -1009,7 +1009,7 @@ const RevisionHistory = ({
                             </p>
                           </div>
 
-                          <p className="whitespace-pre-line break-words text-sm font-semibold leading-6 text-[#344054]">
+                          <p className="whitespace-pre-line break-words text-sm font-semibold leading-6 text-sibs-text-secondary">
                             {remarks}
                           </p>
                         </div>
@@ -1018,7 +1018,7 @@ const RevisionHistory = ({
 
                     <div className="flex justify-end xl:justify-start">
                       <span
-                        className={`flex h-10 w-10 items-center justify-center rounded-xl border border-[#D9E2EC] bg-white text-sibs-primary-1 transition-all duration-200 ease-out sm:h-11 sm:w-11 sm:rounded-2xl ${
+                        className={`flex h-10 w-10 items-center justify-center rounded-xl border border-sibs-border bg-white text-sibs-primary-1 transition-all duration-200 ease-out sm:h-11 sm:w-11 sm:rounded-2xl ${
                           isOpen ? "rotate-180" : "rotate-0"
                         }`}
                       >
@@ -1048,12 +1048,12 @@ const RevisionHistory = ({
           })}
         </div>
       ) : (
-        <div className="mt-5 rounded-[18px] border border-dashed border-[#BFD6F6] bg-[#F8FAFC] p-6 text-center sm:mt-6 sm:rounded-[20px] sm:p-10">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#EAF2FB] text-sibs-primary-1">
+        <div className="mt-5 rounded-[18px] border border-dashed border-sibs-border bg-sibs-surface p-6 text-center sm:mt-6 sm:rounded-[20px] sm:p-10">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-sibs-primary-1">
             <History size={24} />
           </div>
 
-          <h4 className="mt-4 text-lg font-extrabold text-[#101828]">
+          <h4 className="mt-4 text-lg font-extrabold text-sibs-navy">
             No revision history yet
           </h4>
 
