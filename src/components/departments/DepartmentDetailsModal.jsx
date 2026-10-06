@@ -156,6 +156,7 @@ function AccountEmployeesModal({
       className="sibs-account-employees-modal"
       headerClassName="sibs-account-employees-modal-header"
       bodyClassName="max-h-[70vh] overflow-y-auto"
+      closeOnBackdrop={false}
       footer={
         <div className="flex w-full items-center justify-between gap-3">
           <span className="text-xs font-bold text-sibs-muted">
@@ -856,6 +857,7 @@ export default function DepartmentDetailsModal({
       className="sibs-department-details-modal"
       headerClassName="sibs-department-details-modal-header"
       bodyClassName="max-h-[72vh] overflow-y-auto"
+      closeOnBackdrop={false}
       footer={
         <div className="flex w-full items-center justify-between gap-3">
           <span className="inline-flex items-center gap-2 text-xs font-extrabold text-sibs-muted">

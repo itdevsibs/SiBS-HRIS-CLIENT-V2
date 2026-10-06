@@ -1,17 +1,18 @@
 import { useState } from "react";
 import {
-  Award,
   Building2,
   CalendarDays,
   ChevronDown,
   ChevronUp,
-  MapPin,
-  Phone,
   Plus,
   Trash2,
 } from "lucide-react";
 
 import { RECORD_SCHEMAS } from "../../../../lib/utils/employees/employeeProfileSchemas.js";
+import {
+  getEducationRecordFields,
+  normalizeEducationRecordForLevel,
+} from "../../../../lib/utils/employees/educationRecordFields.js";
 import { formatDisplayDate, hasValue, toInputDate } from "../../../../lib/utils/employees/employeeProfileHelpers.js";
 import ProfileSectionHeader from "../shared/ProfileSectionHeader.jsx";
 import ProfilePanel from "../shared/ProfilePanel.jsx";
@@ -40,11 +41,27 @@ function licenseStatus(value) {
 
 function GenericRecordEditor({ schema, records, onChange }) {
   function addRecord() {
-    onChange([...records, { ...schema.newRecord, id: `${schema.listKey}_${Date.now()}` }]);
+    const baseRecord = schema.normalizeRecord
+      ? schema.normalizeRecord(schema.newRecord)
+      : { ...schema.newRecord };
+
+    onChange([
+      ...records,
+      { ...baseRecord, id: `${schema.listKey}_${Date.now()}` },
+    ]);
   }
 
   function updateRecord(index, field, value) {
-    onChange(records.map((record, recordIndex) => recordIndex === index ? { ...record, [field]: value } : record));
+    onChange(
+      records.map((record, recordIndex) => {
+        if (recordIndex !== index) return record;
+
+        const nextRecord = { ...record, [field]: value };
+        return schema.normalizeRecord
+          ? schema.normalizeRecord(nextRecord)
+          : nextRecord;
+      }),
+    );
   }
 
   function removeRecord(index) {
@@ -65,7 +82,12 @@ function GenericRecordEditor({ schema, records, onChange }) {
         records.map((record, index) => (
           <ProfilePanel key={record?.id || index} title={`${schema.title.replace(" Chronological Records", "")} #${index + 1}`} accent={index % 2 ? "navy" : "orange"}>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {schema.fields.map(([field, label, type = "text", options = []]) => (
+              {(schema.getFields
+                ? schema.getFields(record?.level)
+                : Array.isArray(schema.fields)
+                  ? schema.fields
+                  : []
+              ).map(([field, label, type = "text", options = []]) => (
                 <ProfileFieldControl
                   key={field}
                   label={label}
@@ -111,27 +133,36 @@ export function TimelineSection({
       ) : activeSection === "education" ? (
         <div className="relative ml-2 sm:ml-3 space-y-3.5 border-l-2 border-slate-200 pl-4 sm:pl-6">
           {records.length === 0 ? <ProfileEmptyState message={schema.empty} actionLabel={schema.addLabel} onAction={onEdit} /> : records.map((record, index) => {
-            const level = normalizeRecordValue(record, ["level"]);
-            const school = normalizeRecordValue(record, ["school", "schoolName"]);
-            const degree = normalizeRecordValue(record, ["degree", "degreeCourse"]);
-            const honors = normalizeRecordValue(record, ["honors", "honorsReceived"]);
+            const normalizedRecord = normalizeEducationRecordForLevel(record);
+            const level = normalizedRecord.level;
+            const displayFields = getEducationRecordFields(level).filter(
+              ([field]) => field !== "level",
+            );
+            const heading =
+              normalizedRecord.degree ||
+              normalizedRecord.school ||
+              "Education Record";
+
             return (
               <article key={record?.id || index} className="relative rounded-xl border border-sibs-border bg-white p-3.5 2xl:p-4 shadow-xs">
                 <span className="absolute -left-[25px] sm:-left-[33px] top-5 h-3.5 w-3.5 rounded-full border-3 border-white bg-sibs-navy shadow" />
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                  <div>
-                    <div className="flex flex-wrap gap-1.5">
-                      <span className="rounded-full border border-blue-100 bg-blue-50 px-2 py-0.5 sibs-text-micro font-extrabold uppercase tracking-wide text-sibs-navy">{level || "Education"}</span>
-                      {honors && <span className="inline-flex items-center gap-1 rounded-full border border-orange-100 bg-orange-50 px-2 py-0.5 sibs-text-micro font-extrabold text-sibs-orange"><Award size={11} />{honors}</span>}
-                    </div>
-                    <h3 className="mt-2 sibs-text-xs 2xl:sibs-text-sm font-extrabold text-sibs-navy">{degree || "Academic Program"}</h3>
-                    <p className="mt-0.5 sibs-text-micro font-bold text-sibs-muted">{school || "—"}</p>
-                  </div>
-                  <div className="rounded-lg bg-slate-100 px-2.5 py-1.5 sibs-text-micro font-extrabold text-sibs-navy">{record?.from || "—"} — {record?.to || "Present"}</div>
+                <div>
+                  <span className="rounded-full border border-blue-100 bg-blue-50 px-2 py-0.5 sibs-text-micro font-extrabold uppercase tracking-wide text-sibs-navy">
+                    {level || "Education"}
+                  </span>
+                  <h3 className="mt-2 sibs-text-xs 2xl:sibs-text-sm font-extrabold text-sibs-navy">
+                    {heading}
+                  </h3>
                 </div>
                 <div className="mt-3 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-                  <ProfileReadField label="Highest Level / Units Earned" value={normalizeRecordValue(record, ["highestLevel", "highestLevelUnits"])} />
-                  <ProfileReadField label="Year Graduated" value={record?.yearGraduated} />
+                  {displayFields.map(([field, label]) => (
+                    <ProfileReadField
+                      key={field}
+                      label={label}
+                      value={normalizedRecord?.[field]}
+                      className={field === "address" ? "sm:col-span-2" : ""}
+                    />
+                  ))}
                 </div>
               </article>
             );
@@ -176,10 +207,11 @@ export function TimelineSection({
                   </div>
                   <span className="rounded-lg border border-indigo-100 bg-indigo-50 px-2.5 py-1 sibs-text-micro font-extrabold text-indigo-700">{record?.from || "—"} — {record?.to || "Present"}</span>
                 </div>
-                <div className="mt-3 grid grid-cols-1 gap-2.5 sm:grid-cols-3">
+                <div className="mt-3 grid grid-cols-1 gap-2.5 sm:grid-cols-2 xl:grid-cols-4">
                   <ProfileReadField label="Monthly Salary" value={normalizeRecordValue(record, ["salary", "monthlySalary"])} />
                   <ProfileReadField label="Salary / Job Grade" value={normalizeRecordValue(record, ["salaryGrade", "salaryJobGrade"])} />
                   <ProfileReadField label="Government Service" value={record?.governmentService} />
+                  <ProfileReadField label="Reason for Leaving" value={normalizeRecordValue(record, ["reasonForLeaving", "reason"])} />
                 </div>
                 {record?.duties && (
                   <div className="mt-3 border-t border-sibs-border-subtle pt-2.5">
@@ -220,7 +252,7 @@ export function TimelineSection({
               <h3 className="border-b border-sibs-border-subtle pb-2.5 sibs-text-xs 2xl:sibs-text-sm font-extrabold text-sibs-navy">{record?.name || "—"}</h3>
               <div className="mt-3 space-y-2">
                 <ProfileReadField label="Address" value={record?.address} />
-                <ProfileReadField label="Contact Number" value={record?.telNo || record?.contact} />
+                <ProfileReadField label="Contact Number" value={normalizeRecordValue(record, ["telephone", "telNo", "contact", "phone", "contactNumber"])} />
               </div>
             </ProfilePanel>
           ))}

@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
   Search,
+  Check,
+  ChevronDown,
   CalendarDays,
   CircleCheckBig,
   CircleX,
@@ -24,10 +26,10 @@ import {
   MetricGridSkeleton,
   ResponsiveTableShell,
   SearchInput,
-  SelectDropdown,
   TablePagination,
   TableSkeletonRows,
 } from "@/components/ui";
+import DropdownPortal from "@/components/ui/DropdownPortal.jsx";
 import {
   sanitizeDisplayFullName,
   sanitizeMiddleName,
@@ -550,6 +552,56 @@ function getAnimationStyle(delay = 0) {
   };
 }
 
+function getManilaDateParts(value = new Date()) {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Manila",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(value);
+
+  const values = Object.fromEntries(
+    parts
+      .filter((part) => part.type !== "literal")
+      .map((part) => [part.type, part.value]),
+  );
+
+  return {
+    year: Number(values.year),
+    month: Number(values.month),
+    day: Number(values.day),
+  };
+}
+
+function formatUtcDateKey(date) {
+  const year = date.getUTCFullYear();
+  const month = String(date.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(date.getUTCDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
+function getDefaultAttendanceDateRange() {
+  const { year, month, day } = getManilaDateParts();
+  const today = new Date(Date.UTC(year, month - 1, day));
+  const dayOfWeek = today.getUTCDay();
+  const daysSinceMonday = (dayOfWeek + 6) % 7;
+
+  const currentWeekMonday = new Date(today);
+  currentWeekMonday.setUTCDate(today.getUTCDate() - daysSinceMonday);
+
+  const previousWeekMonday = new Date(currentWeekMonday);
+  previousWeekMonday.setUTCDate(currentWeekMonday.getUTCDate() - 7);
+
+  const currentWeekSunday = new Date(currentWeekMonday);
+  currentWeekSunday.setUTCDate(currentWeekMonday.getUTCDate() + 6);
+
+  return {
+    dateFrom: formatUtcDateKey(previousWeekMonday),
+    dateTo: formatUtcDateKey(currentWeekSunday),
+  };
+}
+
 function TimeIndicator({ value, label, tone = "neutral" }) {
   const tones = {
     neutral: {
@@ -616,6 +668,275 @@ function AttendanceStatusBadge({ status }) {
   );
 }
 
+function AttendanceDirectoryFilterDropdown({
+  label,
+  value,
+  values = [],
+  options = [],
+  onChange,
+  multiple = false,
+  placeholder = "All",
+  searchPlaceholder = "Search...",
+  disabled = false,
+}) {
+  const [open, setOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const anchorRef = useRef(null);
+  const inputRef = useRef(null);
+
+  const normalizedOptions = useMemo(
+    () =>
+      (Array.isArray(options) ? options : [])
+        .map((option) => ({
+          value: String(option?.value ?? option ?? ""),
+          label: String(option?.label ?? option?.value ?? option ?? ""),
+        }))
+        .filter((option) => option.value && option.label),
+    [options],
+  );
+
+  const allOption = normalizedOptions.find(
+    (option) => option.value === "All",
+  );
+  const regularOptions = normalizedOptions.filter(
+    (option) => option.value !== "All",
+  );
+
+  const selectedValues = useMemo(
+    () =>
+      multiple
+        ? [...new Set((Array.isArray(values) ? values : []).map(String).filter(Boolean))]
+        : [],
+    [multiple, values],
+  );
+
+  const selectedLabel = useMemo(() => {
+    if (multiple) {
+      if (selectedValues.length === 0) {
+        return allOption?.label || placeholder;
+      }
+
+      if (selectedValues.length === 1) {
+        return (
+          regularOptions.find(
+            (option) => option.value === selectedValues[0],
+          )?.label || selectedValues[0]
+        );
+      }
+
+      return `${selectedValues.length} selected`;
+    }
+
+    return (
+      normalizedOptions.find(
+        (option) => option.value === String(value ?? ""),
+      )?.label ||
+      (value && value !== "All" ? String(value) : allOption?.label || placeholder)
+    );
+  }, [
+    allOption?.label,
+    multiple,
+    normalizedOptions,
+    placeholder,
+    regularOptions,
+    selectedValues,
+    value,
+  ]);
+
+  const filteredOptions = useMemo(() => {
+    const keyword = searchQuery.trim().toLowerCase();
+    if (!keyword) return regularOptions;
+
+    return regularOptions.filter((option) =>
+      option.label.toLowerCase().includes(keyword),
+    );
+  }, [regularOptions, searchQuery]);
+
+  function openMenu() {
+    if (disabled) return;
+    setOpen(true);
+    setSearchQuery("");
+    window.requestAnimationFrame(() => inputRef.current?.focus());
+  }
+
+  function closeMenu() {
+    setOpen(false);
+    setSearchQuery("");
+  }
+
+  function toggleMenu() {
+    if (disabled) return;
+    if (open) {
+      closeMenu();
+      return;
+    }
+    openMenu();
+  }
+
+  function selectValue(nextValue) {
+    if (multiple) {
+      if (nextValue === "All") {
+        onChange?.([]);
+        closeMenu();
+        return;
+      }
+
+      const cleanValue = String(nextValue || "").trim();
+      if (!cleanValue) return;
+
+      const nextValues = selectedValues.includes(cleanValue)
+        ? selectedValues.filter((item) => item !== cleanValue)
+        : [...selectedValues, cleanValue];
+
+      onChange?.(nextValues);
+      return;
+    }
+
+    onChange?.(nextValue);
+    closeMenu();
+  }
+
+  const allSelected = multiple
+    ? selectedValues.length === 0
+    : !value || value === "All";
+
+  return (
+    <div ref={anchorRef} className="relative w-full min-w-0 font-jakarta">
+      <label className="mb-1 block sibs-text-xs font-bold text-sibs-navy">
+        {label}
+      </label>
+
+      <div className="group relative">
+        <input
+          ref={inputRef}
+          type="text"
+          role="combobox"
+          aria-expanded={open}
+          aria-haspopup="listbox"
+          aria-label={label}
+          disabled={disabled}
+          value={open ? searchQuery : selectedLabel}
+          placeholder={open ? searchPlaceholder : placeholder}
+          autoComplete="off"
+          onFocus={openMenu}
+          onClick={openMenu}
+          onChange={(event) => {
+            if (!open) setOpen(true);
+            setSearchQuery(event.target.value);
+          }}
+          onKeyDown={(event) => {
+            if (event.key === "Escape") {
+              event.preventDefault();
+              closeMenu();
+              inputRef.current?.blur();
+            }
+          }}
+          className={`h-8.5 sm:h-9 2xl:h-10 w-full rounded-[10px] border bg-[#F8FAFC] px-3 pr-10 font-jakarta sibs-text-xs font-bold text-[#042C51] shadow-sm outline-none transition placeholder:text-[#98A2B3] hover:bg-white disabled:cursor-not-allowed disabled:opacity-50 ${
+            open
+              ? "border-[#FF5C28] bg-white ring-4 ring-[#FF5C28]/10"
+              : "border-[#E6ECF2] hover:border-[#FF5C28]/40"
+          }`}
+          style={{ outline: "none", boxShadow: open ? undefined : "none" }}
+        />
+
+        <button
+          type="button"
+          tabIndex={-1}
+          disabled={disabled}
+          aria-label={`Toggle ${label} dropdown`}
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={toggleMenu}
+          className="absolute right-2 top-1/2 flex h-6.5 w-6.5 2xl:h-7 2xl:w-7 -translate-y-1/2 items-center justify-center rounded-md text-[#667085] transition hover:bg-[#FFF0EB] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <ChevronDown
+            className={`h-3.5 w-3.5 2xl:h-4 2xl:w-4 transition-transform duration-300 ${
+              open ? "rotate-180 text-[#FF5C28]" : ""
+            }`}
+          />
+        </button>
+      </div>
+
+      <DropdownPortal
+        open={open && !disabled}
+        anchorRef={anchorRef}
+        onClose={closeMenu}
+        maxHeight={320}
+        offset={6}
+        className="!rounded-[10px] !border-[#D7DEE8]"
+      >
+        <div className="sibs-scrollbar max-h-[320px] overflow-y-auto py-1">
+          {allOption ? (
+            <button
+              type="button"
+              role="option"
+              aria-selected={allSelected}
+              onClick={() => selectValue("All")}
+              className={`flex w-full items-center justify-between gap-2 px-3 py-2.5 text-left sibs-text-xs transition ${
+                allSelected
+                  ? "bg-[#FFF0EB] font-extrabold text-[#FF5C28]"
+                  : "font-semibold text-[#344054] hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
+              }`}
+            >
+              <span className="truncate">{allOption.label}</span>
+              {!multiple && allSelected ? (
+                <Check size={14} className="shrink-0 text-[#FF5C28]" />
+              ) : null}
+            </button>
+          ) : null}
+
+          {filteredOptions.length > 0 ? (
+            filteredOptions.map((option) => {
+              const selected = multiple
+                ? selectedValues.includes(option.value)
+                : String(value ?? "") === option.value;
+
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  role="option"
+                  aria-selected={selected}
+                  onClick={() => selectValue(option.value)}
+                  className={`flex w-full items-center gap-2 px-3 py-2.5 text-left sibs-text-xs transition ${
+                    selected
+                      ? "bg-[#FFF0EB] font-extrabold text-[#FF5C28]"
+                      : "font-semibold text-[#344054] hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
+                  }`}
+                >
+                  {multiple ? (
+                    <span
+                      className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${
+                        selected
+                          ? "border-[#FF5C28] bg-[#FF5C28] text-white"
+                          : "border-[#D0D5DD] bg-white text-transparent"
+                      }`}
+                      aria-hidden="true"
+                    >
+                      <Check size={11} strokeWidth={3} />
+                    </span>
+                  ) : null}
+
+                  <span className="block min-w-0 flex-1 truncate">
+                    {option.label}
+                  </span>
+
+                  {!multiple && selected ? (
+                    <Check size={14} className="shrink-0 text-[#FF5C28]" />
+                  ) : null}
+                </button>
+              );
+            })
+          ) : (
+            <div className="px-3 py-4 text-center sibs-text-xs font-semibold text-[#667085]">
+              No options found.
+            </div>
+          )}
+        </div>
+      </DropdownPortal>
+    </div>
+  );
+}
+
 function InlineDateRangeFilter({ visible }) {
   if (!visible) return null;
 
@@ -672,8 +993,19 @@ export default function AttendanceTable() {
     handlePageChange,
   } = paginationContext;
 
-  const dateFrom = filterValues?.dateFrom || "";
-  const dateTo = filterValues?.dateTo || "";
+  const defaultAttendanceDateRange = useMemo(
+    () => getDefaultAttendanceDateRange(),
+    [],
+  );
+  const rawDateFrom = filterValues?.dateFrom || "";
+  const rawDateTo = filterValues?.dateTo || "";
+  const hasStoredDateRange = Boolean(rawDateFrom || rawDateTo);
+  const dateFrom = hasStoredDateRange
+    ? rawDateFrom
+    : defaultAttendanceDateRange.dateFrom;
+  const dateTo = hasStoredDateRange
+    ? rawDateTo
+    : defaultAttendanceDateRange.dateTo;
 
   const tableScrollRef = useRef(null);
   const mobileScrollRef = useRef(null);
@@ -720,6 +1052,17 @@ export default function AttendanceTable() {
     // This intentionally runs once for each AttendanceTable mount.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (rawDateFrom || rawDateTo) return;
+
+    paginationContext.setDateRange?.(defaultAttendanceDateRange);
+  }, [
+    defaultAttendanceDateRange,
+    paginationContext,
+    rawDateFrom,
+    rawDateTo,
+  ]);
 
   const safePagination = pagination || {
     currentPage: page || 1,
@@ -854,12 +1197,16 @@ export default function AttendanceTable() {
     handleAttendanceSearchSubmit();
   }
 
+  const hasCustomDateRange = Boolean(
+    dateFrom !== defaultAttendanceDateRange.dateFrom ||
+      dateTo !== defaultAttendanceDateRange.dateTo,
+  );
+
   const hasActiveFilters = Boolean(
     String(searchInput || "").trim() ||
     (departmentFilter && departmentFilter !== "All") ||
     accountFilters.length > 0 ||
-    dateFrom ||
-    dateTo
+    hasCustomDateRange
   );
 
   function handleClearAttendanceFilters() {
@@ -868,7 +1215,7 @@ export default function AttendanceTable() {
     setDepartmentFilter("All");
     setAccountFilters([]);
     const { setDateRange } = paginationContext;
-    setDateRange?.({ dateFrom: "", dateTo: "" });
+    setDateRange?.(defaultAttendanceDateRange);
     goToPage(1);
   }
 
@@ -1252,7 +1599,7 @@ export default function AttendanceTable() {
             {attendanceFiltersView ? (
               <>
                 <div className="w-full sm:w-48 xl:w-[170px] 2xl:w-[200px] xl:flex-none">
-                  <SelectDropdown
+                  <AttendanceDirectoryFilterDropdown
                     label="Department"
                     value={departmentFilter || "All"}
                     onChange={handleDepartmentSelect}
@@ -1261,27 +1608,23 @@ export default function AttendanceTable() {
                       ...departmentDropdownOptions,
                     ]}
                     placeholder="All Departments"
-                    searchable
                     searchPlaceholder="Search departments..."
-                    clearable={false}
                     disabled={loading}
                   />
                 </div>
 
                 <div className="w-full sm:w-48 xl:w-[170px] 2xl:w-[200px] xl:flex-none">
-                  <SelectDropdown
+                  <AttendanceDirectoryFilterDropdown
                     label="Account"
                     multiple
-                    value={accountFilters.length ? accountFilters : ["All"]}
+                    values={accountFilters}
                     onChange={handleAccountSelect}
                     options={[
                       { value: "All", label: "All Accounts" },
                       ...accountDropdownOptions,
                     ]}
                     placeholder="All Accounts"
-                    searchable
                     searchPlaceholder="Search accounts..."
-                    clearable={false}
                     disabled={loading}
                   />
                 </div>

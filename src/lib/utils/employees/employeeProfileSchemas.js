@@ -14,6 +14,13 @@ import {
   User,
 } from "lucide-react";
 
+import {
+  createEmptyEducationRecord,
+  EDUCATION_LEVEL_OPTIONS as EDUCATION_LEVEL_OPTIONS_SOURCE,
+  getEducationRecordFields,
+  normalizeEducationRecordForLevel,
+} from "./educationRecordFields.js";
+
 export const PROFILE_TABS = [
   {
     key: "personal",
@@ -69,15 +76,7 @@ export const PROFILE_TABS = [
   { key: "notes", label: "Profile Notes", icon: Lock },
 ];
 
-export const EDUCATION_LEVEL_OPTIONS = [
-  "Elementary",
-  "Secondary",
-  "Senior High",
-  "Vocational",
-  "College Level",
-  "College Graduate",
-  "Graduate Studies",
-];
+export const EDUCATION_LEVEL_OPTIONS = EDUCATION_LEVEL_OPTIONS_SOURCE;
 
 export const PIPELINE_STAGES = [
   "Sourcing",
@@ -96,14 +95,10 @@ export const RECORD_SCHEMAS = {
     listKey: "education",
     addLabel: "Add Education Record",
     empty: "No education records found.",
-    newRecord: {
-      level: "College Graduate",
-      school: "",
-      degree: "",
-      from: "",
-      to: "",
-      honors: "",
-    },
+    newRecord: createEmptyEducationRecord(),
+    fields: getEducationRecordFields("Elementary"),
+    getFields: getEducationRecordFields,
+    normalizeRecord: normalizeEducationRecordForLevel,
   },
   eligibility: {
     title: "Credentials & Eligibility Records",
@@ -113,13 +108,21 @@ export const RECORD_SCHEMAS = {
     addLabel: "Add Credential Record",
     empty: "No eligibility or credential records found.",
     newRecord: {
-      name: "",
+      title: "",
       rating: "",
-      date: "",
-      place: "",
+      examDate: "",
+      examPlace: "",
       licenseNumber: "",
-      validity: "",
+      validityDate: "",
     },
+    fields: [
+      ["title", "Eligibility / License"],
+      ["rating", "Rating"],
+      ["examDate", "Date of Exam / Conferment", "date"],
+      ["examPlace", "Place of Exam / Conferment"],
+      ["licenseNumber", "License Number"],
+      ["validityDate", "Validity Date", "date"],
+    ],
   },
   experience: {
     title: "Work Experience History",
@@ -129,21 +132,35 @@ export const RECORD_SCHEMAS = {
     addLabel: "Add Experience Record",
     empty: "No work experience records found.",
     newRecord: {
-      company: "",
-      position: "",
       from: "",
       to: "",
+      position: "",
+      company: "",
       salary: "",
-      payGrade: "",
+      salaryGrade: "",
       appointmentStatus: "",
-      govService: "No",
+      governmentService: "No",
+      reasonForLeaving: "",
+      duties: "",
     },
+    fields: [
+      ["from", "From", "month"],
+      ["to", "To", "month"],
+      ["position", "Position Title"],
+      ["company", "Company / Office"],
+      ["salary", "Monthly Salary"],
+      ["salaryGrade", "Salary / Job Grade"],
+      ["appointmentStatus", "Status of Appointment"],
+      ["governmentService", "Government Service Y/N", "select", ["Yes", "No"]],
+      ["reasonForLeaving", "Reason for Leaving"],
+      ["duties", "Duties & Responsibilities", "textarea"],
+    ],
   },
   training: {
     title: "Trainings & Seminars",
     subtitle: "Professional development, workshops, and certifications.",
     icon: BookOpen,
-    listKey: "training",
+    listKey: "trainings",
     addLabel: "Add Training Record",
     empty: "No training records found.",
     newRecord: {
@@ -151,9 +168,17 @@ export const RECORD_SCHEMAS = {
       from: "",
       to: "",
       hours: "",
-      type: "Managerial",
+      type: "",
       conductedBy: "",
     },
+    fields: [
+      ["title", "Training Title"],
+      ["from", "From", "date"],
+      ["to", "To", "date"],
+      ["hours", "Number of Hours"],
+      ["type", "Type of LD"],
+      ["conductedBy", "Conducted / Sponsored By"],
+    ],
   },
   references: {
     title: "Professional Character References",
@@ -165,7 +190,12 @@ export const RECORD_SCHEMAS = {
     newRecord: {
       name: "",
       address: "",
-      contact: "",
+      telephone: "",
     },
+    fields: [
+      ["name", "Name"],
+      ["address", "Address"],
+      ["telephone", "Contact Number", "phone11"],
+    ],
   },
 };

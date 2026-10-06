@@ -1,15 +1,14 @@
-import React, {
-  useState,
-  useRef,
-  useEffect,
-  useLayoutEffect,
-  useCallback,
-  useMemo,
-} from "react";
-import { createPortal } from "react-dom";
-import { CalendarDays, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import {
+  CalendarDays,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 
-const MONTH_NAMES = [
+import DropdownPortal from "./DropdownPortal.jsx";
+
+const MONTH_LABELS = [
   "January",
   "February",
   "March",
@@ -26,364 +25,596 @@ const MONTH_NAMES = [
 
 const WEEKDAY_LABELS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
 
-function parseLocalDate(dateString) {
-  if (!dateString || typeof dateString !== "string") return null;
-  const clean = dateString.trim().slice(0, 10);
-  const parts = clean.split("-");
-  if (parts.length !== 3) {
-    const fallback = new Date(dateString);
-    return Number.isNaN(fallback.getTime()) ? null : fallback;
+function parseLocalDate(value) {
+  if (!value || typeof value !== "string") return null;
+
+  const cleanValue = value.trim().slice(0, 10);
+  const match = cleanValue.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+
+  if (match) {
+    const year = Number(match[1]);
+    const month = Number(match[2]);
+    const day = Number(match[3]);
+    const parsed = new Date(year, month - 1, day);
+
+    if (
+      Number.isNaN(parsed.getTime()) ||
+      parsed.getFullYear() !== year ||
+      parsed.getMonth() !== month - 1 ||
+      parsed.getDate() !== day
+    ) {
+      return null;
+    }
+
+    return parsed;
   }
-  const year = parseInt(parts[0], 10);
-  const month = parseInt(parts[1], 10) - 1;
-  const day = parseInt(parts[2], 10);
-  const date = new Date(year, month, day);
-  return Number.isNaN(date.getTime()) ? null : date;
+
+  const fallback = new Date(value);
+  return Number.isNaN(fallback.getTime()) ? null : fallback;
 }
 
-function toLocalDateString(date) {
-  if (!date || Number.isNaN(date.getTime())) return "";
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
+function toDateKey(date) {
+  if (!(date instanceof Date) || Number.isNaN(date.getTime())) return "";
+
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(
+    date.getDate(),
+  ).padStart(2, "0")}`;
 }
 
-function formatDisplayDate(dateString) {
-  const parsed = parseLocalDate(dateString);
+function formatDateValue(value) {
+  const parsed = parseLocalDate(value);
   if (!parsed) return "";
-  const month = String(parsed.getMonth() + 1).padStart(2, "0");
-  const day = String(parsed.getDate()).padStart(2, "0");
-  const year = parsed.getFullYear();
-  return `${month}/${day}/${year}`;
+
+  return new Intl.DateTimeFormat("en-PH", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  }).format(parsed);
 }
 
-function isSameDay(d1, d2) {
-  if (!d1 || !d2) return false;
-  return (
-    d1.getFullYear() === d2.getFullYear() &&
-    d1.getMonth() === d2.getMonth() &&
-    d1.getDate() === d2.getDate()
-  );
+function getCalendarCells(viewDate) {
+  const firstDay = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1);
+  const firstCell = new Date(firstDay);
+  firstCell.setDate(1 - firstDay.getDay());
+
+  return Array.from({ length: 42 }, (_, index) => {
+    const cell = new Date(firstCell);
+    cell.setDate(firstCell.getDate() + index);
+    return cell;
+  });
+}
+
+function getYearOptions({ query, viewYear, minYear, maxYear }) {
+  const cleanQuery = String(query || "")
+    .replace(/\D/g, "")
+    .slice(0, 4);
+
+  if (!cleanQuery) {
+    const startYear = Math.max(minYear, viewYear - 5);
+    const endYear = Math.min(maxYear, startYear + 11);
+    const adjustedStart = Math.max(minYear, endYear - 11);
+
+    return Array.from(
+      { length: Math.max(endYear - adjustedStart + 1, 0) },
+      (_, index) => adjustedStart + index,
+    );
+  }
+
+  const matches = [];
+
+  for (let year = minYear; year <= maxYear && matches.length < 12; year += 1) {
+    if (String(year).startsWith(cleanQuery)) matches.push(year);
+  }
+
+  const exactYear = Number(cleanQuery);
+
+  if (
+    cleanQuery.length === 4 &&
+    Number.isInteger(exactYear) &&
+    exactYear >= minYear &&
+    exactYear <= maxYear &&
+    !matches.includes(exactYear)
+  ) {
+    matches.unshift(exactYear);
+  }
+
+  return matches.slice(0, 12);
+}
+
+function hasUtilityClass(value, expression) {
+  return expression.test(String(value || ""));
 }
 
 export default function DatePicker({
+  label = "",
+  hideLabel = false,
+  labelClassName = "",
+  leadingLabel = "",
   value = "",
+  displayValue,
+  min = "",
+  max = "",
   onChange,
   placeholder = "Select date",
   disabled = false,
   readOnly = false,
-  min = "",
-  max = "",
-  buttonClassName = "",
-  className = "",
-  label = "",
-  labelClassName = "",
-  hideLabel = false,
-  showClear = true,
+  required = false,
+  clearable,
+  showClear,
   showToday = true,
+  className = "",
+  buttonClassName = "",
 }) {
-  const [open, setOpen] = useState(false);
-  const [panelStyle, setPanelStyle] = useState({ top: 0, left: 0, width: 290 });
-
-  const triggerRef = useRef(null);
-  const panelRef = useRef(null);
+  const anchorRef = useRef(null);
+  const yearInputRef = useRef(null);
 
   const selectedDate = useMemo(() => parseLocalDate(value), [value]);
+  const minDate = useMemo(() => parseLocalDate(min), [min]);
+  const maxDate = useMemo(() => parseLocalDate(max), [max]);
   const today = useMemo(() => new Date(), []);
 
-  const [viewDate, setViewDate] = useState(() => {
-    return selectedDate || new Date(today.getFullYear(), today.getMonth(), 1);
-  });
+  const [open, setOpen] = useState(false);
+  const [viewDate, setViewDate] = useState(
+    selectedDate || minDate || new Date(today.getFullYear(), today.getMonth(), 1),
+  );
+  const [yearSearchOpen, setYearSearchOpen] = useState(false);
+  const [yearSearch, setYearSearch] = useState("");
 
-  useEffect(() => {
-    if (selectedDate) {
-      setViewDate(new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1));
-    }
-  }, [selectedDate]);
-
-  const updatePosition = useCallback(() => {
-    if (!triggerRef.current) return;
-    const rect = triggerRef.current.getBoundingClientRect();
-    const panelWidth = 290;
-    const panelHeight = 310;
-    const gutter = 8;
-
-    const spaceBelow = window.innerHeight - rect.bottom;
-    const shouldFlipUp = spaceBelow < panelHeight && rect.top > panelHeight;
-
-    const top = shouldFlipUp
-      ? Math.max(gutter, rect.top - panelHeight - 6)
-      : rect.bottom + 6;
-
-    const maxLeft = window.innerWidth - panelWidth - gutter;
-    const left = Math.max(gutter, Math.min(rect.left, maxLeft));
-
-    setPanelStyle({
-      top,
-      left,
-      width: panelWidth,
-    });
-  }, []);
-
-  useLayoutEffect(() => {
-    if (open) {
-      updatePosition();
-    }
-  }, [open, updatePosition]);
-
-  useEffect(() => {
-    if (!open) return;
-
-    function handleClickOutside(event) {
-      const inTrigger = triggerRef.current?.contains(event.target);
-      const inPanel = panelRef.current?.contains(event.target);
-      if (!inTrigger && !inPanel) {
-        setOpen(false);
-      }
-    }
-
-    function handleKeyDown(event) {
-      if (event.key === "Escape") {
-        setOpen(false);
-      }
-    }
-
-    window.addEventListener("resize", updatePosition);
-    window.addEventListener("scroll", updatePosition, true);
-    document.addEventListener("mousedown", handleClickOutside);
-    document.addEventListener("keydown", handleKeyDown);
-
-    return () => {
-      window.removeEventListener("resize", updatePosition);
-      window.removeEventListener("scroll", updatePosition, true);
-      document.removeEventListener("mousedown", handleClickOutside);
-      document.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [open, updatePosition]);
-
-  const calendarCells = useMemo(() => {
-    const year = viewDate.getFullYear();
-    const month = viewDate.getMonth();
-    const firstDay = new Date(year, month, 1);
-    const startDayOfWeek = firstDay.getDay();
-
-    const cells = [];
-    for (let i = 0; i < 42; i++) {
-      const cellDate = new Date(year, month, 1 - startDayOfWeek + i);
-      const cellStr = toLocalDateString(cellDate);
-      cells.push({
-        date: cellDate,
-        dateStr: cellStr,
-        dayNumber: cellDate.getDate(),
-        isCurrentMonth: cellDate.getMonth() === month,
-        isSelected: selectedDate ? isSameDay(cellDate, selectedDate) : false,
-        isToday: isSameDay(cellDate, today),
-      });
-    }
-    return cells;
-  }, [viewDate, selectedDate, today]);
-
-  function handlePrevMonth() {
-    setViewDate((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
-  }
-
-  function handleNextMonth() {
-    setViewDate((prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
-  }
-
-  function handleSelect(cell) {
-    onChange?.(cell.dateStr);
-    setOpen(false);
-  }
-
-  function handleClear() {
-    onChange?.("");
-    setOpen(false);
-  }
-
-  function handleTodayClick() {
-    const todayStr = toLocalDateString(today);
-    onChange?.(todayStr);
-    setViewDate(new Date(today.getFullYear(), today.getMonth(), 1));
-    setOpen(false);
-  }
+  const effectiveClearable =
+    clearable !== undefined
+      ? Boolean(clearable)
+      : showClear !== undefined
+        ? Boolean(showClear)
+        : true;
 
   const isLocked = disabled || readOnly;
+  const minYear = minDate?.getFullYear() ?? 1900;
+  const maxYear = maxDate?.getFullYear() ?? 2100;
+
+  useEffect(() => {
+    if (!selectedDate) return;
+
+    setViewDate(
+      new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1),
+    );
+  }, [selectedDate]);
+
+  useEffect(() => {
+    if (!open) {
+      setYearSearchOpen(false);
+      setYearSearch("");
+    }
+  }, [open]);
+
+  const cells = useMemo(() => getCalendarCells(viewDate), [viewDate]);
+
+  const yearOptions = useMemo(
+    () =>
+      getYearOptions({
+        query: yearSearch,
+        viewYear: viewDate.getFullYear(),
+        minYear,
+        maxYear,
+      }),
+    [yearSearch, viewDate, minYear, maxYear],
+  );
+
+  const renderedValue = displayValue || formatDateValue(value);
+
+  function isDisabledDate(date) {
+    if (!(date instanceof Date) || Number.isNaN(date.getTime())) return true;
+
+    const dateKey = toDateKey(date);
+    const minKey = minDate ? toDateKey(minDate) : "";
+    const maxKey = maxDate ? toDateKey(maxDate) : "";
+
+    return Boolean((minKey && dateKey < minKey) || (maxKey && dateKey > maxKey));
+  }
+
+  function closePicker() {
+    setOpen(false);
+    setYearSearchOpen(false);
+    setYearSearch("");
+  }
+
+  function selectDate(date) {
+    if (isDisabledDate(date)) return;
+
+    onChange?.(toDateKey(date));
+    closePicker();
+  }
+
+  function clearDate() {
+    onChange?.("");
+    closePicker();
+  }
+
+  function selectToday() {
+    if (isDisabledDate(today)) return;
+
+    onChange?.(toDateKey(today));
+    setViewDate(new Date(today.getFullYear(), today.getMonth(), 1));
+    closePicker();
+  }
+
+  function openYearSearch() {
+    setYearSearch("");
+    setYearSearchOpen(true);
+
+    window.requestAnimationFrame(() => {
+      yearInputRef.current?.focus();
+    });
+  }
+
+  function closeYearSearch() {
+    setYearSearchOpen(false);
+    setYearSearch("");
+  }
+
+  function selectYear(year) {
+    const nextYear = Number(year);
+
+    if (
+      !Number.isInteger(nextYear) ||
+      nextYear < minYear ||
+      nextYear > maxYear
+    ) {
+      return;
+    }
+
+    setViewDate(
+      (previous) => new Date(nextYear, previous.getMonth(), 1),
+    );
+    closeYearSearch();
+  }
+
+  function handleYearSearchKeyDown(event) {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      closeYearSearch();
+      return;
+    }
+
+    if (event.key !== "Enter") return;
+
+    event.preventDefault();
+
+    if (yearSearch.length === 4) {
+      selectYear(Number(yearSearch));
+    }
+  }
+
+  function moveMonth(offset) {
+    setViewDate((previous) => {
+      const next = new Date(
+        previous.getFullYear(),
+        previous.getMonth() + offset,
+        1,
+      );
+
+      if (minDate) {
+        const minMonth = new Date(minDate.getFullYear(), minDate.getMonth(), 1);
+        if (next < minMonth) return previous;
+      }
+
+      if (maxDate) {
+        const maxMonth = new Date(maxDate.getFullYear(), maxDate.getMonth(), 1);
+        if (next > maxMonth) return previous;
+      }
+
+      return next;
+    });
+  }
+
+  const currentMonthStart = new Date(
+    viewDate.getFullYear(),
+    viewDate.getMonth(),
+    1,
+  );
+  const previousMonthStart = new Date(
+    viewDate.getFullYear(),
+    viewDate.getMonth() - 1,
+    1,
+  );
+  const nextMonthStart = new Date(
+    viewDate.getFullYear(),
+    viewDate.getMonth() + 1,
+    1,
+  );
+  const minMonthStart = minDate
+    ? new Date(minDate.getFullYear(), minDate.getMonth(), 1)
+    : null;
+  const maxMonthStart = maxDate
+    ? new Date(maxDate.getFullYear(), maxDate.getMonth(), 1)
+    : null;
+
+  const canMovePrevious = !minMonthStart || previousMonthStart >= minMonthStart;
+  const canMoveNext = !maxMonthStart || nextMonthStart <= maxMonthStart;
 
   const customClasses = `${buttonClassName || ""} ${className || ""}`;
-  const hasCustomHeight = /(?:^|\s)(?:[a-z0-9]+:)*!?(?:h-\S+|min-h-\S+)/.test(customClasses);
-  const hasCustomRounded = /(?:^|\s)(?:[a-z0-9]+:)*!?rounded-/.test(customClasses);
-  const hasCustomPadding = /(?:^|\s)(?:[a-z0-9]+:)*!?p[xye]?-/.test(customClasses);
+  const hasCustomHeight = hasUtilityClass(
+    customClasses,
+    /(?:^|\s)(?:[a-z0-9]+:)*!?(?:h-\S+|min-h-\S+)/i,
+  );
+  const hasCustomRounded = hasUtilityClass(
+    customClasses,
+    /(?:^|\s)(?:[a-z0-9]+:)*!?rounded-\S+/i,
+  );
+  const hasCustomPadding = hasUtilityClass(
+    customClasses,
+    /(?:^|\s)(?:[a-z0-9]+:)*!?p[xye]?-\S+/i,
+  );
 
-  const defaultHeightClass = hasCustomHeight ? "" : "h-11";
+  const defaultHeightClass = hasCustomHeight ? "" : "h-8.5 2xl:h-10";
   const defaultRoundedClass = hasCustomRounded ? "" : "rounded-xl";
-  const defaultPaddingClass = hasCustomPadding ? "" : "px-3.5";
+  const defaultPaddingClass = hasCustomPadding ? "" : "px-3";
 
-  const displayText = value ? formatDisplayDate(value) : placeholder;
+  const triggerClasses = `flex w-full min-w-0 items-center justify-between gap-2 border bg-white text-left font-jakarta sibs-text-xs 2xl:sibs-text-sm font-semibold text-sibs-navy shadow-sm outline-none transition-all duration-200 ${defaultHeightClass} ${defaultRoundedClass} ${defaultPaddingClass} ${
+    isLocked
+      ? "cursor-not-allowed border-sibs-border bg-sibs-canvas text-sibs-faint opacity-70"
+      : open
+        ? "border-sibs-orange ring-4 ring-sibs-orange/10"
+        : "border-slate-300 hover:border-sibs-orange/50 hover:bg-white"
+  } ${buttonClassName} ${className}`;
 
   return (
-    <div className="relative w-full min-w-0">
-      {label && !hideLabel && (
+    <div ref={anchorRef} className="relative min-w-0 w-full font-jakarta">
+      {label && !hideLabel ? (
         <label
-          className={
-            labelClassName ||
-            "mb-1.5 block font-jakarta text-xs font-bold text-sibs-navy"
-          }
+          className={`mb-1 block ${
+            labelClassName || "sibs-text-xs font-bold text-sibs-navy"
+          }`}
         >
           {label}
+          {required ? <span className="text-sibs-orange"> *</span> : null}
         </label>
-      )}
+      ) : null}
 
       <button
-        ref={triggerRef}
         type="button"
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        aria-label={label || leadingLabel || placeholder}
         disabled={isLocked}
         onClick={() => {
-          if (!isLocked) {
-            setOpen((prev) => !prev);
-          }
+          if (isLocked) return;
+
+          setViewDate(
+            selectedDate ||
+              minDate ||
+              new Date(today.getFullYear(), today.getMonth(), 1),
+          );
+          setYearSearchOpen(false);
+          setYearSearch("");
+          setOpen((current) => !current);
         }}
-        className={`flex w-full min-w-0 items-center justify-between gap-2 border font-jakarta text-sm font-semibold outline-none transition text-left ${defaultHeightClass} ${defaultRoundedClass} ${defaultPaddingClass} ${
-          isLocked
-            ? "cursor-not-allowed border-sibs-border-subtle bg-sibs-canvas text-sibs-faint opacity-70"
-            : open
-              ? "border-sibs-orange bg-white text-sibs-navy ring-2 ring-sibs-orange/10"
-              : "border-sibs-border-subtle bg-white text-sibs-navy hover:border-sibs-orange/40"
-        } ${buttonClassName || ""} ${className || ""}`}
+        className={triggerClasses}
       >
-        <span className="flex min-w-0 flex-1 items-center gap-2 truncate">
-          <CalendarDays
-            size={16}
-            className={`shrink-0 ${
-              value ? "text-sibs-navy" : "text-sibs-faint"
-            }`}
-          />
+        <span className="flex min-w-0 flex-1 items-center gap-2">
+          <CalendarDays size={15} className="shrink-0 text-sibs-orange" />
+
+          {leadingLabel ? (
+            <span className="shrink-0 font-extrabold text-sibs-navy">
+              {leadingLabel}
+            </span>
+          ) : null}
+
           <span
             className={`truncate ${
-              value
-                ? "text-sibs-navy font-semibold"
-                : "text-sibs-faint font-normal"
+              renderedValue
+                ? "text-sibs-primary-1"
+                : "font-normal text-sibs-faint"
             }`}
           >
-            {displayText}
+            {renderedValue || placeholder}
           </span>
         </span>
 
-        {!isLocked && (
+        {!isLocked ? (
           <ChevronDown
-            size={16}
+            size={14}
             className={`shrink-0 text-sibs-navy transition-transform duration-200 ${
               open ? "rotate-180 text-sibs-orange" : ""
             }`}
           />
-        )}
+        ) : null}
       </button>
 
-      {open &&
-        !isLocked &&
-        createPortal(
-          <div
-            ref={panelRef}
-            className="sibs-dropdown-pop-in fixed z-[999999] w-[290px] rounded-xl border border-sibs-border-subtle bg-white p-3.5 shadow-2xl"
-            style={{
-              top: `${panelStyle.top}px`,
-              left: `${panelStyle.left}px`,
-            }}
-          >
-            {/* Header */}
-            <div className="flex items-center justify-between border-b border-sibs-border pb-2.5">
-              <button
-                type="button"
-                onClick={handlePrevMonth}
-                aria-label="Previous month"
-                className="flex h-7 w-7 items-center justify-center rounded-lg border border-sibs-border-subtle bg-sibs-surface text-sibs-navy transition hover:bg-sibs-cream-light hover:text-sibs-orange"
-              >
-                <ChevronLeft size={15} />
-              </button>
-
-              <span className="font-jakarta text-xs font-extrabold text-sibs-navy">
-                {MONTH_NAMES[viewDate.getMonth()]} {viewDate.getFullYear()}
-              </span>
-
-              <button
-                type="button"
-                onClick={handleNextMonth}
-                aria-label="Next month"
-                className="flex h-7 w-7 items-center justify-center rounded-lg border border-sibs-border-subtle bg-sibs-surface text-sibs-navy transition hover:bg-sibs-cream-light hover:text-sibs-orange"
-              >
-                <ChevronRight size={15} />
-              </button>
-            </div>
-
-            {/* Weekdays */}
-            <div className="mt-2.5 grid grid-cols-7 gap-1">
-              {WEEKDAY_LABELS.map((dayLabel) => (
-                <div
-                  key={dayLabel}
-                  className="flex h-6 items-center justify-center font-jakarta text-[10px] font-extrabold text-sibs-muted"
+      <DropdownPortal
+        open={open && !isLocked}
+        anchorRef={anchorRef}
+        onClose={closePicker}
+        width={300}
+        matchAnchorWidth={false}
+        maxHeight={430}
+      >
+        <div className="w-full font-jakarta">
+          <div className="flex items-center justify-between border-b border-[#E6ECF2] px-4 py-2.5">
+            {yearSearchOpen ? (
+              <>
+                <button
+                  type="button"
+                  aria-label="Back to calendar"
+                  onClick={closeYearSearch}
+                  className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sibs-navy transition hover:bg-sibs-cream-light hover:text-sibs-orange focus:outline-none focus:ring-2 focus:ring-sibs-orange/20"
                 >
-                  {dayLabel}
-                </div>
-              ))}
+                  <ChevronLeft size={17} />
+                </button>
 
-              {/* Day cells */}
-              {calendarCells.map((cell) => {
-                let cellClass =
-                  "text-sibs-navy hover:bg-sibs-cream-subtle hover:text-sibs-orange";
+                <input
+                  ref={yearInputRef}
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="off"
+                  value={yearSearch}
+                  onChange={(event) =>
+                    setYearSearch(
+                      event.target.value.replace(/\D/g, "").slice(0, 4),
+                    )
+                  }
+                  onKeyDown={handleYearSearchKeyDown}
+                  placeholder="Search year..."
+                  aria-label="Search year"
+                  className="mx-2 h-8 min-w-0 flex-1 rounded-lg border border-sibs-orange bg-white px-3 text-center sibs-text-xs font-extrabold text-sibs-navy outline-none ring-2 ring-sibs-orange/10 placeholder:font-semibold placeholder:text-sibs-faint"
+                />
 
-                if (cell.isSelected) {
-                  cellClass =
-                    "bg-sibs-orange text-white font-extrabold shadow-xs hover:bg-sibs-orange";
-                } else if (cell.isToday) {
-                  cellClass =
-                    "border border-sibs-orange bg-sibs-cream-light text-sibs-orange font-extrabold";
-                } else if (!cell.isCurrentMonth) {
-                  cellClass = "text-sibs-faint hover:bg-sibs-surface";
-                }
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (yearSearch.length === 4) {
+                      selectYear(Number(yearSearch));
+                    }
+                  }}
+                  disabled={
+                    yearSearch.length !== 4 ||
+                    Number(yearSearch) < minYear ||
+                    Number(yearSearch) > maxYear
+                  }
+                  className="inline-flex h-8 shrink-0 items-center justify-center rounded-lg px-2.5 sibs-text-micro font-extrabold text-sibs-orange transition hover:bg-sibs-cream-light disabled:cursor-not-allowed disabled:text-slate-300"
+                >
+                  Go
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  aria-label="Previous month"
+                  disabled={!canMovePrevious}
+                  onClick={() => moveMonth(-1)}
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-full text-sibs-navy transition hover:bg-sibs-cream-light hover:text-sibs-orange focus:outline-none focus:ring-2 focus:ring-sibs-orange/20 disabled:cursor-not-allowed disabled:text-slate-300 disabled:hover:bg-transparent"
+                >
+                  <ChevronLeft size={17} />
+                </button>
 
-                return (
-                  <button
-                    key={cell.dateStr}
-                    type="button"
-                    onClick={() => handleSelect(cell)}
-                    className={`flex h-7.5 w-7.5 items-center justify-center rounded-lg font-jakarta text-xs font-bold transition mx-auto ${cellClass}`}
-                  >
-                    {cell.dayNumber}
-                  </button>
-                );
-              })}
-            </div>
+                <button
+                  type="button"
+                  onClick={openYearSearch}
+                  title="Click to search year"
+                  className="rounded-lg px-3 py-1.5 sibs-text-xs 2xl:sibs-text-sm font-extrabold text-sibs-navy transition hover:bg-sibs-cream-light hover:text-sibs-orange focus:outline-none focus:ring-2 focus:ring-sibs-orange/20"
+                >
+                  {MONTH_LABELS[currentMonthStart.getMonth()]} {currentMonthStart.getFullYear()}
+                </button>
 
-            {/* Footer */}
-            {(showClear || showToday) && (
-              <div className="mt-2.5 flex items-center justify-between border-t border-sibs-border pt-2">
-                {showClear ? (
-                  <button
-                    type="button"
-                    onClick={handleClear}
-                    className="font-jakarta text-xs font-bold text-sibs-muted transition hover:text-red-600"
-                  >
-                    Clear
-                  </button>
-                ) : (
-                  <div />
-                )}
-
-                {showToday && (
-                  <button
-                    type="button"
-                    onClick={handleTodayClick}
-                    className="font-jakarta text-xs font-extrabold text-sibs-orange transition hover:opacity-85"
-                  >
-                    Today
-                  </button>
-                )}
-              </div>
+                <button
+                  type="button"
+                  aria-label="Next month"
+                  disabled={!canMoveNext}
+                  onClick={() => moveMonth(1)}
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-full text-sibs-navy transition hover:bg-sibs-cream-light hover:text-sibs-orange focus:outline-none focus:ring-2 focus:ring-sibs-orange/20 disabled:cursor-not-allowed disabled:text-slate-300 disabled:hover:bg-transparent"
+                >
+                  <ChevronRight size={17} />
+                </button>
+              </>
             )}
-          </div>,
-          document.body,
-        )}
+          </div>
+
+          {yearSearchOpen ? (
+            <div className="p-3 2xl:p-4">
+              <p className="mb-2 sibs-text-micro font-bold text-sibs-muted">
+                Type a year, then select it below or press Enter.
+              </p>
+
+              {yearOptions.length ? (
+                <div className="grid grid-cols-3 gap-2">
+                  {yearOptions.map((year) => (
+                    <button
+                      key={year}
+                      type="button"
+                      onClick={() => selectYear(year)}
+                      className={`flex h-9 items-center justify-center rounded-lg border sibs-text-xs font-extrabold transition focus:outline-none focus:ring-2 focus:ring-sibs-orange/20 ${
+                        year === viewDate.getFullYear()
+                          ? "border-sibs-orange bg-sibs-cream-subtle text-sibs-orange"
+                          : "border-sibs-border bg-white text-sibs-navy hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange"
+                      }`}
+                    >
+                      {year}
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="rounded-lg border border-dashed border-sibs-border px-3 py-6 text-center sibs-text-xs font-semibold text-sibs-muted">
+                  No year matches your search.
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="p-3 2xl:p-4">
+              <div className="grid grid-cols-7 gap-1">
+                {WEEKDAY_LABELS.map((day) => (
+                  <div
+                    key={day}
+                    className="flex h-7 items-center justify-center sibs-text-micro font-extrabold text-[#7B8DB3]"
+                  >
+                    {day}
+                  </div>
+                ))}
+
+                {cells.map((date) => {
+                  const key = toDateKey(date);
+                  const currentMonth =
+                    date.getMonth() === viewDate.getMonth() &&
+                    date.getFullYear() === viewDate.getFullYear();
+                  const selected = Boolean(value && key === toDateKey(selectedDate));
+                  const isToday = key === toDateKey(today);
+                  const disabledDate = isDisabledDate(date);
+
+                  return (
+                    <button
+                      key={key}
+                      type="button"
+                      disabled={disabledDate}
+                      onClick={() => selectDate(date)}
+                      className={`flex h-8 items-center justify-center rounded-lg sibs-text-xs font-bold transition focus:outline-none focus:ring-2 focus:ring-sibs-orange/20 ${
+                        selected
+                          ? "bg-sibs-orange text-white shadow-sm"
+                          : isToday
+                            ? "bg-sibs-cream-subtle font-extrabold text-sibs-orange"
+                            : currentMonth
+                              ? "text-sibs-navy hover:bg-sibs-cream-light hover:text-sibs-orange"
+                              : "text-slate-400 hover:bg-slate-50"
+                      } ${
+                        disabledDate
+                          ? "cursor-not-allowed bg-slate-50 text-slate-300 hover:bg-slate-50"
+                          : ""
+                      }`}
+                    >
+                      {date.getDate()}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {(effectiveClearable || showToday) && (
+                <div className="mt-2 flex items-center justify-between border-t border-[#E6ECF2] pt-2.5">
+                  {effectiveClearable ? (
+                    <button
+                      type="button"
+                      onClick={clearDate}
+                      className="rounded-full px-2.5 py-1 sibs-text-micro font-extrabold text-sibs-muted transition hover:bg-sibs-cream-light hover:text-sibs-orange"
+                    >
+                      Clear
+                    </button>
+                  ) : (
+                    <span />
+                  )}
+
+                  {showToday ? (
+                    <button
+                      type="button"
+                      disabled={isDisabledDate(today)}
+                      onClick={selectToday}
+                      className="rounded-full px-2.5 py-1 sibs-text-micro font-extrabold text-sibs-navy transition hover:bg-sibs-cream-light hover:text-sibs-orange disabled:cursor-not-allowed disabled:text-slate-300"
+                    >
+                      Today
+                    </button>
+                  ) : null}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </DropdownPortal>
     </div>
   );
 }

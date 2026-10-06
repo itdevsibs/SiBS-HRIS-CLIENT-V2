@@ -15,9 +15,9 @@ const LEVEL_FIELD = Object.freeze([
   EDUCATION_LEVEL_OPTIONS,
 ]);
 
-const SCHOOL_FIELD = Object.freeze(["school", "Name of School"]);
-const ADDRESS_FIELD = Object.freeze(["address", "Address"]);
-const DEGREE_FIELD = Object.freeze(["degree", "Degree / Course"]);
+const SCHOOL_FIELD = Object.freeze(["school", "Name of School", "autogrow"]);
+const ADDRESS_FIELD = Object.freeze(["address", "Address", "autogrow"]);
+const DEGREE_FIELD = Object.freeze(["degree", "Degree / Course", "autogrow"]);
 const YEAR_GRADUATED_FIELD = Object.freeze([
   "yearGraduated",
   "Year Graduated",

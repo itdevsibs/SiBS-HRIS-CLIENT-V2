@@ -1,127 +1,10 @@
-import React, {
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
-import { createPortal } from "react-dom";
-import { Check, ChevronDown, Search } from "lucide-react";
+import React, { useMemo, useRef, useState } from "react";
+import { Check, ChevronDown } from "lucide-react";
+
+import DropdownPortal from "./DropdownPortal.jsx";
 
 function cleanText(value) {
   return String(value ?? "").trim();
-}
-
-function DropdownPortal({
-  open,
-  anchorRef,
-  onClose,
-  children,
-  className = "",
-  maxHeight = 224,
-  offset = 4,
-}) {
-  const [style, setStyle] = useState(null);
-  const dropdownRef = useRef(null);
-
-  useEffect(() => {
-    if (!open) return;
-
-    function handleClickOutside(event) {
-      const clickedAnchor = anchorRef.current?.contains(event.target);
-      const clickedDropdown = dropdownRef.current?.contains(event.target);
-
-      if (!clickedAnchor && !clickedDropdown) {
-        onClose?.();
-      }
-    }
-
-    function handleKeyDown(event) {
-      if (event.key === "Escape") {
-        onClose?.();
-      }
-    }
-
-    document.addEventListener("mousedown", handleClickOutside);
-    document.addEventListener("touchstart", handleClickOutside);
-    document.addEventListener("keydown", handleKeyDown);
-
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-      document.removeEventListener("touchstart", handleClickOutside);
-      document.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [open, anchorRef, onClose]);
-
-  useLayoutEffect(() => {
-    if (!open || !anchorRef.current) return;
-
-    function updatePosition() {
-      if (!anchorRef.current) return;
-
-      const rect = anchorRef.current.getBoundingClientRect();
-      const viewportPadding = 8;
-      const spaceBelow = window.innerHeight - rect.bottom - offset;
-      const spaceAbove = rect.top - offset;
-
-      const shouldFlipUp = spaceBelow < 180 && spaceAbove > spaceBelow;
-      const availableHeight = shouldFlipUp
-        ? Math.max(120, spaceAbove - viewportPadding)
-        : Math.max(120, spaceBelow - viewportPadding);
-
-      const panelMaxHeight = Math.min(maxHeight, availableHeight);
-      const renderedHeight = dropdownRef.current?.offsetHeight || panelMaxHeight;
-
-      const top = shouldFlipUp
-        ? Math.max(viewportPadding, rect.top - renderedHeight - offset)
-        : rect.bottom + offset;
-
-      const left = Math.min(
-        Math.max(viewportPadding, rect.left),
-        window.innerWidth - rect.width - viewportPadding,
-      );
-
-      setStyle({
-        top,
-        left,
-        width: rect.width,
-        maxHeight: panelMaxHeight,
-      });
-    }
-
-    updatePosition();
-
-    window.addEventListener("resize", updatePosition);
-    window.addEventListener("scroll", updatePosition, true);
-
-    return () => {
-      window.removeEventListener("resize", updatePosition);
-      window.removeEventListener("scroll", updatePosition, true);
-    };
-  }, [open, anchorRef, maxHeight, offset]);
-
-  if (!open || !style || typeof document === "undefined") return null;
-
-  return createPortal(
-    <div
-      ref={dropdownRef}
-      role="listbox"
-      className={`sibs-dropdown-pop-in fixed z-[999999] overflow-hidden rounded-xl border border-sibs-border-subtle bg-white font-jakarta shadow-2xl ${className}`}
-      style={{
-        top: `${style.top}px`,
-        left: `${style.left}px`,
-        width: `${style.width}px`,
-      }}
-    >
-      <div
-        className="sibs-scrollbar overflow-y-auto overscroll-contain py-1"
-        style={{ maxHeight: `${style.maxHeight}px` }}
-      >
-        {children}
-      </div>
-    </div>,
-    document.body,
-  );
 }
 
 export default function SelectDropdown({
@@ -154,26 +37,28 @@ export default function SelectDropdown({
   const anchorRef = useRef(null);
   const searchInputRef = useRef(null);
 
-  const normalizedOptions = useMemo(() => {
-    return options.map((option) => ({
-      raw: option,
-      value: String(optionValue(option) ?? ""),
-      label: String(optionLabel(option) ?? ""),
-      description: optionDescription(option),
-      disabled: Boolean(option?.disabled),
-    }));
-  }, [options, optionValue, optionLabel, optionDescription]);
+  const normalizedOptions = useMemo(
+    () =>
+      options.map((option) => ({
+        raw: option,
+        value: String(optionValue(option) ?? ""),
+        label: String(optionLabel(option) ?? ""),
+        description: optionDescription(option),
+        disabled: Boolean(option?.disabled),
+      })),
+    [options, optionValue, optionLabel, optionDescription],
+  );
 
   const selectedValues = useMemo(() => {
     if (!multiple) return [];
-    if (Array.isArray(value)) return value.map((v) => String(v ?? ""));
+    if (Array.isArray(value)) return value.map((item) => String(item ?? ""));
     return value ? [String(value)] : [];
   }, [multiple, value]);
 
   const selectedOption = useMemo(() => {
     if (multiple) return null;
     return normalizedOptions.find(
-      (opt) => String(opt.value) === String(value ?? ""),
+      (option) => String(option.value) === String(value ?? ""),
     );
   }, [multiple, normalizedOptions, value]);
 
@@ -181,212 +66,286 @@ export default function SelectDropdown({
     if (multiple) {
       if (selectedValues.length === 0) return "";
       if (selectedValues.length === 1) {
-        const found = normalizedOptions.find((opt) => opt.value === selectedValues[0]);
-        return found ? found.label : selectedValues[0];
+        const selected = normalizedOptions.find(
+          (option) => option.value === selectedValues[0],
+        );
+        return selected?.label || selectedValues[0];
       }
       return `${selectedValues.length} selected`;
     }
+
     return selectedOption?.label || (value ? String(value) : "");
-  }, [multiple, selectedValues, normalizedOptions, selectedOption, value]);
+  }, [multiple, normalizedOptions, selectedOption, selectedValues, value]);
 
   const filteredOptions = useMemo(() => {
     const query = cleanText(searchQuery).toLowerCase();
     if (!searchable || !query) return normalizedOptions;
 
-    return normalizedOptions.filter((opt) => {
-      const labelMatch = opt.label.toLowerCase().includes(query);
-      const descMatch = opt.description
-        ? String(opt.description).toLowerCase().includes(query)
+    return normalizedOptions.filter((option) => {
+      const labelMatch = option.label.toLowerCase().includes(query);
+      const descriptionMatch = option.description
+        ? String(option.description).toLowerCase().includes(query)
         : false;
-      return labelMatch || descMatch;
+      return labelMatch || descriptionMatch;
     });
   }, [normalizedOptions, searchable, searchQuery]);
 
-  function handleOpen() {
-    if (disabled) return;
-    setOpen((prev) => !prev);
-    if (!open && searchable) {
-      setSearchQuery("");
-      window.requestAnimationFrame(() => {
-        searchInputRef.current?.focus();
-      });
-    }
-  }
-
-  function handleClose() {
+  function closeMenu() {
     setOpen(false);
     setSearchQuery("");
   }
 
-  function handleSelect(selectedValue, optionRaw) {
+  function openMenu() {
+    if (disabled || open) return;
+    setOpen(true);
+
+    if (searchable) {
+      setSearchQuery("");
+      window.requestAnimationFrame(() => searchInputRef.current?.focus());
+    }
+  }
+
+  function toggleMenu() {
+    if (disabled) return;
+    if (open) {
+      closeMenu();
+      return;
+    }
+    openMenu();
+  }
+
+  function selectOption(selectedValue, rawOption) {
     if (multiple) {
       if (selectedValue === "All") {
-        onChange?.([], optionRaw);
+        onChange?.([], rawOption);
         return;
       }
 
-      const cleanVal = String(selectedValue ?? "");
-      const nextValues = selectedValues.includes(cleanVal)
-        ? selectedValues.filter((item) => item !== cleanVal)
-        : [...selectedValues.filter((item) => item !== "All"), cleanVal];
+      const normalizedValue = String(selectedValue ?? "");
+      const nextValues = selectedValues.includes(normalizedValue)
+        ? selectedValues.filter((item) => item !== normalizedValue)
+        : [
+            ...selectedValues.filter((item) => item !== "All"),
+            normalizedValue,
+          ];
 
-      onChange?.(nextValues, optionRaw);
+      onChange?.(nextValues, rawOption);
       return;
     }
 
-    onChange?.(selectedValue, optionRaw);
-    handleClose();
+    onChange?.(selectedValue, rawOption);
+    closeMenu();
   }
 
+  // Preserve per-page sizing overrides while keeping the shared SiBS dropdown
+  // design as the default for new pages.
   const customClasses = `${buttonClassName || ""} ${className || ""}`;
-  const hasCustomHeight = /(?:^|\s)(?:[a-z0-9]+:)*!?(?:h-\S+|min-h-\S+)/.test(customClasses);
-  const hasCustomRounded = /(?:^|\s)(?:[a-z0-9]+:)*!?rounded-/.test(customClasses);
-  const hasCustomPadding = /(?:^|\s)(?:[a-z0-9]+:)*!?p[xye]?-/.test(customClasses);
+  const hasCustomHeight =
+    /(?:^|\s)(?:[a-z0-9]+:)*!?(?:h-\S+|min-h-\S+)/.test(customClasses);
+  const hasCustomRounded =
+    /(?:^|\s)(?:[a-z0-9]+:)*!?rounded-\S+/.test(customClasses);
+  const hasCustomPadding =
+    /(?:^|\s)(?:[a-z0-9]+:)*!?p[xy]?\-\S+/.test(customClasses);
 
   const defaultHeightClass = hasCustomHeight ? "" : "h-8.5 2xl:h-10";
   const defaultRoundedClass = hasCustomRounded ? "" : "rounded-[10px]";
   const defaultPaddingClass = hasCustomPadding ? "" : "px-2.5 2xl:px-3";
 
-  const triggerClasses = `flex w-full min-w-0 items-center justify-between gap-2 border font-jakarta sibs-text-xs 2xl:sibs-text-sm font-semibold outline-none transition text-left ${defaultHeightClass} ${defaultRoundedClass} ${defaultPaddingClass} ${
+  const triggerClasses = `flex w-full min-w-0 items-center justify-between gap-2 border bg-white text-left font-jakarta sibs-text-xs 2xl:sibs-text-sm font-semibold text-sibs-navy shadow-sm outline-none transition-all duration-200 ${defaultHeightClass} ${defaultRoundedClass} ${defaultPaddingClass} ${
     disabled
-      ? "cursor-not-allowed border-sibs-border-subtle bg-sibs-canvas text-sibs-faint opacity-70"
+      ? "cursor-not-allowed border-sibs-border bg-sibs-canvas text-sibs-faint opacity-70"
       : open
-        ? "border-sibs-orange bg-white text-sibs-navy ring-2 ring-sibs-orange/10"
-        : "border-sibs-border-subtle bg-sibs-surface text-sibs-navy hover:border-sibs-orange/40 hover:bg-white"
-  } ${buttonClassName || className}`;
+        ? "border-sibs-orange ring-4 ring-sibs-orange/10"
+        : "border-slate-300 hover:border-sibs-orange/50 hover:bg-white"
+  } ${buttonClassName || ""} ${className || ""}`;
 
   return (
     <div ref={anchorRef} className="relative min-w-0 w-full font-jakarta">
-      {label && !hideLabel && (
+      {label && !hideLabel ? (
         <label
-          className={`mb-1 block font-jakarta ${
+          className={`mb-1 block ${
             labelClassName || "sibs-text-xs font-bold text-sibs-navy"
           }`}
         >
           {label}
-          {required && <span className="text-sibs-orange"> *</span>}
+          {required ? <span className="text-sibs-orange"> *</span> : null}
         </label>
-      )}
+      ) : null}
 
-      <button
-        type="button"
-        aria-haspopup="listbox"
-        aria-expanded={open}
-        aria-required={required ? "true" : undefined}
-        aria-label={label ? `${label}: ${displayLabel || placeholder}` : placeholder}
-        disabled={disabled}
-        onClick={handleOpen}
-        className={triggerClasses}
-      >
-        <span
-          className={`block min-w-0 flex-1 truncate ${
-            displayLabel ? "text-sibs-navy font-semibold" : "text-sibs-faint font-normal"
-          }`}
+      {searchable ? (
+        <div className={triggerClasses}>
+          <input
+            ref={searchInputRef}
+            type="text"
+            role="combobox"
+            aria-haspopup="listbox"
+            aria-expanded={open}
+            aria-required={required ? "true" : undefined}
+            aria-label={
+              label ? `${label}: ${displayLabel || placeholder}` : placeholder
+            }
+            disabled={disabled}
+            value={open ? searchQuery : displayLabel}
+            placeholder={open ? searchPlaceholder : placeholder}
+            onFocus={openMenu}
+            onClick={openMenu}
+            onChange={(event) => {
+              if (!open) openMenu();
+              setSearchQuery(event.target.value);
+            }}
+            onKeyDown={(event) => {
+              if (event.key === "Escape") {
+                event.preventDefault();
+                closeMenu();
+                searchInputRef.current?.blur();
+              }
+              if (event.key === "ArrowDown" && !open) {
+                event.preventDefault();
+                openMenu();
+              }
+            }}
+            className={`min-w-0 flex-1 appearance-none border-0 bg-transparent p-0 shadow-none outline-none ring-0 placeholder:text-sibs-faint focus:border-0 focus:outline-none focus:ring-0 ${
+              open
+                ? "font-semibold text-sibs-navy"
+                : displayLabel
+                  ? "font-semibold text-sibs-navy"
+                  : "font-normal text-sibs-faint"
+            }`}
+            autoComplete="off"
+          />
+
+          <button
+            type="button"
+            tabIndex={-1}
+            aria-label={open ? "Close options" : "Open options"}
+            disabled={disabled}
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={toggleMenu}
+            className="inline-flex shrink-0 items-center justify-center rounded-md"
+          >
+            <ChevronDown
+              size={14}
+              aria-hidden="true"
+              className={`transition-transform duration-200 ${
+                disabled
+                  ? "text-sibs-faint"
+                  : open
+                    ? "rotate-180 text-sibs-orange"
+                    : "text-sibs-navy"
+              }`}
+            />
+          </button>
+        </div>
+      ) : (
+        <button
+          type="button"
+          aria-haspopup="listbox"
+          aria-expanded={open}
+          aria-required={required ? "true" : undefined}
+          aria-label={
+            label ? `${label}: ${displayLabel || placeholder}` : placeholder
+          }
+          disabled={disabled}
+          onClick={toggleMenu}
+          className={triggerClasses}
         >
-          {displayLabel || placeholder}
-        </span>
+          <span
+            className={`block min-w-0 flex-1 truncate ${
+              displayLabel
+                ? "font-semibold text-sibs-navy"
+                : "font-normal text-sibs-faint"
+            }`}
+          >
+            {displayLabel || placeholder}
+          </span>
 
-        <ChevronDown
-          size={14}
-          aria-hidden="true"
-          className={`shrink-0 transition-transform duration-200 ${
-            disabled
-              ? "text-sibs-faint"
-              : open
-                ? "rotate-180 text-sibs-orange"
-                : "text-sibs-navy"
-          }`}
-        />
-      </button>
+          <ChevronDown
+            size={14}
+            aria-hidden="true"
+            className={`shrink-0 transition-transform duration-200 ${
+              disabled
+                ? "text-sibs-faint"
+                : open
+                  ? "rotate-180 text-sibs-orange"
+                  : "text-sibs-navy"
+            }`}
+          />
+        </button>
+      )}
 
       <DropdownPortal
         open={open && !disabled}
         anchorRef={anchorRef}
-        onClose={handleClose}
+        onClose={closeMenu}
+        maxHeight={320}
         className={menuClassName}
       >
-        {searchable && (
-          <div className="border-b border-sibs-border px-2.5 py-1.5">
-            <div className="flex items-center gap-2 rounded-lg border border-sibs-border-subtle bg-sibs-surface px-2 py-1">
-              <Search size={13} className="text-sibs-faint" />
-              <input
-                ref={searchInputRef}
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder={searchPlaceholder}
-                className="w-full bg-transparent font-jakarta sibs-text-xs font-semibold text-sibs-navy outline-none placeholder:text-sibs-faint"
-              />
-            </div>
-          </div>
-        )}
+        <div className="sibs-scrollbar max-h-[320px] overflow-y-auto overscroll-contain py-1">
+          {clearable && !searchQuery ? (
+            <button
+              type="button"
+              role="option"
+              aria-selected={!value}
+              onClick={() => selectOption("", null)}
+              className={`flex w-full items-center justify-between gap-2 px-3 py-2 text-left font-jakarta sibs-text-xs 2xl:sibs-text-sm transition ${
+                !value
+                  ? "bg-sibs-cream-subtle font-extrabold text-sibs-orange"
+                  : "font-semibold text-sibs-faint hover:bg-sibs-cream-light hover:text-sibs-orange"
+              }`}
+            >
+              <span className="truncate">{placeholder}</span>
+              {!value ? <Check size={14} className="shrink-0 text-sibs-orange" /> : null}
+            </button>
+          ) : null}
 
-        {clearable && !searchQuery && (
-          <button
-            type="button"
-            role="option"
-            aria-selected={!value}
-            onClick={() => handleSelect("", null)}
-            className={`flex w-full items-center justify-between px-3 py-1.5 2xl:py-2 text-left font-jakarta sibs-text-xs 2xl:sibs-text-sm transition ${
-              !value
-                ? "bg-sibs-cream-subtle font-extrabold text-sibs-orange"
-                : "font-semibold text-sibs-faint hover:bg-sibs-cream-light hover:text-sibs-orange"
-            }`}
-          >
-            <span className="truncate">{placeholder}</span>
-            {!value && <Check size={14} className="text-sibs-orange shrink-0" />}
-          </button>
-        )}
-
-        {filteredOptions.length > 0 ? (
-          filteredOptions.map((opt) => {
-            const isSelected = multiple
-              ? (opt.value === "All"
+          {filteredOptions.length ? (
+            filteredOptions.map((option) => {
+              const selected = multiple
+                ? option.value === "All"
                   ? selectedValues.length === 0 || selectedValues.includes("All")
-                  : selectedValues.includes(String(opt.value)))
-              : String(opt.value) === String(value ?? "");
+                  : selectedValues.includes(option.value)
+                : String(option.value) === String(value ?? "");
 
-            return (
-              <button
-                key={opt.value || opt.label}
-                type="button"
-                role="option"
-                disabled={opt.disabled}
-                aria-selected={isSelected}
-                onClick={() => {
-                  if (opt.disabled) return;
-                  handleSelect(opt.value, opt.raw);
-                }}
-                className={`flex w-full items-start justify-between gap-2.5 px-3 py-1.5 2xl:py-2 text-left font-jakarta transition ${
-                  opt.disabled
-                    ? "cursor-not-allowed text-sibs-faint opacity-50"
-                    : isSelected
-                      ? "bg-sibs-cream-subtle font-extrabold text-sibs-orange"
-                      : "bg-white font-bold text-sibs-navy hover:bg-sibs-cream-light hover:text-sibs-orange"
-                }`}
-              >
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate sibs-text-xs 2xl:sibs-text-sm">
-                    {opt.label}
-                  </span>
-                  {opt.description && (
-                    <span className="mt-0.5 block truncate text-[9px] 2xl:text-[10px] font-semibold text-sibs-muted">
-                      {opt.description}
+              return (
+                <button
+                  key={option.value || option.label}
+                  type="button"
+                  role="option"
+                  disabled={option.disabled}
+                  aria-selected={selected}
+                  onClick={() => {
+                    if (!option.disabled) selectOption(option.value, option.raw);
+                  }}
+                  className={`flex w-full items-start justify-between gap-2.5 px-3 py-2 text-left font-jakarta transition ${
+                    option.disabled
+                      ? "cursor-not-allowed text-sibs-faint opacity-50"
+                      : selected
+                        ? "bg-sibs-cream-subtle font-extrabold text-sibs-orange"
+                        : "bg-white font-bold text-sibs-navy hover:bg-sibs-cream-light hover:text-sibs-orange"
+                  }`}
+                >
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate sibs-text-xs 2xl:sibs-text-sm">
+                      {option.label}
                     </span>
-                  )}
-                </span>
-
-                {isSelected && (
-                  <Check size={14} className="mt-0.5 shrink-0 text-sibs-orange" />
-                )}
-              </button>
-            );
-          })
-        ) : (
-          <div className="px-3 py-2 text-center font-jakarta sibs-text-xs font-semibold text-sibs-faint">
-            {emptyMessage}
-          </div>
-        )}
+                    {option.description ? (
+                      <span className="mt-0.5 block truncate text-[9px] 2xl:text-[10px] font-semibold text-sibs-muted">
+                        {option.description}
+                      </span>
+                    ) : null}
+                  </span>
+                  {selected ? (
+                    <Check size={14} className="mt-0.5 shrink-0 text-sibs-orange" />
+                  ) : null}
+                </button>
+              );
+            })
+          ) : (
+            <div className="px-3 py-3 text-center font-jakarta sibs-text-xs font-semibold text-sibs-faint">
+              {emptyMessage}
+            </div>
+          )}
+        </div>
       </DropdownPortal>
     </div>
   );

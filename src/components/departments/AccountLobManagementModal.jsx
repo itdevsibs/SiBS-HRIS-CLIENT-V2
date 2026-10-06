@@ -231,7 +231,7 @@ export default function AccountLobManagementModal({
       badge={`${activeCount} active · ${lobs.length} total`}
       maxWidth="max-w-5xl"
       bodyClassName="max-h-[72vh] overflow-y-auto"
-      closeOnBackdrop={!saving && !addResultModal.open}
+      closeOnBackdrop={false}
       closeOnEscape={!saving && !addResultModal.open}
       footer={
         <div className="flex w-full items-center justify-between gap-3">
@@ -477,7 +477,7 @@ export default function AccountLobManagementModal({
       }
       icon={addResultModal.type === "success" ? CheckCircle2 : XCircle}
       maxWidth="max-w-md"
-      closeOnBackdrop
+      closeOnBackdrop={false}
       closeOnEscape
       footer={
         <button

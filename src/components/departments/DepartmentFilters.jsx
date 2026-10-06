@@ -1,6 +1,15 @@
 import { Filter, Search } from "lucide-react";
 
-export default function DepartmentFilters({ search, status, onSearch, onStatus, onClear, canClear }) {
+import { SelectDropdown } from "@/components/ui";
+
+export default function DepartmentFilters({
+  search,
+  status,
+  onSearch,
+  onStatus,
+  onClear,
+  canClear,
+}) {
   return (
     <div className="grid gap-3 border-b border-sibs-border px-4 py-4 md:grid-cols-[minmax(280px,1fr)_220px_auto] sm:px-5">
       <label className="block">
@@ -15,15 +24,28 @@ export default function DepartmentFilters({ search, status, onSearch, onStatus, 
           />
         </span>
       </label>
-      <label className="block">
-        <span className="sibs-field-label">Department Status</span>
-        <select value={status} onChange={(event) => onStatus(event.target.value)} className="sibs-dashboard-input px-3">
-          <option value="all">All Statuses</option>
-          <option value="active">Active</option>
-          <option value="inactive">Inactive</option>
-        </select>
-      </label>
-      <button type="button" className="sibs-btn-secondary self-end" onClick={onClear} disabled={!canClear}>
+
+      <div className="block">
+        <SelectDropdown
+          label="Department Status"
+          value={status}
+          onChange={onStatus}
+          options={[
+            { value: "all", label: "All Statuses" },
+            { value: "active", label: "Active" },
+            { value: "inactive", label: "Inactive" },
+          ]}
+          clearable={false}
+          placeholder="All Statuses"
+        />
+      </div>
+
+      <button
+        type="button"
+        className="sibs-btn-secondary self-end"
+        onClick={onClear}
+        disabled={!canClear}
+      >
         <Filter className="h-4 w-4" /> Clear
       </button>
     </div>
