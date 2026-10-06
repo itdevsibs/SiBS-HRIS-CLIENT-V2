@@ -9,6 +9,7 @@ import {
   SquarePen,
   Trash2,
 } from "lucide-react";
+import { StatusBadge } from "../../ui";
 
 const PROFICIENCY_LEVELS = [
   "Average",
@@ -222,9 +223,10 @@ function CompetencyCommentCard({ comment }) {
           Reviewer Comment
         </p>
 
-        <span className="rounded-full border border-amber-200 bg-white px-2 py-0.5 text-[9px] font-extrabold uppercase text-amber-700">
-          {comment?.status || "Open"}
-        </span>
+        <StatusBadge
+          status={comment?.status || "Open"}
+          className="shrink-0 whitespace-nowrap text-[9px] px-2 py-0.5"
+        />
       </div>
 
       <p className="mt-2 whitespace-pre-line text-xs font-semibold leading-5 text-amber-800">
@@ -249,7 +251,7 @@ function ProficiencyRadio({
         value={label}
         checked={checked}
         onChange={() => onChange?.(label)}
-        className="h-4 w-4 accent-[#0D4676]"
+        className="h-4 w-4 accent-[var(--sibs-primary-1)]"
       />
 
       <span className="sr-only">{label}</span>
@@ -479,10 +481,10 @@ export default function DesiredCompetenciesViewTable({
 
   return (
     <section className="space-y-3">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+      <div className="jd-details-section-header flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <h4 className="text-base font-extrabold text-[#101828]">
+            <h4 className="text-base font-extrabold text-sibs-navy">
               Desired Competencies
             </h4>
 
@@ -494,13 +496,13 @@ export default function DesiredCompetenciesViewTable({
             )}
 
             {selectedCompetencies.length > 0 && !isEditing && (
-              <span className="rounded-full border border-amber-300 bg-[#FFF3B8] px-2.5 py-1 text-[11px] font-extrabold text-[#101828]">
+              <span className="rounded-full border border-amber-300 bg-amber-100 px-2.5 py-1 text-[11px] font-extrabold text-sibs-navy">
                 {selectedCompetencies.length} selected
               </span>
             )}
           </div>
 
-          <p className="mt-1 text-sm font-medium text-[#315F8C]">
+          <p className="mt-1 text-sm font-medium text-sibs-text-secondary">
             Expected competency level required for
             this position.
           </p>
@@ -523,7 +525,7 @@ export default function DesiredCompetenciesViewTable({
               className={`inline-flex flex-1 items-center justify-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs font-bold transition sm:flex-none ${
                 disableEdit
                   ? "cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400"
-                  : "border-[#D7DEE8] bg-white text-sibs-primary-1 hover:bg-[#F8FAFC]"
+                  : "border-sibs-border-subtle bg-white text-sibs-primary-1 hover:bg-sibs-surface"
               }`}
             >
               <SquarePen size={14} />
@@ -552,12 +554,12 @@ export default function DesiredCompetenciesViewTable({
       </div>
 
       {isEditing ? (
-        <div className="overflow-hidden rounded-xl border border-[#D7DEE8] bg-white shadow-sm">
+        <div className="overflow-hidden rounded-xl border border-sibs-border-subtle bg-white shadow-sm">
           <div className="thin-scroll overflow-x-auto">
             <table className="w-full min-w-[760px] border-collapse">
-              <thead className="bg-[#F8FAFC]">
+              <thead className="bg-sibs-surface">
                 <tr>
-                  <th className="w-[50%] border-b border-r border-[#D7DEE8] px-4 py-3 text-left text-xs font-extrabold uppercase text-sibs-primary-1">
+                  <th className="w-[50%] border-b border-r border-sibs-border-subtle px-4 py-3 text-left text-xs font-extrabold uppercase text-sibs-primary-1">
                     Competency for this position
                   </th>
 
@@ -565,14 +567,14 @@ export default function DesiredCompetenciesViewTable({
                     (level) => (
                       <th
                         key={level}
-                        className="w-[15%] border-b border-r border-[#D7DEE8] px-3 py-3 text-center text-xs font-extrabold uppercase text-sibs-primary-1 last:border-r-0"
+                        className="w-[15%] border-b border-r border-sibs-border-subtle px-3 py-3 text-center text-xs font-extrabold uppercase text-sibs-primary-1 last:border-r-0"
                       >
                         {level}
                       </th>
                     ),
                   )}
 
-                  <th className="w-[5%] border-b border-[#D7DEE8] px-3 py-3 text-center text-xs font-extrabold uppercase text-sibs-primary-1">
+                  <th className="w-[5%] border-b border-sibs-border-subtle px-3 py-3 text-center text-xs font-extrabold uppercase text-sibs-primary-1">
                     Remove
                   </th>
                 </tr>
@@ -585,7 +587,7 @@ export default function DesiredCompetenciesViewTable({
                       key={competency._key}
                       className="align-top"
                     >
-                      <td className="border-b border-r border-[#D7DEE8] p-3">
+                      <td className="border-b border-r border-sibs-border-subtle p-3">
                         <div className="space-y-2">
                           <input
                             value={competency.title}
@@ -599,7 +601,7 @@ export default function DesiredCompetenciesViewTable({
                             placeholder={`Competency ${
                               index + 1
                             }`}
-                            className="h-10 w-full rounded-lg border border-[#C9D8E8] bg-white px-3 text-sm font-bold text-[#344054] outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+                            className="h-10 w-full rounded-lg border border-sibs-border bg-white px-3 text-sm font-bold text-sibs-text-secondary outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
                           />
 
                           <textarea
@@ -615,7 +617,7 @@ export default function DesiredCompetenciesViewTable({
                               )
                             }
                             placeholder="Optional competency description"
-                            className="min-h-[70px] w-full resize-y rounded-lg border border-[#C9D8E8] bg-white px-3 py-2 text-sm font-medium leading-5 text-[#344054] outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+                            className="min-h-[70px] w-full resize-y rounded-lg border border-sibs-border bg-white px-3 py-2 text-sm font-medium leading-5 text-sibs-text-secondary outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
                           />
                         </div>
                       </td>
@@ -624,7 +626,7 @@ export default function DesiredCompetenciesViewTable({
                         (level) => (
                           <td
                             key={level}
-                            className="border-b border-r border-[#D7DEE8] px-3 py-5 text-center last:border-r-0"
+                            className="border-b border-r border-sibs-border-subtle px-3 py-5 text-center last:border-r-0"
                           >
                             <ProficiencyRadio
                               name={`competency-level-${competency._key}`}
@@ -647,7 +649,7 @@ export default function DesiredCompetenciesViewTable({
                         ),
                       )}
 
-                      <td className="border-b border-[#D7DEE8] px-3 py-4 text-center">
+                      <td className="border-b border-sibs-border-subtle px-3 py-4 text-center">
                         <button
                           type="button"
                           onClick={() =>
@@ -670,7 +672,7 @@ export default function DesiredCompetenciesViewTable({
             </table>
           </div>
 
-          <div className="border-t border-[#E6ECF2] bg-[#F8FAFC] p-3 sm:p-4">
+          <div className="border-t border-sibs-border bg-sibs-surface p-3 sm:p-4">
             <button
               type="button"
               onClick={addDraft}
@@ -690,7 +692,7 @@ export default function DesiredCompetenciesViewTable({
               <button
                 type="button"
                 onClick={cancelEditing}
-                className="inline-flex h-10 w-full items-center justify-center rounded-lg border border-[#D7DEE8] bg-white px-4 text-sm font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC] sm:w-auto"
+                className="inline-flex h-10 w-full items-center justify-center rounded-lg border border-sibs-border-subtle bg-white px-4 text-sm font-bold text-sibs-primary-1 transition hover:bg-sibs-surface sm:w-auto"
               >
                 Cancel
               </button>
@@ -707,11 +709,11 @@ export default function DesiredCompetenciesViewTable({
         </div>
       ) : (
         <>
-          <div className="hidden overflow-hidden rounded-xl border border-[#D7DEE8] bg-white md:block">
+          <div className="hidden overflow-hidden rounded-xl border border-sibs-border-subtle bg-white md:block">
             <table className="w-full table-fixed border-collapse">
-              <thead className="bg-[#F8FAFC]">
+              <thead className="bg-sibs-surface">
                 <tr>
-                  <th className="w-[65%] border-b border-r border-[#D7DEE8] px-4 py-3 text-left text-xs font-extrabold uppercase text-sibs-primary-1">
+                  <th className="w-[65%] border-b border-r border-sibs-border-subtle px-4 py-3 text-left text-xs font-extrabold uppercase text-sibs-primary-1">
                     Competency for this position
                   </th>
 
@@ -719,7 +721,7 @@ export default function DesiredCompetenciesViewTable({
                     (level) => (
                       <th
                         key={level}
-                        className="border-b border-r border-[#D7DEE8] px-3 py-3 text-center text-xs font-extrabold uppercase text-sibs-primary-1 last:border-r-0"
+                        className="border-b border-r border-sibs-border-subtle px-3 py-3 text-center text-xs font-extrabold uppercase text-sibs-primary-1 last:border-r-0"
                       >
                         {level}
                       </th>
@@ -758,21 +760,21 @@ export default function DesiredCompetenciesViewTable({
                               : ""
                           } ${
                             selected
-                              ? "bg-[#FFF8D9]"
+                              ? "bg-amber-100/60"
                               : competencyComments.length >
                                   0
                                 ? "bg-amber-50/50"
-                                : "hover:bg-[#F8FAFC]"
+                                : "hover:bg-sibs-surface"
                           }`}
                         >
-                          <td className="border-b border-r border-[#D7DEE8] px-4 py-4 align-top last:border-b-0">
-                            <p className="font-extrabold leading-5 text-[#344054]">
+                          <td className="border-b border-r border-sibs-border-subtle px-4 py-4 align-top last:border-b-0">
+                            <p className="font-extrabold leading-5 text-sibs-text-secondary">
                               {competency.title ||
                                 "Untitled competency"}
                             </p>
 
                             {competency.description && (
-                              <p className="mt-1 whitespace-pre-line text-sm font-medium leading-5 text-[#667085]">
+                              <p className="mt-1 whitespace-pre-line text-sm font-medium leading-5 text-sibs-muted">
                                 {
                                   competency.description
                                 }
@@ -806,14 +808,14 @@ export default function DesiredCompetenciesViewTable({
                             (level) => (
                               <td
                                 key={level}
-                                className="border-b border-r border-[#D7DEE8] px-3 py-4 text-center align-top last:border-r-0"
+                                className="border-b border-r border-sibs-border-subtle px-3 py-4 text-center align-top last:border-r-0"
                               >
                                 <span
                                   className={`mx-auto flex h-5 w-5 items-center justify-center rounded-full border ${
                                     competency.level ===
                                     level
                                       ? "border-sibs-primary-1 bg-sibs-primary-1"
-                                      : "border-[#C9D8E8] bg-white"
+                                      : "border-sibs-border bg-white"
                                   }`}
                                 >
                                   {competency.level ===
@@ -832,7 +834,7 @@ export default function DesiredCompetenciesViewTable({
                   <tr>
                     <td
                       colSpan={4}
-                      className="px-4 py-9 text-center text-sm font-bold text-[#315F8C]"
+                      className="px-4 py-9 text-center text-sm font-bold text-sibs-text-secondary"
                     >
                       No competencies provided.
                     </td>
@@ -868,19 +870,19 @@ export default function DesiredCompetenciesViewTable({
                       }
                       className={`w-full rounded-xl border p-4 text-left transition ${
                         selected
-                          ? "border-amber-300 bg-[#FFF8D9] ring-1 ring-amber-300"
+                          ? "border-amber-300 bg-amber-100/60 ring-1 ring-amber-300"
                           : competencyComments.length > 0
                             ? "border-amber-200 bg-amber-50/50"
-                            : "border-[#D7DEE8] bg-white"
+                            : "border-sibs-border-subtle bg-white"
                       }`}
                     >
-                      <p className="font-extrabold leading-5 text-[#344054]">
+                      <p className="font-extrabold leading-5 text-sibs-text-secondary">
                         {competency.title ||
                           "Untitled competency"}
                       </p>
 
                       {competency.description && (
-                        <p className="mt-1 whitespace-pre-line text-sm font-medium leading-5 text-[#667085]">
+                        <p className="mt-1 whitespace-pre-line text-sm font-medium leading-5 text-sibs-muted">
                           {competency.description}
                         </p>
                       )}
@@ -894,7 +896,7 @@ export default function DesiredCompetenciesViewTable({
                                 competency.level ===
                                 level
                                   ? "border-sibs-primary-1 bg-sibs-primary-1 text-white"
-                                  : "border-[#D7DEE8] bg-[#F8FAFC] text-[#667085]"
+                                  : "border-sibs-border-subtle bg-sibs-surface text-sibs-muted"
                               }`}
                             >
                               {level}
@@ -927,7 +929,7 @@ export default function DesiredCompetenciesViewTable({
                 },
               )
             ) : (
-              <div className="rounded-xl border border-[#D7DEE8] bg-white px-4 py-9 text-center text-sm font-bold text-[#315F8C]">
+              <div className="rounded-xl border border-sibs-border-subtle bg-white px-4 py-9 text-center text-sm font-bold text-sibs-text-secondary">
                 No competencies provided.
               </div>
             )}

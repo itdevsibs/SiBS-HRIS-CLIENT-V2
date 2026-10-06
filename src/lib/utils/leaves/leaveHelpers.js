@@ -234,18 +234,29 @@ export function getApproverDisplay(item) {
   let name = "";
 
   if (lname || fname || mname) {
-    name = `${lname}, ${fname} ${mname}`.replace(/\s+/g, " ").trim();
+    const firstMiddle = [fname, mname].filter(Boolean).join(" ").trim();
+    if (lname && firstMiddle) {
+      name = `${lname}, ${firstMiddle}`;
+    } else {
+      name = lname || firstMiddle;
+    }
+    name = name.replace(/^,\s*|,\s*$/g, "").replace(/\s+/g, " ").trim();
   } else if (displayName) {
     const displayParts = displayName.split("-");
     name = String(displayParts.slice(1).join("-") || "")
+      .replace(/^,\s*|,\s*$/g, "")
       .replace(/\s+/g, " ")
       .trim()
       .toUpperCase();
   }
 
+  if (name === "," || !name) {
+    name = "—";
+  }
+
   return {
     sibsId: userCode || "—",
-    name: name || "—",
+    name,
   };
 }
 

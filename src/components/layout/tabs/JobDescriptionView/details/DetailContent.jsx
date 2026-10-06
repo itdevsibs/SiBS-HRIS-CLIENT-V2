@@ -1,6 +1,8 @@
 import React, { useMemo } from "react";
+import { PencilLine } from "lucide-react";
 
 import RichTextViewer from "../../../../modals/jobDescription/RichTextViewer";
+import { StatusBadge } from "../../../../ui";
 import {
   getChildPrefix,
   getChildText,
@@ -106,7 +108,7 @@ function InlineCommentedText({
     return (
       <span
         className={`${className} ${
-          approvalPage ? "selection:bg-[#FFF3B8] selection:text-[#101828]" : ""
+          approvalPage ? "selection:bg-amber-100 selection:text-sibs-navy" : ""
         }`}
       >
         {text}
@@ -141,7 +143,7 @@ function InlineCommentedText({
           )}
 
           <span
-            className="inline-flex items-center self-center rounded-md bg-[#FFF3B8] px-1.5 py-0.5 font-semibold leading-normal text-[#101828] ring-1 ring-amber-300"
+            className="inline-flex items-center self-center rounded-md bg-amber-100 px-1.5 py-0.5 font-semibold leading-normal text-sibs-navy ring-1 ring-amber-300"
             title={match.comment.comment || "Marked for revision"}
           >
             {text.slice(match.start, match.end)}
@@ -166,7 +168,7 @@ function InlineCommentedText({
   return (
     <span
       className={`${className} ${
-        approvalPage ? "selection:bg-[#FFF3B8] selection:text-[#101828]" : ""
+        approvalPage ? "selection:bg-amber-100 selection:text-sibs-navy" : ""
       }`}
     >
       {nodes}
@@ -179,6 +181,8 @@ function DetailContentRenderer({
   emptyText = "No information provided.",
   approvalPage = false,
   comments = [],
+  sectionKey,
+  onOpenRevision,
 }) {
   const blocks = useMemo(
     () => parseDetailContent(value),
@@ -215,14 +219,14 @@ function DetailContentRenderer({
     (!approvalPage || !hasSelectedTextComments)
   ) {
     const richTextSelectionClass = approvalPage
-      ? "selection:bg-[#FFF3B8] selection:text-[#101828]"
+      ? "selection:bg-amber-100 selection:text-sibs-navy"
       : "";
 
     return (
       <div className={richTextSelectionClass}>
         <RichTextViewer
           value={value}
-          className="jd-single-spaced-justified text-justify text-[#344054]"
+          className="jd-single-spaced-justified text-justify text-sibs-text-secondary"
           emptyText={emptyText}
         />
       </div>
@@ -230,7 +234,7 @@ function DetailContentRenderer({
   }
 
   const selectionClass = approvalPage
-    ? "selection:bg-[#FFF3B8] selection:text-[#101828]"
+    ? "selection:bg-amber-100 selection:text-sibs-navy"
     : "";
 
   return (
@@ -239,8 +243,8 @@ function DetailContentRenderer({
         if (block.type === "list") {
           const ListTag = block.ordered ? "ol" : "ul";
           const listClassName = block.ordered
-            ? "list-decimal space-y-1 pl-5 text-justify text-sm font-medium leading-[1.5] text-[#344054] sm:pl-6 sm:text-[15px]"
-            : "list-disc space-y-1 pl-5 text-justify text-sm font-medium leading-[1.5] text-[#344054] sm:pl-6 sm:text-[15px]";
+            ? "list-decimal space-y-1 pl-5 text-justify text-sm font-medium leading-[1.5] text-sibs-text-secondary sm:pl-6 sm:text-[15px]"
+            : "list-disc space-y-1 pl-5 text-justify text-sm font-medium leading-[1.5] text-sibs-text-secondary sm:pl-6 sm:text-[15px]";
 
           return (
             <ListTag key={`list-${index}`} className={listClassName}>
@@ -299,6 +303,8 @@ function DetailContentRenderer({
                             }
                             comment={comment}
                             showSelectedContent={false}
+                            sectionKey={sectionKey}
+                            onOpenRevision={onOpenRevision}
                           />
                         ))}
                       </div>
@@ -329,7 +335,7 @@ function DetailContentRenderer({
                             >
                               <div className="flex gap-2 text-justify leading-[1.5]">
                                 {childPrefix && (
-                                  <span className="shrink-0 font-semibold text-[#344054]">
+                                  <span className="shrink-0 font-semibold text-sibs-text-secondary">
                                     {childPrefix}
                                   </span>
                                 )}
@@ -373,6 +379,8 @@ function DetailContentRenderer({
                                           }
                                           comment={comment}
                                           showSelectedContent={false}
+                                          sectionKey={sectionKey}
+                                          onOpenRevision={onOpenRevision}
                                         />
                                       ))}
                                     </div>
@@ -395,7 +403,7 @@ function DetailContentRenderer({
 
         return (
           <div key={`paragraph-wrap-${index}`}>
-            <p className="text-justify text-sm font-medium leading-[1.5] text-[#344054] sm:text-[15px]">
+            <p className="text-justify text-sm font-medium leading-[1.5] text-sibs-text-secondary sm:text-[15px]">
               <InlineCommentedText
                 text={block.text}
                 comments={comments}
@@ -410,6 +418,8 @@ function DetailContentRenderer({
                     key={comment.id || `${index}-${comment.comment}`}
                     comment={comment}
                     showSelectedContent={false}
+                    sectionKey={sectionKey}
+                    onOpenRevision={onOpenRevision}
                   />
                 ))}
               </div>
@@ -421,7 +431,12 @@ function DetailContentRenderer({
   );
 }
 
-function InlineRevisionCommentBlock({ comment, showSelectedContent = true }) {
+function InlineRevisionCommentBlock({
+  comment,
+  showSelectedContent = true,
+  sectionKey,
+  onOpenRevision,
+}) {
   return (
     <div className="mt-3 overflow-hidden rounded-xl border border-amber-300 bg-amber-50 shadow-sm">
       <div className="flex flex-col gap-3 border-b border-amber-300 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
@@ -435,9 +450,24 @@ function InlineRevisionCommentBlock({ comment, showSelectedContent = true }) {
           </p>
         </div>
 
-        <span className="w-fit rounded-full border border-amber-300 bg-white px-3 py-1 text-[10px] font-extrabold uppercase tracking-wide text-orange-700">
-          {comment.status || "Open"}
-        </span>
+        <div className="flex items-center gap-2">
+          <StatusBadge
+            status={comment.status || "Open"}
+            className="shrink-0 whitespace-nowrap"
+          />
+
+          {onOpenRevision && (
+            <button
+              type="button"
+              onClick={() => onOpenRevision(null, sectionKey)}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-amber-300 bg-white px-3 py-1 text-xs font-bold text-orange-800 shadow-xs transition hover:bg-amber-100 hover:text-orange-900 active:scale-95"
+              title="Open this section in the revision editor"
+            >
+              <PencilLine size={13} />
+              Revise Section
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="space-y-4 px-4 py-4">
@@ -482,6 +512,8 @@ function DetailRichContent({
   emptyText = "No information provided.",
   approvalPage = false,
   comments = [],
+  sectionKey,
+  onOpenRevision,
 }) {
   const unmatchedComments = useMemo(
     () => getUnmatchedRevisionComments(value, comments),
@@ -503,6 +535,8 @@ function DetailRichContent({
         emptyText={emptyText}
         approvalPage={approvalPage}
         comments={comments}
+        sectionKey={sectionKey}
+        onOpenRevision={onOpenRevision}
       />
 
       {unmatchedComments.length > 0 && (
@@ -512,6 +546,8 @@ function DetailRichContent({
               key={getCommentUniqueKey(comment, index)}
               comment={comment}
               showSelectedContent={true}
+              sectionKey={sectionKey}
+              onOpenRevision={onOpenRevision}
             />
           ))}
         </div>

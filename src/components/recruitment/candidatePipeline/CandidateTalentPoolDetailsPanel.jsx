@@ -910,13 +910,13 @@ function SubmittedDetailField({ label, value, icon: Icon, className = "" }) {
     <div className={`min-w-0 ${className}`}>
       <div className="flex items-start gap-3">
         {Icon ? (
-          <span className="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[#DDE7F0] bg-[#F4F8FD] text-[#174A7C] shadow-[0_2px_6px_rgba(4,44,81,0.04)]">
+          <span className="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] border border-sibs-border bg-sibs-surface text-sibs-navy shadow-[0_2px_6px_rgba(4,44,81,0.04)]">
             <Icon size={16} />
           </span>
         ) : null}
         <div className="min-w-0 flex-1">
-          <p className="text-[9px] font-extrabold uppercase tracking-[0.02em] text-[#98A2B3] 2xl:text-[9.5px]">{label}</p>
-          <p title={displayValue} className="mt-1 break-words text-[11px] font-extrabold leading-5 text-[#344054] 2xl:text-xs">{displayValue}</p>
+          <p className="text-[9px] font-extrabold uppercase tracking-[0.02em] text-sibs-muted 2xl:text-[9.5px]">{label}</p>
+          <p title={displayValue} className="mt-1 break-words text-[11px] font-extrabold leading-5 text-sibs-navy 2xl:text-xs">{displayValue}</p>
         </div>
       </div>
     </div>
@@ -926,8 +926,8 @@ function SubmittedDetailField({ label, value, icon: Icon, className = "" }) {
 function SubmittedDetailsSection({ title, children }) {
   return (
     <section className="pt-1">
-      <div className="mb-3 border-b border-[#E8EEF5] pb-2.5">
-        <h4 className="text-[10px] font-extrabold uppercase tracking-[0.02em] text-[#042C51] 2xl:text-[10.5px]">{title}</h4>
+      <div className="mb-3 border-b border-sibs-border pb-2.5">
+        <h4 className="text-[10px] font-extrabold uppercase tracking-[0.02em] text-sibs-navy 2xl:text-[10.5px]">{title}</h4>
       </div>
       {children}
     </section>
@@ -938,17 +938,17 @@ function SubmittedFileLink({ href = "", icon: Icon, label, fileName }) {
   const name = getSubmittedDisplayValue(fileName);
   const content = (
     <>
-      <Icon size={15} className={`shrink-0 ${href ? "text-[#FF5C28]" : "text-[#98A2B3]"}`} />
+      <Icon size={15} className={`shrink-0 ${href ? "text-sibs-orange" : "text-sibs-muted"}`} />
       <div className="min-w-0">
-        <p className="text-[9px] font-extrabold uppercase text-[#98A2B3]">{label}</p>
-        <p className={`mt-0.5 truncate text-[11px] font-extrabold ${href ? "text-[#042C51]" : "text-[#667085]"}`}>{name}</p>
+        <p className="text-[9px] font-extrabold uppercase text-sibs-muted">{label}</p>
+        <p className={`mt-0.5 truncate text-[11px] font-extrabold ${href ? "text-sibs-navy" : "text-sibs-muted"}`}>{name}</p>
       </div>
     </>
   );
   return href ? (
-    <a href={href} target="_blank" rel="noreferrer" className="flex min-w-0 items-center gap-2 rounded-xl border border-[#DCE6F0] bg-white px-3 py-2.5 transition hover:border-[#FF5C28]/40 hover:bg-[#FFF9F6]">{content}</a>
+    <a href={href} target="_blank" rel="noreferrer" className="flex min-w-0 items-center gap-2 rounded-[10px] border border-sibs-border bg-white px-3 py-2.5 transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light">{content}</a>
   ) : (
-    <div className="flex min-w-0 items-center gap-2 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-3 py-2.5">{content}</div>
+    <div className="flex min-w-0 items-center gap-2 rounded-[10px] border border-sibs-border bg-sibs-surface px-3 py-2.5">{content}</div>
   );
 }
 
@@ -1706,41 +1706,41 @@ const CandidateTalentPoolDetailsPanel = ({ candidate }) => {
   const references = Array.isArray(data.references) ? data.references : [];
 
   return (
-    <section className="relative overflow-hidden rounded-2xl border border-[#DDE6EF] bg-white p-4 shadow-[0_10px_28px_rgba(4,44,81,0.05)] sm:p-5 2xl:p-6">
-      <div className="mb-4 flex items-start gap-2.5 border-b border-[#E8EEF5] pb-3.5">
-        <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-[#DDE7F0] bg-[#F4F8FD] text-[#174A7C]"><Sparkles size={15} /></span>
+    <section className="relative overflow-hidden rounded-2xl border border-sibs-border bg-white p-4 shadow-[0_10px_28px_rgba(4,44,81,0.05)] sm:p-5 2xl:p-6">
+      <div className="mb-4 flex items-start gap-2.5 border-b border-sibs-border pb-3.5">
+        <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] border border-sibs-border bg-sibs-surface text-sibs-navy"><Sparkles size={15} /></span>
         <div className="min-w-0 flex-1">
-          <h3 className="sibs-text-sm font-extrabold text-[#042C51]">Talent Pool Submitted Details</h3>
-          <p className="mt-0.5 sibs-text-xs font-semibold leading-5 text-[#667085]">Complete submitted profile from the Talent Pool / Public Form.</p>
-          {isLoadingProfile ? <p className="mt-1 text-[10px] font-bold text-[#667085]">Loading full Talent Pool profile...</p> : null}
+          <h3 className="sibs-text-sm font-extrabold text-sibs-navy">Talent Pool Submitted Details</h3>
+          <p className="mt-0.5 sibs-text-xs font-semibold leading-5 text-sibs-muted">Complete submitted profile from the Talent Pool / Public Form.</p>
+          {isLoadingProfile ? <p className="mt-1 text-[10px] font-bold text-sibs-muted">Loading full Talent Pool profile...</p> : null}
         </div>
       </div>
 
       <div className="space-y-5">
-        <section className="relative overflow-hidden rounded-2xl border border-[#D7E1EB] bg-white shadow-[0_4px_12px_rgba(4,44,81,0.06)]">
-          <div className="absolute inset-x-0 top-0 h-[3px] bg-[linear-gradient(90deg,#042C51_0%,#042C51_68%,#FF5C28_68%,#FF5C28_100%)]" />
+        <section className="relative overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-[0_4px_12px_rgba(4,44,81,0.06)]">
+          <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-sibs-navy via-sibs-navy to-sibs-orange" />
           <div className="flex flex-col gap-4 px-5 pb-4 pt-5 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex min-w-0 items-start gap-4">
-              <div className="relative flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[#042C51] text-sm font-extrabold text-white shadow-sm">
+              <div className="relative flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-sibs-navy text-sm font-extrabold text-white shadow-sm">
                 {candidateInitials}<span className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-2 border-white bg-emerald-500" />
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
-                  <h4 className="break-words text-sm font-extrabold uppercase text-[#042C51] 2xl:text-base">{candidateName}</h4>
+                  <h4 className="break-words text-sm font-extrabold uppercase text-sibs-navy 2xl:text-base">{candidateName}</h4>
                   <span className="rounded-full border border-emerald-300 bg-emerald-50 px-2.5 py-0.5 text-[9px] font-extrabold uppercase text-emerald-700">{statusLabel}</span>
-                  <span className="max-w-full truncate rounded-full bg-[#EDF3FA] px-2.5 py-0.5 text-[9px] font-extrabold text-[#31577A]">{getSubmittedDisplayValue(data.candidateId)}</span>
-                  {cleanText(data.nickname) ? <span className="rounded-full bg-[#F4F5F7] px-2.5 py-0.5 text-[9px] font-extrabold uppercase text-[#667085]">&quot;{cleanText(data.nickname)}&quot;</span> : null}
+                  <span className="max-w-full truncate rounded-full bg-sibs-surface px-2.5 py-0.5 text-[9px] font-extrabold text-sibs-navy">{getSubmittedDisplayValue(data.candidateId)}</span>
+                  {cleanText(data.nickname) ? <span className="rounded-full bg-sibs-surface px-2.5 py-0.5 text-[9px] font-extrabold uppercase text-sibs-muted">&quot;{cleanText(data.nickname)}&quot;</span> : null}
                 </div>
-                <p className="mt-1 text-xs font-extrabold uppercase text-[#FF5C28]">{getSubmittedDisplayValue(data.openPosition)}</p>
-                <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[10px] font-semibold text-[#667085] 2xl:text-[10.5px]">
-                  <span className="inline-flex min-w-0 items-center gap-1.5"><Mail size={12} className="shrink-0 text-[#98A2B3]" /><span className="max-w-[260px] truncate">{getSubmittedDisplayValue(data.email)}</span></span>
-                  <span className="inline-flex items-center gap-1.5"><CalendarDays size={12} className="shrink-0 text-[#98A2B3]" />Applied: {getSubmittedDisplayValue(data.submissionDate)}</span>
-                  <span className="inline-flex items-center gap-1.5"><BriefcaseBusiness size={12} className="shrink-0 text-[#98A2B3]" />Fit: {getSubmittedDisplayValue(data.openPosition)}</span>
-                  <span className="inline-flex items-center gap-1.5"><MapPin size={12} className="shrink-0 text-[#98A2B3]" />{getSubmittedDisplayValue(data.applyingLocation)}</span>
+                <p className="mt-1 text-xs font-extrabold uppercase text-sibs-orange">{getSubmittedDisplayValue(data.openPosition)}</p>
+                <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[10px] font-semibold text-sibs-muted 2xl:text-[10.5px]">
+                  <span className="inline-flex min-w-0 items-center gap-1.5"><Mail size={12} className="shrink-0 text-sibs-muted" /><span className="max-w-[260px] truncate">{getSubmittedDisplayValue(data.email)}</span></span>
+                  <span className="inline-flex items-center gap-1.5"><CalendarDays size={12} className="shrink-0 text-sibs-muted" />Applied: {getSubmittedDisplayValue(data.submissionDate)}</span>
+                  <span className="inline-flex items-center gap-1.5"><BriefcaseBusiness size={12} className="shrink-0 text-sibs-muted" />Fit: {getSubmittedDisplayValue(data.openPosition)}</span>
+                  <span className="inline-flex items-center gap-1.5"><MapPin size={12} className="shrink-0 text-sibs-muted" />{getSubmittedDisplayValue(data.applyingLocation)}</span>
                 </div>
               </div>
             </div>
-            <span className="w-fit shrink-0 rounded-full border border-[#FFB69E] bg-[#FFF6F2] px-3 py-1 text-[9px] font-extrabold uppercase text-[#FF5C28]">Source: {getSubmittedDisplayValue(sourceLabel)}</span>
+            <span className="w-fit shrink-0 rounded-full border border-sibs-orange/30 bg-sibs-cream-light px-3 py-1 text-[9px] font-extrabold uppercase text-sibs-orange">Source: {getSubmittedDisplayValue(sourceLabel)}</span>
           </div>
         </section>
 
@@ -1771,8 +1771,8 @@ const CandidateTalentPoolDetailsPanel = ({ candidate }) => {
 
         <SubmittedDetailsSection title="Work Experience & Employment History">
           {workExperiences.length ? <div className="space-y-4">{workExperiences.map((experience, index) => (
-            <div key={`${experience.company || experience.role || "experience"}-${index}`} className="rounded-xl border border-[#E8EEF5] bg-[#FBFCFE] p-4">
-              <p className="mb-3 text-[9px] font-extrabold uppercase text-[#FF5C28]">Experience {index + 1}</p>
+            <div key={`${experience.company || experience.role || "experience"}-${index}`} className="rounded-xl border border-sibs-border bg-sibs-surface p-4">
+              <p className="mb-3 text-[9px] font-extrabold uppercase text-sibs-orange">Experience {index + 1}</p>
               <div className="grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2 xl:grid-cols-4">
                 <SubmittedDetailField label="Industry" value={experience.industry} icon={BriefcaseBusiness} /><SubmittedDetailField label="Length of Experience" value={experience.lengthOfWorkExperience || experience.years} icon={CalendarDays} /><SubmittedDetailField label="Role / Position" value={experience.role} icon={BriefcaseBusiness} /><SubmittedDetailField label="Company" value={experience.company} icon={School} /><SubmittedDetailField label="Monthly Compensation" value={experience.monthlyCompensationFormatted || experience.monthlyCompensation} icon={BadgeCheck} /><SubmittedDetailField label="Reason for Leaving" value={experience.reasonForLeaving} icon={FileText} className="xl:col-span-3" />
               </div>
@@ -1802,7 +1802,7 @@ const CandidateTalentPoolDetailsPanel = ({ candidate }) => {
           </div>
         </SubmittedDetailsSection>
 
-        <div className="flex items-center gap-2 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-3 py-2.5 text-[10px] font-semibold leading-5 text-[#667085]"><FileText size={14} className="shrink-0 text-[#174A7C]" />This section is read-only and reflects the profile submitted through Talent Pool / Public Form.</div>
+        <div className="flex items-center gap-2 rounded-xl border border-sibs-border bg-sibs-surface px-3 py-2.5 text-[10px] font-semibold leading-5 text-sibs-muted"><FileText size={14} className="shrink-0 text-sibs-navy" />This section is read-only and reflects the profile submitted through Talent Pool / Public Form.</div>
       </div>
     </section>
   );

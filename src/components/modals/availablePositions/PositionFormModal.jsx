@@ -1281,7 +1281,7 @@ export default function PositionFormModal({
                         type="button"
                         onClick={handleApprove}
                         disabled={approvalActionsDisabled}
-                        className="inline-flex h-8.5 2xl:h-10 min-w-[92px] items-center justify-center gap-1.5 rounded-lg bg-emerald-600 px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98]"
+                        className="inline-flex h-8.5 2xl:h-10 min-w-[92px] items-center justify-center gap-1.5 rounded-[10px] bg-emerald-600 px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98]"
                       >
                         <CheckCircle2 size={14} strokeWidth={2} />
                         <span>Approve</span>
@@ -1291,7 +1291,7 @@ export default function PositionFormModal({
                         type="button"
                         onClick={handleReject}
                         disabled={approvalActionsDisabled}
-                        className="inline-flex h-8.5 2xl:h-10 min-w-[82px] items-center justify-center gap-1.5 rounded-lg bg-rose-600 px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98]"
+                        className="inline-flex h-8.5 2xl:h-10 min-w-[82px] items-center justify-center gap-1.5 rounded-[10px] bg-rose-600 px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98]"
                       >
                         <XCircle size={14} strokeWidth={2} />
                         <span>Reject</span>

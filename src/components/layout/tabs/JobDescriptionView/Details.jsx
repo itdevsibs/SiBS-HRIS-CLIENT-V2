@@ -79,8 +79,8 @@ const Details = ({
       }
       className={
         interactivePage
-          ? "jd-details-document mx-auto w-full max-w-[1100px] space-y-6 overflow-visible bg-white py-5 text-[#1D2939] shadow-[0_18px_55px_rgba(15,23,42,0.14)] sm sm sm:shadow-[0_24px_70px_rgba(15,23,42,0.18)] lg:min-h-[1056px] lg print"
-          : "jd-details-document jd-details-paged-preview mx-auto w-full text-[#1D2939]"
+          ? "jd-details-document mx-auto w-full max-w-[1100px] space-y-6 overflow-visible bg-white py-5 text-sibs-navy shadow-[0_18px_55px_rgba(15,23,42,0.14)] sm sm sm:shadow-[0_24px_70px_rgba(15,23,42,0.18)] lg:min-h-[1056px] lg print"
+          : "jd-details-document jd-details-paged-preview mx-auto w-full text-sibs-navy"
       }
     >
       <style>{detailsResponsiveAuditStyles}</style>
@@ -160,7 +160,7 @@ const Details = ({
                         className={`inline-flex flex-1 items-center justify-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs font-bold transition sm:flex-none ${
                           disableEditBecauseCommented
                             ? "cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400"
-                            : "border-[#D7DEE8] bg-white text-sibs-primary-1 hover:bg-[#F8FAFC]"
+                            : "border-sibs-border-subtle bg-white text-sibs-primary-1 hover:bg-sibs-surface"
                         }`}
                       >
                         <SquarePen size={14} />
@@ -195,7 +195,7 @@ const Details = ({
                       <button
                         type="button"
                         onClick={cancelRecordInfoEdit}
-                        className="inline-flex h-9 flex-1 items-center justify-center rounded-lg border border-[#D7DEE8] bg-white px-3 text-xs font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC] sm:flex-none"
+                        className="inline-flex h-9 flex-1 items-center justify-center rounded-lg border border-sibs-border-subtle bg-white px-3 text-xs font-bold text-sibs-primary-1 transition hover:bg-sibs-surface sm:flex-none"
                       >
                         Cancel
                       </button>
@@ -214,7 +214,7 @@ const Details = ({
             </div>
           ) : null}
 
-          <div className={interactivePage ? "" : "jd-paged-running-header"}>
+          <div className="jd-paged-running-header">
             <DocumentRecordInfoTable
               item={item}
               recordInfoDraft={recordInfoDraft}
@@ -223,6 +223,7 @@ const Details = ({
               onChange={handleRecordInfoChange}
               accountOptions={recordDropdownOptions.accounts}
               approvalPage={approvalPage}
+              onOpenRevision={onOpenRevision}
             />
           </div>
         </section>
@@ -235,6 +236,7 @@ const Details = ({
             emptyText="No Position Overview provided."
             comments={getSectionComments("description")}
             onAddComment={openSectionComment}
+            onOpenRevision={onOpenRevision}
             isEditing={editingSection === "description"}
             editingDraft={editingDraft}
             setEditingDraft={setEditingDraft}
@@ -254,6 +256,7 @@ const Details = ({
             emptyText="No responsibilities provided."
             comments={getSectionComments("responsibilities")}
             onAddComment={openSectionComment}
+            onOpenRevision={onOpenRevision}
             isEditing={editingSection === "responsibilities"}
             editingDraft={editingDraft}
             setEditingDraft={setEditingDraft}
@@ -273,6 +276,7 @@ const Details = ({
             emptyText="No qualifications provided."
             comments={getSectionComments("qualifications")}
             onAddComment={openSectionComment}
+            onOpenRevision={onOpenRevision}
             isEditing={editingSection === "qualifications"}
             editingDraft={editingDraft}
             setEditingDraft={setEditingDraft}
@@ -292,6 +296,7 @@ const Details = ({
             emptyText="No education requirements provided."
             comments={getSectionComments("education")}
             onAddComment={openSectionComment}
+            onOpenRevision={onOpenRevision}
             isEditing={editingSection === "education"}
             editingDraft={editingDraft}
             setEditingDraft={setEditingDraft}
@@ -311,6 +316,7 @@ const Details = ({
             emptyText="No experience requirements provided."
             comments={getSectionComments("experience")}
             onAddComment={openSectionComment}
+            onOpenRevision={onOpenRevision}
             isEditing={editingSection === "experience"}
             editingDraft={editingDraft}
             setEditingDraft={setEditingDraft}
@@ -330,6 +336,7 @@ const Details = ({
             emptyText="No certifications or affiliations provided."
             comments={getSectionComments("certificationsAffiliations")}
             onAddComment={openSectionComment}
+            onOpenRevision={onOpenRevision}
             isEditing={editingSection === "certificationsAffiliations"}
             editingDraft={editingDraft}
             setEditingDraft={setEditingDraft}
@@ -349,6 +356,7 @@ const Details = ({
             canManageJdDetails={canManageJdDetails}
             disableEdit={disableEditBecauseCommented}
             disableComment={disableCommentBecauseEdited}
+            onOpenRevision={onOpenRevision}
             isEditing={editingSection === "personalityType"}
             editingDraft={editingDraft}
             setEditingDraft={setEditingDraft}
@@ -369,6 +377,7 @@ const Details = ({
               competencies={competencyDrafts}
               comments={getSectionComments("competencies")}
               onAddComment={openSectionComment}
+              onOpenRevision={onOpenRevision}
               disableEdit={disableEditBecauseCommented}
               disableComment={disableCommentBecauseEdited}
               canManageActions={approvalPage && canManageJdDetails}
@@ -379,27 +388,29 @@ const Details = ({
         </section>
       </div>
 
-      {!interactivePage && (
-        <>
-          <div
-            ref={pagedOutputRef}
-            className={`jd-paged-output jd-desktop-paged-output ${
-              !isCompactDocumentView && isPagedPreviewLoading
-                ? "pointer-events-none opacity-0"
-                : "opacity-100"
-            }`}
-          />
+      <div
+        ref={pagedOutputRef}
+        style={interactivePage ? { display: "none" } : undefined}
+        className={`jd-paged-output jd-desktop-paged-output ${
+          interactivePage
+            ? "jd-paged-output-hidden !hidden"
+            : !isCompactDocumentView && isPagedPreviewLoading
+              ? "pointer-events-none opacity-0"
+              : "opacity-100"
+        }`}
+      />
 
-          <div
-            ref={mobilePagedOutputRef}
-            className={`jd-mobile-paged-output ${
-              isCompactDocumentView && isPagedPreviewLoading
-                ? "pointer-events-none opacity-0"
-                : "opacity-100"
-            }`}
-          />
-        </>
-      )}
+      <div
+        ref={mobilePagedOutputRef}
+        style={interactivePage ? { display: "none" } : undefined}
+        className={`jd-mobile-paged-output ${
+          interactivePage
+            ? "jd-paged-output-hidden !hidden"
+            : isCompactDocumentView && isPagedPreviewLoading
+              ? "pointer-events-none opacity-0"
+              : "opacity-100"
+        }`}
+      />
 
       <RevisionCommentModal
         approvalPage={approvalPage}

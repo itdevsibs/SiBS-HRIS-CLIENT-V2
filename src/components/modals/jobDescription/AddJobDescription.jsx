@@ -394,19 +394,19 @@ function CompactSection({
   children,
 }) {
   return (
-    <section className="rounded-2xl border border-[#DCE6F1] bg-white p-3.5 sm:p-4 2xl:p-5 shadow-sm">
-      <div className="mb-3 2xl:mb-4 flex flex-col gap-2 border-b border-[#EEF2F6] pb-2.5 sm:flex-row sm:items-start sm:justify-between">
+    <section className="rounded-2xl border border-sibs-border bg-white p-3.5 sm:p-4 2xl:p-5 shadow-sm">
+      <div className="mb-3 2xl:mb-4 flex flex-col gap-2 border-b border-sibs-border pb-2.5 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex min-w-0 items-start gap-2 2xl:gap-2.5">
           {React.createElement(icon, {
-            className: "mt-0.5 h-3.5 w-3.5 2xl:h-4 2xl:w-4 shrink-0 text-[#FF5C28]",
+            className: "mt-0.5 h-3.5 w-3.5 2xl:h-4 2xl:w-4 shrink-0 text-sibs-orange",
             "aria-hidden": "true",
           })}
           <div className="min-w-0">
-            <h3 className="text-xs font-extrabold uppercase tracking-wide text-[#042C51]">
+            <h3 className="text-xs font-extrabold uppercase tracking-wide text-sibs-navy">
               {title}
             </h3>
             {subtitle ? (
-              <p className="mt-0.5 text-xs font-semibold leading-relaxed text-[#667085]">
+              <p className="mt-0.5 text-xs font-semibold leading-relaxed text-sibs-muted">
                 {subtitle}
               </p>
             ) : null}
@@ -414,7 +414,7 @@ function CompactSection({
         </div>
 
         {metaNode || meta ? (
-          <div className="shrink-0 sibs-text-micro font-extrabold text-[#98A2B3]">
+          <div className="shrink-0 sibs-text-micro font-extrabold text-sibs-faint">
             {metaNode || meta}
           </div>
         ) : null}
@@ -429,7 +429,7 @@ function JobDescriptionStatusPill({ status }) {
   const cleanStatus = String(status || "New Job Description");
   const normalized = cleanStatus.toLowerCase();
   const statusClass = normalized.includes("approval")
-    ? "border-[#FFB088] bg-[#FFF3ED] text-[#FF5C28]"
+    ? "border-sibs-orange/30 bg-sibs-cream-light text-sibs-orange"
     : normalized.includes("approved")
       ? "border-emerald-200 bg-emerald-50 text-emerald-700"
       : normalized.includes("revision")
@@ -905,14 +905,14 @@ export default function AddJobDescription({
         aria-modal="true"
         aria-labelledby="add-job-description-modal-title"
         aria-describedby="add-job-description-modal-description"
-        className="sibs-modal-pop-in relative flex max-h-[92dvh] w-full max-w-5xl 2xl:max-w-6xl flex-col overflow-hidden rounded-2xl border border-white/70 bg-[#F7F9FC] font-jakarta shadow-2xl"
+        className="sibs-modal-pop-in relative flex max-h-[92dvh] w-full max-w-5xl 2xl:max-w-6xl flex-col overflow-hidden rounded-2xl border border-white/70 bg-sibs-surface font-jakarta shadow-2xl"
         onClick={(event) => event.stopPropagation()}
       >
-        <header className="shrink-0 bg-[#042C51] px-4 py-3 sm:px-5 2xl:px-6 2xl:py-3.5 text-white">
+        <header className="shrink-0 bg-sibs-navy px-4 py-3 sm:px-5 2xl:px-6 2xl:py-3.5 text-white">
           <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex min-w-0 items-center gap-2.5 2xl:gap-3">
-              <span className="flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg border border-white/15 bg-white/10 text-[#FF5C28]">
-                <FileText className="h-4 w-4 text-[#FF5C28]" />
+              <span className="flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg border border-white/15 bg-white/10 text-sibs-orange">
+                <FileText className="h-4 w-4 text-sibs-orange" />
               </span>
 
               <div className="min-w-0">
@@ -923,7 +923,7 @@ export default function AddJobDescription({
                   >
                     Add Job Description
                   </h2>
-                  <span className="inline-flex rounded bg-[#FF5C28] px-2 py-0.5 text-[8.5px] 2xl:text-[9px] font-extrabold uppercase text-white">
+                  <span className="inline-flex rounded bg-sibs-orange px-2 py-0.5 text-[8.5px] 2xl:text-[9px] font-extrabold uppercase text-white">
                     Specification
                   </span>
                 </div>
@@ -956,7 +956,7 @@ export default function AddJobDescription({
           onSubmit={handleCreateJobDescription}
           className="flex min-h-0 flex-1 flex-col"
         >
-          <div className="thin-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain bg-[#F7F9FC] p-3 sm:p-5">
+          <div className="thin-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain bg-sibs-surface p-3 sm:p-5">
             <div className="space-y-4">
               <style>{`
                 /*
@@ -967,7 +967,7 @@ export default function AddJobDescription({
                 .jd-compact-input-theme label {
                   display: block;
                   margin-bottom: 0.375rem;
-                  color: #042c51;
+                  color: var(--color-sibs-navy);
                   font-size: 0.75rem;
                   font-weight: 800;
                   line-height: 1rem;
@@ -978,11 +978,11 @@ export default function AddJobDescription({
                 .jd-compact-input-theme select {
                   width: 100%;
                   min-height: 2.5rem;
-                  border: 1px solid #d7dee8;
+                  border: 1px solid var(--color-sibs-border);
                   border-radius: 10px;
-                  background: #f8fafc;
+                  background: var(--color-sibs-surface);
                   padding: 0.625rem 0.75rem;
-                  color: #042c51;
+                  color: var(--color-sibs-navy);
                   font-size: 0.75rem;
                   font-weight: 600;
                   line-height: 1.25rem;
@@ -995,31 +995,31 @@ export default function AddJobDescription({
 
                 .jd-compact-input-theme input::placeholder,
                 .jd-compact-input-theme textarea::placeholder {
-                  color: #98a2b3;
+                  color: var(--color-sibs-faint);
                 }
 
                 .jd-compact-input-theme input:not([type="checkbox"]):not([type="radio"]):hover,
                 .jd-compact-input-theme textarea:hover,
                 .jd-compact-input-theme select:hover {
                   border-color: rgba(255, 92, 40, 0.4);
-                  background: #ffffff;
+                  background: white;
                 }
 
                 .jd-compact-input-theme input:not([type="checkbox"]):not([type="radio"]):focus,
                 .jd-compact-input-theme textarea:focus,
                 .jd-compact-input-theme select:focus {
-                  border-color: #ff5c28;
-                  background: #ffffff;
+                  border-color: var(--color-sibs-orange);
+                  background: white;
                   box-shadow: 0 0 0 4px rgba(255, 92, 40, 0.1);
                 }
 
                 .jd-compact-input-theme button[aria-haspopup="listbox"],
                 .jd-compact-input-theme button[aria-expanded] {
                   min-height: 2.5rem;
-                  border-color: #d7dee8;
+                  border-color: var(--color-sibs-border);
                   border-radius: 10px;
-                  background: #f8fafc;
-                  color: #042c51;
+                  background: var(--color-sibs-surface);
+                  color: var(--color-sibs-navy);
                   font-size: 0.75rem;
                   font-weight: 600;
                 }
@@ -1027,19 +1027,19 @@ export default function AddJobDescription({
                 .jd-compact-input-theme button[aria-haspopup="listbox"]:hover,
                 .jd-compact-input-theme button[aria-expanded]:hover {
                   border-color: rgba(255, 92, 40, 0.4);
-                  background: #ffffff;
+                  background: white;
                 }
 
                 .jd-compact-input-theme table {
-                  border-color: #d7dee8;
+                  border-color: var(--color-sibs-border);
                 }
 
                 .jd-compact-input-theme thead {
-                  background: #f8fafc;
+                  background: var(--color-sibs-surface);
                 }
 
                 .jd-compact-input-theme th {
-                  color: #042c51;
+                  color: var(--color-sibs-navy);
                   font-size: 0.625rem;
                   font-weight: 800;
                   letter-spacing: 0.04em;
@@ -1047,20 +1047,20 @@ export default function AddJobDescription({
                 }
 
                 .jd-compact-input-theme td {
-                  border-color: #e6ecf2;
+                  border-color: var(--color-sibs-border);
                 }
               `}</style>
 
-              <section className="rounded-xl border border-blue-200 bg-[#EEF5FF] p-4">
+              <section className="rounded-xl border border-blue-200 bg-blue-50/70 p-4">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex min-w-0 items-center gap-3">
-                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#245BFF] text-white">
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-600 text-white">
                       <Info size={16} />
                     </span>
 
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="text-xs font-extrabold text-[#042C51]">
+                        <h3 className="text-xs font-extrabold text-sibs-navy">
                           Contextual Specification Guide
                         </h3>
                         <span className="rounded border border-indigo-200 bg-indigo-50 px-2 py-0.5 text-[9px] font-extrabold uppercase text-indigo-700">
@@ -1070,7 +1070,7 @@ export default function AddJobDescription({
                         </span>
                       </div>
 
-                      <p className="mt-1 text-xs font-semibold leading-relaxed text-[#667085]">
+                      <p className="mt-1 text-xs font-semibold leading-relaxed text-sibs-muted">
                         {isExistingTemplateMode
                           ? "You are linking this record to an approved job description template. Review the inherited details and complete the remaining specification inputs."
                           : "You are creating a new Job Description specification. Define competency standards, supervisory level, and core responsibilities for the recruitment intake."}
@@ -1133,7 +1133,7 @@ export default function AddJobDescription({
             </div>
           </div>
 
-          <footer className="shrink-0 border-t border-[#DDE5EE] bg-[#F1F5F9] px-5 py-3 2xl:py-3.5 sm:px-6">
+          <footer className="shrink-0 border-t border-sibs-border bg-sibs-surface px-5 py-3 2xl:py-3.5 sm:px-6">
             <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center">
                 <button

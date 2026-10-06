@@ -10,6 +10,7 @@ export { default as DataCard } from "./DataCard";
 export { default as ResponsiveTableShell } from "./ResponsiveTableShell";
 export { default as StatusFilterTabs } from "./StatusFilterTabs";
 export { default as SelectDropdown } from "./SelectDropdown";
+export { default as DatePicker } from "./DatePicker";
 export { default as SearchInput } from "./SearchInput";
 export { default as MetricCard, MetricGrid } from "./MetricCard";
 export { Skeleton } from "./skeleton";

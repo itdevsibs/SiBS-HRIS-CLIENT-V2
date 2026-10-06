@@ -14,12 +14,12 @@ export default function JobDescriptionViewSkeleton({ className = "" }) {
       aria-live="polite"
       aria-label="Loading job description details"
       data-testid="job-description-view-skeleton"
-      className={`jd-view-page-shell fixed inset-0 z-[9999] flex min-h-0 flex-col overflow-hidden bg-[#EEF2F6] font-jakarta text-sibs-primary-1 ${className}`}
+      className={`jd-view-page-shell fixed inset-0 z-[9999] flex min-h-0 flex-col overflow-hidden bg-sibs-canvas font-jakarta text-sibs-primary-1 ${className}`}
     >
       {/* Top Header Bar */}
       <div
         data-jd-header
-        className="shrink-0 overflow-hidden border-b border-[#D9E2EC] bg-white px-3 pt-3 opacity-100 sm:px-6 sm:pt-4"
+        className="shrink-0 overflow-hidden border-b border-sibs-border bg-white px-3 pt-3 opacity-100 sm:px-6 sm:pt-4"
       >
         <div className="jd-view-header-content mx-auto flex w-full max-w-[1760px] flex-col gap-3 sm:gap-4">
           <div className="flex flex-col justify-between gap-3 lg:flex-row lg:items-start">
@@ -51,12 +51,12 @@ export default function JobDescriptionViewSkeleton({ className = "" }) {
 
           <div
             data-testid="jd-skeleton-tabs"
-            className="relative flex gap-5 overflow-x-auto text-sm font-bold text-[#344054] no-scrollbar sm:gap-8 pb-3"
+            className="relative flex gap-5 overflow-x-auto text-sm font-bold text-sibs-text-secondary no-scrollbar sm:gap-8 pb-3"
           >
             <span className="text-blue-600 pb-1 border-b-2 border-blue-500">
               Details
             </span>
-            <span className="text-[#667085] pb-1">
+            <span className="text-sibs-muted pb-1">
               Revision History
             </span>
           </div>
@@ -64,14 +64,14 @@ export default function JobDescriptionViewSkeleton({ className = "" }) {
       </div>
 
       {/* Content Document Area */}
-      <div className="relative min-h-0 flex-1 overflow-hidden bg-[#EEF2F6]">
+      <div className="relative min-h-0 flex-1 overflow-hidden bg-sibs-canvas">
         <div className="thin-scroll h-full overscroll-contain overflow-y-auto px-2.5 py-4 sm:px-5 sm:py-7 lg:px-8">
           <article
             data-testid="jd-skeleton-document"
-            className="jd-details-document mx-auto w-full max-w-[1100px] space-y-6 overflow-visible rounded-2xl bg-white p-6 sm:p-8 text-[#1D2939] shadow-[0_18px_55px_rgba(15,23,42,0.14)] sm:shadow-[0_24px_70px_rgba(15,23,42,0.18)]"
+            className="jd-details-document mx-auto w-full max-w-[1100px] space-y-6 overflow-visible rounded-2xl bg-white p-6 sm:p-8 text-sibs-navy shadow-[0_18px_55px_rgba(15,23,42,0.14)] sm:shadow-[0_24px_70px_rgba(15,23,42,0.18)]"
           >
             {/* Document Header Banner Skeleton */}
-            <div className="flex items-center justify-between border-b border-[#E6ECF2] pb-5">
+            <div className="flex items-center justify-between border-b border-sibs-border pb-5">
               <div className="space-y-2">
                 <Skeleton className="h-7 w-64 rounded-md" />
                 <Skeleton className="h-4 w-40 rounded" />
@@ -80,7 +80,7 @@ export default function JobDescriptionViewSkeleton({ className = "" }) {
             </div>
 
             {/* Record Info / Identification Grid Skeleton */}
-            <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4">
+            <div className="rounded-xl border border-sibs-border bg-sibs-surface p-4">
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
                 {Array.from({ length: 6 }).map((_, i) => (
                   <div key={i} className="space-y-1.5">
@@ -130,7 +130,7 @@ export default function JobDescriptionViewSkeleton({ className = "" }) {
       {/* Footer Skeleton */}
       <div
         data-testid="jd-skeleton-footer"
-        className="jd-view-footer shrink-0 overflow-hidden border-t border-[#D9E2EC] bg-white px-5 py-3 sm:px-7"
+        className="jd-view-footer shrink-0 overflow-hidden border-t border-sibs-border bg-white px-5 py-3 sm:px-7"
       >
         <div className="mx-auto flex w-full max-w-[1760px] flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-2">

@@ -174,8 +174,8 @@ export default function TalentPoolMobileCard({ candidate, index = 0 }) {
 
       <DataCard.Footer>
         <div className="flex w-full items-center justify-between gap-2">
-          <p className="flex items-center gap-1.5 text-[10px] font-semibold text-[#667085]">
-            <CalendarDays size={12} className="shrink-0 text-[#98A2B3]" />
+          <p className="flex items-center gap-1.5 text-[10px] font-semibold text-sibs-muted">
+            <CalendarDays size={12} className="shrink-0 text-sibs-muted" />
             Activity: {lastActivityDate}
           </p>
 

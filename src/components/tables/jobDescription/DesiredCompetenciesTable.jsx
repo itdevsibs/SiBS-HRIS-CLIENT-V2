@@ -68,7 +68,7 @@ const DesiredCompetenciesTable = ({ competencies = [], setCompetencies }) => {
   return (
     <div>
       <div className="overflow-hidden rounded-[10px] border border-sibs-tertiary-8 bg-white">
-        <div className="hidden grid-cols-[minmax(0,1fr)_120px_120px_120px_56px] border-b border-[#E6ECF2] bg-[#F8FAFC] md:grid">
+        <div className="hidden grid-cols-[minmax(0,1fr)_120px_120px_120px_56px] border-b border-sibs-border bg-sibs-surface md:grid">
           <div className="px-3 py-3 text-[10px] font-extrabold uppercase tracking-normal text-sibs-primary-1">
             Competency for this Position
           </div>
@@ -90,13 +90,13 @@ const DesiredCompetenciesTable = ({ competencies = [], setCompetencies }) => {
             No competencies added yet.
           </div>
         ) : (
-          <div className="divide-y divide-[#E6ECF2]">
+          <div className="divide-y divide-sibs-border">
             {competencies.map((item) => (
               <div
                 key={item.id}
                 className="grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_120px_120px_120px_56px]"
               >
-                <div className="border-b border-[#E6ECF2] p-3 md:border-b-0 md:border-r">
+                <div className="border-b border-sibs-border p-3 md:border-b-0 md:border-r md:border-sibs-border">
                   <AutoGrowTextarea
                     value={item.description || ""}
                     onChange={(value) =>
@@ -109,10 +109,10 @@ const DesiredCompetenciesTable = ({ competencies = [], setCompetencies }) => {
                 {proficiencyOptions.map((option) => (
                   <div
                     key={option}
-                    className="flex items-center justify-center border-b border-[#E6ECF2] px-3 py-3 md:border-b-0 md:border-r"
+                    className="flex items-center justify-center border-b border-sibs-border px-3 py-3 md:border-b-0 md:border-r md:border-sibs-border"
                   >
                     <label className="flex cursor-pointer flex-col items-center gap-2">
-                      <span className="text-xs font-semibold text-[#344054] md:hidden">
+                      <span className="text-xs font-semibold text-sibs-text-secondary md:hidden">
                         {option}
                       </span>
 

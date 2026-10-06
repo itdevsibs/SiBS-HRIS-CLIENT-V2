@@ -189,11 +189,11 @@ export default function DropOffListSection({
   }
 
   return (
-    <section className="sibs-page-card-in overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white font-jakarta shadow-sm">
+    <section className="sibs-page-card-in overflow-hidden rounded-2xl border border-sibs-border bg-white font-jakarta shadow-sm">
       <button
         type="button"
         onClick={() => setExpanded((previousValue) => !previousValue)}
-        className="flex w-full items-center justify-between gap-4 border-b border-[#E6ECF2] bg-white px-4 py-5 text-left transition hover:bg-[#FFF9F6] sm:px-5"
+        className="flex w-full items-center justify-between gap-4 border-b border-sibs-border bg-white px-4 py-5 text-left transition hover:bg-sibs-cream-light/40 sm:px-5"
       >
         <div className="flex min-w-0 items-center gap-3">
           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-red-100 bg-red-50 text-red-700">
@@ -217,7 +217,7 @@ export default function DropOffListSection({
             {candidates.length}
           </span>
 
-          <span className="inline-flex h-9 items-center justify-center gap-2 rounded-[10px] border border-[#E6ECF2] bg-white px-3 text-xs font-extrabold text-sibs-primary-1 shadow-sm">
+          <span className="inline-flex h-9 items-center justify-center gap-2 rounded-[10px] border border-sibs-border bg-white px-3 text-xs font-extrabold text-sibs-primary-1 shadow-sm">
             {expanded ? "Hide" : "Show"}
             {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
           </span>
@@ -226,10 +226,10 @@ export default function DropOffListSection({
 
       {expanded && (
         <div className="p-4 sm:p-5">
-          <div className="mb-5 rounded-xl border border-[#E6ECF2] bg-white p-4">
+          <div className="mb-5 rounded-xl border border-sibs-border bg-white p-4">
             <label
               htmlFor="drop-off-list-search"
-              className="mb-1.5 block font-jakarta text-xs font-extrabold tracking-normal text-[#101828]"
+              className="mb-1.5 block font-jakarta text-xs font-extrabold tracking-normal text-sibs-navy"
             >
               Search
             </label>
@@ -237,7 +237,7 @@ export default function DropOffListSection({
             <div className="relative">
               <Search
                 size={17}
-                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#98A2B3]"
+                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sibs-muted"
               />
 
               <input
@@ -247,7 +247,7 @@ export default function DropOffListSection({
                 disabled={isLoading}
                 onChange={(event) => setSearchQuery(event.target.value)}
                 placeholder="Search drop-off candidates..."
-                className="h-10 w-full rounded-[10px] border border-[#E6ECF2] bg-[#F8FAFC] pl-9 pr-11 text-xs font-semibold text-[#042C51] outline-none transition placeholder:text-[#8A98B8] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+                className="h-10 w-full rounded-[10px] border border-sibs-border bg-sibs-surface pl-9 pr-11 text-xs font-semibold text-sibs-navy outline-none transition placeholder:text-sibs-muted hover:border-sibs-orange/40 hover:bg-white focus:border-sibs-orange focus:bg-white focus:ring-4 focus:ring-sibs-orange/10 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
               />
 
               {searchQuery && (
@@ -255,7 +255,7 @@ export default function DropOffListSection({
                   type="button"
                   onClick={() => setSearchQuery("")}
                   aria-label="Clear Drop-off List search"
-                  className="absolute right-2 top-1/2 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-[#667085] transition hover:bg-[#FFF0EB] hover:text-[#FF5C28]"
+                  className="absolute right-2 top-1/2 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-sibs-muted transition hover:bg-sibs-cream-light hover:text-sibs-orange"
                 >
                   <X size={16} />
                 </button>
@@ -263,7 +263,7 @@ export default function DropOffListSection({
             </div>
 
             <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-xs font-semibold text-[#667085]">
+              <p className="text-xs font-semibold text-sibs-muted">
                 Showing {filteredCandidates.length} of {candidates.length}{" "}
                 drop-off candidates
               </p>
@@ -287,39 +287,39 @@ export default function DropOffListSection({
           )}
 
           {isLoading && candidates.length === 0 ? (
-            <div className="flex min-h-[180px] items-center justify-center rounded-xl border border-dashed border-[#D9E2EC] bg-[#F8FAFC] px-5 py-10">
+            <div className="flex min-h-[180px] items-center justify-center rounded-xl border border-dashed border-sibs-border bg-sibs-surface px-5 py-10">
               <div className="flex flex-col items-center text-center">
                 <Loader2 size={22} className="animate-spin text-sibs-primary-1" />
-                <p className="mt-3 text-xs font-extrabold text-[#042C51]">
+                <p className="mt-3 text-xs font-extrabold text-sibs-navy">
                   Loading drop-off candidates...
                 </p>
               </div>
             </div>
           ) : candidates.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-[#D9E2EC] bg-[#F8FAFC] px-5 py-10 text-center">
-              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full border border-[#E6ECF2] bg-white text-sibs-tertiary-5">
+            <div className="rounded-xl border border-dashed border-sibs-border bg-sibs-surface px-5 py-10 text-center">
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full border border-sibs-border bg-white text-sibs-tertiary-5">
                 <AlertTriangle size={22} />
               </div>
 
-              <p className="mt-3 text-xs font-extrabold text-[#042C51]">
+              <p className="mt-3 text-xs font-extrabold text-sibs-navy">
                 No drop-off candidates
               </p>
 
-              <p className="mt-1 text-xs font-semibold text-[#667085]">
+              <p className="mt-1 text-xs font-semibold text-sibs-muted">
                 Candidates moved to Drop-off will appear here.
               </p>
             </div>
           ) : filteredCandidates.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-[#D9E2EC] bg-[#F8FAFC] px-5 py-10 text-center">
-              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full border border-[#E6ECF2] bg-white text-sibs-primary-1">
+            <div className="rounded-xl border border-dashed border-sibs-border bg-sibs-surface px-5 py-10 text-center">
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full border border-sibs-border bg-white text-sibs-primary-1">
                 <Search size={22} />
               </div>
 
-              <p className="mt-3 text-xs font-extrabold text-[#042C51]">
+              <p className="mt-3 text-xs font-extrabold text-sibs-navy">
                 No drop-off candidates match your search.
               </p>
 
-              <p className="mt-1 text-xs font-semibold text-[#667085]">
+              <p className="mt-1 text-xs font-semibold text-sibs-muted">
                 Try searching by candidate, position, location, account,
                 status, reason, or date.
               </p>
@@ -327,7 +327,7 @@ export default function DropOffListSection({
               <button
                 type="button"
                 onClick={() => setSearchQuery("")}
-                className="mt-4 inline-flex h-10 items-center justify-center rounded-[10px] border border-[#E6ECF2] bg-white px-4 text-xs font-extrabold text-sibs-primary-1 transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28]"
+                className="mt-4 inline-flex h-10 items-center justify-center rounded-[10px] border border-sibs-border bg-white px-4 text-xs font-extrabold text-sibs-primary-1 transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light/60 hover:text-sibs-orange"
               >
                 Clear search
               </button>
@@ -343,7 +343,7 @@ export default function DropOffListSection({
                   onPointerCancel={stopDropOffTableDragging}
                   onLostPointerCapture={stopDropOffTableDragging}
                   onDragStart={(event) => event.preventDefault()}
-                  className={`overflow-x-auto overscroll-x-contain rounded-xl border border-[#E6ECF2] bg-white sibs-scrollbar ${
+                  className={`overflow-x-auto overscroll-x-contain rounded-xl border border-sibs-border bg-white sibs-scrollbar ${
                     isDropOffTableDragging
                       ? "cursor-grabbing select-none"
                       : "cursor-grab"
@@ -393,20 +393,20 @@ export default function DropOffListSection({
                           onKeyDown={(event) =>
                             handleDropOffCandidateKeyDown(event, candidate)
                           }
-                          className="cursor-pointer transition hover:bg-[#FFF9F6] focus:bg-[#FFF9F6] focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[#FF5C28]/30"
+                          className="cursor-pointer transition hover:bg-sibs-cream-light/40 focus:bg-sibs-cream-light/40 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-sibs-orange/30"
                         >
-                          <td className="border-b border-[#E6ECF2] px-4 py-3.5 align-middle">
-                            <p className="truncate text-xs font-extrabold text-[#042C51]">
+                          <td className="border-b border-sibs-border px-4 py-3.5 align-middle">
+                            <p className="truncate text-xs font-extrabold text-sibs-navy">
                               {getDropOffCandidateName(candidate)}
                             </p>
 
-                            <p className="mt-0.5 truncate text-[11px] font-semibold text-[#667085]">
+                            <p className="mt-0.5 truncate text-[11px] font-semibold text-sibs-muted">
                               {getDropOffCandidateId(candidate)}
                             </p>
                           </td>
 
-                          <td className="border-b border-[#E6ECF2] px-4 py-3.5 align-middle">
-                            <p className="truncate text-xs font-bold text-[#344054]">
+                          <td className="border-b border-sibs-border px-4 py-3.5 align-middle">
+                            <p className="truncate text-xs font-bold text-sibs-navy">
                               {candidate.openPosition ||
                                 candidate.open_position ||
                                 candidate.roleCapability ||
@@ -414,24 +414,24 @@ export default function DropOffListSection({
                                 getDropOffCandidateRole(candidate)}
                             </p>
 
-                            <p className="mt-0.5 truncate text-[11px] font-semibold text-[#667085]">
+                            <p className="mt-0.5 truncate text-[11px] font-semibold text-sibs-muted">
                               Skills: {candidate.skillsLanguage || candidate.skills_language || "—"}
                             </p>
                           </td>
 
-                          <td className="border-b border-[#E6ECF2] px-4 py-3.5 align-middle">
-                            <p className="truncate text-xs font-semibold text-[#344054]">
+                          <td className="border-b border-sibs-border px-4 py-3.5 align-middle">
+                            <p className="truncate text-xs font-semibold text-sibs-navy">
                               {candidate.applyingLocation ||
                                 candidate.applying_location ||
                                 "—"}
                             </p>
 
-                            <p className="mt-0.5 truncate text-[11px] font-semibold text-[#667085]">
+                            <p className="mt-0.5 truncate text-[11px] font-semibold text-sibs-muted">
                               Final Account: {getDropOffCandidateAccount(candidate)}
                             </p>
                           </td>
 
-                          <td className="border-b border-[#E6ECF2] px-4 py-3.5 text-center align-middle">
+                          <td className="border-b border-sibs-border px-4 py-3.5 text-center align-middle">
                             <span className="inline-flex max-w-full rounded-lg border border-red-100 bg-red-50 px-2.5 py-1 text-[10px] font-extrabold text-red-700">
                               <span className="truncate">
                                 {candidate.dropOffCategory ||
@@ -441,20 +441,20 @@ export default function DropOffListSection({
                             </span>
                           </td>
 
-                          <td className="border-b border-[#E6ECF2] px-4 py-3.5 align-middle">
-                            <p className="line-clamp-2 text-xs font-semibold leading-5 text-[#344054]">
+                          <td className="border-b border-sibs-border px-4 py-3.5 align-middle">
+                            <p className="line-clamp-2 text-xs font-semibold leading-5 text-sibs-navy">
                               {getDropOffReason(candidate)}
                             </p>
 
                             {getDropOffBy(candidate) && (
-                              <p className="mt-0.5 truncate text-[11px] font-semibold text-[#667085]">
+                              <p className="mt-0.5 truncate text-[11px] font-semibold text-sibs-muted">
                                 By: {getDropOffBy(candidate)}
                               </p>
                             )}
                           </td>
 
-                          <td className="border-b border-[#E6ECF2] px-4 py-3.5 align-middle">
-                            <p className="text-xs font-semibold text-[#344054]">
+                          <td className="border-b border-sibs-border px-4 py-3.5 align-middle">
+                            <p className="text-xs font-semibold text-sibs-navy">
                               {formatDropOffDate(getDropOffDate(candidate))}
                             </p>
                           </td>
@@ -476,15 +476,15 @@ export default function DropOffListSection({
                       getDropOffDate(candidate)
                     }-mobile`}
                     onClick={() => onViewCandidate?.(candidate)}
-                    className="block w-full rounded-2xl border border-[#E6ECF2] bg-white p-4 text-left font-jakarta shadow-sm transition hover:border-[#FF5C28]/35 hover:bg-[#FFFCFA] hover:shadow-md focus:outline-none focus:ring-4 focus:ring-[#FF5C28]/10"
+                    className="block w-full rounded-2xl border border-sibs-border bg-white p-4 text-left font-jakarta shadow-sm transition hover:border-sibs-orange/35 hover:bg-sibs-cream-light/20 hover:shadow-md focus:outline-none focus:ring-4 focus:ring-sibs-orange/10"
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <h3 className="truncate text-[13px] font-extrabold text-[#042C51]">
+                        <h3 className="truncate text-[13px] font-extrabold text-sibs-navy">
                           {getDropOffCandidateName(candidate)}
                         </h3>
 
-                        <p className="mt-0.5 truncate text-[11px] font-semibold text-[#667085]">
+                        <p className="mt-0.5 truncate text-[11px] font-semibold text-sibs-muted">
                           {getDropOffCandidateId(candidate)}
                         </p>
                       </div>
@@ -497,12 +497,12 @@ export default function DropOffListSection({
                     </div>
 
                     <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                      <div className="rounded-lg border border-[#EEF2F6] bg-[#F8FAFC] p-3">
-                        <p className="text-[10px] font-extrabold uppercase tracking-normal text-[#667085]">
+                      <div className="rounded-lg border border-sibs-border bg-sibs-surface p-3">
+                        <p className="text-[10px] font-extrabold uppercase tracking-normal text-sibs-muted">
                           Applied Position
                         </p>
 
-                        <p className="mt-1 text-xs font-bold leading-4 text-[#344054]">
+                        <p className="mt-1 text-xs font-bold leading-4 text-sibs-navy">
                           {candidate.openPosition ||
                             candidate.open_position ||
                             candidate.roleCapability ||
@@ -511,12 +511,12 @@ export default function DropOffListSection({
                         </p>
                       </div>
 
-                      <div className="rounded-lg border border-[#EEF2F6] bg-[#F8FAFC] p-3">
-                        <p className="text-[10px] font-extrabold uppercase tracking-normal text-[#667085]">
+                      <div className="rounded-lg border border-sibs-border bg-sibs-surface p-3">
+                        <p className="text-[10px] font-extrabold uppercase tracking-normal text-sibs-muted">
                           Preferred Location
                         </p>
 
-                        <p className="mt-1 text-xs font-bold leading-4 text-[#344054]">
+                        <p className="mt-1 text-xs font-bold leading-4 text-sibs-navy">
                           {candidate.applyingLocation ||
                             candidate.applying_location ||
                             "—"}
@@ -524,12 +524,12 @@ export default function DropOffListSection({
                       </div>
                     </div>
 
-                    <p className="mt-4 rounded-lg border border-[#EEF2F6] bg-[#F8FAFC] p-3 text-xs font-semibold leading-5 text-[#475467]">
+                    <p className="mt-4 rounded-lg border border-sibs-border bg-sibs-surface p-3 text-xs font-semibold leading-5 text-sibs-navy">
                       {getDropOffReason(candidate)}
                     </p>
 
                     <div className="mt-4">
-                      <p className="text-xs font-semibold text-[#667085]">
+                      <p className="text-xs font-semibold text-sibs-muted">
                         {formatDropOffDate(getDropOffDate(candidate))}
                       </p>
                     </div>

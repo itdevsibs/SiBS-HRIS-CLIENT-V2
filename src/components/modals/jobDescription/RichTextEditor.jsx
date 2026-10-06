@@ -458,8 +458,8 @@ function ToolbarButton({
       }}
       className={`inline-flex h-7 w-7 items-center justify-center rounded-md border transition ${
         active
-          ? "border-sibs-primary-1 bg-sibs-primary-1 text-white"
-          : "border-transparent text-[#667085] hover:border-[#D7DEE8] hover:bg-white hover:text-[#FF5C28]"
+          ? "border-sibs-orange bg-sibs-orange text-white"
+          : "border-transparent text-sibs-muted hover:border-sibs-border-subtle hover:bg-white hover:text-sibs-orange"
       } disabled:cursor-not-allowed disabled:opacity-40`}
     >
       {children}
@@ -725,7 +725,7 @@ export default function RichTextEditor({
           p.is-editor-empty:first-child::before {
           float: left;
           height: 0;
-          color: #91a4b7;
+          color: var(--color-sibs-faint);
           content: attr(data-placeholder);
           pointer-events: none;
         }
@@ -752,9 +752,9 @@ export default function RichTextEditor({
 
       <div
         onFocusCapture={onFocus}
-        className="overflow-hidden rounded-[10px] border border-[#D7DEE8] bg-[#F8FAFC] transition hover:border-[#FF5C28]/40 hover:bg-white focus-within:border-[#FF5C28] focus-within:bg-white focus-within:ring-4 focus-within:ring-[#FF5C28]/10"
+        className="overflow-hidden rounded-[10px] border border-sibs-border bg-sibs-surface transition hover:border-sibs-orange/40 hover:bg-white focus-within:border-sibs-orange focus-within:bg-white focus-within:ring-4 focus-within:ring-sibs-orange/10"
       >
-      <div className="flex flex-wrap items-center gap-0.5 border-b border-[#D7DEE8] bg-[#F2F4F7] px-2.5 py-1.5">
+      <div className="flex flex-wrap items-center gap-0.5 border-b border-sibs-border bg-slate-100/80 px-2.5 py-1.5">
         <ToolbarButton
           title="Bold"
           active={editor?.isActive("bold")}
@@ -811,7 +811,7 @@ export default function RichTextEditor({
           <Strikethrough size={15} />
         </ToolbarButton>
 
-        <span className="mx-1 h-5 w-px bg-[#D7E1EB]" />
+        <span className="mx-1 h-5 w-px bg-sibs-border" />
 
         <ToolbarButton
           title="Numbered list"
@@ -869,7 +869,7 @@ export default function RichTextEditor({
           <IndentDecrease size={15} />
         </ToolbarButton>
 
-        <span className="mx-1 h-5 w-px bg-[#D7E1EB]" />
+        <span className="mx-1 h-5 w-px bg-sibs-border" />
 
         <ToolbarButton
           title="Align left"
@@ -903,7 +903,7 @@ export default function RichTextEditor({
           <AlignJustify size={15} />
         </ToolbarButton>
 
-        <span className="mx-1 h-5 w-px bg-[#D7E1EB]" />
+        <span className="mx-1 h-5 w-px bg-sibs-border" />
 
         <ToolbarButton
           title="Clear formatting"
@@ -970,7 +970,7 @@ export default function RichTextEditor({
             editor?.chain().focus().run();
           }
         }}
-        className="jd-rich-text-editor bg-[#F8FAFC] px-3 py-2.5 focus-within:bg-white"
+        className="jd-rich-text-editor bg-sibs-surface px-3 py-2.5 focus-within:bg-white"
       >
         <EditorContent editor={editor} />
       </div>

@@ -199,33 +199,33 @@ export default function ApplicantLeadsTable({
                   isConvertedApplicantTab ? "min-w-[720px]" : "min-w-[800px]"
                 }`}
               >
-            <thead className="sticky top-0 z-10 bg-[#F8FAFC]">
-              <tr className="border-b border-[#E6ECF2]">
-                <th className="w-[26%] px-3 2xl:px-4 py-2.5 2xl:py-3 text-[10px] font-extrabold uppercase tracking-[0.04em] text-[#7B8DB3]">
+            <thead className="sticky top-0 z-10 bg-sibs-surface">
+              <tr className="border-b border-sibs-border">
+                <th className="w-[26%] px-3 2xl:px-4 py-2.5 2xl:py-3 text-[10px] font-extrabold uppercase tracking-[0.04em] text-sibs-muted">
                   Referral Code &amp; Name
                 </th>
 
-                <th className="w-[28%] px-3 2xl:px-4 py-2.5 2xl:py-3 text-[10px] font-extrabold uppercase tracking-[0.04em] text-[#7B8DB3]">
+                <th className="w-[28%] px-3 2xl:px-4 py-2.5 2xl:py-3 text-[10px] font-extrabold uppercase tracking-[0.04em] text-sibs-muted">
                   CP Number / Email
                 </th>
 
-                <th className="w-[20%] px-3 2xl:px-4 py-2.5 2xl:py-3 text-[10px] font-extrabold uppercase tracking-[0.04em] text-[#7B8DB3]">
+                <th className="w-[20%] px-3 2xl:px-4 py-2.5 2xl:py-3 text-[10px] font-extrabold uppercase tracking-[0.04em] text-sibs-muted">
                   Status
                 </th>
 
-                <th className="w-[20%] px-3 2xl:px-4 py-2.5 2xl:py-3 text-[10px] font-extrabold uppercase tracking-[0.04em] text-[#7B8DB3]">
+                <th className="w-[20%] px-3 2xl:px-4 py-2.5 2xl:py-3 text-[10px] font-extrabold uppercase tracking-[0.04em] text-sibs-muted">
                   Inputted By
                 </th>
 
                 {!isConvertedApplicantTab && (
-                  <th className="w-[6%] px-3 2xl:px-4 py-2.5 2xl:py-3 text-right text-[10px] font-extrabold uppercase tracking-[0.04em] text-[#7B8DB3]">
+                  <th className="w-[6%] px-3 2xl:px-4 py-2.5 2xl:py-3 text-right text-[10px] font-extrabold uppercase tracking-[0.04em] text-sibs-muted">
                     Actions
                   </th>
                 )}
               </tr>
             </thead>
 
-            <tbody className="divide-y divide-[#E6ECF2] bg-white">
+            <tbody className="divide-y divide-sibs-border bg-white">
               {isLoading ? (
                 <TableSkeletonRows count={6} columns={isConvertedApplicantTab ? 4 : 5} />
               ) : errorMessage ? (
@@ -272,7 +272,7 @@ export default function ApplicantLeadsTable({
                           openEditModal(lead);
                         }
                       }}
-                      className="sibs-page-card-in group cursor-pointer bg-white text-xs transition-colors duration-150 hover:bg-[#F8FAFC] focus:bg-[#F8FAFC] focus:outline-none"
+                      className="sibs-page-card-in group cursor-pointer bg-white text-xs transition-colors duration-150 hover:bg-sibs-surface focus:bg-sibs-surface focus:outline-none"
                     >
                       {/* REFERRAL CODE & NAME */}
                       <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle">
@@ -403,9 +403,9 @@ export default function ApplicantLeadsTable({
               ) : (
                 <tr>
                   <td colSpan={isConvertedApplicantTab ? 4 : 5} className="px-5 py-14 text-center">
-                    <div className="flex flex-col items-center justify-center text-[#667085]">
-                      <UsersRound className="h-6 w-6 text-[#98A2B3]" />
-                      <p className="mt-2 text-[13px] font-extrabold text-[#042C51]">
+                    <div className="flex flex-col items-center justify-center text-sibs-muted">
+                      <UsersRound className="h-6 w-6 text-sibs-muted" />
+                      <p className="mt-2 text-[13px] font-extrabold text-sibs-navy">
                         {emptyTitle}
                       </p>
                       <p className="mt-1 text-xs font-medium">

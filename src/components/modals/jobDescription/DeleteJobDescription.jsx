@@ -257,7 +257,7 @@ function DependencyRow({
             </span>
           ) : null}
 
-          <p className="min-w-0 text-[13px] font-bold text-[#062f56]">
+          <p className="min-w-0 text-[13px] font-bold text-sibs-navy">
             {title}
           </p>
 
@@ -475,7 +475,7 @@ export default function DeleteJobDescriptionModal({
   }
 
   return (
-    <div className="sibs-modal-backdrop-in sibs-modal-blur fixed inset-0 z-[9999] flex h-dvh items-center justify-center p-3 sm:p-5 font-jakarta bg-[#042C51]/60">
+    <div className="sibs-modal-backdrop-in sibs-modal-blur fixed inset-0 z-[9999] flex h-dvh items-center justify-center p-3 sm:p-5 font-jakarta bg-sibs-navy/60">
       <div
         className="sibs-modal-pop-in flex max-h-[92dvh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-white/70 bg-white shadow-2xl font-jakarta"
         onClick={(event) => {
@@ -485,7 +485,7 @@ export default function DeleteJobDescriptionModal({
         {/* ======================================
             RED HEADER
         ====================================== */}
-        <div className="relative shrink-0 bg-gradient-to-r from-[#f50000] via-[#ef0017] to-[#db0037] px-4 py-3 sm:px-5 2xl:px-6 2xl:py-3.5 text-white">
+        <div className="relative shrink-0 bg-gradient-to-r from-red-600 via-red-700 to-rose-700 px-4 py-3 sm:px-5 2xl:px-6 2xl:py-3.5 text-white">
           <button
             type="button"
             onClick={handleClose}
@@ -539,7 +539,7 @@ export default function DeleteJobDescriptionModal({
               {/* ==================================
                   TARGET JOB DESCRIPTION
               ================================== */}
-              <section className="rounded-xl border border-slate-200 bg-[#f8fbff] px-4 py-4">
+              <section className="rounded-xl border border-slate-200 bg-sibs-surface px-4 py-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="text-[10px] font-bold uppercase tracking-[0.03em] text-slate-400">
@@ -547,7 +547,7 @@ export default function DeleteJobDescriptionModal({
                     </p>
 
                     <div className="mt-1 flex flex-wrap items-center gap-2">
-                      <h3 className="text-[16px] font-extrabold text-[#07365f]">
+                      <h3 className="text-[16px] font-extrabold text-sibs-navy">
                         {getDisplayRoleTitle(jobDescription)}
                       </h3>
 
@@ -596,10 +596,10 @@ export default function DeleteJobDescriptionModal({
                     <BriefcaseBusiness
                       size={16}
                       strokeWidth={1.9}
-                      className="text-[#ff5a1f]"
+                      className="text-sibs-orange"
                     />
 
-                    <h3 className="text-[14px] font-extrabold uppercase tracking-[-0.01em] text-[#07365f]">
+                    <h3 className="text-[14px] font-extrabold uppercase tracking-[-0.01em] text-sibs-navy">
                       Linked Available Positions & Requisitions
                     </h3>
                   </div>
@@ -612,7 +612,7 @@ export default function DeleteJobDescriptionModal({
                   </span>
                 </div>
 
-                <div className="rounded-xl border border-red-200 bg-[#fff6f6] px-4 py-3">
+                <div className="rounded-xl border border-red-200 bg-red-50/70 px-4 py-3">
                   <div className="flex items-start gap-3">
                     <AlertTriangle
                       size={16}
@@ -620,8 +620,8 @@ export default function DeleteJobDescriptionModal({
                       className="mt-0.5 shrink-0 text-red-500"
                     />
 
-                    <p className="text-[11px] leading-[1.65] text-[#a43e3e]">
-                      <span className="font-extrabold text-[#9d2727]">
+                    <p className="text-[11px] leading-[1.65] text-red-700">
+                      <span className="font-extrabold text-red-800">
                         Active Hiring Dependency Alert:
                       </span>{" "}
                       Deleting this Job Description will permanently remove the
@@ -660,7 +660,7 @@ export default function DeleteJobDescriptionModal({
               {/* ==================================
                   SAFE ALTERNATIVE
               ================================== */}
-              <section className="rounded-xl border border-amber-300 bg-[#fffaf0] px-4 py-3">
+              <section className="rounded-xl border border-amber-300 bg-amber-50/70 px-4 py-3">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
@@ -697,7 +697,7 @@ export default function DeleteJobDescriptionModal({
               {/* ==================================
                   ACKNOWLEDGEMENTS
               ================================== */}
-              <section className="rounded-xl border border-red-200 bg-[#fffafa] px-4 py-4">
+              <section className="rounded-xl border border-red-200 bg-red-50/60 px-4 py-4">
                 <div className="mb-3 flex items-center gap-2">
                   <LockKeyhole
                     size={15}
@@ -705,7 +705,7 @@ export default function DeleteJobDescriptionModal({
                     className="text-red-500"
                   />
 
-                  <h3 className="text-[12px] font-extrabold uppercase text-[#5b2020]">
+                  <h3 className="text-[12px] font-extrabold uppercase text-red-900">
                     Mandatory Safety Acknowledgements
                   </h3>
                 </div>
@@ -810,7 +810,7 @@ export default function DeleteJobDescriptionModal({
         {/* ======================================
             FIXED FOOTER
         ====================================== */}
-        <div className="shrink-0 border-t border-slate-200 bg-[#f8fbff] px-4 py-3 sm:px-5 2xl:px-6">
+        <div className="shrink-0 border-t border-sibs-border bg-sibs-surface px-4 py-3 sm:px-5 2xl:px-6">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-2 text-[10px] font-medium text-slate-500">
               <ShieldAlert
@@ -826,7 +826,7 @@ export default function DeleteJobDescriptionModal({
                 type="button"
                 onClick={handleClose}
                 disabled={deleting}
-                className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg 2xl:rounded-xl border border-slate-300 bg-white px-4 2xl:px-5 sibs-text-xs font-bold text-[#042C51] shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98]"
+                className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg 2xl:rounded-xl border border-slate-300 bg-white px-4 2xl:px-5 sibs-text-xs font-bold text-sibs-navy shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98]"
               >
                 Cancel
               </button>

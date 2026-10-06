@@ -32,12 +32,32 @@ const STATUS_CONFIGS = {
     dotClassName: "bg-emerald-500",
     label: "On Track",
   },
+  addressed: {
+    className: "sibs-badge-success",
+    dotClassName: "bg-emerald-500",
+    label: "Addressed",
+  },
+  resolved: {
+    className: "sibs-badge-success",
+    dotClassName: "bg-emerald-500",
+    label: "Resolved",
+  },
 
   // Warning / Pending / Review
   pending: {
     className: "sibs-badge-warning",
     dotClassName: "bg-amber-500",
     label: "Pending",
+  },
+  open: {
+    className: "sibs-badge-warning",
+    dotClassName: "bg-amber-500",
+    label: "Open",
+  },
+  current: {
+    className: "sibs-badge-warning",
+    dotClassName: "bg-amber-500",
+    label: "Current",
   },
   "for review": {
     className: "sibs-badge-warning",

@@ -56,7 +56,7 @@ function TableState({ icon, title, message, tone = "neutral", spin = false }) {
   const IconComponent = icon;
 
   const toneClasses = {
-    neutral: "border-[#D9E2EC] bg-[#F8FAFC] text-[#667085]",
+    neutral: "border-sibs-border bg-sibs-surface text-sibs-muted",
     error: "border-red-200 bg-red-50 text-red-700",
   };
 
@@ -330,7 +330,7 @@ export default function TalentPoolTable({
                           onKeyDown={(event) =>
                             handleRowKeyDown(event, candidate)
                           }
-                          className="sibs-page-card-in cursor-pointer transition hover:bg-[#F8FAFC] focus-visible:bg-[#FFF9F6] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sibs-orange/25"
+                          className="sibs-page-card-in cursor-pointer transition hover:bg-sibs-surface focus-visible:bg-sibs-cream-light/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sibs-orange/25"
                           style={{
                             animationDelay: `${index * 35}ms`,
                             animationFillMode: "both",

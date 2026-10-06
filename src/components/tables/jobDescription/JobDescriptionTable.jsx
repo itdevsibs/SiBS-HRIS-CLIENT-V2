@@ -10,11 +10,13 @@ import {
 import { useNavigate } from "react-router-dom";
 
 import { usePagination } from "../../../services/context/PaginationContext";
-import PaginationTable from "../../../services/pagination/PaginationTable";
 import {
   DataCard,
   ResponsiveTableShell,
+  SearchInput,
+  SelectDropdown,
   StatusFilterTabs,
+  TableEmptyRow,
   TablePagination,
   TableSkeletonRows,
 } from "@/components/ui";
@@ -527,6 +529,33 @@ export default function JobDescriptionTable({
     [jobDescriptionList],
   );
 
+  const departmentDropdownOptions = useMemo(
+    () =>
+      departmentOptions.map((opt) => ({
+        label: opt,
+        value: opt,
+      })),
+    [departmentOptions],
+  );
+
+  const accountDropdownOptions = useMemo(
+    () =>
+      accountOptions.map((opt) => ({
+        label: opt,
+        value: opt,
+      })),
+    [accountOptions],
+  );
+
+  const supervisoryDropdownOptions = useMemo(
+    () =>
+      supervisoryOptions.map((opt) => ({
+        label: opt,
+        value: opt,
+      })),
+    [supervisoryOptions],
+  );
+
   /* =====================================================
   STATUS COUNTS
   ===================================================== */
@@ -749,74 +778,85 @@ export default function JobDescriptionTable({
         </p>
 
         <div className="relative z-[90] mt-3.5 2xl:mt-4 overflow-visible">
-          <PaginationTable
-            filterLayout="ta-inline"
-            showFilterPanel={false}
-            showFilterHeader={false}
-            showPagination={false}
-            searchValue={searchTerm}
-            searchPlaceholder="Search role title, document, department, account, or hiring need..."
-            onSearchChange={(value) => updateFilter(setSearchTerm, value)}
-            className="border-0 bg-transparent p-0 shadow-none"
-            filters={[
-              {
-                key: "department",
-                value: departmentFilter,
-                options: departmentOptions.map((opt) => ({
-                  label: opt,
-                  value: opt,
-                })),
-                onChange: (value) =>
-                  updateFilter(setDepartmentFilter, value || "All Departments"),
-                includeAll: false,
-                allLabel: "All Departments",
-                label: "Department",
-                placeholder: "All Departments",
-                searchable: true,
-              },
-              {
-                key: "account",
-                value: accountFilter,
-                options: accountOptions.map((opt) => ({
-                  label: opt,
-                  value: opt,
-                })),
-                onChange: (value) =>
-                  updateFilter(setAccountFilter, value || "All Accounts"),
-                includeAll: false,
-                allLabel: "All Accounts",
-                label: "Account",
-                placeholder: "All Accounts",
-                searchable: true,
-              },
-              {
-                key: "supervisory",
-                value: supervisoryFilter,
-                options: supervisoryOptions.map((opt) => ({
-                  label: opt,
-                  value: opt,
-                })),
-                onChange: (value) =>
-                  updateFilter(setSupervisoryFilter, value || "All Levels"),
-                includeAll: false,
-                allLabel: "All Levels",
-                label: "Supervisory Level",
-                placeholder: "All Levels",
-                searchable: true,
-              },
-            ]}
-            rightContent={
-              <button
-                type="button"
-                onClick={handleResetFilters}
-                disabled={!hasActiveFilters}
-                className="inline-flex h-8.5 2xl:h-10 w-full items-center justify-center gap-1.5 rounded-lg border border-sibs-border bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-muted transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-sibs-border disabled:hover:bg-white disabled:hover:text-sibs-muted xl:w-auto"
-              >
-                <RotateCcw size={14} />
-                Clear
-              </button>
-            }
-          />
+          <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+            <div className="flex flex-1 flex-col gap-2.5 sm:flex-row sm:items-center">
+              <div className="flex-1 min-w-[200px]">
+                <SearchInput
+                  value={searchTerm}
+                  onChange={(val) =>
+                    updateFilter(
+                      setSearchTerm,
+                      typeof val === "string" ? val : val?.target?.value || "",
+                    )
+                  }
+                  placeholder="Search role title, document, department, account, or hiring need..."
+                  ariaLabel="Search job descriptions"
+                  disabled={loading}
+                  className="w-full"
+                />
+              </div>
+
+              <div className="w-full sm:w-44 xl:w-[170px] 2xl:w-[200px] xl:flex-none">
+                <SelectDropdown
+                  label="Department"
+                  value={departmentFilter}
+                  onChange={(val) =>
+                    updateFilter(setDepartmentFilter, val || "All Departments")
+                  }
+                  options={departmentDropdownOptions}
+                  placeholder="All Departments"
+                  searchable
+                  searchPlaceholder="Search departments..."
+                  clearable={false}
+                  disabled={loading}
+                />
+              </div>
+
+              <div className="w-full sm:w-44 xl:w-[170px] 2xl:w-[200px] xl:flex-none">
+                <SelectDropdown
+                  label="Account"
+                  value={accountFilter}
+                  onChange={(val) =>
+                    updateFilter(setAccountFilter, val || "All Accounts")
+                  }
+                  options={accountDropdownOptions}
+                  placeholder="All Accounts"
+                  searchable
+                  searchPlaceholder="Search accounts..."
+                  clearable={false}
+                  disabled={loading}
+                />
+              </div>
+
+              <div className="w-full sm:w-40 xl:w-[150px] 2xl:w-[170px] xl:flex-none">
+                <SelectDropdown
+                  label="Supervisory Level"
+                  value={supervisoryFilter}
+                  onChange={(val) =>
+                    updateFilter(setSupervisoryFilter, val || "All Levels")
+                  }
+                  options={supervisoryDropdownOptions}
+                  placeholder="All Levels"
+                  clearable={false}
+                  disabled={loading}
+                />
+              </div>
+
+              {hasActiveFilters && (
+                <div className="shrink-0">
+                  <button
+                    type="button"
+                    onClick={handleResetFilters}
+                    disabled={loading}
+                    className="inline-flex h-8.5 2xl:h-10 w-full xl:w-auto items-center justify-center gap-1.5 rounded-lg border border-sibs-border bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-muted transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <RotateCcw size={14} />
+                    Clear
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -860,7 +900,7 @@ export default function JobDescriptionTable({
                       <button
                         type="button"
                         onClick={handleResetFilters}
-                        className="rounded-lg bg-sibs-navy px-4 py-2 text-xs font-extrabold text-white transition hover:bg-sibs-navy/90"
+                        className="sibs-btn-primary !h-8.5 text-xs font-extrabold"
                       >
                         Reset Search & Filters
                       </button>
@@ -996,28 +1036,14 @@ export default function JobDescriptionTable({
                         );
                       })
                     ) : (
-                      <tr>
-                        <td colSpan={5} className="px-5 py-14 text-center">
-                          <FileText className="mx-auto h-9 w-9 text-slate-300" />
-
-                          <p className="mt-3 text-sm font-extrabold text-sibs-navy">
-                            No Job Descriptions Found
-                          </p>
-
-                          <p className="mt-1 text-xs font-semibold text-sibs-muted">
-                            No records matched the active search, filters, and
-                            status tab.
-                          </p>
-
-                          <button
-                            type="button"
-                            onClick={handleResetFilters}
-                            className="mt-4 rounded-lg bg-sibs-navy px-4 py-2 text-xs font-extrabold text-white transition hover:bg-sibs-navy/90"
-                          >
-                            Reset Search & Filters
-                          </button>
-                        </td>
-                      </tr>
+                      <TableEmptyRow
+                        colSpan={5}
+                        icon={FileText}
+                        title="No Job Descriptions Found"
+                        description="No records matched the active search, filters, and status tab."
+                        actionLabel="Reset Search & Filters"
+                        onAction={handleResetFilters}
+                      />
                     )}
                   </tbody>
                 </table>

@@ -32,55 +32,55 @@ export default function TalentPoolDetailRow({ candidate }) {
   );
 
   return (
-    <tr className="transition hover:bg-[#FAFBFC]">
-      <td className="border-b border-[#E6ECF2] px-4 py-3.5 align-middle">
+    <tr className="transition hover:bg-sibs-surface">
+      <td className="border-b border-sibs-border px-4 py-3.5 align-middle">
         <div className="min-w-0">
           <p
             title={candidate.name}
-            className="truncate text-[13px] font-extrabold text-[#042C51]"
+            className="truncate text-[13px] font-extrabold text-sibs-navy"
           >
             {candidate.name || "—"}
           </p>
           <p
             title={candidate.candidateId}
-            className="mt-0.5 truncate text-[11px] font-semibold text-[#667085]"
+            className="mt-0.5 truncate text-[11px] font-semibold text-sibs-muted"
           >
             {candidate.candidateId || "—"}
           </p>
         </div>
       </td>
 
-      <td className="border-b border-[#E6ECF2] px-4 py-3.5 align-middle">
-        <p title={appliedPosition} className="truncate text-[13px] font-bold text-[#344054]">
+      <td className="border-b border-sibs-border px-4 py-3.5 align-middle">
+        <p title={appliedPosition} className="truncate text-[13px] font-bold text-sibs-navy">
           {appliedPosition}
         </p>
-        <p title={candidate.skillsLanguage} className="mt-0.5 truncate text-[11px] font-semibold text-[#667085]">
+        <p title={candidate.skillsLanguage} className="mt-0.5 truncate text-[11px] font-semibold text-sibs-muted">
           Skills: {candidate.skillsLanguage || "—"}
         </p>
       </td>
 
-      <td className="border-b border-[#E6ECF2] px-4 py-3.5 align-middle">
-        <p title={applicationSource} className="truncate text-[13px] font-semibold text-[#344054]">
+      <td className="border-b border-sibs-border px-4 py-3.5 align-middle">
+        <p title={applicationSource} className="truncate text-[13px] font-semibold text-sibs-navy">
           {applicationSource}
         </p>
-        <p title={referrer} className="mt-0.5 truncate text-[11px] font-semibold text-[#667085]">
+        <p title={referrer} className="mt-0.5 truncate text-[11px] font-semibold text-sibs-muted">
           Ref: {referrer}
         </p>
       </td>
 
-      <td className="border-b border-[#E6ECF2] px-4 py-3.5 align-middle">
-        <p title={preferredLocation} className="truncate text-[13px] font-semibold text-[#344054]">
+      <td className="border-b border-sibs-border px-4 py-3.5 align-middle">
+        <p title={preferredLocation} className="truncate text-[13px] font-semibold text-sibs-navy">
           {preferredLocation}
         </p>
-        <p title={finalAccount} className="mt-0.5 truncate text-[11px] font-semibold text-[#667085]">
+        <p title={finalAccount} className="mt-0.5 truncate text-[11px] font-semibold text-sibs-muted">
           Final Account: {finalAccount}
         </p>
       </td>
 
-      <td className="border-b border-[#E6ECF2] px-4 py-3.5 text-center align-middle">
+      <td className="border-b border-sibs-border px-4 py-3.5 text-center align-middle">
         <span
           title={displayStatus}
-          className={`mx-auto inline-flex max-w-full items-center justify-center truncate rounded-lg border px-2.5 py-1 text-[10px] font-extrabold ${getStatusClass(
+          className={`mx-auto inline-flex max-w-full items-center justify-center truncate rounded-[10px] border px-2.5 py-1 text-[10px] font-extrabold ${getStatusClass(
             displayStatus,
           )}`}
         >
@@ -88,17 +88,17 @@ export default function TalentPoolDetailRow({ candidate }) {
         </span>
       </td>
 
-      <td className="border-b border-[#E6ECF2] px-4 py-3.5 align-middle">
-        <p title={lastActivity} className="truncate text-[13px] font-semibold text-[#344054]">
+      <td className="border-b border-sibs-border px-4 py-3.5 align-middle">
+        <p title={lastActivity} className="truncate text-[13px] font-semibold text-sibs-navy">
           {lastActivity}
         </p>
       </td>
 
-      <td className="border-b border-[#E6ECF2] px-4 py-3.5 text-right align-middle">
+      <td className="border-b border-sibs-border px-4 py-3.5 text-right align-middle">
         <button
           type="button"
           onClick={() => setSelectedCandidate(candidate)}
-          className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-[#D6DEE8] bg-white px-3 text-xs font-extrabold text-[#042C51] outline-none transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28] focus-visible:ring-2 focus-visible:ring-[#FF5C28]/25 active:scale-[0.98]"
+          className="inline-flex h-9 items-center justify-center gap-1.5 rounded-[10px] border border-sibs-border bg-white px-3 text-xs font-extrabold text-sibs-navy outline-none transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light/60 hover:text-sibs-orange focus-visible:ring-2 focus-visible:ring-sibs-orange/25 active:scale-[0.98]"
         >
           <Eye size={14} />
           View
