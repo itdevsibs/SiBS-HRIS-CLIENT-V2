@@ -1,5 +1,7 @@
 import React from "react";
 import { Search } from "lucide-react";
+
+import { SelectDropdown } from "@/components/ui";
 import { usePagination } from "@/services/context/PaginationContext";
 
 const TableHeader = ({ tableEntity }) => {
@@ -33,7 +35,7 @@ const TableHeader = ({ tableEntity }) => {
           )}
         </div>
 
-        <div className="flex w-full flex-col gap-3 sm:flex-row lg:w-auto lg:items-center">
+        <div className="flex w-full flex-col gap-3 sm:flex-row lg:w-auto lg:items-end">
           <div className="relative w-full sm:w-[320px] lg:w-[360px]">
             <button
               type="button"
@@ -46,29 +48,32 @@ const TableHeader = ({ tableEntity }) => {
             <input
               type="text"
               value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
+              onChange={(event) => setSearchInput(event.target.value)}
               onKeyDown={handleSearchKeyDown}
               placeholder={searchPlaceholder}
-              className="h-12 w-full rounded-xl border border-[#DDE6F0] bg-white pl-10 pr-4 text-sm font-medium text-sibs-primary-1 outline-none transition placeholder:text-[#8C98AA] focus:border-sibs-primary-1"
+              className="h-12 w-full rounded-xl border border-[#DDE6F0] bg-white pl-10 pr-4 text-sm font-medium text-sibs-primary-1 outline-none transition placeholder:text-[#8C98AA] focus:border-sibs-orange focus:ring-4 focus:ring-sibs-orange/10"
             />
           </div>
 
           {filters.map((filter) => (
-            <select
+            <div
               key={filter.key}
-              value={filterValues?.[filter.key] ?? filter.defaultValue ?? ""}
-              onChange={(e) => setFilter(filter.key, e.target.value)}
-              className={
-                filter.className ||
-                "h-12 w-full rounded-xl border border-[#DDE6F0] bg-white px-4 text-sm font-semibold text-sibs-primary-1 outline-none transition focus:border-sibs-primary-1 sm:w-[220px]"
-              }
+              className={filter.wrapperClassName || "w-full sm:w-[220px]"}
             >
-              {(filter.options || []).map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
+              <SelectDropdown
+                label={filter.label}
+                hideLabel={!filter.label}
+                value={filterValues?.[filter.key] ?? filter.defaultValue ?? ""}
+                onChange={(selectedValue) => setFilter(filter.key, selectedValue)}
+                options={filter.options || []}
+                placeholder={filter.placeholder || "Choose option"}
+                searchable={Boolean(filter.searchable)}
+                searchPlaceholder={filter.searchPlaceholder || "Search..."}
+                clearable={filter.clearable ?? false}
+                disabled={Boolean(filter.disabled)}
+                buttonClassName={filter.className || "!h-12"}
+              />
+            </div>
           ))}
         </div>
       </div>
