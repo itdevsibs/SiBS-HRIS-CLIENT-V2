@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { BriefcaseBusiness, Building2, Loader2 } from "lucide-react";
+import { useState } from "react";
+import { Building2, Loader2 } from "lucide-react";
 
 import { ModalShell } from "@/components/ui";
 
@@ -10,42 +10,30 @@ export default function AddDepartmentModal({
   submitting = false,
 }) {
   const [departmentName, setDepartmentName] = useState("");
-  const [lineOfBusiness, setLineOfBusiness] = useState("");
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    if (!open) {
-      setDepartmentName("");
-      setLineOfBusiness("");
-      setError("");
-    }
-  }, [open]);
+  function handleClose() {
+    if (submitting) return;
+    setDepartmentName("");
+    setError("");
+    onClose?.();
+  }
 
   async function handleSubmit(event) {
     event.preventDefault();
 
     const cleanDepartmentName = departmentName.trim().replace(/\s+/g, " ");
-    const cleanLineOfBusiness = lineOfBusiness.trim().replace(/\s+/g, " ");
 
     if (!cleanDepartmentName) {
       setError("Department name is required.");
       return;
     }
 
-    if (!cleanLineOfBusiness) {
-      setError("Line of Business (LOB) is required.");
-      return;
-    }
-
     setError("");
 
     try {
-      await onSubmit?.({
-        departmentName: cleanDepartmentName,
-        lineOfBusiness: cleanLineOfBusiness,
-      });
+      await onSubmit?.({ departmentName: cleanDepartmentName });
       setDepartmentName("");
-      setLineOfBusiness("");
     } catch (submitError) {
       setError(submitError?.message || "Failed to submit department request.");
     }
@@ -54,9 +42,9 @@ export default function AddDepartmentModal({
   return (
     <ModalShell
       open={open}
-      onClose={submitting ? undefined : onClose}
+      onClose={submitting ? undefined : handleClose}
       title="Add Department"
-      subtitle="Create a department request with its Line of Business. The department becomes available in SiBS HRIS only after approval."
+      subtitle="Create a department request. Lines of Business are managed separately under each Account after the department is approved."
       icon={Building2}
       maxWidth="max-w-xl"
       closeOnBackdrop={!submitting}
@@ -66,7 +54,7 @@ export default function AddDepartmentModal({
           <button
             type="button"
             className="sibs-btn-secondary"
-            onClick={onClose}
+            onClick={handleClose}
             disabled={submitting}
           >
             Cancel
@@ -100,7 +88,7 @@ export default function AddDepartmentModal({
                 Department Information
               </p>
               <p className="mt-0.5 text-[11px] font-semibold leading-relaxed text-sibs-muted">
-                Enter the official department name and the Line of Business it belongs to.
+                Enter the official department name. Account-specific Lines of Business are added manually from the Account details.
               </p>
             </div>
           </div>
@@ -130,34 +118,6 @@ export default function AddDepartmentModal({
               className="h-11 w-full rounded-xl border border-sibs-border bg-white pl-10 pr-3.5 text-sm font-semibold text-sibs-navy outline-none transition placeholder:text-sibs-faint focus:border-sibs-orange focus:ring-2 focus:ring-sibs-orange/10"
             />
           </div>
-        </div>
-
-        <div>
-          <label
-            htmlFor="department-lob"
-            className="mb-1.5 block text-xs font-extrabold text-sibs-navy"
-          >
-            Line of Business (LOB) <span className="text-rose-500">*</span>
-          </label>
-          <div className="relative">
-            <BriefcaseBusiness className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-sibs-faint" />
-            <input
-              id="department-lob"
-              type="text"
-              value={lineOfBusiness}
-              onChange={(event) => {
-                setLineOfBusiness(event.target.value);
-                if (error) setError("");
-              }}
-              placeholder="Enter line of business"
-              maxLength={150}
-              disabled={submitting}
-              className="h-11 w-full rounded-xl border border-sibs-border bg-white pl-10 pr-3.5 text-sm font-semibold text-sibs-navy outline-none transition placeholder:text-sibs-faint focus:border-sibs-orange focus:ring-2 focus:ring-sibs-orange/10"
-            />
-          </div>
-          <p className="mt-1.5 text-[10px] font-semibold text-sibs-muted">
-            LOB is stored with the department and included in the approval request.
-          </p>
         </div>
 
         {error ? (

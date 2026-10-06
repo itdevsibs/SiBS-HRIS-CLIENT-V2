@@ -1,5 +1,4 @@
 import {
-  BriefcaseBusiness,
   CheckCircle2,
   Clock3,
   Loader2,
@@ -41,8 +40,7 @@ export default function DepartmentApprovalRequests({
         <div>
           <h2 className="sibs-card-title">Pending Department Approvals</h2>
           <p className="sibs-card-subtitle">
-            New departments and their Line of Business remain unavailable across
-            HRIS until they are approved.
+            New departments remain unavailable across HRIS until they are approved. Lines of Business are managed separately per Account.
           </p>
         </div>
         <span className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-[10px] font-extrabold text-amber-700">
@@ -58,8 +56,6 @@ export default function DepartmentApprovalRequests({
         <div className="divide-y divide-sibs-border">
           {requests.map((request) => {
             const busy = String(processingId) === String(request.id);
-            const lineOfBusiness =
-              request.lineOfBusiness || request.line_of_business || "-";
 
             return (
               <div
@@ -74,11 +70,6 @@ export default function DepartmentApprovalRequests({
                     <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[9px] font-extrabold uppercase text-amber-700">
                       <Clock3 className="h-3 w-3" /> Pending
                     </span>
-                  </div>
-
-                  <div className="mt-1.5 inline-flex max-w-full items-center gap-1.5 rounded-lg border border-sibs-border bg-sibs-surface px-2.5 py-1 text-[10px] font-bold text-sibs-secondary">
-                    <BriefcaseBusiness className="h-3.5 w-3.5 shrink-0 text-sibs-orange" />
-                    <span className="truncate">LOB: {lineOfBusiness}</span>
                   </div>
 
                   <p className="mt-1.5 text-xs font-semibold text-sibs-muted">
