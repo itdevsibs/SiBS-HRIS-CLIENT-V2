@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  getWorkforceHiringPlanAccountOptions,
   getWorkforceHiringPlanAccounts,
   getWorkforceHiringPlanAccountTrends,
   getWorkforceHiringPlanSixWeekTable,
   getWorkforceHiringPlanForecast,
+  getWorkforceHiringPlanFilterOptions,
   getWorkforceHiringPlanWeeks,
   lockWorkforceHiringPlanSnapshot,
   openWorkforceHiringPlanFile,
@@ -99,7 +101,11 @@ function normalizeWorkforceFilterRequestValue(values, fallback = "All") {
   return fallback;
 }
 
-export default function useWorkforceHiringPage() {
+export default function useWorkforceHiringPage({
+  requireFilterSelection = false,
+  fastOverviewMode = false,
+  forecastPlanMode = false,
+} = {}) {
   const { user } = useUser();
 
   const canManageHiringPlanPercent = canManageHiringPlanByRole(user);
@@ -140,6 +146,8 @@ export default function useWorkforceHiringPage() {
   const [weeklyVersions, setWeeklyVersions] = useState([]);
   const [activeWeekId, setActiveWeekId] = useState("");
   const [weeksLoading, setWeeksLoading] = useState(false);
+  const [clusterOptions, setClusterOptions] = useState([]);
+  const [filtersLoading, setFiltersLoading] = useState(false);
   const [, setLockingWeeklyPlan] = useState(false);
   const [databaseLockedWeekKeys, setDatabaseLockedWeekKeys] = useState(
     new Set(),
@@ -149,21 +157,32 @@ export default function useWorkforceHiringPage() {
   const [weekSearch, setWeekSearch] = useState("");
   const [showWeekDropdown, setShowWeekDropdown] = useState(false);
 
-  const [selectedClusters, setSelectedClusters] = useState(["All"]);
+  const [selectedClusters, setSelectedClusters] = useState(() =>
+    requireFilterSelection ? [] : ["All"],
+  );
   const [showClusterDropdown, setShowClusterDropdown] = useState(false);
 
-  const [selectedAccounts, setSelectedAccounts] = useState(["All"]);
+  const [selectedAccounts, setSelectedAccounts] = useState(() =>
+    requireFilterSelection ? [] : ["All"],
+  );
   const [showAccountDropdown, setShowAccountDropdown] = useState(false);
   const [accountSearch, setAccountSearch] = useState("");
 
   const [selectedHiringPlanPercent, setSelectedHiringPlanPercent] = useState(5);
 
-  const [accountOptions, setAccountOptions] = useState([
-    allWeeklyAccountOption,
-  ]);
+  const [accountOptions, setAccountOptions] = useState(() =>
+    requireFilterSelection ? [] : [allWeeklyAccountOption],
+  );
 
   const [remoteAccounts, setRemoteAccounts] = useState([]);
-  const [accountsLoading, setAccountsLoading] = useState(false);
+  const [accountOptionsLoading, setAccountOptionsLoading] = useState(false);
+  const [accountDataLoading, setAccountDataLoading] = useState(false);
+  const [accountDataReady, setAccountDataReady] = useState(false);
+  const [accountSelectionPending, setAccountSelectionPending] = useState(
+    requireFilterSelection,
+  );
+
+  const accountsLoading = accountOptionsLoading || accountDataLoading;
 
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [actionItemTarget, setActionItemTarget] = useState(null);
@@ -264,7 +283,29 @@ export default function useWorkforceHiringPage() {
     [selectedAccounts],
   );
 
+  const hasClusterSelection = selectedClusters.length > 0;
+  const hasAccountSelection = selectedAccounts.length > 0;
+  const canLoadWorkforceData =
+    hasClusterSelection && hasAccountSelection && !accountSelectionPending;
+
+  /*
+    On the overview page, prioritize the selected account's KPI response first.
+    Historical trends/table work starts only after the base account request has
+    completed, so it cannot compete with the first paint query.
+  */
+  const canLoadSecondaryData =
+    canLoadWorkforceData &&
+    !forecastPlanMode &&
+    (!fastOverviewMode || accountDataReady);
+
   const fetchSixWeekTrends = useCallback(async () => {
+    if (!canLoadSecondaryData) {
+      setTrendData(null);
+      setTrendsError("");
+      setTrendsLoading(false);
+      return;
+    }
+
     const weekStart = getSelectedWeekStart(activeWeek);
     const weekEnd = getSelectedWeekEnd(activeWeek);
 
@@ -277,6 +318,11 @@ export default function useWorkforceHiringPage() {
       setTrendsLoading(true);
       setTrendsError("");
 
+      if (fastOverviewMode) {
+        setSixWeekTableLoading(true);
+        setSixWeekTableError("");
+      }
+
       const result = await getWorkforceHiringPlanAccountTrends({
         cluster: selectedClusterRequestValue,
         account: selectedAccountRequestValue,
@@ -287,14 +333,49 @@ export default function useWorkforceHiringPage() {
       });
 
       setTrendData(result);
+
+      if (fastOverviewMode) {
+        setSixWeekTableRows(
+          Array.isArray(result?.sixWeekTableRows)
+            ? result.sixWeekTableRows
+            : Array.isArray(result?.six_week_table_rows)
+              ? result.six_week_table_rows
+              : [],
+        );
+        setSixWeekTableWeeks(
+          Array.isArray(result?.sixWeekTableWeeks)
+            ? result.sixWeekTableWeeks
+            : [],
+        );
+        setSixWeekTableError("");
+      }
     } catch (error) {
       console.error("FETCH 6-WEEK TRENDS ERROR:", error);
       setTrendData(null);
       setTrendsError(error?.message || "Failed to fetch 6-week trends.");
+
+      if (fastOverviewMode) {
+        setSixWeekTableRows([]);
+        setSixWeekTableWeeks([]);
+        setSixWeekTableError(
+          error?.message || "Failed to fetch six-week details.",
+        );
+      }
     } finally {
       setTrendsLoading(false);
+
+      if (fastOverviewMode) {
+        setSixWeekTableLoading(false);
+      }
     }
-  }, [activeWeek, selectedAccountRequestValue, selectedClusterRequestValue]);
+  }, [
+    canLoadSecondaryData,
+    activeWeek,
+    fastOverviewMode,
+    forecastPlanMode,
+    selectedAccountRequestValue,
+    selectedClusterRequestValue,
+  ]);
 
   useEffect(() => {
     fetchSixWeekTrends();
@@ -304,6 +385,18 @@ export default function useWorkforceHiringPage() {
     let cancelled = false;
 
     async function fetchSixWeekTable() {
+      if (fastOverviewMode) {
+        return;
+      }
+
+      if (!canLoadSecondaryData) {
+        setSixWeekTableRows([]);
+        setSixWeekTableWeeks([]);
+        setSixWeekTableError("");
+        setSixWeekTableLoading(false);
+        return;
+      }
+
       const selectedWeek = activeWeek;
 
       if (!selectedWeek?.weekStart && !selectedWeek?.startDate) {
@@ -368,12 +461,37 @@ export default function useWorkforceHiringPage() {
     return () => {
       cancelled = true;
     };
-  }, [activeWeek, selectedAccountRequestValue, selectedClusterRequestValue]);
+  }, [
+    canLoadSecondaryData,
+    activeWeek,
+    fastOverviewMode,
+    forecastPlanMode,
+    selectedAccountRequestValue,
+    selectedClusterRequestValue,
+  ]);
 
   useEffect(() => {
     let cancelled = false;
 
     async function fetchForecastData() {
+      if (fastOverviewMode || forecastPlanMode) {
+        setForecastRows([]);
+        setForecastWeeks([]);
+        setForecastError("");
+        setSelectedForecastWeekId("");
+        setForecastLoading(false);
+        return;
+      }
+
+      if (!canLoadSecondaryData) {
+        setForecastRows([]);
+        setForecastWeeks([]);
+        setForecastError("");
+        setSelectedForecastWeekId("");
+        setForecastLoading(false);
+        return;
+      }
+
       const selectedWeek = activeWeek;
 
       if (!selectedWeek?.weekStart && !selectedWeek?.startDate) {
@@ -502,7 +620,14 @@ export default function useWorkforceHiringPage() {
     return () => {
       cancelled = true;
     };
-  }, [activeWeek, selectedAccountRequestValue, selectedClusterRequestValue]);
+  }, [
+    canLoadSecondaryData,
+    activeWeek,
+    fastOverviewMode,
+    forecastPlanMode,
+    selectedAccountRequestValue,
+    selectedClusterRequestValue,
+  ]);
 
   useEffect(() => {
     function handleClickOutside(e) {
@@ -532,6 +657,59 @@ export default function useWorkforceHiringPage() {
 
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  useEffect(() => {
+    let ignore = false;
+
+    async function fetchFilterOptions() {
+      try {
+        setFiltersLoading(true);
+
+        const result = await getWorkforceHiringPlanFilterOptions();
+
+        const normalizedClusters = Array.from(
+          new Set(
+            (result?.clusters || [])
+              .map((cluster) => {
+                if (typeof cluster === "string" || typeof cluster === "number") {
+                  return String(cluster).trim();
+                }
+
+                return String(
+                  cluster?.cluster_name ||
+                    cluster?.clusterName ||
+                    cluster?.name ||
+                    cluster?.label ||
+                    cluster?.value ||
+                    "",
+                ).trim();
+              })
+              .filter(Boolean),
+          ),
+        );
+
+        if (!ignore) {
+          setClusterOptions(normalizedClusters);
+        }
+      } catch (error) {
+        console.error("FETCH WORKFORCE FILTER OPTIONS ERROR:", error);
+
+        if (!ignore) {
+          setClusterOptions([]);
+        }
+      } finally {
+        if (!ignore) {
+          setFiltersLoading(false);
+        }
+      }
+    }
+
+    fetchFilterOptions();
+
+    return () => {
+      ignore = true;
     };
   }, []);
 
@@ -678,15 +856,71 @@ export default function useWorkforceHiringPage() {
   ]);
 
   function isAllClustersSelected() {
-    return selectedClusters.includes("All") || selectedClusters.length === 0;
+    return selectedClusters.includes("All");
   }
 
   function isAllAccountsSelected() {
-    return selectedAccounts.includes("All") || selectedAccounts.length === 0;
+    return selectedAccounts.includes("All");
+  }
+
+  function clearLoadedAccountData() {
+    setRemoteAccounts([]);
+    setAccountDataReady(false);
+    setTrendData(null);
+    setTrendsError("");
+    setSixWeekTableRows([]);
+    setSixWeekTableWeeks([]);
+    setSixWeekTableError("");
+    setForecastRows([]);
+    setForecastWeeks([]);
+    setForecastError("");
+    setSelectedForecastWeekId("");
+  }
+
+  function resolveSelectionUpdate(currentValue, nextValueOrUpdater) {
+    const rawNext =
+      typeof nextValueOrUpdater === "function"
+        ? nextValueOrUpdater(currentValue)
+        : nextValueOrUpdater;
+
+    return (Array.isArray(rawNext) ? rawNext : [rawNext])
+      .map((value) => String(value || "").trim())
+      .filter(Boolean);
+  }
+
+  function updateSelectedClusters(nextValueOrUpdater) {
+    const nextClusters = resolveSelectionUpdate(
+      selectedClusters,
+      nextValueOrUpdater,
+    );
+
+    setSelectedClusters(nextClusters);
+
+    // A cluster must be chosen first. Changing it resets the account
+    // selection and clears all previously loaded workforce calculations.
+    setSelectedAccounts([]);
+    setAccountOptions([]);
+    setAccountSearch("");
+    setAccountSelectionPending(true);
+    clearLoadedAccountData();
+  }
+
+  function updateSelectedAccounts(nextValueOrUpdater) {
+    const nextAccounts = resolveSelectionUpdate(
+      selectedAccounts,
+      nextValueOrUpdater,
+    );
+
+    setSelectedAccounts(nextAccounts);
+    setAccountSelectionPending(nextAccounts.length === 0);
+
+    if (nextAccounts.length === 0) {
+      clearLoadedAccountData();
+    }
   }
 
   function handleToggleCluster(cluster) {
-    setSelectedClusters((prev) => {
+    updateSelectedClusters((prev) => {
       if (cluster === "All") {
         return ["All"];
       }
@@ -698,15 +932,12 @@ export default function useWorkforceHiringPage() {
         ? current.filter((item) => item !== cluster)
         : [...current, cluster];
 
-      return next.length > 0 ? next : ["All"];
+      return next;
     });
-
-    setSelectedAccounts(["All"]);
-    setAccountSearch("");
   }
 
   function handleToggleAccount(accountName) {
-    setSelectedAccounts((prev) => {
+    updateSelectedAccounts((prev) => {
       if (accountName === "All") {
         return ["All"];
       }
@@ -718,7 +949,7 @@ export default function useWorkforceHiringPage() {
         ? current.filter((item) => item !== accountName)
         : [...current, accountName];
 
-      return next.length > 0 ? next : ["All"];
+      return next;
     });
   }
 
@@ -762,7 +993,90 @@ export default function useWorkforceHiringPage() {
     setSelectedHiringPlanPercent(cleanHiringPlanPercent);
   }
 
-  async function fetchAccountsByCluster({ resetAccountFilter = true } = {}) {
+  async function fetchAccountOptionsByCluster() {
+    if (!userAccessReady || !hasClusterSelection) {
+      setAccountOptions([]);
+      return [];
+    }
+
+    try {
+      setAccountOptionsLoading(true);
+
+      let accounts = await getWorkforceHiringPlanAccountOptions(
+        selectedClusterRequestValue,
+      );
+
+      if (!weeklyAccess.hasFullAccess) {
+        const assignedAccountIds = weeklyAccess.assignedAccountIds;
+        const assignedAccountNames = weeklyAccess.assignedAccountNames;
+
+        accounts = (accounts || []).filter((account) => {
+          const accountId = getAccountIdFromAny(account);
+          const accountName = getAccountNameFromAny(account);
+
+          return (
+            assignedAccountIds.has(accountId) ||
+            assignedAccountNames.has(accountName)
+          );
+        });
+      }
+
+      const uniqueAccountOptionsMap = new Map();
+
+      (accounts || []).forEach((account, index) => {
+        const rawAccountId = String(
+          account?.id ||
+            account?.accountId ||
+            account?.account_id ||
+            account?.backendAccountId ||
+            account?.gy_acc_id ||
+            "",
+        ).trim();
+
+        const accountName = String(
+          account?.accountName ||
+            account?.account ||
+            account?.account_name ||
+            account?.gy_acc_name ||
+            "",
+        ).trim();
+
+        if (!accountName) return;
+
+        const key = accountName.toLowerCase();
+
+        if (!uniqueAccountOptionsMap.has(key)) {
+          uniqueAccountOptionsMap.set(key, {
+            ...account,
+            id: rawAccountId || `account-option-${index}`,
+            accountId: rawAccountId || account?.accountId || "",
+            accountName,
+            account: accountName,
+            clusterName: getClusterFromAny(account),
+          });
+        }
+      });
+
+      setAccountOptions([
+        allWeeklyAccountOption,
+        ...Array.from(uniqueAccountOptionsMap.values()),
+      ]);
+
+      return accounts || [];
+    } catch (error) {
+      console.error("FETCH ACCOUNT OPTIONS BY CLUSTER ERROR:", error);
+      setAccountOptions([]);
+      return [];
+    } finally {
+      setAccountOptionsLoading(false);
+    }
+  }
+
+  async function fetchAccountsByCluster() {
+    if (!canLoadWorkforceData) {
+      return [];
+    }
+
     if (!activeWeekStartDate || !activeWeekEndDate) {
       return [];
     }
@@ -772,29 +1086,16 @@ export default function useWorkforceHiringPage() {
     }
 
     try {
-      setAccountsLoading(true);
+      setAccountDataReady(false);
+      setAccountDataLoading(true);
 
-      let accounts = [];
-
-      if (isAllClustersSelected()) {
-        accounts = await getWorkforceHiringPlanAccounts(
-          "All",
-          activeWeekStartDate,
-          activeWeekEndDate,
-        );
-      } else {
-        const results = await Promise.all(
-          selectedClusters.map((cluster) =>
-            getWorkforceHiringPlanAccounts(
-              cluster,
-              activeWeekStartDate,
-              activeWeekEndDate,
-            ),
-          ),
-        );
-
-        accounts = results.flat();
-      }
+      let accounts = await getWorkforceHiringPlanAccounts(
+        selectedClusterRequestValue,
+        activeWeekStartDate,
+        activeWeekEndDate,
+        selectedAccountRequestValue,
+        !fastOverviewMode,
+      );
 
       if (!weeklyAccess.hasFullAccess) {
         const assignedAccountIds = weeklyAccess.assignedAccountIds;
@@ -914,84 +1215,85 @@ export default function useWorkforceHiringPage() {
         }
       });
 
-      accounts = Array.from(uniqueAccountsMap.values());
-
-      const uniqueAccountOptionsMap = new Map();
-
-      accounts.forEach((account, index) => {
-        const rawAccountId = String(
-          account?.id ||
-            account?.accountId ||
-            account?.account_id ||
-            account?.backendAccountId ||
-            account?.gy_acc_id ||
-            "",
-        ).trim();
-
-        const accountName = String(
-          account?.accountName ||
-            account?.account ||
-            account?.account_name ||
-            account?.gy_acc_name ||
-            "",
-        ).trim();
-
-        if (!accountName) return;
-
-        const key = accountName.toLowerCase();
-
-        if (!uniqueAccountOptionsMap.has(key)) {
-          uniqueAccountOptionsMap.set(key, {
-            ...account,
-            id: rawAccountId || `manual-option-${index}`,
-            accountName,
-            account: accountName,
-            clusterName: getClusterFromAny(account),
-          });
-        }
-      });
-
-      setRemoteAccounts(accounts || []);
-
-      setAccountOptions([
-        allWeeklyAccountOption,
-        ...Array.from(uniqueAccountOptionsMap.values()),
-      ]);
-
-      if (resetAccountFilter) {
-        setSelectedAccounts(["All"]);
-      }
-
-      return accounts || [];
+      const normalizedAccounts = Array.from(uniqueAccountsMap.values());
+      setRemoteAccounts(normalizedAccounts);
+      setAccountDataReady(true);
+      return normalizedAccounts;
     } catch (error) {
       console.error("FETCH ACCOUNTS BY CLUSTER ERROR:", error);
-
       setRemoteAccounts([]);
-      setAccountOptions([allWeeklyAccountOption]);
-
-      if (resetAccountFilter) {
-        setSelectedAccounts(["All"]);
-      }
-
+      setAccountDataReady(false);
       return [];
     } finally {
-      setAccountsLoading(false);
+      setAccountDataLoading(false);
     }
   }
 
   useEffect(() => {
-    if (activeWeekStartDate && activeWeekEndDate && userAccessReady) {
-      fetchAccountsByCluster();
+    if (userAccessReady && hasClusterSelection) {
+      fetchAccountOptionsByCluster();
+    } else {
+      setAccountOptions([]);
+      setAccountOptionsLoading(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     selectedClusters,
+    hasClusterSelection,
+    userAccessReady,
+    user?.role,
+    user?.adminAccess,
+    user?.assignedAccounts,
+  ]);
+
+  useEffect(() => {
+    let deferredTimer = null;
+
+    if (
+      canLoadWorkforceData &&
+      activeWeekStartDate &&
+      activeWeekEndDate &&
+      userAccessReady
+    ) {
+      if (forecastPlanMode) {
+        /*
+          Workforce Hiring Plan renders from /accounts/forecast. Do not start the
+          separate current-account query at the same time because both queries
+          scan the same Kronos attendance / tracker data. Give the forecast the
+          first connection/window, then hydrate legacy plan/AI data afterward.
+        */
+        setAccountDataReady(false);
+        setAccountDataLoading(true);
+
+        deferredTimer = window.setTimeout(() => {
+          fetchAccountsByCluster();
+        }, 2500);
+      } else {
+        fetchAccountsByCluster();
+      }
+    } else if (!canLoadWorkforceData) {
+      setRemoteAccounts([]);
+      setAccountDataReady(false);
+      setAccountDataLoading(false);
+    }
+
+    return () => {
+      if (deferredTimer) {
+        window.clearTimeout(deferredTimer);
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    canLoadWorkforceData,
+    selectedClusters,
+    selectedAccounts,
     activeWeekStartDate,
     activeWeekEndDate,
     userAccessReady,
     user?.role,
     user?.adminAccess,
     user?.assignedAccounts,
+    forecastPlanMode,
   ]);
 
   const displayData = useMemo(() => {
@@ -2703,22 +3005,27 @@ export default function useWorkforceHiringPage() {
       forecastError,
 
       weeksLoading,
+      filtersLoading,
+      clusterOptions,
       weekSearch,
       setWeekSearch,
       showWeekDropdown,
       setShowWeekDropdown,
       filteredWeeklyVersions,
       selectedClusters,
-      setSelectedClusters,
+      setSelectedClusters: updateSelectedClusters,
       showClusterDropdown,
       setShowClusterDropdown,
       selectedAccounts,
-      setSelectedAccounts,
+      setSelectedAccounts: updateSelectedAccounts,
       showAccountDropdown,
       setShowAccountDropdown,
       accountSearch,
       setAccountSearch,
       accountsLoading,
+      accountOptionsLoading,
+      accountDataLoading,
+      accountSelectionPending,
       filteredAccountOptions,
       isAllClustersSelected,
       isAllAccountsSelected,

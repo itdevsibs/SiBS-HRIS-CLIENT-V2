@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   BadgeCheck,
   BriefcaseBusiness,
+  Building2,
   CheckCircle2,
   ChevronDown,
   FileText,
@@ -46,6 +47,13 @@ import {
   searchAvailablePositionApprovalEmployees,
 } from "../../../lib/axios/getAvailablePositionApprovalSettings.js";
 
+import {
+  addDepartmentApprovalUser,
+  getDepartmentApprovalUsers,
+  removeDepartmentApprovalUser,
+  searchDepartmentApprovalEmployees,
+} from "../../../lib/axios/getDepartmentApprovalSettings.js";
+
 const APPROVAL_RULE_TABS = [
   {
     key: "jobDescription",
@@ -84,6 +92,19 @@ const APPROVAL_RULE_TABS = [
     emptyText: "No Available Position approval users added yet.",
     rowDescription:
       "Can approve or reject Available Position requests.",
+    isConnected: true,
+  },
+  {
+    key: "departments",
+    title: "Department Approval",
+    shortTitle: "Departments",
+    description:
+      "Add the users who can approve or reject newly created departments before they become available across SiBS HRIS.",
+    icon: Building2,
+    badgeText: "Department Rules",
+    emptyText: "No Department approval users added yet.",
+    rowDescription:
+      "Can approve or reject new Department requests from the Departments page.",
     isConnected: true,
   },
   {
@@ -347,6 +368,7 @@ function getRuleLabel(ruleKey) {
   if (ruleKey === "availablePositions") {
     return "Available Position Approval";
   }
+  if (ruleKey === "departments") return "Department Approval";
 
   return "Offer Approval";
 }
@@ -376,6 +398,15 @@ function getRuleApi(ruleKey) {
       addUser: addAvailablePositionApprovalUser,
       removeUser: removeAvailablePositionApprovalUser,
       searchEmployees: searchAvailablePositionApprovalEmployees,
+    };
+  }
+
+  if (ruleKey === "departments") {
+    return {
+      getUsers: getDepartmentApprovalUsers,
+      addUser: addDepartmentApprovalUser,
+      removeUser: removeDepartmentApprovalUser,
+      searchEmployees: searchDepartmentApprovalEmployees,
     };
   }
 
@@ -721,6 +752,7 @@ export default function ApprovalRulesSettings() {
     jobDescription: [],
     hiringNeeds: [],
     availablePositions: [],
+    departments: [],
   });
 
   const [loadingByRule, setLoadingByRule] = useState({
@@ -728,6 +760,7 @@ export default function ApprovalRulesSettings() {
     jobDescription: false,
     hiringNeeds: false,
     availablePositions: false,
+    departments: false,
   });
 
   const [searchByRule, setSearchByRule] = useState({
@@ -735,6 +768,7 @@ export default function ApprovalRulesSettings() {
     jobDescription: "",
     hiringNeeds: "",
     availablePositions: "",
+    departments: "",
   });
 
   const [candidatesByRule, setCandidatesByRule] = useState({
@@ -742,6 +776,7 @@ export default function ApprovalRulesSettings() {
     jobDescription: [],
     hiringNeeds: [],
     availablePositions: [],
+    departments: [],
   });
 
   const [selectedByRule, setSelectedByRule] = useState({
@@ -749,6 +784,7 @@ export default function ApprovalRulesSettings() {
     jobDescription: null,
     hiringNeeds: null,
     availablePositions: null,
+    departments: null,
   });
 
   const [searchingByRule, setSearchingByRule] = useState({
@@ -756,6 +792,7 @@ export default function ApprovalRulesSettings() {
     jobDescription: false,
     hiringNeeds: false,
     availablePositions: false,
+    departments: false,
   });
 
   const [addingByRule, setAddingByRule] = useState({
@@ -763,6 +800,7 @@ export default function ApprovalRulesSettings() {
     jobDescription: false,
     hiringNeeds: false,
     availablePositions: false,
+    departments: false,
   });
 
   const [removingId, setRemovingId] = useState("");
@@ -789,6 +827,7 @@ export default function ApprovalRulesSettings() {
       jobDescription: usersByRule.jobDescription.length,
       hiringNeeds: usersByRule.hiringNeeds.length,
       availablePositions: usersByRule.availablePositions.length,
+      departments: usersByRule.departments.length,
     };
   }, [usersByRule]);
 
@@ -1016,6 +1055,7 @@ export default function ApprovalRulesSettings() {
     loadUsers("jobDescription");
     loadUsers("hiringNeeds");
     loadUsers("availablePositions");
+    loadUsers("departments");
     loadUsers("offers");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -1041,7 +1081,7 @@ export default function ApprovalRulesSettings() {
 
             <p className="mt-1 sibs-text-xs 2xl:text-sm font-semibold text-sibs-muted">
               Configure approval users for Job Descriptions, Hiring Needs,
-              Available Positions, and Offers from one settings panel.
+              Available Positions, Departments, and Offers from one settings panel.
             </p>
           </div>
         </div>

@@ -39,6 +39,7 @@ import React, {
 
 import { useUser } from "../../services/context/UserContext";
 import { useHeader } from "../../services/context/HeaderContext";
+import { usePersistentHeader } from "../../services/context/PersistentHeaderContext";
 import { getEmployee } from "../../lib/axios/getEmployee";
 import { getMyEmployeeProfilePicture } from "../../lib/axios/employeeProfile";
 import { getManilaClock } from "../../lib/axios/getAuditNotifications";
@@ -905,7 +906,7 @@ const QUICK_SEARCH_CATEGORIES = [
   },
 ];
 
-export default function Header() {
+function HeaderContent() {
   const { user, loading } = useUser();
   const { setMobileSidebarOpen } = useHeader();
   const navigate = useNavigate();
@@ -1726,4 +1727,27 @@ export default function Header() {
       />
     </header>
   );
+}
+
+export default function Header({ persistent = false }) {
+  const persistentHeaderActive = usePersistentHeader();
+
+  /*
+   * Authenticated pages historically render <Header /> themselves.
+   * AppShell now owns one persistent Header instance so route changes do not
+   * remount the clock, profile, search, notification, or calendar state.
+   * Keep a height-matched spacer in each page so existing page layouts retain
+   * the exact same vertical sizing without rendering a second Header.
+   */
+  if (persistentHeaderActive && !persistent) {
+    return (
+      <div
+        className="h-[74px] 2xl:h-[86px] shrink-0"
+        aria-hidden="true"
+        data-sibs-header-spacer="true"
+      />
+    );
+  }
+
+  return <HeaderContent />;
 }

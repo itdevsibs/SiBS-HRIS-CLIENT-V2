@@ -1,24 +1,176 @@
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import {
   AlertTriangle,
   Building2,
   Loader2,
+  Plus,
   RefreshCw,
 } from "lucide-react";
 
+import AddDepartmentModal from "@/components/departments/AddDepartmentModal";
+import DepartmentApprovalRequests from "@/components/departments/DepartmentApprovalRequests";
 import DepartmentCard from "@/components/departments/DepartmentCard";
 import DepartmentDetailsModal from "@/components/departments/DepartmentDetailsModal";
 import DepartmentFilters from "@/components/departments/DepartmentFilters";
 import DepartmentSummaryCards from "@/components/departments/DepartmentSummaryCards";
 import Header from "@/components/layout/Header";
+import StatusModal from "@/components/modals/StatusModal";
 import { PageHeaderHero } from "@/components/ui";
 import useDepartments from "@/hooks/departments/useDepartments";
+import {
+  approveDepartmentRequest,
+  createDepartmentRequest,
+  getDepartmentApprovalAccess,
+  getDepartmentApprovalRequests,
+  rejectDepartmentRequest,
+} from "@/lib/axios/getDepartments";
 import { DepartmentsProvider } from "@/services/context/DepartmentsContext";
+
+function errorMessage(error, fallback) {
+  return (
+    error?.response?.data?.message ||
+    error?.response?.data?.error ||
+    error?.message ||
+    fallback
+  );
+}
 
 function DepartmentsPageContent() {
   const departments = useDepartments();
   const [selectedDepartment, setSelectedDepartment] = useState(null);
+  const [addModalOpen, setAddModalOpen] = useState(false);
+  const [submittingDepartment, setSubmittingDepartment] = useState(false);
+  const [approvalRequests, setApprovalRequests] = useState([]);
+  const [approvalLoading, setApprovalLoading] = useState(true);
+  const [canApproveDepartments, setCanApproveDepartments] = useState(false);
+  const [processingRequestId, setProcessingRequestId] = useState("");
+  const [statusModal, setStatusModal] = useState({
+    open: false,
+    type: "success",
+    title: "",
+    message: "",
+  });
+
+  const showStatus = useCallback((type, title, message) => {
+    setStatusModal({ open: true, type, title, message });
+  }, []);
+
+  const loadApprovalData = useCallback(async () => {
+    setApprovalLoading(true);
+
+    try {
+      const [requestsPayload, accessPayload] = await Promise.all([
+        getDepartmentApprovalRequests(),
+        getDepartmentApprovalAccess(),
+      ]);
+
+      setApprovalRequests(
+        Array.isArray(requestsPayload?.data)
+          ? requestsPayload.data
+          : Array.isArray(requestsPayload?.rows)
+            ? requestsPayload.rows
+            : [],
+      );
+      setCanApproveDepartments(
+        Boolean(accessPayload?.canApprove ?? accessPayload?.data?.canApprove),
+      );
+    } catch (error) {
+      console.error("LOAD DEPARTMENT APPROVAL DATA ERROR:", error);
+      setApprovalRequests([]);
+      setCanApproveDepartments(false);
+    } finally {
+      setApprovalLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadApprovalData();
+  }, [loadApprovalData]);
+
+  async function handleRefresh() {
+    departments.refresh();
+    await loadApprovalData();
+  }
+
+  async function handleCreateDepartment({ departmentName, lineOfBusiness }) {
+    setSubmittingDepartment(true);
+
+    try {
+      const result = await createDepartmentRequest(
+        departmentName,
+        lineOfBusiness,
+      );
+      setAddModalOpen(false);
+      await loadApprovalData();
+
+      showStatus(
+        "success",
+        "Department Submitted",
+        result?.message ||
+          `${departmentName} was submitted and is waiting for Department approval.`,
+      );
+    } catch (error) {
+      throw new Error(
+        errorMessage(error, "Failed to submit department for approval."),
+      );
+    } finally {
+      setSubmittingDepartment(false);
+    }
+  }
+
+  async function handleApproveDepartment(request) {
+    if (!request?.id) return;
+
+    setProcessingRequestId(String(request.id));
+
+    try {
+      const result = await approveDepartmentRequest(request.id);
+      departments.refresh();
+      await loadApprovalData();
+
+      showStatus(
+        "success",
+        "Department Approved",
+        result?.message ||
+          `${request.departmentName || request.department_name} is now available across HRIS.`,
+      );
+    } catch (error) {
+      showStatus(
+        "error",
+        "Approval Failed",
+        errorMessage(error, "Failed to approve department request."),
+      );
+    } finally {
+      setProcessingRequestId("");
+    }
+  }
+
+  async function handleRejectDepartment(request) {
+    if (!request?.id) return;
+
+    setProcessingRequestId(String(request.id));
+
+    try {
+      const result = await rejectDepartmentRequest(request.id, "");
+      await loadApprovalData();
+
+      showStatus(
+        "success",
+        "Department Rejected",
+        result?.message ||
+          `${request.departmentName || request.department_name} was rejected.`,
+      );
+    } catch (error) {
+      showStatus(
+        "error",
+        "Rejection Failed",
+        errorMessage(error, "Failed to reject department request."),
+      );
+    } finally {
+      setProcessingRequestId("");
+    }
+  }
 
   return (
     <div className="sibs-dashboard-shell">
@@ -28,28 +180,48 @@ function DepartmentsPageContent() {
         <PageHeaderHero
           kicker="Organization View"
           title="Department Units & Account Status"
-          description="Read-only organization directory and operational account reporting sourced from the Kronos database."
+          description="Organization directory and operational account reporting sourced from SiBS HRIS master data."
           className="mb-5"
           actions={
-            <button
-              type="button"
-              className="sibs-btn-icon"
-              title="Refresh departments"
-              onClick={departments.refresh}
-              disabled={departments.refreshing}
-            >
-              <RefreshCw
-                className={`h-4 w-4 ${
-                  departments.refreshing
-                    ? "animate-spin text-sibs-orange"
-                    : ""
-                }`}
-              />
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                className="sibs-btn-primary"
+                onClick={() => setAddModalOpen(true)}
+              >
+                <Plus className="h-4 w-4" />
+                Add Department
+              </button>
+
+              <button
+                type="button"
+                className="sibs-btn-icon"
+                title="Refresh departments"
+                onClick={handleRefresh}
+                disabled={departments.refreshing || approvalLoading}
+              >
+                <RefreshCw
+                  className={`h-4 w-4 ${
+                    departments.refreshing || approvalLoading
+                      ? "animate-spin text-sibs-orange"
+                      : ""
+                  }`}
+                />
+              </button>
+            </div>
           }
         />
 
         <DepartmentSummaryCards summary={departments.summary} />
+
+        <DepartmentApprovalRequests
+          requests={approvalRequests}
+          loading={approvalLoading}
+          canApprove={canApproveDepartments}
+          processingId={processingRequestId}
+          onApprove={handleApproveDepartment}
+          onReject={handleRejectDepartment}
+        />
 
         <section className="mt-5 overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-sm">
           <div className="flex flex-col gap-3 border-b border-sibs-border px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
@@ -92,7 +264,7 @@ function DepartmentsPageContent() {
               <button
                 type="button"
                 className="sibs-btn-secondary mt-4"
-                onClick={departments.refresh}
+                onClick={handleRefresh}
               >
                 Try Again
               </button>
@@ -124,6 +296,25 @@ function DepartmentsPageContent() {
       <DepartmentDetailsModal
         department={selectedDepartment}
         onClose={() => setSelectedDepartment(null)}
+      />
+
+      <AddDepartmentModal
+        open={addModalOpen}
+        onClose={() => setAddModalOpen(false)}
+        onSubmit={handleCreateDepartment}
+        submitting={submittingDepartment}
+      />
+
+      <StatusModal
+        open={statusModal.open}
+        type={statusModal.type}
+        title={statusModal.title}
+        message={statusModal.message}
+        variant="center"
+        onClose={() =>
+          setStatusModal((previous) => ({ ...previous, open: false }))
+        }
+        lockScroll
       />
     </div>
   );

@@ -39,7 +39,7 @@ export function WorkforceHiringOverviewPipelineStrip() {
   const pipeline = overview?.pipeline || [];
   const summary = overview?.summary || {};
 
-  if (status?.isLoading || overview?.trendsLoading) {
+  if (status?.isLoading) {
     return <WorkforceHiringPipelineStripSkeleton />;
   }
 
@@ -116,7 +116,7 @@ export function HiringFunnelCard() {
   } = useWorkforceHiringView();
   const pipeline = Array.isArray(overview?.pipeline) ? overview.pipeline : [];
   const summary = overview?.summary || {};
-  const loading = Boolean(status?.isLoading || overview?.trendsLoading);
+  const loading = Boolean(status?.isLoading);
 
   if (loading) {
     return (

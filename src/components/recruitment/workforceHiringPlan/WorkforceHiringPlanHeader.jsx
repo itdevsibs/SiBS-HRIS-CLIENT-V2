@@ -43,7 +43,7 @@ export default function WorkforceHiringPlanHeader() {
               </button>
             </div>
 
-            <WorkforceHiringOverviewFilters weekMode="forecast" />
+            <WorkforceHiringOverviewFilters />
           </div>
         </div>
       }

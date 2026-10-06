@@ -7,7 +7,10 @@ import useWorkforceHiringPage from "../../hooks/workforceHiring/useWorkforceHiri
 
 export default function WorkforceHiringPlanPage() {
   const { mainScrollRef, ...workforceHiringPlanModals } =
-    useWorkforceHiringPage();
+    useWorkforceHiringPage({
+      forecastPlanMode: true,
+      requireFilterSelection: true,
+    });
 
   return (
     <div className="sibs-dashboard-shell bg-sibs-canvas font-jakarta">

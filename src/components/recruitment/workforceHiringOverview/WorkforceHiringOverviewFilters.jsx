@@ -55,22 +55,36 @@ function getOptionValue(option) {
   );
 }
 
-function normalizeArrayValue(value, allValue) {
+function normalizeArrayValue(value, allValue, preserveEmpty = false) {
   if (Array.isArray(value)) {
-    return value.length ? value : [allValue];
+    return value.length || preserveEmpty ? value : [allValue];
   }
 
-  if (!value || value === allValue || value === "All") {
+  if (!value) {
+    return preserveEmpty ? [] : [allValue];
+  }
+
+  if (value === allValue || value === "All") {
     return [allValue];
   }
 
   return [value];
 }
 
-function getMultiSelectLabel(selected = [], allValue, allLabel, itemLabel) {
-  const cleanSelected = normalizeArrayValue(selected, allValue);
+function getMultiSelectLabel(
+  selected = [],
+  allValue,
+  allLabel,
+  itemLabel,
+  emptyLabel = allLabel,
+) {
+  const cleanSelected = normalizeArrayValue(selected, allValue, true);
 
-  if (!cleanSelected.length || cleanSelected.includes(allValue)) {
+  if (!cleanSelected.length) {
+    return emptyLabel;
+  }
+
+  if (cleanSelected.includes(allValue)) {
     return allLabel;
   }
 
@@ -82,7 +96,7 @@ function getMultiSelectLabel(selected = [], allValue, allLabel, itemLabel) {
 }
 
 function toggleMultiValue(currentValue, nextValue, allValue) {
-  const current = normalizeArrayValue(currentValue, allValue);
+  const current = normalizeArrayValue(currentValue, allValue, true);
 
   if (nextValue === allValue) {
     return [allValue];
@@ -91,8 +105,7 @@ function toggleMultiValue(currentValue, nextValue, allValue) {
   const withoutAll = current.filter((item) => item !== allValue);
 
   if (withoutAll.includes(nextValue)) {
-    const next = withoutAll.filter((item) => item !== nextValue);
-    return next.length ? next : [allValue];
+    return withoutAll.filter((item) => item !== nextValue);
   }
 
   return [...withoutAll, nextValue];
@@ -466,6 +479,7 @@ function CheckboxDropdown({
   selectedLabel,
   itemLabel,
   loading = false,
+  disabled = false,
   searchable = false,
   searchPlaceholder = "Search...",
   emptyText = "No options found.",
@@ -476,7 +490,7 @@ function CheckboxDropdown({
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
 
-  const selectedValues = normalizeArrayValue(value, allValue);
+  const selectedValues = normalizeArrayValue(value, allValue, true);
 
   const normalizedOptions = useMemo(
     () =>
@@ -501,7 +515,7 @@ function CheckboxDropdown({
   }, [normalizedOptions, search]);
 
   function handleOpen() {
-    if (loading) return;
+    if (loading || disabled) return;
     setOpen((prev) => !prev);
     setSearch("");
     onOpen?.();
@@ -539,13 +553,13 @@ function CheckboxDropdown({
               onOpen?.();
             }}
             onFocus={() => {
-              if (!loading) {
+              if (!loading && !disabled) {
                 setOpen(true);
                 setSearch("");
                 onOpen?.();
               }
             }}
-            disabled={loading}
+            disabled={loading || disabled}
             placeholder={searchPlaceholder}
             autoComplete="off"
             className={`h-8.5 2xl:h-10 w-full rounded-[10px] border border-sibs-border bg-sibs-surface px-2.5 2xl:px-3 pr-8 2xl:pr-10 font-jakarta sibs-text-xs font-bold text-sibs-navy outline-none transition disabled:cursor-not-allowed disabled:bg-sibs-surface disabled:text-sibs-faint placeholder:text-sibs-faint hover:border-sibs-orange/40 hover:bg-white focus:border-sibs-orange focus:bg-white focus:ring-4 focus:ring-sibs-orange/10 ${
@@ -556,8 +570,10 @@ function CheckboxDropdown({
           />
 
           <ChevronDown
-            onClick={handleOpen}
-            className={`absolute right-2.5 2xl:right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 2xl:h-4 2xl:w-4 cursor-pointer transition-all duration-300 ${
+            onClick={disabled ? undefined : handleOpen}
+            className={`absolute right-2.5 2xl:right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 2xl:h-4 2xl:w-4 transition-all duration-300 ${
+              disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer"
+            } ${
               open ? "rotate-180 text-sibs-orange" : "text-sibs-muted"
             }`}
           />
@@ -566,7 +582,7 @@ function CheckboxDropdown({
         <button
           ref={buttonRef}
           type="button"
-          disabled={loading}
+          disabled={loading || disabled}
           onClick={handleOpen}
           className={`flex h-8.5 2xl:h-10 w-full items-center justify-between rounded-[10px] border border-sibs-border bg-sibs-surface px-2.5 2xl:px-3 text-left font-jakarta sibs-text-xs font-bold text-sibs-navy outline-none transition disabled:cursor-not-allowed disabled:bg-sibs-surface disabled:text-sibs-faint hover:border-sibs-orange/40 hover:bg-white focus:border-sibs-orange focus:bg-white focus:ring-4 focus:ring-sibs-orange/10 ${
             open
@@ -587,7 +603,7 @@ function CheckboxDropdown({
       )}
 
       <DropdownPortal
-        open={open && !loading}
+        open={open && !loading && !disabled}
         anchorRef={anchorRef}
         maxHeight={256}
         onClose={() => setOpen(false)}
@@ -681,8 +697,17 @@ export default function WorkforceHiringOverviewFilters({ weekMode = "actual" } =
 
   const [, setOpenName] = useState("");
 
-  const selectedClusters = normalizeArrayValue(cluster, "All Clusters");
-  const selectedAccounts = normalizeArrayValue(account, "All Accounts");
+  const selectedClusters = normalizeArrayValue(
+    cluster,
+    "All Clusters",
+    true,
+  );
+  const selectedAccounts = normalizeArrayValue(
+    account,
+    "All Accounts",
+    true,
+  );
+  const hasClusterSelection = selectedClusters.length > 0;
 
   function closeOtherDropdowns(nextOpenName) {
     setOpenName(nextOpenName);
@@ -699,8 +724,8 @@ export default function WorkforceHiringOverviewFilters({ weekMode = "actual" } =
                 handleWeeklyVersionChange?.(nextValue);
 
                 if (!usesForecastWeeks) {
-                  setCluster?.("All Clusters");
-                  setAccount?.("All Accounts");
+                  setCluster?.([]);
+                  setAccount?.([]);
                 }
               }}
               options={weeklyVersionOptions}
@@ -719,7 +744,6 @@ export default function WorkforceHiringOverviewFilters({ weekMode = "actual" } =
                   : nextSelected;
 
                 setCluster?.(nextValue);
-                setAccount?.("All Accounts");
               }}
               options={(options?.clusters || []).filter(
                 (item) => getOptionValue(item) !== "All Clusters",
@@ -732,6 +756,7 @@ export default function WorkforceHiringOverviewFilters({ weekMode = "actual" } =
                 "All Clusters",
                 "All Clusters",
                 "Clusters",
+                "Select Cluster",
               )}
               loading={status?.isLoadingFilters}
               emptyText="No clusters available."
@@ -761,11 +786,17 @@ export default function WorkforceHiringOverviewFilters({ weekMode = "actual" } =
                 "All Accounts",
                 "All Accounts",
                 "Accounts",
+                "Select Account",
               )}
               loading={status?.isLoadingAccounts}
+              disabled={!hasClusterSelection}
               searchable
               searchPlaceholder="Search accounts..."
-              emptyText="No accounts found."
+              emptyText={
+                hasClusterSelection
+                  ? "No accounts found."
+                  : "Select a cluster first."
+              }
               onOpen={() => closeOtherDropdowns("account")}
             />
           </div>

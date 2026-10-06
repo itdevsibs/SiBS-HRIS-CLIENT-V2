@@ -1,4 +1,3 @@
-import { WEEKLY_CLUSTER_OPTIONS } from "../../lib/utils/workforceHiringPlan/workforceHiringPlanConstants";
 import { useWorkforceHiring } from "./WorkforceHiringContext";
 
 const EMPTY_SUMMARY = {
@@ -38,7 +37,11 @@ function getAveragePercent(numerator, denominator) {
 function normalizeSelectedPlanValues(values = [], allValue, overviewAllValue) {
   const cleanValues = cleanArray(values);
 
-  if (!cleanValues.length || cleanValues.includes(allValue)) {
+  if (!cleanValues.length) {
+    return [];
+  }
+
+  if (cleanValues.includes(allValue)) {
     return overviewAllValue;
   }
 
@@ -47,14 +50,18 @@ function normalizeSelectedPlanValues(values = [], allValue, overviewAllValue) {
 
 function normalizeOverviewValues(values, planAllValue) {
   if (!Array.isArray(values)) {
-    if (!values || values === "All Clusters" || values === "All Accounts") {
+    if (!values) {
+      return [];
+    }
+
+    if (values === "All Clusters" || values === "All Accounts") {
       return [planAllValue];
     }
 
     return [values];
   }
 
-  if (!values.length) return [planAllValue];
+  if (!values.length) return [];
 
   if (
     values.includes("All Clusters") ||
@@ -565,7 +572,6 @@ function isAllSelected(values = []) {
   const cleanValues = Array.isArray(values) ? values : [values];
 
   return (
-    !cleanValues.length ||
     cleanValues.includes("All") ||
     cleanValues.includes("All Clusters") ||
     cleanValues.includes("All Accounts")
@@ -655,7 +661,7 @@ export function useWorkforceHiringView(optional = false) {
       },
       options: {
         weeklyVersions: weeklyVersion.filteredWeeklyVersions || [],
-        clusters: WEEKLY_CLUSTER_OPTIONS,
+        clusters: weeklyVersion.clusterOptions || [],
         accounts: (weeklyVersion.filteredAccountOptions || [])
           .map((account) => account?.accountName || account?.account || "")
           .filter(Boolean),
@@ -695,14 +701,19 @@ export function useWorkforceHiringView(optional = false) {
     },
 
     status: {
+      /*
+        Base dashboard loading should not wait for the historical trend query.
+        KPI/pipeline cards can render as soon as the selected account data is ready.
+      */
       isLoading: Boolean(
-        weeklyVersion.weeksLoading ||
-        weeklyVersion.accountsLoading ||
-        tables.trendsLoading,
+        weeklyVersion.weeksLoading || weeklyVersion.accountDataLoading,
       ),
       isLoadingWeeks: Boolean(weeklyVersion.weeksLoading),
-      isLoadingFilters: false,
-      isLoadingAccounts: Boolean(weeklyVersion.accountsLoading),
+      isLoadingFilters: Boolean(weeklyVersion.filtersLoading),
+      isLoadingAccounts: Boolean(
+        weeklyVersion.accountOptionsLoading ?? weeklyVersion.accountsLoading,
+      ),
+      isLoadingAccountData: Boolean(weeklyVersion.accountDataLoading),
       isLoadingTrends: Boolean(tables.trendsLoading),
       error: "",
       refetch: () => {},
