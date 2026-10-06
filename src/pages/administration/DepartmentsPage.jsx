@@ -44,6 +44,7 @@ function DepartmentsPageContent() {
   const [approvalRequests, setApprovalRequests] = useState([]);
   const [approvalLoading, setApprovalLoading] = useState(true);
   const [canApproveDepartments, setCanApproveDepartments] = useState(false);
+  const [canManageLobs, setCanManageLobs] = useState(false);
   const [processingRequestId, setProcessingRequestId] = useState("");
   const [statusModal, setStatusModal] = useState({
     open: false,
@@ -75,10 +76,14 @@ function DepartmentsPageContent() {
       setCanApproveDepartments(
         Boolean(accessPayload?.canApprove ?? accessPayload?.data?.canApprove),
       );
+      setCanManageLobs(
+        Boolean(accessPayload?.canManageLobs ?? accessPayload?.data?.canManageLobs),
+      );
     } catch (error) {
       console.error("LOAD DEPARTMENT APPROVAL DATA ERROR:", error);
       setApprovalRequests([]);
       setCanApproveDepartments(false);
+      setCanManageLobs(false);
     } finally {
       setApprovalLoading(false);
     }
@@ -93,14 +98,11 @@ function DepartmentsPageContent() {
     await loadApprovalData();
   }
 
-  async function handleCreateDepartment({ departmentName, lineOfBusiness }) {
+  async function handleCreateDepartment({ departmentName }) {
     setSubmittingDepartment(true);
 
     try {
-      const result = await createDepartmentRequest(
-        departmentName,
-        lineOfBusiness,
-      );
+      const result = await createDepartmentRequest(departmentName);
       setAddModalOpen(false);
       await loadApprovalData();
 
@@ -179,8 +181,8 @@ function DepartmentsPageContent() {
       <main className="sibs-dashboard-main-wide">
         <PageHeaderHero
           kicker="Organization View"
-          title="Department Units & Account Status"
-          description="Organization directory and operational account reporting sourced from SiBS HRIS master data."
+          title="Departments, Accounts & Lines of Business"
+          description="Manage the organization hierarchy from Department to Account to account-specific Lines of Business."
           className="mb-5"
           actions={
             <div className="flex items-center gap-2">
@@ -230,8 +232,8 @@ function DepartmentsPageContent() {
                 Department Directory & Status Reports
               </h2>
               <p className="sibs-card-subtitle">
-                Select a department to review its accounts, Operations Managers,
-                and Team Leaders.
+                Select a department to review its Accounts, Lines of Business,
+                Operations Managers, Team Leaders, and employee assignments.
               </p>
             </div>
 
@@ -295,6 +297,7 @@ function DepartmentsPageContent() {
 
       <DepartmentDetailsModal
         department={selectedDepartment}
+        canManageLobs={canManageLobs}
         onClose={() => setSelectedDepartment(null)}
       />
 

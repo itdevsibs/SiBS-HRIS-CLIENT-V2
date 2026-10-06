@@ -66,3 +66,89 @@ export async function getDepartmentAccountEmployees(accountId) {
     );
   }
 }
+
+export async function getAccountLobs(accountId, { includeInactive = false } = {}) {
+  const cleanAccountId = String(accountId ?? "").trim();
+  if (!cleanAccountId) return { lobs: [], account: null };
+
+  try {
+    const response = await api.get(
+      `/api/departments/accounts/${encodeURIComponent(cleanAccountId)}/lobs`,
+      {
+        params: includeInactive ? { includeInactive: 1 } : undefined,
+        withCredentials: true,
+      },
+    );
+
+    return {
+      lobs: Array.isArray(response.data?.data) ? response.data.data : [],
+      account: response.data?.account || null,
+    };
+  } catch (error) {
+    throw new Error(
+      getErrorMessage(error, "Unable to load Lines of Business for this account."),
+    );
+  }
+}
+
+export async function createAccountLob(accountId, payload = {}) {
+  try {
+    const response = await api.post(
+      `/api/departments/accounts/${encodeURIComponent(accountId)}/lobs`,
+      payload,
+      { withCredentials: true },
+    );
+    return response.data;
+  } catch (error) {
+    throw new Error(getErrorMessage(error, "Unable to add Line of Business."));
+  }
+}
+
+export async function updateAccountLob(lobId, payload = {}) {
+  try {
+    const response = await api.patch(
+      `/api/departments/lobs/${encodeURIComponent(lobId)}`,
+      payload,
+      { withCredentials: true },
+    );
+    return response.data;
+  } catch (error) {
+    throw new Error(getErrorMessage(error, "Unable to update Line of Business."));
+  }
+}
+
+export async function setAccountLobStatus(lobId, isActive) {
+  try {
+    const response = await api.patch(
+      `/api/departments/lobs/${encodeURIComponent(lobId)}/status`,
+      { isActive: Boolean(isActive) },
+      { withCredentials: true },
+    );
+    return response.data;
+  } catch (error) {
+    throw new Error(
+      getErrorMessage(error, "Unable to change Line of Business status."),
+    );
+  }
+}
+
+export async function assignEmployeeLob(accountId, sibsId, lobIds) {
+  const normalizedLobIds = Array.isArray(lobIds)
+    ? lobIds.filter((value) => value !== null && value !== undefined && value !== "")
+    : lobIds === null || lobIds === undefined || lobIds === ""
+      ? []
+      : [lobIds];
+
+  try {
+    const response = await api.put(
+      `/api/departments/accounts/${encodeURIComponent(accountId)}/employees/${encodeURIComponent(sibsId)}/lob`,
+      { lobIds: normalizedLobIds },
+      { withCredentials: true },
+    );
+    return response.data;
+  } catch (error) {
+    throw new Error(
+      getErrorMessage(error, "Unable to update the employee LOB assignments."),
+    );
+  }
+}

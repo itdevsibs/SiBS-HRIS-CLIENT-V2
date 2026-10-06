@@ -91,6 +91,10 @@ function normalizeDepartment(row = {}) {
           statusCode: toNumber(account.statusCode),
           employeeCount: toNumber(account.employeeCount),
           activeEmployeeCount: toNumber(account.activeEmployeeCount),
+          lobCount: toNumber(account.lobCount),
+          lobNames: Array.isArray(account.lobNames)
+            ? account.lobNames.map((name) => toText(name)).filter(Boolean)
+            : [],
           teamLeaderCount: toNumber(
             account.teamLeaderCount ??
               (Array.isArray(account.teamLeaders) ? account.teamLeaders.length : 0),

@@ -31,11 +31,11 @@ function getDepartmentErrorMessage(error, fallback) {
   );
 }
 
-export async function createDepartmentRequest(departmentName, lineOfBusiness) {
+export async function createDepartmentRequest(departmentName) {
   try {
     const response = await api.post(
       "/api/departments",
-      { departmentName, lineOfBusiness },
+      { departmentName },
       { withCredentials: true },
     );
     return response.data;
