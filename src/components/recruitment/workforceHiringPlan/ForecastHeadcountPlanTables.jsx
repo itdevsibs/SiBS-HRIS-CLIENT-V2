@@ -136,6 +136,14 @@ function getWeekEnd(row = {}) {
   ]);
 }
 
+function hasExplicitFilterSelection(value) {
+  const values = (Array.isArray(value) ? value : [value])
+    .map((item) => String(item || "").trim())
+    .filter(Boolean);
+
+  return values.length > 0;
+}
+
 function normalizeRequestFilter(value, allLabel) {
   if (Array.isArray(value)) {
     if (!value.length || value.includes(allLabel) || value.includes("All")) {
@@ -539,20 +547,22 @@ function getForecastStateFromContext(context = {}) {
     {};
 
   const selectedCluster =
-    tables.cluster ||
-    tables.selectedCluster ||
-    weeklyVersion.selectedClusters ||
-    weeklyVersion.cluster ||
-    weeklyVersion.selectedCluster ||
-    "All";
+    tables.selectedClusters ??
+    tables.cluster ??
+    tables.selectedCluster ??
+    weeklyVersion.selectedClusters ??
+    weeklyVersion.cluster ??
+    weeklyVersion.selectedCluster ??
+    [];
 
   const selectedAccount =
-    tables.account ||
-    tables.selectedAccount ||
-    weeklyVersion.selectedAccounts ||
-    weeklyVersion.account ||
-    weeklyVersion.selectedAccount ||
-    "All";
+    tables.selectedAccounts ??
+    tables.account ??
+    tables.selectedAccount ??
+    weeklyVersion.selectedAccounts ??
+    weeklyVersion.account ??
+    weeklyVersion.selectedAccount ??
+    [];
 
   return {
     activeWeek,
@@ -675,11 +685,31 @@ export default function ForecastHeadcountPlanTable({
 
   const weekStart = getWeekStart(activeWeek);
   const weekEnd = getWeekEnd(activeWeek);
+  const hasClusterSelection = hasExplicitFilterSelection(selectedCluster);
+  const hasAccountSelection = hasExplicitFilterSelection(selectedAccount);
 
   useEffect(() => {
     let cancelled = false;
 
     async function loadForecast() {
+      /*
+        Match Workforce & Hiring Overview behavior:
+        selecting a Cluster only refreshes the lightweight Account options.
+        Do not start the expensive forecast calculation until an Account
+        (including an explicit All Accounts choice) has been selected.
+      */
+      if (!hasClusterSelection || !hasAccountSelection) {
+        applyForecastData({
+          rows: [],
+          summary: {},
+          accountRowsByWeek: [],
+          loading: false,
+          error: "",
+        });
+
+        return;
+      }
+
       if (!weekStart || !weekEnd) {
         applyForecastData({
           rows: [],
@@ -759,6 +789,8 @@ export default function ForecastHeadcountPlanTable({
     basisWeeks,
     forecastWeeks,
     applyForecastData,
+    hasAccountSelection,
+    hasClusterSelection,
     selectedAccount,
     selectedCluster,
     weekEnd,
@@ -895,9 +927,9 @@ export default function ForecastHeadcountPlanTable({
                   isDragging ? "cursor-grabbing" : "cursor-grab"
                 }`}
               >
-                <table className="w-[1980px] min-w-[1980px] table-fixed border-collapse font-jakarta text-xs whitespace-nowrap">
+                <table className="w-[2070px] min-w-[2070px] table-fixed border-collapse font-jakarta text-xs whitespace-nowrap">
                   <colgroup>
-                    <col style={{ width: "210px" }} />
+                    <col style={{ width: "300px" }} />
                     <col style={{ width: "115px" }} />
                     <col style={{ width: "105px" }} />
                     <col style={{ width: "95px" }} />
@@ -1000,9 +1032,12 @@ export default function ForecastHeadcountPlanTable({
                           <WorkforceBodyTd
                             align="left"
                             numeric={false}
-                            className="font-black text-sibs-navy"
+                            className="border-r border-sibs-border !pr-5 font-black text-sibs-navy"
+                            title={formatForecastWeekLabel(row)}
                           >
-                            {formatForecastWeekLabel(row)}
+                            <span className="block w-full overflow-hidden text-ellipsis whitespace-nowrap">
+                              {formatForecastWeekLabel(row)}
+                            </span>
                           </WorkforceBodyTd>
 
                           <WorkforceBodyTd className={WORKFORCE_BOLD_NUMBER_CLASS}>
@@ -1104,7 +1139,7 @@ export default function ForecastHeadcountPlanTable({
                         <WorkforceFooterTd
                           align="left"
                           numeric={false}
-                          className="rounded-bl-xl font-black uppercase"
+                          className="rounded-bl-xl border-r border-sibs-border !pr-5 font-black uppercase"
                         >
                           TOTAL / AVG.
                         </WorkforceFooterTd>

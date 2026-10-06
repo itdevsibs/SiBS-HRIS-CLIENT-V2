@@ -2,7 +2,7 @@ import { createElement } from "react";
 import { Activity, Building2, CheckCircle2, Layers3, XCircle } from "lucide-react";
 
 const METRICS = [
-  { key: "totalDepartments", label: "Total Departments", description: "Kronos organization units", icon: Building2, tone: "text-blue-600 bg-blue-50" },
+  { key: "totalDepartments", label: "Total Departments", description: "Approved HRIS departments", icon: Building2, tone: "text-blue-600 bg-blue-50" },
   { key: "totalAccounts", label: "Total Accounts", description: "Linked operating accounts", icon: Layers3, tone: "text-violet-600 bg-violet-50" },
   { key: "activeAccounts", label: "Active Accounts", description: "Available in Kronos", icon: CheckCircle2, tone: "text-emerald-600 bg-emerald-50" },
   { key: "inactiveAccounts", label: "Inactive Accounts", description: "Disabled or archived", icon: XCircle, tone: "text-amber-600 bg-amber-50" },

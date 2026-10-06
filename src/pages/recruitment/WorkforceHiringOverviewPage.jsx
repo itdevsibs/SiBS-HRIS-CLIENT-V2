@@ -8,7 +8,10 @@ import WorkforceHiringOverviewSummary from "../../components/recruitment/workfor
 import useWorkforceHiringPage from "../../hooks/workforceHiring/useWorkforceHiringPage";
 
 export default function WorkforceHiringOverviewPage() {
-  const { mainScrollRef } = useWorkforceHiringPage();
+  const { mainScrollRef } = useWorkforceHiringPage({
+    requireFilterSelection: true,
+    fastOverviewMode: true,
+  });
 
   return (
     <div className="sibs-dashboard-shell bg-sibs-canvas font-jakarta">

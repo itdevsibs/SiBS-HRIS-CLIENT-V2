@@ -20,7 +20,7 @@ export default function WorkforceHiringOverviewSummary() {
   } = useWorkforceHiringView();
   const summary = overview?.summary || {};
 
-  if (status?.isLoading || overview?.trendsLoading) {
+  if (status?.isLoading) {
     return (
       <MetricGridSkeleton
         labels={WORKFORCE_OVERVIEW_METRIC_LABELS}
