@@ -33,7 +33,7 @@ import {
   filterDropOffCandidates,
   isDropOffCandidate,
 } from "../../lib/utils/recruitment/dropOffCandidates";
-import { PageHeaderHero, MetricGridSkeleton } from "@/components/ui";
+import { PageHeaderHero, MetricGridSkeleton, SearchInput } from "@/components/ui";
 
 function cleanText(value) {
   return String(value ?? "").trim();
@@ -236,7 +236,7 @@ function FilterDropdown({
       className={`relative min-w-0 ${open ? zIndex : "z-[1]"}`}
     >
       {label ? (
-        <label className="mb-1 block text-xs font-bold text-[#042C51]">
+        <label className="mb-1 block text-xs font-bold text-sibs-navy">
           {label}
         </label>
       ) : null}
@@ -256,10 +256,10 @@ function FilterDropdown({
           placeholder={`Search ${label ? label.toLowerCase() : "options"}...`}
           autoComplete="off"
           disabled={disabled}
-          className={`h-8.5 w-full rounded-xl border px-3 pr-8 font-jakarta sibs-text-xs font-bold outline-none transition placeholder:text-[#98A2B3] disabled:cursor-not-allowed disabled:opacity-50 2xl:h-10 ${
+          className={`h-8.5 w-full rounded-[10px] border px-3 pr-8 font-jakarta sibs-text-xs font-bold outline-none transition placeholder:text-sibs-faint disabled:cursor-not-allowed disabled:opacity-50 2xl:h-10 ${
             open
-              ? "border-[#FF5C28] bg-white ring-4 ring-[#FF5C28]/10 text-[#042C51]"
-              : "border-[#E6ECF2] bg-[#F8FAFC] text-[#042C51] hover:border-[#FF5C28]/40 hover:bg-white"
+              ? "border-sibs-orange bg-white ring-4 ring-sibs-orange/10 text-sibs-navy"
+              : "border-sibs-border bg-sibs-surface text-sibs-navy hover:border-sibs-orange/40 hover:bg-white"
           }`}
         />
 
@@ -270,20 +270,20 @@ function FilterDropdown({
             setOpen((prev) => !prev);
             setFilterSearch("");
           }}
-          className="absolute right-1 top-1/2 flex h-6.5 w-6.5 -translate-y-1/2 items-center justify-center rounded-lg text-[#667085] transition hover:bg-[#FFF0EB] hover:text-[#FF5C28]"
+          className="absolute right-1 top-1/2 flex h-6.5 w-6.5 -translate-y-1/2 items-center justify-center rounded-[10px] text-sibs-muted transition hover:bg-sibs-cream-light hover:text-sibs-orange"
           aria-label={`Toggle ${label || "dropdown"}`}
         >
           <ChevronDown
             size={15}
             className={`transition-transform duration-300 ${
-              open ? "rotate-180 text-[#FF5C28]" : ""
+              open ? "rotate-180 text-sibs-orange" : ""
             }`}
           />
         </button>
       </div>
 
       {open && !disabled && (
-        <div className="sibs-dropdown-pop-in absolute left-0 right-0 top-[calc(100%+6px)] z-[99999] min-w-[200px] overflow-hidden rounded-xl border border-[#D7DEE8] bg-white shadow-[0_20px_25px_-5px_rgba(15,23,42,0.15),0_8px_10px_-6px_rgba(15,23,42,0.1)]">
+        <div className="sibs-dropdown-pop-in absolute left-0 right-0 top-[calc(100%+6px)] z-[99999] min-w-[200px] overflow-hidden rounded-[10px] border border-sibs-border bg-white shadow-[0_20px_25px_-5px_rgba(15,23,42,0.15),0_8px_10px_-6px_rgba(15,23,42,0.1)]">
           <div role="listbox" className="sibs-scrollbar max-h-60 overflow-y-auto py-1">
             {filteredOptions.length > 0 ? (
               filteredOptions.map((option) => {
@@ -298,17 +298,17 @@ function FilterDropdown({
                     onClick={() => handleSelect(option.value)}
                     className={`flex min-h-9 w-full items-center justify-between gap-2 px-3.5 py-2 text-left sibs-text-xs transition ${
                       active
-                        ? "bg-[#FFF0EB] font-extrabold text-[#FF5C28]"
-                        : "font-semibold text-[#344054] hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
+                        ? "bg-sibs-cream-light font-extrabold text-sibs-orange"
+                        : "font-semibold text-slate-700 hover:bg-sibs-cream-light hover:text-sibs-orange"
                     }`}
                   >
                     <span className="min-w-0 flex-1 truncate">{option.label}</span>
-                    {active && <Check size={14} className="shrink-0 text-[#FF5C28]" />}
+                    {active && <Check size={14} className="shrink-0 text-sibs-orange" />}
                   </button>
                 );
               })
             ) : (
-              <div className="px-3.5 py-3 sibs-text-xs font-semibold text-[#667085]">
+              <div className="px-3.5 py-3 sibs-text-xs font-semibold text-sibs-muted">
                 No matching options found.
               </div>
             )}
@@ -390,33 +390,33 @@ function matchesReferenceFilters(
 
 const METRIC_TONES = {
   navy: {
-    label: "text-[#042C51]",
-    icon: "border-blue-100 bg-[#E9F0FC] text-[#042C51]",
-    value: "text-[#042C51]",
+    label: "text-sibs-navy",
+    icon: "border-blue-100 bg-blue-50 text-sibs-navy",
+    value: "text-sibs-navy",
   },
   indigo: {
     label: "text-indigo-700",
     icon: "border-indigo-100 bg-indigo-50 text-indigo-600",
-    value: "text-[#042C51]",
+    value: "text-sibs-navy",
   },
   blue: {
     label: "text-blue-700",
     icon: "border-blue-100 bg-blue-50 text-blue-600",
-    value: "text-[#042C51]",
+    value: "text-sibs-navy",
   },
   green: {
     label: "text-emerald-700",
     icon: "border-emerald-100 bg-emerald-50 text-emerald-600",
-    value: "text-[#042C51]",
+    value: "text-sibs-navy",
   },
   amber: {
     label: "text-amber-700",
     icon: "border-amber-100 bg-amber-50 text-amber-600",
-    value: "text-[#042C51]",
+    value: "text-sibs-navy",
   },
   orange: {
-    label: "text-[#C2410C]",
-    icon: "border-orange-100 bg-orange-50 text-[#FF5C28]",
+    label: "text-sibs-orange",
+    icon: "border-orange-100 bg-orange-50 text-sibs-orange",
     value: "text-emerald-600",
   },
 };
@@ -755,7 +755,7 @@ export default function CandidatePipelinePage() {
           {loadError ? (
             <section
               role="alert"
-              className="sibs-page-card-in rounded-xl border border-red-200 bg-red-50 px-4 py-3 sibs-text-xs font-bold leading-5 text-red-700"
+              className="sibs-page-card-in rounded-[10px] border border-red-200 bg-red-50 px-4 py-3 sibs-text-xs font-bold leading-5 text-red-700"
               style={{ animationDelay: "45ms", animationFillMode: "both" }}
             >
               {loadError}
@@ -835,14 +835,14 @@ export default function CandidatePipelinePage() {
           >
             <div className="flex flex-col justify-between gap-3 lg:flex-row lg:items-center">
               <div className="flex flex-wrap items-center gap-2">
-                <div className="flex items-center gap-1 rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] p-1">
+                <div className="flex items-center gap-1 rounded-[10px] border border-sibs-border bg-sibs-surface p-1">
                   <button
                     type="button"
                     onClick={() => setPageView("pipeline")}
-                    className={`inline-flex h-7.5 2xl:h-8 items-center justify-center gap-1.5 rounded-lg px-3 text-[11px] 2xl:text-xs font-extrabold transition ${
+                    className={`inline-flex h-7.5 2xl:h-8 items-center justify-center gap-1.5 rounded-[10px] px-3 text-[11px] 2xl:text-xs font-extrabold transition ${
                       pageView === "pipeline"
-                        ? "bg-[#FF5C28] text-white shadow-sm"
-                        : "text-[#667085] hover:text-[#042C51]"
+                        ? "bg-sibs-orange text-white shadow-sm"
+                        : "text-sibs-muted hover:text-sibs-navy"
                     }`}
                   >
                     <LayoutGrid size={13} />
@@ -852,10 +852,10 @@ export default function CandidatePipelinePage() {
                   <button
                     type="button"
                     onClick={() => setPageView("calendar")}
-                    className={`inline-flex h-7.5 2xl:h-8 items-center justify-center gap-1.5 rounded-lg px-3 text-[11px] 2xl:text-xs font-extrabold transition ${
+                    className={`inline-flex h-7.5 2xl:h-8 items-center justify-center gap-1.5 rounded-[10px] px-3 text-[11px] 2xl:text-xs font-extrabold transition ${
                       pageView === "calendar"
-                        ? "bg-[#FF5C28] text-white shadow-sm"
-                        : "text-[#667085] hover:text-[#042C51]"
+                        ? "bg-sibs-orange text-white shadow-sm"
+                        : "text-sibs-muted hover:text-sibs-navy"
                     }`}
                   >
                     <CalendarDays size={13} />
@@ -867,7 +867,7 @@ export default function CandidatePipelinePage() {
                   <button
                     type="button"
                     onClick={handleClearAllFilters}
-                    className="inline-flex h-7.5 2xl:h-8 items-center justify-center gap-1.5 rounded-lg border border-[#FF5C28]/30 bg-[#FFF9F6] px-2.5 text-[11px] 2xl:text-xs font-extrabold text-[#FF5C28] transition hover:bg-[#FF5C28] hover:text-white active:scale-[0.98]"
+                    className="inline-flex h-7.5 2xl:h-8 items-center justify-center gap-1.5 rounded-[10px] border border-sibs-orange/30 bg-sibs-cream-light px-2.5 text-[11px] 2xl:text-xs font-extrabold text-sibs-orange transition hover:bg-sibs-orange hover:text-white active:scale-[0.98]"
                   >
                     <RotateCcw size={12} />
                     Reset Filters
@@ -877,18 +877,18 @@ export default function CandidatePipelinePage() {
 
               {pageView === "pipeline" ? (
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-[9.5px] 2xl:text-[10px] font-extrabold uppercase tracking-wide text-[#042C51]">
+                  <span className="text-[9.5px] 2xl:text-[10px] font-extrabold uppercase tracking-wide text-sibs-navy">
                     Sub-View:
                   </span>
 
-                  <div className="flex items-center gap-1 rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] p-1">
+                  <div className="flex items-center gap-1 rounded-[10px] border border-sibs-border bg-sibs-surface p-1">
                     <button
                       type="button"
                       onClick={() => setBoardSubView("board")}
-                      className={`inline-flex h-7.5 2xl:h-8 items-center justify-center gap-1.5 rounded-lg px-3 text-[11px] 2xl:text-xs font-extrabold transition ${
+                      className={`inline-flex h-7.5 2xl:h-8 items-center justify-center gap-1.5 rounded-[10px] px-3 text-[11px] 2xl:text-xs font-extrabold transition ${
                         boardSubView === "board"
-                          ? "bg-[#FF5C28] text-white shadow-sm"
-                          : "text-[#667085] hover:text-[#042C51]"
+                          ? "bg-sibs-orange text-white shadow-sm"
+                          : "text-sibs-muted hover:text-sibs-navy"
                       }`}
                     >
                       <LayoutGrid size={13} />
@@ -898,10 +898,10 @@ export default function CandidatePipelinePage() {
                     <button
                       type="button"
                       onClick={() => setBoardSubView("list")}
-                      className={`inline-flex h-7.5 2xl:h-8 items-center justify-center gap-1.5 rounded-lg px-3 text-[11px] 2xl:text-xs font-extrabold transition ${
+                      className={`inline-flex h-7.5 2xl:h-8 items-center justify-center gap-1.5 rounded-[10px] px-3 text-[11px] 2xl:text-xs font-extrabold transition ${
                         boardSubView === "list"
-                          ? "bg-[#FF5C28] text-white shadow-sm"
-                          : "text-[#667085] hover:text-[#042C51]"
+                          ? "bg-sibs-orange text-white shadow-sm"
+                          : "text-sibs-muted hover:text-sibs-navy"
                       }`}
                     >
                       <List size={13} />
@@ -912,29 +912,15 @@ export default function CandidatePipelinePage() {
               ) : null}
             </div>
 
-            <div className="mt-3 grid grid-cols-1 gap-2.5 border-t border-[#E6ECF2] pt-3 sm:grid-cols-2 lg:grid-cols-5">
-              <div className="relative min-w-0">
-                <Search
-                  size={15}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-[#98A2B3]"
-                />
-                <input
-                  value={search}
-                  onChange={(event) => setSearch(event.target.value)}
-                  placeholder="Search candidate name, ID, or email..."
-                  className="h-8.5 w-full rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] pl-8.5 pr-8 sibs-text-xs font-semibold text-[#042C51] outline-none transition placeholder:text-[#98A2B3] hover:border-[#042C51]/45 hover:bg-white focus:border-[#042C51] focus:bg-white focus:ring-4 focus:ring-[#042C51]/10 2xl:h-10"
-                />
-                {cleanText(search) ? (
-                  <button
-                    type="button"
-                    onClick={() => setSearch("")}
-                    aria-label="Clear search"
-                    className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-[#98A2B3] transition hover:bg-white hover:text-[#042C51]"
-                  >
-                    <X size={13} />
-                  </button>
-                ) : null}
-              </div>
+            <div className="mt-3 grid grid-cols-1 gap-2.5 border-t border-sibs-border pt-3 sm:grid-cols-2 lg:grid-cols-5">
+              <SearchInput
+                value={search}
+                onChange={setSearch}
+                onClear={() => setSearch("")}
+                placeholder="Search candidate name, ID, or email..."
+                ariaLabel="Search candidate name, ID, or email"
+                className="min-w-0"
+              />
 
               <FilterDropdown
                 value={departmentFilter}

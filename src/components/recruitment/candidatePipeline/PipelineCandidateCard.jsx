@@ -66,7 +66,7 @@ function getCompactStatusTextClass(value = "") {
     return "text-red-600";
   }
 
-  return "text-[#475467]";
+  return "text-sibs-muted";
 }
 
 const PipelineCandidateCard = ({
@@ -171,26 +171,26 @@ const PipelineCandidateCard = ({
       onClick={openCandidate}
       onKeyDown={handleCardKeyDown}
       aria-label={`Open Candidate Pipeline record for ${candidate.name || "candidate"}`}
-      className="group cursor-pointer overflow-hidden rounded-xl border border-[#D7DEE8] bg-white p-3 font-jakarta shadow-[0_3px_9px_rgba(4,44,81,0.04)] outline-none transition-all duration-200 hover:-translate-y-0.5 hover:border-[#042C51]/25 hover:shadow-[0_8px_18px_rgba(4,44,81,0.08)] focus-visible:border-[#FF5C28]/50 focus-visible:ring-2 focus-visible:ring-[#FF5C28]/20"
+      className="group cursor-pointer overflow-hidden rounded-[10px] border border-sibs-border bg-white p-3 font-jakarta shadow-[0_3px_9px_rgba(4,44,81,0.04)] outline-none transition-all duration-200 hover:-translate-y-0.5 hover:border-sibs-navy/25 hover:shadow-[0_8px_18px_rgba(4,44,81,0.08)] focus-visible:border-sibs-orange/50 focus-visible:ring-2 focus-visible:ring-sibs-orange/20"
     >
       <div className="flex items-start justify-between gap-2.5">
         <div className="flex min-w-0 flex-1 items-start gap-1.5">
           <GripVertical
             size={12}
-            className="mt-0.5 shrink-0 text-[#C5D2E0] transition-colors group-hover:text-[#94A9C1]"
+            className="mt-0.5 shrink-0 text-slate-300 transition-colors group-hover:text-sibs-faint"
             aria-hidden="true"
           />
 
           <div className="min-w-0 flex-1">
             <h3
               title={candidate.name || "Unnamed candidate"}
-              className="truncate text-[11px] font-extrabold uppercase leading-[1.4] text-[#042C51]"
+              className="truncate text-[11px] font-extrabold uppercase leading-[1.4] text-sibs-navy"
             >
               {candidate.name || "Unnamed candidate"}
             </h3>
             <p
               title={candidate.email || "No email saved"}
-              className="mt-0.5 truncate text-[9px] font-semibold text-[#91A4BE]"
+              className="mt-0.5 truncate text-[9px] font-semibold text-sibs-faint"
             >
               {candidate.email || "No email saved"}
             </p>
@@ -203,28 +203,28 @@ const PipelineCandidateCard = ({
       <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
         <span
           title={`Acquisition source: ${candidate.source || "Pipeline"}`}
-          className="inline-flex max-w-[120px] truncate rounded-md border border-blue-100 bg-[#E9F0FC] px-2 py-0.5 text-[8.5px] font-extrabold uppercase tracking-tight text-blue-700"
+          className="inline-flex max-w-[120px] truncate rounded-[10px] border border-blue-100 bg-blue-50 px-2 py-0.5 text-[8.5px] font-extrabold uppercase tracking-tight text-blue-700"
         >
           {candidate.source || "Pipeline"}
         </span>
 
         <span
           title={`PRF status: ${candidate.prfStatus || "Review"}`}
-          className={`ml-auto inline-flex max-w-[118px] truncate rounded-md border px-2 py-0.5 text-[8.5px] font-extrabold uppercase tracking-tight ${getReferencePrfStatusClass(candidate.prfStatus || "Review")}`}
+          className={`ml-auto inline-flex max-w-[118px] truncate rounded-[10px] border px-2 py-0.5 text-[8.5px] font-extrabold uppercase tracking-tight ${getReferencePrfStatusClass(candidate.prfStatus || "Review")}`}
         >
           {candidate.prfStatus || "Review"}
         </span>
 
         {isSuccessfulHeadcount && (
-          <span className="basis-full inline-flex w-fit rounded-md border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[8px] font-extrabold uppercase tracking-wide text-emerald-700">
+          <span className="basis-full inline-flex w-fit rounded-[10px] border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[8px] font-extrabold uppercase tracking-wide text-emerald-700">
             Successful HC
           </span>
         )}
       </div>
 
-      <div className="mt-2.5 grid grid-cols-2 gap-2 rounded-lg border border-[#E9EEF4] bg-[#F8FAFC] px-2.5 py-2.5">
-        <div className="min-w-0 border-r border-[#E1E8F0] pr-2">
-          <p className="text-[8px] font-extrabold uppercase tracking-wide text-[#91A4BE]">
+      <div className="mt-2.5 grid grid-cols-2 gap-2 rounded-[10px] border border-sibs-border bg-sibs-surface px-2.5 py-2.5">
+        <div className="min-w-0 border-r border-sibs-border pr-2">
+          <p className="text-[8px] font-extrabold uppercase tracking-wide text-sibs-faint">
             Position
           </p>
           <p
@@ -234,7 +234,7 @@ const PipelineCandidateCard = ({
               candidate.currentAppliedRole ||
               ""
             }
-            className="mt-0.5 truncate text-[10px] font-extrabold text-[#042C51]"
+            className="mt-0.5 truncate text-[10px] font-extrabold text-sibs-navy"
           >
             {getRoleTitle(candidate.roleAccount) ||
               candidate.roleTitle ||
@@ -244,12 +244,12 @@ const PipelineCandidateCard = ({
         </div>
 
         <div className="min-w-0 pl-0.5">
-          <p className="truncate text-[8px] font-extrabold uppercase tracking-wide text-[#91A4BE]">
+          <p className="truncate text-[8px] font-extrabold uppercase tracking-wide text-sibs-faint">
             {resolvedAccountLabel}
           </p>
           <p
             title={getPipelineAccountValue(candidate) || ""}
-            className="mt-0.5 truncate text-[10px] font-extrabold text-[#042C51]"
+            className="mt-0.5 truncate text-[10px] font-extrabold text-sibs-navy"
           >
             {getPipelineAccountValue(candidate) || ""}
           </p>
@@ -259,9 +259,9 @@ const PipelineCandidateCard = ({
       <div className="mt-2.5 grid grid-cols-2 gap-1.5">
         <div
           title={`Assessment Status: ${assessmentLabel}`}
-          className="flex min-w-0 items-center justify-between gap-1.5 truncate rounded-lg border border-[#E6ECF2] bg-[#F8FAFC] px-2 py-1.5"
+          className="flex min-w-0 items-center justify-between gap-1.5 truncate rounded-[10px] border border-sibs-border bg-sibs-surface px-2 py-1.5"
         >
-          <span className="shrink-0 text-[7.5px] font-extrabold uppercase tracking-tight text-[#91A4BE]">
+          <span className="shrink-0 text-[7.5px] font-extrabold uppercase tracking-tight text-sibs-faint">
             Assess
           </span>
           <span
@@ -275,9 +275,9 @@ const PipelineCandidateCard = ({
 
         <div
           title={`Interview Status: ${interviewStatus || "Pending"}`}
-          className="flex min-w-0 items-center justify-between gap-1.5 truncate rounded-lg border border-[#E6ECF2] bg-[#F8FAFC] px-2 py-1.5"
+          className="flex min-w-0 items-center justify-between gap-1.5 truncate rounded-[10px] border border-sibs-border bg-sibs-surface px-2 py-1.5"
         >
-          <span className="shrink-0 text-[7.5px] font-extrabold uppercase tracking-tight text-[#91A4BE]">
+          <span className="shrink-0 text-[7.5px] font-extrabold uppercase tracking-tight text-sibs-faint">
             Interview
           </span>
           <span
@@ -293,34 +293,34 @@ const PipelineCandidateCard = ({
       {(candidate.currentStage === "Interview Scheduled" ||
         candidate.currentStage === "Interviewed") &&
         candidate.interviewDate && (
-          <div className="mt-2.5 rounded-lg border border-sky-100 bg-sky-50/70 px-2.5 py-2">
-            <p className="flex items-center gap-1.5 text-[9px] font-extrabold text-[#042C51]">
-              <CalendarDays size={12} className="text-[#FF5C28]" />
+          <div className="mt-2.5 rounded-[10px] border border-sky-100 bg-sky-50/70 px-2.5 py-2">
+            <p className="flex items-center gap-1.5 text-[9px] font-extrabold text-sibs-navy">
+              <CalendarDays size={12} className="text-sibs-orange" />
               {formatDateTime(candidate.interviewDate)}
             </p>
-            <p className="mt-0.5 text-[8.5px] font-semibold text-[#667085]">
+            <p className="mt-0.5 text-[8.5px] font-semibold text-sibs-muted">
               {getDisplayInterviewType(candidate)}
             </p>
           </div>
         )}
 
       {isDropOff && (
-        <div className="mt-2.5 rounded-lg border border-[#E6ECF2] bg-[#F8FAFC] px-2.5 py-2.5">
+        <div className="mt-2.5 rounded-[10px] border border-sibs-border bg-sibs-surface px-2.5 py-2.5">
           <div className="flex items-center justify-between gap-2">
-            <p className="text-[8px] font-extrabold uppercase tracking-wide text-[#667085]">
+            <p className="text-[8px] font-extrabold uppercase tracking-wide text-sibs-muted">
               Email Notification
             </p>
             <span
-              className={`rounded-full border px-2 py-0.5 text-[8px] font-extrabold ${dropOffEmailStatusClass}`}
+              className={`rounded-[10px] border px-2 py-0.5 text-[8px] font-extrabold ${dropOffEmailStatusClass}`}
             >
               {dropOffEmailStatus}
             </span>
           </div>
-          <p className="mt-1 truncate text-[8.5px] font-semibold text-[#667085]">
+          <p className="mt-1 truncate text-[8.5px] font-semibold text-sibs-muted">
             {dropOffEmailRecipient}
           </p>
           {dropOffEmailLastActivity && (
-            <p className="mt-1 text-[8px] font-semibold text-[#98A2B3]">
+            <p className="mt-1 text-[8px] font-semibold text-sibs-faint">
               {formatDateTime(dropOffEmailLastActivity)}
             </p>
           )}
@@ -330,17 +330,17 @@ const PipelineCandidateCard = ({
       {latestTimeline?.reason && (
         <p
           title={latestTimeline.reason}
-          className="mt-2.5 truncate rounded-lg border border-[#E9EEF4] bg-[#F8FAFC] px-2.5 py-1.5 text-[9px] font-semibold text-[#667085]"
+          className="mt-2.5 truncate rounded-[10px] border border-sibs-border bg-sibs-surface px-2.5 py-1.5 text-[9px] font-semibold text-sibs-muted"
         >
-          <span className="mr-1 font-extrabold text-[#A5B4C5]">•</span>
+          <span className="mr-1 font-extrabold text-sibs-faint">•</span>
           {latestTimeline.reason}
         </p>
       )}
 
-      <div className="mt-2.5 flex items-center justify-between gap-2 border-t border-[#E9EEF4] pt-2.5">
+      <div className="mt-2.5 flex items-center justify-between gap-2 border-t border-sibs-border pt-2.5">
         <p
           title={candidate.candidateId || candidate.candidateApplicationId || "—"}
-          className="min-w-0 max-w-[118px] truncate font-mono text-[8px] font-bold text-[#91A4BE]"
+          className="min-w-0 max-w-[118px] truncate font-mono text-[8px] font-bold text-sibs-faint"
         >
           {candidate.candidateId || candidate.candidateApplicationId || "—"}
         </p>
@@ -353,7 +353,7 @@ const PipelineCandidateCard = ({
           <button
             type="button"
             onClick={() => onViewCandidate?.(candidate)}
-            className="inline-flex h-6 w-6 items-center justify-center rounded-md border border-[#D6DEE8] bg-white text-[#042C51] transition hover:-translate-y-0.5 hover:border-[#042C51]/35 hover:bg-[#F8FAFC]"
+            className="inline-flex h-6 w-6 items-center justify-center rounded-[10px] border border-sibs-border bg-white text-sibs-navy transition hover:-translate-y-0.5 hover:border-sibs-navy/35 hover:bg-sibs-surface"
             title="View Details"
             aria-label="View Details"
           >
@@ -364,7 +364,7 @@ const PipelineCandidateCard = ({
             <button
               type="button"
               onClick={() => handleResendDropOffEmail(candidate)}
-              className="inline-flex h-6 w-6 items-center justify-center rounded-md border border-blue-100 bg-blue-50 text-blue-700 transition hover:-translate-y-0.5 hover:bg-blue-100"
+              className="inline-flex h-6 w-6 items-center justify-center rounded-[10px] border border-blue-100 bg-blue-50 text-blue-700 transition hover:-translate-y-0.5 hover:bg-blue-100"
               title="Resend Drop-off Email"
               aria-label="Resend Drop-off Email"
             >
@@ -380,7 +380,7 @@ const PipelineCandidateCard = ({
                 if (isInterviewInProgress) return;
                 onOpenAssessmentModal(candidate);
               }}
-              className={`inline-flex h-6 w-6 items-center justify-center rounded-md border border-cyan-100 bg-cyan-50 text-cyan-700 transition hover:-translate-y-0.5 hover:bg-cyan-100 ${disabledActionClass}`}
+              className={`inline-flex h-6 w-6 items-center justify-center rounded-[10px] border border-cyan-100 bg-cyan-50 text-cyan-700 transition hover:-translate-y-0.5 hover:bg-cyan-100 ${disabledActionClass}`}
               title="Update Assessment"
               aria-label="Update Assessment"
             >
@@ -396,7 +396,7 @@ const PipelineCandidateCard = ({
                 if (isInterviewInProgress) return;
                 onOpenScheduleModal(candidate);
               }}
-              className={`inline-flex h-6 w-6 items-center justify-center rounded-md border border-blue-100 bg-blue-50 text-blue-700 transition hover:-translate-y-0.5 hover:bg-blue-100 ${disabledActionClass}`}
+              className={`inline-flex h-6 w-6 items-center justify-center rounded-[10px] border border-blue-100 bg-blue-50 text-blue-700 transition hover:-translate-y-0.5 hover:bg-blue-100 ${disabledActionClass}`}
               title="Schedule Interview"
               aria-label="Schedule Interview"
             >
@@ -413,7 +413,7 @@ const PipelineCandidateCard = ({
                   if (isInterviewInProgress) return;
                   onOpenScheduleModal(candidate);
                 }}
-                className={`inline-flex h-6 w-6 items-center justify-center rounded-md border border-blue-100 bg-blue-50 text-blue-700 transition hover:-translate-y-0.5 hover:bg-blue-100 ${disabledActionClass}`}
+                className={`inline-flex h-6 w-6 items-center justify-center rounded-[10px] border border-blue-100 bg-blue-50 text-blue-700 transition hover:-translate-y-0.5 hover:bg-blue-100 ${disabledActionClass}`}
                 title="Update Interview Schedule"
                 aria-label="Update Interview Schedule"
               >
@@ -427,7 +427,7 @@ const PipelineCandidateCard = ({
                   if (isInterviewInProgress) return;
                   onCancelInterview(candidate);
                 }}
-                className={`inline-flex h-6 w-6 items-center justify-center rounded-md border border-red-100 bg-red-50 text-red-600 transition hover:-translate-y-0.5 hover:bg-red-100 ${disabledActionClass}`}
+                className={`inline-flex h-6 w-6 items-center justify-center rounded-[10px] border border-red-100 bg-red-50 text-red-600 transition hover:-translate-y-0.5 hover:bg-red-100 ${disabledActionClass}`}
                 title="Cancel Interview"
                 aria-label="Cancel Interview"
               >
@@ -469,7 +469,7 @@ const PipelineCandidateCard = ({
                       },
                     );
                   }}
-                  className={`inline-flex h-6 w-6 items-center justify-center rounded-md bg-[#042C51] text-white transition hover:-translate-y-0.5 hover:bg-[#063C69] ${disabledActionClass}`}
+                  className={`inline-flex h-6 w-6 items-center justify-center rounded-[10px] bg-sibs-navy text-white transition hover:-translate-y-0.5 hover:bg-sibs-navy-hover ${disabledActionClass}`}
                   title="Start Interview"
                   aria-label="Start Interview"
                 >
@@ -487,7 +487,7 @@ const PipelineCandidateCard = ({
                 if (isInterviewInProgress) return;
                 onOpenMoveModal(candidate);
               }}
-              className={`inline-flex h-6 items-center justify-center gap-0.5 rounded-md bg-[#FF5C28] px-2 text-[8.5px] font-extrabold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-[#E94F1F] ${disabledActionClass}`}
+              className={`inline-flex h-6 items-center justify-center gap-0.5 rounded-[10px] bg-sibs-orange px-2 text-[8.5px] font-extrabold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-sibs-orange-hover ${disabledActionClass}`}
               title={`Move to ${nextStage}`}
               aria-label={`Move to ${nextStage}`}
             >
@@ -505,7 +505,7 @@ export function PipelineCandidateCardSkeleton() {
   return (
     <article
       data-testid="pipeline-candidate-card-skeleton"
-      className="overflow-hidden rounded-xl border border-[#D7DEE8] bg-white p-3 font-jakarta shadow-[0_3px_9px_rgba(4,44,81,0.04)]"
+      className="overflow-hidden rounded-[10px] border border-sibs-border bg-white p-3 font-jakarta shadow-[0_3px_9px_rgba(4,44,81,0.04)]"
       aria-hidden="true"
     >
       <div className="flex items-start justify-between gap-2.5">
@@ -520,12 +520,12 @@ export function PipelineCandidateCardSkeleton() {
       </div>
 
       <div className="mt-2.5 flex items-center justify-between gap-2">
-        <div className="h-4 w-16 rounded-md bg-sibs-tertiary-9 animate-sibs-pulse motion-reduce:animate-none" />
-        <div className="h-4 w-14 rounded-md bg-sibs-tertiary-9 animate-sibs-pulse motion-reduce:animate-none" />
+        <div className="h-4 w-16 rounded-[10px] bg-sibs-tertiary-9 animate-sibs-pulse motion-reduce:animate-none" />
+        <div className="h-4 w-14 rounded-[10px] bg-sibs-tertiary-9 animate-sibs-pulse motion-reduce:animate-none" />
       </div>
 
-      <div className="mt-2.5 grid grid-cols-2 gap-2 rounded-lg border border-[#E9EEF4] bg-[#F8FAFC] px-2.5 py-2.5">
-        <div className="min-w-0 border-r border-[#E1E8F0] pr-2 space-y-1">
+      <div className="mt-2.5 grid grid-cols-2 gap-2 rounded-[10px] border border-sibs-border bg-sibs-surface px-2.5 py-2.5">
+        <div className="min-w-0 border-r border-sibs-border pr-2 space-y-1">
           <div className="h-2 w-10 rounded bg-sibs-tertiary-9 animate-sibs-pulse motion-reduce:animate-none" />
           <div className="h-2.5 w-20 rounded bg-sibs-tertiary-9 animate-sibs-pulse motion-reduce:animate-none" />
         </div>
@@ -536,15 +536,15 @@ export function PipelineCandidateCardSkeleton() {
       </div>
 
       <div className="mt-2.5 grid grid-cols-2 gap-1.5">
-        <div className="h-6 rounded-lg border border-[#E6ECF2] bg-[#F8FAFC] px-2 py-1.5" />
-        <div className="h-6 rounded-lg border border-[#E6ECF2] bg-[#F8FAFC] px-2 py-1.5" />
+        <div className="h-6 rounded-[10px] border border-sibs-border bg-sibs-surface px-2 py-1.5" />
+        <div className="h-6 rounded-[10px] border border-sibs-border bg-sibs-surface px-2 py-1.5" />
       </div>
 
-      <div className="mt-2.5 flex items-center justify-between gap-2 border-t border-[#E9EEF4] pt-2.5">
+      <div className="mt-2.5 flex items-center justify-between gap-2 border-t border-sibs-border pt-2.5">
         <div className="h-2.5 w-16 rounded bg-sibs-tertiary-9 animate-sibs-pulse motion-reduce:animate-none" />
         <div className="flex shrink-0 items-center gap-1">
-          <div className="h-6 w-6 rounded-md bg-sibs-tertiary-9 animate-sibs-pulse motion-reduce:animate-none" />
-          <div className="h-6 w-14 rounded-md bg-sibs-tertiary-9 animate-sibs-pulse motion-reduce:animate-none" />
+          <div className="h-6 w-6 rounded-[10px] bg-sibs-tertiary-9 animate-sibs-pulse motion-reduce:animate-none" />
+          <div className="h-6 w-14 rounded-[10px] bg-sibs-tertiary-9 animate-sibs-pulse motion-reduce:animate-none" />
         </div>
       </div>
     </article>

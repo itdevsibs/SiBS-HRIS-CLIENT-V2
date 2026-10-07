@@ -7,8 +7,8 @@ import CandidateMovementHistoryDrawer, {
 } from "./CandidateMovementHistoryDrawer";
 
 const PRIMARY_VARIANTS = {
-  orange: "bg-[#FF5C28] hover:bg-[#E94F1F] focus-visible:ring-[#FF5C28]/20",
-  navy: "bg-[#042C51] hover:bg-[#063C69] focus-visible:ring-[#042C51]/20",
+  orange: "bg-sibs-orange hover:bg-sibs-orange-deep focus-visible:ring-sibs-orange/20",
+  navy: "bg-sibs-navy hover:bg-sibs-navy/90 focus-visible:ring-sibs-navy/20",
   emerald: "bg-emerald-600 hover:bg-emerald-700 focus-visible:ring-emerald-500/20",
   red: "bg-red-600 hover:bg-red-700 focus-visible:ring-red-500/20",
 };
@@ -64,18 +64,18 @@ export function CandidateModalSection({
         <div className="mb-3.5 flex flex-col gap-3 border-b border-sibs-border pb-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex min-w-0 items-start gap-2.5">
             {icon ? (
-              <span className="sibs-tone-navy-icon inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl">
+              <span className="sibs-tone-navy-icon inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px]">
                 {icon}
               </span>
             ) : null}
             <div className="min-w-0 pt-0.5">
               {title ? (
-                <h3 className="sibs-modal-section-title text-[#042C51]">
+                <h3 className="sibs-modal-section-title text-sibs-navy">
                   {title}
                 </h3>
               ) : null}
               {subtitle ? (
-                <p className="sibs-modal-section-subtitle mt-0.5 text-[#667085]">
+                <p className="sibs-modal-section-subtitle mt-0.5 text-sibs-muted">
                   {subtitle}
                 </p>
               ) : null}
@@ -354,7 +354,7 @@ export default function CandidatePipelineModalShell({
               ) : (
                 <div className="flex min-w-0 items-center gap-2.5 2xl:gap-3">
                   {Icon ? (
-                    <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-[#FF5C28] text-white shadow-[0_6px_16px_rgba(255,92,40,0.28)] 2xl:h-9 2xl:w-9">
+                    <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] border border-white/10 bg-sibs-orange text-white shadow-[0_6px_16px_rgba(255,92,40,0.28)] 2xl:h-9 2xl:w-9">
                       <Icon size={16} />
                     </span>
                   ) : null}
@@ -399,13 +399,13 @@ export default function CandidatePipelineModalShell({
                       ? "Close Movement History"
                       : `Open Movement History, ${movementHistoryItems.length} records`
                   }
-                  className={`inline-flex h-8 items-center justify-center gap-1.5 rounded-xl border px-2.5 text-[9px] font-extrabold text-white shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF5C28]/40 2xl:h-8.5 2xl:text-[10px] ${
+                  className={`inline-flex h-8 items-center justify-center gap-1.5 rounded-[10px] border px-2.5 text-[9px] font-extrabold text-white shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sibs-orange/40 2xl:h-8.5 2xl:text-[10px] ${
                     movementHistoryOpen
-                      ? "border-[#FF8A61]/70 bg-white/10 shadow-[0_0_14px_rgba(255,92,40,0.16)]"
-                      : "border-white/15 bg-white/[0.06] hover:border-[#FF8A61]/55 hover:bg-white/10"
+                      ? "border-orange-300/70 bg-white/10 shadow-[0_0_14px_rgba(255,92,40,0.16)]"
+                      : "border-white/15 bg-white/[0.06] hover:border-orange-300/55 hover:bg-white/10"
                   }`}
                 >
-                  <History size={12} className="text-[#FF5C28]" />
+                  <History size={12} className="text-sibs-orange" />
                   <span className="hidden sm:inline">Movement History</span>
                   <span>({movementHistoryItems.length})</span>
                 </button>

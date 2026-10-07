@@ -3,13 +3,13 @@ export default function StatCard({
   value,
   icon: Icon,
   description,
-  valueClassName = "text-sibs-primary-1",
+  valueClassName = "text-sibs-navy",
 }) {
   return (
-    <div className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
+    <div className="rounded-[10px] border border-sibs-border bg-white p-5 shadow-sm">
       <div className="flex items-center justify-between gap-4">
         <div className="min-w-0">
-          <p className="truncate text-xs font-bold uppercase tracking-wide text-sibs-tertiary-5">
+          <p className="truncate text-xs font-bold uppercase tracking-wide text-sibs-muted">
             {title}
           </p>
 
@@ -20,13 +20,13 @@ export default function StatCard({
           </p>
 
           {description && (
-            <p className="mt-1 truncate text-xs font-semibold text-sibs-tertiary-5">
+            <p className="mt-1 truncate text-xs font-semibold text-sibs-muted">
               {description}
             </p>
           )}
         </div>
 
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#F2F6FA] text-sibs-primary-1">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[10px] bg-sky-50 text-sibs-navy">
           <Icon size={22} />
         </div>
       </div>

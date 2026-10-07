@@ -68,7 +68,7 @@ export function sanitizeOfferRoleTitle(value, account = "") {
 }
 
 export function inputClass(extra = "") {
-  return `h-11 w-full rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-semibold outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${extra}`;
+  return `h-11 w-full rounded-[10px] border border-sibs-border bg-white px-4 text-sm font-semibold outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${extra}`;
 }
 
 export function calculateDailyRate(basicPay, deminimisDailyRate) {

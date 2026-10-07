@@ -92,23 +92,23 @@ function DropOffCategoryDropdown({
         onClick={handleToggle}
         aria-haspopup="listbox"
         aria-expanded={open}
-        className={`flex h-8.5 2xl:h-10 w-full min-w-0 items-center justify-between gap-3 rounded-xl border bg-white px-3 text-left sibs-text-xs font-bold shadow-sm outline-none transition ${
+        className={`flex h-8.5 2xl:h-10 w-full min-w-0 items-center justify-between gap-3 rounded-[10px] border bg-white px-3 text-left sibs-text-xs font-bold shadow-sm outline-none transition ${
           hasError
             ? "border-red-400 ring-4 ring-red-100"
             : open
               ? "border-sibs-primary-1 ring-4 ring-sibs-primary-1/10"
-              : "border-[#D6DEE8] hover:border-sibs-primary-1"
+              : "border-sibs-border hover:border-sibs-primary-1"
         } ${
           disabled
             ? "cursor-not-allowed bg-slate-100 text-slate-400 opacity-70"
-            : "text-[#344054]"
+            : "text-sibs-navy"
         }`}
       >
         <span
           className={`min-w-0 flex-1 truncate ${
             selectedOption
-              ? "text-[#344054]"
-              : "text-[#98A2B3]"
+              ? "text-sibs-navy"
+              : "text-sibs-faint"
           }`}
         >
           {selectedOption || placeholder}
@@ -123,7 +123,7 @@ function DropOffCategoryDropdown({
       </button>
 
       {open && !disabled && (
-        <div className="sibs-dropdown-pop-in absolute left-0 top-[calc(100%+8px)] z-[99999] w-full overflow-hidden rounded-xl border border-[#D6DEE8] bg-white shadow-[0_18px_45px_rgba(15,23,42,0.16)]">
+        <div className="sibs-dropdown-pop-in absolute left-0 top-[calc(100%+8px)] z-[99999] w-full overflow-hidden rounded-[10px] border border-sibs-border bg-white shadow-[0_18px_45px_rgba(15,23,42,0.16)]">
           <div
             role="listbox"
             aria-label="Drop-off reason category"
@@ -143,8 +143,8 @@ function DropOffCategoryDropdown({
                     onClick={() => handleSelect(option)}
                     className={`flex min-h-[38px] 2xl:min-h-[42px] w-full items-center px-3 py-1.5 2xl:py-2 text-left sibs-text-xs font-semibold transition ${
                       active
-                        ? "bg-[#EAF2FB] text-sibs-primary-1 font-extrabold"
-                        : "bg-white text-[#475467] hover:bg-[#F8FAFC] hover:text-sibs-primary-1"
+                        ? "bg-sky-50 text-sky-800 font-extrabold"
+                        : "bg-white text-sibs-navy hover:bg-sibs-surface hover:text-sibs-primary-1"
                     }`}
                   >
                     <span className="min-w-0 flex-1 truncate">
@@ -154,7 +154,7 @@ function DropOffCategoryDropdown({
                 );
               })
             ) : (
-              <div className="px-4 py-3 text-sm font-semibold text-[#98A2B3]">
+              <div className="px-4 py-3 text-sm font-semibold text-sibs-faint">
                 No categories available.
               </div>
             )}
@@ -256,7 +256,7 @@ const DropOffModal = ({
           statusClass="border-red-100 bg-red-50 text-red-700"
         />
 
-        <div className="rounded-xl border border-red-100 bg-red-50 px-4 py-3">
+        <div className="rounded-[10px] border border-red-100 bg-red-50 px-4 py-3">
           <div className="flex items-start gap-3">
             <UserX size={17} className="mt-0.5 shrink-0 text-red-600" />
             <div>
@@ -273,8 +273,8 @@ const DropOffModal = ({
         <CandidateModalSection title="Drop-off Details">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="relative z-[50]">
-              <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
-                Reason Category <span className="text-[#FF5C28]"> *</span>
+              <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-sibs-faint">
+                Reason Category <span className="text-sibs-orange"> *</span>
               </label>
               <DropOffCategoryDropdown
                 value={form?.category || ""}
@@ -292,8 +292,8 @@ const DropOffModal = ({
             </div>
 
             <label className="block">
-              <span className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
-                Drop-off Reason <span className="text-[#FF5C28]"> *</span>
+              <span className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-sibs-faint">
+                Drop-off Reason <span className="text-sibs-orange"> *</span>
               </span>
               <textarea
                 required
@@ -309,7 +309,7 @@ const DropOffModal = ({
             </label>
 
             <label className="block">
-              <span className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+              <span className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-sibs-faint">
                 Internal Remarks
               </span>
               <textarea

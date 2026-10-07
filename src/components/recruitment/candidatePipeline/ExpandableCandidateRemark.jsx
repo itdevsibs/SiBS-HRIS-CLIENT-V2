@@ -41,7 +41,7 @@ export default function ExpandableCandidateRemark({ value }) {
   }, [text]);
 
   const textClassName =
-    "m-0 break-words text-[11.5px] font-extrabold leading-tight text-[#042C51] 2xl:text-xs";
+    "m-0 break-words text-[11.5px] font-extrabold leading-tight text-sibs-navy 2xl:text-xs";
 
   return (
     <>
@@ -67,7 +67,7 @@ export default function ExpandableCandidateRemark({ value }) {
           aria-expanded={expanded}
           aria-controls={remarkId}
           onClick={() => setExpanded((current) => !current)}
-          className="mt-1 inline-flex min-h-7 items-center rounded text-[10px] font-bold text-[#174A7C] underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF5C28]"
+          className="mt-1 inline-flex min-h-7 items-center rounded text-[10px] font-bold text-sibs-navy underline-offset-2 hover:text-sibs-orange hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sibs-orange"
         >
           {expanded ? "Show less" : "Show more"}
         </button>

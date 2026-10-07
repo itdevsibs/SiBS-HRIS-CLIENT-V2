@@ -158,7 +158,7 @@ function FieldLabel({ children, required = false }) {
 
 function PositionFormSection({ title, subtitle, icon: Icon, children }) {
   return (
-    <section className="rounded-xl 2xl:rounded-2xl border border-sibs-border bg-white p-3.5 sm:p-4 2xl:p-5 shadow-[0_8px_24px_rgba(4,44,81,0.04)] font-jakarta">
+    <section className="rounded-[14px] border border-sibs-border bg-white p-3.5 sm:p-4 2xl:p-5 shadow-[0_8px_24px_rgba(4,44,81,0.04)] font-jakarta">
       <div className="mb-3 2xl:mb-4 flex items-start gap-2.5 border-b border-sibs-border pb-2.5 2xl:pb-3">
         {Icon ? <Icon className="mt-0.5 h-3.5 w-3.5 2xl:h-4 2xl:w-4 shrink-0 text-sibs-orange" /> : null}
 
@@ -867,12 +867,12 @@ export default function PositionFormModal({
         aria-labelledby="available-position-modal-title"
         onSubmit={handleFormSubmit}
         onClick={(event) => event.stopPropagation()}
-        className="sibs-modal-pop-in flex max-h-[92dvh] w-full max-w-5xl 2xl:max-w-6xl flex-col overflow-hidden rounded-2xl border border-white/70 bg-slate-50 shadow-2xl font-jakarta"
+        className="sibs-modal-pop-in flex max-h-[92dvh] w-full max-w-5xl 2xl:max-w-6xl flex-col overflow-hidden rounded-[14px] border border-white/70 bg-slate-50 shadow-2xl font-jakarta"
       >
         <header className="shrink-0 bg-sibs-navy px-4 py-3 text-white sm:px-5 2xl:px-6 2xl:py-3.5">
           <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex min-w-0 flex-1 items-center gap-2.5 2xl:gap-3">
-              <div className="flex h-8 w-8 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-lg border border-white/15 bg-white/10 text-sibs-orange">
+              <div className="flex h-8 w-8 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-[10px] border border-white/15 bg-white/10 text-sibs-orange">
                 <BriefcaseBusiness className="h-4 w-4 text-sibs-orange" />
               </div>
 
@@ -977,9 +977,9 @@ export default function PositionFormModal({
               icon={FileCheck2}
             >
               {isRelinkMode ? (
-                <section className="mb-3 rounded-xl border border-amber-300 bg-amber-50 p-3 sm:p-3.5">
+                <section className="mb-3 rounded-[10px] border border-amber-300 bg-amber-50 p-3 sm:p-3.5">
                   <div className="flex items-start gap-2.5">
-                    <span className="flex h-7.5 w-7.5 shrink-0 items-center justify-center rounded-lg bg-amber-100 text-amber-600">
+                    <span className="flex h-7.5 w-7.5 shrink-0 items-center justify-center rounded-[10px] bg-amber-100 text-amber-600">
                       <AlertTriangle size={15} strokeWidth={2.2} />
                     </span>
 
@@ -997,7 +997,7 @@ export default function PositionFormModal({
                     </div>
                   </div>
 
-                  <div className="mt-2.5 w-full rounded-xl border border-sibs-orange bg-white p-2 sm:p-2.5 shadow-[0_0_0_3px_rgba(255,92,40,0.08)]">
+                  <div className="mt-2.5 w-full rounded-[10px] border border-sibs-orange bg-white p-2 sm:p-2.5 shadow-[0_0_0_3px_rgba(255,92,40,0.08)]">
                     {approvedJdSelector}
                   </div>
                 </section>

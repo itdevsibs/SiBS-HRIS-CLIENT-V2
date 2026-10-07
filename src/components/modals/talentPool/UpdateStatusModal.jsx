@@ -24,14 +24,14 @@ export default function UpdateStatusModal() {
       onClick={closeStatus}
     >
       <div
-        className="sibs-modal-pop-in relative flex w-full max-w-lg flex-col overflow-visible rounded-2xl border border-sibs-border bg-white shadow-2xl"
+        className="sibs-modal-pop-in relative flex w-full max-w-lg flex-col overflow-visible rounded-[14px] border border-sibs-border bg-white shadow-2xl"
         onClick={(event) => event.stopPropagation()}
       >
         {/* SiBS Standard Dark Navy Modal Header */}
-        <header className="shrink-0 rounded-t-2xl bg-sibs-navy px-4 py-3 text-white sm:px-6 2xl:py-3.5">
+        <header className="shrink-0 rounded-t-[14px] bg-sibs-navy px-4 py-3 text-white sm:px-6 2xl:py-3.5">
           <div className="flex items-center justify-between gap-3">
             <div className="flex min-w-0 items-center gap-3">
-              <span className="inline-flex h-8.5 w-8.5 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-xl bg-sibs-orange text-white shadow-xs">
+              <span className="inline-flex h-8.5 w-8.5 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-[10px] bg-sibs-orange text-white shadow-xs">
                 <RefreshCcw size={16} />
               </span>
 
@@ -56,7 +56,7 @@ export default function UpdateStatusModal() {
               type="button"
               onClick={closeStatus}
               disabled={isSaving}
-              className="inline-flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 items-center justify-center rounded-lg border border-white/15 bg-white/10 text-white/80 transition hover:border-sibs-orange/60 hover:bg-sibs-orange hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+              className="sibs-modal-close-btn"
               aria-label="Close modal"
             >
               <X size={16} />
@@ -67,7 +67,7 @@ export default function UpdateStatusModal() {
         {/* Modal Body with Section Cards */}
         <div className="overflow-visible bg-sibs-surface p-4 sm:p-5 space-y-3.5">
           {/* Candidate Summary Card */}
-          <div className="rounded-xl border border-sibs-border bg-white p-4 shadow-[0_8px_22px_rgba(4,44,81,0.04)]">
+          <div className="rounded-[10px] border border-sibs-border bg-white p-4 shadow-[0_8px_22px_rgba(4,44,81,0.04)]">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <p className="text-[10px] font-extrabold uppercase tracking-wider text-sibs-muted">
@@ -91,7 +91,7 @@ export default function UpdateStatusModal() {
           </div>
 
           {/* Form Card */}
-          <div className="relative z-[50] overflow-visible rounded-xl border border-sibs-border bg-white p-4 shadow-[0_8px_22px_rgba(4,44,81,0.04)]">
+          <div className="relative z-[50] overflow-visible rounded-[10px] border border-sibs-border bg-white p-4 shadow-[0_8px_22px_rgba(4,44,81,0.04)]">
             <form
               id="update-status-form"
               onSubmit={submitStatus}
@@ -145,7 +145,7 @@ export default function UpdateStatusModal() {
         </div>
 
         {/* Standard SiBS Modal Footer */}
-        <footer className="relative z-[10] shrink-0 rounded-b-2xl border-t border-sibs-border bg-white px-4 py-2.5 sm:px-6 sm:py-3">
+        <footer className="relative z-[10] shrink-0 rounded-b-[14px] border-t border-sibs-border bg-white px-4 py-2.5 sm:px-6 sm:py-3">
           <div className="flex flex-col-reverse justify-end gap-2 sm:flex-row">
             <button
               type="button"

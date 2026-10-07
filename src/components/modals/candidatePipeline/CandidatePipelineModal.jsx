@@ -1507,7 +1507,7 @@ function getSummaryOutcomeTextClass(value = "") {
     return "text-red-600";
   }
 
-  return "text-[#344054]";
+  return "text-sibs-navy";
 }
 
 function getTimelineAssessmentScore(item = {}) {
@@ -2798,19 +2798,19 @@ function FormDropdown({
           type="button"
           disabled={disabled}
           onClick={handleToggle}
-          className={`flex h-11 w-full items-center justify-between gap-3 rounded-xl border bg-white px-4 text-left text-sm font-bold shadow-sm outline-none transition ${
+          className={`flex h-11 w-full items-center justify-between gap-3 rounded-[10px] border bg-white px-4 text-left text-sm font-bold shadow-sm outline-none transition ${
             open
-              ? "border-sibs-primary-1 ring-4 ring-sibs-primary-1/10"
-              : "border-[#D6DEE8] hover:border-sibs-primary-1"
+              ? "border-sibs-orange ring-4 ring-sibs-orange/10"
+              : "border-sibs-border hover:border-sibs-orange"
           } ${
             disabled
               ? "cursor-not-allowed bg-slate-100 text-slate-400 opacity-70"
-              : "text-[#344054]"
+              : "text-sibs-navy"
           }`}
         >
           <span
             className={`min-w-0 flex-1 truncate ${
-              selectedOption ? "text-[#344054]" : "text-[#98A2B3]"
+              selectedOption ? "text-sibs-navy" : "text-sibs-muted"
             }`}
           >
             {selectedOption?.label || placeholder}
@@ -2818,7 +2818,7 @@ function FormDropdown({
 
           <ChevronDown
             size={18}
-            className={`shrink-0 text-sibs-primary-1 transition-transform duration-200 ${
+            className={`shrink-0 text-sibs-navy transition-transform duration-200 ${
               open ? "rotate-180" : ""
             }`}
           />
@@ -2826,7 +2826,7 @@ function FormDropdown({
 
         {open && !disabled && (
           <div
-            className={`absolute left-0 z-[99999] max-h-[260px] w-full overflow-hidden rounded-xl border border-[#D6DEE8] bg-white shadow-[0_18px_45px_rgba(15,23,42,0.16)] ${
+            className={`absolute left-0 z-[99999] max-h-[260px] w-full overflow-hidden rounded-[10px] border border-sibs-border bg-white shadow-[0_18px_45px_rgba(15,23,42,0.16)] ${
               openUpward
                 ? "bottom-[calc(100%+8px)]"
                 : "top-[calc(100%+8px)]"
@@ -2843,8 +2843,8 @@ function FormDropdown({
                     onClick={() => handleSelect(option)}
                     className={`flex min-h-[44px] w-full items-center px-4 text-left text-sm font-semibold transition ${
                       active
-                        ? "bg-[#EAF2FB] text-sibs-primary-1"
-                        : "bg-white text-[#475467] hover:bg-[#F8FAFC] hover:text-sibs-primary-1"
+                        ? "bg-sibs-cream-light text-sibs-orange"
+                        : "bg-white text-sibs-navy hover:bg-sibs-surface hover:text-sibs-orange"
                     }`}
                   >
                     {option.label}
@@ -3169,10 +3169,10 @@ function RequirementCard({
 
   return (
     <div
-      className={`rounded-xl border p-4 transition ${
+      className={`rounded-[10px] border p-4 transition ${
         hasFiles
           ? "border-emerald-200 bg-emerald-50/50"
-          : "border-[#D9E2EC] bg-[#F8FAFC]"
+          : "border-sibs-border bg-sibs-surface"
       }`}
     >
       <div className="flex min-w-0 items-start gap-3">
@@ -3180,7 +3180,7 @@ function RequirementCard({
           className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border ${
             hasFiles
               ? "border-emerald-500 bg-emerald-500 text-white"
-              : "border-[#B9C7D6] bg-white"
+              : "border-sibs-border bg-white"
           }`}
         >
           {hasFiles && <Check size={14} strokeWidth={3} />}
@@ -3190,7 +3190,7 @@ function RequirementCard({
           <div className="flex min-w-0 items-start justify-between gap-2">
             <p
               title={requirement}
-              className="truncate text-sm font-extrabold text-[#101828]"
+              className="truncate text-sm font-extrabold text-sibs-navy"
             >
               {requirement}
             </p>
@@ -3220,7 +3220,7 @@ function RequirementCard({
                 return (
                   <div
                     key={`${uploadedFile.id}-${getNhoFileIdentity(uploadedFile)}`}
-                    className="flex min-w-0 items-center gap-2 rounded-xl border border-emerald-100 bg-white p-3"
+                    className="flex min-w-0 items-center gap-2 rounded-[10px] border border-emerald-100 bg-white p-3"
                   >
                     <button
                       type="button"
@@ -3252,7 +3252,7 @@ function RequirementCard({
                       type="button"
                       disabled={disabled}
                       onClick={() => onRemove?.(uploadedFile)}
-                      className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-red-100 bg-red-50 text-red-600 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-70"
+                      className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] border border-red-100 bg-red-50 text-red-600 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-70"
                       title="Remove this file"
                     >
                       <Trash2 size={15} />
@@ -3265,7 +3265,7 @@ function RequirementCard({
                 type="button"
                 disabled={disabled}
                 onClick={() => inputRef.current?.click()}
-                className="flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-dashed border-emerald-300 bg-emerald-50 px-3 text-xs font-extrabold text-emerald-700 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-70"
+                className="flex h-10 w-full items-center justify-center gap-2 rounded-[10px] border border-dashed border-emerald-300 bg-emerald-50 px-3 text-xs font-extrabold text-emerald-700 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-70"
               >
                 Add more files
                 <UploadCloud size={15} />
@@ -3276,7 +3276,7 @@ function RequirementCard({
               type="button"
               disabled={disabled}
               onClick={() => inputRef.current?.click()}
-              className="mt-3 flex w-full items-center justify-between rounded-xl border border-dashed border-[#B9C7D6] bg-white px-3 py-3 text-left text-xs font-extrabold text-sibs-primary-1 transition hover:border-sibs-primary-1 disabled:cursor-not-allowed disabled:opacity-70"
+              className="mt-3 flex w-full items-center justify-between rounded-[10px] border border-dashed border-sibs-border bg-white px-3 py-3 text-left text-xs font-extrabold text-sibs-navy transition hover:border-sibs-orange disabled:cursor-not-allowed disabled:opacity-70"
             >
               Upload files for this requirement
               <UploadCloud size={16} />
@@ -3301,12 +3301,12 @@ function RequirementCard({
 function FilePreviewPanel({ file }) {
   if (!file) {
     return (
-      <div className="flex min-h-[320px] flex-col items-center justify-center rounded-2xl border border-dashed border-[#B9C7D6] bg-[#F8FAFC] p-6 text-center">
-        <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-[#D9E2EC] bg-white text-sibs-primary-1 shadow-sm">
+      <div className="flex min-h-[320px] flex-col items-center justify-center rounded-[10px] border border-dashed border-sibs-border bg-sibs-surface p-6 text-center">
+        <div className="flex h-14 w-14 items-center justify-center rounded-[10px] border border-sibs-border bg-white text-sibs-primary-1 shadow-sm">
           <FileText size={27} />
         </div>
 
-        <p className="mt-4 text-base font-extrabold text-[#101828]">
+        <p className="mt-4 text-base font-extrabold text-sibs-navy">
           No file selected
         </p>
 
@@ -3326,9 +3326,9 @@ function FilePreviewPanel({ file }) {
       /\.(jpg|jpeg|png|gif|webp)$/i.test(file.fileName || ""));
 
   return (
-    <div className="rounded-2xl border border-[#D9E2EC] bg-[#F8FAFC] p-5">
+    <div className="rounded-[10px] border border-sibs-border bg-sibs-surface p-5">
       <div className="flex items-start gap-3">
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white text-sibs-primary-1 shadow-sm">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[10px] bg-white text-sibs-primary-1 shadow-sm">
           <FileIcon size={24} />
         </div>
 
@@ -3339,7 +3339,7 @@ function FilePreviewPanel({ file }) {
 
           <h3
             title={file.fileName || file.savedFileName}
-            className="mt-1 break-words text-base font-extrabold text-[#101828]"
+            className="mt-1 break-words text-base font-extrabold text-sibs-navy"
           >
             {file.fileName || file.savedFileName || "Uploaded file"}
           </h3>
@@ -3350,7 +3350,7 @@ function FilePreviewPanel({ file }) {
         </div>
       </div>
 
-      <div className="mt-5 space-y-3 rounded-xl border border-[#E6ECF2] bg-white p-4">
+      <div className="mt-5 space-y-3 rounded-[10px] border border-sibs-border bg-white p-4">
         <div>
           <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-tertiary-5">
             Requirement
@@ -3397,7 +3397,7 @@ function FilePreviewPanel({ file }) {
       </div>
 
       {isImage && (
-        <div className="mt-5 overflow-hidden rounded-xl border border-[#E6ECF2] bg-white">
+        <div className="mt-5 overflow-hidden rounded-[10px] border border-sibs-border bg-white">
           <img
             src={resolvedFileUrl}
             alt={file.fileName || "Uploaded file"}
@@ -3411,7 +3411,7 @@ function FilePreviewPanel({ file }) {
           href={resolvedFileUrl}
           target="_blank"
           rel="noreferrer"
-          className="mt-5 inline-flex h-11 w-full items-center justify-center rounded-xl bg-sibs-primary-1 px-4 text-sm font-extrabold text-white transition hover:opacity-90"
+          className="mt-5 inline-flex h-11 w-full items-center justify-center rounded-[10px] bg-sibs-navy px-4 text-sm font-extrabold text-white transition hover:bg-sibs-navy-light"
         >
           Open File
         </a>
@@ -3462,13 +3462,13 @@ function PreEmploymentRequirementsPanel({
   );
 
   return (
-    <div className="rounded-xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
+    <div className="rounded-[10px] border border-sibs-border bg-white p-5 shadow-sm">
       <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
         <div className="min-w-0 space-y-5">
-          <section className="rounded-2xl border border-[#D9E2EC] bg-white p-5 shadow-sm">
+          <section className="rounded-[10px] border border-sibs-border bg-white p-5 shadow-sm">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
               <div className="min-w-0">
-                <h3 className="break-words text-lg font-extrabold uppercase text-[#101828]">
+                <h3 className="break-words text-lg font-extrabold uppercase text-sibs-navy">
                   {candidateName || "Candidate"}
                 </h3>
 
@@ -3478,7 +3478,7 @@ function PreEmploymentRequirementsPanel({
               </div>
 
               <div className="flex shrink-0 flex-wrap gap-2">
-                <span className="rounded-full bg-[#F2F6FA] px-3 py-1 text-xs font-extrabold text-[#344054]">
+                <span className="rounded-full bg-sibs-surface px-3 py-1 text-xs font-extrabold text-sibs-navy">
                   Pre-Employment
                 </span>
 
@@ -3504,7 +3504,7 @@ function PreEmploymentRequirementsPanel({
                 <span>{majorProgress.percent}%</span>
               </div>
 
-              <div className="h-3 overflow-hidden rounded-full bg-[#EEF4FA]">
+              <div className="h-3 overflow-hidden rounded-full bg-sibs-surface">
                 <div
                   className={`h-full rounded-full transition-all duration-300 ${
                     majorProgress.isComplete
@@ -3520,7 +3520,7 @@ function PreEmploymentRequirementsPanel({
                 <span>{totalProgress.percent}%</span>
               </div>
 
-              <div className="h-2 overflow-hidden rounded-full bg-[#EEF4FA]">
+              <div className="h-2 overflow-hidden rounded-full bg-sibs-surface">
                 <div
                   className="h-full rounded-full bg-sibs-primary-1/70 transition-all duration-300"
                   style={{ width: `${totalProgress.percent}%` }}
@@ -3529,7 +3529,7 @@ function PreEmploymentRequirementsPanel({
             </div>
 
             {!majorProgress.isComplete && (
-              <div className="mt-4 rounded-xl border border-amber-100 bg-amber-50 px-4 py-3 text-sm font-bold leading-6 text-amber-700">
+              <div className="mt-4 rounded-[10px] border border-amber-100 bg-amber-50 px-4 py-3 text-sm font-bold leading-6 text-amber-700">
                 Candidate has fewer than 5 major requirements. After saving,
                 this candidate will be moved to{" "}
                 <span className="font-extrabold">
@@ -3540,27 +3540,27 @@ function PreEmploymentRequirementsPanel({
             )}
 
             {majorProgress.isComplete && (
-              <div className="mt-4 rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm font-bold leading-6 text-emerald-700">
+              <div className="mt-4 rounded-[10px] border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm font-bold leading-6 text-emerald-700">
                 Candidate completed the 5 major requirements and can proceed to
                 Onboarding.
               </div>
             )}
 
             {saveError && (
-              <div className="mt-4 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-bold leading-6 text-red-600">
+              <div className="mt-4 rounded-[10px] border border-red-100 bg-red-50 px-4 py-3 text-sm font-bold leading-6 text-red-600">
                 {saveError}
               </div>
             )}
 
             {saveSuccess && (
-              <div className="mt-4 rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm font-bold leading-6 text-emerald-700">
+              <div className="mt-4 rounded-[10px] border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm font-bold leading-6 text-emerald-700">
                 {saveSuccess}
               </div>
             )}
           </section>
 
-          <section className="rounded-2xl border border-[#D9E2EC] bg-white p-5 shadow-sm">
-            <h3 className="text-lg font-extrabold text-[#101828]">
+          <section className="rounded-[10px] border border-sibs-border bg-white p-5 shadow-sm">
+            <h3 className="text-lg font-extrabold text-sibs-navy">
               Pre-Employment Requirements
             </h3>
 
@@ -3574,7 +3574,7 @@ function PreEmploymentRequirementsPanel({
                 return (
                   <div
                     key={group.id}
-                    className="border-t border-[#E6ECF2] pt-5 first:border-t-0 first:pt-0"
+                    className="border-t border-sibs-border pt-5 first:border-t-0 first:pt-0"
                   >
                     <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                       <div className="flex min-w-0 items-center gap-3">
@@ -3582,7 +3582,7 @@ function PreEmploymentRequirementsPanel({
                           {group.title}
                         </h4>
 
-                        <span className="rounded-full bg-[#F2F6FA] px-3 py-1 text-xs font-extrabold text-sibs-primary-1">
+                        <span className="rounded-full bg-sibs-surface px-3 py-1 text-xs font-extrabold text-sibs-primary-1">
                           {groupProgress.completed} / {groupProgress.total}
                         </span>
                       </div>
@@ -3965,7 +3965,7 @@ function UpdateAssessmentModal({
                 onWheel={handleAssessmentScoreWheel}
                 onKeyDown={handleAssessmentScoreKeyDown}
                 placeholder="Enter score from 0 to 100"
-                className="mt-2 h-11 w-full rounded-xl border border-[#D6DEE8] bg-white px-3 text-sm font-bold text-[#344054] outline-none transition [appearance:textfield] placeholder:text-slate-400 focus:border-sibs-primary-1 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                className="mt-2 h-11 w-full rounded-[10px] border border-sibs-border bg-white px-3 text-sm font-bold text-sibs-navy outline-none transition [appearance:textfield] placeholder:text-sibs-muted focus:border-sibs-orange disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
               />
 
               <p className="mt-1 text-xs font-semibold leading-5 text-sibs-tertiary-5">
@@ -3996,7 +3996,7 @@ function UpdateAssessmentModal({
             ) : null}
 
             {isAutomaticAssessmentFailure && (
-              <div className="rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-bold leading-6 text-red-700">
+              <div className="rounded-[10px] border border-red-100 bg-red-50 px-4 py-3 text-sm font-bold leading-6 text-red-700">
                 This score is below {ASSESSMENT_FAILURE_THRESHOLD}. The result
                 will be set to <span className="font-extrabold">Assessment Not Fit</span>,
                 the candidate will be marked as Drop-off automatically, and a
@@ -4015,7 +4015,7 @@ function UpdateAssessmentModal({
                 onChange={(event) => setAssessmentRemarks(event.target.value)}
                 rows={4}
                 placeholder="Add assessment remarks..."
-                className="mt-2 w-full resize-none rounded-xl border border-[#D6DEE8] bg-white px-3 py-3 text-sm font-semibold leading-6 text-[#344054] outline-none transition placeholder:text-slate-400 focus:border-sibs-primary-1"
+                className="mt-2 w-full resize-none rounded-[10px] border border-sibs-border bg-white px-3 py-3 text-sm font-semibold leading-6 text-sibs-navy outline-none transition placeholder:text-sibs-muted focus:border-sibs-orange"
               />
             </label>
 
@@ -4024,7 +4024,7 @@ function UpdateAssessmentModal({
                 Assessment Attachment
               </span>
 
-              <div className="mt-2 rounded-xl border border-dashed border-[#B9C7D6] bg-white p-4">
+              <div className="mt-2 rounded-[10px] border border-dashed border-sibs-border bg-white p-4">
                 <input
                   type="file"
                   disabled={isSaving}
@@ -4032,7 +4032,7 @@ function UpdateAssessmentModal({
                   onChange={(event) =>
                     setAssessmentFile(event.target.files?.[0] || null)
                   }
-                  className="block w-full text-sm font-bold text-[#344054] file:mr-4 file:rounded-xl file:border-0 file:bg-sibs-primary-1 file:px-4 file:py-2 file:text-sm file:font-extrabold file:text-white"
+                  className="block w-full text-sm font-bold text-sibs-navy file:mr-4 file:rounded-[10px] file:border-0 file:bg-sibs-navy file:px-4 file:py-2 file:text-sm file:font-extrabold file:text-white hover:file:bg-sibs-navy-light"
                 />
 
                 <p className="mt-2 text-xs font-semibold leading-5 text-sibs-tertiary-5">
@@ -4050,7 +4050,7 @@ function UpdateAssessmentModal({
             </>) : null}
 
             {errorMessage && (
-              <div className="rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-bold leading-6 text-red-600">
+              <div className="rounded-[10px] border border-red-100 bg-red-50 px-4 py-3 text-sm font-bold leading-6 text-red-600">
                 {errorMessage}
               </div>
             )}
@@ -4357,25 +4357,25 @@ function AssessmentDeadlineDatePicker({
         type="button"
         disabled={disabled}
         onClick={() => setOpen((previous) => !previous)}
-        className={`flex h-11 w-full min-w-0 items-center justify-between gap-3 rounded-xl border bg-white px-4 text-left text-sm font-bold shadow-sm outline-none transition ${
+        className={`flex h-11 w-full min-w-0 items-center justify-between gap-3 rounded-[10px] border bg-white px-4 text-left text-sm font-bold shadow-sm outline-none transition ${
           open
-            ? "border-sibs-primary-1 ring-4 ring-sibs-primary-1/10"
-            : "border-[#D6DEE8] hover:border-sibs-primary-1"
+            ? "border-sibs-orange ring-4 ring-sibs-orange/10"
+            : "border-sibs-border hover:border-sibs-orange"
         } ${
           disabled
             ? "cursor-not-allowed bg-gray-50 text-gray-400 opacity-70"
-            : "text-[#344054]"
+            : "text-sibs-navy"
         }`}
       >
         <span className="inline-flex min-w-0 flex-1 items-center gap-2 truncate">
           <CalendarDays
             size={16}
-            className="shrink-0 text-sibs-primary-1"
+            className="shrink-0 text-sibs-navy"
           />
 
           <span
             className={`min-w-0 truncate ${
-              value ? "text-[#344054]" : "text-gray-400"
+              value ? "text-sibs-navy" : "text-gray-400"
             }`}
           >
             {value ? formatAssessmentDateDisplay(value) : placeholder}
@@ -4384,25 +4384,25 @@ function AssessmentDeadlineDatePicker({
 
         <ChevronDown
           size={18}
-          className={`shrink-0 text-sibs-primary-1 transition-transform duration-200 ${
+          className={`shrink-0 text-sibs-navy transition-transform duration-200 ${
             open ? "rotate-180" : ""
           }`}
         />
       </button>
 
       {open && !disabled && (
-        <div className="absolute left-0 top-[calc(100%+8px)] z-[99999] w-[340px] overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)]">
-          <div className="flex items-center justify-between border-b border-[#E6ECF2] px-4 py-3">
+        <div className="absolute left-0 top-[calc(100%+8px)] z-[99999] w-[340px] overflow-hidden rounded-[10px] border border-sibs-border bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)]">
+          <div className="flex items-center justify-between border-b border-sibs-border px-4 py-3">
             <button
               type="button"
               onClick={goPreviousMonth}
               disabled={disablePreviousMonth}
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sibs-primary-1 transition hover:bg-[#EAF2FB] disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:bg-transparent"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sibs-navy transition hover:bg-sibs-faint disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:bg-transparent"
             >
               <ChevronLeft size={18} />
             </button>
 
-            <p className="min-w-0 flex-1 text-center text-sm font-extrabold text-sibs-primary-1">
+            <p className="min-w-0 flex-1 text-center text-sm font-extrabold text-sibs-navy">
               {assessmentEmailMonthNames[displayDate.getMonth()]}{" "}
               {displayDate.getFullYear()}
             </p>
@@ -4410,7 +4410,7 @@ function AssessmentDeadlineDatePicker({
             <button
               type="button"
               onClick={goNextMonth}
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sibs-primary-1 transition hover:bg-[#EAF2FB]"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sibs-navy transition hover:bg-sibs-faint"
             >
               <ChevronRight size={18} />
             </button>
@@ -4421,7 +4421,7 @@ function AssessmentDeadlineDatePicker({
               {assessmentEmailWeekdayLabels.map((dayLabel) => (
                 <div
                   key={dayLabel}
-                  className="flex h-8 items-center justify-center text-xs font-extrabold text-[#174A7C]"
+                  className="flex h-8 items-center justify-center text-xs font-extrabold text-sibs-navy"
                 >
                   {dayLabel}
                 </div>
@@ -4441,14 +4441,14 @@ function AssessmentDeadlineDatePicker({
                       onClick={() => handleSelectDate(day.date)}
                       className={`flex h-9 w-9 items-center justify-center rounded-full text-sm font-extrabold transition ${
                         disabledDay
-                          ? "cursor-not-allowed text-[#CBD5E1] opacity-45"
+                          ? "cursor-not-allowed text-slate-300 opacity-45"
                           : active
-                            ? "bg-sibs-primary-1 text-white"
+                            ? "bg-sibs-orange text-white"
                             : currentDay
-                              ? "bg-[#F2F6FA] text-sibs-primary-1"
+                              ? "bg-sibs-surface text-sibs-navy"
                               : day.isCurrentMonth
-                                ? "text-sibs-primary-1 hover:bg-[#EAF2FB]"
-                                : "text-[#98A7BA] hover:bg-[#F7FAFC]"
+                                ? "text-sibs-navy hover:bg-sibs-faint"
+                                : "text-sibs-muted hover:bg-sibs-surface"
                       }`}
                     >
                       {day.dayNumber}
@@ -4458,11 +4458,11 @@ function AssessmentDeadlineDatePicker({
             </div>
           </div>
 
-          <div className="flex items-center justify-between border-t border-[#E6ECF2] px-5 py-3">
+          <div className="flex items-center justify-between border-t border-sibs-border px-5 py-3">
             <button
               type="button"
               onClick={handleClear}
-              className="rounded-lg px-2 py-1 text-xs font-extrabold text-sibs-primary-1 transition hover:bg-[#F2F6FA]"
+              className="rounded-lg px-2 py-1 text-xs font-extrabold text-sibs-navy transition hover:bg-sibs-surface"
             >
               Clear
             </button>
@@ -4470,7 +4470,7 @@ function AssessmentDeadlineDatePicker({
             <button
               type="button"
               onClick={handleToday}
-              className="rounded-lg px-2 py-1 text-xs font-extrabold text-sibs-primary-1 transition hover:bg-[#F2F6FA]"
+              className="rounded-lg px-2 py-1 text-xs font-extrabold text-sibs-navy transition hover:bg-sibs-surface"
             >
               Today
             </button>
@@ -4946,14 +4946,14 @@ function NhoTimeDropdown({
               : dropdownId,
           )
         }
-        className={`flex h-10 w-full min-w-0 items-center justify-between gap-2 rounded-xl border bg-[#F8FAFC] px-3 text-left sibs-text-xs font-bold outline-none transition ${
+        className={`flex h-10 w-full min-w-0 items-center justify-between gap-2 rounded-[10px] border bg-sibs-surface px-3 text-left sibs-text-xs font-bold outline-none transition ${
           open
-            ? "border-[#FF5C28] bg-white ring-4 ring-[#FF5C28]/10"
-            : "border-[#D7DEE8] hover:border-[#FF5C28]/40 hover:bg-white"
+            ? "border-sibs-orange bg-white ring-4 ring-sibs-orange/10"
+            : "border-sibs-border hover:border-sibs-orange/40 hover:bg-white"
         } ${
           disabled
-            ? "cursor-not-allowed bg-[#F2F4F7] text-[#98A2B3] opacity-70"
-            : "text-[#042C51]"
+            ? "cursor-not-allowed bg-slate-100 text-slate-400 opacity-70"
+            : "text-sibs-navy"
         }`}
       >
         <span className="truncate">
@@ -4963,7 +4963,7 @@ function NhoTimeDropdown({
 
         <ChevronDown
           size={15}
-          className={`shrink-0 text-[#315B7E] transition-transform ${
+          className={`shrink-0 text-sibs-navy transition-transform ${
             open
               ? "rotate-180"
               : ""
@@ -4979,7 +4979,7 @@ function NhoTimeDropdown({
             <div
               ref={menuRef}
               role="listbox"
-              className="sibs-dropdown-pop-in fixed z-[13000] overflow-hidden rounded-[10px] border border-[#D9E2EC] bg-white shadow-[0_20px_25px_-5px_rgba(4,44,81,0.16),0_8px_10px_-6px_rgba(4,44,81,0.14)]"
+              className="sibs-dropdown-pop-in fixed z-[13000] overflow-hidden rounded-[10px] border border-sibs-border bg-white shadow-[0_20px_25px_-5px_rgba(4,44,81,0.16),0_8px_10px_-6px_rgba(4,44,81,0.14)]"
               style={{
                 left:
                   menuPosition?.left ??
@@ -5039,10 +5039,10 @@ function NhoTimeDropdown({
                         }
                         className={`flex min-h-[38px] w-full items-center justify-between gap-2 px-3 text-left sibs-text-xs font-semibold transition ${
                           option.disabled
-                            ? "cursor-not-allowed bg-white text-[#C8D2DE]"
+                            ? "cursor-not-allowed bg-white text-slate-300"
                             : active
-                              ? "bg-[#FFF4EF] text-[#FF5C28]"
-                              : "bg-white text-[#31465B] hover:bg-[#FFF8F5] hover:text-[#FF5C28]"
+                              ? "bg-sibs-cream-light text-sibs-orange"
+                              : "bg-white text-sibs-navy hover:bg-sibs-cream-light hover:text-sibs-orange"
                         }`}
                       >
                         <span>
@@ -5120,10 +5120,10 @@ function NhoTimePicker({
   }
 
   return (
-    <div className="rounded-xl border border-[#D9E2EC] bg-[#F8FAFC] p-4">
+    <div className="rounded-[10px] border border-sibs-border bg-sibs-surface p-4">
       <div className="mb-3 flex items-center justify-between gap-3">
         <div>
-          <p className="sibs-kicker text-[#667085]">NHO Time</p>
+          <p className="sibs-kicker text-sibs-muted">NHO Time</p>
           <p className="mt-1 sibs-text-xs font-extrabold text-sibs-primary-1">
             {formatNhoScheduleTimeDisplay(value)}
           </p>
@@ -5133,7 +5133,7 @@ function NhoTimePicker({
 
       <div className="grid grid-cols-[1fr_1fr_auto] gap-2">
         <div>
-          <label className="mb-1 block sibs-kicker text-[#7D8FA5]">
+          <label className="mb-1 block sibs-kicker text-sibs-muted">
             Hour
           </label>
 
@@ -5157,7 +5157,7 @@ function NhoTimePicker({
         </div>
 
         <div>
-          <label className="mb-1 block sibs-kicker text-[#7D8FA5]">
+          <label className="mb-1 block sibs-kicker text-sibs-muted">
             Minute
           </label>
 
@@ -5181,11 +5181,11 @@ function NhoTimePicker({
         </div>
 
         <div>
-          <label className="mb-1 block sibs-kicker text-[#7D8FA5]">
+          <label className="mb-1 block sibs-kicker text-sibs-muted">
             AM/PM
           </label>
 
-          <div className="flex h-10 overflow-hidden rounded-xl border border-[#D7DEE8] bg-white">
+          <div className="flex h-10 overflow-hidden rounded-[10px] border border-sibs-border bg-white">
             {["AM", "PM"].map((item) => (
               <button
                 key={item}
@@ -5194,8 +5194,8 @@ function NhoTimePicker({
                 onClick={() => handlePeriodChange(item)}
                 className={`w-12 sibs-text-micro font-bold transition ${
                   period === item
-                    ? "bg-[#FF5C28] text-white"
-                    : "bg-white text-[#315B7E] hover:bg-[#FFF8F5] hover:text-[#FF5C28]"
+                    ? "bg-sibs-orange text-white"
+                    : "bg-white text-sibs-navy hover:bg-sibs-cream-light hover:text-sibs-orange"
                 } disabled:cursor-not-allowed disabled:opacity-60`}
               >
                 {item}
@@ -5205,7 +5205,7 @@ function NhoTimePicker({
         </div>
       </div>
 
-      <p className="mt-3 sibs-text-xs font-semibold text-[#667085]">
+      <p className="mt-3 sibs-text-xs font-semibold text-sibs-muted">
         Available NHO time is from 8:00 AM through 6:00 PM.
       </p>
     </div>
@@ -5565,17 +5565,17 @@ function NhoInternalRescheduleModal({
           subtitle="HR, TA, HR Admin, and Super Admin may select any weekday from today onward and set the NHO time."
         >
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-4 py-3">
-              <p className="sibs-kicker text-[#667085]">Current NHO Date</p>
+            <div className="rounded-[10px] border border-sibs-border bg-sibs-surface px-4 py-3">
+              <p className="sibs-kicker text-sibs-muted">Current NHO Date</p>
               <p className="mt-1 sibs-text-sm font-extrabold text-sibs-primary-1">
                 {formatNhoScheduleDateDisplay(currentValue)}
               </p>
-              <p className="mt-1 sibs-text-xs font-bold text-[#667085]">
+              <p className="mt-1 sibs-text-xs font-bold text-sibs-muted">
                 {formatNhoScheduleTimeDisplay(currentTime)}
               </p>
             </div>
 
-            <div className="rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3">
+            <div className="rounded-[10px] border border-emerald-100 bg-emerald-50 px-4 py-3">
               <p className="sibs-kicker text-emerald-700">New NHO Date</p>
               <p className="mt-1 sibs-text-sm font-extrabold text-emerald-800">
                 {formatNhoScheduleDateDisplay(value)}
@@ -5586,8 +5586,8 @@ function NhoInternalRescheduleModal({
             </div>
           </div>
 
-          <div className="mt-4 overflow-hidden rounded-xl border border-[#D9E2EC] bg-white shadow-sm">
-            <div className="flex items-center justify-between border-b border-[#E6ECF2] px-4 py-3">
+          <div className="mt-4 overflow-hidden rounded-[10px] border border-sibs-border bg-white shadow-sm">
+            <div className="flex items-center justify-between border-b border-sibs-border px-4 py-3">
               <button
                 type="button"
                 disabled={disablePreviousMonth || isSaving}
@@ -5601,13 +5601,13 @@ function NhoInternalRescheduleModal({
                       ),
                   )
                 }
-                className="flex h-9 w-9 items-center justify-center rounded-full text-sibs-primary-1 transition hover:bg-[#EAF2FB] disabled:cursor-not-allowed disabled:opacity-30"
+                className="flex h-9 w-9 items-center justify-center rounded-full text-sibs-navy transition hover:bg-sibs-faint disabled:cursor-not-allowed disabled:opacity-30"
                 aria-label="Previous month"
               >
                 <ChevronLeft size={18} />
               </button>
 
-              <p className="sibs-text-xs font-extrabold text-sibs-primary-1">
+              <p className="sibs-text-xs font-extrabold text-sibs-navy">
                 {assessmentEmailMonthNames[displayDate.getMonth()]}{" "}
                 {displayDate.getFullYear()}
               </p>
@@ -5625,7 +5625,7 @@ function NhoInternalRescheduleModal({
                       ),
                   )
                 }
-                className="flex h-9 w-9 items-center justify-center rounded-full text-sibs-primary-1 transition hover:bg-[#EAF2FB] disabled:cursor-not-allowed disabled:opacity-60"
+                className="flex h-9 w-9 items-center justify-center rounded-full text-sibs-navy transition hover:bg-sibs-faint disabled:cursor-not-allowed disabled:opacity-60"
                 aria-label="Next month"
               >
                 <ChevronRight size={18} />
@@ -5637,7 +5637,7 @@ function NhoInternalRescheduleModal({
                 {assessmentEmailWeekdayLabels.map((dayLabel) => (
                   <div
                     key={dayLabel}
-                    className="flex h-8 items-center justify-center sibs-text-micro font-extrabold text-[#174A7C]"
+                    className="flex h-8 items-center justify-center sibs-text-micro font-extrabold text-sibs-navy"
                   >
                     {dayLabel}
                   </div>
@@ -5663,16 +5663,16 @@ function NhoInternalRescheduleModal({
                       onClick={() => handleSelectDate(day.date)}
                       className={`flex h-10 w-10 items-center justify-center rounded-full sibs-text-xs font-extrabold transition ${
                         active
-                          ? "bg-sibs-primary-1 text-white shadow-sm"
+                          ? "bg-sibs-orange text-white shadow-sm"
                           : selectable
                             ? isToday
-                              ? "bg-[#EAF2FB] text-sibs-primary-1 hover:bg-[#DDEBFA]"
-                              : "text-sibs-primary-1 hover:bg-[#EAF2FB]"
+                              ? "bg-sibs-faint text-sibs-navy hover:bg-sky-100"
+                              : "text-sibs-navy hover:bg-sibs-faint"
                             : isWeekend
                               ? "cursor-not-allowed bg-red-50 text-red-200"
                               : day.isCurrentMonth
-                                ? "cursor-not-allowed text-[#CBD5E1]"
-                                : "cursor-not-allowed text-[#E2E8F0]"
+                                ? "cursor-not-allowed text-slate-300"
+                                : "cursor-not-allowed text-slate-200"
                       }`}
                       title={
                         selectable
@@ -5698,7 +5698,7 @@ function NhoInternalRescheduleModal({
             />
           </div>
 
-          <div className="mt-4 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3">
+          <div className="mt-4 rounded-[10px] border border-blue-100 bg-blue-50 px-4 py-3">
             <p className="sibs-text-xs font-bold leading-5 text-sibs-primary-1">
               Available dates start today. Saturdays and Sundays are disabled.
               Select an available NHO time from 8:00 AM through 6:00 PM before sending the updated schedule.
@@ -5863,7 +5863,7 @@ className="min-w-[132px]"
           title="NHO Schedule"
           subtitle="The suggested NHO is Friday of next week. This week\'s upcoming Friday may still be selected for an earlier NHO."
         >
-          <div className="rounded-xl border border-blue-100 bg-blue-50 px-4 py-3">
+          <div className="rounded-[10px] border border-blue-100 bg-blue-50 px-4 py-3">
             <p className="sibs-text-xs font-bold leading-5 text-sibs-primary-1">
               Suggested NHO date:{" "}
               <span className="font-extrabold">
@@ -5874,8 +5874,8 @@ className="min-w-[132px]"
             </p>
           </div>
 
-          <div className="mt-4 overflow-hidden rounded-xl border border-[#D9E2EC] bg-white shadow-sm">
-            <div className="flex items-center justify-between border-b border-[#E6ECF2] px-4 py-3">
+          <div className="mt-4 overflow-hidden rounded-[10px] border border-sibs-border bg-white shadow-sm">
+            <div className="flex items-center justify-between border-b border-sibs-border px-4 py-3">
               <button
                 type="button"
                 disabled={disablePreviousMonth || isSaving}
@@ -5889,13 +5889,13 @@ className="min-w-[132px]"
                       ),
                   )
                 }
-                className="flex h-9 w-9 items-center justify-center rounded-full text-sibs-primary-1 transition hover:bg-[#EAF2FB] disabled:cursor-not-allowed disabled:opacity-30"
+                className="flex h-9 w-9 items-center justify-center rounded-full text-sibs-navy transition hover:bg-sibs-faint disabled:cursor-not-allowed disabled:opacity-30"
                 aria-label="Previous month"
               >
                 <ChevronLeft size={18} />
               </button>
 
-              <p className="sibs-text-xs font-extrabold text-sibs-primary-1">
+              <p className="sibs-text-xs font-extrabold text-sibs-navy">
                 {assessmentEmailMonthNames[displayDate.getMonth()]}{" "}
                 {displayDate.getFullYear()}
               </p>
@@ -5913,7 +5913,7 @@ className="min-w-[132px]"
                       ),
                   )
                 }
-                className="flex h-9 w-9 items-center justify-center rounded-full text-sibs-primary-1 transition hover:bg-[#EAF2FB] disabled:cursor-not-allowed disabled:opacity-60"
+                className="flex h-9 w-9 items-center justify-center rounded-full text-sibs-navy transition hover:bg-sibs-faint disabled:cursor-not-allowed disabled:opacity-60"
                 aria-label="Next month"
               >
                 <ChevronRight size={18} />
@@ -5925,7 +5925,7 @@ className="min-w-[132px]"
                 {assessmentEmailWeekdayLabels.map((dayLabel) => (
                   <div
                     key={dayLabel}
-                    className="flex h-8 items-center justify-center sibs-text-micro font-extrabold text-[#174A7C]"
+                    className="flex h-8 items-center justify-center sibs-text-micro font-extrabold text-sibs-navy"
                   >
                     {dayLabel}
                   </div>
@@ -5946,14 +5946,14 @@ className="min-w-[132px]"
                       onClick={() => handleSelectDate(day.date)}
                       className={`flex h-10 w-10 items-center justify-center rounded-full sibs-text-xs font-extrabold transition ${
                         active
-                          ? "bg-sibs-primary-1 text-white shadow-sm"
+                          ? "bg-sibs-orange text-white shadow-sm"
                           : selectable
                             ? "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
                             : isFriday
                               ? "cursor-not-allowed bg-amber-50 text-amber-300"
                               : day.isCurrentMonth
-                                ? "cursor-not-allowed text-[#CBD5E1]"
-                                : "cursor-not-allowed text-[#E2E8F0]"
+                                ? "cursor-not-allowed text-slate-300"
+                                : "cursor-not-allowed text-slate-200"
                       }`}
                       title={
                         selectable
@@ -5969,7 +5969,7 @@ className="min-w-[132px]"
             </div>
           </div>
 
-          <div className="mt-4 rounded-xl border border-emerald-100 bg-emerald-50 p-4">
+          <div className="mt-4 rounded-[10px] border border-emerald-100 bg-emerald-50 p-4">
             <p className="sibs-kicker text-emerald-700">
               Selected NHO Start Date
             </p>
@@ -6367,7 +6367,7 @@ function AssessmentEmailFormatModal({
                     recipientEmail: event.target.value,
                   })
                 }
-                className="mt-2 h-11 w-full rounded-xl border border-[#D6DEE8] bg-white px-3 sibs-text-xs font-bold text-[#344054] outline-none transition focus:border-[#FF5C28] focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:bg-[#F2F4F7]"
+                className="mt-2 h-11 w-full rounded-[10px] border border-sibs-border bg-white px-3 sibs-text-xs font-bold text-sibs-navy outline-none transition focus:border-sibs-orange focus:ring-4 focus:ring-sibs-orange/10 disabled:cursor-not-allowed disabled:bg-slate-100"
               />
             </label>
 
@@ -6401,7 +6401,7 @@ function AssessmentEmailFormatModal({
                     emailSubject: event.target.value,
                   })
                 }
-                className="mt-2 h-11 w-full rounded-xl border border-[#D6DEE8] bg-white px-3 sibs-text-xs font-bold text-[#344054] outline-none transition focus:border-[#FF5C28] focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:bg-[#F2F4F7]"
+                className="mt-2 h-11 w-full rounded-[10px] border border-sibs-border bg-white px-3 sibs-text-xs font-bold text-sibs-navy outline-none transition focus:border-sibs-orange focus:ring-4 focus:ring-sibs-orange/10 disabled:cursor-not-allowed disabled:bg-slate-100"
               />
             </label>
 
@@ -6416,7 +6416,7 @@ function AssessmentEmailFormatModal({
                     roleName: event.target.value,
                   })
                 }
-                className="mt-2 h-11 w-full rounded-xl border border-[#D6DEE8] bg-white px-3 sibs-text-xs font-bold text-[#344054] outline-none transition focus:border-[#FF5C28] focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:bg-[#F2F4F7]"
+                className="mt-2 h-11 w-full rounded-[10px] border border-sibs-border bg-white px-3 sibs-text-xs font-bold text-sibs-navy outline-none transition focus:border-sibs-orange focus:ring-4 focus:ring-sibs-orange/10 disabled:cursor-not-allowed disabled:bg-slate-100"
               />
             </label>
           </div>
@@ -6426,7 +6426,7 @@ function AssessmentEmailFormatModal({
           title="Email Preview"
           subtitle="This is the message format the candidate will receive."
         >
-          <div className="mx-auto max-w-[560px] overflow-hidden rounded-sm bg-[#FFF8EF] shadow-sm">
+          <div className="mx-auto max-w-[560px] overflow-hidden rounded-[10px] border border-amber-200/60 bg-amber-50/40 shadow-sm">
             <div className="bg-white px-8 py-5 text-center">
               <img
                 src={SIBS_ASSESSMENT_LOGO_PREVIEW_URL}
@@ -6787,8 +6787,8 @@ function buildEmploymentOfferPdfUrl(
 
 
 const DETAIL_ICON_TONES = {
-  navy: "border-blue-100 bg-[#F2F7FC] text-[#174A7C]",
-  orange: "border-orange-100 bg-[#FFF3EE] text-[#FF5C28]",
+  navy: "border-blue-100 bg-sky-50 text-sibs-navy",
+  orange: "border-orange-100 bg-sibs-cream-light text-sibs-orange",
   emerald: "border-emerald-100 bg-emerald-50 text-emerald-700",
   amber: "border-amber-100 bg-amber-50 text-amber-700",
   red: "border-red-100 bg-red-50 text-red-700",
@@ -6879,7 +6879,7 @@ function getOutcomePillClass(value = "") {
     return "border-amber-100 bg-amber-50 text-amber-700";
   }
 
-  return "border-blue-100 bg-blue-50 text-[#174A7C]";
+  return "border-blue-100 bg-sky-50 text-sibs-navy";
 }
 
 function CandidateDetailItem({
@@ -6895,21 +6895,21 @@ function CandidateDetailItem({
   return (
     <div className={`flex min-w-0 items-start gap-3 py-2.5 ${className}`}>
       <span
-        className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border ${
+        className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] border ${
           DETAIL_ICON_TONES[tone] || DETAIL_ICON_TONES.navy
         }`}
       >
         <Icon size={17} />
       </span>
       <div className="min-w-0 flex-1 pt-0.5">
-        <p className="text-[9.5px] font-semibold leading-tight text-[#71839A] 2xl:text-[10px]">
+        <p className="text-[9.5px] font-semibold leading-tight text-sibs-muted 2xl:text-[10px]">
           {label}
         </p>
         {children || (
           <p
             title={String(displayValue)}
             className={`mt-1 min-w-0 truncate text-[11.5px] font-extrabold leading-tight 2xl:text-xs ${
-              tone === "orange" ? "text-[#FF5C28]" : "text-[#042C51]"
+              tone === "orange" ? "text-sibs-orange" : "text-sibs-navy"
             }`}
           >
             {displayValue}
@@ -6944,7 +6944,7 @@ function CandidateStageJourney({ currentStage = "" }) {
 
       <div className="mb-3 flex flex-col gap-2.5 border-b border-sibs-border pb-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex min-w-0 items-start gap-2.5">
-          <span className="sibs-tone-navy-icon inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl">
+          <span className="sibs-tone-navy-icon inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px]">
             <Route size={15} />
           </span>
 
@@ -6969,7 +6969,7 @@ function CandidateStageJourney({ currentStage = "" }) {
       </div>
 
       {isDropOff ? (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2.5 sibs-text-xs font-bold text-rose-700">
+        <div className="rounded-[10px] border border-rose-200 bg-rose-50 px-3 py-2.5 sibs-text-xs font-bold text-rose-700">
           Candidate is currently outside the active recruitment pipeline.
         </div>
       ) : (
@@ -7150,7 +7150,7 @@ function ManualCandidateResponseDropdown({
         ? createPortal(
             <div
               ref={menuRef}
-              className="fixed z-[12001] w-44 overflow-hidden rounded-xl border border-sibs-border bg-white p-1.5 shadow-xl"
+              className="fixed z-[12001] w-44 overflow-hidden rounded-[10px] border border-sibs-border bg-white p-1.5 shadow-xl"
               style={{
                 left: menuPosition?.left ?? 0,
                 top: menuPosition?.top ?? 0,
@@ -11823,7 +11823,7 @@ const concretePreferredFinalInterviewFormId =
   }
 
   const nhoScheduleSection = (
-    <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4">
+    <div className="rounded-[10px] border border-sibs-border bg-sibs-surface p-4">
       {isCandidateProcessRunning && (
         <div
           className="fixed inset-0 z-[24000] cursor-wait bg-transparent"
@@ -11854,7 +11854,7 @@ const concretePreferredFinalInterviewFormId =
 
       {hasNhoSchedule ? (
         <>
-          <div className="mt-4 rounded-xl bg-white p-4">
+          <div className="mt-4 rounded-[10px] bg-white p-4">
             <DetailRow
               label="Start Date"
               value={displayValueOrNA(
@@ -11883,27 +11883,27 @@ const concretePreferredFinalInterviewFormId =
           </div>
 
           {nhoScheduleDetails.remarks && (
-            <div className="mt-4 rounded-xl border border-[#E6ECF2] bg-white p-4">
+            <div className="mt-4 rounded-[10px] border border-sibs-border bg-white p-4">
               <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
                 Remarks
               </p>
-              <p className="mt-2 text-sm font-medium leading-6 text-[#475467]">
+              <p className="mt-2 text-sm font-medium leading-6 text-sibs-muted">
                 {nhoScheduleDetails.remarks}
               </p>
             </div>
           )}
         </>
       ) : (
-        <div className="mt-4 rounded-xl border border-dashed border-[#C9D6E4] bg-white p-5 text-center">
-          <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-xl bg-[#F8FAFC] text-sibs-primary-1 shadow-sm">
+        <div className="mt-4 rounded-[10px] border border-dashed border-sibs-border bg-white p-5 text-center">
+          <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-[10px] bg-sibs-surface text-sibs-primary-1 shadow-sm">
             <CalendarDays size={22} />
           </div>
 
-          <p className="mt-3 text-sm font-bold text-[#101828]">
+          <p className="mt-3 text-sm font-bold text-sibs-navy">
             NHO schedule not set
           </p>
 
-          <p className="mt-1 text-xs font-medium leading-5 text-[#667085]">
+          <p className="mt-1 text-xs font-medium leading-5 text-sibs-muted">
             Set the candidate’s start date, trainer, and schedule details for
             onboarding.
           </p>
@@ -12182,7 +12182,7 @@ const concretePreferredFinalInterviewFormId =
         title="Candidate Pipeline Record"
         headerContent={
           <div className="flex min-w-0 items-center gap-2.5 2xl:gap-3">
-            <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-[#FF5C28] text-white shadow-[0_6px_16px_rgba(255,92,40,0.28)] 2xl:h-9 2xl:w-9">
+            <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] border border-white/10 bg-sibs-orange text-white shadow-[0_6px_16px_rgba(255,92,40,0.28)] 2xl:h-9 2xl:w-9">
               <BriefcaseBusiness size={16} aria-hidden="true" />
             </span>
             <nav
@@ -12223,16 +12223,16 @@ const concretePreferredFinalInterviewFormId =
               showAssignment={false}
             />
 
-            <section className="relative overflow-hidden rounded-2xl border border-[#FFE0D4] bg-[linear-gradient(135deg,#FFF8F5_0%,#FFF1EB_100%)] p-4 shadow-[0_9px_24px_rgba(255,92,40,0.07)] sm:p-4.5">
-              <div className="pointer-events-none absolute -right-8 -bottom-10 h-28 w-28 rounded-full bg-[#FF5C28]/[0.07]" />
+            <section className="relative overflow-hidden rounded-[10px] border border-orange-200/60 bg-[linear-gradient(135deg,#FFF8F5_0%,#FFF1EB_100%)] p-4 shadow-[0_9px_24px_rgba(255,92,40,0.07)] sm:p-4.5">
+              <div className="pointer-events-none absolute -right-8 -bottom-10 h-28 w-28 rounded-full bg-sibs-orange/[0.07]" />
               <div className="relative flex h-full items-center gap-3.5">
-                <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-[#FFD2C2] bg-white text-[#FF5C28] shadow-sm">
+                <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] border border-orange-200/80 bg-white text-sibs-orange shadow-sm">
                   <ShieldCheck size={21} />
                 </span>
 
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <p className="text-[9.5px] font-semibold text-[#7C8DA4] 2xl:text-[10px]">
+                    <p className="text-[9.5px] font-semibold text-sibs-muted 2xl:text-[10px]">
                       Current PRF Status
                     </p>
                     {isSuccessfulHeadcount ? (
@@ -12248,13 +12248,13 @@ const concretePreferredFinalInterviewFormId =
                         ? "text-red-600"
                         : getStatusTone(activePrfStatus) === "emerald"
                           ? "text-emerald-700"
-                          : "text-[#FF5C28]"
+                          : "text-sibs-orange"
                     }`}
                   >
                     {activePrfStatus || "Review"}
                   </p>
 
-                  <p className="mt-1 text-[9.5px] font-semibold text-[#71839A] 2xl:text-[10px]">
+                  <p className="mt-1 text-[9.5px] font-semibold text-sibs-muted 2xl:text-[10px]">
                     Created on {compactCreatedDate ? formatCandidateDateOnly(compactCreatedDate) : EMPTY_DISPLAY_VALUE}
                   </p>
                 </div>
@@ -12272,7 +12272,7 @@ const concretePreferredFinalInterviewFormId =
               <CandidateModalSecondaryButton
                 type="button"
                 onClick={() => setShowTalentPoolDetails((previous) => !previous)}
-                className="!h-8 !rounded-xl !border-[#CAD8E7] !px-3 !text-[10px] !font-extrabold !text-[#174A7C] hover:!border-[#FF5C28]/35 hover:!bg-[#FFF7F3] hover:!text-[#FF5C28]"
+                className="!h-8 !rounded-[10px] !border-sibs-border !px-3 !text-[10px] !font-extrabold !text-sibs-navy hover:!border-sibs-orange/35 hover:!bg-sibs-cream-light hover:!text-sibs-orange"
               >
                 <Eye size={14} />
                 <span className="whitespace-nowrap">
@@ -12282,8 +12282,8 @@ const concretePreferredFinalInterviewFormId =
             }
           >
             {isInitialScreening ? (
-              <div className="mb-3 flex flex-col gap-2 rounded-xl border border-[#E8EEF5] bg-[#F8FAFC] px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between">
-                <span className="text-[10px] font-bold text-[#667085]">Lead PRF Action</span>
+              <div className="mb-3 flex flex-col gap-2 rounded-[10px] border border-sibs-border bg-sibs-surface px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between">
+                <span className="text-[10px] font-bold text-sibs-muted">Lead PRF Action</span>
                 <div
                   className="flex flex-wrap items-center gap-1.5"
                   role="radiogroup"
@@ -12299,8 +12299,8 @@ const concretePreferredFinalInterviewFormId =
                         key={option.value}
                         className={`group inline-flex h-7 cursor-pointer items-center justify-center gap-1.5 rounded-full border px-2.5 text-[10px] font-semibold transition ${
                           isChecked
-                            ? "border-[#FF5C28] bg-[#FFF0EB] font-bold text-[#FF5C28]"
-                            : "border-[#DCE6F1] bg-white text-[#52637A] hover:border-[#FF5C28]/40 hover:text-[#FF5C28]"
+                            ? "border-sibs-orange bg-sibs-cream-light font-bold text-sibs-orange"
+                            : "border-sibs-border bg-white text-sibs-muted hover:border-sibs-orange/40 hover:text-sibs-orange"
                         }`}
                       >
                         <input
@@ -12309,7 +12309,7 @@ const concretePreferredFinalInterviewFormId =
                           value={option.value}
                           checked={isChecked}
                           onChange={() => handleLocalPrfStatusUpdate(option.value)}
-                          className="h-3 w-3 shrink-0 cursor-pointer border-[#98A2B3] accent-[#FF5C28]"
+                          className="h-3 w-3 shrink-0 cursor-pointer border-sibs-border accent-sibs-orange"
                         />
                         <span className="whitespace-nowrap">{option.label}</span>
                       </label>
@@ -12375,8 +12375,8 @@ const concretePreferredFinalInterviewFormId =
                   value={item.value}
                   tone={item.tone}
                   className={`${
-                    index % 3 !== 2 ? "lg:border-r lg:border-[#E7EDF4] lg:pr-4" : ""
-                  } ${index % 3 !== 0 ? "lg:pl-4" : ""} border-b border-[#EEF2F6] last:border-b-0 lg:border-b-0`}
+                    index % 3 !== 2 ? "lg:border-r lg:border-sibs-border lg:pr-4" : ""
+                  } ${index % 3 !== 0 ? "lg:pl-4" : ""} border-b border-sibs-border last:border-b-0 lg:border-b-0`}
                 />
               ))}
             </div>
@@ -12395,7 +12395,7 @@ const concretePreferredFinalInterviewFormId =
               subtitle="Online assessment result and attached files."
               headerAction={
                 <div className="flex flex-wrap items-center justify-end gap-2">
-                  <span className="text-[9.5px] font-bold text-[#667085] 2xl:text-[10px]">
+                  <span className="text-[9.5px] font-bold text-sibs-muted 2xl:text-[10px]">
                     {getAssessmentSummaryTestType(activeCandidate)}
                   </span>
                   <span
@@ -12414,7 +12414,7 @@ const concretePreferredFinalInterviewFormId =
                 </div>
               }
             >
-              <div className="grid grid-cols-1 rounded-xl border border-[#E5EEE9] bg-[linear-gradient(90deg,#FBFFFD_0%,#F7FBFF_100%)] px-2 sm:grid-cols-3 sm:px-3">
+              <div className="grid grid-cols-1 rounded-[10px] border border-sibs-border bg-[linear-gradient(90deg,#FBFFFD_0%,#F7FBFF_100%)] px-2 sm:grid-cols-3 sm:px-3">
                 <CandidateDetailItem
                   icon={CheckCircle2}
                   label="Status"
@@ -12428,7 +12428,7 @@ const concretePreferredFinalInterviewFormId =
                       activeCandidate.assessment_status ||
                       (getAssessmentResult(activeCandidate) ? "Taken" : "Pending"),
                   )}
-                  className="border-b border-[#E7EFEB] sm:border-b-0 sm:border-r sm:border-[#DDE8E2] sm:pr-4"
+                  className="border-b border-sibs-border sm:border-b-0 sm:border-r sm:border-sibs-border sm:pr-4"
                 />
 
                 <CandidateDetailItem
@@ -12441,7 +12441,7 @@ const concretePreferredFinalInterviewFormId =
                     activeCandidate.assessment_attachment_name ||
                     EMPTY_DISPLAY_VALUE
                   }
-                  className="border-b border-[#E7EFEB] sm:border-b-0 sm:border-r sm:border-[#DDE8E2] sm:px-4"
+                  className="border-b border-sibs-border sm:border-b-0 sm:border-r sm:border-sibs-border sm:px-4"
                 />
 
                 <CandidateDetailItem
@@ -12468,7 +12468,7 @@ const concretePreferredFinalInterviewFormId =
               headerAction={
                 <div className="flex flex-col items-end gap-1.5">
                   <div className="flex flex-wrap items-center justify-end gap-2">
-                    <span className="text-[9.5px] font-bold text-[#667085] 2xl:text-[10px]">
+                    <span className="text-[9.5px] font-bold text-sibs-muted 2xl:text-[10px]">
                       Final Interview
                     </span>
                     <span
@@ -12486,10 +12486,10 @@ const concretePreferredFinalInterviewFormId =
                     </span>
                   </div>
                   <div className="flex flex-wrap items-center justify-end gap-2">
-                    <span className="text-[9.5px] font-bold text-[#667085] 2xl:text-[10px]">
+                    <span className="text-[9.5px] font-bold text-sibs-muted 2xl:text-[10px]">
                       Job Evaluation
                     </span>
-                    <span className="text-[10px] font-extrabold text-[#042C51] sm:text-xs">
+                    <span className="text-[10px] font-extrabold text-sibs-navy sm:text-xs">
                       {jobEvaluationSummaryScore}
                     </span>
                   </div>
@@ -12501,28 +12501,28 @@ const concretePreferredFinalInterviewFormId =
                   icon={CalendarDays}
                   label="Date / Time"
                   value={displayValueOrNA(formatDateTime(activeCandidate.interviewDate))}
-                  className="border-b border-[#EEF2F6] sm:border-r sm:border-[#E7EDF4] sm:pr-4 lg:border-b-0"
+                  className="border-b border-sibs-border sm:border-r sm:border-sibs-border sm:pr-4 lg:border-b-0"
                 />
                 <CandidateDetailItem
                   icon={Users}
                   label="Interview Type"
                   value={displayValueOrNA(getDisplayInterviewType(activeCandidate))}
-                  className="border-b border-[#EEF2F6] sm:pl-4 lg:border-r lg:border-[#E7EDF4] lg:pr-4 lg:border-b-0"
+                  className="border-b border-sibs-border sm:pl-4 lg:border-r lg:border-sibs-border lg:pr-4 lg:border-b-0"
                 />
                 <CandidateDetailItem
                   icon={CheckCircle2}
                   label="Interview Status"
                   value={displayValueOrNA(getDisplayInterviewStatus(activeCandidate))}
                   tone={getStatusTone(getDisplayInterviewStatus(activeCandidate))}
-                  className="border-b border-[#EEF2F6] sm:border-r sm:border-[#E7EDF4] sm:pr-4 lg:border-r-0 lg:border-b-0 lg:pl-4"
+                  className="border-b border-sibs-border sm:border-r sm:border-sibs-border sm:pr-4 lg:border-r-0 lg:border-b-0 lg:pl-4"
                 />
               </div>
 
-              <div className="mt-1 grid grid-cols-1 border-t border-[#EEF2F6] pt-1 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="mt-1 grid grid-cols-1 border-t border-sibs-border pt-1 sm:grid-cols-2 lg:grid-cols-4">
                 <CandidateDetailItem
                   icon={Link2}
                   label="Interview Link"
-                  className="border-b border-[#EEF2F6] sm:border-r sm:border-[#E7EDF4] sm:pr-4 lg:border-b-0"
+                  className="border-b border-sibs-border sm:border-r sm:border-sibs-border sm:pr-4 lg:border-b-0"
                 >
                   {displayValueOrNA(
                     normalizeOnlineInterviewLink(
@@ -12549,7 +12549,7 @@ const concretePreferredFinalInterviewFormId =
                       )}
                     </a>
                   ) : (
-                    <p className="mt-1 text-[11.5px] font-extrabold text-[#042C51] 2xl:text-xs">
+                    <p className="mt-1 text-[11.5px] font-extrabold text-sibs-navy 2xl:text-xs">
                       {EMPTY_DISPLAY_VALUE}
                     </p>
                   )}
@@ -12558,7 +12558,7 @@ const concretePreferredFinalInterviewFormId =
                 <CandidateDetailItem
                   icon={FileText}
                   label="Job Evaluation Link"
-                  className="border-b border-[#EEF2F6] sm:pl-4 lg:border-r lg:border-[#E7EDF4] lg:pr-4 lg:border-b-0"
+                  className="border-b border-sibs-border sm:pl-4 lg:border-r lg:border-sibs-border lg:pr-4 lg:border-b-0"
                 >
                   {displayValueOrNA(jobEvaluationSummaryLink) !== EMPTY_DISPLAY_VALUE ? (
                     <button
@@ -12570,7 +12570,7 @@ const concretePreferredFinalInterviewFormId =
                       View Job Evaluation
                     </button>
                   ) : (
-                    <p className="mt-1 text-[11.5px] font-extrabold text-[#042C51] 2xl:text-xs">
+                    <p className="mt-1 text-[11.5px] font-extrabold text-sibs-navy 2xl:text-xs">
                       {EMPTY_DISPLAY_VALUE}
                     </p>
                   )}
@@ -12579,9 +12579,9 @@ const concretePreferredFinalInterviewFormId =
                 <CandidateDetailItem
                   icon={MessageSquareText}
                   label="Interview Remarks"
-                  className="border-b border-[#EEF2F6] sm:border-r sm:border-[#E7EDF4] sm:pr-4 lg:border-b-0 lg:pl-4"
+                  className="border-b border-sibs-border sm:border-r sm:border-sibs-border sm:pr-4 lg:border-b-0 lg:pl-4"
                 >
-                  <p className="mt-1 whitespace-pre-line break-words text-[11.5px] font-semibold leading-5 text-[#344054] 2xl:text-xs">
+                  <p className="mt-1 whitespace-pre-line break-words text-[11.5px] font-semibold leading-5 text-sibs-navy 2xl:text-xs">
                     {activeCandidate.interviewNotes ||
                       activeCandidate.interviewerNotes ||
                       activeCandidate.interview_notes ||
@@ -12594,14 +12594,14 @@ const concretePreferredFinalInterviewFormId =
                   label="Job Evaluation Remarks"
                   className="sm:pl-4"
                 >
-                  <p className="mt-1 whitespace-pre-line break-words text-[11.5px] font-semibold leading-5 text-[#344054] 2xl:text-xs">
+                  <p className="mt-1 whitespace-pre-line break-words text-[11.5px] font-semibold leading-5 text-sibs-navy 2xl:text-xs">
                     {jobEvaluationSummaryRemarks}
                   </p>
                 </CandidateDetailItem>
               </div>
 
               {isInterviewScheduled && candidateHasSchedule && (
-                <div className="mt-4 flex flex-wrap justify-end gap-2 border-t border-[#EEF2F6] pt-3">
+                <div className="mt-4 flex flex-wrap justify-end gap-2 border-t border-sibs-border pt-3">
                   {isInterviewRescheduled &&
                     canApproveInterviewRescheduleAccess && (
                       <CandidateModalPrimaryButton
@@ -12701,19 +12701,19 @@ const concretePreferredFinalInterviewFormId =
                     value={item.value}
                     tone={item.tone}
                     className={`${
-                      index % 3 !== 2 ? "lg:border-r lg:border-[#E7EDF4] lg:pr-4" : ""
-                    } ${index % 3 !== 0 ? "lg:pl-4" : ""} border-b border-[#EEF2F6] last:border-b-0 lg:border-b-0`}
+                      index % 3 !== 2 ? "lg:border-r lg:border-sibs-border lg:pr-4" : ""
+                    } ${index % 3 !== 0 ? "lg:pl-4" : ""} border-b border-sibs-border last:border-b-0 lg:border-b-0`}
                   />
                 ))}
               </div>
 
               {candidateOfferVersions.length > 0 && (
-                <div className="mt-2.5 rounded-xl border border-[#E6ECF2] bg-white p-3">
+                <div className="mt-2.5 rounded-[10px] border border-sibs-border bg-white p-3">
                   <div className="flex items-center justify-between gap-3">
-                    <p className="text-[9.5px] 2xl:text-[10px] font-extrabold uppercase tracking-wide text-[#042C51]">
+                    <p className="text-[9.5px] 2xl:text-[10px] font-extrabold uppercase tracking-wide text-sibs-navy">
                       Offer Versions
                     </p>
-                    {isLoadingOfferVersions && <Loader2 size={13} className="animate-spin text-[#667085]" />}
+                    {isLoadingOfferVersions && <Loader2 size={13} className="animate-spin text-sibs-muted" />}
                   </div>
                   <div className="mt-2 space-y-1.5">
                     {candidateOfferVersions.map((version) => {
@@ -12727,11 +12727,11 @@ const concretePreferredFinalInterviewFormId =
                       return (
                         <div
                           key={version.id || version.offerVersionId || versionNumber || filename}
-                          className="flex flex-col gap-1.5 rounded-lg border border-[#E6ECF2] px-2.5 py-1.5 sm:flex-row sm:items-center sm:justify-between"
+                          className="flex flex-col gap-1.5 rounded-[10px] border border-sibs-border px-2.5 py-1.5 sm:flex-row sm:items-center sm:justify-between"
                         >
                           <div className="min-w-0">
-                            <p className="truncate text-[11px] 2xl:text-xs font-extrabold text-[#344054]">{filename}</p>
-                            <p className="mt-0.5 text-[9.5px] font-semibold text-[#98A2B3]">
+                            <p className="truncate text-[11px] 2xl:text-xs font-extrabold text-sibs-navy">{filename}</p>
+                            <p className="mt-0.5 text-[9.5px] font-semibold text-sibs-muted">
                               Version {versionNumber || EMPTY_DISPLAY_VALUE}
                             </p>
                           </div>
@@ -12747,9 +12747,9 @@ const concretePreferredFinalInterviewFormId =
                                   )}/offer-versions/${encodeURIComponent(versionNumber)}/pdf`,
                                 })
                               }
-                              className="shrink-0 !h-7 2xl:!h-7.5 !text-[11px] !border-[#FF5C28]/35 !text-[#FF5C28] hover:!bg-[#FFF0EB]"
+                              className="shrink-0 !h-7 2xl:!h-7.5 !text-[11px] !border-sibs-orange/35 !text-sibs-orange hover:!bg-sibs-cream-light"
                             >
-                              <Eye size={13} className="text-[#FF5C28]" />
+                              <Eye size={13} className="text-sibs-orange" />
                               Open PDF
                             </CandidateModalSecondaryButton>
                           )}
@@ -12801,7 +12801,7 @@ const concretePreferredFinalInterviewFormId =
               )}
 
               {activeCandidate.offerEmailSent && !hasFinalOfferDecision && !isOfferNegotiationRequested && (
-                <div className="mt-2.5 flex flex-col gap-3 rounded-xl border border-sibs-border bg-white p-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="mt-2.5 flex flex-col gap-3 rounded-[10px] border border-sibs-border bg-white p-3 sm:flex-row sm:items-center sm:justify-between">
                   <div className="min-w-0">
                     <p className="text-[9.5px] 2xl:text-[10px] font-extrabold uppercase tracking-wide text-sibs-navy">
                       Manual Candidate Response
@@ -12828,26 +12828,26 @@ const concretePreferredFinalInterviewFormId =
             >
               <div className="grid grid-cols-1 gap-x-4 gap-y-2 px-0.5 py-1 sm:grid-cols-2 lg:grid-cols-4">
                 <div>
-                  <p className="text-[9px] sm:text-[9.5px] 2xl:text-[10px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+                  <p className="text-[9px] sm:text-[9.5px] 2xl:text-[10px] font-extrabold uppercase tracking-wide text-sibs-muted">
                     Major Requirements
                   </p>
-                  <p className="mt-0.5 text-[11px] 2xl:text-xs font-extrabold text-[#344054]">
+                  <p className="mt-0.5 text-[11px] 2xl:text-xs font-extrabold text-sibs-navy">
                     {majorNhoProgress.completed} / {majorNhoProgress.total} ({majorNhoProgress.percent}%)
                   </p>
                 </div>
                 <div>
-                  <p className="text-[9px] sm:text-[9.5px] 2xl:text-[10px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+                  <p className="text-[9px] sm:text-[9.5px] 2xl:text-[10px] font-extrabold uppercase tracking-wide text-sibs-muted">
                     Overall Requirements
                   </p>
-                  <p className="mt-0.5 text-[11px] 2xl:text-xs font-extrabold text-[#344054]">
+                  <p className="mt-0.5 text-[11px] 2xl:text-xs font-extrabold text-sibs-navy">
                     {totalNhoProgress.completed} / {totalNhoProgress.total} ({totalNhoProgress.percent}%)
                   </p>
                 </div>
                 <div>
-                  <p className="text-[9px] sm:text-[9.5px] 2xl:text-[10px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+                  <p className="text-[9px] sm:text-[9.5px] 2xl:text-[10px] font-extrabold uppercase tracking-wide text-sibs-muted">
                     NHO Schedule
                   </p>
-                  <p className="mt-0.5 text-[11px] 2xl:text-xs font-extrabold text-[#344054]">
+                  <p className="mt-0.5 text-[11px] 2xl:text-xs font-extrabold text-sibs-navy">
                     {hasNhoSchedule
                       ? formatNhoScheduleSummaryDisplay(
                           nhoScheduleDetails.startDate,
@@ -12857,21 +12857,21 @@ const concretePreferredFinalInterviewFormId =
                   </p>
                 </div>
                 <div>
-                  <p className="text-[9px] sm:text-[9.5px] 2xl:text-[10px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+                  <p className="text-[9px] sm:text-[9.5px] 2xl:text-[10px] font-extrabold uppercase tracking-wide text-sibs-muted">
                     Routing
                   </p>
-                  <p className="mt-0.5 text-[11px] 2xl:text-xs font-extrabold text-[#344054]">{currentStage}</p>
+                  <p className="mt-0.5 text-[11px] 2xl:text-xs font-extrabold text-sibs-navy">{currentStage}</p>
                 </div>
               </div>
 
               <div className="mt-2.5">
-                <div className="mb-1 flex items-center justify-between text-[9.5px] font-extrabold text-[#667085]">
+                <div className="mb-1 flex items-center justify-between text-[9.5px] font-extrabold text-sibs-muted">
                   <span>Major completion</span>
                   <span>{majorNhoProgress.percent}%</span>
                 </div>
-                <div className="h-1.5 overflow-hidden rounded-full bg-[#EEF4FA]">
+                <div className="h-1.5 overflow-hidden rounded-full bg-sibs-surface">
                   <div
-                    className="h-full rounded-full bg-[#042C51] transition-all"
+                    className="h-full rounded-full bg-sibs-navy transition-all"
                     style={{ width: `${majorNhoProgress.percent}%` }}
                   />
                 </div>

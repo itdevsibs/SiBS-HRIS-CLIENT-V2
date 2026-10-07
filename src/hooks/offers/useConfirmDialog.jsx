@@ -44,12 +44,12 @@ export function useConfirmDialog() {
               role="dialog"
               aria-modal="true"
               aria-labelledby="offer-confirmation-title"
-              className="sibs-modal-pop-in flex w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-[#D6DEE8] bg-white shadow-2xl"
+              className="sibs-modal-pop-in flex w-full max-w-lg flex-col overflow-hidden rounded-[14px] border border-sibs-border bg-white shadow-2xl"
               onClick={(event) => event.stopPropagation()}
             >
-              <div className="flex items-start justify-between gap-4 border-b border-white/10 bg-[#042C51] px-5 py-4 text-white sm:px-6">
+              <div className="flex items-start justify-between gap-4 border-b border-white/10 bg-sibs-navy px-5 py-4 text-white sm:px-6">
                 <div className="flex min-w-0 items-center gap-3">
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#FF5C28] text-white shadow-sm">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-sibs-orange text-white shadow-sm">
                     <FileCheck2 size={17} strokeWidth={2.2} />
                   </span>
 
@@ -69,7 +69,7 @@ export function useConfirmDialog() {
                 <button
                   type="button"
                   onClick={() => close(false)}
-                  className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-white/70 transition hover:bg-white/10 hover:text-white"
+                  className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] text-white/70 transition hover:bg-white/10 hover:text-white"
                   aria-label="Close confirmation"
                 >
                   <X size={18} />
@@ -77,7 +77,7 @@ export function useConfirmDialog() {
               </div>
 
               <div className="px-5 py-5 sm:px-6">
-                <p className="text-sm font-semibold leading-6 text-[#475467]">
+                <p className="text-sm font-semibold leading-6 text-slate-600">
                   {config.message}
                 </p>
 
@@ -85,9 +85,9 @@ export function useConfirmDialog() {
                   <div className="mt-4">
                     <label
                       htmlFor="offer-confirmation-notes"
-                      className="mb-1.5 block text-[10px] font-extrabold uppercase tracking-wide text-[#667085]"
+                      className="mb-1.5 block text-[10px] font-extrabold uppercase tracking-wide text-sibs-muted"
                     >
-                      Notes <span className="font-semibold normal-case text-[#98A2B3]">(Optional)</span>
+                      Notes <span className="font-semibold normal-case text-sibs-muted">(Optional)</span>
                     </label>
                     <textarea
                       id="offer-confirmation-notes"
@@ -95,17 +95,17 @@ export function useConfirmDialog() {
                       onChange={(event) => setNotes(event.target.value)}
                       placeholder="Add notes for this action..."
                       rows={3}
-                      className="w-full resize-none rounded-xl border border-[#D6DEE8] bg-white px-3 py-2.5 text-xs font-semibold leading-5 text-[#344054] outline-none transition placeholder:text-[#98A2B3] focus:border-[#FF5C28] focus:ring-4 focus:ring-[#FF5C28]/10"
+                      className="w-full resize-none rounded-[10px] border border-sibs-border bg-white px-3 py-2.5 text-xs font-semibold leading-5 text-slate-700 outline-none transition placeholder:text-sibs-muted focus:border-sibs-orange focus:ring-4 focus:ring-sibs-orange/10"
                     />
                   </div>
                 ) : null}
               </div>
 
-              <div className="flex items-center justify-end gap-2 border-t border-[#E6ECF2] bg-[#F8FAFC] px-5 py-4 sm:px-6">
+              <div className="flex items-center justify-end gap-2 border-t border-sibs-border bg-slate-50 px-5 py-4 sm:px-6">
                 <button
                   type="button"
                   onClick={() => close(false)}
-                  className="inline-flex h-10 min-w-[90px] items-center justify-center rounded-xl border border-[#D6DEE8] bg-white px-4 text-xs font-extrabold text-[#475467] transition hover:bg-white hover:text-[#042C51]"
+                  className="inline-flex h-10 min-w-[90px] items-center justify-center rounded-[10px] border border-sibs-border bg-white px-4 text-xs font-extrabold text-slate-600 transition hover:bg-white hover:text-sibs-navy"
                 >
                   {config.cancelText}
                 </button>
@@ -113,10 +113,10 @@ export function useConfirmDialog() {
                 <button
                   type="button"
                   onClick={() => close(true)}
-                  className={`inline-flex h-10 min-w-[104px] items-center justify-center rounded-xl px-4 text-xs font-extrabold text-white shadow-sm transition active:scale-[0.98] ${
+                  className={`inline-flex h-10 min-w-[104px] items-center justify-center rounded-[10px] px-4 text-xs font-extrabold text-white shadow-sm transition active:scale-[0.98] ${
                     config.variant === "danger"
                       ? "bg-red-600 hover:bg-red-700"
-                      : "bg-[#042C51] hover:bg-[#073B6C]"
+                      : "bg-sibs-navy hover:bg-sibs-navy-light"
                   }`}
                 >
                   {config.confirmText}

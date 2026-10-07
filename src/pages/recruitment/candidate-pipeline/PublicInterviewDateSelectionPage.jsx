@@ -276,25 +276,25 @@ function PublicTimeDropdown({
         type="button"
         disabled={disabled}
         onClick={() => setOpenDropdown(open ? "" : dropdownId)}
-        className={`flex h-11 w-full items-center justify-between gap-2 rounded-xl border bg-white px-3 text-left text-sm font-extrabold outline-none transition ${
+        className={`flex h-11 w-full items-center justify-between gap-2 rounded-[10px] border bg-white px-3 text-left text-sm font-extrabold outline-none transition ${
           open
-            ? "border-[#FF5C28] ring-4 ring-[#FF5C28]/10"
-            : "border-[#D0D5DD] hover:border-[#FF5C28]/50"
-        } disabled:cursor-not-allowed disabled:bg-[#F2F4F7] disabled:text-[#98A2B3]`}
+            ? "border-sibs-orange ring-4 ring-sibs-orange/10"
+            : "border-sibs-border hover:border-sibs-orange/50"
+        } disabled:cursor-not-allowed disabled:bg-sibs-surface disabled:text-sibs-muted`}
       >
-        <span className="truncate text-sibs-primary-1">
+        <span className="truncate text-sibs-navy">
           {selectedOption?.label || "—"}
         </span>
         <ChevronDown
           size={16}
-          className={`shrink-0 text-[#315B7E] transition-transform ${
+          className={`shrink-0 text-sibs-navy transition-transform ${
             open ? "rotate-180" : ""
           }`}
         />
       </button>
 
       {open && !disabled && (
-        <div className="absolute left-0 top-[calc(100%+6px)] z-[100] max-h-60 w-full overflow-hidden rounded-xl border border-[#D9E2EC] bg-white shadow-[0_16px_36px_rgba(15,23,42,0.18)]">
+        <div className="absolute left-0 top-[calc(100%+6px)] z-[100] max-h-60 w-full overflow-hidden rounded-[10px] border border-sibs-border bg-white shadow-[0_16px_36px_rgba(15,23,42,0.18)]">
           <div className="max-h-60 overflow-y-auto py-1">
             {options.map((option) => {
               const active = String(option.value) === String(value);
@@ -307,10 +307,10 @@ function PublicTimeDropdown({
                   onClick={() => handleSelect(option)}
                   className={`flex min-h-10 w-full items-center justify-between gap-2 px-3 text-left text-sm font-bold transition ${
                     option.disabled
-                      ? "cursor-not-allowed bg-white text-[#C8D2DE]"
+                      ? "cursor-not-allowed bg-white text-sibs-muted"
                       : active
-                        ? "bg-[#FFF4EF] text-[#FF5C28]"
-                        : "bg-white text-[#344054] hover:bg-[#FFF8F5] hover:text-[#FF5C28]"
+                        ? "bg-sibs-cream-light text-sibs-orange"
+                        : "bg-white text-sibs-navy hover:bg-sibs-cream-light hover:text-sibs-orange"
                   }`}
                 >
                   <span>{option.label}</span>
@@ -387,7 +387,7 @@ function PublicInterviewTimePicker({
     <div className="mt-3">
       <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] gap-2">
         <div className="min-w-0">
-          <p className="mb-1 text-[10px] font-extrabold uppercase tracking-wide text-[#7D8FA5]">
+          <p className="mb-1 text-[10px] font-extrabold uppercase tracking-wide text-sibs-muted">
             Hour
           </p>
           <PublicTimeDropdown
@@ -411,7 +411,7 @@ function PublicInterviewTimePicker({
         </div>
 
         <div className="min-w-0">
-          <p className="mb-1 text-[10px] font-extrabold uppercase tracking-wide text-[#7D8FA5]">
+          <p className="mb-1 text-[10px] font-extrabold uppercase tracking-wide text-sibs-muted">
             Minute
           </p>
           <PublicTimeDropdown
@@ -433,10 +433,10 @@ function PublicInterviewTimePicker({
         </div>
 
         <div>
-          <p className="mb-1 text-[10px] font-extrabold uppercase tracking-wide text-[#7D8FA5]">
+          <p className="mb-1 text-[10px] font-extrabold uppercase tracking-wide text-sibs-muted">
             AM/PM
           </p>
-          <div className="flex h-11 overflow-hidden rounded-xl border border-[#D0D5DD] bg-white">
+          <div className="flex h-11 overflow-hidden rounded-[10px] border border-sibs-border bg-white">
             {["AM", "PM"].map((item) => (
               <button
                 key={item}
@@ -445,8 +445,8 @@ function PublicInterviewTimePicker({
                 onClick={() => handlePeriodChange(item)}
                 className={`min-w-14 px-3 text-xs font-extrabold transition ${
                   period === item
-                    ? "bg-sibs-primary-1 text-white"
-                    : "bg-white text-sibs-primary-1 hover:bg-blue-50 hover:text-sibs-primary-1"
+                    ? "bg-sibs-orange text-white"
+                    : "bg-white text-sibs-navy hover:bg-sibs-surface hover:text-sibs-navy"
                 } disabled:cursor-not-allowed disabled:opacity-60`}
               >
                 {item}
@@ -468,14 +468,14 @@ function PublicStateCard({
   showLogo = false,
 }) {
   const toneClasses = {
-    blue: "border-blue-100 bg-blue-50 text-sibs-primary-1",
+    blue: "border-sky-100 bg-sky-50 text-sibs-navy",
     red: "border-red-100 bg-red-50 text-red-700",
     green: "border-emerald-100 bg-emerald-50 text-emerald-700",
     amber: "border-amber-100 bg-amber-50 text-amber-700",
   };
 
   return (
-    <div className="mx-auto w-full max-w-xl rounded-3xl border border-[#D9E2EC] bg-white p-6 text-center shadow-xl sm:p-10">
+    <div className="mx-auto w-full max-w-xl rounded-[14px] border border-sibs-border bg-white p-6 text-center shadow-xl sm:p-10">
       {showLogo && (
         <img
           src="/SiBSLogoNavy.png"
@@ -485,14 +485,14 @@ function PublicStateCard({
       )}
 
       <div
-        className={`${showLogo ? "mt-6 " : ""}mx-auto flex h-16 w-16 items-center justify-center rounded-2xl border ${toneClasses[tone]}`}
+        className={`${showLogo ? "mt-6 " : ""}mx-auto flex h-16 w-16 items-center justify-center rounded-[10px] border ${toneClasses[tone]}`}
       >
         {icon}
       </div>
-      <h1 className="mt-5 text-2xl font-extrabold text-sibs-primary-1">
+      <h1 className="mt-5 text-2xl font-extrabold text-sibs-navy">
         {title}
       </h1>
-      <p className="mx-auto mt-3 max-w-md text-sm font-semibold leading-6 text-[#667085]">
+      <p className="mx-auto mt-3 max-w-md text-sm font-semibold leading-6 text-sibs-muted">
         {message}
       </p>
       {children}
@@ -520,7 +520,7 @@ function ReadOnlyResponse({ schedule, warning = "" }) {
       )}.`;
 
   return (
-    <main className="flex min-h-dvh items-center justify-center bg-[#F4F7FB] px-4 py-10 font-jakarta">
+    <main className="flex min-h-dvh items-center justify-center bg-sibs-surface px-4 py-10 font-jakarta">
       <PublicStateCard
         showLogo
         icon={declined ? <XCircle size={32} /> : <CheckCircle2 size={32} />}
@@ -528,28 +528,28 @@ function ReadOnlyResponse({ schedule, warning = "" }) {
         message={message}
         tone={declined ? "amber" : "green"}
       >
-        <div className="mt-6 rounded-2xl border border-[#E6ECF2] bg-[#F8FAFC] p-4 text-left">
-          <p className="text-xs font-extrabold uppercase tracking-wide text-[#667085]">
+        <div className="mt-6 rounded-[10px] border border-sibs-border bg-sibs-surface p-4 text-left">
+          <p className="text-xs font-extrabold uppercase tracking-wide text-sibs-muted">
             Response
           </p>
-          <p className="mt-1 text-base font-extrabold text-sibs-primary-1">
+          <p className="mt-1 text-base font-extrabold text-sibs-navy">
             {status}
           </p>
           {!declined && (
-            <p className="mt-3 text-sm font-bold text-[#344054]">
+            <p className="mt-3 text-sm font-bold text-sibs-navy">
               {formatDateTime(
                 schedule?.finalInterviewDate || schedule?.selectedInterviewDate,
               )}
             </p>
           )}
           {schedule?.responseReason && (
-            <p className="mt-3 text-sm font-semibold leading-6 text-[#667085]">
+            <p className="mt-3 text-sm font-semibold leading-6 text-sibs-muted">
               {schedule.responseReason}
             </p>
           )}
         </div>
         {warning && (
-          <p className="mt-4 rounded-xl border border-amber-100 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-700">
+          <p className="mt-4 rounded-[10px] border border-amber-100 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-700">
             {warning}
           </p>
         )}
@@ -740,9 +740,9 @@ export default function PublicInterviewDateSelectionPage() {
 
   if (phase === "loading") {
     return (
-      <main className="flex min-h-dvh items-center justify-center bg-[#F4F7FB] px-4 py-10 font-jakarta">
+      <main className="flex min-h-dvh items-center justify-center bg-sibs-surface px-4 py-10 font-jakarta">
         <PublicStateCard
-          icon={<Loader2 size={30} className="animate-spin" />}
+          icon={<Loader2 size={30} className="animate-spin text-sibs-navy" />}
           title="Loading Interview Schedule"
           message="Please wait while we verify your secure response link."
         />
@@ -767,7 +767,7 @@ export default function PublicInterviewDateSelectionPage() {
           : "Response Link Unavailable";
 
     return (
-      <main className="flex min-h-dvh items-center justify-center bg-[#F4F7FB] px-4 py-10 font-jakarta">
+      <main className="flex min-h-dvh items-center justify-center bg-sibs-surface px-4 py-10 font-jakarta">
         <PublicStateCard
           icon={<AlertCircle size={32} />}
           title={title}
@@ -784,9 +784,9 @@ export default function PublicInterviewDateSelectionPage() {
   const isSubmitting = phase === "submitting";
 
   return (
-    <main className="min-h-dvh bg-[#F4F7FB] px-4 py-8 font-jakarta sm:py-12">
-      <div className="mx-auto w-full max-w-6xl overflow-hidden rounded-3xl border border-[#D9E2EC] bg-white shadow-xl">
-        <header className="flex items-center justify-center border-b border-[#E6ECF2] bg-white px-5 py-5 sm:px-8">
+    <main className="min-h-dvh bg-sibs-surface px-4 py-8 font-jakarta sm:py-12">
+      <div className="mx-auto w-full max-w-6xl overflow-hidden rounded-[14px] border border-sibs-border bg-white shadow-xl">
+        <header className="flex items-center justify-center border-b border-sibs-border bg-white px-5 py-5 sm:px-8">
           <img
             src="/SiBSLogoNavy.png"
             alt="SiBS Contact Center"
@@ -795,56 +795,56 @@ export default function PublicInterviewDateSelectionPage() {
         </header>
 
         <div className="grid grid-cols-1 lg:grid-cols-[0.78fr_1.22fr]">
-          <section className="border-b border-[#E6ECF2] bg-[#F8FAFC] p-5 sm:p-8 lg:border-b-0 lg:border-r">
-            <span className="inline-flex rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
+          <section className="border-b border-sibs-border bg-sibs-surface p-5 sm:p-8 lg:border-b-0 lg:border-r">
+            <span className="inline-flex rounded-full border border-sky-100 bg-sky-50 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-sibs-navy">
               Interview Response
             </span>
-            <h1 className="mt-4 text-2xl font-extrabold text-sibs-primary-1 sm:text-3xl">
+            <h1 className="mt-4 text-2xl font-extrabold text-sibs-navy sm:text-3xl">
               Respond to Interview Schedule
             </h1>
-            <p className="mt-3 text-sm font-semibold leading-6 text-[#667085]">
+            <p className="mt-3 text-sm font-semibold leading-6 text-sibs-muted">
               Accept the proposed schedule, choose a different date and time, or
               decline the interview. Your response becomes final after
               submission.
             </p>
 
-            <div className="mt-6 space-y-3 rounded-2xl border border-[#D9E2EC] bg-white p-5">
+            <div className="mt-6 space-y-3 rounded-[10px] border border-sibs-border bg-white p-5">
               <div>
-                <p className="text-[11px] font-extrabold uppercase tracking-wide text-[#667085]">
+                <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-muted">
                   Candidate
                 </p>
-                <p className="mt-1 text-base font-extrabold text-[#101828]">
+                <p className="mt-1 text-base font-extrabold text-sibs-navy">
                   {schedule?.candidateName}
                 </p>
               </div>
               <div>
-                <p className="text-[11px] font-extrabold uppercase tracking-wide text-[#667085]">
+                <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-muted">
                   Position / Account
                 </p>
-                <p className="mt-1 text-sm font-bold text-sibs-primary-1">
+                <p className="mt-1 text-sm font-bold text-sibs-navy">
                   {schedule?.roleName} · {schedule?.accountName}
                 </p>
               </div>
               <div>
-                <p className="text-[11px] font-extrabold uppercase tracking-wide text-[#667085]">
+                <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-muted">
                   Proposed Schedule
                 </p>
-                <p className="mt-1 text-sm font-bold text-sibs-primary-1">
+                <p className="mt-1 text-sm font-bold text-sibs-navy">
                   {formatDateOnly(schedule?.proposedDate)} at{" "}
                   {formatCandidateInterviewTime(schedule?.proposedTime)}
                 </p>
               </div>
               <div>
-                <p className="text-[11px] font-extrabold uppercase tracking-wide text-[#667085]">
+                <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-muted">
                   Interview Type
                 </p>
-                <p className="mt-1 text-sm font-bold text-sibs-primary-1">
+                <p className="mt-1 text-sm font-bold text-sibs-navy">
                   {schedule?.interviewType}
                 </p>
               </div>
             </div>
 
-            <div className="mt-5 rounded-xl border border-amber-100 bg-amber-50 px-4 py-3 text-xs font-semibold leading-5 text-amber-700">
+            <div className="mt-5 rounded-[10px] border border-amber-100 bg-amber-50 px-4 py-3 text-xs font-semibold leading-5 text-amber-700">
               <p>
                 Current response deadline: {formatDateTime(schedule?.responseDeadline)}
               </p>
@@ -890,25 +890,25 @@ export default function PublicInterviewDateSelectionPage() {
                       setAction(option.key);
                       setMessage("");
                     }}
-                    className={`rounded-2xl border p-4 text-left transition ${
+                    className={`rounded-[10px] border p-4 text-left transition ${
                       active
-                        ? "border-sibs-primary-1 bg-blue-50 shadow-sm"
-                        : "border-[#D9E2EC] bg-white hover:border-sibs-primary-1/40 hover:bg-[#F8FAFC]"
+                        ? "border-sibs-orange bg-sibs-cream-light shadow-sm"
+                        : "border-sibs-border bg-white hover:border-sibs-orange/40 hover:bg-sibs-surface"
                     } disabled:opacity-60`}
                   >
                     <span
-                      className={`flex h-10 w-10 items-center justify-center rounded-xl ${
+                      className={`flex h-10 w-10 items-center justify-center rounded-[10px] ${
                         active
-                          ? "bg-sibs-primary-1 text-white"
-                          : "bg-[#F2F4F7] text-sibs-primary-1"
+                          ? "bg-sibs-orange text-white"
+                          : "bg-sibs-surface text-sibs-navy"
                       }`}
                     >
                       <Icon size={19} />
                     </span>
-                    <span className="mt-3 block text-sm font-extrabold text-sibs-primary-1">
+                    <span className="mt-3 block text-sm font-extrabold text-sibs-navy">
                       {option.label}
                     </span>
-                    <span className="mt-1 block text-xs font-semibold leading-5 text-[#667085]">
+                    <span className="mt-1 block text-xs font-semibold leading-5 text-sibs-muted">
                       {option.description}
                     </span>
                   </button>
@@ -917,12 +917,12 @@ export default function PublicInterviewDateSelectionPage() {
             </div>
 
             {action === "accept" && (
-              <div className="mt-6 rounded-2xl border border-emerald-100 bg-emerald-50 p-5">
+              <div className="mt-6 rounded-[10px] border border-emerald-100 bg-emerald-50 p-5">
                 <p className="flex items-center gap-2 text-sm font-extrabold text-emerald-700">
                   <CheckCircle2 size={18} />
                   Accept Proposed Interview Schedule
                 </p>
-                <p className="mt-2 text-sm font-bold text-[#344054]">
+                <p className="mt-2 text-sm font-bold text-sibs-navy">
                   {formatDateOnly(schedule?.proposedDate)} at{" "}
                   {formatCandidateInterviewTime(schedule?.proposedTime)}
                 </p>
@@ -945,11 +945,11 @@ export default function PublicInterviewDateSelectionPage() {
                           ),
                       )
                     }
-                    className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#D9E2EC] text-sibs-primary-1 transition hover:bg-[#F8FAFC] disabled:opacity-50"
+                    className="flex h-10 w-10 items-center justify-center rounded-[10px] border border-sibs-border text-sibs-navy transition hover:bg-sibs-surface disabled:opacity-50"
                   >
                     <ChevronLeft size={18} />
                   </button>
-                  <h2 className="text-center text-base font-extrabold text-sibs-primary-1">
+                  <h2 className="text-center text-base font-extrabold text-sibs-navy">
                     {MONTH_NAMES[viewDate.getMonth()]} {viewDate.getFullYear()}
                   </h2>
                   <button
@@ -965,7 +965,7 @@ export default function PublicInterviewDateSelectionPage() {
                           ),
                       )
                     }
-                    className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#D9E2EC] text-sibs-primary-1 transition hover:bg-[#F8FAFC] disabled:opacity-50"
+                    className="flex h-10 w-10 items-center justify-center rounded-[10px] border border-sibs-border text-sibs-navy transition hover:bg-sibs-surface disabled:opacity-50"
                   >
                     <ChevronRight size={18} />
                   </button>
@@ -975,7 +975,7 @@ export default function PublicInterviewDateSelectionPage() {
                   {WEEKDAY_LABELS.map((label) => (
                     <div
                       key={label}
-                      className="flex h-9 items-center justify-center text-xs font-extrabold text-[#667085]"
+                      className="flex h-9 items-center justify-center text-xs font-extrabold text-sibs-muted"
                     >
                       {label}
                     </div>
@@ -1008,13 +1008,13 @@ export default function PublicInterviewDateSelectionPage() {
                                 ? "Select interview date"
                                 : "Past dates are unavailable"
                         }
-                        className={`flex h-10 items-center justify-center rounded-xl text-sm font-extrabold transition ${
+                        className={`flex h-10 items-center justify-center rounded-[10px] text-sm font-extrabold transition ${
                           active
-                            ? "bg-sibs-primary-1 text-white shadow-sm"
+                            ? "bg-sibs-orange text-white shadow-sm"
                             : selectable
                               ? item.isCurrentMonth
-                                ? "text-[#344054] hover:bg-blue-50 hover:text-sibs-primary-1"
-                                : "text-[#98A2B3] hover:bg-[#F8FAFC]"
+                                ? "text-sibs-navy hover:bg-sibs-cream-light hover:text-sibs-orange"
+                                : "text-sibs-muted hover:bg-sibs-surface"
                               : holiday
                                 ? "cursor-not-allowed bg-amber-50 text-amber-300"
                                 : weekend
@@ -1028,8 +1028,8 @@ export default function PublicInterviewDateSelectionPage() {
                   })}
                 </div>
 
-                <div className="mt-6 rounded-2xl border border-[#D9E2EC] bg-[#F8FAFC] p-5">
-                  <label className="flex items-center gap-2 text-sm font-extrabold text-sibs-primary-1">
+                <div className="mt-6 rounded-[10px] border border-sibs-border bg-sibs-surface p-5">
+                  <label className="flex items-center gap-2 text-sm font-extrabold text-sibs-navy">
                     <Clock3 size={17} />
                     Interview Time
                   </label>
@@ -1038,16 +1038,16 @@ export default function PublicInterviewDateSelectionPage() {
                     disabled={isSubmitting}
                     onChange={setSelectedTime}
                   />
-                  <p className="mt-2 text-xs font-semibold text-[#667085]">
+                  <p className="mt-2 text-xs font-semibold text-sibs-muted">
                     Available from 10:00 AM through 5:00 PM.
                   </p>
                 </div>
 
-                <div className="mt-5 rounded-2xl border border-blue-100 bg-blue-50 p-4">
-                  <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
+                <div className="mt-5 rounded-[10px] border border-sky-100 bg-sky-50 p-4">
+                  <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-navy">
                     New Interview Schedule
                   </p>
-                  <p className="mt-1 text-sm font-extrabold text-sibs-primary-1">
+                  <p className="mt-1 text-sm font-extrabold text-sibs-navy">
                     {formatDateOnly(selectedDate)} at{" "}
                     {formatCandidateInterviewTime(selectedTime)}
                   </p>
@@ -1056,7 +1056,7 @@ export default function PublicInterviewDateSelectionPage() {
             )}
 
             {action === "decline" && (
-              <div className="mt-6 rounded-2xl border border-red-100 bg-red-50 p-5">
+              <div className="mt-6 rounded-[10px] border border-red-100 bg-red-50 p-5">
                 <label className="text-sm font-extrabold text-red-700">
                   Reason for declining (optional)
                 </label>
@@ -1066,7 +1066,7 @@ export default function PublicInterviewDateSelectionPage() {
                   value={declineReason}
                   onChange={(event) => setDeclineReason(event.target.value)}
                   placeholder="Share a reason when applicable."
-                  className="mt-3 w-full resize-none rounded-xl border border-red-100 bg-white px-4 py-3 text-sm font-semibold text-[#344054] outline-none transition focus:border-red-300 focus:ring-4 focus:ring-red-100 disabled:opacity-60"
+                  className="mt-3 w-full resize-none rounded-[10px] border border-red-100 bg-white px-4 py-3 text-sm font-semibold text-sibs-navy outline-none transition focus:border-red-300 focus:ring-4 focus:ring-red-100 disabled:opacity-60"
                 />
                 <p className="mt-2 text-xs font-semibold leading-5 text-red-600">
                   Declining moves your application to Drop-off and the response
@@ -1076,7 +1076,7 @@ export default function PublicInterviewDateSelectionPage() {
             )}
 
             {message && (
-              <div className="mt-5 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-bold text-red-600">
+              <div className="mt-5 rounded-[10px] border border-red-100 bg-red-50 px-4 py-3 text-sm font-bold text-red-600">
                 {message}
               </div>
             )}
@@ -1084,7 +1084,7 @@ export default function PublicInterviewDateSelectionPage() {
             <button
               type="submit"
               disabled={isSubmitting || !action}
-              className="mt-6 inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-extrabold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+              className="mt-6 inline-flex h-12 w-full items-center justify-center gap-2 rounded-[10px] bg-sibs-navy px-5 text-sm font-extrabold text-white transition hover:bg-sibs-navy-hover disabled:cursor-not-allowed disabled:opacity-60"
             >
               {isSubmitting ? (
                 <Loader2 size={17} className="animate-spin" />

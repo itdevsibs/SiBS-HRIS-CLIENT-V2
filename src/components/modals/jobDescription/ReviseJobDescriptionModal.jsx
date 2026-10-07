@@ -266,10 +266,10 @@ const REVISION_FIELD_LABEL_CLASS =
   "mb-1.5 block text-xs font-bold text-sibs-navy";
 
 const REVISION_INPUT_CLASS =
-  "h-11 w-full rounded-xl border border-sibs-border-subtle bg-white px-3.5 text-sm font-medium text-sibs-navy outline-none transition focus:border-sibs-orange focus:ring-2 focus:ring-sibs-orange/10";
+  "h-11 w-full rounded-[10px] border border-sibs-border-subtle bg-white px-3.5 text-sm font-medium text-sibs-navy outline-none transition focus:border-sibs-orange focus:ring-2 focus:ring-sibs-orange/10";
 
 const REVISION_TEXTAREA_CLASS =
-  "min-h-[260px] flex-1 resize-none rounded-xl border border-sibs-border bg-white px-4 py-3 text-sm font-medium leading-7 text-sibs-navy outline-none transition placeholder:text-sibs-muted focus:border-sibs-navy focus:ring-2 focus:ring-blue-100";
+  "min-h-[260px] flex-1 resize-none rounded-[10px] border border-sibs-border bg-white px-4 py-3 text-sm font-medium leading-7 text-sibs-navy outline-none transition placeholder:text-sibs-muted focus:border-sibs-navy focus:ring-2 focus:ring-blue-100";
 
 const REVISION_DISPLAY_VALUE_CLASS =
   "mt-2 block max-w-full overflow-x-auto whitespace-nowrap pb-1 text-sm font-bold leading-6 text-sibs-text-secondary [scrollbar-width:thin]";
@@ -1306,7 +1306,7 @@ function HighlightedCurrentText({ value = "", comments = [] }) {
           &gt;&gt;&gt;
         </span>{" "}
         <span
-          className="inline rounded-md bg-amber-100 px-1.5 py-0.5 font-[inherit] leading-normal text-sibs-navy ring-1 ring-amber-300"
+          className="inline rounded-[10px] bg-amber-100 px-1.5 py-0.5 font-[inherit] leading-normal text-sibs-navy ring-1 ring-amber-300"
           title={getReviewerCommentText(match.comment) || "Marked for revision"}
         >
           {text.slice(match.start, match.end)}
@@ -1343,7 +1343,7 @@ function HighlightedCurrentText({ value = "", comments = [] }) {
 function RevisionCommentCard({ comment, compact = false }) {
   return (
     <div
-      className={`rounded-xl border border-amber-300 bg-amber-50 ${
+      className={`rounded-[10px] border border-amber-300 bg-amber-50 ${
         compact ? "px-3 py-3" : "px-4 py-4"
       }`}
     >
@@ -1358,7 +1358,7 @@ function RevisionCommentCard({ comment, compact = false }) {
         />
       </div>
 
-      <div className="mt-3 rounded-lg border border-amber-300 bg-white/70 px-4 py-4">
+      <div className="mt-3 rounded-[10px] border border-amber-300 bg-white/70 px-4 py-4">
         <div className="flex items-center gap-2">
           <span className="h-2 w-2 rounded-full bg-sibs-orange" />
 
@@ -1671,7 +1671,7 @@ function RecordCurrentView({ item = {}, comments = [] }) {
             )}`}
           >
             <div
-              className={`min-h-[72px] overflow-hidden rounded-xl border px-4 py-3 ${
+              className={`min-h-[72px] overflow-hidden rounded-[10px] border px-4 py-3 ${
                 hasComments
                   ? "border-amber-300 bg-amber-100"
                   : "border-sibs-border bg-sibs-surface"
@@ -1776,7 +1776,7 @@ function ReportsToDraftSelect({
           onBeforeOpen?.();
           setOpen((prev) => !prev);
         }}
-        className={`flex w-full items-center justify-between gap-3 rounded-xl border bg-white px-4 py-3 text-left text-sm text-sibs-primary-1 outline-none transition ${
+        className={`flex w-full items-center justify-between gap-3 rounded-[10px] border bg-white px-4 py-3 text-left text-sm text-sibs-primary-1 outline-none transition ${
           open ? "border-[var(--sibs-primary-1)]" : "border-sibs-tertiary-8"
         }`}
       >
@@ -1793,7 +1793,7 @@ function ReportsToDraftSelect({
       </button>
 
       {open && (
-        <div className="absolute left-0 right-0 z-40 mt-2 overflow-hidden rounded-xl border border-sibs-tertiary-8 bg-white shadow-xl">
+        <div className="absolute left-0 right-0 z-40 mt-2 overflow-hidden rounded-[10px] border border-sibs-tertiary-8 bg-white shadow-xl">
           {REPORTS_TO_OPTIONS.map((option) => {
             const selected =
               String(value || "")
@@ -1841,10 +1841,10 @@ function SupervisoryDraftToggle({ value = "", onChange }) {
   const isYes = currentValue === "Yes";
 
   return (
-    <div className="h-11 w-full overflow-hidden rounded-xl border border-sibs-border-subtle bg-sibs-surface shadow-sm">
+    <div className="h-11 w-full overflow-hidden rounded-[10px] border border-sibs-border-subtle bg-sibs-surface shadow-sm">
       <div className="relative grid h-full grid-cols-2">
         <span
-          className={`absolute left-0 top-0 z-0 h-full w-1/2 rounded-xl bg-sibs-navy shadow-md transition-transform duration-300 ease-out ${
+          className={`absolute left-0 top-0 z-0 h-full w-1/2 rounded-[10px] bg-sibs-navy shadow-md transition-transform duration-300 ease-out ${
             isYes ? "translate-x-0" : "translate-x-full"
           }`}
         />
@@ -1960,7 +1960,7 @@ function RecordDraftEditor({ form = {}, setForm, visibleFieldKeys = null }) {
               <SelectDropdown
                 label="Prepared For"
                 labelClassName={REVISION_FIELD_LABEL_CLASS}
-                buttonClassName="h-11 rounded-xl border-sibs-border-subtle bg-white text-sm font-medium text-sibs-navy"
+                buttonClassName="h-11 rounded-[10px] border-sibs-border-subtle bg-white text-sm font-medium text-sibs-navy"
                 value={form.preparedFor || form.account || ""}
                 placeholder="Search account"
                 disabled={false}
@@ -1995,7 +1995,7 @@ function RecordDraftEditor({ form = {}, setForm, visibleFieldKeys = null }) {
               <SelectDropdown
                 label="Department"
                 labelClassName={REVISION_FIELD_LABEL_CLASS}
-                buttonClassName="h-11 rounded-xl border-sibs-border-subtle bg-white text-sm font-medium text-sibs-navy"
+                buttonClassName="h-11 rounded-[10px] border-sibs-border-subtle bg-white text-sm font-medium text-sibs-navy"
                 value={form.department || ""}
                 placeholder="Search department"
                 disabled={false}
@@ -2028,7 +2028,7 @@ function RecordDraftEditor({ form = {}, setForm, visibleFieldKeys = null }) {
               <SelectDropdown
                 label="Linked Hiring Requirement"
                 labelClassName={REVISION_FIELD_LABEL_CLASS}
-                buttonClassName="h-11 rounded-xl border-sibs-border-subtle bg-white text-sm font-medium text-sibs-navy"
+                buttonClassName="h-11 rounded-[10px] border-sibs-border-subtle bg-white text-sm font-medium text-sibs-navy"
                 value={form.linkedHiringRequirement || ""}
                 placeholder="Select existing job description"
                 disabled={false}
@@ -2053,7 +2053,7 @@ function RecordDraftEditor({ form = {}, setForm, visibleFieldKeys = null }) {
               <SelectDropdown
                 label={field.label}
                 labelClassName={REVISION_FIELD_LABEL_CLASS}
-                buttonClassName="h-11 rounded-xl border-sibs-border-subtle bg-white text-sm font-medium text-sibs-navy"
+                buttonClassName="h-11 rounded-[10px] border-sibs-border-subtle bg-white text-sm font-medium text-sibs-navy"
                 value={form.locationWorkSetup || ""}
                 placeholder="Select location / work setup"
                 options={LOCATION_WORK_SETUP_OPTIONS}
@@ -2072,7 +2072,7 @@ function RecordDraftEditor({ form = {}, setForm, visibleFieldKeys = null }) {
               <SelectDropdown
                 label={field.label}
                 labelClassName={REVISION_FIELD_LABEL_CLASS}
-                buttonClassName="h-11 rounded-xl border-sibs-border-subtle bg-white text-sm font-medium text-sibs-navy"
+                buttonClassName="h-11 rounded-[10px] border-sibs-border-subtle bg-white text-sm font-medium text-sibs-navy"
                 value={form.reportsTo || ""}
                 placeholder="Select reporting line"
                 options={REPORTS_TO_OPTIONS}
@@ -2243,7 +2243,7 @@ function InlineCommentedText({
         )}
 
         <span
-          className="inline rounded-md bg-amber-100 px-1.5 py-0.5 font-[inherit] leading-[1.9] text-sibs-navy ring-1 ring-amber-300 box-decoration-clone"
+          className="inline rounded-[10px] bg-amber-100 px-1.5 py-0.5 font-[inherit] leading-[1.9] text-sibs-navy ring-1 ring-amber-300 box-decoration-clone"
           title={getReviewerCommentText(match.comment) || "Marked for revision"}
         >
           {highlightedText}
@@ -2376,7 +2376,7 @@ function CompetenciesCurrentTable({ item = {}, comments = [] }) {
   );
 
   return (
-    <div className="overflow-hidden rounded-xl border border-sibs-border bg-white selection:bg-amber-100 selection:text-sibs-navy">
+    <div className="overflow-hidden rounded-[10px] border border-sibs-border bg-white selection:bg-amber-100 selection:text-sibs-navy">
       <div className="hidden grid-cols-[minmax(0,1fr)_110px_110px_110px] border-b border-sibs-border bg-sibs-surface md:grid">
         <div className="px-4 py-3 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
           Competency for this Position
@@ -2491,7 +2491,7 @@ function AutoGrowCompetencyTextarea({
       }}
       onInput={resizeTextarea}
       placeholder={placeholder}
-      className="block min-h-[90px] w-full resize-none rounded-xl border border-sibs-border bg-white px-4 py-3 text-sm font-medium leading-7 text-sibs-navy outline-none transition placeholder:text-sibs-muted focus:border-sibs-primary-1 focus:ring-2 focus:ring-blue-100"
+      className="block min-h-[90px] w-full resize-none rounded-[10px] border border-sibs-border bg-white px-4 py-3 text-sm font-medium leading-7 text-sibs-navy outline-none transition placeholder:text-sibs-muted focus:border-sibs-primary-1 focus:ring-2 focus:ring-blue-100"
       style={{
         height: "auto",
         overflow: "hidden",
@@ -2536,7 +2536,7 @@ function CompetenciesDraftTable({ form = {}, setForm }) {
 
   return (
     <div className="w-full">
-      <div className="overflow-hidden rounded-xl border border-sibs-border bg-white">
+      <div className="overflow-hidden rounded-[10px] border border-sibs-border bg-white">
         <div className="hidden grid-cols-[minmax(0,1fr)_110px_110px_110px_56px] border-b border-sibs-border bg-sibs-surface md:grid">
           <div className="px-4 py-3 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
             Competency for this Position
@@ -2574,7 +2574,7 @@ function CompetenciesDraftTable({ form = {}, setForm }) {
                         handleChange(item.id, "title", event.target.value)
                       }
                       placeholder={`Competency ${index + 1} title`}
-                      className="w-full rounded-xl border border-sibs-border bg-white px-4 py-3 text-sm font-semibold text-sibs-navy outline-none transition placeholder:text-sibs-muted focus:border-sibs-primary-1 focus:ring-2 focus:ring-blue-100"
+                      className="w-full rounded-[10px] border border-sibs-border bg-white px-4 py-3 text-sm font-semibold text-sibs-navy outline-none transition placeholder:text-sibs-muted focus:border-sibs-primary-1 focus:ring-2 focus:ring-blue-100"
                     />
 
                     <AutoGrowCompetencyTextarea
@@ -2615,7 +2615,7 @@ function CompetenciesDraftTable({ form = {}, setForm }) {
                   <button
                     type="button"
                     onClick={() => handleRemoveRow(item.id)}
-                    className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-red-200 bg-red-50 text-red-600 transition hover:bg-red-100"
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-[10px] border border-red-200 bg-red-50 text-red-600 transition hover:bg-red-100"
                     aria-label="Remove competency"
                     title="Remove competency"
                   >
@@ -2632,7 +2632,7 @@ function CompetenciesDraftTable({ form = {}, setForm }) {
         <button
           type="button"
           onClick={handleAddRow}
-          className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-blue-200 bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-600 transition hover:bg-blue-100"
+          className="inline-flex w-full items-center justify-center gap-2 rounded-[10px] border border-dashed border-blue-200 bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-600 transition hover:bg-blue-100"
         >
           <Plus size={18} />
           Add Competency
@@ -2703,7 +2703,7 @@ function PersonalityCurrentView({ value = "", comments = [] }) {
 
   if (!personalityTypes.length) {
     return (
-      <div className="rounded-xl border border-sibs-border bg-sibs-surface px-4 py-4 text-sm font-semibold text-sibs-tertiary-5">
+      <div className="rounded-[10px] border border-sibs-border bg-sibs-surface px-4 py-4 text-sm font-semibold text-sibs-tertiary-5">
         No preferred personality type provided.
       </div>
     );
@@ -2711,7 +2711,7 @@ function PersonalityCurrentView({ value = "", comments = [] }) {
 
   return (
     <div className="space-y-3">
-      <div className="rounded-xl border border-sibs-border bg-sibs-surface px-4 py-4">
+      <div className="rounded-[10px] border border-sibs-border bg-sibs-surface px-4 py-4">
         <div className="flex flex-wrap gap-2">
           {personalityTypes.map((code) => {
             const matchedComments = selectedTextComments.filter((comment) =>
@@ -2788,7 +2788,7 @@ function PersonalityDraftPicker({ form = {}, setForm }) {
   return (
     <div className="w-full">
       <div
-        className={`rounded-xl border bg-white transition ${
+        className={`rounded-[10px] border bg-white transition ${
           open
             ? "border-sibs-orange ring-2 ring-sibs-orange/10"
             : "border-sibs-border-subtle hover:border-sibs-orange/40"
@@ -2847,7 +2847,7 @@ function PersonalityDraftPicker({ form = {}, setForm }) {
       </div>
 
       {open && (
-        <div className="mt-2 max-h-[280px] overflow-y-auto rounded-xl border border-sibs-border bg-white shadow-sm">
+        <div className="mt-2 max-h-[280px] overflow-y-auto rounded-[10px] border border-sibs-border bg-white shadow-sm">
           {PERSONALITY_TYPE_OPTIONS.map((option) => {
             const selected = selectedCodes.includes(option.code);
 
@@ -2867,7 +2867,7 @@ function PersonalityDraftPicker({ form = {}, setForm }) {
                 </span>
 
                 <span
-                  className={`flex h-5 w-5 items-center justify-center rounded-md border ${
+                  className={`flex h-5 w-5 items-center justify-center rounded-[10px] border ${
                     selected
                       ? "border-sibs-orange bg-sibs-orange text-white"
                       : "border-sibs-border bg-white text-transparent"
@@ -2986,7 +2986,7 @@ function SectionMergeEditor({
   return (
     <section
       ref={sectionRef}
-      className="scroll-mt-3 overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-sm transition"
+      className="scroll-mt-3 overflow-hidden rounded-[14px] border border-sibs-border bg-white shadow-sm transition"
     >
       <div className="flex flex-col gap-3 border-b border-sibs-border bg-sibs-surface px-4 py-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="min-w-0">
@@ -3020,7 +3020,7 @@ function SectionMergeEditor({
         <button
           type="button"
           onClick={useCurrentVersion}
-          className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-sibs-border bg-white px-3 text-xs font-bold text-sibs-primary-1 transition hover:bg-sibs-surface"
+          className="inline-flex h-9 items-center justify-center gap-2 rounded-[10px] border border-sibs-border bg-white px-3 text-xs font-bold text-sibs-primary-1 transition hover:bg-sibs-surface"
         >
           <RotateCcw size={14} />
           Use Current
@@ -3045,7 +3045,7 @@ function SectionMergeEditor({
 
           <div className="flex flex-1 flex-col gap-4 px-4 py-4">
             <div
-              className={`rounded-xl border border-sibs-border ${
+              className={`rounded-[10px] border border-sibs-border ${
                 isCompetencySectionType || isPersonalityPickerSection
                   ? "bg-white p-0"
                   : "bg-sibs-surface px-4 py-4"
@@ -3419,7 +3419,7 @@ function RevisionDocumentSection({
             <button
               type="button"
               onClick={onToggleOriginal}
-              className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-sibs-border-subtle bg-white px-3 text-[11px] font-bold text-sibs-primary-1 transition hover:bg-sibs-surface"
+              className="inline-flex h-8 items-center justify-center gap-1.5 rounded-[10px] border border-sibs-border-subtle bg-white px-3 text-[11px] font-bold text-sibs-primary-1 transition hover:bg-sibs-surface"
             >
               <Eye size={14} />
               {showOriginal ? "Hide Original" : "Show Original"}
@@ -3430,7 +3430,7 @@ function RevisionDocumentSection({
             type="button"
             onClick={resetSection}
             disabled={!changed}
-            className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-sibs-border-subtle bg-white px-3 text-[11px] font-bold text-sibs-primary-1 transition hover:bg-sibs-surface disabled:cursor-not-allowed disabled:opacity-40"
+            className="inline-flex h-8 items-center justify-center gap-1.5 rounded-[10px] border border-sibs-border-subtle bg-white px-3 text-[11px] font-bold text-sibs-primary-1 transition hover:bg-sibs-surface disabled:cursor-not-allowed disabled:opacity-40"
           >
             <RotateCcw size={14} />
             Revert changes
@@ -3461,7 +3461,7 @@ function RevisionDocumentSection({
             revisionMode
           />
 
-          <div className="rounded-xl border border-sibs-border bg-sibs-surface p-4">
+          <div className="rounded-[10px] border border-sibs-border bg-sibs-surface p-4">
             <div className="mb-4">
               <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
                 Additional Document Details
@@ -3488,7 +3488,7 @@ function RevisionDocumentSection({
       ) : (
         <div className="space-y-4">
           {showOriginal && (
-            <div className="rounded-xl border border-amber-200 bg-amber-50/70 px-4 py-4">
+            <div className="rounded-[10px] border border-amber-200 bg-amber-50/70 px-4 py-4">
               <div className="mb-3 flex items-center justify-between gap-3">
                 <p className="text-[10px] font-extrabold uppercase tracking-wide text-amber-700">
                   Original Version
@@ -3518,7 +3518,7 @@ function RevisionDocumentSection({
           )}
 
           <div
-            className={`relative rounded-xl border px-4 py-4 transition ${
+            className={`relative rounded-[10px] border px-4 py-4 transition ${
               sectionHasActiveComment && remainingSectionComments.length > 0
                 ? "border-orange-300 bg-orange-50/35 shadow-sm ring-2 ring-orange-100"
                 : comments.length > 0 && remainingSectionComments.length > 0
@@ -3531,7 +3531,7 @@ function RevisionDocumentSection({
             }`}
           >
             {sectionHasActiveComment && remainingSectionComments.length > 0 && (
-              <div className="mb-3 flex items-center gap-2 rounded-lg border border-orange-200 bg-white/85 px-3 py-2 text-[11px] font-extrabold text-orange-700">
+              <div className="mb-3 flex items-center gap-2 rounded-[10px] border border-orange-200 bg-white/85 px-3 py-2 text-[11px] font-extrabold text-orange-700">
                 <MessageSquareText size={14} strokeWidth={2.4} />
                 Selected reviewer comment applies to this section
               </div>
@@ -3553,7 +3553,7 @@ function RevisionDocumentSection({
 
           {comments.length > 0 && (
             <div
-              className={`flex flex-wrap items-center justify-between gap-3 rounded-lg border px-3 py-2.5 ${
+              className={`flex flex-wrap items-center justify-between gap-3 rounded-[10px] border px-3 py-2.5 ${
                 remainingSectionComments.length > 0
                   ? "border-amber-100 bg-amber-50/45"
                   : "border-emerald-100 bg-emerald-50/45"
@@ -3605,7 +3605,7 @@ function RevisionCommentsRail({
 }) {
   if (!comments.length) {
     return (
-      <aside className="rounded-2xl border border-sibs-border bg-white p-4 shadow-sm">
+      <aside className="rounded-[14px] border border-sibs-border bg-white p-4 shadow-sm">
         <div className="flex items-center gap-2">
           <MessageSquareText size={17} className="text-sibs-primary-1" />
           <h3 className="text-sm font-extrabold text-sibs-primary-1">
@@ -3625,12 +3625,12 @@ function RevisionCommentsRail({
     : 100;
 
   return (
-    <aside className="overflow-hidden rounded-2xl border border-sibs-border-panel bg-white shadow-sm xl:flex xl:max-h-[calc(100dvh-218px)] xl:min-h-0 xl:flex-col">
+    <aside className="overflow-hidden rounded-[14px] border border-sibs-border-panel bg-white shadow-sm xl:flex xl:max-h-[calc(100dvh-218px)] xl:min-h-0 xl:flex-col">
       <div className="shrink-0 border-b border-sibs-border px-4 py-4">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-orange-50 text-orange-600">
+              <span className="flex h-7 w-7 items-center justify-center rounded-[10px] bg-orange-50 text-orange-600">
                 <MessageSquareText size={15} strokeWidth={2.4} />
               </span>
               <h3 className="text-sm font-extrabold text-sibs-primary-1">
@@ -3663,7 +3663,7 @@ function RevisionCommentsRail({
             type="button"
             onClick={onPreviousIssue}
             disabled={remainingCount === 0}
-            className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-sibs-border-subtle bg-white px-2 text-[10px] font-bold text-sibs-primary-1 transition hover:bg-sibs-surface disabled:cursor-not-allowed disabled:opacity-40"
+            className="inline-flex h-8 items-center justify-center gap-1.5 rounded-[10px] border border-sibs-border-subtle bg-white px-2 text-[10px] font-bold text-sibs-primary-1 transition hover:bg-sibs-surface disabled:cursor-not-allowed disabled:opacity-40"
           >
             <ArrowLeft size={13} />
             Previous
@@ -3673,7 +3673,7 @@ function RevisionCommentsRail({
             type="button"
             onClick={onNextIssue}
             disabled={remainingCount === 0}
-            className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-sibs-border-subtle bg-white px-2 text-[10px] font-bold text-sibs-primary-1 transition hover:bg-sibs-surface disabled:cursor-not-allowed disabled:opacity-40"
+            className="inline-flex h-8 items-center justify-center gap-1.5 rounded-[10px] border border-sibs-border-subtle bg-white px-2 text-[10px] font-bold text-sibs-primary-1 transition hover:bg-sibs-surface disabled:cursor-not-allowed disabled:opacity-40"
           >
             Next
             <ArrowRight size={13} />
@@ -3702,7 +3702,7 @@ function RevisionCommentsRail({
           return (
             <article
               key={`${commentKey}-${index}`}
-              className={`rounded-xl border border-l-4 p-3 transition ${
+              className={`rounded-[10px] border border-l-4 p-3 transition ${
                 activeCommentKey === commentKey
                   ? addressed
                     ? "border-emerald-300 border-l-emerald-500 bg-emerald-50/70 shadow-sm ring-1 ring-emerald-100"
@@ -3773,7 +3773,7 @@ function RevisionCommentsRail({
                 </div>
 
                 {selectedText && (
-                  <div className="mt-2 rounded-lg border border-white/80 bg-white/80 px-2.5 py-2">
+                  <div className="mt-2 rounded-[10px] border border-white/80 bg-white/80 px-2.5 py-2">
                     <p className="line-clamp-2 text-[11px] font-semibold leading-5 text-sibs-muted" title={selectedText}>
                       “{selectedText}”
                     </p>
@@ -3787,7 +3787,7 @@ function RevisionCommentsRail({
                     <button
                       type="button"
                       onClick={() => onToggleCommentAddressed(comment)}
-                      className="inline-flex h-8 w-full items-center justify-center gap-1.5 rounded-lg border border-sibs-border-subtle bg-white px-3 text-[11px] font-extrabold text-sibs-primary-1 transition hover:bg-sibs-surface"
+                      className="inline-flex h-8 w-full items-center justify-center gap-1.5 rounded-[10px] border border-sibs-border-subtle bg-white px-3 text-[11px] font-extrabold text-sibs-primary-1 transition hover:bg-sibs-surface"
                     >
                       <RotateCcw size={13} />
                       Reopen Comment
@@ -3796,13 +3796,13 @@ function RevisionCommentsRail({
                     <button
                       type="button"
                       onClick={() => onToggleCommentAddressed(comment)}
-                      className="inline-flex h-8 w-full items-center justify-center gap-1.5 rounded-lg bg-emerald-600 px-3 text-[11px] font-extrabold text-white transition hover:bg-emerald-700"
+                      className="inline-flex h-8 w-full items-center justify-center gap-1.5 rounded-[10px] bg-emerald-600 px-3 text-[11px] font-extrabold text-white transition hover:bg-emerald-700"
                     >
                       <CheckCircle2 size={13} />
                       Mark Addressed
                     </button>
                   ) : (
-                    <div className="flex items-start gap-2 rounded-lg bg-sibs-surface px-2.5 py-2 text-[10px] font-semibold leading-4 text-sibs-muted">
+                    <div className="flex items-start gap-2 rounded-[10px] bg-sibs-surface px-2.5 py-2 text-[10px] font-semibold leading-4 text-sibs-muted">
                       <MessageSquareText
                         size={13}
                         className="mt-0.5 shrink-0 text-amber-600"
@@ -4382,7 +4382,7 @@ export default function ReviseJobDescriptionModal({
 
             <div className="flex flex-wrap items-center gap-2 lg:justify-end">
               <div
-                className={`inline-flex h-9 items-center gap-2 rounded-lg border px-3 text-xs font-bold ${
+                className={`inline-flex h-9 items-center gap-2 rounded-[10px] border px-3 text-xs font-bold ${
                   hasUnresolvedIssues
                     ? "border-amber-200 bg-amber-50 text-amber-800"
                     : "border-emerald-200 bg-emerald-50 text-emerald-700"
@@ -4410,9 +4410,9 @@ export default function ReviseJobDescriptionModal({
               className="min-w-0"
             >
               <article className="overflow-hidden bg-white px-5 py-5 shadow-[0_18px_55px_rgba(15,23,42,0.12)] sm:px-8 sm:py-7 lg:min-h-[1056px] lg:px-10">
-              <section className="mb-6 overflow-hidden rounded-xl border border-sibs-border-panel bg-sibs-surface">
+              <section className="mb-6 overflow-hidden rounded-[10px] border border-sibs-border-panel bg-sibs-surface">
                 <div className="flex items-start gap-3 border-l-4 border-l-orange-500 px-4 py-3">
-                  <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-orange-50 text-orange-600">
+                  <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-[10px] bg-orange-50 text-orange-600">
                     <GitCompare size={15} strokeWidth={2.4} />
                   </span>
 
@@ -4429,13 +4429,13 @@ export default function ReviseJobDescriptionModal({
               </section>
 
               {(submitError || revisionSaveError) && (
-                <div className="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700">
+                <div className="mb-6 rounded-[10px] border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700">
                   {submitError || revisionSaveError}
                 </div>
               )}
 
               {revisionCommentsLoading && (
-                <div className="mb-6 flex items-center gap-2 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-xs font-bold text-sibs-primary-1">
+                <div className="mb-6 flex items-center gap-2 rounded-[10px] border border-blue-100 bg-blue-50 px-4 py-3 text-xs font-bold text-sibs-primary-1">
                   <Loader2 size={15} className="animate-spin" />
                   Loading reviewer comments...
                 </div>
@@ -4566,7 +4566,7 @@ export default function ReviseJobDescriptionModal({
                 type="button"
                 onClick={() => setReviewSaveOpen(false)}
                 disabled={revisionSaving}
-                className="sibs-btn-secondary inline-flex h-10 items-center justify-center rounded-lg px-5 text-sm font-bold disabled:opacity-50"
+                className="sibs-btn-secondary inline-flex h-10 items-center justify-center rounded-[10px] px-5 text-sm font-bold disabled:opacity-50"
               >
                 Back to Revision
               </button>
@@ -4577,7 +4577,7 @@ export default function ReviseJobDescriptionModal({
                 disabled={
                   revisionSaving || !cleanText(form.revisionRemarks)
                 }
-                className="sibs-btn-primary inline-flex h-10 items-center justify-center gap-2 rounded-lg px-5 text-sm font-extrabold disabled:cursor-not-allowed disabled:opacity-50"
+                className="sibs-btn-primary inline-flex h-10 items-center justify-center gap-2 rounded-[10px] px-5 text-sm font-extrabold disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {revisionSaving ? (
                   <Loader2 size={16} className="animate-spin" />
@@ -4592,7 +4592,7 @@ export default function ReviseJobDescriptionModal({
         >
           <div className="space-y-4">
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-              <div className="rounded-xl border border-sibs-border bg-sibs-surface px-4 py-3">
+              <div className="rounded-[10px] border border-sibs-border bg-sibs-surface px-4 py-3">
                 <p className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-muted">
                   Changed Sections
                 </p>
@@ -4601,7 +4601,7 @@ export default function ReviseJobDescriptionModal({
                 </p>
               </div>
 
-              <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
+              <div className="rounded-[10px] border border-emerald-200 bg-emerald-50 px-4 py-3">
                 <p className="text-[10px] font-extrabold uppercase tracking-wide text-emerald-700">
                   Comments Addressed
                 </p>
@@ -4610,7 +4610,7 @@ export default function ReviseJobDescriptionModal({
                 </p>
               </div>
 
-              <div className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3">
+              <div className="rounded-[10px] border border-blue-200 bg-blue-50 px-4 py-3">
                 <p className="text-[10px] font-extrabold uppercase tracking-wide text-blue-700">
                   Current Version
                 </p>
@@ -4620,7 +4620,7 @@ export default function ReviseJobDescriptionModal({
               </div>
             </div>
 
-            <div className="rounded-xl border border-sibs-border bg-white px-4 py-4">
+            <div className="rounded-[10px] border border-sibs-border bg-white px-4 py-4">
               <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
                 Changed Sections
               </p>
@@ -4652,12 +4652,12 @@ export default function ReviseJobDescriptionModal({
                 }
                 rows={5}
                 placeholder="Summarize what was changed and why..."
-                className="w-full resize-y rounded-xl border border-sibs-border-subtle bg-white px-4 py-3 text-sm font-semibold leading-6 text-sibs-primary-1 outline-none transition placeholder:text-sibs-faint focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+                className="w-full resize-y rounded-[10px] border border-sibs-border-subtle bg-white px-4 py-3 text-sm font-semibold leading-6 text-sibs-primary-1 outline-none transition placeholder:text-sibs-faint focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
               />
             </div>
 
             {(submitError || revisionSaveError) && (
-              <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700">
+              <div className="rounded-[10px] border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700">
                 {submitError || revisionSaveError}
               </div>
             )}

@@ -75,8 +75,8 @@ function AssignmentChip({ icon: Icon, children }) {
   if (!children) return null;
 
   return (
-    <span className="inline-flex min-w-0 items-center gap-1.5 rounded-lg border border-sibs-border bg-sibs-surface px-2.5 py-1.5 sibs-text-xs font-extrabold text-sibs-navy">
-      <Icon size={12} className="shrink-0 text-[#FF5C28]" />
+    <span className="inline-flex min-w-0 items-center gap-1.5 rounded-[10px] border border-sibs-border bg-sibs-surface px-2.5 py-1.5 sibs-text-xs font-extrabold text-sibs-navy">
+      <Icon size={12} className="shrink-0 text-sibs-orange" />
       <span className="truncate">{children}</span>
     </span>
   );
@@ -86,10 +86,10 @@ function MetadataItem({ label, value }) {
   if (!value) return null;
 
   return (
-    <span className="inline-flex min-w-0 items-center gap-1.5 text-[9px] font-bold text-[#8190A5] 2xl:text-[10px]">
-      <Hash size={10} className="shrink-0 text-[#9AA8B9]" />
+    <span className="inline-flex min-w-0 items-center gap-1.5 text-[9px] font-bold text-sibs-muted 2xl:text-[10px]">
+      <Hash size={10} className="shrink-0 text-sibs-faint" />
       <span className="shrink-0 uppercase tracking-[0.08em]">{label}</span>
-      <span className="min-w-0 truncate font-mono font-semibold normal-case tracking-normal text-[#667085]">
+      <span className="min-w-0 truncate font-mono font-semibold normal-case tracking-normal text-sibs-muted">
         {value}
       </span>
     </span>
@@ -99,7 +99,7 @@ function MetadataItem({ label, value }) {
 export default function CandidateModalSummary({
   candidate = {},
   stage = "",
-  statusClass = "border-[#FF5C28]/25 bg-[#FFF0EB] text-[#FF5C28]",
+  statusClass = "border-sibs-orange/25 bg-sibs-cream-light text-sibs-orange",
   compact = false,
   showAssignment = true,
 }) {
@@ -130,12 +130,12 @@ export default function CandidateModalSummary({
 
       <div className="relative p-4 sm:p-4.5 2xl:p-5">
         <div className="flex items-start gap-3.5 sm:gap-4">
-          <div className="shrink-0 rounded-2xl bg-white p-1 shadow-[0_5px_16px_rgba(4,44,81,0.11)] ring-1 ring-[#D9E3ED]">
+          <div className="shrink-0 rounded-[10px] bg-white p-1 shadow-[0_5px_16px_rgba(4,44,81,0.11)] ring-1 ring-sibs-border">
             <CandidateAvatar candidate={candidate} />
           </div>
 
           <div className="min-w-0 flex-1">
-            <h3 className="truncate font-heading text-base font-black leading-tight tracking-[-0.015em] text-[#042C51] sm:text-lg 2xl:text-xl">
+            <h3 className="truncate font-heading text-base font-black leading-tight tracking-[-0.015em] text-sibs-navy sm:text-lg 2xl:text-xl">
               {candidateName}
             </h3>
 
@@ -157,15 +157,15 @@ export default function CandidateModalSummary({
               ) : null}
             </div>
 
-            <div className="mt-2 flex min-w-0 items-center gap-1.5 text-[10px] font-semibold text-[#667085] 2xl:text-[11px]">
-              <Database size={12} className="shrink-0 text-[#7A91AA]" />
+            <div className="mt-2 flex min-w-0 items-center gap-1.5 text-[10px] font-semibold text-sibs-muted 2xl:text-[11px]">
+              <Database size={12} className="shrink-0 text-sibs-faint" />
               <span className="truncate">{source}</span>
             </div>
 
             {!compact ? (
               <>
-                <div className="mt-2 flex min-w-0 items-center gap-1.5 text-[10px] font-semibold text-[#667085] 2xl:text-[11px]">
-                  <Mail size={11} className="shrink-0 text-[#8EA0B4]" />
+                <div className="mt-2 flex min-w-0 items-center gap-1.5 text-[10px] font-semibold text-sibs-muted 2xl:text-[11px]">
+                  <Mail size={11} className="shrink-0 text-sibs-faint" />
                   <span className="truncate">{email}</span>
                 </div>
 
@@ -177,7 +177,7 @@ export default function CandidateModalSummary({
                 ) : null}
 
                 {hasMetadata ? (
-                  <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-[#E9EFF5] pt-2.5">
+                  <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-sibs-border pt-2.5">
                     <MetadataItem label="Candidate" value={candidateId} />
                     <MetadataItem label="Application" value={candidateApplicationId} />
                   </div>

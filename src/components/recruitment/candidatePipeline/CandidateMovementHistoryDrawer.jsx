@@ -895,13 +895,13 @@ export default function CandidateMovementHistoryDrawer({
       {/* Drawer Panel */}
       <aside
         aria-label="Candidate Movement History"
-        className="sibs-modal-pop-in relative z-10 flex h-full w-full max-w-[440px] flex-col border-l border-[#D7DEE8] bg-white shadow-2xl"
+        className="sibs-modal-pop-in relative z-10 flex h-full w-full max-w-[440px] flex-col border-l border-sibs-border bg-white shadow-2xl"
       >
         {/* Drawer Header */}
-        <header className="shrink-0 bg-[#042C51] px-5 py-4 text-white">
+        <header className="shrink-0 bg-sibs-navy px-5 py-4 text-white">
           <div className="flex items-center justify-between gap-3">
             <div className="flex min-w-0 items-start gap-3">
-              <span className="inline-flex h-10 w-10 2xl:h-11 2xl:w-11 shrink-0 items-center justify-center rounded-xl bg-[#FF5C28] text-white shadow-sm">
+              <span className="inline-flex h-10 w-10 2xl:h-11 2xl:w-11 shrink-0 items-center justify-center rounded-[10px] bg-sibs-orange text-white shadow-sm">
                 <History size={18} strokeWidth={2.4} />
               </span>
 
@@ -934,9 +934,9 @@ export default function CandidateMovementHistoryDrawer({
         </header>
 
         {/* Live Status Bar */}
-        <div className="shrink-0 border-b border-[#E6ECF2] bg-[#F8FAFC] px-5 py-3">
+        <div className="shrink-0 border-b border-sibs-border bg-sibs-surface px-5 py-3">
           <div className="flex items-center justify-between gap-3">
-            <span className="inline-flex items-center gap-2 text-[9px] font-extrabold uppercase tracking-wide text-[#042C51] sm:text-[10px]">
+            <span className="inline-flex items-center gap-2 text-[9px] font-extrabold uppercase tracking-wide text-sibs-navy sm:text-[10px]">
               <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 ring-4 ring-emerald-100" />
               LIVE STATUS
             </span>
@@ -955,18 +955,18 @@ export default function CandidateMovementHistoryDrawer({
         {/* Timeline Content */}
         <div className="sibs-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain bg-white px-5 py-5">
           {timeline.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-[#D6E0EA] bg-[#F8FAFC] px-4 py-8 text-center">
-              <History className="mx-auto text-[#98A2B3]" size={24} />
-              <p className="mt-2 text-xs font-extrabold text-[#042C51]">
+            <div className="rounded-[10px] border border-dashed border-sibs-border bg-sibs-surface px-4 py-8 text-center">
+              <History className="mx-auto text-sibs-faint" size={24} />
+              <p className="mt-2 text-xs font-extrabold text-sibs-navy">
                 No movement history recorded yet
               </p>
-              <p className="mt-1 text-[11px] font-semibold text-[#667085]">
+              <p className="mt-1 text-[11px] font-semibold text-sibs-muted">
                 Stage transitions, evaluations, and notes will appear here.
               </p>
             </div>
           ) : (
             <div className="relative pl-5 sm:pl-6">
-              <div className="absolute bottom-2 left-2 top-2 w-[2px] bg-[#E6ECF2]" />
+              <div className="absolute bottom-2 left-2 top-2 w-[2px] bg-sibs-border" />
 
               <div className="space-y-4">
                 {timeline.map((item, index) => {
@@ -978,47 +978,47 @@ export default function CandidateMovementHistoryDrawer({
                       <span
                         className={`absolute -left-[21px] top-1.5 flex h-3.5 w-3.5 items-center justify-center rounded-full border-2 bg-white sm:-left-[25px] ${
                           isLatest
-                            ? "border-[#FF5C28] ring-4 ring-[#FFF0EB]"
-                            : "border-[#98A2B3]"
+                            ? "border-sibs-orange ring-4 ring-sibs-cream-light"
+                            : "border-sibs-border"
                         }`}
                       >
                         <span
                           className={`h-1.5 w-1.5 rounded-full ${
-                            isLatest ? "bg-[#FF5C28]" : "bg-[#98A2B3]"
+                            isLatest ? "bg-sibs-orange" : "bg-sibs-faint"
                           }`}
                         />
                       </span>
 
                       <div
-                        className={`rounded-xl border p-3 sm:p-3.5 ${
+                        className={`rounded-[10px] border p-3 sm:p-3.5 ${
                           isLatest
-                            ? "border-[#FFD7C8] bg-[#FFFBF9] shadow-xs"
-                            : "border-[#E6ECF2] bg-white"
+                            ? "border-sibs-orange/30 bg-sibs-cream-light/40 shadow-xs"
+                            : "border-sibs-border bg-white"
                         }`}
                       >
                         <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                           <div className="min-w-0 flex-1">
                             <div className="flex flex-wrap items-center gap-1.5">
-                              <span className="text-xs font-extrabold text-[#042C51]">
+                              <span className="text-xs font-extrabold text-sibs-navy">
                                 {item.displayStage || stage}
                               </span>
 
                               {isLatest ? (
-                                <span className="rounded bg-[#FF5C28] px-1.5 py-0.5 text-[7px] font-extrabold uppercase tracking-wide text-white sm:text-[8px]">
+                                <span className="rounded bg-sibs-orange px-1.5 py-0.5 text-[7px] font-extrabold uppercase tracking-wide text-white sm:text-[8px]">
                                   LATEST
                                 </span>
                               ) : null}
                             </div>
 
-                            <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[9px] font-semibold text-[#667085]">
+                            <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[9px] font-semibold text-sibs-muted">
                               <span className="inline-flex items-center gap-1">
-                                <UserRound size={11} className="text-[#98A2B3]" />
+                                <UserRound size={11} className="text-sibs-faint" />
                                 {updatedBy}
                               </span>
 
                               {rawDate ? (
                                 <span className="inline-flex items-center gap-1">
-                                  <Clock3 size={11} className="text-[#98A2B3]" />
+                                  <Clock3 size={11} className="text-sibs-faint" />
                                   {formatDateTime(rawDate) || rawDate}
                                 </span>
                               ) : null}
@@ -1027,8 +1027,8 @@ export default function CandidateMovementHistoryDrawer({
                         </div>
 
                         {reason ? (
-                          <div className="mt-3 rounded-lg border border-[#E6ECF2] bg-white px-3 py-2.5 text-[10px] font-semibold leading-4 text-[#475467] sm:text-[11px] sm:leading-5">
-                            <span className="font-extrabold text-[#667085]">Action: </span>
+                          <div className="mt-3 rounded-[10px] border border-sibs-border bg-white px-3 py-2.5 text-[10px] font-semibold leading-4 text-sibs-navy sm:text-[11px] sm:leading-5">
+                            <span className="font-extrabold text-sibs-muted">Action: </span>
                             <span>{reason}</span>
                           </div>
                         ) : null}
@@ -1038,7 +1038,7 @@ export default function CandidateMovementHistoryDrawer({
                             {details.nhoFileTracking.map((file, fileIndex) => (
                               <div
                                 key={`${file.action}-${file.requirement}-${file.fileName}-${fileIndex}`}
-                                className="overflow-hidden rounded-lg border border-[#E6ECF2] bg-[#F8FAFC]"
+                                className="overflow-hidden rounded-[10px] border border-sibs-border bg-sibs-surface"
                               >
                                 {[
                                   ["Requirement:", file.requirement],
@@ -1048,13 +1048,13 @@ export default function CandidateMovementHistoryDrawer({
                                   <div
                                     key={label}
                                     className={`flex items-start justify-between gap-3 px-3 py-2 ${
-                                      detailIndex < 2 ? "border-b border-[#E6ECF2]" : ""
+                                      detailIndex < 2 ? "border-b border-sibs-border" : ""
                                     }`}
                                   >
-                                    <span className="text-[9px] font-extrabold text-[#667085] sm:text-[10px]">
+                                    <span className="text-[9px] font-extrabold text-sibs-muted sm:text-[10px]">
                                       {label}
                                     </span>
-                                    <span className="min-w-0 break-all text-right text-[9px] font-extrabold text-[#042C51] sm:text-[10px]">
+                                    <span className="min-w-0 break-all text-right text-[9px] font-extrabold text-sibs-navy sm:text-[10px]">
                                       {value || "—"}
                                     </span>
                                   </div>
@@ -1065,7 +1065,7 @@ export default function CandidateMovementHistoryDrawer({
                         ) : null}
 
                         {details.offerSummary ? (
-                          <div className="mt-3 overflow-hidden rounded-lg border border-[#E6ECF2] bg-[#F8FAFC]">
+                          <div className="mt-3 overflow-hidden rounded-[10px] border border-sibs-border bg-sibs-surface">
                             {[
                               ["Account", details.offerSummary.account],
                               ["Basic Pay", details.offerSummary.basicPay],
@@ -1077,13 +1077,13 @@ export default function CandidateMovementHistoryDrawer({
                               <div
                                 key={label}
                                 className={`flex items-start justify-between gap-3 px-3 py-2 ${
-                                  detailIndex < 2 ? "border-b border-[#E6ECF2]" : ""
+                                  detailIndex < 2 ? "border-b border-sibs-border" : ""
                                 }`}
                               >
-                                <span className="text-[9px] font-extrabold text-[#667085] sm:text-[10px]">
+                                <span className="text-[9px] font-extrabold text-sibs-muted sm:text-[10px]">
                                   {label}:
                                 </span>
-                                <span className="text-right text-[9px] font-extrabold text-[#042C51] sm:text-[10px]">
+                                <span className="text-right text-[9px] font-extrabold text-sibs-navy sm:text-[10px]">
                                   {value || "—"}
                                 </span>
                               </div>
@@ -1092,8 +1092,8 @@ export default function CandidateMovementHistoryDrawer({
                         ) : null}
 
                         {remarks && remarks !== reason ? (
-                          <div className="mt-2 rounded-lg border border-[#E6ECF2] bg-[#F8FAFC] px-3 py-2 text-[9px] font-semibold leading-4 text-[#667085] sm:text-[10px]">
-                            <span className="font-extrabold text-[#475467]">Notes: </span>
+                          <div className="mt-2 rounded-[10px] border border-sibs-border bg-sibs-surface px-3 py-2 text-[9px] font-semibold leading-4 text-sibs-muted sm:text-[10px]">
+                            <span className="font-extrabold text-sibs-navy">Notes: </span>
                             <span>{remarks}</span>
                           </div>
                         ) : null}
@@ -1101,21 +1101,21 @@ export default function CandidateMovementHistoryDrawer({
                         {(details.score || details.result) && (
                           <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
                             {details.score ? (
-                              <div className="rounded-lg border border-blue-100 bg-blue-50 px-3 py-2">
-                                <p className="text-[8px] font-extrabold uppercase tracking-wide text-[#174A78]">
+                              <div className="rounded-[10px] border border-blue-100 bg-blue-50 px-3 py-2">
+                                <p className="text-[8px] font-extrabold uppercase tracking-wide text-sibs-navy">
                                   Score
                                 </p>
-                                <p className="mt-0.5 text-xs font-extrabold text-[#042C51]">
+                                <p className="mt-0.5 text-xs font-extrabold text-sibs-navy">
                                   {details.score}
                                 </p>
                               </div>
                             ) : null}
                             {details.result ? (
-                              <div className="rounded-lg border border-blue-100 bg-white px-3 py-2">
-                                <p className="text-[8px] font-extrabold uppercase tracking-wide text-[#174A78]">
+                              <div className="rounded-[10px] border border-blue-100 bg-white px-3 py-2">
+                                <p className="text-[8px] font-extrabold uppercase tracking-wide text-sibs-navy">
                                   Result
                                 </p>
-                                <p className="mt-0.5 text-xs font-extrabold text-[#042C51]">
+                                <p className="mt-0.5 text-xs font-extrabold text-sibs-navy">
                                   {details.result}
                                 </p>
                               </div>
@@ -1130,7 +1130,7 @@ export default function CandidateMovementHistoryDrawer({
                                 key={`${link.label}-${link.url}`}
                                 type="button"
                                 onClick={() => window.open(link.url, "_blank", "noopener,noreferrer")}
-                                className="flex w-full items-center justify-between gap-2 rounded-lg border border-blue-100 bg-blue-50 px-3 py-2 text-left text-[10px] font-extrabold text-blue-700 underline"
+                                className="flex w-full items-center justify-between gap-2 rounded-[10px] border border-blue-100 bg-blue-50 px-3 py-2 text-left text-[10px] font-extrabold text-blue-700 underline"
                               >
                                 <span className="truncate">Open {link.label}</span>
                                 <ExternalLink size={13} className="shrink-0 no-underline" />
@@ -1147,19 +1147,19 @@ export default function CandidateMovementHistoryDrawer({
                               const meta = [cleanText(file.type || file.mimeType), formatFileSize(file.size || file.fileSize)].filter(Boolean).join(" • ");
 
                               return (
-                                <div key={`${name}-${fileIndex}`} className="flex items-center justify-between gap-3 rounded-lg border border-blue-100 bg-[#F8FAFC] px-3 py-2.5">
+                                <div key={`${name}-${fileIndex}`} className="flex items-center justify-between gap-3 rounded-[10px] border border-blue-100 bg-sibs-surface px-3 py-2.5">
                                   <div className="flex min-w-0 items-center gap-2">
-                                    <FileText size={17} className="shrink-0 text-[#FF5C28]" />
+                                    <FileText size={17} className="shrink-0 text-sibs-orange" />
                                     <div className="min-w-0">
-                                      <p className="truncate text-[10px] font-extrabold text-[#042C51]">{name}</p>
-                                      {meta ? <p className="mt-0.5 text-[9px] font-semibold text-[#667085]">{meta}</p> : null}
+                                      <p className="truncate text-[10px] font-extrabold text-sibs-navy">{name}</p>
+                                      {meta ? <p className="mt-0.5 text-[9px] font-semibold text-sibs-muted">{meta}</p> : null}
                                     </div>
                                   </div>
                                   {url ? (
                                     <button
                                       type="button"
                                       onClick={() => openMovementFilePreview(file)}
-                                      className="shrink-0 rounded-lg border border-blue-100 bg-blue-50 px-2.5 py-1.5 text-[9px] font-extrabold text-blue-700"
+                                      className="shrink-0 rounded-[10px] border border-blue-100 bg-blue-50 px-2.5 py-1.5 text-[9px] font-extrabold text-blue-700"
                                     >
                                       Open File
                                     </button>
@@ -1191,9 +1191,9 @@ export default function CandidateMovementHistoryDrawer({
             className="sibs-modal-pop-in flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
             onClick={(event) => event.stopPropagation()}
           >
-            <div className="flex items-center justify-between gap-3 bg-[#042C51] px-5 py-4 text-white">
+            <div className="flex items-center justify-between gap-3 bg-sibs-navy px-5 py-4 text-white">
               <div className="flex min-w-0 items-center gap-2">
-                <FolderLock size={17} className="shrink-0 text-[#FF5C28]" />
+                <FolderLock size={17} className="shrink-0 text-sibs-orange" />
                 <h3
                   className="truncate font-heading text-sm font-bold text-white"
                   title={getMovementFileName(preview.file)}
@@ -1205,7 +1205,7 @@ export default function CandidateMovementHistoryDrawer({
               <button
                 type="button"
                 onClick={closeMovementFilePreview}
-                className="rounded-lg p-1.5 transition hover:bg-white/10"
+                className="rounded-[10px] p-1.5 transition hover:bg-white/10"
                 aria-label="Close file preview"
                 title="Close"
               >
@@ -1215,21 +1215,21 @@ export default function CandidateMovementHistoryDrawer({
 
             <div className="min-h-0 flex-1 overflow-auto p-5">
               {previewLoading ? (
-                <div className="flex min-h-[420px] items-center justify-center rounded-xl bg-[#F8FAFC] text-xs font-bold text-[#667085]">
+                <div className="flex min-h-[420px] items-center justify-center rounded-[10px] bg-sibs-surface text-xs font-bold text-sibs-muted">
                   Loading secure preview...
                 </div>
               ) : previewError ? (
-                <div className="flex min-h-[320px] flex-col items-center justify-center rounded-xl border border-[#D6E0EA] bg-[#F8FAFC] p-8 text-center">
-                  <FileText size={34} className="text-[#042C51]" />
-                  <p className="mt-3 text-sm font-extrabold text-[#042C51]">
+                <div className="flex min-h-[320px] flex-col items-center justify-center rounded-[10px] border border-sibs-border bg-sibs-surface p-8 text-center">
+                  <FileText size={34} className="text-sibs-navy" />
+                  <p className="mt-3 text-sm font-extrabold text-sibs-navy">
                     File preview could not be loaded.
                   </p>
-                  <p className="mt-1 max-w-lg text-xs font-semibold text-[#667085]">
+                  <p className="mt-1 max-w-lg text-xs font-semibold text-sibs-muted">
                     {previewError}
                   </p>
                 </div>
               ) : preview?.url && isMovementImageMimeType(preview.mimeType) ? (
-                <div className="flex min-h-[420px] items-center justify-center rounded-xl bg-[#F8FAFC] p-4">
+                <div className="flex min-h-[420px] items-center justify-center rounded-[10px] bg-sibs-surface p-4">
                   <img
                     src={preview.url}
                     alt={getMovementFileName(preview.file)}
@@ -1240,26 +1240,26 @@ export default function CandidateMovementHistoryDrawer({
                 <iframe
                   src={preview.url}
                   title={getMovementFileName(preview.file)}
-                  className="h-[68vh] w-full rounded-xl border border-[#D6E0EA]"
+                  className="h-[68vh] w-full rounded-[10px] border border-sibs-border"
                 />
               ) : (
-                <div className="flex min-h-[320px] flex-col items-center justify-center rounded-xl border border-[#D6E0EA] bg-[#F8FAFC] p-8 text-center">
-                  <FileText size={34} className="text-[#042C51]" />
-                  <p className="mt-3 text-sm font-extrabold text-[#042C51]">
+                <div className="flex min-h-[320px] flex-col items-center justify-center rounded-[10px] border border-sibs-border bg-sibs-surface p-8 text-center">
+                  <FileText size={34} className="text-sibs-navy" />
+                  <p className="mt-3 text-sm font-extrabold text-sibs-navy">
                     This file type cannot be previewed in the browser.
                   </p>
                 </div>
               )}
 
-              <div className="mt-4 flex flex-col gap-3 rounded-xl border border-[#E6ECF2] bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="mt-4 flex flex-col gap-3 rounded-[10px] border border-sibs-border bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="min-w-0">
                   <p
-                    className="truncate text-xs font-extrabold text-[#344054]"
+                    className="truncate text-xs font-extrabold text-sibs-navy"
                     title={getMovementFileName(preview.file)}
                   >
                     {getMovementFileName(preview.file)}
                   </p>
-                  <p className="mt-1 text-[10px] font-semibold text-[#667085]">
+                  <p className="mt-1 text-[10px] font-semibold text-sibs-muted">
                     Candidate Pipeline
                     {formatFileSize(preview.file?.size)
                       ? ` · ${formatFileSize(preview.file?.size)}`

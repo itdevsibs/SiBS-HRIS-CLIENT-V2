@@ -13,7 +13,7 @@ const CandidateAvatar = ({ candidate = {} }) => {
     <div
       aria-hidden="true"
       className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[10px] font-extrabold text-white shadow-sm ring-2 ring-white ${
-        candidate.avatarColor || "bg-[#042C51]"
+        candidate.avatarColor || "bg-sibs-navy"
       }`}
     >
       {initials || "?"}
