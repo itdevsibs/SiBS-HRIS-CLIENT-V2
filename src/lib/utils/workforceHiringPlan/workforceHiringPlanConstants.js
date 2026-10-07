@@ -12,8 +12,23 @@ export const FULL_WEEKLY_ACCESS_ROLES = [
   "human_resource",
   "human_resources_admin",
   "human_resource_admin",
+  "finance",
+  "finance_admin",
+  "manager",
+  "om",
+  "operation_manager",
+  "operations_manager",
+  "executive",
   "super_admin",
   "superadmin",
+  "team_leader",
+  "team_leaders",
+  "tl",
+  "wfm",
+  "workforce_management",
+  "workforce_manager",
+  "som",
+  "senior_operations_manager",
 ];
 
 export const WEEKLY_CLUSTER_OPTIONS = [

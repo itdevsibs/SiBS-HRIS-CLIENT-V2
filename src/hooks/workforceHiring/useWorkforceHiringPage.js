@@ -244,12 +244,32 @@ export default function useWorkforceHiringPage({
     }
 
     const role = getCurrentRoleKey(user);
+    const adminAccess = getCurrentAdminAccess(user);
+    const assignedAdminAccessValues = Array.isArray(user?.assignedAccounts)
+      ? user.assignedAccounts
+          .map((account) =>
+            Number(
+              account?.adminAccess ??
+                account?.admin_access ??
+                account?.access ??
+                0,
+            ),
+          )
+          .filter(
+            (value) =>
+              Number.isInteger(value) && value >= 1 && value <= 10,
+          )
+      : [];
 
-    if (FULL_WEEKLY_ACCESS_ROLES.includes(role)) {
+    if (
+      (Number.isInteger(adminAccess) && adminAccess >= 1 && adminAccess <= 10) ||
+      assignedAdminAccessValues.length > 0 ||
+      FULL_WEEKLY_ACCESS_ROLES.includes(role)
+    ) {
       return true;
     }
 
-    return Array.isArray(user?.assignedAccounts);
+    return false;
   }, [user]);
 
   const filteredWeeklyVersions = useMemo(() => {

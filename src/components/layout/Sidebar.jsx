@@ -1059,14 +1059,14 @@ export default function Sidebar() {
       name: "Workforce & Hiring Overview",
       icon: CalendarDays,
       path: "/recruitment/workforce-hiring-overview",
-      allowedUsers: [3, 5, 6, 7, 10],
+      allowedUsers: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
       notificationKey: "workforceHiringOverview",
     },
     {
       name: "Workforce & Hiring Plan",
       icon: CalendarDays,
       path: "/recruitment/workforce-hiring-plan",
-      allowedUsers: [3, 5, 6, 7, 10],
+      allowedUsers: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
     },
     {
       name: "Job Description",
@@ -1213,13 +1213,13 @@ export default function Sidebar() {
       name: "Departments",
       icon: Building2,
       path: "/departments",
-      allowedUsers: [5, 6, 7, 10],
+      allowedUsers: [3, 5, 6, 7, 10],
     },
     {
       name: "Office Locations",
       icon: MapPin,
       path: "/locations",
-      allowedUsers: [5, 6, 7, 10],
+      allowedUsers: [3, 5, 6, 7, 10],
     },
   ];
 
@@ -1262,12 +1262,15 @@ export default function Sidebar() {
     },
   ];
 
-  const isAdminSide = ADMIN_ROLES.includes(normalizeRole(user?.role));
+  const rawAdminAccess = getRawAdminAccess(user);
+  const isAdminSide =
+    (Number.isInteger(rawAdminAccess) &&
+      rawAdminAccess >= 1 &&
+      rawAdminAccess <= 10) ||
+    ADMIN_ROLES.includes(normalizeRole(user?.role));
   const coreMenu = isAdminSide ? adminCoreMenu : employeeCoreMenu;
   const coreSectionTitle = isAdminSide ? "CORE HR" : "EMPLOYEE ACCESS";
   const coreSectionShort = isAdminSide ? "HR" : "EMP";
-
-  const rawAdminAccess = getRawAdminAccess(user);
 
   const getVisibleItems = (items) =>
     items.filter((item) => {
