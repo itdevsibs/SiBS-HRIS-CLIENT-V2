@@ -14,6 +14,7 @@ import {
   CreditCard,
   FileText,
   Info,
+  MapPin,
   ShieldAlert,
   UserCheck,
   UserPlus,
@@ -46,7 +47,8 @@ import {
 
 const EXISTING_ADMIN_ROUTES = {
   employees: "/employee",
-  departments: "/employee",
+  departments: "/departments",
+  locations: "/locations",
   attendance: "/attendance",
   reports: "/recruitment/weekly-reports",
   leaves: "/leaves",
@@ -483,10 +485,17 @@ export default function AdminDashboardPage() {
     },
     {
       id: "create-department",
-      title: "Department Records",
-      description: "View departments through employee records",
+      title: "Departments",
+      description: "Manage departments, accounts, and Lines of Business",
       icon: Building2,
       path: EXISTING_ADMIN_ROUTES.departments,
+    },
+    {
+      id: "office-locations",
+      title: "Office Locations",
+      description: "View active employees by office location",
+      icon: MapPin,
+      path: EXISTING_ADMIN_ROUTES.locations,
     },
     {
       id: "attendance-route",

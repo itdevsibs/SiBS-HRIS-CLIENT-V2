@@ -448,8 +448,23 @@ export function canManagerUpdateApprovedHeadcount({
   canEditRequiredHeadcount,
   weeklyAccess,
 }) {
-  if (!canEditRequiredHeadcount) return false;
-  if (!item || weeklyAccess?.hasFullAccess) return false;
+  if (!canEditRequiredHeadcount || !item) return false;
+
+  /*
+    Managers / OM / SOM now have company-wide read visibility, but their
+    existing headcount edit scope must stay limited to assigned accounts.
+  */
+  const itemAccountId = getAccountIdFromAny(item);
+  const itemAccountName = getAccountNameFromAny(item);
+  const assignedAccountIds = weeklyAccess?.assignedAccountIds;
+  const assignedAccountNames = weeklyAccess?.assignedAccountNames;
+
+  const isAssignedAccount = Boolean(
+    (itemAccountId && assignedAccountIds?.has?.(itemAccountId)) ||
+      (itemAccountName && assignedAccountNames?.has?.(itemAccountName)),
+  );
+
+  if (!isAssignedAccount) return false;
 
   return isApprovedRecruitmentSettingsRequest(item);
 }
@@ -561,14 +576,30 @@ export function buildWeeklyAccess(user) {
   const role = getCurrentRoleKey(user);
   const adminAccess = getCurrentAdminAccess(user);
 
-  // WFM (admin_access = 9) has company-wide Workforce & Hiring visibility.
-  // Keep Manager/TL assignment scoping unchanged.
-  const hasFullAccess =
-    adminAccess === 9 || FULL_WEEKLY_ACCESS_ROLES.includes(role);
-
   const assignedAccounts = Array.isArray(user?.assignedAccounts)
     ? user.assignedAccounts
     : [];
+
+  const assignedAdminAccessValues = assignedAccounts
+    .map((account) =>
+      Number(
+        account?.adminAccess ??
+          account?.admin_access ??
+          account?.access ??
+          0,
+      ),
+    )
+    .filter((value) => Number.isInteger(value) && value >= 1 && value <= 10);
+
+  /*
+    Workforce & Hiring Overview / Plan is available company-wide to every
+    canonical administrative access (1-10). Only regular Employee access is
+    excluded. Keep role aliases as a compatibility fallback for older sessions.
+  */
+  const hasFullAccess =
+    (Number.isInteger(adminAccess) && adminAccess >= 1 && adminAccess <= 10) ||
+    assignedAdminAccessValues.length > 0 ||
+    FULL_WEEKLY_ACCESS_ROLES.includes(role);
 
   const assignedAccountIds = new Set(
     assignedAccounts

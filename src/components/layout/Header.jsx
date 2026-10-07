@@ -189,7 +189,7 @@ const SEARCHABLE_MODULES = [
     description: "Hiring ramps and workforce overview",
     path: "/recruitment/workforce-hiring-overview",
     scope: "admin",
-    allowedUsers: [1, 2, 3, 5, 6, 7, 10],
+    allowedUsers: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
     icon: CalendarDays,
     keywords: ["workforce", "hiring", "overview", "ramps", "recruitment"],
   },
@@ -199,7 +199,7 @@ const SEARCHABLE_MODULES = [
     description: "Weekly workforce and hiring plans",
     path: "/recruitment/workforce-hiring-plan",
     scope: "admin",
-    allowedUsers: [1, 2, 3, 5, 6, 7, 10],
+    allowedUsers: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
     icon: CalendarDays,
     keywords: ["workforce", "hiring plan", "weekly hiring", "recruitment"],
   },
@@ -379,7 +379,7 @@ const SEARCHABLE_MODULES = [
     description: "Department configuration",
     path: "/departments",
     scope: "admin",
-    allowedUsers: [5, 6, 7, 10],
+    allowedUsers: [3, 5, 6, 7, 10],
     icon: Building2,
     keywords: ["departments", "department", "organization"],
   },
@@ -389,7 +389,7 @@ const SEARCHABLE_MODULES = [
     description: "Office site and location configuration",
     path: "/locations",
     scope: "admin",
-    allowedUsers: [5, 6, 7, 10],
+    allowedUsers: [3, 5, 6, 7, 10],
     icon: MapPin,
     keywords: ["office locations", "locations", "sites", "office"],
   },
@@ -444,7 +444,12 @@ function getUserAccess(user) {
 }
 
 function isAdminUser(user) {
-  return ADMIN_ROLES.includes(normalizeRole(user?.role));
+  const adminAccess = getUserAccess(user);
+
+  return (
+    (Number.isInteger(adminAccess) && adminAccess >= 1 && adminAccess <= 10) ||
+    ADMIN_ROLES.includes(normalizeRole(user?.role))
+  );
 }
 
 function canAccessModule(moduleItem, user) {

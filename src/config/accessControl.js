@@ -23,6 +23,7 @@ export const ADMIN_ACCESS = {
   HR_ADMIN: 3,
   FINANCE: 4,
   MANAGER: 5,
+  TEAM_LEADER: 8,
   WFM: 9,
   SOM: 10,
   EXECUTIVE: 6,
@@ -224,7 +225,27 @@ export const ACCESS_RULES = [
   },
   {
     paths: [
+      "/recruitment/workforce-hiring-overview",
       "/recruitment/workforce-hiring-plan",
+    ],
+    roles: [
+      "ta",
+      "hr",
+      "hr_admin",
+      "finance",
+      "manager",
+      "team_leader",
+      "team_leaders",
+      "tl",
+      "wfm",
+      "som",
+      "executive",
+      "super_admin",
+    ],
+    adminAccess: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+  },
+  {
+    paths: [
       "/recruitment/hiring-needs",
       "/recruitment/weekly-reports",
     ],
@@ -336,7 +357,10 @@ export function canAccessPath(user, pathname) {
     return false;
   }
 
-  if (role === "employee") {
+  const hasCanonicalAdminAccess =
+    Number.isInteger(rawAccess) && rawAccess >= 1 && rawAccess <= 10;
+
+  if (role === "employee" && !hasCanonicalAdminAccess) {
     return isEmployeeAllowedPath(pathname);
   }
 
