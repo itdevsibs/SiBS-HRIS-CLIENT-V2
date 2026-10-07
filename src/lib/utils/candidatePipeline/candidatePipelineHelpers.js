@@ -17,11 +17,11 @@ import { FileSpreadsheet, FileText, ImageIcon } from "lucide-react";
 import { getPipelineStageClass } from "./candidatePipelineStageThemes";
 
 export function inputClass(extra = "") {
-  return `h-11 w-full rounded-xl border border-[#D0D5DD] bg-white px-4 text-sm font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 disabled:cursor-not-allowed disabled:border-[#E6ECF2] disabled:bg-[#F8FAFC] disabled:text-sibs-tertiary-5 disabled:placeholder:text-sibs-tertiary-6 disabled:shadow-none disabled:focus:border-[#E6ECF2] disabled:focus:ring-0 ${extra}`;
+  return `h-11 w-full rounded-[10px] border border-sibs-border bg-white px-4 text-sm font-semibold text-sibs-navy outline-none transition placeholder:text-sibs-muted focus:border-sibs-navy focus:ring-4 focus:ring-sibs-navy/10 disabled:cursor-not-allowed disabled:border-sibs-border disabled:bg-sibs-surface disabled:text-sibs-muted disabled:placeholder:text-sibs-faint disabled:shadow-none disabled:focus:border-sibs-border disabled:focus:ring-0 ${extra}`;
 }
 
 export function textareaClass(extra = "") {
-  return `w-full resize-none rounded-xl border border-[#E6ECF2] bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${extra}`;
+  return `w-full resize-none rounded-[10px] border border-sibs-border bg-white px-4 py-3 text-sm font-semibold text-sibs-navy outline-none transition focus:border-sibs-navy focus:ring-4 focus:ring-sibs-navy/10 ${extra}`;
 }
 
 export function getCandidateStage(candidate = {}) {

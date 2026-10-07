@@ -52,7 +52,7 @@ function TextInput({ className = "", ...props }) {
   return (
     <input
       {...props}
-      className={`h-8.5 2xl:h-10 w-full rounded-lg 2xl:rounded-xl border border-sibs-border bg-slate-50 px-3 font-jakarta text-xs font-semibold text-sibs-navy outline-none transition placeholder:text-sibs-muted hover:border-sibs-orange/40 hover:bg-white focus:border-sibs-orange focus:bg-white focus:ring-2 focus:ring-sibs-orange/10 disabled:cursor-not-allowed disabled:border-sibs-border disabled:bg-slate-100 disabled:text-sibs-muted ${className}`}
+      className={`h-8.5 2xl:h-10 w-full rounded-[10px] border border-sibs-border bg-slate-50 px-3 font-jakarta text-xs font-semibold text-sibs-navy outline-none transition placeholder:text-sibs-muted hover:border-sibs-orange/40 hover:bg-white focus:border-sibs-orange focus:bg-white focus:ring-2 focus:ring-sibs-orange/10 disabled:cursor-not-allowed disabled:border-sibs-border disabled:bg-slate-100 disabled:text-sibs-muted ${className}`}
     />
   );
 }
@@ -61,7 +61,7 @@ function TextArea({ className = "", ...props }) {
   return (
     <textarea
       {...props}
-      className={`min-h-28 w-full resize-none rounded-xl border border-sibs-border bg-slate-50 px-3 py-2.5 font-jakarta text-xs font-semibold text-sibs-navy outline-none transition placeholder:text-sibs-muted hover:border-sibs-orange/40 hover:bg-white focus:border-sibs-orange focus:bg-white focus:ring-2 focus:ring-sibs-orange/10 disabled:cursor-not-allowed disabled:border-sibs-border disabled:bg-slate-100 disabled:text-sibs-muted ${className}`}
+      className={`min-h-28 w-full resize-none rounded-[10px] border border-sibs-border bg-slate-50 px-3 py-2.5 font-jakarta text-xs font-semibold text-sibs-navy outline-none transition placeholder:text-sibs-muted hover:border-sibs-orange/40 hover:bg-white focus:border-sibs-orange focus:bg-white focus:ring-2 focus:ring-sibs-orange/10 disabled:cursor-not-allowed disabled:border-sibs-border disabled:bg-slate-100 disabled:text-sibs-muted ${className}`}
     />
   );
 }
@@ -74,7 +74,7 @@ function FormSection({
   headerAction = null,
 }) {
   return (
-    <section className="rounded-xl 2xl:rounded-2xl border border-sibs-border bg-white p-3.5 sm:p-4 2xl:p-5 shadow-sm">
+    <section className="rounded-[14px] border border-sibs-border bg-white p-3.5 sm:p-4 2xl:p-5 shadow-sm">
       <div className="mb-3 2xl:mb-4 flex flex-col gap-2.5 border-b border-sibs-border pb-2.5 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex min-w-0 items-start gap-2 2xl:gap-2.5">
           {React.createElement(SectionIcon, {
@@ -1113,7 +1113,7 @@ function DropdownPortal({
   return createPortal(
     <div
       ref={dropdownRef}
-      className={`sibs-dropdown-pop-in fixed z-[999999] overflow-hidden rounded-xl border border-sibs-border bg-white shadow-2xl ${className}`}
+      className={`sibs-dropdown-pop-in fixed z-[999999] overflow-hidden rounded-[10px] border border-sibs-border bg-white shadow-2xl ${className}`}
       style={{
         top: `${style.top}px`,
         left: `${style.left}px`,
@@ -1255,7 +1255,7 @@ function CustomSelect({
       <div ref={anchorRef} className="relative min-w-0 font-jakarta">
         <div
           onClick={handleOpen}
-          className={`flex h-10 w-full min-w-0 items-center gap-2.5 rounded-lg border px-3 text-left font-jakarta text-xs font-bold outline-none transition ${
+          className={`flex h-10 w-full min-w-0 items-center gap-2.5 rounded-[10px] border px-3 text-left font-jakarta text-xs font-bold outline-none transition ${
             disabled
               ? "cursor-not-allowed border-sibs-border bg-slate-100 text-sibs-muted opacity-70"
               : open
@@ -1364,7 +1364,7 @@ function CustomSelect({
         type="button"
         disabled={disabled}
         onClick={() => setOpen((prev) => !prev)}
-        className={`flex h-10 w-full min-w-0 items-center justify-between gap-2.5 rounded-lg border px-3 text-left font-jakarta text-xs font-bold outline-none transition ${
+        className={`flex h-10 w-full min-w-0 items-center justify-between gap-2.5 rounded-[10px] border px-3 text-left font-jakarta text-xs font-bold outline-none transition ${
           disabled
             ? "cursor-not-allowed border-sibs-border bg-slate-100 text-sibs-muted opacity-70"
             : open
@@ -1490,7 +1490,7 @@ function CalendarHeaderDropdown({
       <button
         type="button"
         onClick={() => setOpen((previous) => !previous)}
-        className={`flex h-7 w-full min-w-0 items-center justify-between gap-1 rounded-lg border px-2 text-left font-jakarta text-xs font-extrabold outline-none transition ${
+        className={`flex h-7 w-full min-w-0 items-center justify-between gap-1 rounded-[10px] border px-2 text-left font-jakarta text-xs font-extrabold outline-none transition ${
           open
             ? "border-sibs-orange bg-white text-sibs-navy ring-2 ring-sibs-orange/10"
             : "border-sibs-border bg-slate-50 text-sibs-navy hover:border-sibs-orange/40 hover:bg-white"
@@ -1506,7 +1506,7 @@ function CalendarHeaderDropdown({
       </button>
 
       {open && (
-        <div className="sibs-dropdown-pop-in sibs-scrollbar absolute left-0 top-[calc(100%+4px)] z-[10090] max-h-48 overflow-y-auto rounded-xl border border-sibs-border bg-white p-1 shadow-2xl">
+        <div className="sibs-dropdown-pop-in sibs-scrollbar absolute left-0 top-[calc(100%+4px)] z-[10090] max-h-48 overflow-y-auto rounded-[10px] border border-sibs-border bg-white p-1 shadow-2xl">
           {options.map((option) => {
             const active = String(option.value) === String(value);
 
@@ -1518,7 +1518,7 @@ function CalendarHeaderDropdown({
                   onChange(option.value);
                   setOpen(false);
                 }}
-                className={`block w-full rounded-lg px-2.5 py-1.5 text-left font-jakarta text-xs transition ${
+                className={`block w-full rounded-[10px] px-2.5 py-1.5 text-left font-jakarta text-xs transition ${
                   active
                     ? "bg-orange-50 font-extrabold text-sibs-orange"
                     : "bg-white font-bold text-sibs-navy hover:bg-orange-50/50 hover:text-sibs-orange"
@@ -1625,7 +1625,7 @@ function DateDropdown({
         type="button"
         disabled={disabled}
         onClick={() => setOpen((prev) => !prev)}
-        className={`flex h-10 w-full min-w-0 items-center justify-between gap-2.5 rounded-lg border px-3 text-left font-jakarta text-xs font-bold outline-none transition ${
+        className={`flex h-10 w-full min-w-0 items-center justify-between gap-2.5 rounded-[10px] border px-3 text-left font-jakarta text-xs font-bold outline-none transition ${
           disabled
             ? "cursor-not-allowed border-sibs-border bg-slate-100 text-sibs-muted opacity-70"
             : open
@@ -1661,14 +1661,14 @@ function DateDropdown({
         maxHeight={420}
         matchAnchorWidth={false}
         width={300}
-        className="rounded-xl border-sibs-border"
+        className="rounded-[10px] border-sibs-border"
         innerClassName="p-3"
       >
-        <div className="mb-3 flex items-center gap-1.5 rounded-xl border border-sibs-border bg-slate-50 p-1.5">
+        <div className="mb-3 flex items-center gap-1.5 rounded-[10px] border border-sibs-border bg-slate-50 p-1.5">
           <button
             type="button"
             onClick={goToPreviousMonth}
-            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-sibs-border bg-white text-sibs-navy transition hover:border-sibs-orange/40 hover:bg-orange-50 hover:text-sibs-orange"
+            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-[10px] border border-sibs-border bg-white text-sibs-navy transition hover:border-sibs-orange/40 hover:bg-orange-50 hover:text-sibs-orange"
             aria-label="Previous month"
           >
             <ChevronLeft size={15} />
@@ -1690,7 +1690,7 @@ function DateDropdown({
           <button
             type="button"
             onClick={goToNextMonth}
-            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-sibs-border bg-white text-sibs-navy transition hover:border-sibs-orange/40 hover:bg-orange-50 hover:text-sibs-orange"
+            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-[10px] border border-sibs-border bg-white text-sibs-navy transition hover:border-sibs-orange/40 hover:bg-orange-50 hover:text-sibs-orange"
             aria-label="Next month"
           >
             <ChevronRight size={15} />
@@ -1717,7 +1717,7 @@ function DateDropdown({
                 key={toDateInputValue(date)}
                 type="button"
                 onClick={() => handleSelectDate(date)}
-                className={`flex h-8 items-center justify-center rounded-lg font-jakarta text-xs transition-all active:scale-[0.98] ${
+                className={`flex h-8 items-center justify-center rounded-[10px] font-jakarta text-xs transition-all active:scale-[0.98] ${
                   active
                     ? "bg-sibs-orange font-extrabold text-white shadow-md"
                     : isToday
@@ -1740,7 +1740,7 @@ function DateDropdown({
               onChange("");
               setOpen(false);
             }}
-            className="inline-flex h-8 items-center justify-center rounded-lg border border-sibs-border bg-white px-3 font-jakarta text-xs font-extrabold text-sibs-navy transition hover:border-sibs-orange/40 hover:bg-orange-50 hover:text-sibs-orange active:scale-[0.98]"
+            className="inline-flex h-8 items-center justify-center rounded-[10px] border border-sibs-border bg-white px-3 font-jakarta text-xs font-extrabold text-sibs-navy transition hover:border-sibs-orange/40 hover:bg-orange-50 hover:text-sibs-orange active:scale-[0.98]"
           >
             Clear
           </button>
@@ -1748,7 +1748,7 @@ function DateDropdown({
           <button
             type="button"
             onClick={handleTodayClick}
-            className="inline-flex h-8 items-center justify-center rounded-lg bg-sibs-orange px-3 font-jakarta text-xs font-extrabold text-white shadow-sm transition hover:bg-sibs-orange-dark active:scale-[0.98]"
+            className="inline-flex h-8 items-center justify-center rounded-[10px] bg-sibs-orange px-3 font-jakarta text-xs font-extrabold text-white shadow-sm transition hover:bg-sibs-orange-dark active:scale-[0.98]"
           >
             Today
           </button>
@@ -2614,12 +2614,12 @@ export default function AddHiringNeedsModal({ open, onClose, onStatus }) {
         aria-labelledby="add-hiring-needs-title"
         onSubmit={handleSubmit}
         onClick={(event) => event.stopPropagation()}
-        className="sibs-modal-pop-in flex max-h-[92dvh] w-full max-w-4xl 2xl:max-w-5xl flex-col overflow-hidden rounded-2xl border border-white/70 bg-slate-50 shadow-2xl font-jakarta"
+        className="sibs-modal-pop-in flex max-h-[92dvh] w-full max-w-4xl 2xl:max-w-5xl flex-col overflow-hidden rounded-[14px] border border-white/70 bg-slate-50 shadow-2xl font-jakarta"
       >
         <header className="shrink-0 bg-sibs-navy px-4 py-3 text-white sm:px-5 2xl:px-6 2xl:py-3.5">
           <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex min-w-0 items-center gap-2.5 2xl:gap-3">
-              <span className="flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg border border-white/15 bg-white/10 text-sibs-orange">
+              <span className="flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-[10px] border border-white/15 bg-white/10 text-sibs-orange">
                 <FileText className="h-4 w-4 text-sibs-orange" />
               </span>
 
@@ -2664,10 +2664,10 @@ export default function AddHiringNeedsModal({ open, onClose, onStatus }) {
 
         <div className="sibs-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain bg-slate-50 p-3 sm:p-4 2xl:p-5">
           <div className="space-y-3.5 2xl:space-y-4">
-            <section className="rounded-2xl border border-blue-200 bg-blue-50/70 p-3 2xl:p-3.5">
+            <section className="rounded-[10px] border border-blue-200 bg-blue-50/70 p-3 2xl:p-3.5">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex min-w-0 items-start gap-2.5 2xl:gap-3">
-                  <span className="flex h-7.5 w-7.5 2xl:h-8 2xl:w-8 shrink-0 items-center justify-center rounded-lg bg-blue-600 text-white">
+                  <span className="flex h-7.5 w-7.5 2xl:h-8 2xl:w-8 shrink-0 items-center justify-center rounded-[10px] bg-blue-600 text-white">
                     <Info className="h-4 w-4" />
                   </span>
 
@@ -3150,7 +3150,7 @@ export default function AddHiringNeedsModal({ open, onClose, onStatus }) {
                                 className="max-h-52 w-auto max-w-full rounded-[10px] border border-sibs-border bg-white object-contain shadow-sm"
                               />
                             ) : (
-                              <span className="flex h-16 w-16 items-center justify-center rounded-xl border border-sibs-border bg-white text-sibs-navy shadow-sm">
+                              <span className="flex h-16 w-16 items-center justify-center rounded-[10px] border border-sibs-border bg-white text-sibs-navy shadow-sm">
                                 <FileText size={27} />
                               </span>
                             )}

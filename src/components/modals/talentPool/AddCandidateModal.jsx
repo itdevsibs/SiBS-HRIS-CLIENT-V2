@@ -855,13 +855,13 @@ function getCandidateFileName(candidateForm = {}, type = "audio") {
 function inputClass(extra = "", options = {}) {
   const shouldUppercase = options.uppercase !== false;
 
-  return `h-8.5 2xl:h-10 w-full rounded-xl border border-sibs-border bg-sibs-surface px-3 2xl:px-3.5 sibs-text-xs font-semibold ${
+  return `h-8.5 2xl:h-10 w-full rounded-[10px] border border-sibs-border bg-sibs-surface px-3 2xl:px-3.5 sibs-text-xs font-semibold ${
     shouldUppercase ? "uppercase" : "normal-case"
   } text-sibs-navy outline-none transition placeholder:text-sibs-muted hover:border-sibs-orange/40 hover:bg-white focus:border-sibs-orange focus:bg-white focus:ring-4 focus:ring-sibs-orange/10 disabled:cursor-not-allowed disabled:border-sibs-border disabled:bg-slate-100 disabled:text-sibs-muted ${extra}`;
 }
 
 function textareaInputClass(extra = "") {
-  return `w-full resize-none rounded-xl border border-sibs-border bg-sibs-surface px-3 py-2 text-xs font-semibold uppercase text-sibs-navy outline-none transition placeholder:text-sibs-muted hover:border-sibs-orange/40 hover:bg-white focus:border-sibs-orange focus:bg-white focus:ring-4 focus:ring-sibs-orange/10 disabled:cursor-not-allowed disabled:border-sibs-border disabled:bg-slate-100 disabled:text-sibs-muted ${extra}`;
+  return `w-full resize-none rounded-[10px] border border-sibs-border bg-sibs-surface px-3 py-2 text-xs font-semibold uppercase text-sibs-navy outline-none transition placeholder:text-sibs-muted hover:border-sibs-orange/40 hover:bg-white focus:border-sibs-orange focus:bg-white focus:ring-4 focus:ring-sibs-orange/10 disabled:cursor-not-allowed disabled:border-sibs-border disabled:bg-slate-100 disabled:text-sibs-muted ${extra}`;
 }
 
 function AutoResizeTextarea({
@@ -926,7 +926,7 @@ function ApplicationPageTabs({
   const pageTwoActive = currentPage === 2;
 
   const tabClass = (active) =>
-    `flex min-h-[48px] w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-left text-xs font-extrabold transition sm:text-sm ${
+    `flex min-h-[48px] w-full items-center justify-center gap-2 rounded-[10px] px-4 py-3 text-left text-xs font-extrabold transition sm:text-sm ${
       active
         ? "bg-sibs-navy text-white shadow-md"
         : "bg-white text-sibs-navy hover:bg-sibs-surface"
@@ -942,7 +942,7 @@ function ApplicationPageTabs({
   return (
     <nav
       aria-label="Add Candidate application pages"
-      className="grid grid-cols-1 gap-2 rounded-2xl border border-sibs-border bg-white p-2 shadow-sm sm:grid-cols-2"
+      className="grid grid-cols-1 gap-2 rounded-[14px] border border-sibs-border bg-white p-2 shadow-sm sm:grid-cols-2"
     >
       <button
         type="button"
@@ -970,7 +970,7 @@ function ApplicationPageTabs({
         <span className={numberClass(pageTwoActive)}>2</span>
         <span className="min-w-0 truncate">Page 2: Position Screening Questions</span>
         <span
-          className={`shrink-0 rounded-md px-2 py-1 text-[9px] font-black uppercase tracking-wide ${
+          className={`shrink-0 rounded-[6px] px-2 py-1 text-[9px] font-black uppercase tracking-wide ${
             pageTwoActive
               ? "bg-sibs-orange/20 text-sibs-orange"
               : "bg-sibs-cream-light text-sibs-orange"
@@ -1014,11 +1014,11 @@ function SectionCard({
   children,
 }) {
   return (
-    <section className="sibs-page-card-in relative overflow-visible rounded-2xl border border-sibs-border bg-white shadow-sm">
+    <section className="sibs-page-card-in relative overflow-visible rounded-[14px] border border-sibs-border bg-white shadow-sm">
       <div className="flex flex-col gap-3 border-b border-sibs-border/60 px-5 py-4 sm:flex-row sm:items-start sm:justify-between sm:px-6">
         <div className="flex min-w-0 items-start gap-3">
           {Icon && (
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sibs-cream-light text-sibs-orange">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] bg-sibs-cream-light text-sibs-orange">
               <Icon size={18} />
             </div>
           )}
@@ -1050,7 +1050,7 @@ function SectionCard({
 
 function EmptyOptionNotice({ message = "No options configured in database." }) {
   return (
-    <div className="rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-700">
+    <div className="rounded-[10px] border border-amber-100 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-700">
       {message}
     </div>
   );
@@ -1572,7 +1572,7 @@ function CalendarHeaderDropdown({
 
       {open && (
         <div
-          className={`absolute left-0 top-[calc(100%+8px)] z-[100000] overflow-hidden rounded-xl border border-sibs-border bg-white shadow-2xl ${menuClassName}`}
+          className={`absolute left-0 top-[calc(100%+8px)] z-[100000] overflow-hidden rounded-[10px] border border-sibs-border bg-white shadow-2xl ${menuClassName}`}
         >
           <div className="max-h-72 overflow-y-auto py-2 sibs-scrollbar">
             {options.map((option) => {
@@ -1889,7 +1889,7 @@ function CalendarDatePicker({
         ? createPortal(
             <div
               ref={calendarPanelRef}
-              className="fixed z-[100000] overflow-visible rounded-2xl border border-sibs-border bg-white shadow-2xl"
+              className="fixed z-[100000] overflow-visible rounded-[14px] border border-sibs-border bg-white shadow-2xl"
               style={{
                 left: `${panelPosition.left}px`,
                 top: `${panelPosition.top}px`,
@@ -1953,7 +1953,7 @@ function CalendarDatePicker({
                         key={day.dateValue}
                         type="button"
                         onClick={() => handleSelectDate(day.date)}
-                        className={`flex h-8 w-8 items-center justify-center rounded-lg text-xs font-extrabold transition-all duration-200 hover:-translate-y-0.5 active:scale-[0.98] ${
+                        className={`flex h-8 w-8 items-center justify-center rounded-[8px] text-xs font-extrabold transition-all duration-200 hover:-translate-y-0.5 active:scale-[0.98] ${
                           active
                             ? "bg-sibs-orange text-white shadow-sm"
                             : currentDay
@@ -2242,7 +2242,7 @@ function SchoolYearSearchableDropdown({
           type="button"
           onClick={handleToggle}
           aria-label={open ? "Close school year options" : "Open school year options"}
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition hover:bg-sibs-cream-light"
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[8px] transition hover:bg-sibs-cream-light"
         >
           <ChevronDown
             size={18}
@@ -2441,7 +2441,7 @@ function EducationDetailsFields({ attainment, details, onChange }) {
   };
 
   return (
-    <div className="space-y-4 rounded-2xl border border-sibs-border bg-sibs-surface p-4 sm:p-5">
+    <div className="space-y-4 rounded-[14px] border border-sibs-border bg-sibs-surface p-4 sm:p-5">
       <div>
         <h4 className="text-xs font-extrabold uppercase tracking-normal text-sibs-navy">
           Required Education Details
@@ -2673,7 +2673,7 @@ function WorkReadinessQuestion({
 }) {
   return (
     <div
-      className={`grid grid-cols-1 gap-3 rounded-xl border border-sibs-border bg-white px-4 py-3 transition hover:border-sibs-orange/40 hover:bg-sibs-surface sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center ${className}`}
+      className={`grid grid-cols-1 gap-3 rounded-[10px] border border-sibs-border bg-white px-4 py-3 transition hover:border-sibs-orange/40 hover:bg-sibs-surface sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center ${className}`}
     >
       <div className="flex min-w-0 items-start gap-3">
         <span
@@ -2936,7 +2936,7 @@ function ExperienceFields({
 
 function PositionInfoItem({ label, value }) {
   return (
-    <div className="rounded-2xl border border-gray-100 bg-white p-4">
+    <div className="rounded-[10px] border border-gray-100 bg-white p-4">
       <p className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
         {label}
       </p>
@@ -4571,12 +4571,12 @@ export default function AddCandidateModal() {
         onClick={closeAddCandidateModal}
       >
         <div
-          className="sibs-modal-pop-in flex max-h-[88dvh] 2xl:max-h-[92dvh] w-full max-w-[1060px] flex-col overflow-hidden rounded-2xl border border-sibs-border bg-sibs-surface font-jakarta shadow-[0_30px_90px_rgba(2,26,48,0.42)]"
+          className="sibs-modal-pop-in flex max-h-[88dvh] 2xl:max-h-[92dvh] w-full max-w-[1060px] flex-col overflow-hidden rounded-[14px] border border-sibs-border bg-sibs-surface font-jakarta shadow-[0_30px_90px_rgba(2,26,48,0.42)]"
           onClick={(event) => event.stopPropagation()}
         >
           <div className="flex shrink-0 flex-col gap-2.5 border-b border-white/10 bg-sibs-navy px-4 py-3 text-white sm:flex-row sm:items-center sm:justify-between sm:px-6 2xl:py-3.5">
             <div className="flex min-w-0 items-center gap-3">
-              <span className="flex h-8.5 w-8.5 2xl:h-10 2xl:w-10 shrink-0 items-center justify-center rounded-xl bg-white/10 text-sibs-orange ring-1 ring-white/15">
+              <span className="flex h-8.5 w-8.5 2xl:h-10 2xl:w-10 shrink-0 items-center justify-center rounded-[10px] bg-white/10 text-sibs-orange ring-1 ring-white/15">
                 <UserPlus size={18} />
               </span>
 
@@ -4650,9 +4650,9 @@ export default function AddCandidateModal() {
             onSubmit={handleSubmitCandidate}
             className="thin-scroll flex-1 space-y-4 2xl:space-y-5 overflow-y-auto bg-sibs-surface p-3.5 sm:p-4 2xl:p-6"
           >
-            <div className="rounded-2xl border border-sibs-border bg-white p-3.5 2xl:p-4 shadow-xs">
+            <div className="rounded-[14px] border border-sibs-border bg-white p-3.5 2xl:p-4 shadow-xs">
               <div className="flex items-start gap-3">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sibs-cream-light text-sibs-orange">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] bg-sibs-cream-light text-sibs-orange">
                   <ShieldCheck size={17} />
                 </span>
                 <div className="min-w-0">
@@ -4684,7 +4684,7 @@ export default function AddCandidateModal() {
               description="Tell us where the applicant learned about SiBS and what position they are applying for."
             >
               <div className="space-y-4">
-                <div className="rounded-2xl border border-sibs-border bg-sibs-surface p-4 shadow-sm">
+                <div className="rounded-[10px] border border-sibs-border bg-sibs-surface p-4 shadow-sm">
                   <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                     <div>
                       <p className="text-[10px] font-black uppercase tracking-wide text-sibs-orange">
@@ -4728,7 +4728,7 @@ export default function AddCandidateModal() {
                 </div>
 
                 {hasReferralCode === "Yes" ? (
-                  <div className="rounded-2xl border border-sibs-orange/40 bg-sibs-cream-light p-4 shadow-sm">
+                  <div className="rounded-[10px] border border-sibs-orange/40 bg-sibs-cream-light p-4 shadow-sm">
                     <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                       <div>
                         <p className="text-[10px] font-black uppercase tracking-wide text-sibs-orange">
@@ -4938,7 +4938,7 @@ export default function AddCandidateModal() {
 
                   </>
                 ) : (
-                  <div className="rounded-xl border border-sibs-border bg-sibs-surface px-4 py-3 text-xs font-semibold leading-5 text-sibs-muted">
+                  <div className="rounded-[10px] border border-sibs-border bg-sibs-surface px-4 py-3 text-xs font-semibold leading-5 text-sibs-muted">
                     {!hasReferralCode
                       ? "Select Yes or No above to continue with the candidate profile."
                       : referralLookupStatus === "checking"
@@ -5150,7 +5150,7 @@ export default function AddCandidateModal() {
                         <button
                           type="button"
                           onClick={addOtherExperience}
-                          className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg bg-[var(--sibs-primary-1)] px-4 text-xs font-extrabold text-white shadow-sm transition hover:opacity-90"
+                          className="inline-flex h-9 items-center justify-center gap-1.5 rounded-[10px] bg-sibs-primary-1 px-4 text-xs font-extrabold text-white shadow-sm transition hover:opacity-90"
                         >
                           <Plus size={14} />
                           Add Other Experience
@@ -5403,13 +5403,13 @@ export default function AddCandidateModal() {
               >
                 <div className="space-y-4">
                   {applicationQuestionsError ? (
-                    <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700">
+                    <div className="rounded-[10px] border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700">
                       {applicationQuestionsError}
                     </div>
                   ) : null}
 
                   {applicationForm?.formName ? (
-                    <div className="rounded-xl border border-sibs-border bg-sibs-surface px-4 py-3">
+                    <div className="rounded-[10px] border border-sibs-border bg-sibs-surface px-4 py-3">
                       <p className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-muted">
                         Application Form
                       </p>
@@ -5433,11 +5433,11 @@ export default function AddCandidateModal() {
                         return (
                           <div
                             key={question.id}
-                            className="rounded-2xl border border-sibs-border bg-sibs-surface p-4 sm:p-5"
+                            className="rounded-[10px] border border-sibs-border bg-sibs-surface p-4 sm:p-5"
                           >
                             <div className="min-w-0">
                               <div className="flex flex-wrap items-center gap-2">
-                                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-sibs-cream-light text-[10px] font-extrabold text-sibs-orange">
+                                <span className="flex h-7 w-7 items-center justify-center rounded-[8px] bg-sibs-cream-light text-[10px] font-extrabold text-sibs-orange">
                                   {index + 1}
                                 </span>
                                 {question.isRequired ? (
@@ -5501,7 +5501,7 @@ export default function AddCandidateModal() {
                       })}
                     </div>
                   ) : (
-                    <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-4 text-sm font-semibold leading-6 text-emerald-800">
+                    <div className="rounded-[10px] border border-emerald-200 bg-emerald-50 px-4 py-4 text-sm font-semibold leading-6 text-emerald-800">
                       No additional application questions are configured for this position. You can continue with the uploads and consent below.
                     </div>
                   )}

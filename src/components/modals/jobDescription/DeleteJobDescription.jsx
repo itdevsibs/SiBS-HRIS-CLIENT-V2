@@ -292,7 +292,7 @@ function DependencyRow({
       </div>
 
       <div className="flex min-w-[132px] flex-col items-end gap-1">
-        <span className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-[11px] font-bold text-emerald-700">
+        <span className="inline-flex items-center gap-1.5 rounded-[10px] border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-[11px] font-bold text-emerald-700">
           <Users size={13} strokeWidth={1.8} />
           {openSlots} Open Slot
           {Number(openSlots) === 1 ? "" : "s"}
@@ -477,7 +477,7 @@ export default function DeleteJobDescriptionModal({
   return (
     <div className="sibs-modal-backdrop-in sibs-modal-blur fixed inset-0 z-[9999] flex h-dvh items-center justify-center p-3 sm:p-5 font-jakarta bg-sibs-navy/60">
       <div
-        className="sibs-modal-pop-in flex max-h-[92dvh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-white/70 bg-white shadow-2xl font-jakarta"
+        className="sibs-modal-pop-in flex max-h-[92dvh] w-full max-w-2xl flex-col overflow-hidden rounded-[14px] border border-white/70 bg-white shadow-2xl font-jakarta"
         onClick={(event) => {
           event.stopPropagation();
         }}
@@ -497,7 +497,7 @@ export default function DeleteJobDescriptionModal({
           </button>
 
           <div className="flex items-start gap-3 pr-10">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/35 bg-white/10">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] border border-white/35 bg-white/10">
               <ShieldAlert size={20} strokeWidth={1.8} />
             </div>
 
@@ -539,7 +539,7 @@ export default function DeleteJobDescriptionModal({
               {/* ==================================
                   TARGET JOB DESCRIPTION
               ================================== */}
-              <section className="rounded-xl border border-slate-200 bg-sibs-surface px-4 py-4">
+              <section className="rounded-[10px] border border-slate-200 bg-sibs-surface px-4 py-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="text-[10px] font-bold uppercase tracking-[0.03em] text-slate-400">
@@ -566,7 +566,7 @@ export default function DeleteJobDescriptionModal({
                   </div>
 
                   {getDisplayDepartment(jobDescription) ? (
-                    <span className="shrink-0 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-semibold text-slate-600">
+                    <span className="shrink-0 rounded-[10px] border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-semibold text-slate-600">
                       {getDisplayDepartment(jobDescription)}
                     </span>
                   ) : null}
@@ -612,7 +612,7 @@ export default function DeleteJobDescriptionModal({
                   </span>
                 </div>
 
-                <div className="rounded-xl border border-red-200 bg-red-50/70 px-4 py-3">
+                <div className="rounded-[10px] border border-red-200 bg-red-50/70 px-4 py-3">
                   <div className="flex items-start gap-3">
                     <AlertTriangle
                       size={16}
@@ -634,7 +634,7 @@ export default function DeleteJobDescriptionModal({
                   </div>
                 </div>
 
-                <div className="mt-3 overflow-hidden rounded-xl border border-slate-200 bg-white">
+                <div className="mt-3 overflow-hidden rounded-[10px] border border-slate-200 bg-white">
                   {displayDependencies.length > 0 ? (
                     displayDependencies.map((row) => (
                       <DependencyRow
@@ -660,7 +660,7 @@ export default function DeleteJobDescriptionModal({
               {/* ==================================
                   SAFE ALTERNATIVE
               ================================== */}
-              <section className="rounded-xl border border-amber-300 bg-amber-50/70 px-4 py-3">
+              <section className="rounded-[10px] border border-amber-300 bg-amber-50/70 px-4 py-3">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
@@ -686,7 +686,7 @@ export default function DeleteJobDescriptionModal({
                     type="button"
                     onClick={handleArchiveInstead}
                     disabled={deleting}
-                    className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border border-amber-400 bg-white px-4 py-2 text-[12px] font-bold text-amber-800 transition hover:bg-amber-50 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="inline-flex shrink-0 items-center justify-center gap-2 rounded-[10px] border border-amber-400 bg-white px-4 py-2 text-[12px] font-bold text-amber-800 transition hover:bg-amber-50 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     <Archive size={14} strokeWidth={1.9} />
                     Archive Instead
@@ -697,7 +697,7 @@ export default function DeleteJobDescriptionModal({
               {/* ==================================
                   ACKNOWLEDGEMENTS
               ================================== */}
-              <section className="rounded-xl border border-red-200 bg-red-50/60 px-4 py-4">
+              <section className="rounded-[10px] border border-red-200 bg-red-50/60 px-4 py-4">
                 <div className="mb-3 flex items-center gap-2">
                   <LockKeyhole
                     size={15}
@@ -790,7 +790,7 @@ export default function DeleteJobDescriptionModal({
                       : "Type 'DELETE' to confirm"
                   }
                   className={[
-                    "mt-2 h-[38px] w-full rounded-xl border bg-white px-4 text-[12px] text-slate-700 outline-none transition",
+                    "mt-2 h-[38px] w-full rounded-[10px] border bg-white px-4 text-[12px] text-slate-700 outline-none transition",
                     confirmation && !confirmationValid
                       ? "border-red-300 focus:border-red-400 focus:ring-2 focus:ring-red-100"
                       : "border-slate-300 focus:border-red-400 focus:ring-2 focus:ring-red-100",
@@ -826,7 +826,7 @@ export default function DeleteJobDescriptionModal({
                 type="button"
                 onClick={handleClose}
                 disabled={deleting}
-                className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg 2xl:rounded-xl border border-slate-300 bg-white px-4 2xl:px-5 sibs-text-xs font-bold text-sibs-navy shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98]"
+                className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-[10px] border border-slate-300 bg-white px-4 2xl:px-5 sibs-text-xs font-bold text-sibs-navy shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98]"
               >
                 Cancel
               </button>
@@ -836,7 +836,7 @@ export default function DeleteJobDescriptionModal({
                 onClick={handlePermanentDelete}
                 disabled={!canPermanentlyDelete}
                 className={[
-                  "inline-flex h-8.5 2xl:h-10 min-w-[240px] items-center justify-center gap-2 rounded-lg 2xl:rounded-xl border px-4 2xl:px-5 sibs-text-xs font-extrabold shadow-sm transition active:scale-[0.98]",
+                  "inline-flex h-8.5 2xl:h-10 min-w-[240px] items-center justify-center gap-2 rounded-[10px] border px-4 2xl:px-5 sibs-text-xs font-extrabold shadow-sm transition active:scale-[0.98]",
                   canPermanentlyDelete
                     ? "border-red-600 bg-red-600 text-white hover:bg-red-700"
                     : "cursor-not-allowed border-slate-300 bg-slate-200 text-slate-400",

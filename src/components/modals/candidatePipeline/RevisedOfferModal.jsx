@@ -118,7 +118,7 @@ export default function RevisedOfferModal({
         type="submit"
         form="candidate-revised-offer-form"
         disabled={isSubmitting}
-        className="min-w-[170px] bg-[#FF5C28] hover:bg-[#E94F1F]"
+        className="min-w-[170px] bg-sibs-orange hover:bg-sibs-orange-hover"
       >
         {isSubmitting && <Loader2 size={15} className="animate-spin" />}
         {isSubmitting ? "Submitting..." : "Submit Revised Offer"}
@@ -151,17 +151,17 @@ export default function RevisedOfferModal({
             <div className="space-y-2">
               <div className="sibs-info-tile">
                 <p className="sibs-kicker">Current Basic Daily Rate</p>
-                <p className="mt-0.5 sibs-text-sm font-extrabold tabular-nums text-[#101828]">
+                <p className="mt-0.5 sibs-text-sm font-extrabold tabular-nums text-sibs-navy">
                   {formatCurrency(currentBasicDailyRate)}
                 </p>
               </div>
               <div className="sibs-info-tile">
                 <p className="sibs-kicker">Current Daily De Minimis</p>
-                <p className="mt-0.5 sibs-text-sm font-extrabold tabular-nums text-[#101828]">
+                <p className="mt-0.5 sibs-text-sm font-extrabold tabular-nums text-sibs-navy">
                   {formatCurrency(currentDailyDeMinimis)}
                 </p>
               </div>
-              <div className="rounded-xl border border-blue-100 bg-blue-50 px-3 py-2">
+              <div className="rounded-[10px] border border-blue-100 bg-blue-50 px-3 py-2">
                 <p className="sibs-kicker text-sibs-primary-1">Current Total Daily Rate</p>
                 <p className="mt-0.5 sibs-text-sm font-extrabold tabular-nums text-sibs-primary-1">
                   {formatCurrency(toNumber(currentBasicDailyRate) + toNumber(currentDailyDeMinimis))}
@@ -173,7 +173,7 @@ export default function RevisedOfferModal({
           <CandidateModalSection title="Proposed Compensation">
             <div className="space-y-2.5">
               <label className="block">
-                <span className="mb-1 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">New Basic Daily Rate <span className="text-[#FF5C28]">*</span></span>
+                <span className="mb-1 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-sibs-muted">New Basic Daily Rate <span className="text-sibs-orange">*</span></span>
                 <input
                   type="number"
                   min="0"
@@ -185,12 +185,12 @@ export default function RevisedOfferModal({
                   onKeyDown={preventNumberArrowChange}
                   onChange={(event) => setBasicDailyRate(event.target.value)}
                   placeholder="Enter new basic daily rate"
-                  className="h-8.5 2xl:h-10 w-full rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-3 sibs-text-xs font-semibold tabular-nums text-[#042C51] outline-none transition placeholder:text-[#6B88A8] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:bg-[#F2F4F7] disabled:text-[#98A2B3]"
+                  className="h-8.5 2xl:h-10 w-full rounded-[10px] border border-sibs-border bg-sibs-surface px-3 sibs-text-xs font-semibold tabular-nums text-sibs-navy outline-none transition placeholder:text-sibs-faint hover:border-sibs-orange/40 hover:bg-white focus:border-sibs-orange focus:bg-white focus:ring-4 focus:ring-sibs-orange/10 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-sibs-muted"
                 />
               </label>
 
               <label className="block">
-                <span className="mb-1 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">New Daily De Minimis <span className="text-[#FF5C28]">*</span></span>
+                <span className="mb-1 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-sibs-muted">New Daily De Minimis <span className="text-sibs-orange">*</span></span>
                 <input
                   type="number"
                   min="0"
@@ -202,12 +202,12 @@ export default function RevisedOfferModal({
                   onKeyDown={preventNumberArrowChange}
                   onChange={(event) => setDailyDeMinimis(event.target.value)}
                   placeholder="Enter new daily de minimis"
-                  className="h-8.5 2xl:h-10 w-full rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-3 sibs-text-xs font-semibold tabular-nums text-[#042C51] outline-none transition placeholder:text-[#6B88A8] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:bg-[#F2F4F7] disabled:text-[#98A2B3]"
+                  className="h-8.5 2xl:h-10 w-full rounded-[10px] border border-sibs-border bg-sibs-surface px-3 sibs-text-xs font-semibold tabular-nums text-sibs-navy outline-none transition placeholder:text-sibs-faint hover:border-sibs-orange/40 hover:bg-white focus:border-sibs-orange focus:bg-white focus:ring-4 focus:ring-sibs-orange/10 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-sibs-muted"
                 />
               </label>
 
-              <div className="rounded-xl border border-[#FF5C28]/25 bg-[#FFF9F6] px-3 py-2">
-                <p className="sibs-kicker text-[#FF5C28]">Proposed Total Daily Rate</p>
+              <div className="rounded-[10px] border border-sibs-orange/25 bg-sibs-cream-light px-3 py-2">
+                <p className="sibs-kicker text-sibs-orange">Proposed Total Daily Rate</p>
                 <p className="mt-0.5 sibs-text-sm font-extrabold tabular-nums text-sibs-primary-1">
                   {formatCurrency(proposedTotal)}
                 </p>
@@ -223,12 +223,12 @@ export default function RevisedOfferModal({
             onChange={(event) => setRemarks(event.target.value)}
             rows={3}
             placeholder="Add a reason or justification for the new offer..."
-            className="w-full resize-none rounded-xl border border-[#D6E0EA] bg-white px-3 py-2 sibs-text-xs font-semibold leading-5 text-[#344054] outline-none transition placeholder:text-slate-400 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 disabled:cursor-not-allowed disabled:bg-slate-100"
+            className="w-full resize-none rounded-[10px] border border-sibs-border bg-white px-3 py-2 sibs-text-xs font-semibold leading-5 text-sibs-navy outline-none transition placeholder:text-sibs-faint focus:border-sibs-navy focus:ring-4 focus:ring-sibs-navy/10 disabled:cursor-not-allowed disabled:bg-slate-100"
           />
         </CandidateModalSection>
 
         {errorMessage && (
-          <div className="rounded-xl border border-red-100 bg-red-50 px-4 py-3 sibs-text-xs font-bold leading-5 text-red-600">
+          <div className="rounded-[10px] border border-red-100 bg-red-50 px-4 py-3 sibs-text-xs font-bold leading-5 text-red-600">
             {errorMessage}
           </div>
         )}

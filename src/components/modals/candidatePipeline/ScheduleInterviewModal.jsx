@@ -68,11 +68,11 @@ const HOUR_OPTIONS = Array.from({ length: 12 }, (_, index) => {
 });
 
 const SCHEDULE_FIELD_LABEL_CLASS =
-  "mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]";
+  "mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-sibs-faint";
 const SCHEDULE_INPUT_CLASS =
-  "h-8.5 2xl:h-10 w-full rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-3 sibs-text-xs font-semibold text-[#042C51] outline-none transition placeholder:text-[#6B88A8] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:border-[#E6ECF2] disabled:bg-[#F2F4F7] disabled:text-[#98A2B3] disabled:hover:border-[#E6ECF2] disabled:hover:bg-[#F2F4F7] disabled:focus:ring-0";
+  "h-8.5 2xl:h-10 w-full rounded-[10px] border border-sibs-border bg-sibs-surface px-3 sibs-text-xs font-semibold text-sibs-navy outline-none transition placeholder:text-sibs-faint hover:border-sibs-orange/40 hover:bg-white focus:border-sibs-orange focus:bg-white focus:ring-4 focus:ring-sibs-orange/10 disabled:cursor-not-allowed disabled:border-sibs-border disabled:bg-slate-100 disabled:text-sibs-faint disabled:hover:border-sibs-border disabled:hover:bg-slate-100 disabled:focus:ring-0";
 const SCHEDULE_TEXTAREA_CLASS =
-  "min-h-18 2xl:min-h-24 w-full resize-none rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-3 py-2 sibs-text-xs font-semibold leading-5 text-[#042C51] outline-none transition placeholder:text-[#6B88A8] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10";
+  "min-h-18 2xl:min-h-24 w-full resize-none rounded-[10px] border border-sibs-border bg-sibs-surface px-3 py-2 sibs-text-xs font-semibold leading-5 text-sibs-navy outline-none transition placeholder:text-sibs-faint hover:border-sibs-orange/40 hover:bg-white focus:border-sibs-orange focus:bg-white focus:ring-4 focus:ring-sibs-orange/10";
 
 function cleanText(value) {
   return String(value ?? "").trim();
@@ -363,19 +363,19 @@ function PickerDropdown({
         type="button"
         disabled={disabled}
         onClick={toggleOpen}
-        className={`flex h-10 w-full min-w-0 items-center justify-between gap-3 rounded-xl border bg-[#F8FAFC] px-3 text-left font-jakarta ${textClassName} font-bold shadow-sm outline-none transition ${
+        className={`flex h-10 w-full min-w-0 items-center justify-between gap-3 rounded-[10px] border bg-sibs-surface px-3 text-left font-jakarta ${textClassName} font-bold shadow-sm outline-none transition ${
           open
-            ? "border-[#FF5C28] bg-white ring-4 ring-[#FF5C28]/10"
-            : "border-[#D7DEE8] hover:border-[#FF5C28]/40 hover:bg-white"
+            ? "border-sibs-orange bg-white ring-4 ring-sibs-orange/10"
+            : "border-sibs-border hover:border-sibs-orange/40 hover:bg-white"
         } ${
           disabled
-            ? "cursor-not-allowed bg-[#F2F4F7] text-[#98A2B3] opacity-70"
-            : "text-[#042C51]"
+            ? "cursor-not-allowed bg-slate-100 text-sibs-faint opacity-70"
+            : "text-sibs-navy"
         } ${buttonClassName}`}
       >
         <span
           className={`min-w-0 flex-1 truncate ${
-            selectedOption ? "text-[#042C51]" : "text-[#6B88A8]"
+            selectedOption ? "text-sibs-navy" : "text-sibs-faint"
           }`}
         >
           {selectedOption?.label || placeholder}
@@ -383,7 +383,7 @@ function PickerDropdown({
 
         <ChevronDown
           size={16}
-          className={`shrink-0 text-[#315B7E] transition-transform duration-200 ${
+          className={`shrink-0 text-sibs-navy transition-transform duration-200 ${
             open ? "rotate-180" : ""
           }`}
         />
@@ -391,7 +391,7 @@ function PickerDropdown({
 
       {open && !disabled && (
         <div
-          className={`sibs-dropdown-pop-in absolute left-0 top-[calc(100%+8px)] z-[99999] max-h-[260px] w-full overflow-hidden rounded-[10px] border border-[#D9E2EC] bg-white font-jakarta shadow-[0_20px_25px_-5px_rgba(4,44,81,0.16),0_8px_10px_-6px_rgba(4,44,81,0.14)] ${menuClassName}`}
+          className={`sibs-dropdown-pop-in absolute left-0 top-[calc(100%+8px)] z-[99999] max-h-[260px] w-full overflow-hidden rounded-[10px] border border-sibs-border bg-white font-jakarta shadow-[0_20px_25px_-5px_rgba(4,44,81,0.16),0_8px_10px_-6px_rgba(4,44,81,0.14)] ${menuClassName}`}
         >
           <div className="max-h-[260px] overflow-y-auto py-1">
             {options.map((option) => {
@@ -405,10 +405,10 @@ function PickerDropdown({
                   onClick={() => handleSelect(option)}
                   className={`flex min-h-[38px] w-full items-center justify-between gap-3 px-3 text-left font-jakarta ${textClassName} font-semibold transition ${
                     option.disabled
-                      ? "cursor-not-allowed bg-white text-[#C8D2DE]"
+                      ? "cursor-not-allowed bg-white text-slate-300"
                       : active
-                        ? "bg-[#FFF4EF] text-[#FF5C28]"
-                        : "bg-white text-[#31465B] hover:bg-[#FFF8F5] hover:text-[#FF5C28]"
+                        ? "bg-sibs-cream-light text-sibs-orange"
+                        : "bg-white text-sibs-navy hover:bg-sibs-cream-light hover:text-sibs-orange"
                   }`}
                 >
                   <span>{option.label}</span>
@@ -682,7 +682,7 @@ function DateTimePicker({ value, onChange }) {
   }
 
   return (
-    <div ref={pickerRef} className="relative font-jakarta text-[#042C51]">
+    <div ref={pickerRef} className="relative font-jakarta text-sibs-navy">
       <button
         type="button"
         onClick={() => {
@@ -696,33 +696,33 @@ function DateTimePicker({ value, onChange }) {
             return nextOpen;
           });
         }}
-        className={`flex h-10 w-full items-center justify-between gap-3 rounded-xl border bg-[#F8FAFC] px-3 text-left font-jakarta sibs-text-xs font-bold shadow-sm outline-none transition ${
+        className={`flex h-10 w-full items-center justify-between gap-3 rounded-[10px] border bg-sibs-surface px-3 text-left font-jakarta sibs-text-xs font-bold shadow-sm outline-none transition ${
           open
-            ? "border-[#FF5C28] bg-white ring-4 ring-[#FF5C28]/10"
-            : "border-[#D7DEE8] hover:border-[#FF5C28]/40 hover:bg-white"
+            ? "border-sibs-orange bg-white ring-4 ring-sibs-orange/10"
+            : "border-sibs-border hover:border-sibs-orange/40 hover:bg-white"
         }`}
       >
         <span
           className={`min-w-0 flex-1 truncate ${
-            displayValue ? "text-[#042C51]" : "text-[#6B88A8]"
+            displayValue ? "text-sibs-navy" : "text-sibs-faint"
           }`}
         >
           {formatDateTimeDisplay(displayValue)}
         </span>
 
-        <CalendarDays size={17} className="shrink-0 text-[#315B7E]" />
+        <CalendarDays size={17} className="shrink-0 text-sibs-navy" />
       </button>
 
       {open && (
-        <div className="sibs-dropdown-pop-in mt-3 overflow-visible rounded-xl border border-[#D9E2EC] bg-white font-jakarta shadow-[0_20px_25px_-5px_rgba(4,44,81,0.16),0_8px_10px_-6px_rgba(4,44,81,0.14)]">
+        <div className="sibs-dropdown-pop-in mt-3 overflow-visible rounded-[10px] border border-sibs-border bg-white font-jakarta shadow-[0_20px_25px_-5px_rgba(4,44,81,0.16),0_8px_10px_-6px_rgba(4,44,81,0.14)]">
           <div className="grid grid-cols-1 lg:grid-cols-[1.15fr_0.85fr]">
-            <div className="border-b border-[#E6ECF2] p-4 lg:border-b-0 lg:border-r">
+            <div className="border-b border-sibs-border p-4 lg:border-b-0 lg:border-r">
               <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <button
                   type="button"
                   onClick={handlePreviousMonth}
                   disabled={disablePreviousMonth}
-                  className="hidden h-9 w-9 items-center justify-center rounded-xl border border-[#D9E2EC] bg-white text-[#315B7E] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-[#D9E2EC] disabled:hover:bg-white disabled:hover:text-[#315B7E] sm:flex"
+                  className="hidden h-9 w-9 items-center justify-center rounded-[10px] border border-sibs-border bg-white text-sibs-navy transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-sibs-border disabled:hover:bg-white disabled:hover:text-sibs-navy sm:flex"
                 >
                   <ChevronLeft size={18} />
                 </button>
@@ -752,7 +752,7 @@ function DateTimePicker({ value, onChange }) {
                 <button
                   type="button"
                   onClick={handleNextMonth}
-                  className="hidden h-9 w-9 items-center justify-center rounded-xl border border-[#D9E2EC] bg-white text-[#315B7E] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28] sm:flex"
+                  className="hidden h-9 w-9 items-center justify-center rounded-[10px] border border-sibs-border bg-white text-sibs-navy transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange sm:flex"
                 >
                   <ChevronRight size={18} />
                 </button>
@@ -762,7 +762,7 @@ function DateTimePicker({ value, onChange }) {
                     type="button"
                     onClick={handlePreviousMonth}
                     disabled={disablePreviousMonth}
-                    className="inline-flex h-9 items-center justify-center gap-2 rounded-xl border border-[#D9E2EC] bg-white font-jakarta sibs-text-xs font-bold text-[#315B7E] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-[#D9E2EC] disabled:hover:bg-white disabled:hover:text-[#315B7E]"
+                    className="inline-flex h-9 items-center justify-center gap-2 rounded-[10px] border border-sibs-border bg-white font-jakarta sibs-text-xs font-bold text-sibs-navy transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-sibs-border disabled:hover:bg-white disabled:hover:text-sibs-navy"
                   >
                     <ChevronLeft size={16} />
                     Previous
@@ -771,7 +771,7 @@ function DateTimePicker({ value, onChange }) {
                   <button
                     type="button"
                     onClick={handleNextMonth}
-                    className="inline-flex h-9 items-center justify-center gap-2 rounded-xl border border-[#D9E2EC] bg-white font-jakarta sibs-text-xs font-bold text-[#315B7E] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28]"
+                    className="inline-flex h-9 items-center justify-center gap-2 rounded-[10px] border border-sibs-border bg-white font-jakarta sibs-text-xs font-bold text-sibs-navy transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange"
                   >
                     Next
                     <ChevronRight size={16} />
@@ -783,7 +783,7 @@ function DateTimePicker({ value, onChange }) {
                 {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((day) => (
                   <div
                     key={day}
-                    className="py-2 font-jakarta sibs-kicker text-[#7D8FA5]"
+                    className="py-2 font-jakarta sibs-kicker text-sibs-muted"
                   >
                     {day}
                   </div>
@@ -800,16 +800,16 @@ function DateTimePicker({ value, onChange }) {
                       type="button"
                       disabled={disabledDay}
                       onClick={() => handleDateSelect(item.date)}
-                      className={`flex h-9 items-center justify-center rounded-xl font-jakarta sibs-text-xs font-bold tabular-nums transition ${
+                      className={`flex h-9 items-center justify-center rounded-[10px] font-jakarta sibs-text-xs font-bold tabular-nums transition ${
                         disabledDay
-                          ? "cursor-not-allowed text-[#C8D2DE] opacity-50"
+                          ? "cursor-not-allowed text-slate-300 opacity-50"
                           : active
-                            ? "bg-[#FF5C28] text-white shadow-sm"
+                            ? "bg-sibs-orange text-white shadow-sm"
                             : today
-                              ? "border border-[#FF5C28]/30 bg-[#FFF4EF] text-[#FF5C28]"
+                              ? "border border-sibs-orange/30 bg-sibs-cream-light text-sibs-orange"
                               : item.currentMonth
-                                ? "text-[#31465B] hover:bg-[#FFF8F5] hover:text-[#FF5C28]"
-                                : "text-[#9BAAC0] hover:bg-[#FFF8F5] hover:text-[#FF5C28]"
+                                ? "text-sibs-navy hover:bg-sibs-cream-light hover:text-sibs-orange"
+                                : "text-sibs-faint hover:bg-sibs-cream-light hover:text-sibs-orange"
                       }`}
                     >
                       {item.date.getDate()}
@@ -826,7 +826,7 @@ function DateTimePicker({ value, onChange }) {
                     setOpen(false);
                     setOpenDropdown("");
                   }}
-                  className="font-jakarta sibs-text-xs font-bold text-[#E5484D] transition hover:text-[#C9363B]"
+                  className="font-jakarta sibs-text-xs font-bold text-rose-600 transition hover:text-rose-700"
                 >
                   Clear
                 </button>
@@ -834,22 +834,22 @@ function DateTimePicker({ value, onChange }) {
                 <button
                   type="button"
                   onClick={setToday}
-                  className="font-jakarta sibs-text-xs font-bold text-[#FF5C28] transition hover:text-[#E84B1A]"
+                  className="font-jakarta sibs-text-xs font-bold text-sibs-orange transition hover:text-sibs-orange-deep"
                 >
                   Today
                 </button>
               </div>
             </div>
 
-            <div className="bg-[#F8FAFC] p-4">
-              <div className="mb-3 flex items-center gap-2 text-[#042C51]">
+            <div className="bg-sibs-surface p-4">
+              <div className="mb-3 flex items-center gap-2 text-sibs-navy">
                 <Clock size={15} />
                 <p className="font-jakarta sibs-text-xs font-extrabold">Select Time</p>
               </div>
 
               <div className="grid grid-cols-[1fr_1fr_auto] gap-2">
                 <div>
-                  <label className="mb-1 block font-jakarta sibs-kicker text-[#7D8FA5]">
+                  <label className="mb-1 block font-jakarta sibs-kicker text-sibs-muted">
                     Hour
                   </label>
 
@@ -873,7 +873,7 @@ function DateTimePicker({ value, onChange }) {
                 </div>
 
                 <div>
-                  <label className="mb-1 block font-jakarta sibs-kicker text-[#7D8FA5]">
+                  <label className="mb-1 block font-jakarta sibs-kicker text-sibs-muted">
                     Minute
                   </label>
 
@@ -898,11 +898,11 @@ function DateTimePicker({ value, onChange }) {
                 </div>
 
                 <div>
-                  <label className="mb-1 block font-jakarta sibs-kicker text-[#7D8FA5]">
+                  <label className="mb-1 block font-jakarta sibs-kicker text-sibs-muted">
                     AM/PM
                   </label>
 
-                  <div className="flex h-9 overflow-hidden rounded-xl border border-[#D7DEE8] bg-white">
+                  <div className="flex h-9 overflow-hidden rounded-[10px] border border-sibs-border bg-white">
                     {["AM", "PM"].map((item) => (
                       <button
                         key={item}
@@ -910,8 +910,8 @@ function DateTimePicker({ value, onChange }) {
                         onClick={() => handlePeriodChange(item)}
                         className={`w-12 font-jakarta sibs-text-micro font-bold transition ${
                           period === item
-                            ? "bg-[#FF5C28] text-white"
-                            : "bg-white text-[#315B7E] hover:bg-[#FFF8F5] hover:text-[#FF5C28]"
+                            ? "bg-sibs-orange text-white"
+                            : "bg-white text-sibs-navy hover:bg-sibs-cream-light hover:text-sibs-orange"
                         }`}
                       >
                         {item}
@@ -921,12 +921,12 @@ function DateTimePicker({ value, onChange }) {
                 </div>
               </div>
 
-              <div className="mt-4 rounded-xl border border-[#D9E2EC] bg-white p-3">
-                <p className="font-jakarta sibs-kicker text-[#7D8FA5]">
+              <div className="mt-4 rounded-[10px] border border-sibs-border bg-white p-3">
+                <p className="font-jakarta sibs-kicker text-sibs-muted">
                   Selected Schedule
                 </p>
 
-                <p className="mt-1 font-jakarta sibs-text-xs font-extrabold text-[#042C51]">
+                <p className="mt-1 font-jakarta sibs-text-xs font-extrabold text-sibs-navy">
                   {formatDateTimeDisplay(displayValue)}
                 </p>
               </div>
@@ -938,7 +938,7 @@ function DateTimePicker({ value, onChange }) {
                   setOpen(false);
                   setOpenDropdown("");
                 }}
-                className="mt-4 inline-flex h-8.5 2xl:h-10 w-full items-center justify-center gap-2 rounded-xl bg-[#FF5C28] px-4 font-jakarta sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E84B1A] disabled:cursor-not-allowed disabled:opacity-70"
+                className="mt-4 inline-flex h-8.5 2xl:h-10 w-full items-center justify-center gap-2 rounded-[10px] bg-sibs-orange px-4 font-jakarta sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-sibs-orange-deep disabled:cursor-not-allowed disabled:opacity-70"
               >
                 <Check size={14} />
                 Apply Schedule
@@ -1057,7 +1057,7 @@ const ScheduleInterviewModal = ({
         >
           <div>
             <label className={SCHEDULE_FIELD_LABEL_CLASS}>
-              Interview Date and Time <span className="text-[#FF5C28]"> *</span>
+              Interview Date and Time <span className="text-sibs-orange"> *</span>
             </label>
             <DateTimePicker
               value={form.interviewDate}
@@ -1070,7 +1070,7 @@ const ScheduleInterviewModal = ({
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div>
               <label className={SCHEDULE_FIELD_LABEL_CLASS}>
-                Interview Type <span className="text-[#FF5C28]"> *</span>
+                Interview Type <span className="text-sibs-orange"> *</span>
               </label>
               <InterviewTypeDropdown
                 value={form.interviewType}
@@ -1086,7 +1086,7 @@ const ScheduleInterviewModal = ({
 
             <div>
               <label className={SCHEDULE_FIELD_LABEL_CLASS}>
-                Online Interview Link {form.interviewType === "Online" && <span className="text-[#FF5C28]"> *</span>}
+                Online Interview Link {form.interviewType === "Online" && <span className="text-sibs-orange"> *</span>}
               </label>
               <input
                 type="text"

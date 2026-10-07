@@ -5,7 +5,7 @@ function SkeletonBlock({ className = "" }) {
   return (
     <div
       aria-hidden="true"
-      className={`animate-pulse rounded-lg bg-slate-200 ${className}`}
+      className={`animate-pulse rounded-[10px] bg-slate-200 ${className}`}
     />
   );
 }
@@ -28,8 +28,8 @@ export default function OfferApprovalSkeletonModal({
       onClick={(event) => event.stopPropagation()}
       onMouseDown={(event) => event.stopPropagation()}
     >
-      <div className="sibs-modal-pop-in w-full max-w-[440px] overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white shadow-[0_24px_80px_rgba(15,23,42,0.28)]">
-        <div className="border-b border-[#E6ECF2] px-6 py-5">
+      <div className="sibs-modal-pop-in w-full max-w-[440px] overflow-hidden rounded-[14px] border border-sibs-border bg-white shadow-[0_24px_80px_rgba(15,23,42,0.28)]">
+        <div className="border-b border-sibs-border px-6 py-5">
           <div className="flex items-center gap-4">
             <SkeletonBlock className="h-12 w-12 shrink-0 rounded-full bg-emerald-100" />
 
@@ -41,7 +41,7 @@ export default function OfferApprovalSkeletonModal({
         </div>
 
         <div className="space-y-4 px-6 py-6">
-          <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4">
+          <div className="rounded-[10px] border border-sibs-border bg-slate-50 p-4">
             <div className="flex items-center justify-between gap-4">
               <SkeletonBlock className="h-3 w-28" />
               <SkeletonBlock className="h-7 w-20 rounded-full bg-emerald-100" />

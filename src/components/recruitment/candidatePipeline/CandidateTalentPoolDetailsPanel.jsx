@@ -1706,7 +1706,7 @@ const CandidateTalentPoolDetailsPanel = ({ candidate }) => {
   const references = Array.isArray(data.references) ? data.references : [];
 
   return (
-    <section className="relative overflow-hidden rounded-2xl border border-sibs-border bg-white p-4 shadow-[0_10px_28px_rgba(4,44,81,0.05)] sm:p-5 2xl:p-6">
+    <section className="relative overflow-hidden rounded-[10px] border border-sibs-border bg-white p-4 shadow-[0_10px_28px_rgba(4,44,81,0.05)] sm:p-5 2xl:p-6">
       <div className="mb-4 flex items-start gap-2.5 border-b border-sibs-border pb-3.5">
         <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] border border-sibs-border bg-sibs-surface text-sibs-navy"><Sparkles size={15} /></span>
         <div className="min-w-0 flex-1">
@@ -1717,11 +1717,11 @@ const CandidateTalentPoolDetailsPanel = ({ candidate }) => {
       </div>
 
       <div className="space-y-5">
-        <section className="relative overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-[0_4px_12px_rgba(4,44,81,0.06)]">
+        <section className="relative overflow-hidden rounded-[10px] border border-sibs-border bg-white shadow-[0_4px_12px_rgba(4,44,81,0.06)]">
           <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-sibs-navy via-sibs-navy to-sibs-orange" />
           <div className="flex flex-col gap-4 px-5 pb-4 pt-5 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex min-w-0 items-start gap-4">
-              <div className="relative flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-sibs-navy text-sm font-extrabold text-white shadow-sm">
+              <div className="relative flex h-14 w-14 shrink-0 items-center justify-center rounded-[10px] bg-sibs-navy text-sm font-extrabold text-white shadow-sm">
                 {candidateInitials}<span className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-2 border-white bg-emerald-500" />
               </div>
               <div className="min-w-0 flex-1">
@@ -1771,7 +1771,7 @@ const CandidateTalentPoolDetailsPanel = ({ candidate }) => {
 
         <SubmittedDetailsSection title="Work Experience & Employment History">
           {workExperiences.length ? <div className="space-y-4">{workExperiences.map((experience, index) => (
-            <div key={`${experience.company || experience.role || "experience"}-${index}`} className="rounded-xl border border-sibs-border bg-sibs-surface p-4">
+            <div key={`${experience.company || experience.role || "experience"}-${index}`} className="rounded-[10px] border border-sibs-border bg-sibs-surface p-4">
               <p className="mb-3 text-[9px] font-extrabold uppercase text-sibs-orange">Experience {index + 1}</p>
               <div className="grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2 xl:grid-cols-4">
                 <SubmittedDetailField label="Industry" value={experience.industry} icon={BriefcaseBusiness} /><SubmittedDetailField label="Length of Experience" value={experience.lengthOfWorkExperience || experience.years} icon={CalendarDays} /><SubmittedDetailField label="Role / Position" value={experience.role} icon={BriefcaseBusiness} /><SubmittedDetailField label="Company" value={experience.company} icon={School} /><SubmittedDetailField label="Monthly Compensation" value={experience.monthlyCompensationFormatted || experience.monthlyCompensation} icon={BadgeCheck} /><SubmittedDetailField label="Reason for Leaving" value={experience.reasonForLeaving} icon={FileText} className="xl:col-span-3" />
@@ -1802,7 +1802,7 @@ const CandidateTalentPoolDetailsPanel = ({ candidate }) => {
           </div>
         </SubmittedDetailsSection>
 
-        <div className="flex items-center gap-2 rounded-xl border border-sibs-border bg-sibs-surface px-3 py-2.5 text-[10px] font-semibold leading-5 text-sibs-muted"><FileText size={14} className="shrink-0 text-sibs-navy" />This section is read-only and reflects the profile submitted through Talent Pool / Public Form.</div>
+        <div className="flex items-center gap-2 rounded-[10px] border border-sibs-border bg-sibs-surface px-3 py-2.5 text-[10px] font-semibold leading-5 text-sibs-muted"><FileText size={14} className="shrink-0 text-sibs-navy" />This section is read-only and reflects the profile submitted through Talent Pool / Public Form.</div>
       </div>
     </section>
   );

@@ -8,8 +8,8 @@ import PipelineListView from "./PipelineListView";
 
 const BOARD_SCROLLBAR_CLASS =
   "sibs-scrollbar [&::-webkit-scrollbar]:h-2 [&::-webkit-scrollbar-track]:rounded-full " +
-  "[&::-webkit-scrollbar-track]:bg-[#E6ECF2] [&::-webkit-scrollbar-thumb]:rounded-full " +
-  "[&::-webkit-scrollbar-thumb]:bg-[#94A9C1] [&::-webkit-scrollbar-thumb:hover]:bg-[#6B88A8]";
+  "[&::-webkit-scrollbar-track]:bg-sibs-border [&::-webkit-scrollbar-thumb]:rounded-full " +
+  "[&::-webkit-scrollbar-thumb]:bg-slate-400 [&::-webkit-scrollbar-thumb:hover]:bg-slate-500";
 
 const COLUMN_SCROLLBAR_CLASS =
   "sibs-scrollbar [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent";
@@ -177,7 +177,7 @@ export default function PipelineCardsBoard({
       onMouseMove={handleBoardMouseMove}
       onMouseUp={handleBoardMouseUp}
       onMouseLeave={handleBoardMouseLeave}
-      className={`overflow-x-auto bg-[#F8FAFC] p-1.5 pb-3 select-none sm:p-2 sm:pb-4 ${BOARD_SCROLLBAR_CLASS} ${
+      className={`overflow-x-auto bg-sibs-surface p-1.5 pb-3 select-none sm:p-2 sm:pb-4 ${BOARD_SCROLLBAR_CLASS} ${
         isDraggingBoard ? "cursor-grabbing" : "cursor-default"
       }`}
     >
@@ -194,10 +194,10 @@ export default function PipelineCardsBoard({
             <div
               key={stage}
               style={{ animationDelay: `${stageIndex * 60}ms`, animationFillMode: "both" }}
-              className="sibs-page-card-in flex h-[520px] 2xl:h-[720px] w-[275px] 2xl:w-[292px] shrink-0 flex-col overflow-hidden rounded-2xl border border-[#D7DEE8] bg-[#EEF3F8] shadow-[0_7px_18px_rgba(4,44,81,0.035)] transition"
+              className="sibs-page-card-in flex h-[520px] 2xl:h-[720px] w-[275px] 2xl:w-[292px] shrink-0 flex-col overflow-hidden rounded-2xl border border-sibs-border bg-slate-100/70 shadow-[0_7px_18px_rgba(4,44,81,0.035)] transition"
             >
               <div
-                className={`mx-1.5 mt-1.5 flex min-h-[38px] 2xl:min-h-[44px] items-center justify-between gap-2 rounded-xl border px-2.5 2xl:px-3 text-left shadow-[0_1px_2px_rgba(4,44,81,0.025)] ${theme.header}`}
+                className={`mx-1.5 mt-1.5 flex min-h-[38px] 2xl:min-h-[44px] items-center justify-between gap-2 rounded-[10px] border px-2.5 2xl:px-3 text-left shadow-[0_1px_2px_rgba(4,44,81,0.025)] ${theme.header}`}
               >
                 <div className="flex min-w-0 items-center gap-2">
                   <span
@@ -252,12 +252,12 @@ export default function PipelineCardsBoard({
                     </div>
                   ))
                 ) : (
-                  <div className="mx-0.5 flex min-h-[112px] items-center justify-center rounded-xl border border-dashed border-[#D6E0EA] bg-white/70 px-4 text-center">
+                  <div className="mx-0.5 flex min-h-[112px] items-center justify-center rounded-[10px] border border-dashed border-sibs-border bg-white/70 px-4 text-center">
                     <div>
-                      <p className="sibs-text-xs font-extrabold text-[#667085]">
+                      <p className="sibs-text-xs font-extrabold text-sibs-muted">
                         No candidates
                       </p>
-                      <p className="mt-1 text-[9px] font-semibold text-[#98A2B3]">
+                      <p className="mt-1 text-[9px] font-semibold text-sibs-faint">
                         This stage is currently empty.
                       </p>
                     </div>

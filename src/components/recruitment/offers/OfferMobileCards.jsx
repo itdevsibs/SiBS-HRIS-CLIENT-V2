@@ -93,11 +93,11 @@ export default function OfferMobileCards({
               title={offer.candidateName || "—"}
               subtitle={
                 <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
-                  <span className="font-mono text-[10px] font-extrabold uppercase tracking-wide text-[#FF5C28]">
+                  <span className="font-mono text-[10px] font-extrabold uppercase tracking-wide text-sibs-orange">
                     {offer.offerId || "—"}
                   </span>
                   {offer.candidateId && (
-                    <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-[#667085]">
+                    <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-sibs-muted">
                       {offer.candidateId}
                     </span>
                   )}
@@ -105,7 +105,7 @@ export default function OfferMobileCards({
               }
               badge={
                 <span
-                  className={`inline-flex shrink-0 items-center justify-center rounded-lg border px-2.5 py-0.5 text-[10px] font-extrabold ${getStatusClass(
+                  className={`inline-flex shrink-0 items-center justify-center rounded-[10px] border px-2.5 py-0.5 text-[10px] font-extrabold ${getStatusClass(
                     displayStatus,
                   )}`}
                 >
@@ -116,28 +116,28 @@ export default function OfferMobileCards({
 
             <DataCard.ContextRow>
               <div className="min-w-0 flex-1">
-                <p className="text-[9px] font-extrabold uppercase tracking-wider text-[#8A98B8]">
+                <p className="text-[9px] font-extrabold uppercase tracking-wider text-sibs-muted">
                   Final Role / Account
                 </p>
-                <p className="mt-0.5 truncate text-xs font-bold text-[#042C51]">
+                <p className="mt-0.5 truncate text-xs font-bold text-sibs-navy">
                   {offer.roleTitle || "—"}
                 </p>
-                <p className="truncate text-[11px] font-semibold text-[#667085]">
+                <p className="truncate text-[11px] font-semibold text-sibs-muted">
                   {offer.account || "—"}
                 </p>
               </div>
-              <div className="min-w-0 flex-1 border-l border-[#E6ECF2] pl-2.5">
-                <p className="text-[9px] font-extrabold uppercase tracking-wider text-[#8A98B8]">
+              <div className="min-w-0 flex-1 border-l border-sibs-border pl-2.5">
+                <p className="text-[9px] font-extrabold uppercase tracking-wider text-sibs-muted">
                   Owner
                 </p>
                 <div className="mt-1 flex min-w-0 flex-col items-start gap-1">
                   {ownerRoleLabel ? (
-                    <span className="inline-flex w-fit items-center rounded-full border border-[#B2CCFF] bg-[#EFF4FF] px-2 py-0.5 text-[9px] font-extrabold leading-none text-[#175CD3]">
+                    <span className="inline-flex w-fit items-center rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 text-[9px] font-extrabold leading-none text-blue-700">
                       {ownerRoleLabel}
                     </span>
                   ) : null}
-                  <p className="flex min-w-0 items-start gap-1 text-xs font-bold leading-4 text-[#042C51]">
-                    <UserRound size={11} className="mt-0.5 shrink-0 text-[#98A2B3]" />
+                  <p className="flex min-w-0 items-start gap-1 text-xs font-bold leading-4 text-sibs-navy">
+                    <UserRound size={11} className="mt-0.5 shrink-0 text-sibs-muted" />
                     <span className="line-clamp-2 break-words">{ownerDisplay}</span>
                   </p>
                 </div>
@@ -148,36 +148,36 @@ export default function OfferMobileCards({
               <DataCard.MetricItem
                 label="Assessment"
                 value={scores.assessment.display}
-                valueClassName="text-xs font-extrabold text-[#042C51]"
+                valueClassName="text-xs font-extrabold text-sibs-navy"
               />
               <DataCard.MetricItem
                 label="Job Eval"
                 value={scores.jobEvaluation.display}
-                valueClassName="text-xs font-extrabold text-[#042C51]"
+                valueClassName="text-xs font-extrabold text-sibs-navy"
               />
               <DataCard.MetricItem
                 label="Interview"
                 value={scores.finalInterview.display}
-                valueClassName="text-xs font-extrabold text-[#042C51]"
+                valueClassName="text-xs font-extrabold text-sibs-navy"
               />
             </DataCard.Metrics>
 
-            <div className="mt-2.5 rounded-xl border border-blue-100 bg-blue-50/70 p-2.5">
+            <div className="mt-2.5 rounded-[10px] border border-blue-100 bg-blue-50/70 p-2.5">
               <div className="flex flex-wrap items-center justify-between gap-1.5">
-                <span className="text-[9px] font-extrabold uppercase tracking-wide text-[#042C51]">
+                <span className="text-[9px] font-extrabold uppercase tracking-wide text-sibs-navy">
                   Negotiation
                 </span>
-                <span className="rounded-full bg-white px-2 py-0.5 text-[9px] font-extrabold text-[#042C51] shadow-2xs">
+                <span className="rounded-full bg-white px-2 py-0.5 text-[9px] font-extrabold text-sibs-navy shadow-2xs">
                   Version {negotiation.versionNumber}
                 </span>
               </div>
-              <p className="mt-1 text-[11px] font-bold text-[#344054]">
+              <p className="mt-1 text-[11px] font-bold text-slate-700">
                 {negotiation.hasNegotiation
                   ? negotiation.status
                   : "Original Offer"}
               </p>
               {negotiation.remark && (
-                <p className="mt-0.5 line-clamp-2 text-[10px] font-medium text-[#667085]">
+                <p className="mt-0.5 line-clamp-2 text-[10px] font-medium text-sibs-muted">
                   {negotiation.remark}
                 </p>
               )}
@@ -187,9 +187,9 @@ export default function OfferMobileCards({
                   e.stopPropagation();
                   openOffer(offer, "negotiation-history");
                 }}
-                className="mt-2 inline-flex h-7.5 items-center gap-1.5 rounded-lg border border-blue-200 bg-white px-2.5 text-[10px] font-extrabold text-[#042C51] transition hover:bg-blue-50 active:scale-95"
+                className="mt-2 inline-flex h-7.5 items-center gap-1.5 rounded-[10px] border border-blue-200 bg-white px-2.5 text-[10px] font-extrabold text-sibs-navy transition hover:bg-blue-50 active:scale-95"
               >
-                <History size={12} className="text-[#FF5C28]" />
+                <History size={12} className="text-sibs-orange" />
                 View History
               </button>
             </div>
@@ -202,7 +202,7 @@ export default function OfferMobileCards({
                     e.stopPropagation();
                     openOffer(offer);
                   }}
-                  className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-[#D6DEE8] bg-white px-3 text-[11px] font-extrabold text-[#042C51] transition hover:border-[#FF5C28]/35 hover:bg-[#FFF9F6] hover:text-[#FF5C28] active:scale-95"
+                  className="inline-flex h-8 items-center gap-1.5 rounded-[10px] border border-sibs-border bg-white px-3 text-[11px] font-extrabold text-sibs-navy transition hover:border-sibs-orange/35 hover:bg-sibs-cream-light hover:text-sibs-orange active:scale-95"
                 >
                   <Eye size={13} />
                   View Details
@@ -217,7 +217,7 @@ export default function OfferMobileCards({
                     <button
                       type="button"
                       onClick={() => handleApproval?.(offer, "Rejected")}
-                      className="inline-flex h-8 items-center gap-1 rounded-lg border border-red-200 bg-red-50 px-2.5 text-[10px] font-extrabold text-red-600 transition hover:bg-red-100 active:scale-95"
+                      className="inline-flex h-8 items-center gap-1 rounded-[10px] border border-red-200 bg-red-50 px-2.5 text-[10px] font-extrabold text-red-600 transition hover:bg-red-100 active:scale-95"
                     >
                       <X size={13} />
                       Decline
@@ -226,7 +226,7 @@ export default function OfferMobileCards({
                       <button
                         type="button"
                         onClick={() => handleApproval?.(offer, "Approved")}
-                        className="inline-flex h-8 items-center gap-1 rounded-lg bg-[#042C51] px-2.5 text-[10px] font-extrabold text-white transition hover:bg-[#063b6d] active:scale-95"
+                        className="inline-flex h-8 items-center gap-1 rounded-[10px] bg-sibs-navy px-2.5 text-[10px] font-extrabold text-white transition hover:bg-sibs-navy-light active:scale-95"
                       >
                         <Check size={13} />
                         Approve

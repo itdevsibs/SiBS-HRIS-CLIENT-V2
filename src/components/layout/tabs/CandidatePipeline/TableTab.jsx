@@ -56,7 +56,7 @@ function CandidateTableMobileCard({ candidate, onView, onOpenMoveModal }) {
   const nextStage = getNextStage(candidate.currentStage);
 
   return (
-    <div className="w-full rounded-2xl border border-[#E6ECF2] bg-white p-4 text-left shadow-sm transition hover:border-sibs-primary-1/40 hover:bg-[#F8FAFC]">
+    <div className="w-full rounded-[10px] border border-sibs-border bg-white p-4 text-left shadow-sm transition hover:border-sibs-primary-1/40 hover:bg-sibs-surface">
       <button type="button" onClick={onView} className="block w-full text-left">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
@@ -64,7 +64,7 @@ function CandidateTableMobileCard({ candidate, onView, onOpenMoveModal }) {
               {candidate.candidateId}
             </p>
 
-            <h3 className="mt-1 break-words text-sm font-bold leading-5 text-[#101828]">
+            <h3 className="mt-1 break-words text-sm font-bold leading-5 text-sibs-navy">
               {candidate.name}
             </h3>
 
@@ -83,22 +83,22 @@ function CandidateTableMobileCard({ candidate, onView, onOpenMoveModal }) {
         </div>
 
         <div className="mt-4 grid grid-cols-2 gap-2">
-          <div className="min-w-0 rounded-xl bg-[#F8FAFC] p-3">
+          <div className="min-w-0 rounded-[10px] bg-sibs-surface p-3">
             <p className="text-[10px] font-bold uppercase text-sibs-tertiary-5">
               Owner
             </p>
 
-            <p className="mt-1 break-words text-xs font-bold leading-5 text-[#344054]">
+            <p className="mt-1 break-words text-xs font-bold leading-5 text-sibs-navy">
               {candidate.owner || "—"}
             </p>
           </div>
 
-          <div className="min-w-0 rounded-xl bg-[#F8FAFC] p-3">
+          <div className="min-w-0 rounded-[10px] bg-sibs-surface p-3">
             <p className="text-[10px] font-bold uppercase text-sibs-tertiary-5">
               Source
             </p>
 
-            <p className="mt-1 break-words text-xs font-bold leading-5 text-[#344054]">
+            <p className="mt-1 break-words text-xs font-bold leading-5 text-sibs-navy">
               {candidate.source || "—"}
             </p>
           </div>
@@ -106,13 +106,13 @@ function CandidateTableMobileCard({ candidate, onView, onOpenMoveModal }) {
 
         <div className="mt-3 text-xs font-semibold leading-5 text-sibs-tertiary-5">
           Date Moved:{" "}
-          <span className="font-bold text-[#344054]">
+          <span className="font-bold text-sibs-navy">
             {formatDate(candidate.dateMoved)}
           </span>
         </div>
 
         {candidate.dropOffReason && (
-          <div className="mt-3 rounded-xl border border-red-100 bg-red-50 p-3 text-xs font-semibold leading-5 text-red-700">
+          <div className="mt-3 rounded-[10px] border border-red-100 bg-red-50 p-3 text-xs font-semibold leading-5 text-red-700">
             {candidate.dropOffReason}
           </div>
         )}
@@ -122,7 +122,7 @@ function CandidateTableMobileCard({ candidate, onView, onOpenMoveModal }) {
         <button
           type="button"
           onClick={onView}
-          className={`inline-flex h-9 min-w-0 items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-3 text-xs font-bold text-sibs-primary-1 transition hover:border-sibs-primary-1 hover:bg-sibs-primary-1/5 ${
+          className={`inline-flex h-9 min-w-0 items-center justify-center gap-2 rounded-[10px] border border-sibs-border bg-white px-3 text-xs font-bold text-sibs-primary-1 transition hover:border-sibs-primary-1 hover:bg-sibs-primary-1/5 ${
             nextStage ? "flex-1" : "w-full"
           }`}
         >
@@ -134,7 +134,7 @@ function CandidateTableMobileCard({ candidate, onView, onOpenMoveModal }) {
           <button
             type="button"
             onClick={() => onOpenMoveModal(candidate)}
-            className="inline-flex h-9 min-w-0 flex-1 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-3 text-xs font-bold text-white transition hover:opacity-90"
+            className="inline-flex h-9 min-w-0 flex-1 items-center justify-center gap-2 rounded-[10px] bg-sibs-primary-1 px-3 text-xs font-bold text-white transition hover:opacity-90"
           >
             <ArrowRight size={15} className="shrink-0" />
             <span>Move</span>
@@ -163,16 +163,16 @@ export default function TableTab({
             />
           ))
         ) : (
-          <div className="rounded-xl border border-[#E6ECF2] bg-white px-5 py-10 text-center text-sm font-bold text-gray-500">
+          <div className="rounded-[10px] border border-sibs-border bg-white px-5 py-10 text-center text-sm font-bold text-gray-500">
             No candidate movement records found.
           </div>
         )}
       </div>
 
-      <div className="hidden overflow-hidden rounded-xl border border-[#E6ECF2] lg:block">
+      <div className="hidden overflow-hidden rounded-[10px] border border-sibs-border lg:block">
         <div className="max-h-[520px] overflow-auto">
           <table className="w-full min-w-[1200px] border-collapse text-left">
-            <thead className="sticky top-0 z-10 bg-[#F8FAFC]">
+            <thead className="sticky top-0 z-10 bg-sibs-surface">
               <tr className="text-xs font-bold uppercase tracking-wide text-sibs-tertiary-5">
                 <th className="px-5 py-4">Candidate</th>
                 <th className="px-5 py-4">Role / Account</th>
@@ -193,10 +193,10 @@ export default function TableTab({
                   return (
                     <tr
                       key={candidate.id}
-                      className="transition hover:bg-[#F8FAFC]"
+                      className="transition hover:bg-sibs-surface"
                     >
                       <td className="px-5 py-4">
-                        <p className="text-sm font-bold text-[#101828]">
+                        <p className="text-sm font-bold text-sibs-navy">
                           {candidate.name}
                         </p>
 
@@ -209,7 +209,7 @@ export default function TableTab({
                         {candidate.roleAccount}
                       </td>
 
-                      <td className="px-5 py-4 text-sm font-semibold text-[#344054]">
+                      <td className="px-5 py-4 text-sm font-semibold text-sibs-navy">
                         {candidate.previousStage || "Initial Entry"}
                       </td>
 
@@ -223,15 +223,15 @@ export default function TableTab({
                         </span>
                       </td>
 
-                      <td className="px-5 py-4 text-sm font-semibold text-[#344054]">
+                      <td className="px-5 py-4 text-sm font-semibold text-sibs-navy">
                         {candidate.owner}
                       </td>
 
-                      <td className="px-5 py-4 text-sm font-semibold text-[#344054]">
+                      <td className="px-5 py-4 text-sm font-semibold text-sibs-navy">
                         {candidate.source}
                       </td>
 
-                      <td className="px-5 py-4 text-sm font-semibold text-[#344054]">
+                      <td className="px-5 py-4 text-sm font-semibold text-sibs-navy">
                         {formatDate(candidate.dateMoved)}
                       </td>
 
@@ -240,7 +240,7 @@ export default function TableTab({
                           <button
                             type="button"
                             onClick={() => onViewCandidate(candidate)}
-                            className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-4 py-2 text-xs font-bold text-sibs-primary-1 transition hover:border-sibs-primary-1 hover:bg-sibs-primary-1/5"
+                            className="inline-flex items-center justify-center gap-2 rounded-[10px] border border-sibs-border bg-white px-4 py-2 text-xs font-bold text-sibs-primary-1 transition hover:border-sibs-primary-1 hover:bg-sibs-primary-1/5"
                           >
                             <Eye size={15} />
                             View
@@ -250,7 +250,7 @@ export default function TableTab({
                             <button
                               type="button"
                               onClick={() => onOpenMoveModal(candidate)}
-                              className="inline-flex items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-4 py-2 text-xs font-bold text-white transition hover:opacity-90"
+                              className="inline-flex items-center justify-center gap-2 rounded-[10px] bg-sibs-primary-1 px-4 py-2 text-xs font-bold text-white transition hover:opacity-90"
                             >
                               <ArrowRight size={15} />
                               Move

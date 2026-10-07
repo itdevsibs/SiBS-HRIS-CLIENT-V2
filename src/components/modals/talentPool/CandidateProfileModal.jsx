@@ -1585,7 +1585,7 @@ function CandidateProfileHorizontalNavigation({
 
   return (
     <nav
-      className="rounded-xl border border-sibs-border bg-white p-1.5 xl:p-2 shadow-2xs"
+      className="rounded-[10px] border border-sibs-border bg-white p-1.5 xl:p-2 shadow-2xs"
       aria-label="Candidate profile navigation"
     >
       <div
@@ -1602,7 +1602,7 @@ function CandidateProfileHorizontalNavigation({
               type="button"
               onClick={() => handlePrimaryClick(tab)}
               aria-current={active ? "page" : undefined}
-              className={`inline-flex h-7 xl:h-8.5 min-w-max shrink-0 items-center justify-center gap-1.5 rounded-md xl:rounded-lg border px-2.5 xl:px-3.5 text-[10.5px] xl:text-xs font-extrabold transition-all duration-150 ${
+              className={`inline-flex h-7 xl:h-8.5 min-w-max shrink-0 items-center justify-center gap-1.5 rounded-[8px] xl:rounded-[10px] border px-2.5 xl:px-3.5 text-[10.5px] xl:text-xs font-extrabold transition-all duration-150 ${
                 active
                   ? "border-sibs-orange/40 bg-sibs-cream text-sibs-orange shadow-2xs"
                   : "border-transparent text-sibs-text-muted hover:bg-sibs-cream-subtle hover:text-sibs-navy"
@@ -3333,7 +3333,7 @@ function SectionTitle({ icon: Icon, title, description }) {
       <div className="min-w-0">
         <div className="flex items-center gap-2">
           {Icon && (
-            <span className="flex h-7 w-7 2xl:h-8 2xl:w-8 shrink-0 items-center justify-center rounded-lg bg-sibs-surface text-sibs-navy shadow-2xs">
+            <span className="flex h-7 w-7 2xl:h-8 2xl:w-8 shrink-0 items-center justify-center rounded-[10px] bg-sibs-surface text-sibs-navy shadow-2xs">
               <Icon size={15} />
             </span>
           )}
@@ -3373,7 +3373,7 @@ function ProfileDetail({ label, value, mono = false, className = "" }) {
         {label}
       </span>
 
-      <div className="flex min-h-[30px] 2xl:min-h-[34px] items-center rounded-lg border border-sibs-border bg-sibs-surface px-2.5 py-1 transition-colors duration-150">
+      <div className="flex min-h-[30px] 2xl:min-h-[34px] items-center rounded-[10px] border border-sibs-border bg-sibs-surface px-2.5 py-1 transition-colors duration-150">
         <span
           title={String(displayValue)}
           className={`block min-w-0 break-words text-[11px] 2xl:text-xs font-bold leading-tight ${
@@ -3397,7 +3397,7 @@ function CandidateDraftField({
   className = "",
 }) {
   const controlClass =
-    "w-full rounded-lg border border-sibs-border bg-white px-3 py-2 text-xs font-semibold text-sibs-navy outline-none transition focus:border-sibs-navy focus:ring-2 focus:ring-sibs-navy/10";
+    "w-full rounded-[10px] border border-sibs-border bg-white px-3 py-2 text-xs font-semibold text-sibs-navy outline-none transition focus:border-sibs-navy focus:ring-2 focus:ring-sibs-navy/10";
 
   return (
     <label className={`block min-w-0 ${className}`}>
@@ -3432,7 +3432,7 @@ function NhoRequirementCard({
 
   return (
     <div
-      className={`rounded-xl border p-3.5 2xl:p-4 transition ${
+      className={`rounded-[10px] border p-3.5 2xl:p-4 transition ${
         hasFiles
           ? "border-emerald-200 bg-emerald-50/50"
           : "border-sibs-border bg-sibs-surface"
@@ -3440,7 +3440,7 @@ function NhoRequirementCard({
     >
       <div className="flex min-w-0 items-start gap-3">
         <div
-          className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border ${
+          className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-[6px] border ${
             hasFiles
               ? "border-emerald-500 bg-emerald-500 text-white"
               : "border-sibs-border bg-white"
@@ -3466,7 +3466,7 @@ function NhoRequirementCard({
           </div>
 
           {!hasFiles && (
-            <div className="mt-2.5 rounded-xl border border-dashed border-sibs-border bg-white px-3 py-2.5 text-xs font-bold text-sibs-text-muted">
+            <div className="mt-2.5 rounded-[10px] border border-dashed border-sibs-border bg-white px-3 py-2.5 text-xs font-bold text-sibs-text-muted">
               No uploaded file yet.
             </div>
           )}
@@ -3484,7 +3484,7 @@ function NhoRequirementCard({
                     <button
                       type="button"
                       onClick={() => onSelect?.(file)}
-                      className={`flex w-full min-w-0 items-center gap-2 rounded-xl border px-3 py-2 text-left transition ${
+                      className={`flex w-full min-w-0 items-center gap-2 rounded-[10px] border px-3 py-2 text-left transition ${
                         isSelected
                           ? "border-sibs-orange bg-sibs-cream text-sibs-orange"
                           : "border-emerald-100 bg-white hover:bg-emerald-50 text-sibs-navy"
@@ -3544,7 +3544,7 @@ function ProfileTextarea({ label, value, className = "" }) {
         {label}
       </span>
 
-      <div className="min-h-[55px] 2xl:min-h-[65px] rounded-lg border border-sibs-border bg-sibs-surface px-2.5 py-1.5 transition-colors duration-150">
+      <div className="min-h-[55px] 2xl:min-h-[65px] rounded-[10px] border border-sibs-border bg-sibs-surface px-2.5 py-1.5 transition-colors duration-150">
         <p
           className={`whitespace-pre-wrap break-words text-[11px] 2xl:text-xs font-bold leading-5 ${
             hasValue ? "text-sibs-navy" : "text-sibs-text-muted"
@@ -3563,7 +3563,7 @@ function DetailRow({ label, value }) {
 
 function EmptyState({ title, description }) {
   return (
-    <div className="rounded-xl border border-dashed border-sibs-border bg-sibs-surface px-4 py-8 text-center text-sm font-bold text-sibs-tertiary-5 sm:px-5">
+    <div className="rounded-[10px] border border-dashed border-sibs-border bg-sibs-surface px-4 py-8 text-center text-sm font-bold text-sibs-tertiary-5 sm:px-5">
       <p>{title}</p>
 
       {description && (
@@ -3592,8 +3592,8 @@ function NhoFilePreviewPanel({
 
   if (!activeFile) {
     return (
-      <div className="flex min-h-[320px] flex-col items-center justify-center rounded-2xl border border-dashed border-sibs-border bg-sibs-surface p-6 text-center">
-        <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-sibs-border bg-white text-sibs-primary-1 shadow-sm">
+      <div className="flex min-h-[320px] flex-col items-center justify-center rounded-[14px] border border-dashed border-sibs-border bg-sibs-surface p-6 text-center">
+        <div className="flex h-14 w-14 items-center justify-center rounded-[10px] border border-sibs-border bg-white text-sibs-primary-1 shadow-sm">
           <FileText size={27} />
         </div>
 
@@ -3626,7 +3626,7 @@ function NhoFilePreviewPanel({
     !String(resolvedFileUrl).startsWith("blob:");
 
   return (
-    <div className="rounded-2xl border border-sibs-border bg-sibs-surface p-5">
+    <div className="rounded-[14px] border border-sibs-border bg-sibs-surface p-5">
       <div>
         <p className="text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
           Requirement Files
@@ -3650,7 +3650,7 @@ function NhoFilePreviewPanel({
               key={`${file.id}-${file.fileName}-${file.fileUrl}`}
               type="button"
               onClick={() => onSelectFile?.(file)}
-              className={`flex w-full min-w-0 items-center gap-2 rounded-xl border px-3 py-2 text-left transition ${
+              className={`flex w-full min-w-0 items-center gap-2 rounded-[10px] border px-3 py-2 text-left transition ${
                 selected
                   ? "border-sibs-primary-1 bg-blue-50"
                   : "border-sibs-border bg-white hover:bg-sibs-surface"
@@ -3683,7 +3683,7 @@ function NhoFilePreviewPanel({
         })}
       </div>
 
-      <div className="mt-5 space-y-3 rounded-xl border border-sibs-border bg-white p-4">
+      <div className="mt-5 space-y-3 rounded-[10px] border border-sibs-border bg-white p-4">
         <div>
           <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-tertiary-5">
             Selected File
@@ -3720,7 +3720,7 @@ function NhoFilePreviewPanel({
       </div>
 
       {isImage && (
-        <div className="mt-5 overflow-hidden rounded-xl border border-sibs-border bg-white">
+        <div className="mt-5 overflow-hidden rounded-[10px] border border-sibs-border bg-white">
           <img
             src={resolvedFileUrl}
             alt={
@@ -3741,7 +3741,7 @@ function NhoFilePreviewPanel({
             activeFile.savedFileName ||
             "Uploaded PDF"
           }
-          className="mt-5 h-[420px] w-full rounded-xl border border-sibs-border bg-white"
+          className="mt-5 h-[420px] w-full rounded-[10px] border border-sibs-border bg-white"
         />
       )}
 
@@ -3795,7 +3795,7 @@ function CandidateNhoFilesSection({
   );
 
   return (
-    <section className="rounded-2xl border border-sibs-border bg-white p-5 shadow-sm">
+    <section className="rounded-[14px] border border-sibs-border bg-white p-5 shadow-sm">
       <div className="mb-5 flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
         <SectionTitle
           icon={FileText}
@@ -3817,7 +3817,7 @@ function CandidateNhoFilesSection({
 
       <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
         <div className="min-w-0 space-y-5">
-          <section className="rounded-2xl border border-sibs-border bg-white p-5 shadow-sm">
+          <section className="rounded-[14px] border border-sibs-border bg-white p-5 shadow-sm">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
               <div className="min-w-0">
                 <h3 className="text-lg font-extrabold text-sibs-navy">
@@ -3884,7 +3884,7 @@ function CandidateNhoFilesSection({
             </div>
 
             {!majorProgress.isComplete && (
-              <div className="mt-4 rounded-xl border border-amber-100 bg-amber-50 px-4 py-3 text-sm font-bold leading-6 text-amber-700">
+              <div className="mt-4 rounded-[10px] border border-amber-100 bg-amber-50 px-4 py-3 text-sm font-bold leading-6 text-amber-700">
                 Candidate has fewer than 5 major requirements. Candidate should
                 remain under{" "}
                 <span className="font-extrabold">
@@ -3895,26 +3895,26 @@ function CandidateNhoFilesSection({
             )}
 
             {majorProgress.isComplete && (
-              <div className="mt-4 rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm font-bold leading-6 text-emerald-700">
+              <div className="mt-4 rounded-[10px] border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm font-bold leading-6 text-emerald-700">
                 Candidate completed the 5 major requirements and can proceed to
                 Onboarding.
               </div>
             )}
 
             {error && (
-              <div className="mt-4 rounded-xl border border-amber-100 bg-amber-50 px-4 py-3 text-sm font-bold leading-6 text-amber-700">
+              <div className="mt-4 rounded-[10px] border border-amber-100 bg-amber-50 px-4 py-3 text-sm font-bold leading-6 text-amber-700">
                 {error}
               </div>
             )}
 
             {isLoading && files.length === 0 && (
-              <div className="mt-4 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-bold leading-6 text-blue-700">
+              <div className="mt-4 rounded-[10px] border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-bold leading-6 text-blue-700">
                 Loading Candidate Pipeline NHO uploaded files...
               </div>
             )}
           </section>
 
-          <section className="rounded-2xl border border-sibs-border bg-white p-5 shadow-sm">
+          <section className="rounded-[14px] border border-sibs-border bg-white p-5 shadow-sm">
             <h3 className="text-lg font-extrabold text-sibs-navy">
               Pre-Employment Requirements
             </h3>
@@ -4039,7 +4039,7 @@ function TalentPoolStatusDropdown({
         onClick={() => setOpen((previous) => !previous)}
         aria-haspopup="listbox"
         aria-expanded={open}
-        className={`flex h-10 2xl:h-11 w-full min-w-0 items-center justify-between gap-3 rounded-xl border bg-sibs-surface px-3.5 text-left text-xs font-semibold shadow-xs outline-none transition ${
+        className={`flex h-10 2xl:h-11 w-full min-w-0 items-center justify-between gap-3 rounded-[10px] border bg-sibs-surface px-3.5 text-left text-xs font-semibold shadow-xs outline-none transition ${
           open
             ? "border-sibs-orange bg-white ring-4 ring-sibs-orange/10"
             : "border-sibs-border hover:border-sibs-orange/40 hover:bg-white"
@@ -4066,7 +4066,7 @@ function TalentPoolStatusDropdown({
       </button>
 
       {open && !disabled && (
-        <div className="sibs-animated-dropdown-box absolute left-0 right-0 top-[calc(100%+6px)] z-[100060] overflow-hidden rounded-xl border border-sibs-border bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)]">
+        <div className="sibs-animated-dropdown-box absolute left-0 right-0 top-[calc(100%+6px)] z-[100060] overflow-hidden rounded-[10px] border border-sibs-border bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)]">
           <div className="max-h-64 overflow-y-auto" role="listbox">
             {options.length > 0 ? (
               options.map((option) => {
@@ -6027,7 +6027,7 @@ export default function CandidateProfileModal() {
               ? "No"
               : draftCandidateForm[name] || ""}
           onChange={(event) => setCandidateDraftField(name, event.target.value)}
-          className="w-full rounded-lg border border-sibs-border bg-white px-3 py-2 text-xs font-semibold text-sibs-navy outline-none focus:border-sibs-navy focus:ring-2 focus:ring-sibs-navy/10"
+          className="w-full rounded-[10px] border border-sibs-border bg-white px-3 py-2 text-xs font-semibold text-sibs-navy outline-none focus:border-sibs-navy focus:ring-2 focus:ring-sibs-navy/10"
         >
           <option value="">Choose option</option>
           {options.map((option) => <option key={option} value={option}>{option}</option>)}
@@ -6126,7 +6126,7 @@ export default function CandidateProfileModal() {
           <div className={gridClass}>
             <div className="block min-w-0">
               <FieldLabel>Applied Position</FieldLabel>
-              <div className="flex min-h-[34px] items-center rounded-lg border border-sibs-border bg-sibs-surface px-3 py-2 text-xs font-semibold text-sibs-muted">
+              <div className="flex min-h-[34px] items-center rounded-[10px] border border-sibs-border bg-sibs-surface px-3 py-2 text-xs font-semibold text-sibs-muted">
                 {draftCandidateForm.openPosition || "—"}
               </div>
             </div>
@@ -6138,14 +6138,14 @@ export default function CandidateProfileModal() {
           </div>
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             {[{ kind: "audio", label: "Replace audio response", name: audioName, accept: "audio/*" }, { kind: "attachment", label: "Replace attachment", name: attachmentName, accept: ".pdf,.doc,.docx,.jpg,.jpeg,.png" }].map((item) => (
-              <label key={item.kind} className="block min-w-0 rounded-lg border border-sibs-border bg-sibs-surface p-3">
+              <label key={item.kind} className="block min-w-0 rounded-[10px] border border-sibs-border bg-sibs-surface p-3">
                 <FieldLabel>{item.label}</FieldLabel>
                 <span className="mb-2 block truncate text-xs font-semibold text-sibs-muted">Current: {item.name || "No file attached"}</span>
                 <input
                   type="file"
                   accept={item.accept}
                   onChange={(event) => handleCandidateFileChange(event, item.kind, draftCandidateForm, setDraftCandidateForm)}
-                  className="block w-full text-xs font-semibold text-sibs-navy file:mr-3 file:rounded-lg file:border-0 file:bg-sibs-surface file:px-3 file:py-1.5 file:text-xs file:font-extrabold file:text-sibs-navy hover:file:bg-blue-100/60"
+                  className="block w-full text-xs font-semibold text-sibs-navy file:mr-3 file:rounded-[8px] file:border-0 file:bg-sibs-surface file:px-3 file:py-1.5 file:text-xs file:font-extrabold file:text-sibs-navy hover:file:bg-blue-100/60"
                 />
               </label>
             ))}
@@ -6229,10 +6229,10 @@ export default function CandidateProfileModal() {
                 return (
                   <article
                     key={`${record.sectionKey || record.level || "education"}-${record.schoolName || index}-${index}`}
-                    className="overflow-hidden rounded-2xl border border-sibs-border bg-white"
+                    className="overflow-hidden rounded-[14px] border border-sibs-border bg-white"
                   >
                     <div className="flex items-start gap-3 border-b border-sibs-border bg-sibs-surface px-4 py-4 sm:px-5">
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sibs-surface text-sibs-primary-1">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] bg-sibs-surface text-sibs-primary-1">
                         <GraduationCap size={19} />
                       </div>
 
@@ -6300,7 +6300,7 @@ export default function CandidateProfileModal() {
         <div className="space-y-3">
           {field("Work Experience Summary", "workExperience")}
           {experiences.map((experience, index) => (
-            <div key={`draft-experience-${index}`} className="grid grid-cols-1 gap-3 rounded-lg border border-sibs-border bg-sibs-surface p-3 sm:grid-cols-2 xl:grid-cols-3">
+            <div key={`draft-experience-${index}`} className="grid grid-cols-1 gap-3 rounded-[10px] border border-sibs-border bg-sibs-surface p-3 sm:grid-cols-2 xl:grid-cols-3">
               <CandidateDraftField label={`Role ${index + 1}`} value={experience.role} onChange={(value) => setCandidateDraftExperience(index, "role", value)} />
               <CandidateDraftField label="Company" value={experience.company} onChange={(value) => setCandidateDraftExperience(index, "company", value)} />
               <CandidateDraftField label="Industry / Relevant Experience" value={experience.industryRelevantExperience || experience.industry} onChange={(value) => setCandidateDraftExperience(index, "industryRelevantExperience", value)} />
@@ -6310,7 +6310,7 @@ export default function CandidateProfileModal() {
               <CandidateDraftField label="Reason for Leaving" value={experience.reasonForLeaving} onChange={(value) => setCandidateDraftExperience(index, "reasonForLeaving", value)} className="sm:col-span-2" />
               <label className="block min-w-0">
                 <FieldLabel>Other Experience Available</FieldLabel>
-                <select value={experience.hasOtherExperience || "No"} onChange={(event) => setCandidateDraftExperience(index, "hasOtherExperience", event.target.value)} className="w-full rounded-lg border border-sibs-border bg-white px-3 py-2 text-xs font-semibold text-sibs-navy outline-none focus:border-sibs-navy focus:ring-2 focus:ring-sibs-navy/10">
+                <select value={experience.hasOtherExperience || "No"} onChange={(event) => setCandidateDraftExperience(index, "hasOtherExperience", event.target.value)} className="w-full rounded-[10px] border border-sibs-border bg-white px-3 py-2 text-xs font-semibold text-sibs-navy outline-none focus:border-sibs-navy focus:ring-2 focus:ring-sibs-navy/10">
                   <option value="Yes">Yes</option>
                   <option value="No">No</option>
                 </select>
@@ -6327,7 +6327,7 @@ export default function CandidateProfileModal() {
       return (
         <div className="space-y-3">
           {safeArray(draftCandidateForm.references).map((reference, index) => (
-            <div key={`draft-reference-${index}`} className="grid grid-cols-1 gap-3 rounded-lg border border-sibs-border bg-sibs-surface p-3 sm:grid-cols-2">
+            <div key={`draft-reference-${index}`} className="grid grid-cols-1 gap-3 rounded-[10px] border border-sibs-border bg-sibs-surface p-3 sm:grid-cols-2">
               <CandidateDraftField label={`Reference ${index + 1} Name`} value={reference.name} onChange={(value) => setDraftCandidateForm((current) => ({ ...current, references: safeArray(current.references).map((item, itemIndex) => itemIndex === index ? { ...item, name: value } : item) }))} />
               <CandidateDraftField label="Phone" value={reference.phone} onChange={(value) => setDraftCandidateForm((current) => ({ ...current, references: safeArray(current.references).map((item, itemIndex) => itemIndex === index ? { ...item, phone: value } : item) }))} />
             </div>
@@ -6409,12 +6409,12 @@ export default function CandidateProfileModal() {
     return (
       <div className="space-y-5">
         <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-          <div className="rounded-xl border border-slate-200 bg-sibs-surface p-4">
+          <div className="rounded-[10px] border border-slate-200 bg-sibs-surface p-4">
             <h3 className="mb-4 flex items-center gap-2 border-b border-slate-200 pb-2.5 text-[11px] font-black uppercase tracking-wider text-sibs-navy">
               <span className="h-1.5 w-1.5 rounded-full bg-sibs-orange" />
               Residential Address
             </h3>
-            <p className="min-h-24 rounded-xl bg-white p-4 text-sm font-bold leading-6 text-sibs-navy">
+            <p className="min-h-24 rounded-[10px] bg-white p-4 text-sm font-bold leading-6 text-sibs-navy">
               {firstCandidateValue(
                 activeCandidate.residentialAddress,
                 activeCandidate.residential_address,
@@ -6424,12 +6424,12 @@ export default function CandidateProfileModal() {
             </p>
           </div>
 
-          <div className="rounded-xl border border-slate-200 bg-sibs-surface p-4">
+          <div className="rounded-[10px] border border-slate-200 bg-sibs-surface p-4">
             <h3 className="mb-4 flex items-center gap-2 border-b border-slate-200 pb-2.5 text-[11px] font-black uppercase tracking-wider text-sibs-navy">
               <span className="h-1.5 w-1.5 rounded-full bg-sibs-navy" />
               Permanent Address
             </h3>
-            <p className="min-h-24 rounded-xl bg-white p-4 text-sm font-bold leading-6 text-sibs-navy">
+            <p className="min-h-24 rounded-[10px] bg-white p-4 text-sm font-bold leading-6 text-sibs-navy">
               {firstCandidateValue(
                 activeCandidate.permanentAddress,
                 activeCandidate.permanent_address,
@@ -6635,7 +6635,7 @@ export default function CandidateProfileModal() {
                 return (
                   <div
                     key={`${item.name || "child"}-${index}`}
-                    className="rounded-xl border border-sibs-border bg-sibs-surface p-4"
+                    className="rounded-[10px] border border-sibs-border bg-sibs-surface p-4"
                   >
                     <ProfileGrid cols="sm:grid-cols-2">
                       <ProfileDetail
@@ -6819,7 +6819,7 @@ export default function CandidateProfileModal() {
           description="Current pipeline status, assignment, and TA ownership."
         />
 
-        <div className="rounded-2xl border border-sibs-border bg-white p-5 shadow-sm">
+        <div className="rounded-[14px] border border-sibs-border bg-white p-5 shadow-sm">
           <p className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-orange">
             • Active Recruitment Funnel Tracker
           </p>
@@ -6868,13 +6868,13 @@ export default function CandidateProfileModal() {
         </div>
 
         {pipelineCandidateDetailsLoading && (
-          <div className="mb-4 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-bold text-blue-700">
+          <div className="mb-4 rounded-[10px] border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-bold text-blue-700">
             Loading Candidate Pipeline details...
           </div>
         )}
 
         {pipelineCandidateDetailsError && (
-          <div className="mb-4 rounded-xl border border-amber-100 bg-amber-50 px-4 py-3 text-sm font-bold text-amber-700">
+          <div className="mb-4 rounded-[10px] border border-amber-100 bg-amber-50 px-4 py-3 text-sm font-bold text-amber-700">
             {pipelineCandidateDetailsError}
           </div>
         )}
@@ -6939,10 +6939,10 @@ export default function CandidateProfileModal() {
                 key={`${record.sectionKey || record.level || "education"}-${
                   record.schoolName || index
                 }-${index}`}
-                className="overflow-hidden rounded-2xl border border-sibs-border bg-white"
+                className="overflow-hidden rounded-[14px] border border-sibs-border bg-white"
               >
                 <div className="flex items-start gap-3 border-b border-sibs-border bg-sibs-surface px-4 py-4 sm:px-5">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sibs-surface text-sibs-primary-1">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] bg-sibs-surface text-sibs-primary-1">
                     <GraduationCap size={19} />
                   </div>
 
@@ -7029,7 +7029,7 @@ export default function CandidateProfileModal() {
               return (
                 <div
                   key={`${item.title || item.name || "eligibility"}-${index}`}
-                  className="rounded-xl border border-sibs-border bg-sibs-surface p-4"
+                  className="rounded-[10px] border border-sibs-border bg-sibs-surface p-4"
                 >
                   <ProfileGrid cols="sm:grid-cols-2 xl:grid-cols-4">
                     <ProfileDetail
@@ -7100,7 +7100,7 @@ export default function CandidateProfileModal() {
               return (
                 <div
                   key={`${item.title || "training"}-${index}`}
-                  className="rounded-xl border border-sibs-border bg-sibs-surface p-4"
+                  className="rounded-[10px] border border-sibs-border bg-sibs-surface p-4"
                 >
                   <ProfileGrid cols="sm:grid-cols-2 xl:grid-cols-4">
                     <ProfileDetail label="Training Title" value={item.title} />
@@ -7225,7 +7225,7 @@ export default function CandidateProfileModal() {
             {workExperiences.map((experience, index) => (
               <div
                 key={`experience-${index}`}
-                className="rounded-2xl border border-sibs-border bg-white p-4 shadow-sm"
+                className="rounded-[14px] border border-sibs-border bg-white p-4 shadow-sm"
               >
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                   <div className="min-w-0">
@@ -7456,14 +7456,14 @@ export default function CandidateProfileModal() {
         {!pipelineId && !offerDocumentsLoading ? (
           <EmptyState title="No Candidate Pipeline offer record is linked to this candidate." />
         ) : offerDocumentsLoading ? (
-          <div className="flex min-h-[220px] flex-col items-center justify-center rounded-xl border border-sibs-border bg-sibs-canvas text-center">
+          <div className="flex min-h-[220px] flex-col items-center justify-center rounded-[10px] border border-sibs-border bg-sibs-canvas text-center">
             <Loader2 size={24} className="animate-spin text-sibs-orange" />
             <p className="mt-3 text-xs font-extrabold text-sibs-navy">
               Loading offer documents...
             </p>
           </div>
         ) : offerDocumentsError ? (
-          <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-4 text-sm font-semibold text-red-700">
+          <div className="rounded-[10px] border border-red-200 bg-red-50 px-4 py-4 text-sm font-semibold text-red-700">
             {offerDocumentsError}
           </div>
         ) : offerDocuments.length === 0 ? (
@@ -7500,10 +7500,10 @@ export default function CandidateProfileModal() {
               return (
                 <article
                   key={`offer-document-${versionNumber}`}
-                  className="flex flex-col gap-3 rounded-xl border border-sibs-border bg-sibs-surface p-3.5 sm:flex-row sm:items-center sm:justify-between"
+                  className="flex flex-col gap-3 rounded-[10px] border border-sibs-border bg-sibs-surface p-3.5 sm:flex-row sm:items-center sm:justify-between"
                 >
                   <div className="flex min-w-0 items-start gap-3">
-                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-sibs-orange/20 bg-sibs-cream-light text-sibs-orange">
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] border border-sibs-orange/20 bg-sibs-cream-light text-sibs-orange">
                       <FileText size={18} />
                     </span>
 
@@ -7552,7 +7552,7 @@ export default function CandidateProfileModal() {
                   <button
                     type="button"
                     onClick={() => handleViewOfferDocument(version)}
-                    className="inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-lg bg-sibs-navy px-3.5 text-xs font-extrabold text-white transition hover:bg-sibs-navy/90"
+                    className="inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-[10px] bg-sibs-navy px-3.5 text-xs font-extrabold text-white transition hover:bg-sibs-navy/90"
                   >
                     <Eye size={14} className="text-sibs-orange" />
                     View PDF
@@ -7599,7 +7599,7 @@ export default function CandidateProfileModal() {
         />
 
         <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-          <div className="rounded-xl border border-sibs-border bg-sibs-surface p-4">
+          <div className="rounded-[10px] border border-sibs-border bg-sibs-surface p-4">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
@@ -7634,13 +7634,13 @@ export default function CandidateProfileModal() {
                 Your browser does not support the audio element.
               </audio>
             ) : (
-              <div className="mt-4 rounded-xl border border-dashed border-sibs-border bg-white px-4 py-3 text-sm font-bold text-sibs-tertiary-5">
+              <div className="mt-4 rounded-[10px] border border-dashed border-sibs-border bg-white px-4 py-3 text-sm font-bold text-sibs-tertiary-5">
                 No audio recording uploaded.
               </div>
             )}
           </div>
 
-          <div className="rounded-xl border border-sibs-border bg-sibs-surface p-4">
+          <div className="rounded-[10px] border border-sibs-border bg-sibs-surface p-4">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
@@ -7667,11 +7667,11 @@ export default function CandidateProfileModal() {
             </div>
 
             {attachmentFileUrl ? (
-              <div className="mt-4 rounded-xl border border-sibs-border bg-white px-4 py-3 text-sm font-bold text-sibs-primary-1">
+              <div className="mt-4 rounded-[10px] border border-sibs-border bg-white px-4 py-3 text-sm font-bold text-sibs-primary-1">
                 Click View to open the uploaded attachment.
               </div>
             ) : (
-              <div className="mt-4 rounded-xl border border-dashed border-sibs-border bg-white px-4 py-3 text-sm font-bold text-sibs-tertiary-5">
+              <div className="mt-4 rounded-[10px] border border-dashed border-sibs-border bg-white px-4 py-3 text-sm font-bold text-sibs-tertiary-5">
                 No attachment uploaded.
               </div>
             )}
@@ -7760,7 +7760,7 @@ export default function CandidateProfileModal() {
                         </div>
                       </div>
 
-                      <div className="rounded-2xl border border-sibs-border bg-sibs-surface p-4 transition hover:border-sibs-primary-1/30 hover:bg-white hover:shadow-sm">
+                      <div className="rounded-[14px] border border-sibs-border bg-sibs-surface p-4 transition hover:border-sibs-primary-1/30 hover:bg-white hover:shadow-sm">
                         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                           <div className="min-w-0">
                             <h5
@@ -7799,7 +7799,7 @@ export default function CandidateProfileModal() {
                         </p>
 
                         {item.remarks && (
-                          <div className="mt-4 rounded-xl bg-white px-4 py-3 text-sm font-semibold leading-6 text-sibs-navy">
+                          <div className="mt-4 rounded-[10px] bg-white px-4 py-3 text-sm font-semibold leading-6 text-sibs-navy">
                             {item.remarks}
                           </div>
                         )}
@@ -7810,7 +7810,7 @@ export default function CandidateProfileModal() {
                         />
 
                         {item.offerDetail && (
-                          <div className="mt-4 rounded-xl bg-white px-4 py-3 text-sm font-semibold leading-6 text-sibs-navy">
+                          <div className="mt-4 rounded-[10px] bg-white px-4 py-3 text-sm font-semibold leading-6 text-sibs-navy">
                             {item.offerDetail}
                           </div>
                         )}
@@ -7827,7 +7827,7 @@ export default function CandidateProfileModal() {
                               rel="noreferrer"
                               title={item.savedFormLink}
                               dir="ltr"
-                              className="mt-2 block w-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap rounded-xl border border-sibs-border bg-white px-3 py-2 text-left text-sm text-blue-700 underline"
+                              className="mt-2 block w-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap rounded-[10px] border border-sibs-border bg-white px-3 py-2 text-left text-sm text-blue-700 underline"
                             >
                               {item.savedFormLink.startsWith("http")
                                 ? item.savedFormLink
@@ -7925,7 +7925,7 @@ export default function CandidateProfileModal() {
                     </span>
 
                     <div
-                      className={`rounded-2xl border p-4 ${
+                      className={`rounded-[14px] border p-4 ${
                         isLatest
                           ? "border-sibs-orange/30 bg-sibs-cream-light"
                           : "border-sibs-border bg-white"
@@ -7967,7 +7967,7 @@ export default function CandidateProfileModal() {
                         </div>
                       </div>
 
-                      <div className="mt-3 rounded-xl border border-sibs-border bg-white px-4 py-3 text-sm font-semibold leading-6 text-sibs-navy">
+                      <div className="mt-3 rounded-[10px] border border-sibs-border bg-white px-4 py-3 text-sm font-semibold leading-6 text-sibs-navy">
                         {item.reason || "Candidate pipeline record updated."}
                       </div>
 
@@ -7976,7 +7976,7 @@ export default function CandidateProfileModal() {
                           {nhoFileTracking.map((file, fileIndex) => (
                             <div
                               key={`${file.action}-${file.requirement}-${file.fileName}-${fileIndex}`}
-                              className="overflow-hidden rounded-xl border border-sibs-border bg-sibs-surface"
+                              className="overflow-hidden rounded-[10px] border border-sibs-border bg-sibs-surface"
                             >
                               {[
                                 ["Requirement:", file.requirement],
@@ -8003,7 +8003,7 @@ export default function CandidateProfileModal() {
                       )}
 
                       {Object.keys(offerSummary).length > 0 && (
-                        <div className="mt-3 overflow-hidden rounded-xl border border-sibs-border bg-sibs-surface">
+                        <div className="mt-3 overflow-hidden rounded-[10px] border border-sibs-border bg-sibs-surface">
                           {[
                             ["Account", offerSummary.account],
                             ["Basic Pay", offerSummary.basicPay],
@@ -8364,7 +8364,7 @@ export default function CandidateProfileModal() {
               onClick={handleCloseCandidateProfile}
               disabled={Boolean(editCandidate)}
               aria-label="Close candidate profile"
-              className="inline-flex h-7 w-7 xl:h-8.5 xl:w-8.5 shrink-0 items-center justify-center rounded-md border border-white/15 bg-white/10 text-white/80 transition hover:border-sibs-orange/60 hover:bg-sibs-orange hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+              className="sibs-modal-close-btn disabled:cursor-not-allowed disabled:opacity-60"
             >
               <X size={16} />
             </button>

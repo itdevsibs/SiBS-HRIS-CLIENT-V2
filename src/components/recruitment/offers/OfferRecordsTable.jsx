@@ -21,7 +21,7 @@ function ApprovalActionButtons({
       <button
         type="button"
         onClick={() => onApproveReject?.(offer, "Rejected")}
-        className="inline-flex h-8.5 w-8.5 shrink-0 items-center justify-center rounded-lg border border-red-200 bg-red-50 text-red-600 transition hover:bg-red-100"
+        className="inline-flex h-8.5 w-8.5 shrink-0 items-center justify-center rounded-[10px] border border-red-200 bg-red-50 text-red-600 transition hover:bg-red-100"
         title="Decline offer"
       >
         <X size={15} />
@@ -31,7 +31,7 @@ function ApprovalActionButtons({
         <button
           type="button"
           onClick={() => onApproveReject?.(offer, "Approved")}
-          className="inline-flex h-8.5 w-8.5 shrink-0 items-center justify-center rounded-lg bg-[#042C51] text-white transition hover:bg-[#063b6d]"
+          className="inline-flex h-8.5 w-8.5 shrink-0 items-center justify-center rounded-[10px] bg-sibs-navy text-white transition hover:bg-sibs-navy-hover"
           title="Approve offer"
         >
           <Check size={15} />
@@ -70,7 +70,7 @@ function NegotiationSummary({ offer, onViewHistory }) {
   return (
     <div className="min-w-0">
       <div className="flex flex-wrap items-center gap-1.5">
-        <span className="rounded-full border border-blue-100 bg-[#EAF2FB] px-2 py-0.5 text-[9px] font-extrabold uppercase tabular-nums text-sibs-navy">
+        <span className="rounded-full border border-blue-100 bg-sky-50 px-2 py-0.5 text-[9px] font-extrabold uppercase tabular-nums text-sibs-navy">
           Version {summary.versionNumber}
         </span>
 
@@ -183,9 +183,9 @@ export default function OfferRecordsTable({
           />
         }
         desktopContent={
-          <div className="overflow-x-auto rounded-xl border border-[#E6ECF2] bg-white">
+          <div className="overflow-x-auto rounded-[10px] border border-sibs-border bg-white">
             <table className="w-full min-w-[1180px] table-fixed border-separate border-spacing-0 text-left">
-            <thead className="sibs-data-table-head sticky top-0 z-10 bg-[#F8FAFC]">
+            <thead className="sibs-data-table-head sticky top-0 z-10 bg-sibs-surface">
               <tr className="sibs-data-table-head-row">
                 <th className="sibs-data-table-th px-3 2xl:px-4 py-2 2xl:py-2.5 w-[18%] text-left">Candidate</th>
                 <th className="sibs-data-table-th px-3 2xl:px-4 py-2 2xl:py-2.5 w-[15%] text-left">Final Role / Account</th>
@@ -223,7 +223,7 @@ export default function OfferRecordsTable({
                           openOffer(offer);
                         }
                       }}
-                      className="sibs-page-card-in cursor-pointer transition hover:bg-[#FFF9F6] focus-visible:bg-[#FFF9F6] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#FF5C28]/25"
+                      className="sibs-page-card-in cursor-pointer transition hover:bg-sibs-cream-light/40 focus-visible:bg-sibs-cream-light/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sibs-orange/25"
                       style={{ animationDelay: `${index * 35}ms`, animationFillMode: "both" }}
                     >
                       <td className="border-b border-sibs-border px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle">
@@ -275,7 +275,7 @@ export default function OfferRecordsTable({
                       <td className="border-b border-sibs-border px-3 2xl:px-4 py-2 2xl:py-2.5 text-center align-middle">
                         <span
                           title={displayStatus}
-                          className={`mx-auto inline-flex h-7 max-w-[195px] items-center justify-center rounded-lg border px-2.5 text-center text-[10px] font-extrabold leading-none ${getStatusClass(
+                          className={`mx-auto inline-flex h-7 max-w-[195px] items-center justify-center rounded-[10px] border px-2.5 text-center text-[10px] font-extrabold leading-none ${getStatusClass(
                             displayStatus,
                           )}`}
                         >
@@ -288,7 +288,7 @@ export default function OfferRecordsTable({
                       <td className="border-b border-sibs-border px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle">
                         <div className="flex min-w-0 flex-col items-start gap-1">
                           {ownerRoleLabel ? (
-                            <span className="inline-flex w-fit items-center rounded-full border border-[#B2CCFF] bg-[#EFF4FF] px-2 py-0.5 text-[9px] font-extrabold leading-none text-[#175CD3]">
+                            <span className="inline-flex w-fit items-center rounded-full border border-sky-200 bg-sky-50 px-2 py-0.5 text-[9px] font-extrabold leading-none text-sky-700">
                               {ownerRoleLabel}
                             </span>
                           ) : null}
@@ -309,7 +309,7 @@ export default function OfferRecordsTable({
                           <button
                             type="button"
                             onClick={() => openOffer(offer)}
-                            className="inline-flex h-8 2xl:h-8.5 w-8 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg border border-sibs-border-subtle bg-white text-sibs-navy transition hover:border-sibs-orange/40 hover:bg-[#FFF8F5] hover:text-sibs-orange"
+                            className="inline-flex h-8 2xl:h-8.5 w-8 2xl:w-8.5 shrink-0 items-center justify-center rounded-[10px] border border-sibs-border bg-white text-sibs-navy transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange"
                             title="View offer details"
                           >
                             <Eye size={15} />
@@ -326,26 +326,26 @@ export default function OfferRecordsTable({
 
                           {approvalStatus === "For Review" &&
                             !isAuthorizedApprover && (
-                              <span className="inline-flex h-7 shrink-0 items-center justify-center whitespace-nowrap rounded-lg border border-amber-200 bg-amber-50 px-2.5 text-[10px] font-extrabold leading-none text-amber-700">
+                              <span className="inline-flex h-7 shrink-0 items-center justify-center whitespace-nowrap rounded-[10px] border border-amber-200 bg-amber-50 px-2.5 text-[10px] font-extrabold leading-none text-amber-700">
                                 Waiting for approver
                               </span>
                             )}
 
                           {approvalStatus === "Approved" &&
                             displayStatus !== "Negotiation" && (
-                              <span className="inline-flex h-7 shrink-0 items-center justify-center whitespace-nowrap rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 text-[10px] font-extrabold leading-none text-emerald-700">
+                              <span className="inline-flex h-7 shrink-0 items-center justify-center whitespace-nowrap rounded-[10px] border border-emerald-200 bg-emerald-50 px-2.5 text-[10px] font-extrabold leading-none text-emerald-700">
                                 Ready in Pipeline
                               </span>
                             )}
 
                           {displayStatus === "Negotiation" && (
-                            <span className="inline-flex h-7 shrink-0 items-center justify-center whitespace-nowrap rounded-lg border border-blue-200 bg-blue-50 px-2.5 text-[10px] font-extrabold leading-none text-blue-700">
+                            <span className="inline-flex h-7 shrink-0 items-center justify-center whitespace-nowrap rounded-[10px] border border-blue-200 bg-blue-50 px-2.5 text-[10px] font-extrabold leading-none text-blue-700">
                               Negotiation Requested
                             </span>
                           )}
 
                           {approvalStatus === "Rejected" && (
-                            <span className="inline-flex h-7 shrink-0 items-center justify-center whitespace-nowrap rounded-lg border border-red-200 bg-red-50 px-2.5 text-[10px] font-extrabold leading-none text-red-700">
+                            <span className="inline-flex h-7 shrink-0 items-center justify-center whitespace-nowrap rounded-[10px] border border-red-200 bg-red-50 px-2.5 text-[10px] font-extrabold leading-none text-red-700">
                               Rejected
                             </span>
                           )}
@@ -357,7 +357,7 @@ export default function OfferRecordsTable({
               ) : (
                 <tr>
                   <td colSpan={7} className="px-5 py-12">
-                    <div className="flex flex-col items-center text-center text-[#667085]">
+                    <div className="flex flex-col items-center text-center text-sibs-muted">
                       <FileText className="h-6 w-6" />
                       <p className="mt-2 text-[13px] font-extrabold">
                         No offer records found

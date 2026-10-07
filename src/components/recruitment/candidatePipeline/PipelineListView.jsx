@@ -76,7 +76,7 @@ function PipelineActionButtons({
         <button
           type="button"
           onClick={() => onOpenAssessmentModal?.(candidate)}
-          className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-cyan-100 bg-cyan-50 text-cyan-700 transition hover:-translate-y-0.5 hover:bg-cyan-100 hover:shadow-sm"
+          className="inline-flex h-8 w-8 items-center justify-center rounded-[10px] border border-cyan-100 bg-cyan-50 text-cyan-700 transition hover:-translate-y-0.5 hover:bg-cyan-100 hover:shadow-sm"
           title="Update Assessment"
           aria-label="Update Assessment"
         >
@@ -88,7 +88,7 @@ function PipelineActionButtons({
         <button
           type="button"
           onClick={() => onOpenScheduleModal?.(candidate)}
-          className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-blue-100 bg-blue-50 text-blue-700 transition hover:-translate-y-0.5 hover:bg-blue-100 hover:shadow-sm"
+          className="inline-flex h-8 w-8 items-center justify-center rounded-[10px] border border-blue-100 bg-blue-50 text-blue-700 transition hover:-translate-y-0.5 hover:bg-blue-100 hover:shadow-sm"
           title="Schedule Interview"
           aria-label="Schedule Interview"
         >
@@ -101,7 +101,7 @@ function PipelineActionButtons({
           <button
             type="button"
             onClick={() => onOpenScheduleModal?.(candidate)}
-            className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-blue-100 bg-blue-50 text-blue-700 transition hover:-translate-y-0.5 hover:bg-blue-100 hover:shadow-sm"
+            className="inline-flex h-8 w-8 items-center justify-center rounded-[10px] border border-blue-100 bg-blue-50 text-blue-700 transition hover:-translate-y-0.5 hover:bg-blue-100 hover:shadow-sm"
             title="Update Interview Schedule"
             aria-label="Update Interview Schedule"
           >
@@ -112,7 +112,7 @@ function PipelineActionButtons({
             <button
               type="button"
               onClick={() => onCancelInterview?.(candidate)}
-              className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-red-100 bg-red-50 text-red-600 transition hover:-translate-y-0.5 hover:bg-red-100 hover:shadow-sm"
+              className="inline-flex h-8 w-8 items-center justify-center rounded-[10px] border border-red-100 bg-red-50 text-red-600 transition hover:-translate-y-0.5 hover:bg-red-100 hover:shadow-sm"
               title="Cancel Interview Schedule"
               aria-label="Cancel Interview Schedule"
             >
@@ -124,7 +124,7 @@ function PipelineActionButtons({
             <button
               type="button"
               onClick={() => onCompleteInterview?.(candidate)}
-              className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-emerald-100 bg-emerald-50 text-emerald-700 transition hover:-translate-y-0.5 hover:bg-emerald-100 hover:shadow-sm"
+              className="inline-flex h-8 w-8 items-center justify-center rounded-[10px] border border-emerald-100 bg-emerald-50 text-emerald-700 transition hover:-translate-y-0.5 hover:bg-emerald-100 hover:shadow-sm"
               title="Mark Interview Completed"
               aria-label="Mark Interview Completed"
             >
@@ -138,7 +138,7 @@ function PipelineActionButtons({
         <button
           type="button"
           onClick={() => onOpenMoveModal?.(candidate)}
-          className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[#D6E0EA] bg-white text-[#042C51] transition hover:-translate-y-0.5 hover:border-[#FF5C28]/35 hover:bg-[#FFF9F6] hover:text-[#FF5C28] hover:shadow-sm"
+          className="inline-flex h-8 w-8 items-center justify-center rounded-[10px] border border-sibs-border bg-white text-sibs-navy transition hover:-translate-y-0.5 hover:border-sibs-orange/35 hover:bg-sibs-cream-light hover:text-sibs-orange hover:shadow-sm"
           title={`Move to ${nextStage}`}
           aria-label={`Move to ${nextStage}`}
         >
@@ -227,7 +227,7 @@ const PipelineListView = ({
 
   return (
     <div
-      className="sibs-page-card-in flex min-h-full flex-1 flex-col space-y-0 overflow-hidden rounded-xl border border-sibs-border bg-white shadow-xs"
+      className="sibs-page-card-in flex min-h-full flex-1 flex-col space-y-0 overflow-hidden rounded-[10px] border border-sibs-border bg-white shadow-xs"
       style={{ animationDelay: "240ms", animationFillMode: "both" }}
     >
       <PipelineStageTabs
@@ -267,10 +267,10 @@ const PipelineListView = ({
               )
             }
             desktopContent={
-              <div className="sibs-data-table-shell overflow-hidden rounded-xl border border-[#E6ECF2] bg-white">
+              <div className="sibs-data-table-shell overflow-hidden rounded-[10px] border border-sibs-border bg-white">
                 <div className="overflow-x-auto sibs-scrollbar">
                   <table className="w-full min-w-[1080px] 2xl:min-w-[1180px] border-collapse">
-                  <thead className="sibs-data-table-head bg-[#F8FAFC]">
+                  <thead className="sibs-data-table-head bg-sibs-surface">
                     <tr className="sibs-data-table-head-row">
                       {[
                         "Candidate",
@@ -294,7 +294,7 @@ const PipelineListView = ({
                     </tr>
                   </thead>
 
-                  <tbody className="divide-y divide-[#F1F5F9]">
+                  <tbody className="divide-y divide-sibs-border">
                     {isLoading ? (
                       <TableSkeletonRows count={8} columns={8} />
                     ) : (
@@ -325,7 +325,7 @@ const PipelineListView = ({
                           onKeyDown={(event) =>
                             handleRowKeyDown(event, candidate)
                           }
-                          className="sibs-data-table-row sibs-page-card-in cursor-pointer transition hover:bg-[#F8FAFC]"
+                          className="sibs-data-table-row sibs-page-card-in cursor-pointer transition hover:bg-sibs-surface"
                           style={{
                             animationDelay: `${index * 35}ms`,
                             animationFillMode: "both",
@@ -338,7 +338,7 @@ const PipelineListView = ({
                                 <p className="max-w-[220px] truncate sibs-text-xs font-extrabold tracking-tight text-sibs-navy">
                                   {candidate.name}
                                 </p>
-                                <p className="mt-0.5 max-w-[220px] truncate text-[10px] font-semibold text-[#667085]">
+                                <p className="mt-0.5 max-w-[220px] truncate text-[10px] font-semibold text-sibs-muted">
                                   {candidate.email || "No email saved"}
                                 </p>
                                 <p className="mt-0.5 font-mono text-[10px] 2xl:text-[11px] font-semibold text-sibs-text-muted">
@@ -352,7 +352,7 @@ const PipelineListView = ({
 
                           <td className="sibs-data-table-td px-2.5 2xl:px-3.5 py-2 2xl:py-2.5 whitespace-nowrap">
                             <span
-                              className={`inline-flex rounded-full border px-2.5 py-0.5 text-[9px] font-extrabold ${getStageClass(
+                              className={`inline-flex rounded-[10px] border px-2.5 py-0.5 text-[9px] font-extrabold ${getStageClass(
                                 currentStage,
                               )}`}
                             >
@@ -365,7 +365,7 @@ const PipelineListView = ({
                               {getRoleTitle(candidate.roleAccount) ||
                                 ""}
                             </p>
-                            <p className="mt-0.5 max-w-[210px] truncate text-[10px] font-semibold text-[#667085]">
+                            <p className="mt-0.5 max-w-[210px] truncate text-[10px] font-semibold text-sibs-muted">
                               {getAccount(candidate.roleAccount) ||
                                 ""}
                             </p>
@@ -374,14 +374,14 @@ const PipelineListView = ({
                           <td className="sibs-data-table-td px-2.5 2xl:px-3.5 py-2 2xl:py-2.5 whitespace-nowrap">
                             <div className="flex flex-col items-start gap-1">
                               <span
-                                className={`inline-flex rounded-full border px-2.5 py-0.5 text-[9px] font-extrabold ${getPrfStatusClass(
+                                className={`inline-flex rounded-[10px] border px-2.5 py-0.5 text-[9px] font-extrabold ${getPrfStatusClass(
                                   candidate.prfStatus || "Review",
                                 )}`}
                               >
                                 {candidate.prfStatus || "Review"}
                               </span>
                               {isSuccessfulHeadcount && (
-                                <span className="inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[8px] font-extrabold uppercase tracking-wide text-emerald-700">
+                                <span className="inline-flex rounded-[10px] border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[8px] font-extrabold uppercase tracking-wide text-emerald-700">
                                   Successful HC
                                 </span>
                               )}
@@ -390,7 +390,7 @@ const PipelineListView = ({
 
                           <td className="sibs-data-table-td px-2.5 2xl:px-3.5 py-2 2xl:py-2.5 whitespace-nowrap">
                             <span
-                              className={`inline-flex rounded-full border px-2.5 py-0.5 text-[9px] font-extrabold ${
+                              className={`inline-flex rounded-[10px] border px-2.5 py-0.5 text-[9px] font-extrabold ${
                                 candidate.assessmentResult
                                   ? getAssessmentResultClass(
                                       candidate.assessmentResult,
@@ -411,7 +411,7 @@ const PipelineListView = ({
                               {formatDateTime(candidate.interviewDate)}
                             </p>
                             <span
-                              className={`mt-0.5 inline-flex rounded-full border px-2 py-0.5 text-[8.5px] font-extrabold ${getInterviewStatusClass(
+                              className={`mt-0.5 inline-flex rounded-[10px] border px-2 py-0.5 text-[8.5px] font-extrabold ${getInterviewStatusClass(
                                 interviewStatus,
                               )}`}
                             >
@@ -423,7 +423,7 @@ const PipelineListView = ({
                             <p className="max-w-[150px] truncate sibs-text-xs font-bold text-sibs-navy">
                               {candidate.taOwner || candidate.owner || "—"}
                             </p>
-                            <p className="mt-0.5 text-[9px] font-semibold text-[#98A2B3]">
+                            <p className="mt-0.5 text-[9px] font-semibold text-sibs-faint">
                               {candidate.dateMoved || candidate.updatedAt
                                 ? formatDateTime(candidate.dateMoved || candidate.updatedAt)
                                 : "—"}
@@ -445,9 +445,9 @@ const PipelineListView = ({
                     })
                   )}
                   </tbody>
-                </table>
+                  </table>
+                </div>
               </div>
-            </div>
             }
           />
         )}

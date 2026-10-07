@@ -545,14 +545,14 @@ function TimelineLinkCard({ link }) {
   if (!link?.href) return null;
 
   return (
-    <div className="mt-3 rounded-xl border border-blue-100 bg-white p-3">
+    <div className="mt-3 rounded-[10px] border border-blue-100 bg-white p-3">
       <div className="flex items-start gap-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-sibs-primary-1">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] bg-sky-50 text-sibs-navy">
           <LinkIcon size={19} />
         </div>
 
         <div className="min-w-0 flex-1">
-          <p className="text-[11px] font-extrabold tracking-wide text-sibs-primary-1">
+          <p className="text-[11px] font-extrabold tracking-wide text-sibs-navy">
             {link.label || "Job Evaluation Form"}
           </p>
 
@@ -566,7 +566,7 @@ function TimelineLinkCard({ link }) {
           </button>
 
           {(link.submittedBy || link.submittedAt) && (
-            <p className="mt-2 truncate text-[11px] font-semibold text-[#667085]">
+            <p className="mt-2 truncate text-[11px] font-semibold text-sibs-muted">
               {link.submittedBy ? `Submitted by ${link.submittedBy}` : ""}
               {link.submittedBy && link.submittedAt ? " • " : ""}
               {link.submittedAt ? formatDateTime(link.submittedAt) : ""}
@@ -577,7 +577,7 @@ function TimelineLinkCard({ link }) {
         <button
           type="button"
           onClick={() => openReadableUrl(link.href)}
-          className="inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-lg border border-blue-100 bg-blue-50 px-3 text-xs font-extrabold text-sibs-primary-1 outline-none transition hover:bg-blue-100 focus-visible:ring-4 focus-visible:ring-blue-100"
+          className="inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-[10px] border border-blue-100 bg-blue-50 px-3 text-xs font-extrabold text-sibs-navy outline-none transition hover:bg-blue-100 focus-visible:ring-4 focus-visible:ring-blue-100"
         >
           <ExternalLink size={15} />
           Open
@@ -596,14 +596,14 @@ function TimelineFileCard({ file }) {
   const resolvedUrl = cleanText(safeFile.fileUrl);
 
   return (
-    <div className="mt-3 rounded-xl border border-[#CFE0F5] bg-white p-3">
-      <div className="mb-2 text-[11px] font-extrabold tracking-wide text-sibs-primary-1">
+    <div className="mt-3 rounded-[10px] border border-sibs-border bg-white p-3">
+      <div className="mb-2 text-[11px] font-extrabold tracking-wide text-sibs-navy">
         {safeFile.label || "Assessment Attachment"}
       </div>
 
-      <div className="flex flex-col gap-3 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3 rounded-[10px] border border-sibs-border bg-sibs-surface p-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex min-w-0 items-start gap-3">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-sibs-primary-1 shadow-sm">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] bg-white text-sibs-navy shadow-sm">
             <FileIcon size={21} />
           </div>
 
@@ -620,12 +620,12 @@ function TimelineFileCard({ file }) {
                 </span>
               </button>
             ) : (
-              <p className="truncate text-sm font-extrabold leading-5 text-[#101828]">
+              <p className="truncate text-sm font-extrabold leading-5 text-sibs-navy">
                 {safeFile.fileName || "Assessment attachment"}
               </p>
             )}
 
-            <p className="mt-1 truncate text-xs font-semibold leading-5 text-[#667085]">
+            <p className="mt-1 truncate text-xs font-semibold leading-5 text-sibs-muted">
               {safeFile.fileType || "File"} •{" "}
               {formatFileSize(safeFile.fileSize)}
             </p>
@@ -636,7 +636,7 @@ function TimelineFileCard({ file }) {
           <button
             type="button"
             onClick={() => openReadableUrl(resolvedUrl)}
-            className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl border border-blue-100 bg-blue-50 px-4 text-xs font-extrabold text-sibs-primary-1 outline-none transition hover:bg-blue-100 focus-visible:ring-4 focus-visible:ring-blue-100"
+            className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-[10px] border border-blue-100 bg-blue-50 px-4 text-xs font-extrabold text-sibs-navy outline-none transition hover:bg-blue-100 focus-visible:ring-4 focus-visible:ring-blue-100"
           >
             <ExternalLink size={15} />
             Open File

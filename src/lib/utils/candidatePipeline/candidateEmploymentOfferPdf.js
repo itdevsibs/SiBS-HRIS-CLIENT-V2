@@ -36,7 +36,7 @@ function createPesoSymbolDataUrl() {
 
   context.scale(scale, scale);
   context.clearRect(0, 0, 64, 64);
-  context.fillStyle = "#000000";
+  context.fillStyle = "black";
   context.font = 'bold 44px "Arial", "Segoe UI Symbol", sans-serif';
   context.textAlign = "center";
   context.textBaseline = "middle";

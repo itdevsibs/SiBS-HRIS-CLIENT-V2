@@ -56,7 +56,7 @@ function CandidateKanbanCard({ candidate, onView, onOpenMoveModal }) {
   const nextStage = getNextStage(candidate.currentStage);
 
   return (
-    <div className="w-full rounded-2xl border border-[#E6ECF2] bg-white p-4 text-left shadow-sm transition hover:border-sibs-primary-1/40 hover:bg-[#F8FAFC]">
+    <div className="w-full rounded-[10px] border border-sibs-border bg-white p-4 text-left shadow-sm transition hover:border-sibs-primary-1/40 hover:bg-sibs-surface">
       <button type="button" onClick={onView} className="block w-full text-left">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
@@ -64,7 +64,7 @@ function CandidateKanbanCard({ candidate, onView, onOpenMoveModal }) {
               {candidate.candidateId}
             </p>
 
-            <h3 className="mt-1 break-words text-sm font-bold leading-5 text-[#101828]">
+            <h3 className="mt-1 break-words text-sm font-bold leading-5 text-sibs-navy">
               {candidate.name}
             </h3>
 
@@ -83,22 +83,22 @@ function CandidateKanbanCard({ candidate, onView, onOpenMoveModal }) {
         </div>
 
         <div className="mt-4 grid grid-cols-2 gap-2">
-          <div className="min-w-0 rounded-xl bg-[#F8FAFC] p-3">
+          <div className="min-w-0 rounded-[10px] bg-sibs-surface p-3">
             <p className="text-[10px] font-bold uppercase text-sibs-tertiary-5">
               Owner
             </p>
 
-            <p className="mt-1 break-words text-xs font-bold leading-5 text-[#344054]">
+            <p className="mt-1 break-words text-xs font-bold leading-5 text-sibs-navy">
               {candidate.owner || "—"}
             </p>
           </div>
 
-          <div className="min-w-0 rounded-xl bg-[#F8FAFC] p-3">
+          <div className="min-w-0 rounded-[10px] bg-sibs-surface p-3">
             <p className="text-[10px] font-bold uppercase text-sibs-tertiary-5">
               Source
             </p>
 
-            <p className="mt-1 break-words text-xs font-bold leading-5 text-[#344054]">
+            <p className="mt-1 break-words text-xs font-bold leading-5 text-sibs-navy">
               {candidate.source || "—"}
             </p>
           </div>
@@ -106,13 +106,13 @@ function CandidateKanbanCard({ candidate, onView, onOpenMoveModal }) {
 
         <div className="mt-3 text-xs font-semibold leading-5 text-sibs-tertiary-5">
           Date Moved:{" "}
-          <span className="font-bold text-[#344054]">
+          <span className="font-bold text-sibs-navy">
             {formatDate(candidate.dateMoved)}
           </span>
         </div>
 
         {candidate.dropOffReason && (
-          <div className="mt-3 rounded-xl border border-red-100 bg-red-50 p-3 text-xs font-semibold leading-5 text-red-700">
+          <div className="mt-3 rounded-[10px] border border-red-100 bg-red-50 p-3 text-xs font-semibold leading-5 text-red-700">
             {candidate.dropOffReason}
           </div>
         )}
@@ -122,7 +122,7 @@ function CandidateKanbanCard({ candidate, onView, onOpenMoveModal }) {
         <button
           type="button"
           onClick={onView}
-          className={`inline-flex h-9 min-w-0 items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-3 text-xs font-bold text-sibs-primary-1 transition hover:border-sibs-primary-1 hover:bg-sibs-primary-1/5 ${
+          className={`inline-flex h-9 min-w-0 items-center justify-center gap-2 rounded-[10px] border border-sibs-border bg-white px-3 text-xs font-bold text-sibs-primary-1 transition hover:border-sibs-primary-1 hover:bg-sibs-primary-1/5 ${
             nextStage ? "flex-1" : "w-full"
           }`}
         >
@@ -134,7 +134,7 @@ function CandidateKanbanCard({ candidate, onView, onOpenMoveModal }) {
           <button
             type="button"
             onClick={() => onOpenMoveModal(candidate)}
-            className="inline-flex h-9 min-w-0 flex-1 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-3 text-xs font-bold text-white transition hover:opacity-90"
+            className="inline-flex h-9 min-w-0 flex-1 items-center justify-center gap-2 rounded-[10px] bg-sibs-primary-1 px-3 text-xs font-bold text-white transition hover:opacity-90"
           >
             <ArrowRight size={15} className="shrink-0" />
             <span>Move</span>
@@ -147,10 +147,10 @@ function CandidateKanbanCard({ candidate, onView, onOpenMoveModal }) {
 
 function StageMobileGroup({ stage, candidates, onView, onOpenMoveModal }) {
   return (
-    <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4">
+    <div className="rounded-[10px] border border-sibs-border bg-sibs-surface p-4">
       <div className="mb-4 flex items-center justify-between gap-3">
         <div className="min-w-0">
-          <h2 className="text-sm font-bold text-[#101828]">{stage}</h2>
+          <h2 className="text-sm font-bold text-sibs-navy">{stage}</h2>
 
           <p className="text-xs font-semibold text-sibs-tertiary-5">
             {candidates.length} candidates
@@ -177,7 +177,7 @@ function StageMobileGroup({ stage, candidates, onView, onOpenMoveModal }) {
             />
           ))
         ) : (
-          <div className="rounded-xl border border-dashed border-[#E6ECF2] bg-white p-5 text-center text-xs font-bold text-sibs-tertiary-5">
+          <div className="rounded-[10px] border border-dashed border-sibs-border bg-white p-5 text-center text-xs font-bold text-sibs-tertiary-5">
             No candidates
           </div>
         )}
@@ -214,11 +214,11 @@ export default function Kanban({
             return (
               <div
                 key={stage}
-                className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4"
+                className="rounded-[10px] border border-sibs-border bg-sibs-surface p-4"
               >
                 <div className="mb-4 flex items-center justify-between">
                   <div>
-                    <h2 className="text-sm font-bold text-[#101828]">
+                    <h2 className="text-sm font-bold text-sibs-navy">
                       {stage}
                     </h2>
 
@@ -247,7 +247,7 @@ export default function Kanban({
                       />
                     ))
                   ) : (
-                    <div className="rounded-xl border border-dashed border-[#E6ECF2] bg-white p-5 text-center text-xs font-bold text-sibs-tertiary-5">
+                    <div className="rounded-[10px] border border-dashed border-sibs-border bg-white p-5 text-center text-xs font-bold text-sibs-tertiary-5">
                       No candidates
                     </div>
                   )}

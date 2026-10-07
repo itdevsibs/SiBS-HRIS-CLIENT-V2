@@ -1,12 +1,12 @@
 const DEFAULT_STAGE_THEME = {
   phase: "review",
-  accent: "bg-sibs-primary-1",
-  borderActive: "border-sibs-primary-1/50 shadow-md",
-  badge: "bg-sibs-primary-1 text-white",
-  hoverBg: "hover:bg-sibs-tertiary-10/45",
-  activeHeaderBg: "bg-sibs-tertiary-10/65",
-  pill: "border-sibs-tertiary-9 bg-sibs-tertiary-10 text-sibs-primary-1",
-  header: "border-[#D7DEE8] bg-white",
+  accent: "bg-sibs-navy",
+  borderActive: "border-sibs-navy/50 shadow-md",
+  badge: "bg-sibs-navy text-white",
+  hoverBg: "hover:bg-sibs-surface",
+  activeHeaderBg: "bg-sibs-surface",
+  pill: "border-sibs-border bg-sibs-surface text-sibs-navy",
+  header: "border-sibs-border bg-white",
 };
 
 const ACTIVE_STAGE_THEME = {
@@ -17,7 +17,7 @@ const ACTIVE_STAGE_THEME = {
   hoverBg: "hover:bg-blue-50/50",
   activeHeaderBg: "bg-blue-50/70",
   pill: "border-blue-100 bg-blue-50 text-blue-700",
-  header: "border-blue-100 bg-[#F5F8FF]",
+  header: "border-blue-100 bg-blue-50/70",
 };
 
 const SUCCESS_STAGE_THEME = {
@@ -28,7 +28,7 @@ const SUCCESS_STAGE_THEME = {
   hoverBg: "hover:bg-emerald-50/50",
   activeHeaderBg: "bg-emerald-50/70",
   pill: "border-emerald-100 bg-emerald-50 text-emerald-700",
-  header: "border-emerald-100 bg-[#F3FBF7]",
+  header: "border-emerald-100 bg-emerald-50/70",
 };
 
 const PENDING_STAGE_THEME = {
@@ -39,7 +39,7 @@ const PENDING_STAGE_THEME = {
   hoverBg: "hover:bg-amber-50/50",
   activeHeaderBg: "bg-amber-50/70",
   pill: "border-amber-100 bg-amber-50 text-amber-700",
-  header: "border-amber-100 bg-[#FFFBEB]",
+  header: "border-amber-100 bg-amber-50/70",
 };
 
 const HANDOFF_STAGE_THEME = {
@@ -50,7 +50,7 @@ const HANDOFF_STAGE_THEME = {
   hoverBg: "hover:bg-teal-50/50",
   activeHeaderBg: "bg-teal-50/70",
   pill: "border-teal-100 bg-teal-50 text-teal-700",
-  header: "border-teal-100 bg-[#F0FCFC]",
+  header: "border-teal-100 bg-teal-50/70",
 };
 
 const NEGATIVE_STAGE_THEME = {
@@ -60,8 +60,8 @@ const NEGATIVE_STAGE_THEME = {
   badge: "bg-red-700 text-white",
   hoverBg: "hover:bg-red-50/50",
   activeHeaderBg: "bg-red-50/70",
-  pill: "border-red-100 bg-red-50 text-sibs-primary-1",
-  header: "border-red-100 bg-[#FFF7F7]",
+  pill: "border-red-100 bg-red-50 text-red-700",
+  header: "border-red-100 bg-red-50/70",
 };
 
 const PIPELINE_STAGE_THEMES = {

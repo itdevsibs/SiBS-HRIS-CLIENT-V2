@@ -132,7 +132,7 @@ function EmployeeAvatar({ employee, size = "md" }) {
     previewVisible && previewPosition && typeof document !== "undefined"
       ? createPortal(
           <span
-            className="employee-avatar-preview pointer-events-none fixed z-[11000] rounded-2xl border border-sibs-border bg-white p-2 shadow-[0_18px_45px_rgba(4,44,81,0.22)]"
+            className="employee-avatar-preview pointer-events-none fixed z-[11000] rounded-[14px] border border-sibs-border bg-white p-2 shadow-[0_18px_45px_rgba(4,44,81,0.22)]"
             style={{
               left: previewPosition.left,
               top: previewPosition.top,
@@ -143,7 +143,7 @@ function EmployeeAvatar({ employee, size = "md" }) {
             aria-hidden="true"
           >
             <span
-              className={`relative flex h-40 w-40 items-center justify-center overflow-hidden rounded-xl border text-[24px] font-extrabold ${getAvatarTone(
+              className={`relative flex h-40 w-40 items-center justify-center overflow-hidden rounded-[10px] border text-[24px] font-extrabold ${getAvatarTone(
                 employee,
               )}`}
             >
@@ -268,10 +268,10 @@ function statusClasses(status) {
 
 function SectionCard({ title, subtitle, icon: Icon = FileText, children }) {
   return (
-    <section className="overflow-hidden rounded-xl border border-sibs-border bg-white shadow-xs">
+    <section className="overflow-hidden rounded-[10px] border border-sibs-border bg-white shadow-xs">
       <div className="flex items-center justify-between gap-3 border-b border-sibs-border px-5 py-4 sm:px-6">
         <div className="flex min-w-0 items-center gap-2.5">
-          <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-sibs-navy">
+          <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-blue-50 text-sibs-navy">
             <Icon size={16} />
           </span>
           <div className="min-w-0">
@@ -301,7 +301,7 @@ function ReadOnlyField({ label, value, className = "", multiline = false }) {
         {label}
       </p>
       <div
-        className={`rounded-lg border border-sibs-border bg-sibs-surface px-3 py-2.5 text-xs font-extrabold leading-5 text-sibs-navy ${
+        className={`rounded-[10px] border border-sibs-border bg-sibs-surface px-3 py-2.5 text-xs font-extrabold leading-5 text-sibs-navy ${
           multiline ? "min-h-[88px] whitespace-pre-wrap" : "min-h-10"
         }`}
       >
@@ -323,7 +323,7 @@ function PillList({ items = [], emptyLabel = "None" }) {
       {values.map((item) => (
         <span
           key={item}
-          className="inline-flex rounded-lg border border-sibs-orange/30 bg-sibs-cream-light px-2.5 py-1.5 text-[11px] font-extrabold text-sibs-navy"
+          className="inline-flex rounded-[10px] border border-sibs-orange/30 bg-sibs-cream-light px-2.5 py-1.5 text-[11px] font-extrabold text-sibs-navy"
         >
           {item}
         </span>
@@ -344,7 +344,7 @@ function SupportingDocuments({ items = [] }) {
       {values.map((item) => (
         <div
           key={item}
-          className="flex items-center gap-2 rounded-xl border border-sibs-border bg-sibs-surface px-3 py-2"
+          className="flex items-center gap-2 rounded-[10px] border border-sibs-border bg-sibs-surface px-3 py-2"
         >
           <BadgeCheck size={15} className="shrink-0 text-emerald-600" />
           <span className="text-[11px] font-bold text-sibs-secondary">{item}</span>
@@ -364,9 +364,9 @@ function AttachmentList({ attachments = [] }) {
       {attachments.map((attachment) => (
         <div
           key={attachment.id || `${attachment.fieldName}-${attachment.fileName}`}
-          className="flex min-w-0 items-center gap-3 rounded-xl border border-sibs-border bg-sibs-surface px-3 py-2.5"
+          className="flex min-w-0 items-center gap-3 rounded-[10px] border border-sibs-border bg-sibs-surface px-3 py-2.5"
         >
-          <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white text-sibs-orange shadow-xs">
+          <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-white text-sibs-orange shadow-xs">
             <Paperclip size={15} />
           </span>
           <div className="min-w-0 flex-1">
@@ -391,7 +391,7 @@ function WorkflowRemarks({ workflow }) {
       {stages.map((stage) => (
         <div
           key={stage.key}
-          className="rounded-xl border border-sibs-border bg-sibs-surface p-3.5"
+          className="rounded-[10px] border border-sibs-border bg-sibs-surface p-3.5"
         >
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="text-xs font-extrabold text-sibs-navy">{stage.label}</p>
@@ -418,7 +418,7 @@ function WorkflowRemarks({ workflow }) {
       ))}
 
       {workflow?.terminal ? (
-        <div className="rounded-xl border border-red-200 bg-red-50 p-3.5">
+        <div className="rounded-[10px] border border-red-200 bg-red-50 p-3.5">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="text-xs font-extrabold text-red-700">Final Status</p>
             <span className="rounded-full border border-red-200 bg-white px-2.5 py-1 text-[10px] font-extrabold text-red-700">
@@ -473,7 +473,7 @@ function FormAContent({ detail }) {
             {dependents.map((dependent, index) => (
               <div
                 key={dependent.id || index}
-                className="rounded-2xl border border-sibs-border bg-white p-4"
+                className="rounded-[14px] border border-sibs-border bg-white p-4"
               >
                 {dependents.length > 1 ? (
                   <p className="mb-3 text-[10px] font-extrabold uppercase tracking-wide text-sibs-orange">
@@ -551,7 +551,7 @@ function FormBContent({ detail }) {
                 {form.reimbursementRequests.map((item) => (
                   <div
                     key={item.label}
-                    className="flex items-center justify-between gap-3 rounded-xl border border-sibs-border bg-sibs-surface px-3 py-2.5"
+                    className="flex items-center justify-between gap-3 rounded-[10px] border border-sibs-border bg-sibs-surface px-3 py-2.5"
                   >
                     <span className="text-xs font-bold text-sibs-navy">{item.label}</span>
                     <span className="text-xs font-extrabold text-sibs-orange">
@@ -741,7 +741,7 @@ export default function ChwcpRequestDetailsModal({ requestId, employee, onClose 
       }
     >
       {loading ? (
-        <div className="flex min-h-[420px] flex-col items-center justify-center rounded-xl border border-sibs-border bg-white text-center">
+        <div className="flex min-h-[420px] flex-col items-center justify-center rounded-[10px] border border-sibs-border bg-white text-center">
           <LoaderCircle size={32} className="animate-spin text-sibs-orange" />
           <p className="mt-3 text-sm font-extrabold text-sibs-navy">
             Loading CHWCP request...
@@ -751,7 +751,7 @@ export default function ChwcpRequestDetailsModal({ requestId, employee, onClose 
           </p>
         </div>
       ) : error ? (
-        <div className="flex min-h-[420px] flex-col items-center justify-center rounded-xl border border-sibs-border bg-white text-center">
+        <div className="flex min-h-[420px] flex-col items-center justify-center rounded-[10px] border border-sibs-border bg-white text-center">
           <RefreshCcw size={30} className="text-red-500" />
           <p className="mt-3 text-sm font-extrabold text-red-600">
             Unable to load request details
@@ -764,7 +764,7 @@ export default function ChwcpRequestDetailsModal({ requestId, employee, onClose 
         <div className="space-y-4">
           <section
             data-testid="request-summary-strip"
-            className="request-summary-strip overflow-hidden rounded-xl border border-sibs-border bg-white shadow-xs"
+            className="request-summary-strip overflow-hidden rounded-[10px] border border-sibs-border bg-white shadow-xs"
           >
             <div className="h-0.5 bg-gradient-to-r from-sibs-navy via-sibs-orange to-sibs-navy" />
 
@@ -778,11 +778,11 @@ export default function ChwcpRequestDetailsModal({ requestId, employee, onClose 
                       {safeText(summaryEmployee.employeeName)}
                     </h3>
 
-                    <span className="rounded-md border border-sibs-border bg-sibs-surface px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-sibs-secondary">
+                    <span className="rounded-[10px] border border-sibs-border bg-sibs-surface px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-sibs-secondary">
                       {safeText(detail.formType)}
                     </span>
 
-                    <span className="rounded-md border border-blue-100 bg-blue-50 px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-sibs-navy">
+                    <span className="rounded-[10px] border border-blue-100 bg-blue-50 px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-sibs-navy">
                       {safeText(detail.requestId || requestId)}
                     </span>
                   </div>

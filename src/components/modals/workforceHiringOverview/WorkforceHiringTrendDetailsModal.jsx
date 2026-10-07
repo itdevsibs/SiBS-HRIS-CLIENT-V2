@@ -32,7 +32,7 @@ import {
   sortWeekOptionsChronologically,
 } from "../../../lib/utils/workforceHiringOverview/workforceHiringTrendRangeHelpers";
 
-const EDGE = "rounded-xl";
+const EDGE = "rounded-[10px]";
 
 function getText(value) {
   return String(value || "").trim();
@@ -1119,7 +1119,7 @@ function MetricToggle({ active, colorClass, label, onClick }) {
       type="button"
       onClick={onClick}
       className={[
-        "inline-flex w-full items-center justify-start gap-2 rounded-xl border px-3 py-2.5 text-left text-xs font-bold transition",
+        "inline-flex w-full items-center justify-start gap-2 rounded-[10px] border px-3 py-2.5 text-left text-xs font-bold transition",
         active
           ? "border-slate-300 bg-white text-sibs-primary-1 shadow-sm"
           : "border-slate-200 bg-slate-50 text-slate-400",
@@ -1199,7 +1199,7 @@ function DraggableXScroll({ children, className = "" }) {
   return (
     <div
       className={[
-        "overflow-hidden rounded-xl border border-slate-200",
+        "overflow-hidden rounded-[10px] border border-slate-200",
         className,
       ].join(" ")}
     >
@@ -1607,7 +1607,7 @@ function SixWeekDetailedPerformanceTable({
     selectedRisk !== "All Risks";
 
   return (
-    <section className="sibs-page-card-in sibs-card mt-4 overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-sm">
+    <section className="sibs-page-card-in sibs-card mt-4 overflow-hidden rounded-[14px] border border-sibs-border bg-white shadow-sm">
       <div className="border-b border-sibs-border p-4 sm:p-5">
         <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
           <div className="min-w-0">
@@ -1619,7 +1619,7 @@ function SixWeekDetailedPerformanceTable({
             </p>
           </div>
 
-          <span className="inline-flex w-fit items-center gap-2 rounded-lg border border-sibs-border bg-sibs-canvas px-3 py-2 text-[10px] font-extrabold uppercase tracking-wide text-sibs-muted">
+          <span className="inline-flex w-fit items-center gap-2 rounded-[10px] border border-sibs-border bg-sibs-canvas px-3 py-2 text-[10px] font-extrabold uppercase tracking-wide text-sibs-muted">
             <GripHorizontal className="h-3.5 w-3.5 text-sibs-orange" />
             Drag horizontally to inspect all columns
           </span>
@@ -1674,7 +1674,7 @@ function SixWeekDetailedPerformanceTable({
                 <button
                   type="button"
                   onClick={clearAllFilters}
-                  className="h-9 rounded-lg border border-sibs-border bg-white px-3 text-[10px] font-extrabold text-sibs-muted transition hover:border-sibs-orange/40 hover:bg-orange-50 hover:text-sibs-orange"
+                  className="h-9 rounded-[10px] border border-sibs-border bg-white px-3 text-[10px] font-extrabold text-sibs-muted transition hover:border-sibs-orange/40 hover:bg-orange-50 hover:text-sibs-orange"
                 >
                   Clear
                 </button>
@@ -1686,7 +1686,7 @@ function SixWeekDetailedPerformanceTable({
 
       <div className="p-4 sm:p-5">
         {error ? (
-          <div className="mb-3 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-semibold text-red-600">
+          <div className="mb-3 rounded-[10px] border border-red-100 bg-red-50 px-4 py-3 text-sm font-semibold text-red-600">
             {error}
           </div>
         ) : null}
@@ -2200,7 +2200,7 @@ function TrendRangeSelector({ value, onChange }) {
       <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-sibs-muted">
         Trend Range
       </label>
-      <div className="grid grid-cols-4 rounded-xl border border-sibs-border bg-sibs-surface p-1 shadow-sm">
+      <div className="grid grid-cols-4 rounded-[10px] border border-sibs-border bg-sibs-surface p-1 shadow-sm">
         {TREND_RANGE_OPTIONS.map((option) => {
           const active = value === option.key;
           return (
@@ -2208,7 +2208,7 @@ function TrendRangeSelector({ value, onChange }) {
               key={option.key}
               type="button"
               onClick={() => onChange(option.key)}
-              className={`min-w-0 rounded-lg py-1.5 2xl:py-2 text-[9px] 2xl:text-[10px] font-extrabold transition ${active
+              className={`min-w-0 rounded-[10px] py-1.5 2xl:py-2 text-[9px] 2xl:text-[10px] font-extrabold transition ${active
                 ? "bg-sibs-navy text-white shadow-sm"
                 : "text-sibs-navy hover:bg-orange-50 hover:text-sibs-orange"
                 }`}
@@ -2534,11 +2534,11 @@ export default function WorkforceHiringTrendDetailsModal({
 
   return createPortal(
     <div className="sibs-modal-blur sibs-modal-backdrop-in fixed inset-0 z-[9999] flex items-center justify-center overflow-y-auto p-3 sm:p-5">
-      <div className="sibs-modal-pop-in flex max-h-[94vh] w-full max-w-[1480px] flex-col overflow-hidden rounded-2xl border border-sibs-navy bg-sibs-surface font-jakarta text-sibs-navy shadow-2xl">
+      <div className="sibs-modal-pop-in flex max-h-[94vh] w-full max-w-[1480px] flex-col overflow-hidden rounded-[14px] border border-sibs-navy bg-sibs-surface font-jakarta text-sibs-navy shadow-2xl">
         <header className="shrink-0 border-b border-white/10 bg-sibs-navy px-5 py-3 text-white sm:px-6 2xl:py-3.5">
           <div className="flex items-start justify-between gap-4">
             <div className="flex min-w-0 items-start gap-2.5 2xl:gap-3">
-              <span className="flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg bg-sibs-orange text-white shadow-sm">
+              <span className="flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-[10px] bg-sibs-orange text-white shadow-sm">
                 <BarChart3 size={16} />
               </span>
 
@@ -2561,7 +2561,7 @@ export default function WorkforceHiringTrendDetailsModal({
             <button
               type="button"
               onClick={onClose}
-              className="inline-flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg text-white/70 transition hover:bg-white/10 hover:text-white"
+              className="sibs-modal-close-btn"
               aria-label="Close trend details"
             >
               <X size={18} />
@@ -2572,7 +2572,7 @@ export default function WorkforceHiringTrendDetailsModal({
         <div className="sibs-scrollbar min-h-0 flex-1 overflow-y-auto">
           <main className="space-y-5 p-4 sm:p-6">
             <div className="grid grid-cols-1 items-stretch gap-5 xl:grid-cols-[340px_minmax(0,1fr)]">
-              <aside className="sibs-page-card-in sibs-card overflow-visible rounded-2xl border border-sibs-border bg-white shadow-sm">
+              <aside className="sibs-page-card-in sibs-card overflow-visible rounded-[14px] border border-sibs-border bg-white shadow-sm">
                 <div className="border-b border-sibs-border px-4 py-4 sm:px-5">
                   <div className="flex items-center gap-2">
                     <CalendarDays
@@ -2699,7 +2699,7 @@ export default function WorkforceHiringTrendDetailsModal({
                 </div>
               </aside>
 
-              <section className="sibs-page-card-in sibs-card flex min-w-0 flex-col overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-sm">
+              <section className="sibs-page-card-in sibs-card flex min-w-0 flex-col overflow-hidden rounded-[14px] border border-sibs-border bg-white shadow-sm">
                 <div className="border-b border-sibs-border px-4 py-4 sm:px-5">
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div className="min-w-0">
@@ -2711,7 +2711,7 @@ export default function WorkforceHiringTrendDetailsModal({
                       </p>
                     </div>
 
-                    <span className="inline-flex w-fit shrink-0 items-center gap-2 rounded-lg border border-blue-100 bg-blue-50 px-3 py-2 text-[10px] font-extrabold uppercase tracking-wide text-sibs-navy">
+                    <span className="inline-flex w-fit shrink-0 items-center gap-2 rounded-[10px] border border-blue-100 bg-blue-50 px-3 py-2 text-[10px] font-extrabold uppercase tracking-wide text-sibs-navy">
                       <LineChart className="h-3.5 w-3.5 text-sibs-orange" />
                       {selectedWeekCount}-week view
                     </span>
@@ -2720,18 +2720,18 @@ export default function WorkforceHiringTrendDetailsModal({
 
                 <div className="flex flex-1 flex-col p-4 sm:p-5">
                   {rangeState.error ? (
-                    <div className="mb-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-semibold text-amber-800">
+                    <div className="mb-3 rounded-[10px] border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-semibold text-amber-800">
                       {rangeState.error}
                     </div>
                   ) : null}
 
                   {coverageLimited ? (
-                    <div className="mb-3 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-xs font-semibold text-sibs-navy">
+                    <div className="mb-3 rounded-[10px] border border-blue-100 bg-blue-50 px-4 py-3 text-xs font-semibold text-sibs-navy">
                       Requested {requestedWeekCount} weeks; {activePoints.length} production weeks were returned and displayed. No missing values were generated.
                     </div>
                   ) : null}
 
-                  <div className="min-h-0 rounded-2xl border border-sibs-border bg-sibs-surface p-3 sm:h-[420px] sm:p-4 xl:h-[500px]">
+                  <div className="min-h-0 rounded-[14px] border border-sibs-border bg-sibs-surface p-3 sm:h-[420px] sm:p-4 xl:h-[500px]">
                     {combinedTrendLoading ? (
                       <TrendLoadingScreen
                         title={`Loading ${rangeLabel.toLowerCase()} graph...`}
@@ -2747,14 +2747,14 @@ export default function WorkforceHiringTrendDetailsModal({
                         />
                       </div>
                     ) : (
-                      <div className="flex h-full items-center justify-center rounded-xl border border-dashed border-sibs-border bg-white px-5 text-center text-xs font-semibold text-sibs-muted">
+                      <div className="flex h-full items-center justify-center rounded-[10px] border border-dashed border-sibs-border bg-white px-5 text-center text-xs font-semibold text-sibs-muted">
                         No production trend data is available for the selected range.
                       </div>
                     )}
                   </div>
 
                   <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
-                    <article className="rounded-xl border border-blue-100 bg-blue-50/70 p-3.5">
+                    <article className="rounded-[10px] border border-blue-100 bg-blue-50/70 p-3.5">
                       <span className="text-[9px] font-extrabold uppercase tracking-wider text-blue-900/70">
                         Absenteeism Average
                       </span>
@@ -2766,7 +2766,7 @@ export default function WorkforceHiringTrendDetailsModal({
                       </p>
                     </article>
 
-                    <article className="rounded-xl border border-orange-100 bg-orange-50/70 p-3.5">
+                    <article className="rounded-[10px] border border-orange-100 bg-orange-50/70 p-3.5">
                       <span className="text-[9px] font-extrabold uppercase tracking-wider text-orange-900/70">
                         Attrition Average
                       </span>
@@ -2779,7 +2779,7 @@ export default function WorkforceHiringTrendDetailsModal({
                     </article>
 
                     <article
-                      className={`rounded-xl border p-3.5 ${safeNumber(displaySummary.bufferPercentage) < 0
+                      className={`rounded-[10px] border p-3.5 ${safeNumber(displaySummary.bufferPercentage) < 0
                         ? "border-rose-100 bg-rose-50/70"
                         : "border-emerald-100 bg-emerald-50/70"
                         }`}
@@ -2815,7 +2815,7 @@ export default function WorkforceHiringTrendDetailsModal({
             </div>
 
             {customTableCoverageLimited ? (
-              <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-semibold text-amber-800">
+              <div className="rounded-[10px] border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-semibold text-amber-800">
                 The graph is filtered to the exact custom dates. The existing table endpoint returns six-week aggregates, so the table combines the complete six-week request blocks that cover this custom range.
               </div>
             ) : null}

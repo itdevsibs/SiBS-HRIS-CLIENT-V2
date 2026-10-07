@@ -102,12 +102,12 @@ export default function PipelineMobileCard({
         title={candidate.name || "Unnamed Candidate"}
         subtitle={
           <div className="mt-0.5 space-y-0.5">
-            <span className="font-mono text-[10px] font-extrabold uppercase tracking-wide text-[#FF5C28]">
+            <span className="font-mono text-[10px] font-extrabold uppercase tracking-wide text-sibs-orange">
               {candidateId}
             </span>
             {email ? (
-              <p className="flex items-center gap-1.5 truncate text-[11px] font-medium text-[#667085]">
-                <Mail size={11} className="shrink-0 text-[#98A2B3]" />
+              <p className="flex items-center gap-1.5 truncate text-[11px] font-medium text-sibs-muted">
+                <Mail size={11} className="shrink-0 text-sibs-faint" />
                 <span className="truncate">{email}</span>
               </p>
             ) : null}
@@ -115,7 +115,7 @@ export default function PipelineMobileCard({
         }
         badge={
           <span
-            className={`inline-flex max-w-[140px] shrink-0 items-center justify-center rounded-lg border px-2.5 py-1 text-center text-[10px] font-extrabold leading-4 ${getStageClass(
+            className={`inline-flex max-w-[140px] shrink-0 items-center justify-center rounded-[10px] border px-2.5 py-1 text-center text-[10px] font-extrabold leading-4 ${getStageClass(
               currentStage,
             )}`}
           >
@@ -126,18 +126,18 @@ export default function PipelineMobileCard({
 
       <DataCard.ContextRow>
         <div className="min-w-0 flex-1">
-          <p className="text-[9px] font-extrabold uppercase tracking-wider text-[#8A98B8]">
+          <p className="text-[9px] font-extrabold uppercase tracking-wider text-sibs-faint">
             Position
           </p>
-          <p className="mt-0.5 truncate text-xs font-bold text-[#042C51]">
+          <p className="mt-0.5 truncate text-xs font-bold text-sibs-navy">
             {roleTitle || "—"}
           </p>
         </div>
-        <div className="min-w-0 flex-1 border-l border-[#E6ECF2] pl-2.5">
-          <p className="text-[9px] font-extrabold uppercase tracking-wider text-[#8A98B8]">
+        <div className="min-w-0 flex-1 border-l border-sibs-border pl-2.5">
+          <p className="text-[9px] font-extrabold uppercase tracking-wider text-sibs-faint">
             Account
           </p>
-          <p className="mt-0.5 truncate text-xs font-semibold text-[#344054]">
+          <p className="mt-0.5 truncate text-xs font-semibold text-slate-700">
             {account || "—"}
           </p>
         </div>
@@ -145,7 +145,7 @@ export default function PipelineMobileCard({
 
       <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
         <span
-          className={`rounded-full border px-2 py-0.5 text-[9px] font-extrabold ${getPrfStatusClass(
+          className={`rounded-[10px] border px-2 py-0.5 text-[9px] font-extrabold ${getPrfStatusClass(
             candidate.prfStatus || "Review",
           )}`}
         >
@@ -153,13 +153,13 @@ export default function PipelineMobileCard({
         </span>
 
         {isSuccessfulHeadcount && (
-          <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-emerald-700">
+          <span className="rounded-[10px] border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-emerald-700">
             Successful HC
           </span>
         )}
 
         <span
-          className={`rounded-full border px-2 py-0.5 text-[9px] font-extrabold ${
+          className={`rounded-[10px] border px-2 py-0.5 text-[9px] font-extrabold ${
             candidate.assessmentResult
               ? getAssessmentResultClass(candidate.assessmentResult)
               : getAssessmentStatusClass(
@@ -171,7 +171,7 @@ export default function PipelineMobileCard({
         </span>
 
         <span
-          className={`rounded-full border px-2 py-0.5 text-[9px] font-extrabold ${getInterviewStatusClass(
+          className={`rounded-[10px] border px-2 py-0.5 text-[9px] font-extrabold ${getInterviewStatusClass(
             interviewStatus,
           )}`}
         >
@@ -179,7 +179,7 @@ export default function PipelineMobileCard({
         </span>
 
         {candidate.interviewDate && (
-          <span className="inline-flex items-center gap-1 rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 text-[9px] font-bold text-blue-700">
+          <span className="inline-flex items-center gap-1 rounded-[10px] border border-blue-200 bg-blue-50 px-2 py-0.5 text-[9px] font-bold text-blue-700">
             <CalendarDays size={10} className="shrink-0 text-blue-600" />
             <span>{formatDateTime(candidate.interviewDate)}</span>
           </span>
@@ -189,12 +189,12 @@ export default function PipelineMobileCard({
       <DataCard.Footer>
         <div className="flex w-full items-center justify-between gap-2">
           <div className="min-w-0 flex-1">
-            <p className="flex items-center gap-1 truncate text-[10px] font-semibold text-[#667085]">
-              <UserRound size={11} className="shrink-0 text-[#98A2B3]" />
+            <p className="flex items-center gap-1 truncate text-[10px] font-semibold text-sibs-muted">
+              <UserRound size={11} className="shrink-0 text-sibs-faint" />
               <span className="truncate">TA: {owner}</span>
             </p>
             {(candidate.dateMoved || candidate.updatedAt) && (
-              <p className="mt-0.5 truncate text-[9px] font-medium text-[#98A2B3]">
+              <p className="mt-0.5 truncate text-[9px] font-medium text-sibs-faint">
                 Updated: {formatDateTime(candidate.dateMoved || candidate.updatedAt)}
               </p>
             )}
@@ -209,7 +209,7 @@ export default function PipelineMobileCard({
               <button
                 type="button"
                 onClick={() => onOpenAssessmentModal?.(candidate)}
-                className="inline-flex h-7.5 w-7.5 items-center justify-center rounded-lg border border-cyan-200 bg-cyan-50 text-cyan-700 transition hover:bg-cyan-100 active:scale-95"
+                className="inline-flex h-7.5 w-7.5 items-center justify-center rounded-[10px] border border-cyan-200 bg-cyan-50 text-cyan-700 transition hover:bg-cyan-100 active:scale-95"
                 title="Update Assessment"
                 aria-label="Update Assessment"
               >
@@ -221,7 +221,7 @@ export default function PipelineMobileCard({
               <button
                 type="button"
                 onClick={() => onOpenScheduleModal?.(candidate)}
-                className="inline-flex h-7.5 w-7.5 items-center justify-center rounded-lg border border-blue-200 bg-blue-50 text-blue-700 transition hover:bg-blue-100 active:scale-95"
+                className="inline-flex h-7.5 w-7.5 items-center justify-center rounded-[10px] border border-blue-200 bg-blue-50 text-blue-700 transition hover:bg-blue-100 active:scale-95"
                 title="Schedule Interview"
                 aria-label="Schedule Interview"
               >
@@ -234,7 +234,7 @@ export default function PipelineMobileCard({
                 <button
                   type="button"
                   onClick={() => onOpenScheduleModal?.(candidate)}
-                  className="inline-flex h-7.5 w-7.5 items-center justify-center rounded-lg border border-blue-200 bg-blue-50 text-blue-700 transition hover:bg-blue-100 active:scale-95"
+                  className="inline-flex h-7.5 w-7.5 items-center justify-center rounded-[10px] border border-blue-200 bg-blue-50 text-blue-700 transition hover:bg-blue-100 active:scale-95"
                   title="Update Interview Schedule"
                   aria-label="Update Interview Schedule"
                 >
@@ -245,7 +245,7 @@ export default function PipelineMobileCard({
                   <button
                     type="button"
                     onClick={() => onCancelInterview?.(candidate)}
-                    className="inline-flex h-7.5 w-7.5 items-center justify-center rounded-lg border border-red-200 bg-red-50 text-red-600 transition hover:bg-red-100 active:scale-95"
+                    className="inline-flex h-7.5 w-7.5 items-center justify-center rounded-[10px] border border-red-200 bg-red-50 text-red-600 transition hover:bg-red-100 active:scale-95"
                     title="Cancel Interview Schedule"
                     aria-label="Cancel Interview Schedule"
                   >
@@ -257,7 +257,7 @@ export default function PipelineMobileCard({
                   <button
                     type="button"
                     onClick={() => onCompleteInterview?.(candidate)}
-                    className="inline-flex h-7.5 w-7.5 items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-700 transition hover:bg-emerald-100 active:scale-95"
+                    className="inline-flex h-7.5 w-7.5 items-center justify-center rounded-[10px] border border-emerald-200 bg-emerald-50 text-emerald-700 transition hover:bg-emerald-100 active:scale-95"
                     title="Mark Interview Completed"
                     aria-label="Mark Interview Completed"
                   >
@@ -271,7 +271,7 @@ export default function PipelineMobileCard({
               <button
                 type="button"
                 onClick={() => onOpenMoveModal?.(candidate)}
-                className="inline-flex h-7.5 items-center gap-1 rounded-lg border border-[#D6E0EA] bg-white px-2 text-[10px] font-extrabold text-[#042C51] transition hover:border-[#FF5C28]/35 hover:bg-[#FFF9F6] hover:text-[#FF5C28] active:scale-95"
+                className="inline-flex h-7.5 items-center gap-1 rounded-[10px] border border-sibs-border bg-white px-2 text-[10px] font-extrabold text-sibs-navy transition hover:border-sibs-orange/35 hover:bg-sibs-cream-light hover:text-sibs-orange active:scale-95"
                 title={`Move to ${nextStage}`}
                 aria-label={`Move to ${nextStage}`}
               >

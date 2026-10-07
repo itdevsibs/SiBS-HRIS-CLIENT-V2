@@ -76,7 +76,7 @@ function InternalRemarkContent({ value }) {
   const lines = getAlignedInternalRemarkLines(value);
   if (!lines.length) {
     return (
-      <p className="mt-1.5 whitespace-pre-wrap sibs-text-xs font-semibold leading-relaxed text-[#344054]">
+      <p className="mt-1.5 whitespace-pre-wrap sibs-text-xs font-semibold leading-relaxed text-slate-700">
         —
       </p>
     );
@@ -89,10 +89,10 @@ function InternalRemarkContent({ value }) {
         const label = hasLabel ? cleanText(line.slice(0, colonIndex)) : "";
         const content = hasLabel ? cleanText(line.slice(colonIndex + 1)) : line;
         return (
-          <div key={`${line}-${index}`} className="sibs-text-xs font-semibold leading-relaxed text-[#344054]">
+          <div key={`${line}-${index}`} className="sibs-text-xs font-semibold leading-relaxed text-slate-700">
             {hasLabel ? (
               <>
-                <span className="font-extrabold text-[#042C51]">{label}:</span>{" "}
+                <span className="font-extrabold text-sibs-navy">{label}:</span>{" "}
                 <span>{content || "—"}</span>
               </>
             ) : (
@@ -106,15 +106,15 @@ function InternalRemarkContent({ value }) {
 }
 function EvaluationResultItem({ label, value, detail = "" }) {
   return (
-    <div className="rounded-xl border border-[#E6ECF2] bg-white p-2.5 2xl:p-3">
-      <p className="text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+    <div className="rounded-[10px] border border-sibs-border bg-white p-2.5 2xl:p-3">
+      <p className="text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-sibs-muted">
         {label}
       </p>
-      <p className="mt-0.5 sibs-text-xs 2xl:sibs-text-sm font-extrabold text-[#042C51]">
+      <p className="mt-0.5 sibs-text-xs 2xl:sibs-text-sm font-extrabold text-sibs-navy">
         {value || "—"}
       </p>
       {detail ? (
-        <p className="mt-0.5 sibs-text-micro font-semibold leading-4 text-[#667085]">
+        <p className="mt-0.5 sibs-text-micro font-semibold leading-4 text-sibs-muted">
           {detail}
         </p>
       ) : null}
@@ -127,26 +127,26 @@ function VersionRateChange({ label, previousValue, currentValue }) {
     previousValue !== undefined &&
     previousValue !== "";
   return (
-    <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-2.5 2xl:p-3">
-      <p className="text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+    <div className="rounded-[10px] border border-sibs-border bg-slate-50 p-2.5 2xl:p-3">
+      <p className="text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-sibs-muted">
         {label}
       </p>
       <div className="mt-1.5 flex flex-wrap items-center gap-2">
         {hasPrevious ? (
           <>
-            <span className="text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+            <span className="text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-sibs-muted">
               Previous Offer
             </span>
-            <span className="sibs-text-xs 2xl:sibs-text-sm font-bold text-[#667085] tabular-nums">
+            <span className="sibs-text-xs 2xl:sibs-text-sm font-bold text-sibs-muted tabular-nums">
               {getRateDisplay(previousValue)}
             </span>
-            <ArrowRight size={14} className="text-[#FF5C28]" />
+            <ArrowRight size={14} className="text-sibs-orange" />
           </>
         ) : null}
-        <span className="text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+        <span className="text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-sibs-muted">
           Current Offer
         </span>
-        <span className="sibs-text-xs 2xl:sibs-text-sm font-extrabold text-[#042C51] tabular-nums">
+        <span className="sibs-text-xs 2xl:sibs-text-sm font-extrabold text-sibs-navy tabular-nums">
           {getRateDisplay(currentValue)}
         </span>
       </div>
@@ -694,12 +694,12 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
         onClick={handleClose}
       >
         <div
-          className="sibs-modal-pop-in flex max-h-[92dvh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white shadow-[0_24px_80px_rgba(15,23,42,0.28)] font-jakarta 2xl:max-w-6xl"
+          className="sibs-modal-pop-in flex max-h-[92dvh] w-full max-w-5xl flex-col overflow-hidden rounded-[14px] border border-sibs-border bg-white shadow-[0_24px_80px_rgba(15,23,42,0.28)] font-jakarta 2xl:max-w-6xl"
           onClick={(event) => event.stopPropagation()}
         >
-          <div className="flex shrink-0 items-center justify-between gap-4 border-b border-white/10 bg-[#042C51] px-5 py-4 text-white sm:px-6">
+          <div className="flex shrink-0 items-center justify-between gap-4 border-b border-white/10 bg-sibs-navy px-5 py-4 text-white sm:px-6">
             <div className="flex min-w-0 items-center gap-3">
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/15 bg-white/10 text-[#FF5C28]">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] border border-white/15 bg-white/10 text-sibs-orange">
                 <FileText size={19} />
               </span>
               <div className="min-w-0">
@@ -730,21 +730,21 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
               type="button"
               onClick={handleClose}
               disabled={isBusy}
-              className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-white/70 transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+              className="sibs-modal-close-btn"
               aria-label="Close offer details"
             >
               <X size={18} />
             </button>
           </div>
-          <div className="flex shrink-0 flex-col gap-2 border-b border-[#DDE4EC] bg-[#F8FAFC] px-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+          <div className="flex shrink-0 flex-col gap-2 border-b border-sibs-border bg-slate-50 px-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
             <div className="flex min-w-0 items-center gap-4 overflow-x-auto no-scrollbar">
               <button
                 type="button"
                 onClick={() => setActiveDetailsTab("breakdown")}
                 className={`whitespace-nowrap border-b-2 py-3 text-[11px] font-extrabold transition sm:text-xs ${
                   activeDetailsTab === "breakdown"
-                    ? "border-[#FF5C28] text-[#042C51]"
-                    : "border-transparent text-[#98A2B3] hover:text-[#475467]"
+                    ? "border-sibs-orange text-sibs-navy"
+                    : "border-transparent text-sibs-muted hover:text-slate-600"
                 }`}
               >
                 Compensation & Approval Breakdown
@@ -754,8 +754,8 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
                 onClick={() => setActiveDetailsTab("contract")}
                 className={`inline-flex items-center gap-1.5 whitespace-nowrap border-b-2 py-3 text-[11px] font-extrabold transition sm:text-xs ${
                   activeDetailsTab === "contract"
-                    ? "border-[#FF5C28] text-[#042C51]"
-                    : "border-transparent text-[#98A2B3] hover:text-[#475467]"
+                    ? "border-sibs-orange text-sibs-navy"
+                    : "border-transparent text-sibs-muted hover:text-slate-600"
                 }`}
               >
                 <FileText size={14} />
@@ -763,7 +763,7 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
               </button>
             </div>
             <div className="flex items-center gap-2 pb-2 sm:pb-0">
-              <span className="text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+              <span className="text-[9px] font-extrabold uppercase tracking-wide text-sibs-muted">
                 Consensus:
               </span>
               <span
@@ -775,86 +775,86 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
               </span>
             </div>
           </div>
-          <div className="min-h-0 flex-1 overflow-y-auto bg-[#F8FAFC] p-4 sm:p-5 2xl:p-6">
+          <div className="min-h-0 flex-1 overflow-y-auto bg-slate-50 p-4 sm:p-5 2xl:p-6">
             {activeDetailsTab === "breakdown" ? (
               <div className="space-y-4 2xl:space-y-5">
-                <section className="rounded-2xl border border-[#DDE4EC] bg-white p-4 shadow-sm sm:p-5">
-                  <div className="mb-3 border-b border-[#E8EDF3] pb-2.5">
-                    <h3 className="text-[10px] font-extrabold uppercase tracking-wide text-[#042C51]">
+                <section className="rounded-[14px] border border-sibs-border bg-white p-4 shadow-sm sm:p-5">
+                  <div className="mb-3 border-b border-sibs-border pb-2.5">
+                    <h3 className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-navy">
                       Candidate & Requisition Profile
                     </h3>
                   </div>
                   <div className="grid grid-cols-1 gap-x-8 gap-y-1.5 md:grid-cols-2">
                     <div className="space-y-1.5">
                       <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.35fr)] items-start gap-3 text-xs">
-                        <span className="font-medium text-[#8A98B8]">Candidate Name:</span>
-                        <span className="text-right font-extrabold text-[#042C51]">{offer.candidateName || "—"}</span>
+                        <span className="font-medium text-sibs-muted">Candidate Name:</span>
+                        <span className="text-right font-extrabold text-sibs-navy">{offer.candidateName || "—"}</span>
                       </div>
                       <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.35fr)] items-start gap-3 text-xs">
-                        <span className="font-medium text-[#8A98B8]">Email Address:</span>
-                        <span className="break-all text-right font-semibold text-[#042C51]">{candidateEmail}</span>
+                        <span className="font-medium text-sibs-muted">Email Address:</span>
+                        <span className="break-all text-right font-semibold text-sibs-navy">{candidateEmail}</span>
                       </div>
                       <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.35fr)] items-start gap-3 text-xs">
-                        <span className="font-medium text-[#8A98B8]">Phone Contact:</span>
-                        <span className="text-right font-extrabold text-[#042C51] tabular-nums">{candidatePhone}</span>
+                        <span className="font-medium text-sibs-muted">Phone Contact:</span>
+                        <span className="text-right font-extrabold text-sibs-navy tabular-nums">{candidatePhone}</span>
                       </div>
                     </div>
                     <div className="space-y-1.5">
                       <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.35fr)] items-start gap-3 text-xs">
-                        <span className="font-medium text-[#8A98B8]">Position Title:</span>
-                        <span className="text-right font-extrabold text-[#042C51]">{currentRoleTitle}</span>
+                        <span className="font-medium text-sibs-muted">Position Title:</span>
+                        <span className="text-right font-extrabold text-sibs-navy">{currentRoleTitle}</span>
                       </div>
                       <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.35fr)] items-start gap-3 text-xs">
-                        <span className="font-medium text-[#8A98B8]">Account / Department:</span>
-                        <span className="text-right font-extrabold text-[#042C51]">
+                        <span className="font-medium text-sibs-muted">Account / Department:</span>
+                        <span className="text-right font-extrabold text-sibs-navy">
                           {currentAccount}
                           {departmentName ? ` (${departmentName})` : ""}
                         </span>
                       </div>
                       <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.35fr)] items-start gap-3 text-xs">
-                        <span className="font-medium text-[#8A98B8]">Requisition ID:</span>
-                        <span className="text-right font-extrabold text-[#042C51]">{requisitionId}</span>
+                        <span className="font-medium text-sibs-muted">Requisition ID:</span>
+                        <span className="text-right font-extrabold text-sibs-navy">{requisitionId}</span>
                       </div>
                     </div>
                   </div>
                 </section>
-                <section className="rounded-2xl border border-[#DDE4EC] bg-white p-4 shadow-sm sm:p-5">
-                  <div className="mb-3 flex flex-col gap-2 border-b border-[#E8EDF3] pb-2.5 sm:flex-row sm:items-center sm:justify-between">
-                    <h3 className="text-[10px] font-extrabold uppercase tracking-wide text-[#042C51]">
+                <section className="rounded-[14px] border border-sibs-border bg-white p-4 shadow-sm sm:p-5">
+                  <div className="mb-3 flex flex-col gap-2 border-b border-sibs-border pb-2.5 sm:flex-row sm:items-center sm:justify-between">
+                    <h3 className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-navy">
                       Compensation & Benefits Breakdown
                     </h3>
-                    <span className="w-fit rounded-md border border-[#CFE0F3] bg-[#EDF5FF] px-3 py-1 text-xs font-extrabold text-[#042C51] tabular-nums">
+                    <span className="w-fit rounded-[10px] border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-extrabold text-sibs-navy tabular-nums">
                       Total Value: {formatCurrency(currentTotalDailyRate)} / day
                     </span>
                   </div>
                   <div className="grid gap-3 sm:grid-cols-2">
-                    <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-3.5">
-                      <p className="text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+                    <div className="rounded-[10px] border border-sibs-border bg-slate-50 p-3.5">
+                      <p className="text-[9px] font-extrabold uppercase tracking-wide text-sibs-muted">
                         Basic Daily Rate
                       </p>
-                      <p className="mt-1 text-lg font-extrabold text-[#042C51] tabular-nums">
+                      <p className="mt-1 text-lg font-extrabold text-sibs-navy tabular-nums">
                         {getRateDisplay(currentBasicDailyRate)}
                       </p>
                     </div>
-                    <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-3.5">
-                      <p className="text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+                    <div className="rounded-[10px] border border-sibs-border bg-slate-50 p-3.5">
+                      <p className="text-[9px] font-extrabold uppercase tracking-wide text-sibs-muted">
                         Daily De Minimis
                       </p>
-                      <p className="mt-1 text-lg font-extrabold text-[#042C51] tabular-nums">
+                      <p className="mt-1 text-lg font-extrabold text-sibs-navy tabular-nums">
                         {getRateDisplay(currentDailyDeMinimis)}
                       </p>
                     </div>
                   </div>
                   {benefitList.length ? (
                     <div className="mt-3">
-                      <p className="mb-2 text-[10px] font-extrabold uppercase tracking-wide text-[#667085]">
+                      <p className="mb-2 text-[10px] font-extrabold uppercase tracking-wide text-sibs-muted">
                         Contract Perks & Benefits:
                       </p>
                       <div className="flex flex-wrap gap-1.5">
                         {benefitList.map((benefit, index) => (
                           <span
                             key={`${benefit}-${index}`}
-                            className="inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[10px] font-bold text-emerald-800"
+                            className="inline-flex items-center gap-1 rounded-[10px] border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[10px] font-bold text-emerald-800"
                           >
                             <Check size={12} className="text-emerald-600" />
                             {benefit}
@@ -864,13 +864,13 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
                     </div>
                   ) : null}
                 </section>
-                <section className="rounded-2xl border border-[#DDE4EC] bg-white p-4 shadow-sm sm:p-5">
-                  <div className="mb-3 flex flex-col gap-2 border-b border-[#E8EDF3] pb-2.5 sm:flex-row sm:items-center sm:justify-between">
-                    <h3 className="flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-wide text-[#042C51]">
-                      <ShieldCheck size={14} className="text-[#FF5C28]" />
+                <section className="rounded-[14px] border border-sibs-border bg-white p-4 shadow-sm sm:p-5">
+                  <div className="mb-3 flex flex-col gap-2 border-b border-sibs-border pb-2.5 sm:flex-row sm:items-center sm:justify-between">
+                    <h3 className="flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-wide text-sibs-navy">
+                      <ShieldCheck size={14} className="text-sibs-orange" />
                       Multi-User Approval Workflow Matrix
                     </h3>
-                    <span className="text-[10px] font-medium italic text-[#98A2B3]">
+                    <span className="text-[10px] font-medium italic text-sibs-muted">
                       Consensus: All configured votes required
                     </span>
                   </div>
@@ -878,17 +878,17 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
                     {approvalRows.map((approver) => (
                       <div
                         key={approver.id}
-                        className="flex flex-col gap-3 rounded-xl border border-[#173653] bg-[#FBFCFE] px-3.5 py-3 sm:flex-row sm:items-center sm:justify-between"
+                        className="flex flex-col gap-3 rounded-[10px] border border-sibs-border bg-slate-50 px-3.5 py-3 sm:flex-row sm:items-center sm:justify-between"
                       >
                         <div className="min-w-0">
                           <div className="flex flex-wrap items-center gap-2">
-                            <p className="text-xs font-extrabold text-[#042C51]">{approver.name}</p>
-                            <span className="rounded bg-[#E9EFF7] px-2 py-0.5 text-[9px] font-extrabold text-[#31577A]">
+                            <p className="text-xs font-extrabold text-sibs-navy">{approver.name}</p>
+                            <span className="rounded-[10px] bg-slate-200/60 px-2 py-0.5 text-[9px] font-extrabold text-sibs-navy">
                               {approver.role}
                             </span>
                           </div>
                           {approver.email ? (
-                            <p className="mt-1 truncate text-[10px] font-semibold text-[#8A98B8]">
+                            <p className="mt-1 truncate text-[10px] font-semibold text-sibs-muted">
                               {approver.email}
                             </p>
                           ) : null}
@@ -903,7 +903,7 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
                             {approver.status}
                           </span>
                           {approver.votedAt ? (
-                            <p className="mt-1 text-[9px] font-semibold text-[#98A2B3]">
+                            <p className="mt-1 text-[9px] font-semibold text-sibs-muted">
                               {formatOfferVersionDate(approver.votedAt)}
                             </p>
                           ) : null}
@@ -913,15 +913,15 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
                   </div>
                 </section>
                 {canSubmitRevision ? (
-                  <section className="rounded-2xl border border-amber-200 bg-amber-50 p-4 shadow-sm sm:p-5">
+                  <section className="rounded-[14px] border border-amber-200 bg-amber-50 p-4 shadow-sm sm:p-5">
                     <h3 className="text-sm font-extrabold text-amber-900">
                       Candidate Requested Negotiation
                     </h3>
-                    <p className="mt-2 rounded-lg border border-amber-200 bg-white p-3 text-xs font-semibold leading-5 text-amber-900">
+                    <p className="mt-2 rounded-[10px] border border-amber-200 bg-white p-3 text-xs font-semibold leading-5 text-amber-900">
                       {negotiationMessage || "No negotiation message was saved."}
                     </p>
                     <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                      <label className="text-[9px] font-extrabold uppercase tracking-wide text-[#667085]">
+                      <label className="text-[9px] font-extrabold uppercase tracking-wide text-sibs-muted">
                         New Basic Daily Rate
                         <input
                           type="number"
@@ -934,10 +934,10 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
                           onKeyDown={preventCompensationArrowChange}
                           onChange={(event) => setRevisedBasicPay(event.target.value)}
                           placeholder="Enter new basic daily rate"
-                          className="mt-1.5 h-10 w-full rounded-xl border border-[#D6DEE8] bg-white px-3 text-xs font-bold text-[#042C51] outline-none transition [appearance:textfield] placeholder:text-slate-400 focus:border-[#FF5C28] focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:bg-slate-100 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                          className="mt-1.5 h-10 w-full rounded-[10px] border border-sibs-border bg-white px-3 text-xs font-bold text-sibs-navy outline-none transition [appearance:textfield] placeholder:text-slate-400 focus:border-sibs-orange focus:ring-4 focus:ring-sibs-orange/10 disabled:cursor-not-allowed disabled:bg-slate-100 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                         />
                       </label>
-                      <label className="text-[9px] font-extrabold uppercase tracking-wide text-[#667085]">
+                      <label className="text-[9px] font-extrabold uppercase tracking-wide text-sibs-muted">
                         New Daily De Minimis
                         <input
                           type="number"
@@ -950,34 +950,34 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
                           onKeyDown={preventCompensationArrowChange}
                           onChange={(event) => setRevisedDeminimis(event.target.value)}
                           placeholder="Enter new daily de minimis"
-                          className="mt-1.5 h-10 w-full rounded-xl border border-[#D6DEE8] bg-white px-3 text-xs font-bold text-[#042C51] outline-none transition [appearance:textfield] placeholder:text-slate-400 focus:border-[#FF5C28] focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:bg-slate-100 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                          className="mt-1.5 h-10 w-full rounded-[10px] border border-sibs-border bg-white px-3 text-xs font-bold text-sibs-navy outline-none transition [appearance:textfield] placeholder:text-slate-400 focus:border-sibs-orange focus:ring-4 focus:ring-sibs-orange/10 disabled:cursor-not-allowed disabled:bg-slate-100 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                         />
                       </label>
                     </div>
-                    <label className="mt-3 block text-[9px] font-extrabold uppercase tracking-wide text-[#667085]">
+                    <label className="mt-3 block text-[9px] font-extrabold uppercase tracking-wide text-sibs-muted">
                       Internal Remarks
                       <textarea
                         rows={3}
                         value={revisedRemarks}
                         disabled={isBusy}
                         onChange={(event) => setRevisedRemarks(event.target.value)}
-                        className="mt-1.5 w-full resize-none rounded-xl border border-[#D6DEE8] bg-white p-3 text-xs font-semibold leading-5 text-[#042C51] outline-none transition focus:border-[#FF5C28] focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:bg-slate-100"
+                        className="mt-1.5 w-full resize-none rounded-[10px] border border-sibs-border bg-white p-3 text-xs font-semibold leading-5 text-sibs-navy outline-none transition focus:border-sibs-orange focus:ring-4 focus:ring-sibs-orange/10 disabled:cursor-not-allowed disabled:bg-slate-100"
                       />
                     </label>
                     <button
                       type="button"
                       disabled={isBusy}
                       onClick={submitRevision}
-                      className="mt-4 inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[#042C51] px-4 text-xs font-extrabold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+                      className="mt-4 inline-flex h-10 items-center justify-center gap-2 rounded-[10px] bg-sibs-navy px-4 text-xs font-extrabold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       {savingRevision ? <Loader2 size={15} className="animate-spin" /> : null}
                       {savingRevision ? "Submitting..." : "Submit New Offer for Approval"}
                     </button>
                   </section>
                 ) : null}
-                <section className="rounded-2xl border border-[#DDE4EC] bg-white p-4 shadow-sm sm:p-5">
-                  <div className="mb-3 border-b border-[#E8EDF3] pb-2.5">
-                    <h3 className="text-[10px] font-extrabold uppercase tracking-wide text-[#042C51]">
+                <section className="rounded-[14px] border border-sibs-border bg-white p-4 shadow-sm sm:p-5">
+                  <div className="mb-3 border-b border-sibs-border pb-2.5">
+                    <h3 className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-navy">
                       Evaluation Results
                     </h3>
                   </div>
@@ -1012,16 +1012,16 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
                 </section>
                 <section
                   ref={historySectionRef}
-                  className="scroll-mt-5 rounded-2xl border border-[#DDE4EC] bg-white p-4 shadow-sm sm:p-5"
+                  className="scroll-mt-5 rounded-[14px] border border-sibs-border bg-white p-4 shadow-sm sm:p-5"
                 >
-                  <div className="flex flex-col gap-3 border-b border-[#E8EDF3] pb-2.5 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex flex-col gap-3 border-b border-sibs-border pb-2.5 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex items-center gap-2">
-                      <History size={15} className="text-[#FF5C28]" />
-                      <h3 className="text-[10px] font-extrabold uppercase tracking-wide text-[#042C51]">
+                      <History size={15} className="text-sibs-orange" />
+                      <h3 className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-navy">
                         Negotiation History
                       </h3>
                     </div>
-                    <span className="rounded-full bg-[#E9F0FC] px-2.5 py-1 text-[9px] font-extrabold text-[#042C51]">
+                    <span className="rounded-full bg-blue-50 px-2.5 py-1 text-[9px] font-extrabold text-sibs-navy">
                       {displayedOfferHistory.length} Offer Version
                       {displayedOfferHistory.length === 1 ? "" : "s"}
                     </span>
@@ -1029,11 +1029,11 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
                   {loadingOfferHistory ? (
                     <div className="mt-4 space-y-3 animate-pulse">
                       <div className="h-4 w-1/3 rounded-full bg-slate-200" />
-                      <div className="h-28 rounded-2xl bg-slate-100" />
+                      <div className="h-28 rounded-[10px] bg-slate-100" />
                     </div>
                   ) : null}
                   {!loadingOfferHistory && displayedOfferHistory.length === 0 ? (
-                    <div className="mt-4 rounded-xl border border-dashed border-[#D6E0EA] bg-[#F8FAFC] px-5 py-8 text-center text-xs font-bold text-[#667085]">
+                    <div className="mt-4 rounded-[10px] border border-dashed border-sibs-border bg-slate-50 px-5 py-8 text-center text-xs font-bold text-sibs-muted">
                       No offer versions are available yet.
                     </div>
                   ) : null}
@@ -1043,12 +1043,12 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
                       return (
                         <article
                           key={`${version.id || "version"}-${version.versionNumber}`}
-                          className="rounded-xl border border-[#E2E8F0] bg-[#FBFCFE] p-3.5"
+                          className="rounded-[10px] border border-sibs-border bg-slate-50 p-3.5"
                         >
                           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                             <div>
                               <div className="flex flex-wrap items-center gap-2">
-                                <span className="rounded-full bg-[#042C51] px-2.5 py-0.5 text-[9px] font-extrabold uppercase text-white">
+                                <span className="rounded-full bg-sibs-navy px-2.5 py-0.5 text-[9px] font-extrabold uppercase text-white">
                                   Offer Version {version.versionNumber || displayedOfferHistory.length - versionIndex}
                                 </span>
                                 <span
@@ -1058,15 +1058,15 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
                                 >
                                   {version.approvalStatus || "For Review"}
                                 </span>
-                                <span className="text-[9px] font-extrabold uppercase text-[#667085]">
+                                <span className="text-[9px] font-extrabold uppercase text-sibs-muted">
                                   {isCurrentVersion ? "Current Offer" : "Previous Offer"}
                                 </span>
                               </div>
-                              <p className="mt-1.5 text-[10px] font-semibold text-[#667085]">
+                              <p className="mt-1.5 text-[10px] font-semibold text-sibs-muted">
                                 Submitted: {formatOfferVersionDate(version.submittedAt)} · Submitted by: {getOfferOwnerDisplay(version, offer)}
                               </p>
                             </div>
-                            <span className="w-fit rounded-full border border-[#E6ECF2] bg-white px-2.5 py-0.5 text-[9px] font-extrabold uppercase text-[#475467]">
+                            <span className="w-fit rounded-full border border-sibs-border bg-white px-2.5 py-0.5 text-[9px] font-extrabold uppercase text-slate-600">
                               Candidate: {version.candidateResponse || "Pending"}
                             </span>
                           </div>
@@ -1084,7 +1084,7 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
                           </div>
                           {(version.candidateMessage || version.internalRemarks) ? (
                             <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                              <div className="rounded-xl border border-amber-100 bg-amber-50 p-3">
+                              <div className="rounded-[10px] border border-amber-100 bg-amber-50 p-3">
                                 <p className="text-[9px] font-extrabold uppercase tracking-wide text-amber-700">
                                   Candidate Remark
                                 </p>
@@ -1092,8 +1092,8 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
                                   {version.candidateMessage || "—"}
                                 </p>
                               </div>
-                              <div className="rounded-xl border border-blue-100 bg-blue-50 p-3">
-                                <p className="text-[9px] font-extrabold uppercase tracking-wide text-[#042C51]">
+                              <div className="rounded-[10px] border border-blue-100 bg-blue-50 p-3">
+                                <p className="text-[9px] font-extrabold uppercase tracking-wide text-sibs-navy">
                                   Internal Remark
                                 </p>
                                 <InternalRemarkContent value={version.internalRemarks} />
@@ -1108,13 +1108,13 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
               </div>
             ) : (
               <div className="space-y-4">
-                <section className="rounded-2xl border border-[#DDE4EC] bg-white p-5 shadow-sm">
-                  <div className="flex flex-col gap-3 border-b border-[#E8EDF3] pb-4 sm:flex-row sm:items-start sm:justify-between">
+                <section className="rounded-[14px] border border-sibs-border bg-white p-5 shadow-sm">
+                  <div className="flex flex-col gap-3 border-b border-sibs-border pb-4 sm:flex-row sm:items-start sm:justify-between">
                     <div>
-                      <h3 className="text-sm font-extrabold text-[#042C51]">
+                      <h3 className="text-sm font-extrabold text-sibs-navy">
                         Generated Contract Document
                       </h3>
-                      <p className="mt-1 text-xs font-semibold leading-5 text-[#667085]">
+                      <p className="mt-1 text-xs font-semibold leading-5 text-sibs-muted">
                         Employment Offer PDF generated from the current approved offer version.
                       </p>
                     </div>
@@ -1123,19 +1123,19 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
                     </span>
                   </div>
                   {currentPdfVersion ? (
-                    <div className="mt-5 rounded-2xl border border-[#D9E2EC] bg-[#F8FAFC] p-5">
+                    <div className="mt-5 rounded-[14px] border border-sibs-border bg-slate-50 p-5">
                       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                         <div className="flex min-w-0 items-center gap-3">
-                          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#042C51] text-[#FF5C28]">
+                          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] bg-sibs-navy text-sibs-orange">
                             <FileText size={20} />
                           </span>
                           <div className="min-w-0">
-                            <p className="truncate text-xs font-extrabold text-[#042C51]">
+                            <p className="truncate text-xs font-extrabold text-sibs-navy">
                               {currentPdfVersion.pdfFilename ||
                                 currentPdfVersion.pdf_filename ||
                                 `Employment Offer Version ${currentPdfVersion.versionNumber}.pdf`}
                             </p>
-                            <p className="mt-1 text-[10px] font-semibold text-[#667085]">
+                            <p className="mt-1 text-[10px] font-semibold text-sibs-muted">
                               Offer Version {currentPdfVersion.versionNumber} · {formatOfferVersionDate(currentPdfVersion.submittedAt)}
                             </p>
                           </div>
@@ -1143,18 +1143,18 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
                         <button
                           type="button"
                           onClick={() => openEmploymentOfferPdf(currentPdfVersion)}
-                          className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg bg-[#042C51] px-4 text-xs font-extrabold text-white transition hover:opacity-90"
+                          className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-[10px] bg-sibs-navy px-4 text-xs font-extrabold text-white transition hover:opacity-90"
                         >
-                          <FileText size={15} className="text-[#FF5C28]" />
+                          <FileText size={15} className="text-sibs-orange" />
                           Open Employment Offer
                         </button>
                       </div>
                     </div>
                   ) : (
-                    <div className="mt-5 rounded-xl border border-dashed border-[#D6E0EA] bg-[#F8FAFC] px-5 py-10 text-center">
-                      <FileText size={30} className="mx-auto text-[#98A2B3]" />
-                      <p className="mt-3 text-sm font-extrabold text-[#042C51]">No generated contract PDF yet</p>
-                      <p className="mt-1 text-xs font-semibold text-[#667085]">
+                    <div className="mt-5 rounded-[10px] border border-dashed border-sibs-border bg-slate-50 px-5 py-10 text-center">
+                      <FileText size={30} className="mx-auto text-sibs-muted" />
+                      <p className="mt-3 text-sm font-extrabold text-sibs-navy">No generated contract PDF yet</p>
+                      <p className="mt-1 text-xs font-semibold text-sibs-muted">
                         The document will appear here once an Employment Offer PDF is generated for an offer version.
                       </p>
                     </div>
@@ -1163,9 +1163,9 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
                 {displayedOfferHistory.filter(
                   (version) => version?.pdfAvailable || version?.pdfFilename || version?.pdf_filename,
                 ).length > 1 ? (
-                  <section className="rounded-2xl border border-[#DDE4EC] bg-white p-5 shadow-sm">
-                    <div className="mb-3 border-b border-[#E8EDF3] pb-2.5">
-                      <h3 className="text-[10px] font-extrabold uppercase tracking-wide text-[#042C51]">
+                  <section className="rounded-[14px] border border-sibs-border bg-white p-5 shadow-sm">
+                    <div className="mb-3 border-b border-sibs-border pb-2.5">
+                      <h3 className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-navy">
                         Previous Generated Documents
                       </h3>
                     </div>
@@ -1180,17 +1180,17 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
                             key={`pdf-${version.versionNumber}`}
                             type="button"
                             onClick={() => openEmploymentOfferPdf(version)}
-                            className="flex w-full items-center justify-between gap-3 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-4 py-3 text-left transition hover:border-[#FF5C28]/40 hover:bg-white"
+                            className="flex w-full items-center justify-between gap-3 rounded-[10px] border border-sibs-border bg-slate-50 px-4 py-3 text-left transition hover:border-sibs-orange/40 hover:bg-white"
                           >
                             <span className="min-w-0">
-                              <span className="block truncate text-xs font-extrabold text-[#042C51]">
+                              <span className="block truncate text-xs font-extrabold text-sibs-navy">
                                 {version.pdfFilename || version.pdf_filename || `Employment Offer Version ${version.versionNumber}.pdf`}
                               </span>
-                              <span className="mt-0.5 block text-[10px] font-semibold text-[#667085]">
+                              <span className="mt-0.5 block text-[10px] font-semibold text-sibs-muted">
                                 Offer Version {version.versionNumber} · {formatOfferVersionDate(version.submittedAt)}
                               </span>
                             </span>
-                            <FileText size={16} className="shrink-0 text-[#FF5C28]" />
+                            <FileText size={16} className="shrink-0 text-sibs-orange" />
                           </button>
                         ))}
                     </div>
@@ -1199,13 +1199,13 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
               </div>
             )}
           </div>
-          <div className="shrink-0 border-t border-[#E6ECF2] bg-white px-5 py-3 sm:px-6 2xl:py-4">
+          <div className="shrink-0 border-t border-sibs-border bg-white px-5 py-3 sm:px-6 2xl:py-4">
             <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-end">
               <button
                 type="button"
                 onClick={handleClose}
                 disabled={isBusy}
-                className="inline-flex h-10 items-center justify-center rounded-lg border border-[#D6DEE8] bg-white px-4 text-xs font-extrabold text-[#475467] transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex h-10 items-center justify-center rounded-[10px] border border-sibs-border bg-white px-4 text-xs font-extrabold text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 Close
               </button>
@@ -1215,7 +1215,7 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
                     type="button"
                     disabled={isBusy}
                     onClick={() => handleOfferApproval("Rejected")}
-                    className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 text-xs font-extrabold text-red-600 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
+                    className="inline-flex h-10 items-center justify-center gap-2 rounded-[10px] border border-red-200 bg-red-50 px-4 text-xs font-extrabold text-red-600 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {approvalAction === "Rejected" ? (
                       <Loader2 size={15} className="animate-spin" />
@@ -1228,12 +1228,12 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
                     type="button"
                     disabled={isBusy}
                     onClick={() => handleOfferApproval("Approved")}
-                    className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[#042C51] px-4 text-xs font-extrabold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+                    className="inline-flex h-10 items-center justify-center gap-2 rounded-[10px] bg-sibs-navy px-4 text-xs font-extrabold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {approvalAction === "Approved" ? (
                       <Loader2 size={15} className="animate-spin" />
                     ) : (
-                      <Check size={15} className="text-[#FF5C28]" />
+                      <Check size={15} className="text-sibs-orange" />
                     )}
                     {approvalAction === "Approved" ? "Approving..." : "Approve"}
                   </button>

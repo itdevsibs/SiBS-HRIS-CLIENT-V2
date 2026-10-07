@@ -193,12 +193,12 @@ export default function EmploymentOfferPdfPreviewModal({
       onClick={onClose}
     >
       <div
-        className="sibs-modal-pop-in flex max-h-[92dvh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl font-jakarta"
+        className="sibs-modal-pop-in flex max-h-[92dvh] w-full max-w-5xl flex-col overflow-hidden rounded-[14px] border border-sibs-border bg-white shadow-2xl font-jakarta"
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="flex items-center justify-between bg-[#042C51] px-5 py-3 2xl:py-3.5 text-white">
+        <div className="flex items-center justify-between bg-sibs-navy px-5 py-3 2xl:py-3.5 text-white">
           <div className="flex min-w-0 items-center gap-2.5 2xl:gap-3">
-            <span className="flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg bg-[#FF5C28] text-white shadow-sm">
+            <span className="flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-[10px] bg-sibs-orange text-white shadow-sm">
               <FileText size={16} />
             </span>
 
@@ -213,7 +213,7 @@ export default function EmploymentOfferPdfPreviewModal({
           <button
             type="button"
             onClick={onClose}
-            className="inline-flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg text-white/70 transition hover:bg-white/10 hover:text-white"
+            className="sibs-modal-close-btn"
             aria-label="Close Employment Offer preview"
           >
             <X size={18} />
@@ -222,14 +222,14 @@ export default function EmploymentOfferPdfPreviewModal({
 
         <div className="min-h-0 flex-1 overflow-auto p-5">
           {loading ? (
-            <div className="flex min-h-[520px] flex-col items-center justify-center rounded-xl bg-[#F8FAFC] text-center">
-              <Loader2 size={30} className="animate-spin text-[#042C51]" />
-              <p className="mt-4 text-sm font-extrabold text-[#042C51]">
+            <div className="flex min-h-[520px] flex-col items-center justify-center rounded-[10px] bg-slate-50 text-center">
+              <Loader2 size={30} className="animate-spin text-sibs-navy" />
+              <p className="mt-4 text-sm font-extrabold text-sibs-navy">
                 Loading Employment Offer PDF...
               </p>
             </div>
           ) : errorMessage ? (
-            <div className="flex min-h-[420px] flex-col items-center justify-center rounded-xl border border-red-100 bg-red-50 p-8 text-center">
+            <div className="flex min-h-[420px] flex-col items-center justify-center rounded-[10px] border border-red-100 bg-red-50 p-8 text-center">
               <FileText size={36} className="text-red-600" />
               <p className="mt-4 text-sm font-extrabold text-red-700">
                 Employment Offer preview unavailable
@@ -242,23 +242,23 @@ export default function EmploymentOfferPdfPreviewModal({
             <iframe
               src={previewUrl}
               title={displayFilename}
-              className="h-[68dvh] min-h-[520px] w-full rounded-xl border border-[#D6E0EA]"
+              className="h-[68dvh] min-h-[520px] w-full rounded-[10px] border border-sibs-border"
             />
           ) : (
-            <div className="flex min-h-[420px] items-center justify-center rounded-xl bg-[#F8FAFC] text-sm font-bold text-[#667085]">
+            <div className="flex min-h-[420px] items-center justify-center rounded-[10px] bg-slate-50 text-sm font-bold text-sibs-muted">
               No PDF preview is available.
             </div>
           )}
 
-          <div className="mt-4 flex flex-col gap-3 rounded-xl border border-[#E6ECF2] bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="mt-4 flex flex-col gap-3 rounded-[10px] border border-sibs-border bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="min-w-0">
               <p
                 title={displayFilename}
-                className="truncate text-xs font-extrabold text-[#344054]"
+                className="truncate text-xs font-extrabold text-slate-700"
               >
                 {displayFilename}
               </p>
-              <p className="mt-1 text-[10px] font-semibold text-[#667085]">
+              <p className="mt-1 text-[10px] font-semibold text-sibs-muted">
                 Employment Offer · Candidate Pipeline
               </p>
             </div>
@@ -267,9 +267,9 @@ export default function EmploymentOfferPdfPreviewModal({
               type="button"
               disabled={!previewUrl || loading}
               onClick={handleDownload}
-              className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-lg bg-[#042C51] px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-[10px] bg-sibs-navy px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              <Download size={14} className="text-[#FF5C28]" />
+              <Download size={14} className="text-sibs-orange" />
               Download
             </button>
           </div>

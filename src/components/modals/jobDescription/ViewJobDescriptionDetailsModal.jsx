@@ -429,7 +429,7 @@ export default function ViewJobDescriptionDetailsModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="view-job-description-modal-title"
-        className="sibs-modal-pop-in flex max-h-[92dvh] h-full w-full max-w-[1400px] flex-col overflow-hidden rounded-2xl border border-white/70 bg-white shadow-2xl font-jakarta"
+        className="sibs-modal-pop-in flex max-h-[92dvh] h-full w-full max-w-[1400px] flex-col overflow-hidden rounded-[14px] border border-white/70 bg-white shadow-2xl font-jakarta"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="shrink-0 border-b border-sibs-border bg-white px-4 py-3 sm:px-6 2xl:py-3.5">
@@ -464,7 +464,7 @@ export default function ViewJobDescriptionDetailsModal({
                 type="button"
                 onClick={onClose}
                 disabled={saving}
-                className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-sibs-border text-sibs-navy hover:bg-sibs-surface hover:text-sibs-orange transition active:scale-[0.98]"
+                className="inline-flex h-8 w-8 items-center justify-center rounded-[10px] border border-sibs-border text-sibs-navy hover:bg-sibs-surface hover:text-sibs-orange transition active:scale-[0.98]"
                 aria-label="Close"
               >
                 <X size={16} />
@@ -521,7 +521,7 @@ export default function ViewJobDescriptionDetailsModal({
             )}
 
             {!approvalPage && activeDetailTab === "Revision History" && (
-              <div className="mx-auto w-full max-w-[900px] rounded-2xl bg-white p-4 shadow-sm sm:p-5">
+              <div className="mx-auto w-full max-w-[900px] rounded-[14px] bg-white p-4 shadow-sm sm:p-5">
                 <RevisionHistory revisionHistory={revisionHistory} item={item} />
               </div>
             )}
@@ -531,7 +531,7 @@ export default function ViewJobDescriptionDetailsModal({
         <div className="shrink-0 border-t border-sibs-border bg-white px-4 py-2.5 sm:px-6 2xl:py-3">
           <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-end">
             {!hasRevisionComments && hasEditedChanges && (
-              <div className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-amber-700">
+              <div className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-[10px] border border-amber-200 bg-amber-50 px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-amber-700">
                 <AlertTriangle className="h-3.5 w-3.5 2xl:h-4 2xl:w-4" />
                 Tagged for revision
               </div>
@@ -539,7 +539,7 @@ export default function ViewJobDescriptionDetailsModal({
 
             {!hasRevisionComments && hasEditedChanges && (
               <>
-                <div className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-lg border border-blue-100 bg-blue-50 px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-navy">
+                <div className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-[10px] border border-blue-100 bg-blue-50 px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-navy">
                   <AlertTriangle className="h-3.5 w-3.5 2xl:h-4 2xl:w-4" />
                   New version changes
                 </div>
@@ -547,7 +547,7 @@ export default function ViewJobDescriptionDetailsModal({
                 <button
                   type="button"
                   onClick={() => setShowEditedChanges(true)}
-                  className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-lg border border-sibs-border bg-white px-3.5 2xl:px-4 sibs-text-xs font-bold text-sibs-navy shadow-sm transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange"
+                  className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-[10px] border border-sibs-border bg-white px-3.5 2xl:px-4 sibs-text-xs font-bold text-sibs-navy shadow-sm transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange"
                 >
                   <Eye className="h-3.5 w-3.5 2xl:h-4 2xl:w-4" />
                   View Changes
@@ -559,7 +559,7 @@ export default function ViewJobDescriptionDetailsModal({
               type="button"
               onClick={onClose}
               disabled={saving}
-              className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg border border-sibs-border bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-navy transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-[10px] border border-sibs-border bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-navy transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {approvalPage ? "Cancel" : "Close"}
             </button>
@@ -570,7 +570,7 @@ export default function ViewJobDescriptionDetailsModal({
                 onClick={handlePrimaryAction}
                 disabled={saving}
                 title={primaryButtonTitle}
-                className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-lg bg-sibs-orange px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-sibs-button-hover disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-[10px] bg-sibs-orange px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-sibs-button-hover disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {saving ? (
                   <>
@@ -589,7 +589,7 @@ export default function ViewJobDescriptionDetailsModal({
       {showEditedChanges && (
         <div className="sibs-modal-backdrop-in sibs-modal-blur fixed inset-0 z-[10000] flex items-center justify-center px-4">
           <div
-            className="sibs-modal-pop-in w-full max-w-3xl overflow-hidden rounded-2xl bg-white shadow-2xl font-jakarta"
+            className="sibs-modal-pop-in w-full max-w-3xl overflow-hidden rounded-[14px] bg-white shadow-2xl font-jakarta"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-start justify-between border-b border-sibs-border px-5 py-4">
@@ -606,7 +606,7 @@ export default function ViewJobDescriptionDetailsModal({
               <button
                 type="button"
                 onClick={() => setShowEditedChanges(false)}
-                className="rounded-lg px-3 py-1 text-sm font-bold text-sibs-navy transition hover:bg-sibs-surface hover:text-sibs-orange"
+                className="rounded-[10px] px-3 py-1 text-sm font-bold text-sibs-navy transition hover:bg-sibs-surface hover:text-sibs-orange"
               >
                 Close
               </button>
@@ -618,7 +618,7 @@ export default function ViewJobDescriptionDetailsModal({
                   {editedChangeDetails.map((change) => (
                     <div
                       key={change.key}
-                      className="rounded-xl border border-sibs-border bg-sibs-surface p-4"
+                      className="rounded-[10px] border border-sibs-border bg-sibs-surface p-4"
                     >
                       <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                         <h4 className="text-sm font-extrabold text-sibs-navy">
@@ -631,7 +631,7 @@ export default function ViewJobDescriptionDetailsModal({
                       </div>
 
                       <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                        <div className="rounded-lg border border-sibs-border bg-white p-3">
+                        <div className="rounded-[10px] border border-sibs-border bg-white p-3">
                           <p className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-navy/70">
                             Previous Value
                           </p>
@@ -641,7 +641,7 @@ export default function ViewJobDescriptionDetailsModal({
                           </p>
                         </div>
 
-                        <div className="rounded-lg border border-blue-100 bg-blue-50 p-3">
+                        <div className="rounded-[10px] border border-blue-100 bg-blue-50 p-3">
                           <p className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-navy/70">
                             New Value
                           </p>
@@ -655,7 +655,7 @@ export default function ViewJobDescriptionDetailsModal({
                   ))}
                 </div>
               ) : (
-                <div className="rounded-xl border border-sibs-border bg-sibs-surface px-4 py-6 text-center">
+                <div className="rounded-[10px] border border-sibs-border bg-sibs-surface px-4 py-6 text-center">
                   <p className="text-sm font-semibold text-sibs-muted">
                     No edited changes detected.
                   </p>
@@ -667,7 +667,7 @@ export default function ViewJobDescriptionDetailsModal({
               <button
                 type="button"
                 onClick={() => setShowEditedChanges(false)}
-                className="inline-flex h-10 items-center justify-center rounded-lg bg-sibs-navy px-5 text-sm font-extrabold text-white transition hover:opacity-90"
+                className="inline-flex h-10 items-center justify-center rounded-[10px] bg-sibs-navy px-5 text-sm font-extrabold text-white transition hover:opacity-90"
               >
                 Done
               </button>

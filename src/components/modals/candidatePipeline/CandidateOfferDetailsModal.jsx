@@ -385,20 +385,20 @@ function HrisDropdown({
       {searchable ? (
         <div
           onClick={openDropdown}
-          className={`flex h-12 w-full min-w-0 items-center gap-3 rounded-xl border px-4 text-left text-sm font-extrabold shadow-sm outline-none transition ${
+          className={`flex h-12 w-full min-w-0 items-center gap-3 rounded-[10px] border px-4 text-left text-sm font-extrabold shadow-sm outline-none transition ${
             open
-              ? "border-sibs-primary-1 ring-4 ring-sibs-primary-1/10"
-              : "border-[#D0D5DD] hover:border-sibs-primary-1/50 hover:bg-[#F8FAFC]"
+              ? "border-sibs-navy ring-4 ring-sibs-navy/10"
+              : "border-sibs-border hover:border-sibs-navy/50 hover:bg-sibs-surface"
           } ${
             disabled
-              ? "cursor-not-allowed bg-[#F8FAFC] text-sibs-tertiary-5"
-              : "cursor-text bg-white text-sibs-primary-1"
+              ? "cursor-not-allowed bg-sibs-surface text-sibs-muted"
+              : "cursor-text bg-white text-sibs-navy"
           }`}
         >
           <Search
             size={17}
             className={`shrink-0 ${
-              disabled ? "text-sibs-tertiary-5" : "text-sibs-primary-1"
+              disabled ? "text-sibs-muted" : "text-sibs-navy"
             }`}
           />
 
@@ -410,13 +410,13 @@ function HrisDropdown({
             onChange={handleSearchChange}
             onKeyDown={handleSearchKeyDown}
             placeholder={inputPlaceholder}
-            className="h-full min-w-0 flex-1 bg-transparent text-sm font-extrabold text-sibs-primary-1 outline-none placeholder:text-sibs-tertiary-5 disabled:cursor-not-allowed disabled:text-sibs-tertiary-5"
+            className="h-full min-w-0 flex-1 bg-transparent text-sm font-extrabold text-sibs-navy outline-none placeholder:text-sibs-muted disabled:cursor-not-allowed disabled:text-sibs-muted"
           />
 
           {loading ? (
             <Loader2
               size={18}
-              className="shrink-0 animate-spin text-sibs-primary-1"
+              className="shrink-0 animate-spin text-sibs-navy"
             />
           ) : (
             <button
@@ -425,7 +425,7 @@ function HrisDropdown({
               disabled={disabled}
               onMouseDown={(event) => event.preventDefault()}
               onClick={toggleDropdown}
-              className="shrink-0 rounded-lg p-1 text-sibs-primary-1 transition hover:bg-[#EAF4FF] disabled:cursor-not-allowed disabled:text-sibs-tertiary-5 disabled:hover:bg-transparent"
+              className="shrink-0 rounded-[8px] p-1 text-sibs-navy transition hover:bg-sky-50 disabled:cursor-not-allowed disabled:text-sibs-muted disabled:hover:bg-transparent"
             >
               <ChevronDown
                 size={18}
@@ -439,19 +439,19 @@ function HrisDropdown({
           type="button"
           disabled={disabled}
           onClick={toggleDropdown}
-          className={`flex h-12 w-full min-w-0 items-center justify-between gap-3 rounded-xl border px-4 text-left text-sm font-extrabold shadow-sm outline-none transition ${
+          className={`flex h-12 w-full min-w-0 items-center justify-between gap-3 rounded-[10px] border px-4 text-left text-sm font-extrabold shadow-sm outline-none transition ${
             open
-              ? "border-sibs-primary-1 ring-4 ring-sibs-primary-1/10"
-              : "border-[#D0D5DD] hover:border-sibs-primary-1/50 hover:bg-[#F8FAFC]"
+              ? "border-sibs-navy ring-4 ring-sibs-navy/10"
+              : "border-sibs-border hover:border-sibs-navy/50 hover:bg-sibs-surface"
           } ${
             disabled
-              ? "cursor-not-allowed bg-[#F8FAFC] text-sibs-tertiary-5"
-              : "bg-white text-sibs-primary-1"
+              ? "cursor-not-allowed bg-sibs-surface text-sibs-muted"
+              : "bg-white text-sibs-navy"
           }`}
         >
           <span
             className={`min-w-0 flex-1 truncate ${
-              selectedOption ? "text-sibs-primary-1" : "text-sibs-tertiary-5"
+              selectedOption ? "text-sibs-navy" : "text-sibs-muted"
             }`}
           >
             {loading
@@ -462,13 +462,13 @@ function HrisDropdown({
           {loading ? (
             <Loader2
               size={18}
-              className="shrink-0 animate-spin text-sibs-primary-1"
+              className="shrink-0 animate-spin text-sibs-navy"
             />
           ) : (
             <ChevronDown
               size={18}
               className={`shrink-0 transition-transform ${
-                disabled ? "text-sibs-tertiary-5" : "text-sibs-primary-1"
+                disabled ? "text-sibs-muted" : "text-sibs-navy"
               } ${open ? "rotate-180" : ""}`}
             />
           )}
@@ -476,7 +476,7 @@ function HrisDropdown({
       )}
 
       {open && !disabled && (
-        <div className="sibs-dropdown-pop-in absolute left-0 right-0 top-[calc(100%+8px)] z-[10080] overflow-hidden rounded-xl border border-[#D9E2EC] bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)]">
+        <div className="sibs-dropdown-pop-in absolute left-0 right-0 top-[calc(100%+8px)] z-[10080] overflow-hidden rounded-[10px] border border-sibs-border bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)]">
           <div className="max-h-72 overflow-y-auto py-2">
             {filteredOptions.length > 0 ? (
               filteredOptions.map((option) => {
@@ -489,8 +489,8 @@ function HrisDropdown({
                     onClick={() => handleSelect(option)}
                     className={`flex w-full items-start justify-between gap-3 px-4 py-3 text-left transition ${
                       active
-                        ? "bg-[#EAF4FF] text-sibs-primary-1"
-                        : "bg-white text-[#344054] hover:bg-[#F5F9FF] hover:text-sibs-primary-1"
+                        ? "bg-sky-50 text-sibs-navy"
+                        : "bg-white text-sibs-navy hover:bg-sky-50/50 hover:text-sibs-navy"
                     }`}
                   >
                     <span className="min-w-0 flex-1">
@@ -499,7 +499,7 @@ function HrisDropdown({
                       </span>
 
                       {option.subLabel && (
-                        <span className="mt-0.5 block truncate text-xs font-semibold text-sibs-tertiary-5">
+                        <span className="mt-0.5 block truncate text-xs font-semibold text-sibs-muted">
                           {option.subLabel}
                         </span>
                       )}
@@ -508,14 +508,14 @@ function HrisDropdown({
                     {active && (
                       <Check
                         size={17}
-                        className="mt-0.5 shrink-0 text-sibs-primary-1"
+                        className="mt-0.5 shrink-0 text-sibs-navy"
                       />
                     )}
                   </button>
                 );
               })
             ) : (
-              <div className="px-4 py-5 text-center text-sm font-bold text-sibs-tertiary-5">
+              <div className="px-4 py-5 text-center text-sm font-bold text-sibs-muted">
                 {emptyText}
               </div>
             )}
@@ -527,10 +527,10 @@ function HrisDropdown({
 }
 
 function inputClass(hasError = false) {
-  return `h-8.5 2xl:h-10 w-full rounded-xl border bg-[#F8FAFC] px-3 2xl:px-3.5 sibs-text-xs font-semibold text-[#042C51] shadow-sm outline-none transition placeholder:text-[#6B88A8] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:bg-[#F2F4F7] disabled:text-[#98A2B3] disabled:opacity-80 ${
+  return `h-8.5 2xl:h-10 w-full rounded-[10px] border bg-sibs-surface px-3 2xl:px-3.5 sibs-text-xs font-semibold text-sibs-navy shadow-sm outline-none transition placeholder:text-sibs-faint hover:border-sibs-orange/40 hover:bg-white focus:border-sibs-orange focus:bg-white focus:ring-4 focus:ring-sibs-orange/10 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-sibs-muted disabled:opacity-80 ${
     hasError
       ? "border-red-400 ring-4 ring-red-100 focus:border-red-500 focus:ring-red-100"
-      : "border-[#D7DEE8]"
+      : "border-sibs-border"
   }`;
 }
 
@@ -539,7 +539,7 @@ function handleNumberInputWheel(event) {
 }
 
 function textareaClass() {
-  return "min-h-18 2xl:min-h-24 w-full resize-none rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-3 py-2 sibs-text-xs font-semibold leading-5 text-[#042C51] shadow-sm outline-none transition placeholder:text-[#6B88A8] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10";
+  return "min-h-18 2xl:min-h-24 w-full resize-none rounded-[10px] border border-sibs-border bg-sibs-surface px-3 py-2 sibs-text-xs font-semibold leading-5 text-sibs-navy shadow-sm outline-none transition placeholder:text-sibs-faint hover:border-sibs-orange/40 hover:bg-white focus:border-sibs-orange focus:bg-white focus:ring-4 focus:ring-sibs-orange/10";
 }
 
 function padDatePart(value) {
@@ -640,13 +640,13 @@ function StartDatePicker({ value, onChange, hasError = false, inputRef = null })
       </button>
 
       {open && (
-        <div className="sibs-dropdown-pop-in absolute left-0 top-[calc(100%+8px)] z-[10150] w-full min-w-[310px] rounded-xl border border-[#D9E2EC] bg-white p-3.5 shadow-[0_18px_45px_rgba(15,23,42,0.18)]">
+        <div className="sibs-dropdown-pop-in absolute left-0 top-[calc(100%+8px)] z-[10150] w-full min-w-[310px] rounded-[10px] border border-sibs-border bg-white p-3.5 shadow-[0_18px_45px_rgba(15,23,42,0.18)]">
           <div className="mb-3 flex items-center justify-between">
-            <button type="button" onClick={() => setViewDate(new Date(year, month - 1, 1))} className="rounded-lg p-2 hover:bg-gray-100"><ChevronLeft size={18} /></button>
-            <span className="text-sm font-extrabold text-sibs-primary-1">{viewDate.toLocaleDateString("en-PH", { month: "long", year: "numeric" })}</span>
-            <button type="button" onClick={() => setViewDate(new Date(year, month + 1, 1))} className="rounded-lg p-2 hover:bg-gray-100"><ChevronRight size={18} /></button>
+            <button type="button" onClick={() => setViewDate(new Date(year, month - 1, 1))} className="rounded-[8px] p-2 hover:bg-gray-100"><ChevronLeft size={18} /></button>
+            <span className="text-sm font-extrabold text-sibs-navy">{viewDate.toLocaleDateString("en-PH", { month: "long", year: "numeric" })}</span>
+            <button type="button" onClick={() => setViewDate(new Date(year, month + 1, 1))} className="rounded-[8px] p-2 hover:bg-gray-100"><ChevronRight size={18} /></button>
           </div>
-          <div className="grid grid-cols-7 gap-1 text-center text-[11px] font-extrabold text-sibs-tertiary-5">
+          <div className="grid grid-cols-7 gap-1 text-center text-[11px] font-extrabold text-sibs-muted">
             {['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map((day) => <span key={day} className="py-1">{day}</span>)}
           </div>
           <div className="mt-1 grid grid-cols-7 gap-1">
@@ -662,7 +662,7 @@ function StartDatePicker({ value, onChange, hasError = false, inputRef = null })
                   type="button"
                   disabled={disabled}
                   onClick={() => { onChange(dateValue); setOpen(false); }}
-                  className={`h-9 rounded-lg text-sm font-bold transition ${active ? "bg-sibs-primary-1 text-white" : disabled ? "cursor-not-allowed bg-gray-50 text-gray-300" : "text-sibs-primary-1 hover:bg-[#EAF4FF]"}`}
+                  className={`h-9 rounded-[8px] text-sm font-bold transition ${active ? "bg-sibs-navy text-white" : disabled ? "cursor-not-allowed bg-gray-50 text-gray-300" : "text-sibs-navy hover:bg-sky-50"}`}
                   title={
                     disabled
                       ? "Start date cannot be earlier than the suggested date after NHO."
@@ -1116,8 +1116,8 @@ export default function CandidateOfferDetailsModal({
             >
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
-                  <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
-                    Final Role Title <span className="text-[#FF5C28]"> *</span>
+                  <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-sibs-muted">
+                    Final Role Title <span className="text-sibs-orange"> *</span>
                   </label>
                   <div className="relative">
                     <input
@@ -1138,7 +1138,7 @@ export default function CandidateOfferDetailsModal({
                         );
                         setReprofileOpen(true);
                       }}
-                      className="absolute right-1.5 top-1/2 inline-flex h-7.5 2xl:h-8 -translate-y-1/2 items-center justify-center gap-1.5 rounded-lg border border-[#D6E0EA] bg-white px-2.5 2xl:px-3 text-[10px] font-extrabold text-sibs-primary-1 transition hover:border-[#FF5C28]/35 hover:bg-[#FFF8F5] hover:text-[#FF5C28] focus:border-red-400 focus:outline-none focus:ring-4 focus:ring-red-100"
+                      className="absolute right-1.5 top-1/2 inline-flex h-7.5 2xl:h-8 -translate-y-1/2 items-center justify-center gap-1.5 rounded-[8px] border border-sibs-border bg-white px-2.5 2xl:px-3 text-[10px] font-extrabold text-sibs-navy transition hover:border-sibs-orange/35 hover:bg-sibs-cream-light hover:text-sibs-orange focus:border-red-400 focus:outline-none focus:ring-4 focus:ring-red-100"
                     >
                       <RefreshCw size={13} /> Reprofile
                     </button>
@@ -1151,8 +1151,8 @@ export default function CandidateOfferDetailsModal({
                 </div>
 
                 <div>
-                  <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
-                    Final Account <span className="text-[#FF5C28]"> *</span>
+                  <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-sibs-muted">
+                    Final Account <span className="text-sibs-orange"> *</span>
                   </label>
                   <input
                     type="text"
@@ -1171,7 +1171,7 @@ export default function CandidateOfferDetailsModal({
               </div>
 
               {!cleanText(form?.hiringRequirementId) && !isLoadingHiringNeeds && !loadError && (
-                <div className="mt-4 rounded-xl border border-amber-100 bg-amber-50 px-4 py-3 text-[10px] font-bold leading-5 text-amber-800">
+                <div className="mt-4 rounded-[10px] border border-amber-100 bg-amber-50 px-4 py-3 text-[10px] font-bold leading-5 text-amber-800">
                   The applicant's applied account is selected, but no approved Hiring Requirement currently matches this Role Title and Account. If the account is already full, use Reprofile to select another approved account before proceeding.
                 </div>
               )}
@@ -1181,8 +1181,8 @@ export default function CandidateOfferDetailsModal({
           <CandidateModalSection title="Compensation">
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
-                <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
-                  Basic Daily Rate <span className="text-[#FF5C28]"> *</span>
+                <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-sibs-muted">
+                  Basic Daily Rate <span className="text-sibs-orange"> *</span>
                 </label>
                 <input
                   ref={basicPayRef}
@@ -1209,8 +1209,8 @@ export default function CandidateOfferDetailsModal({
               </div>
 
               <div>
-                <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
-                  Daily De Minimis <span className="text-[#FF5C28]"> *</span>
+                <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-sibs-muted">
+                  Daily De Minimis <span className="text-sibs-orange"> *</span>
                 </label>
                 <input
                   ref={deminimisRef}
@@ -1240,14 +1240,14 @@ export default function CandidateOfferDetailsModal({
 
           <CandidateModalSection title="Start Date & Remarks">
             <div className="space-y-4 pb-2">
-              <div className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-lg border border-blue-100 bg-blue-50 px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-primary-1">
+              <div className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-[10px] border border-blue-100 bg-blue-50 px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-primary-1">
                 <CalendarDays size={14} />
                 Suggested Start Date Based on NHO
               </div>
 
               {startDateInitiated && (
                 <div className="max-w-md">
-                  <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">Start Date</label>
+                  <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-sibs-muted">Start Date</label>
                   <StartDatePicker
                     inputRef={startDateRef}
                     value={form.startDate || ""}
@@ -1268,7 +1268,7 @@ export default function CandidateOfferDetailsModal({
               )}
 
               <div>
-                <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">Remarks</label>
+                <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-sibs-muted">Remarks</label>
                 <textarea
                   value={form.remarks || ""}
                   onChange={(event) => updateForm({ remarks: event.target.value })}
@@ -1279,7 +1279,7 @@ export default function CandidateOfferDetailsModal({
             </div>
           </CandidateModalSection>
 
-          <div className="rounded-xl border border-amber-100 bg-amber-50 px-4 py-3 sibs-text-xs font-semibold leading-5 text-amber-800">
+          <div className="rounded-[10px] border border-amber-100 bg-amber-50 px-4 py-3 sibs-text-xs font-semibold leading-5 text-amber-800">
             After proceeding, the candidate will move to Offered and will be available in the Offers page for approval and contract sending.
           </div>
         </form>
