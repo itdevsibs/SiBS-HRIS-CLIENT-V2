@@ -19,10 +19,10 @@ const ASSESSMENT_RESULT_OPTIONS = [
 ];
 
 const INPUT_CLASS =
-  "h-8.5 2xl:h-10 w-full rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-3 font-jakarta sibs-text-xs font-semibold text-[#042C51] outline-none transition placeholder:text-[#6B88A8] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:border-[#E6ECF2] disabled:bg-[#F2F4F7] disabled:text-[#98A2B3] disabled:hover:border-[#E6ECF2] disabled:hover:bg-[#F2F4F7] disabled:focus:ring-0";
+  "h-8.5 2xl:h-10 w-full rounded-[10px] border border-sibs-border bg-sibs-surface px-3 font-jakarta sibs-text-xs font-semibold text-sibs-navy outline-none transition placeholder:text-sibs-faint hover:border-sibs-orange/40 hover:bg-white focus:border-sibs-orange focus:bg-white focus:ring-4 focus:ring-sibs-orange/10 disabled:cursor-not-allowed disabled:border-sibs-border disabled:bg-slate-100 disabled:text-sibs-faint disabled:hover:border-sibs-border disabled:hover:bg-slate-100 disabled:focus:ring-0";
 
 const TEXTAREA_CLASS =
-  "min-h-18 2xl:min-h-24 w-full resize-none rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-3 py-2 font-jakarta sibs-text-xs font-semibold leading-5 text-[#042C51] outline-none transition placeholder:text-[#6B88A8] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:border-[#E6ECF2] disabled:bg-[#F2F4F7] disabled:text-[#98A2B3]";
+  "min-h-18 2xl:min-h-24 w-full resize-none rounded-[10px] border border-sibs-border bg-sibs-surface px-3 py-2 font-jakarta sibs-text-xs font-semibold leading-5 text-sibs-navy outline-none transition placeholder:text-sibs-faint hover:border-sibs-orange/40 hover:bg-white focus:border-sibs-orange focus:bg-white focus:ring-4 focus:ring-sibs-orange/10 disabled:cursor-not-allowed disabled:border-sibs-border disabled:bg-slate-100 disabled:text-sibs-faint";
 
 function cleanText(value) {
   return String(value ?? "").trim();
@@ -52,9 +52,9 @@ function getExistingAttachmentName(candidate = {}) {
 
 function ModalFieldLabel({ children, required = false }) {
   return (
-    <label className="mb-1.5 block font-jakarta text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+    <label className="mb-1.5 block font-jakarta text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-sibs-faint">
       {children}
-      {required ? <span className="text-[#FF5C28]"> *</span> : null}
+      {required ? <span className="text-sibs-orange"> *</span> : null}
     </label>
   );
 }
@@ -332,11 +332,11 @@ export default function AssessmentModal({
                   disabled={saving || !isTaken}
                   className={`${INPUT_CLASS} pr-16 tabular-nums`}
                 />
-                <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center sibs-text-xs font-extrabold text-[#94A9C1]">
+                <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center sibs-text-xs font-extrabold text-sibs-faint">
                   / 100
                 </span>
               </div>
-              <p className="mt-1.5 sibs-text-xs font-semibold leading-5 text-[#174A7C]">
+              <p className="mt-1.5 sibs-text-xs font-semibold leading-5 text-sibs-navy">
                 Enter the score first. The suggested result is selected automatically.
               </p>
             </div>
@@ -368,22 +368,22 @@ export default function AssessmentModal({
 
             <div>
               <ModalFieldLabel>Assessment Attachment</ModalFieldLabel>
-              <div className="rounded-xl border border-dashed border-[#BFD0E2] bg-[#F8FAFC] p-3 transition hover:border-[#FF5C28]/35 hover:bg-white">
+              <div className="rounded-[10px] border border-dashed border-sibs-border bg-sibs-surface p-3 transition hover:border-sibs-orange/35 hover:bg-white">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
                     disabled={saving || !isTaken}
-                    className="inline-flex h-8.5 2xl:h-9 w-fit shrink-0 items-center justify-center gap-1.5 rounded-lg border border-[#D6E0EA] bg-white px-3 sibs-text-micro font-extrabold text-[#042C51] transition hover:border-[#FF5C28]/35 hover:bg-[#FFF8F5] hover:text-[#FF5C28] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#FF5C28]/15 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="inline-flex h-8.5 2xl:h-9 w-fit shrink-0 items-center justify-center gap-1.5 rounded-[10px] border border-sibs-border bg-white px-3 sibs-text-micro font-extrabold text-sibs-navy transition hover:border-sibs-orange/35 hover:bg-sibs-cream-light hover:text-sibs-orange focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-sibs-orange/15 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     <UploadCloud size={14} />
                     Choose File
                   </button>
-                  <p className="min-w-0 flex-1 truncate sibs-text-xs font-extrabold text-[#344054]">
+                  <p className="min-w-0 flex-1 truncate sibs-text-xs font-extrabold text-sibs-navy">
                     {assessmentFile?.name || existingAttachmentName || "No file chosen"}
                   </p>
                 </div>
-                <p className="mt-2.5 sibs-text-xs font-semibold leading-5 text-[#174A7C]">
+                <p className="mt-2.5 sibs-text-xs font-semibold leading-5 text-sibs-navy">
                   Allowed: PDF, DOC, DOCX, XLS, XLSX, CSV, JPG, PNG, WEBP, HEIC.
                 </p>
                 <input

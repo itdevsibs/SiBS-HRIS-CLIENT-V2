@@ -34,7 +34,7 @@ function StatCard({ title, value, icon, description, tone = "navy", delay = 0 })
             </p>
           </div>
 
-          <p className="line-clamp-1 truncate sibs-text-micro font-bold text-[#667085]">
+          <p className="line-clamp-1 truncate sibs-text-micro font-bold text-sibs-muted">
             {description}
           </p>
         </div>

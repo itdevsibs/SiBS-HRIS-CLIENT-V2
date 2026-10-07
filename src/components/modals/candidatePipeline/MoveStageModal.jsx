@@ -93,7 +93,7 @@ const MoveStageModal = ({
           subtitle="Confirm the current and next recruitment stages."
         >
           <div className="grid grid-cols-[1fr_auto_1fr] items-stretch gap-2 sm:gap-3">
-            <div className="rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] p-2.5 sm:p-3">
+            <div className="rounded-[10px] border border-sibs-border bg-sibs-surface p-2.5 sm:p-3">
               <p className="sibs-kicker">Current Stage</p>
               <span
                 className={`mt-1.5 inline-flex rounded-full border px-2.5 py-0.5 text-[9px] font-extrabold ${getStageClass(
@@ -108,8 +108,8 @@ const MoveStageModal = ({
               <ArrowRight size={16} />
             </div>
 
-            <div className="rounded-xl border border-[#FF5C28]/25 bg-[#FFF9F6] p-2.5 sm:p-3">
-              <p className="sibs-kicker text-[#FF5C28]">Next Stage</p>
+            <div className="rounded-[10px] border border-sibs-orange/25 bg-sibs-cream-light p-2.5 sm:p-3">
+              <p className="sibs-kicker text-sibs-orange">Next Stage</p>
               <span
                 className={`mt-1.5 inline-flex rounded-full border px-2.5 py-0.5 text-[9px] font-extrabold ${getStageClass(
                   nextStage,
@@ -121,14 +121,14 @@ const MoveStageModal = ({
           </div>
 
           {nextStage === "Online Assessment" && (
-            <div className="mt-2.5 rounded-xl border border-blue-100 bg-blue-50 px-3 py-2 sibs-text-xs font-semibold leading-5 text-sibs-primary-1">
+            <div className="mt-2.5 rounded-[10px] border border-blue-100 bg-blue-50 px-3 py-2 sibs-text-xs font-semibold leading-5 text-sibs-primary-1">
               After confirmation, assessment status will be set to Not Take and
               the assessment email workflow will be triggered.
             </div>
           )}
 
           {nextStage === "Offered" && (
-            <div className="mt-2.5 rounded-xl border border-amber-100 bg-amber-50 px-3 py-2 sibs-text-xs font-semibold leading-5 text-amber-800">
+            <div className="mt-2.5 rounded-[10px] border border-amber-100 bg-amber-50 px-3 py-2 sibs-text-xs font-semibold leading-5 text-amber-800">
               Candidate will advance from Interviewed to Offered and continue to
               the offer preparation workflow.
             </div>
@@ -138,8 +138,8 @@ const MoveStageModal = ({
         <CandidateModalSection title="Movement Details">
           <form onSubmit={handleSubmit} className="space-y-2.5 2xl:space-y-3.5">
             <label className="block">
-              <span className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
-                Movement Reason <span className="text-[#FF5C28]"> *</span>
+              <span className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-sibs-faint">
+                Movement Reason <span className="text-sibs-orange"> *</span>
               </span>
               <textarea
                 required
@@ -155,7 +155,7 @@ const MoveStageModal = ({
             </label>
 
             <label className="block">
-              <span className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+              <span className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-sibs-faint">
                 Internal Remarks
               </span>
               <textarea

@@ -138,7 +138,7 @@ export default function OffersPageContent() {
           >
             <OfferFilters />
 
-            <div className="relative z-[1] overflow-hidden rounded-b-2xl">
+            <div className="relative z-[1] overflow-hidden rounded-b-[14px]">
               <OfferRecordsTable />
 
               <div className="p-4 sm:p-5 lg:hidden">

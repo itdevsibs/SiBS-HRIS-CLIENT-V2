@@ -31,14 +31,14 @@ export function CandidateProfileField({
 
   return (
     <div className={`min-w-0 ${className}`}>
-      <p className="text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+      <p className="text-[9px] font-extrabold uppercase tracking-wide text-sibs-muted">
         {label}
       </p>
       <div className="group mt-0.5 flex min-w-0 items-center gap-1.5">
         <p
           title={isFilled ? String(value) : undefined}
           className={`min-w-0 flex-1 truncate text-xs font-extrabold leading-5 ${
-            highlight ? "text-[#FF5C28]" : isFilled ? "text-[#344054]" : "text-[#98A2B3]"
+            highlight ? "text-sibs-orange" : isFilled ? "text-sibs-navy" : "text-sibs-muted"
           }`}
         >
           {isFilled ? String(value) : "N/A"}
@@ -49,7 +49,7 @@ export function CandidateProfileField({
             type="button"
             onClick={handleCopy}
             title={`Copy ${label}`}
-            className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded text-[#98A2B3] opacity-0 transition hover:bg-[#E6ECF2] hover:text-[#042C51] group-hover:opacity-100 focus:opacity-100"
+            className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded text-sibs-muted opacity-0 transition hover:bg-sibs-surface hover:text-sibs-navy group-hover:opacity-100 focus:opacity-100"
           >
             {copied ? (
               <Check size={10} className="text-emerald-600" />
@@ -73,12 +73,12 @@ export function CandidateProfilePanel({
     <section
       className={`p-4 ${className}`}
     >
-      <div className="mb-3 flex items-center justify-between gap-2 border-b border-[#E6ECF2]/60 pb-2">
-        <h4 className="text-[10px] font-extrabold uppercase tracking-wide text-[#042C51]">
+      <div className="mb-3 flex items-center justify-between gap-2 border-b border-sibs-border/60 pb-2">
+        <h4 className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-navy">
           {title}
         </h4>
         {badge ? (
-          <span className="rounded bg-[#E9F0FC] px-2 py-0.5 text-[8px] font-extrabold uppercase tracking-wide text-[#042C51]">
+          <span className="rounded bg-sky-50 px-2 py-0.5 text-[8px] font-extrabold uppercase tracking-wide text-sibs-navy">
             {badge}
           </span>
         ) : null}

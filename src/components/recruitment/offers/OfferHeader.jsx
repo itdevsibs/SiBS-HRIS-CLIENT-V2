@@ -36,7 +36,7 @@ export default function OfferHeader({
       />
 
       {routeFilterActive ? (
-        <div className="flex flex-col gap-3 rounded-xl border border-sibs-orange/20 bg-sibs-cream-light p-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-3 rounded-[10px] border border-sibs-orange/20 bg-sibs-cream-light p-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">
             <p className="sibs-kicker text-sibs-orange">Selected Candidate</p>
             <p className="mt-1 truncate text-xs font-extrabold text-sibs-navy sm:text-sm">

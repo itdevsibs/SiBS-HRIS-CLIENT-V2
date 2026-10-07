@@ -479,7 +479,7 @@ function SupportingFilePreview({ url, fileName, image }) {
         href={url}
         target="_blank"
         rel="noreferrer"
-        className="block overflow-hidden rounded-xl border border-sibs-border bg-white font-jakarta"
+        className="block overflow-hidden rounded-[14px] border border-sibs-border bg-white font-jakarta"
       >
         <img
           src={url}
@@ -555,7 +555,7 @@ function AuditTrailSection({ entries = [] }) {
           })}
         </div>
       ) : (
-        <div className="mt-3 rounded-xl border border-dashed border-sibs-border bg-slate-50 px-4 py-5 text-center">
+        <div className="mt-3 rounded-[10px] border border-dashed border-sibs-border bg-slate-50 px-4 py-5 text-center">
           <Clock size={18} className="mx-auto text-sibs-muted" />
           <p className="mt-2 text-xs font-bold text-sibs-muted">
             No audit history is available for this request.
@@ -909,7 +909,7 @@ export default function ViewHiringNeedsModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="view-hiring-needs-title"
-        className="sibs-modal-pop-in flex max-h-[92dvh] w-full max-w-2xl 2xl:max-w-3xl flex-col overflow-hidden rounded-2xl border border-white/70 bg-white shadow-2xl font-jakarta"
+        className="sibs-modal-pop-in flex max-h-[92dvh] w-full max-w-2xl 2xl:max-w-3xl flex-col overflow-hidden rounded-[14px] border border-white/70 bg-white shadow-2xl font-jakarta"
         onMouseDown={(event) => event.stopPropagation()}
       >
         <header className="shrink-0 bg-sibs-navy px-4 py-3 text-white sm:px-5 2xl:px-6 2xl:py-3.5">
@@ -968,7 +968,7 @@ export default function ViewHiringNeedsModal({
         >
           <div className="space-y-5">
             {isRelinkMode ? (
-              <section className="rounded-xl border border-amber-400 bg-amber-50 p-4 sm:p-5">
+              <section className="rounded-[10px] border border-amber-400 bg-amber-50 p-4 sm:p-5">
                 <div className="flex items-start gap-3">
                   <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-amber-100 text-amber-600">
                     <AlertTriangle size={17} strokeWidth={2.2} />
@@ -1016,7 +1016,7 @@ export default function ViewHiringNeedsModal({
               </section>
             ) : null}
 
-            <section className="rounded-xl border border-sibs-border bg-slate-50 p-4 sm:p-5">
+            <section className="rounded-[10px] border border-sibs-border bg-slate-50 p-4 sm:p-5">
               <div className="grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2">
                 <CompactDetail
                   label="Department"
@@ -1159,7 +1159,7 @@ export default function ViewHiringNeedsModal({
             </section>
 
             {requestRemarks ? (
-              <section className="rounded-lg border border-indigo-100 bg-indigo-50/50 px-3 py-3">
+              <section className="rounded-[10px] border border-indigo-100 bg-indigo-50/50 px-3 py-3">
                 <h3 className="text-[9px] font-extrabold uppercase tracking-wide text-indigo-600">
                   HR/OM Remarks Context
                 </h3>

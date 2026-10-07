@@ -163,7 +163,7 @@ function OfferSkeletonBlock({ className = "" }) {
   return (
     <div
       aria-hidden="true"
-      className={`animate-pulse rounded-xl bg-slate-200/80 ${className}`}
+      className={`animate-pulse rounded-[10px] bg-slate-200/80 ${className}`}
     />
   );
 }
@@ -176,7 +176,7 @@ function OffersDecisionSkeleton() {
       aria-busy="true"
       aria-label="Processing offer decision"
     >
-      <section className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm sm:p-6">
+      <section className="rounded-[10px] border border-sibs-border bg-white p-5 shadow-sm sm:p-6">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
           <div className="min-w-0 flex-1 space-y-3">
             <OfferSkeletonBlock className="h-4 w-32" />
@@ -195,7 +195,7 @@ function OffersDecisionSkeleton() {
         {Array.from({ length: 4 }).map((_, index) => (
           <div
             key={`offer-stat-skeleton-${index}`}
-            className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm"
+            className="rounded-[10px] border border-sibs-border bg-white p-5 shadow-sm"
           >
             <div className="flex items-center justify-between gap-4">
               <div className="min-w-0 flex-1 space-y-3">
@@ -204,14 +204,14 @@ function OffersDecisionSkeleton() {
                 <OfferSkeletonBlock className="h-3 w-32" />
               </div>
 
-              <OfferSkeletonBlock className="h-12 w-12 rounded-2xl" />
+              <OfferSkeletonBlock className="h-12 w-12 rounded-[10px]" />
             </div>
           </div>
         ))}
       </section>
 
-      <section className="sibs-card overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white shadow-sm">
-        <div className="border-b border-[#E6ECF2] p-4 sm:p-5">
+      <section className="sibs-card overflow-hidden rounded-[10px] border border-sibs-border bg-white shadow-sm">
+        <div className="border-b border-sibs-border p-4 sm:p-5">
           <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
             <OfferSkeletonBlock className="h-11 md:col-span-2" />
             <OfferSkeletonBlock className="h-11" />
@@ -220,8 +220,8 @@ function OffersDecisionSkeleton() {
         </div>
 
         <div className="p-4 sm:p-5">
-          <div className="overflow-hidden rounded-xl border border-[#E6ECF2]">
-            <div className="grid grid-cols-6 gap-4 border-b border-[#E6ECF2] bg-[#F8FAFC] px-4 py-4">
+          <div className="overflow-hidden rounded-[10px] border border-sibs-border">
+            <div className="grid grid-cols-6 gap-4 border-b border-sibs-border bg-sibs-surface px-4 py-4">
               {Array.from({ length: 6 }).map((_, index) => (
                 <OfferSkeletonBlock
                   key={`offer-heading-skeleton-${index}`}
@@ -230,7 +230,7 @@ function OffersDecisionSkeleton() {
               ))}
             </div>
 
-            <div className="divide-y divide-[#E6ECF2]">
+            <div className="divide-y divide-sibs-border">
               {Array.from({ length: 6 }).map((_, rowIndex) => (
                 <div
                   key={`offer-row-skeleton-${rowIndex}`}
@@ -253,7 +253,7 @@ function OffersDecisionSkeleton() {
         </div>
       </section>
 
-      <section className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
+      <section className="rounded-[10px] border border-sibs-border bg-white p-5 shadow-sm">
         <div className="space-y-3">
           <OfferSkeletonBlock className="h-5 w-48" />
           <OfferSkeletonBlock className="h-4 w-full" />
@@ -571,7 +571,7 @@ export default function OffersPage() {
           >
             <OfferFilters />
 
-            <div className="relative z-[1] overflow-hidden rounded-b-2xl">
+            <div className="relative z-[1] overflow-hidden rounded-b-[14px]">
               <OfferRecordsTable
                 offersOverride={visibleOffers}
                 routeFilterActive={Boolean(routeCandidate)}

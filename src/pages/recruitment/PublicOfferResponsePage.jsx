@@ -687,7 +687,7 @@ export default function PublicOfferResponsePage() {
       context.lineCap = "round";
       context.lineJoin = "round";
       context.lineWidth = 2.4;
-      context.strokeStyle = "#111827";
+      context.strokeStyle = "rgb(17, 24, 39)";
       context.clearRect(
         0,
         0,
@@ -922,8 +922,8 @@ export default function PublicOfferResponsePage() {
 
   return (
     <main className="min-h-screen bg-slate-100 px-4 py-10 font-jakarta">
-      <section className="mx-auto max-w-2xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl">
-        <header className="bg-[#042C51] px-6 py-5 text-white">
+      <section className="mx-auto max-w-2xl overflow-hidden rounded-[14px] border border-sibs-border bg-white shadow-xl">
+        <header className="bg-sibs-navy px-6 py-5 text-white">
           <img
             src="/SiBSLogoWhite.png"
             alt="SiBS"
@@ -936,26 +936,26 @@ export default function PublicOfferResponsePage() {
 
         <div className="p-6 sm:p-8">
           {state.loading ? (
-            <p className="text-center font-bold text-slate-500">
+            <p className="text-center font-bold text-sibs-muted">
               Loading your offer...
             </p>
           ) : null}
 
           {state.error ? (
-            <div className="mb-4 rounded-xl border border-red-200 bg-red-50 p-4 font-semibold text-red-700">
+            <div className="mb-4 rounded-[10px] border border-red-200 bg-red-50 p-4 font-semibold text-red-700">
               {state.error}
             </div>
           ) : null}
 
           {result ? (
-            <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-5 text-center font-bold text-emerald-800">
+            <div className="rounded-[10px] border border-emerald-200 bg-emerald-50 p-5 text-center font-bold text-emerald-800">
               {result}
             </div>
           ) : null}
 
           {!state.loading && !result && state.data ? (
             <div className="space-y-5">
-              <p className="text-lg font-bold text-[#042C51]">
+              <p className="text-lg font-bold text-sibs-navy">
                 Hi {state.data.candidateName},
               </p>
               <p className="text-sm leading-6 text-slate-600">
@@ -963,7 +963,7 @@ export default function PublicOfferResponsePage() {
                 the offer details below before confirming your response.
               </p>
 
-              <div className="grid gap-3 rounded-xl border border-slate-200 bg-slate-50 p-5 sm:grid-cols-2">
+              <div className="grid gap-3 rounded-[10px] border border-sibs-border bg-slate-50 p-5 sm:grid-cols-2">
                 <p>
                   <b>Final Role:</b>
                   <br />
@@ -998,35 +998,35 @@ export default function PublicOfferResponsePage() {
 
               {state.action === "negotiate" ? (
                 <label className="block">
-                  <span className="text-sm font-extrabold text-[#042C51]">
+                  <span className="text-sm font-extrabold text-sibs-navy">
                     Negotiation message
                   </span>
                   <textarea
                     value={message}
                     onChange={(event) => setMessage(event.target.value)}
                     rows={5}
-                    className="mt-2 w-full rounded-xl border border-slate-300 p-3 outline-none focus:border-[#FF5C28]"
+                    className="mt-2 w-full rounded-[10px] border border-sibs-border p-3 outline-none focus:border-sibs-orange"
                     placeholder="Explain the changes you would like HR to review."
                   />
                 </label>
               ) : (
                 <div className="space-y-4">
-                  <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-semibold text-emerald-800">
+                  <div className="rounded-[10px] border border-emerald-200 bg-emerald-50 p-4 text-sm font-semibold text-emerald-800">
                     By accepting, you confirm that you have reviewed and
                     accepted this Employment Offer. Upload or draw your signature
                     first to enable the Accept Offer button.
                   </div>
 
-                  <div className="rounded-xl border border-slate-200 bg-white p-4">
+                  <div className="rounded-[10px] border border-sibs-border bg-white p-4">
                     <div className="flex items-start gap-3">
-                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#FFF1EC] text-[#FF5C28]">
+                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] bg-orange-50 text-sibs-orange">
                         <FileSignature size={20} />
                       </span>
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm font-extrabold text-[#042C51]">
+                        <p className="text-sm font-extrabold text-sibs-navy">
                           Candidate Signature
                         </p>
-                        <p className="mt-0.5 text-xs font-medium leading-5 text-slate-500">
+                        <p className="mt-0.5 text-xs font-medium leading-5 text-sibs-muted">
                           Upload a cropped handwritten signature image only (PNG, JPG, or WEBP), or draw
                           your signature if you do not have a signature file.
                           The signature will be added to the accepted Employment
@@ -1036,7 +1036,7 @@ export default function PublicOfferResponsePage() {
                     </div>
 
                     {signatureDataUrl ? (
-                      <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50/60 p-4">
+                      <div className="mt-4 rounded-[10px] border border-emerald-200 bg-emerald-50/60 p-4">
                         <div className="flex items-center justify-between gap-3">
                           <div className="flex min-w-0 items-center gap-2 text-sm font-bold text-emerald-800">
                             <CheckCircle2 size={17} className="shrink-0" />
@@ -1048,14 +1048,14 @@ export default function PublicOfferResponsePage() {
                             type="button"
                             onClick={removeSignature}
                             disabled={submitting}
-                            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-red-200 bg-white text-red-600 transition hover:bg-red-50 disabled:opacity-50"
+                            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] border border-red-200 bg-white text-red-600 transition hover:bg-red-50 disabled:opacity-50"
                             aria-label="Remove signature"
                             title="Remove signature"
                           >
                             <X size={15} />
                           </button>
                         </div>
-                        <div className="mt-3 flex min-h-24 items-center justify-center rounded-lg border border-slate-200 bg-white p-3">
+                        <div className="mt-3 flex min-h-24 items-center justify-center rounded-[10px] border border-sibs-border bg-white p-3">
                           <img
                             src={signatureDataUrl}
                             alt="Candidate signature preview"
@@ -1066,42 +1066,42 @@ export default function PublicOfferResponsePage() {
                     ) : (
                       <div className="mt-4">
                         <div className="mb-3 flex items-center gap-3">
-                          <div className="h-px flex-1 bg-slate-200" />
-                          <span className="shrink-0 rounded-full border border-slate-200 bg-white px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.08em] text-slate-500">
+                          <div className="h-px flex-1 bg-sibs-border" />
+                          <span className="shrink-0 rounded-full border border-sibs-border bg-white px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.08em] text-sibs-muted">
                             Choose one signature method
                           </span>
-                          <div className="h-px flex-1 bg-slate-200" />
+                          <div className="h-px flex-1 bg-sibs-border" />
                         </div>
 
                         <div className="grid gap-3 sm:grid-cols-2">
-                          <label className={`group relative flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-5 text-center transition ${
+                          <label className={`group relative flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-[10px] border border-dashed border-sibs-border bg-slate-50 px-4 py-5 text-center transition ${
                             signatureLoading || submitting
                               ? "cursor-not-allowed opacity-50"
-                              : "hover:border-[#FF5C28] hover:bg-[#FFF9F6]"
+                              : "hover:border-sibs-orange hover:bg-orange-50/50"
                           }`}>
-                            <span className="absolute left-3 top-3 rounded-full bg-white px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-slate-500 shadow-sm">
+                            <span className="absolute left-3 top-3 rounded-full bg-white px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-sibs-muted shadow-sm">
                               Option 1
                             </span>
 
                             {signatureLoading ? (
                               <Loader2
                                 size={18}
-                                className="animate-spin text-[#042C51]"
+                                className="animate-spin text-sibs-navy"
                               />
                             ) : (
                               <Upload
                                 size={18}
-                                className="text-[#FF5C28]"
+                                className="text-sibs-orange"
                               />
                             )}
 
-                            <span className="text-sm font-extrabold text-[#042C51]">
+                            <span className="text-sm font-extrabold text-sibs-navy">
                               {signatureLoading
                                 ? "Preparing Signature..."
                                 : "Upload Signature"}
                             </span>
 
-                            <span className="text-[10px] font-semibold text-slate-500">
+                            <span className="text-[10px] font-semibold text-sibs-muted">
                               Signature image only
                             </span>
 
@@ -1126,22 +1126,22 @@ export default function PublicOfferResponsePage() {
                               signatureLoading ||
                               submitting
                             }
-                            className="relative flex flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-5 text-center transition hover:border-[#FF5C28] hover:bg-[#FFF9F6] disabled:cursor-not-allowed disabled:opacity-50"
+                            className="relative flex flex-col items-center justify-center gap-1.5 rounded-[10px] border border-dashed border-sibs-border bg-slate-50 px-4 py-5 text-center transition hover:border-sibs-orange hover:bg-orange-50/50 disabled:cursor-not-allowed disabled:opacity-50"
                           >
-                            <span className="absolute left-3 top-3 rounded-full bg-white px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-slate-500 shadow-sm">
+                            <span className="absolute left-3 top-3 rounded-full bg-white px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-sibs-muted shadow-sm">
                               Option 2
                             </span>
 
                             <Pencil
                               size={18}
-                              className="text-[#FF5C28]"
+                              className="text-sibs-orange"
                             />
 
-                            <span className="text-sm font-extrabold text-[#042C51]">
+                            <span className="text-sm font-extrabold text-sibs-navy">
                               Draw Signature
                             </span>
 
-                            <span className="text-[10px] font-semibold text-slate-500">
+                            <span className="text-[10px] font-semibold text-sibs-muted">
                               Draw using mouse, touch, or stylus
                             </span>
                           </button>
@@ -1161,7 +1161,7 @@ export default function PublicOfferResponsePage() {
                     (state.action === "negotiate" && !message.trim())
                   }
                   onClick={submit}
-                  className="w-full rounded-xl bg-[#FF5C28] px-5 py-3 font-extrabold text-white disabled:opacity-50"
+                  className="w-full rounded-[10px] bg-sibs-orange px-5 py-3 font-extrabold text-white transition hover:opacity-95 disabled:opacity-50"
                 >
                   {submitting ? "Submitting..." : actionLabel}
                 </button>
@@ -1173,7 +1173,7 @@ export default function PublicOfferResponsePage() {
 
       {drawSignatureOpen ? (
         <div
-          className="fixed inset-0 z-[12000] flex items-center justify-center bg-[#042C51]/65 p-4 backdrop-blur-[2px]"
+          className="fixed inset-0 z-[12000] flex items-center justify-center bg-sibs-navy/65 p-4 backdrop-blur-[2px]"
           onClick={(event) => {
             if (event.target === event.currentTarget) {
               closeDrawSignature();
@@ -1184,14 +1184,14 @@ export default function PublicOfferResponsePage() {
             role="dialog"
             aria-modal="true"
             aria-labelledby="candidate-draw-signature-title"
-            className="w-full max-w-xl overflow-hidden rounded-2xl border border-white/60 bg-white shadow-2xl"
+            className="w-full max-w-xl overflow-hidden rounded-[14px] border border-white/60 bg-white shadow-2xl"
             onClick={(event) =>
               event.stopPropagation()
             }
           >
-            <header className="flex items-start justify-between gap-3 bg-[#042C51] px-5 py-4 text-white">
+            <header className="flex items-start justify-between gap-3 bg-sibs-navy px-5 py-4 text-white">
               <div className="flex min-w-0 items-start gap-3">
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#FF5C28]">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-sibs-orange">
                   <Pencil size={17} />
                 </span>
 
@@ -1216,7 +1216,7 @@ export default function PublicOfferResponsePage() {
                   submitting ||
                   signatureLoading
                 }
-                className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-white/75 transition hover:bg-white/10 hover:text-white disabled:opacity-50"
+                className="inline-flex h-8 w-8 items-center justify-center rounded-[10px] text-white/75 transition hover:bg-white/10 hover:text-white disabled:opacity-50"
                 aria-label="Close draw signature"
               >
                 <X size={18} />
@@ -1224,10 +1224,10 @@ export default function PublicOfferResponsePage() {
             </header>
 
             <div className="p-5">
-              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+              <div className="rounded-[10px] border border-sibs-border bg-slate-50 p-3">
                 <canvas
                   ref={drawSignatureCanvasRef}
-                  className="block h-[220px] w-full cursor-crosshair touch-none rounded-lg border border-dashed border-slate-300 bg-white"
+                  className="block h-[220px] w-full cursor-crosshair touch-none rounded-[10px] border border-dashed border-sibs-border bg-white"
                   onPointerDown={
                     handleDrawSignaturePointerDown
                   }
@@ -1245,7 +1245,7 @@ export default function PublicOfferResponsePage() {
                   }}
                 />
 
-                <p className="mt-2 text-xs font-medium leading-5 text-slate-500">
+                <p className="mt-2 text-xs font-medium leading-5 text-sibs-muted">
                   Draw only your signature. It will be
                   attached to the Employment Offer exactly
                   like an uploaded signature image.
@@ -1253,7 +1253,7 @@ export default function PublicOfferResponsePage() {
               </div>
             </div>
 
-            <footer className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-200 bg-slate-50 px-5 py-3.5">
+            <footer className="flex flex-wrap items-center justify-between gap-2 border-t border-sibs-border bg-slate-50 px-5 py-3.5">
               <button
                 type="button"
                 onClick={clearDrawSignature}
@@ -1262,7 +1262,7 @@ export default function PublicOfferResponsePage() {
                   signatureLoading ||
                   !drawSignatureHasStroke
                 }
-                className="inline-flex h-10 items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 text-sm font-extrabold text-slate-600 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex h-10 items-center gap-2 rounded-[10px] border border-sibs-border bg-white px-4 text-sm font-extrabold text-slate-600 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <RotateCcw size={16} />
                 Clear
@@ -1276,7 +1276,7 @@ export default function PublicOfferResponsePage() {
                     submitting ||
                     signatureLoading
                   }
-                  className="inline-flex h-10 items-center justify-center rounded-lg border border-slate-300 bg-white px-4 text-sm font-extrabold text-slate-600 transition hover:bg-slate-100 disabled:opacity-50"
+                  className="inline-flex h-10 items-center justify-center rounded-[10px] border border-sibs-border bg-white px-4 text-sm font-extrabold text-slate-600 transition hover:bg-slate-100 disabled:opacity-50"
                 >
                   Cancel
                 </button>
@@ -1289,7 +1289,7 @@ export default function PublicOfferResponsePage() {
                     signatureLoading ||
                     !drawSignatureHasStroke
                   }
-                  className="inline-flex h-10 items-center gap-2 rounded-lg bg-[#FF5C28] px-4 text-sm font-extrabold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="inline-flex h-10 items-center gap-2 rounded-[10px] bg-sibs-orange px-4 text-sm font-extrabold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <CheckCircle2 size={16} />
                   Use Signature
@@ -1302,7 +1302,7 @@ export default function PublicOfferResponsePage() {
 
       {signatureErrorModal ? (
         <div
-          className="fixed inset-0 z-[13000] flex items-center justify-center bg-[#042C51]/65 p-4 backdrop-blur-[2px]"
+          className="fixed inset-0 z-[13000] flex items-center justify-center bg-sibs-navy/65 p-4 backdrop-blur-[2px]"
           onClick={(event) => {
             if (event.target === event.currentTarget) {
               setSignatureErrorModal("");
@@ -1314,14 +1314,14 @@ export default function PublicOfferResponsePage() {
             aria-modal="true"
             aria-labelledby="signature-upload-error-title"
             aria-describedby="signature-upload-error-message"
-            className="w-full max-w-md overflow-hidden rounded-2xl border border-white/60 bg-white shadow-2xl"
+            className="w-full max-w-md overflow-hidden rounded-[14px] border border-white/60 bg-white shadow-2xl"
             onClick={(event) =>
               event.stopPropagation()
             }
           >
-            <header className="flex items-start justify-between gap-3 bg-[#042C51] px-5 py-4 text-white">
+            <header className="flex items-start justify-between gap-3 bg-sibs-navy px-5 py-4 text-white">
               <div className="flex min-w-0 items-start gap-3">
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#FF5C28] text-white">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-sibs-orange text-white">
                   <AlertTriangle size={17} />
                 </span>
 
@@ -1340,7 +1340,7 @@ export default function PublicOfferResponsePage() {
                 onClick={() =>
                   setSignatureErrorModal("")
                 }
-                className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-white/75 transition hover:bg-white/10 hover:text-white"
+                className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] text-white/75 transition hover:bg-white/10 hover:text-white"
                 aria-label="Close signature error"
               >
                 <X size={18} />
@@ -1348,7 +1348,7 @@ export default function PublicOfferResponsePage() {
             </header>
 
             <div className="p-5">
-              <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3">
+              <div className="rounded-[10px] border border-red-200 bg-red-50 px-4 py-3">
                 <p
                   id="signature-upload-error-message"
                   className="text-sm font-semibold leading-6 text-red-700"
@@ -1359,13 +1359,13 @@ export default function PublicOfferResponsePage() {
 
             </div>
 
-            <footer className="flex justify-end border-t border-slate-200 bg-slate-50 px-5 py-3.5">
+            <footer className="flex justify-end border-t border-sibs-border bg-slate-50 px-5 py-3.5">
               <button
                 type="button"
                 onClick={() =>
                   setSignatureErrorModal("")
                 }
-                className="inline-flex h-10 items-center justify-center rounded-lg bg-[#042C51] px-5 text-sm font-extrabold text-white transition hover:opacity-90"
+                className="inline-flex h-10 items-center justify-center rounded-[10px] bg-sibs-navy px-5 text-sm font-extrabold text-white transition hover:opacity-90"
               >
                 Close
               </button>

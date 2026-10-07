@@ -359,7 +359,7 @@ function ResumeStageDropdown({
         onClick={() => setOpen((previous) => !previous)}
         aria-haspopup="listbox"
         aria-expanded={open}
-        className={`flex h-8.5 2xl:h-10 w-full items-center justify-between gap-3 rounded-xl border bg-white px-3 text-left sibs-text-xs font-semibold shadow-xs outline-none transition ${
+        className={`flex h-8.5 2xl:h-10 w-full items-center justify-between gap-3 rounded-[10px] border bg-white px-3 text-left sibs-text-xs font-semibold shadow-xs outline-none transition ${
           open
             ? "border-sibs-primary-1 ring-4 ring-blue-100"
             : "border-sibs-border hover:border-sibs-primary-1"
@@ -386,7 +386,7 @@ function ResumeStageDropdown({
       </button>
 
       {open && !disabled && (
-        <div className="sibs-dropdown-pop-in absolute left-0 right-0 top-[calc(100%+8px)] z-[10050] overflow-hidden rounded-xl border border-sibs-border bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)]">
+        <div className="sibs-dropdown-pop-in absolute left-0 right-0 top-[calc(100%+8px)] z-[10050] overflow-hidden rounded-[10px] border border-sibs-border bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)]">
           <div className="max-h-64 overflow-y-auto py-1 sibs-scrollbar" role="listbox">
             {options.length > 0 ? (
               options.map((option) => {
@@ -799,12 +799,12 @@ export default function MoveToPipeLineModal() {
       onClick={isBusy ? undefined : closeMoveToPipeline}
     >
       <div
-        className="sibs-modal-pop-in relative flex w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-2xl"
+        className="sibs-modal-pop-in relative flex w-full max-w-2xl flex-col overflow-hidden rounded-[14px] border border-sibs-border bg-white shadow-2xl"
         onClick={(event) => event.stopPropagation()}
       >
         <div className="flex shrink-0 items-center justify-between gap-4 border-b border-white/10 bg-sibs-navy px-4 py-3 text-white sm:px-6 2xl:py-3.5">
           <div className="flex min-w-0 items-center gap-3">
-            <span className="flex h-8.5 w-8.5 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-xl bg-sibs-orange text-white shadow-xs">
+            <span className="flex h-8.5 w-8.5 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-[10px] bg-sibs-orange text-white shadow-xs">
               <TrendingUp size={17} />
             </span>
 
@@ -833,7 +833,7 @@ export default function MoveToPipeLineModal() {
             type="button"
             onClick={closeMoveToPipeline}
             disabled={isBusy}
-            className="inline-flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg border border-white/15 bg-white/10 text-white/80 transition hover:border-sibs-orange/60 hover:bg-sibs-orange hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+            className="sibs-modal-close-btn"
             aria-label="Close move candidate modal"
           >
             <X size={16} />
@@ -841,7 +841,7 @@ export default function MoveToPipeLineModal() {
         </div>
 
         <form onSubmit={handleMoveCandidate} className="space-y-3.5 p-4 sm:p-5">
-          <div className="rounded-xl border border-blue-100 bg-blue-50/70 p-3.5 text-xs font-semibold leading-relaxed text-sibs-navy">
+          <div className="rounded-[10px] border border-blue-100 bg-blue-50/70 p-3.5 text-xs font-semibold leading-relaxed text-sibs-navy">
             {dropOffResume
               ? hasPipelineHistory
                 ? "Select New Applicant to return the candidate to Talent Pool, or choose a stage already entered by the candidate. Future or unvisited stages are not available."
@@ -853,7 +853,7 @@ export default function MoveToPipeLineModal() {
             <FieldLabel>Position Applied</FieldLabel>
 
             <div
-              className="mt-1.5 flex min-h-10 w-full items-center rounded-xl border border-sibs-border bg-sibs-surface px-3.5 py-2.5 sibs-text-xs font-extrabold text-sibs-navy"
+              className="mt-1.5 flex min-h-10 w-full items-center rounded-[10px] border border-sibs-border bg-sibs-surface px-3.5 py-2.5 sibs-text-xs font-extrabold text-sibs-navy"
               aria-readonly="true"
               title={positionApplied}
             >
@@ -965,7 +965,7 @@ export default function MoveToPipeLineModal() {
           }}
         >
           <div
-            className="w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-2xl"
+            className="w-full max-w-lg overflow-hidden rounded-[14px] bg-white shadow-2xl"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="flex items-start justify-between gap-4 border-b border-gray-100 px-5 py-4">
@@ -982,7 +982,7 @@ export default function MoveToPipeLineModal() {
                 type="button"
                 onClick={handleCloseDropOff}
                 disabled={dropOffSaving}
-                className="rounded-full p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700 disabled:cursor-not-allowed disabled:opacity-60"
+                className="rounded-[10px] p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700 disabled:cursor-not-allowed disabled:opacity-60"
                 aria-label="Close Drop Off reason modal"
               >
                 <X size={20} />
@@ -990,7 +990,7 @@ export default function MoveToPipeLineModal() {
             </div>
 
             <form onSubmit={handleConfirmDropOff} className="space-y-4 p-5">
-              <div className="rounded-xl border border-red-100 bg-red-50 p-4 text-sm font-semibold leading-6 text-red-700">
+              <div className="rounded-[10px] border border-red-100 bg-red-50 p-4 text-sm font-semibold leading-6 text-red-700">
                 The candidate will remain visible in Talent Pool with the Drop
                 Off status. Enter the reason before confirming.
               </div>

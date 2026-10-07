@@ -925,7 +925,7 @@ function EmploymentOfferViewer({
 
   if (!safeHtml) {
     return emptyText ? (
-      <p className="text-sm text-[#667085]">
+      <p className="text-sm text-sibs-muted">
         {emptyText}
       </p>
     ) : null;
@@ -1741,7 +1741,7 @@ function decorateEmploymentOfferPageHtml(
         left: "0",
         bottom: "calc(100% + 1.41mm)",
         width: "100%",
-        color: "#111",
+        color: "rgb(17, 17, 17)",
         "font-family": "Arial, Helvetica, sans-serif",
         "font-size": "10pt",
         "font-weight": "700",
@@ -1789,7 +1789,7 @@ function decorateEmploymentOfferPageHtml(
           flex: "1 1 auto",
           "min-width": "42mm",
           height: "12pt",
-          color: "#111",
+          color: "rgb(17, 17, 17)",
           "font-family":
             "Arial, Helvetica, sans-serif",
           "font-size": "9.4pt",
@@ -1797,7 +1797,7 @@ function decorateEmploymentOfferPageHtml(
           "line-height": "12pt",
           "padding-left": "2mm",
           "border-bottom":
-            "0.7pt solid #111",
+            "0.7pt solid rgb(17, 17, 17)",
         },
       );
     }
@@ -2033,7 +2033,7 @@ function decorateEmploymentOfferPageHtml(
         width: "80.8mm",
         "margin-top": "16.93mm",
         "padding-top": "2.6mm",
-        "border-top": "0.7pt solid #111",
+        "border-top": "0.7pt solid rgb(17, 17, 17)",
         color: "transparent",
         "font-size": "0",
         "line-height": "0",
@@ -2511,7 +2511,7 @@ export default function EmploymentOfferDocumentPage() {
       context.lineCap = "round";
       context.lineJoin = "round";
       context.lineWidth = 2.4;
-      context.strokeStyle = "#111827";
+      context.strokeStyle = "rgb(17, 24, 39)";
       context.clearRect(
         0,
         0,
@@ -2893,7 +2893,7 @@ export default function EmploymentOfferDocumentPage() {
   }
 
   return (
-    <div className="employment-offer-document-page flex h-screen max-h-screen min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-[#EEF3F8] font-jakarta text-[#042C51]">
+    <div className="employment-offer-document-page flex h-screen max-h-screen min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-slate-100 font-jakarta text-sibs-navy">
       <style>{`
         @page { size: A4 portrait; margin: 0; }
 
@@ -2909,7 +2909,7 @@ export default function EmploymentOfferDocumentPage() {
           width: 210mm;
           min-height: 297mm;
           font-family: Arial, Helvetica, sans-serif;
-          color: #111;
+          color: rgb(17, 17, 17);
         }
 
         .employment-offer-letterhead {
@@ -2919,7 +2919,7 @@ export default function EmploymentOfferDocumentPage() {
           column-gap: 7.7mm;
           padding: 9.88mm 9.9mm 0;
           font-family: Arial, Helvetica, sans-serif;
-          color: #111;
+          color: rgb(17, 17, 17);
         }
 
         .employment-offer-letterhead-logo {
@@ -2934,7 +2934,7 @@ export default function EmploymentOfferDocumentPage() {
           min-width: 0;
           padding-top: 6.35mm;
           font-family: Arial, Helvetica, sans-serif;
-          color: #111;
+          color: rgb(17, 17, 17);
         }
 
         .employment-offer-letterhead-company {
@@ -2969,14 +2969,14 @@ export default function EmploymentOfferDocumentPage() {
         }
 
         .employment-offer-letterhead-contact a {
-          color: #0B5CAD;
+          color: rgb(11, 92, 173);
           text-decoration: underline;
         }
 
         .employment-offer-content {
           padding: 9.8mm 12.7mm 14mm;
           font-family: Arial, Helvetica, sans-serif;
-          color: #111;
+          color: rgb(17, 17, 17);
         }
 
         .employment-offer-page-two .employment-offer-content {
@@ -2984,7 +2984,7 @@ export default function EmploymentOfferDocumentPage() {
         }
 
         .employment-offer-content .jd-rich-text-viewer {
-          color: #111;
+          color: rgb(17, 17, 17);
           font-family: Arial, Helvetica, sans-serif;
           font-size: 10.2pt;
           font-weight: 400;
@@ -3063,7 +3063,7 @@ export default function EmploymentOfferDocumentPage() {
         .employment-offer-content .jd-rich-text-viewer blockquote {
           border: 0;
           padding: 0;
-          color: #111;
+          color: rgb(17, 17, 17);
         }
 
         .employment-offer-content .jd-rich-text-viewer hr {
@@ -3449,7 +3449,7 @@ export default function EmploymentOfferDocumentPage() {
           width: 80.8mm !important;
           margin-top: 16.93mm !important;
           padding-top: 2.6mm !important;
-          border-top: 0.7pt solid #111 !important;
+          border-top: 0.7pt solid rgb(17, 17, 17) !important;
           color: transparent !important;
           font-size: 0 !important;
           line-height: 0 !important;
@@ -3459,7 +3459,7 @@ export default function EmploymentOfferDocumentPage() {
         .employment-offer-page-two .eo-signature-line::after {
           content: "Signature over Printed Name";
           display: block;
-          color: #111;
+          color: rgb(17, 17, 17);
           font-family: Arial, Helvetica, sans-serif;
           font-size: 9.4pt;
           font-weight: 400;
@@ -3483,7 +3483,7 @@ export default function EmploymentOfferDocumentPage() {
           left: 0 !important;
           bottom: calc(100% + 1.41mm) !important;
           width: 100% !important;
-          color: #111 !important;
+          color: rgb(17, 17, 17) !important;
           font-family: Arial, Helvetica, sans-serif !important;
           font-size: 10pt !important;
           font-weight: 700 !important;
@@ -3507,7 +3507,7 @@ export default function EmploymentOfferDocumentPage() {
           content: "Date signed:";
           flex: 0 0 auto;
           margin-right: 1.76mm;
-          color: #111;
+          color: rgb(17, 17, 17);
           font-family: Arial, Helvetica, sans-serif;
           font-size: 9.4pt;
           font-weight: 400;
@@ -3519,7 +3519,7 @@ export default function EmploymentOfferDocumentPage() {
           flex: 1 1 auto;
           min-width: 42mm;
           height: 12pt;
-          border-bottom: 0.7pt solid #111;
+          border-bottom: 0.7pt solid rgb(17, 17, 17);
           margin-top: 0;
         }
 
@@ -3531,18 +3531,18 @@ export default function EmploymentOfferDocumentPage() {
           flex: 1 1 auto !important;
           min-width: 42mm !important;
           height: 12pt !important;
-          color: #111 !important;
+          color: rgb(17, 17, 17) !important;
           font-family: Arial, Helvetica, sans-serif !important;
           font-size: 9.4pt !important;
           font-weight: 400 !important;
           line-height: 12pt !important;
           padding-left: 2mm !important;
-          border-bottom: 0.7pt solid #111 !important;
+          border-bottom: 0.7pt solid rgb(17, 17, 17) !important;
         }
 
         .employment-offer-editor .jd-rich-text-editor .ProseMirror {
           min-height: 235mm;
-          color: #111;
+          color: rgb(17, 17, 17);
           font-family: Arial, Helvetica, sans-serif;
           font-size: 10.2pt;
           font-weight: 400;
@@ -3569,13 +3569,13 @@ export default function EmploymentOfferDocumentPage() {
           margin: 5mm 0 7mm 7.5mm;
           border-left: 0 !important;
           padding-left: 0 !important;
-          color: #111;
+          color: rgb(17, 17, 17);
         }
 
         .employment-offer-editor .jd-rich-text-editor .ProseMirror hr {
           margin: 12mm 0 8mm;
           border: 0;
-          border-top: 1px dashed #D6DEE8;
+          border-top: 1px dashed rgb(214, 222, 232);
         }
 
         .employment-offer-editor .jd-rich-text-editor .ProseMirror blockquote > p:nth-child(2):has(strong),
@@ -3594,7 +3594,7 @@ export default function EmploymentOfferDocumentPage() {
           body {
             margin: 0 !important;
             padding: 0 !important;
-            background: #fff !important;
+            background: white !important;
           }
 
           .employment-offer-no-print {
@@ -3609,7 +3609,7 @@ export default function EmploymentOfferDocumentPage() {
             max-height: none !important;
             min-height: 0 !important;
             overflow: visible !important;
-            background: #fff !important;
+            background: white !important;
           }
 
           .employment-offer-print-area {
@@ -3647,17 +3647,17 @@ export default function EmploymentOfferDocumentPage() {
       </div>
 
       <div className="employment-offer-screen-shell flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden overscroll-none">
-        <header className="employment-offer-no-print shrink-0 border-b border-[#DCE4EC] bg-white">
+        <header className="employment-offer-no-print shrink-0 border-b border-sibs-border bg-white">
         <div className="mx-auto max-w-[1500px] px-5 py-4 2xl:px-8">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#667085]">
+              <p className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-muted">
                 Employment Offer Document
               </p>
-              <h1 className="mt-1 font-heading text-xl font-extrabold tracking-tight text-[#042C51]">
+              <h1 className="mt-1 font-heading text-xl font-extrabold tracking-tight text-sibs-navy">
                 {candidateName.toUpperCase()}
               </h1>
-              <p className="mt-1 text-xs font-semibold text-[#667085]">
+              <p className="mt-1 text-xs font-semibold text-sibs-muted">
                 {cleanText(
                   version.roleTitle ||
                     version.role_title ||
@@ -3680,8 +3680,8 @@ export default function EmploymentOfferDocumentPage() {
                 onClick={() => setActiveTab(tab)}
                 className={`border-b-2 px-1 pb-2 text-sm font-extrabold transition ${
                   activeTab === tab
-                    ? "border-[#1677FF] text-[#1677FF]"
-                    : "border-transparent text-[#475467]"
+                    ? "border-sibs-navy text-sibs-navy"
+                    : "border-transparent text-sibs-muted hover:text-sibs-navy"
                 }`}
               >
                 {tab}
@@ -3692,20 +3692,20 @@ export default function EmploymentOfferDocumentPage() {
       </header>
 
       {approvalMode && status === "For Review" ? (
-        <div className="employment-offer-no-print shrink-0 border-b border-[#DCE4EC] bg-[#FFF8F5] px-5 py-3">
+        <div className="employment-offer-no-print shrink-0 border-b border-sibs-border bg-orange-50/60 px-5 py-3">
           <div className="mx-auto flex max-w-[1500px] items-center gap-3">
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-orange-200 bg-white text-[#FF5C28]">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] border border-orange-200 bg-white text-sibs-orange">
               <AlertTriangle size={17} />
             </span>
 
             <div className="min-w-0">
-              <p className="text-xs font-extrabold text-[#042C51]">
+              <p className="text-xs font-extrabold text-sibs-navy">
                 {hasManagerSignature
                   ? "Signature ready for approval"
                   : "Approver signature required"}
               </p>
 
-              <p className="mt-0.5 text-[10px] font-semibold leading-relaxed text-[#667085]">
+              <p className="mt-0.5 text-[10px] font-semibold leading-relaxed text-sibs-muted">
                 {hasManagerSignature
                   ? "Review the signed Employment Offer, then click Approve Offer below. The standard approval Notes modal will open before final approval."
                   : "Upload a signature image or draw your signature below before approving this Employment Offer."}
@@ -3718,42 +3718,42 @@ export default function EmploymentOfferDocumentPage() {
       {loading ? (
         <div className="flex min-h-0 flex-1 items-center justify-center overflow-hidden">
           <div className="text-center">
-            <Loader2 className="mx-auto h-7 w-7 animate-spin text-[#FF5C28]" />
-            <p className="mt-3 text-sm font-bold text-[#667085]">Loading Employment Offer...</p>
+            <Loader2 className="mx-auto h-7 w-7 animate-spin text-sibs-orange" />
+            <p className="mt-3 text-sm font-bold text-sibs-muted">Loading Employment Offer...</p>
           </div>
         </div>
       ) : activeTab === "Revision History" ? (
         <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain px-5 py-8 2xl:px-8">
           <div className="mx-auto w-full max-w-5xl">
-          <section className="rounded-2xl border border-[#DCE4EC] bg-white p-5 shadow-sm">
-            <div className="flex items-center gap-3 border-b border-[#E6ECF2] pb-4">
-              <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#EEF5FF] text-[#042C51]">
+          <section className="rounded-[14px] border border-sibs-border bg-white p-5 shadow-sm">
+            <div className="flex items-center gap-3 border-b border-sibs-border pb-4">
+              <span className="flex h-9 w-9 items-center justify-center rounded-[10px] bg-blue-50 text-sibs-navy">
                 <History size={17} />
               </span>
               <div>
-                <h2 className="font-heading text-base font-extrabold">Revision History</h2>
-                <p className="text-xs font-semibold text-[#667085]">Saved Employment Offer document updates.</p>
+                <h2 className="font-heading text-base font-extrabold text-sibs-navy">Revision History</h2>
+                <p className="text-xs font-semibold text-sibs-muted">Saved Employment Offer document updates.</p>
               </div>
             </div>
 
             <div className="mt-4 space-y-3">
               {revisions.length ? (
                 [...revisions].reverse().map((revision, index) => (
-                  <article key={`${revision.revision || index}-${revision.updatedAt || index}`} className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4">
+                  <article key={`${revision.revision || index}-${revision.updatedAt || index}`} className="rounded-[10px] border border-sibs-border bg-slate-50 p-4">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <div>
-                        <p className="text-xs font-extrabold text-[#042C51]">Revision {revision.revision ?? revisions.length - index}</p>
-                        <p className="mt-1 text-[11px] font-semibold text-[#667085]">{revision.updatedBy || "System"} • {formatDateTime(revision.updatedAt)}</p>
+                        <p className="text-xs font-extrabold text-sibs-navy">Revision {revision.revision ?? revisions.length - index}</p>
+                        <p className="mt-1 text-[11px] font-semibold text-sibs-muted">{revision.updatedBy || "System"} • {formatDateTime(revision.updatedAt)}</p>
                       </div>
-                      <span className="rounded-full border border-[#D6DEE8] bg-white px-2.5 py-1 text-[10px] font-extrabold text-[#475467]">
+                      <span className="rounded-full border border-sibs-border bg-white px-2.5 py-1 text-[10px] font-extrabold text-sibs-muted">
                         Version {versionNumber}
                       </span>
                     </div>
-                    <p className="mt-3 text-xs font-semibold leading-5 text-[#475467]">{revision.comment || "Employment Offer signature updated."}</p>
+                    <p className="mt-3 text-xs font-semibold leading-5 text-sibs-muted">{revision.comment || "Employment Offer signature updated."}</p>
                   </article>
                 ))
               ) : (
-                <div className="rounded-xl border border-dashed border-[#CDD7E1] p-8 text-center text-sm font-semibold text-[#667085]">
+                <div className="rounded-[10px] border border-dashed border-sibs-border p-8 text-center text-sm font-semibold text-sibs-muted">
                   No document revisions have been saved yet.
                 </div>
               )}
@@ -3767,7 +3767,7 @@ export default function EmploymentOfferDocumentPage() {
             {documentPages.map((pageHtml, pageIndex) => (
               <article
                 key={`employment-offer-page-${pageIndex + 1}`}
-                className={`employment-offer-paper overflow-hidden border border-[#DCE4EC] bg-white shadow-[0_20px_60px_rgba(15,23,42,0.12)] ${
+                className={`employment-offer-paper overflow-hidden border border-sibs-border bg-white shadow-[0_20px_60px_rgba(15,23,42,0.12)] ${
                   pageIndex === 0
                     ? "employment-offer-page-one"
                     : "employment-offer-page-two"
@@ -3807,16 +3807,16 @@ export default function EmploymentOfferDocumentPage() {
         </main>
       )}
 
-      <footer className="employment-offer-no-print shrink-0 border-t border-[#DCE4EC] bg-white px-5 py-3 shadow-[0_-10px_30px_rgba(15,23,42,0.06)]">
+      <footer className="employment-offer-no-print shrink-0 border-t border-sibs-border bg-white px-5 py-3 shadow-[0_-10px_30px_rgba(15,23,42,0.06)]">
         <div className="mx-auto flex max-w-[1500px] flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2 text-xs font-semibold text-[#667085]">
-            <FileText size={15} className="text-[#042C51]" />
-            <span>Document: <strong className="text-[#042C51]">{offerCode}</strong></span>
-            <span>• Revision: <strong className="text-[#042C51]">{documentData?.documentRevision ?? 0}</strong></span>
+          <div className="flex items-center gap-2 text-xs font-semibold text-sibs-muted">
+            <FileText size={15} className="text-sibs-navy" />
+            <span>Document: <strong className="text-sibs-navy">{offerCode}</strong></span>
+            <span>• Revision: <strong className="text-sibs-navy">{documentData?.documentRevision ?? 0}</strong></span>
           </div>
 
           <div className="flex flex-wrap items-center justify-end gap-2">
-            <button type="button" onClick={() => navigate(-1)} disabled={documentActionBusy} className="inline-flex h-10 items-center gap-2 rounded-lg border border-[#D6DEE8] bg-white px-4 text-xs font-extrabold text-[#042C51] hover:bg-[#F8FAFC] disabled:opacity-50">
+            <button type="button" onClick={() => navigate(-1)} disabled={documentActionBusy} className="inline-flex h-10 items-center gap-2 rounded-[10px] border border-sibs-border bg-white px-4 text-xs font-extrabold text-sibs-navy hover:bg-slate-50 disabled:opacity-50">
               <ArrowLeft size={15} /> Back to Offers
             </button>
 
@@ -3832,10 +3832,10 @@ export default function EmploymentOfferDocumentPage() {
                     event.preventDefault();
                   }
                 }}
-                className={`inline-flex h-10 items-center gap-2 rounded-lg border border-[#D6DEE8] bg-white px-4 text-xs font-extrabold text-[#042C51] ${
+                className={`inline-flex h-10 items-center gap-2 rounded-[10px] border border-sibs-border bg-white px-4 text-xs font-extrabold text-sibs-navy ${
                   documentActionBusy
                     ? "pointer-events-none cursor-not-allowed opacity-50"
-                    : "hover:bg-[#F8FAFC]"
+                    : "hover:bg-slate-50"
                 }`}
               >
                 <Download size={15} /> PDF
@@ -3844,7 +3844,7 @@ export default function EmploymentOfferDocumentPage() {
                 type="button"
                 onClick={handlePrint}
                 disabled={documentActionBusy}
-                className="inline-flex h-10 items-center gap-2 rounded-lg border border-[#D6DEE8] bg-white px-4 text-xs font-extrabold text-[#042C51] hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex h-10 items-center gap-2 rounded-[10px] border border-sibs-border bg-white px-4 text-xs font-extrabold text-sibs-navy hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <Printer size={15} /> Print
               </button>
@@ -3862,12 +3862,12 @@ export default function EmploymentOfferDocumentPage() {
                     type="button"
                     onClick={() => signatureInputRef.current?.click()}
                     disabled={documentActionBusy}
-                    className="inline-flex h-10 items-center gap-2 rounded-lg bg-[#042C51] px-4 text-xs font-extrabold text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="inline-flex h-10 items-center gap-2 rounded-[10px] bg-sibs-navy px-4 text-xs font-extrabold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {signatureUploading ? (
                       <Loader2 size={15} className="animate-spin" />
                     ) : (
-                      <Upload size={15} className="text-[#FF5C28]" />
+                      <Upload size={15} className="text-sibs-orange" />
                     )}
                     {signatureUploading
                       ? "Uploading Signature..."
@@ -3883,11 +3883,11 @@ export default function EmploymentOfferDocumentPage() {
                         setDrawSignatureOpen(true)
                       }
                       disabled={documentActionBusy}
-                      className="inline-flex h-10 items-center gap-2 rounded-lg border border-[#D6DEE8] bg-white px-4 text-xs font-extrabold text-[#042C51] transition hover:border-[#FF5C28] hover:bg-[#FFF8F5] disabled:cursor-not-allowed disabled:opacity-50"
+                      className="inline-flex h-10 items-center gap-2 rounded-[10px] border border-sibs-border bg-white px-4 text-xs font-extrabold text-sibs-navy transition hover:border-sibs-orange hover:bg-orange-50/50 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       <Pencil
                         size={15}
-                        className="text-[#FF5C28]"
+                        className="text-sibs-orange"
                       />
                       Draw Signature
                     </button>
@@ -3898,7 +3898,7 @@ export default function EmploymentOfferDocumentPage() {
                       type="button"
                       onClick={handleSignatureRemove}
                       disabled={documentActionBusy}
-                      className="inline-flex h-10 items-center gap-2 rounded-lg border border-red-200 bg-white px-4 text-xs font-extrabold text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="inline-flex h-10 items-center gap-2 rounded-[10px] border border-red-200 bg-white px-4 text-xs font-extrabold text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       {signatureUploading ? (
                         <Loader2
@@ -3925,17 +3925,17 @@ export default function EmploymentOfferDocumentPage() {
                     !canApproveFromDocument ||
                     documentActionBusy
                   }
-                  className="inline-flex h-10 items-center gap-2 rounded-lg bg-[#042C51] px-4 text-xs font-extrabold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="inline-flex h-10 items-center gap-2 rounded-[10px] bg-sibs-navy px-4 text-xs font-extrabold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {approvalSubmitting ? (
                     <Loader2 size={15} className="animate-spin" />
                   ) : (
-                    <Check size={15} className="text-[#FF5C28]" />
+                    <Check size={15} className="text-sibs-orange" />
                   )}
                   {approvalSubmitting ? "Approving..." : "Approve Offer"}
                 </button>
               ) : (
-                <span className="inline-flex h-10 items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3.5 text-[10px] font-extrabold text-amber-700">
+                <span className="inline-flex h-10 items-center gap-2 rounded-[10px] border border-amber-200 bg-amber-50 px-3.5 text-[10px] font-extrabold text-amber-700">
                   <AlertTriangle size={14} />
                   Upload or draw signature to enable approval
                 </span>
@@ -3948,7 +3948,7 @@ export default function EmploymentOfferDocumentPage() {
 
       {drawSignatureOpen ? (
         <div
-          className="employment-offer-no-print fixed inset-0 z-[13000] flex items-center justify-center bg-[#042C51]/60 p-4 backdrop-blur-[2px]"
+          className="employment-offer-no-print fixed inset-0 z-[13000] flex items-center justify-center bg-sibs-navy/65 p-4 backdrop-blur-[2px]"
           onClick={(event) => {
             if (
               event.target === event.currentTarget
@@ -3961,14 +3961,14 @@ export default function EmploymentOfferDocumentPage() {
             role="dialog"
             aria-modal="true"
             aria-labelledby="draw-signature-title"
-            className="w-full max-w-2xl overflow-hidden rounded-2xl border border-white/60 bg-white shadow-2xl"
+            className="w-full max-w-2xl overflow-hidden rounded-[14px] border border-white/60 bg-white shadow-2xl"
             onClick={(event) =>
               event.stopPropagation()
             }
           >
-            <header className="flex items-start justify-between gap-4 bg-[#042C51] px-5 py-4 text-white">
+            <header className="flex items-start justify-between gap-4 bg-sibs-navy px-5 py-4 text-white">
               <div className="flex min-w-0 items-start gap-3">
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#FF5C28] text-white">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-sibs-orange text-white">
                   <Pencil size={17} />
                 </span>
 
@@ -3990,17 +3990,17 @@ export default function EmploymentOfferDocumentPage() {
                 type="button"
                 onClick={closeDrawSignature}
                 disabled={signatureUploading}
-                className="rounded-lg px-3 py-2 text-xs font-extrabold text-white/80 transition hover:bg-white/10 hover:text-white disabled:opacity-50"
+                className="rounded-[10px] px-3 py-2 text-xs font-extrabold text-white/80 transition hover:bg-white/10 hover:text-white disabled:opacity-50"
               >
                 Cancel
               </button>
             </header>
 
             <div className="p-5">
-              <div className="rounded-xl border border-[#D6DEE8] bg-[#F8FAFC] p-3">
+              <div className="rounded-[10px] border border-sibs-border bg-slate-50 p-3">
                 <canvas
                   ref={drawSignatureCanvasRef}
-                  className="block h-[220px] w-full cursor-crosshair touch-none rounded-lg border border-dashed border-[#B8C6D6] bg-white"
+                  className="block h-[220px] w-full cursor-crosshair touch-none rounded-[10px] border border-dashed border-sibs-border bg-white"
                   onPointerDown={
                     handleDrawSignaturePointerDown
                   }
@@ -4020,7 +4020,7 @@ export default function EmploymentOfferDocumentPage() {
                   }}
                 />
 
-                <p className="mt-2 text-[10px] font-semibold text-[#667085]">
+                <p className="mt-2 text-[10px] font-semibold text-sibs-muted">
                   Draw only your signature. It will be
                   saved as a transparent PNG and placed
                   above your approver name.
@@ -4028,7 +4028,7 @@ export default function EmploymentOfferDocumentPage() {
               </div>
             </div>
 
-            <footer className="flex flex-wrap items-center justify-between gap-2 border-t border-[#E6ECF2] bg-[#F8FAFC] px-5 py-3.5">
+            <footer className="flex flex-wrap items-center justify-between gap-2 border-t border-sibs-border bg-slate-50 px-5 py-3.5">
               <button
                 type="button"
                 onClick={clearDrawSignature}
@@ -4036,7 +4036,7 @@ export default function EmploymentOfferDocumentPage() {
                   signatureUploading ||
                   !drawSignatureHasStroke
                 }
-                className="inline-flex h-10 items-center gap-2 rounded-lg border border-[#D6DEE8] bg-white px-4 text-xs font-extrabold text-[#475467] transition hover:bg-[#F1F5F9] disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex h-10 items-center gap-2 rounded-[10px] border border-sibs-border bg-white px-4 text-xs font-extrabold text-sibs-muted transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <RotateCcw size={15} />
                 Clear
@@ -4047,7 +4047,7 @@ export default function EmploymentOfferDocumentPage() {
                   type="button"
                   onClick={closeDrawSignature}
                   disabled={signatureUploading}
-                  className="inline-flex h-10 items-center justify-center rounded-lg border border-[#D6DEE8] bg-white px-4 text-xs font-extrabold text-[#475467] transition hover:bg-[#F1F5F9] disabled:opacity-50"
+                  className="inline-flex h-10 items-center justify-center rounded-[10px] border border-sibs-border bg-white px-4 text-xs font-extrabold text-sibs-muted transition hover:bg-slate-100 disabled:opacity-50"
                 >
                   Cancel
                 </button>
@@ -4059,7 +4059,7 @@ export default function EmploymentOfferDocumentPage() {
                     signatureUploading ||
                     !drawSignatureHasStroke
                   }
-                  className="inline-flex h-10 items-center gap-2 rounded-lg bg-[#042C51] px-4 text-xs font-extrabold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="inline-flex h-10 items-center gap-2 rounded-[10px] bg-sibs-navy px-4 text-xs font-extrabold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {signatureUploading ? (
                     <Loader2
@@ -4069,7 +4069,7 @@ export default function EmploymentOfferDocumentPage() {
                   ) : (
                     <Check
                       size={15}
-                      className="text-[#FF5C28]"
+                      className="text-sibs-orange"
                     />
                   )}
 

@@ -578,18 +578,18 @@ function RequirementCard({
 
   return (
     <div
-      className={`rounded-xl border p-4 transition ${
+      className={`rounded-[10px] border p-4 transition ${
         hasFiles
           ? "border-emerald-200 bg-emerald-50/50"
-          : "border-[#D9E2EC] bg-[#F8FAFC]"
+          : "border-sibs-border bg-sibs-surface"
       }`}
     >
       <div className="flex min-w-0 items-start gap-3">
         <div
-          className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border ${
+          className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-[6px] border ${
             hasFiles
               ? "border-emerald-500 bg-emerald-500 text-white"
-              : "border-[#B9C7D6] bg-white"
+              : "border-sibs-border bg-white"
           }`}
         >
           {hasFiles && <Check size={14} strokeWidth={3} />}
@@ -599,7 +599,7 @@ function RequirementCard({
           <div className="flex min-w-0 items-start justify-between gap-2">
             <p
               title={requirement}
-              className="truncate text-sm font-extrabold text-[#101828]"
+              className="truncate text-sm font-extrabold text-sibs-navy"
             >
               {requirement}
             </p>
@@ -627,7 +627,7 @@ function RequirementCard({
                 return (
                   <div
                     key={`${uploadedFile.id}-${uploadedFile.fileName}-${uploadedFile.fileUrl}`}
-                    className="flex min-w-0 items-center gap-2 rounded-xl border border-emerald-100 bg-white px-3 py-2"
+                    className="flex min-w-0 items-center gap-2 rounded-[10px] border border-emerald-100 bg-white px-3 py-2"
                   >
                     <button
                       type="button"
@@ -652,7 +652,7 @@ function RequirementCard({
                       type="button"
                       disabled={disabled}
                       onClick={() => onRemove(uploadedFile)}
-                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-red-100 bg-red-50 text-red-600 transition hover:bg-red-100 disabled:opacity-60"
+                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] border border-red-100 bg-red-50 text-red-600 transition hover:bg-red-100 disabled:opacity-60"
                       title="Remove this file"
                     >
                       <Trash2 size={14} />
@@ -662,7 +662,7 @@ function RequirementCard({
               })}
             </div>
           ) : (
-            <div className="mt-3 rounded-xl border border-dashed border-[#C9D6E4] bg-white px-3 py-3 text-xs font-bold text-sibs-tertiary-5">
+            <div className="mt-3 rounded-[10px] border border-dashed border-sibs-border bg-white px-3 py-3 text-xs font-bold text-sibs-muted">
               No uploaded file yet.
             </div>
           )}
@@ -673,10 +673,10 @@ function RequirementCard({
         type="button"
         disabled={disabled}
         onClick={() => inputRef.current?.click()}
-        className={`mt-3 flex h-8.5 2xl:h-10 w-full items-center justify-between rounded-xl border border-dashed px-3 text-left sibs-text-xs font-extrabold transition disabled:cursor-not-allowed disabled:opacity-70 ${
+        className={`mt-3 flex h-8.5 2xl:h-10 w-full items-center justify-between rounded-[10px] border border-dashed px-3 text-left sibs-text-xs font-extrabold transition disabled:cursor-not-allowed disabled:opacity-70 ${
           hasFiles
             ? "border-emerald-200 bg-white text-emerald-700 hover:bg-emerald-50"
-            : "border-[#B9C7D6] bg-white text-sibs-primary-1 hover:bg-[#F3F8FF]"
+            : "border-sibs-border bg-white text-sibs-navy hover:bg-sky-50/50"
         }`}
       >
         <span className="truncate">
@@ -702,16 +702,16 @@ function RequirementCard({
 function FilePreviewPanel({ file }) {
   if (!file) {
     return (
-      <div className="flex min-h-[320px] flex-col items-center justify-center rounded-2xl border border-dashed border-[#B9C7D6] bg-[#F8FAFC] p-6 text-center">
-        <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-[#D9E2EC] bg-white text-sibs-primary-1 shadow-sm">
+      <div className="flex min-h-[320px] flex-col items-center justify-center rounded-[10px] border border-dashed border-sibs-border bg-sibs-surface p-6 text-center">
+        <div className="flex h-14 w-14 items-center justify-center rounded-[10px] border border-sibs-border bg-white text-sibs-navy shadow-sm">
           <FileText size={27} />
         </div>
 
-        <p className="mt-4 text-base font-extrabold text-[#101828]">
+        <p className="mt-4 text-base font-extrabold text-sibs-navy">
           No file selected
         </p>
 
-        <p className="mt-2 max-w-xs text-sm font-semibold leading-6 text-sibs-tertiary-5">
+        <p className="mt-2 max-w-xs text-sm font-semibold leading-6 text-sibs-muted">
           Select an uploaded file from the list to preview its details here.
         </p>
       </div>
@@ -732,58 +732,58 @@ function FilePreviewPanel({ file }) {
     !String(resolvedFileUrl).startsWith("blob:");
 
   return (
-    <div className="rounded-2xl border border-[#D9E2EC] bg-[#F8FAFC] p-5">
+    <div className="rounded-[10px] border border-sibs-border bg-sibs-surface p-5">
       <div className="flex items-start gap-3">
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white text-sibs-primary-1 shadow-sm">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[10px] bg-white text-sibs-navy shadow-sm">
           <FileIcon size={24} />
         </div>
 
         <div className="min-w-0">
-          <p className="text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
+          <p className="text-xs font-extrabold uppercase tracking-wide text-sibs-navy">
             Selected File
           </p>
 
           <h3
             title={file.fileName}
-            className="mt-1 break-words text-base font-extrabold text-[#101828]"
+            className="mt-1 break-words text-base font-extrabold text-sibs-navy"
           >
             {file.fileName || "Uploaded file"}
           </h3>
 
-          <p className="mt-1 text-xs font-bold text-sibs-tertiary-5">
+          <p className="mt-1 text-xs font-bold text-sibs-muted">
             {formatFileSize(file.fileSize)}
           </p>
         </div>
       </div>
 
-      <div className="mt-5 space-y-3 rounded-xl border border-[#E6ECF2] bg-white p-4">
+      <div className="mt-5 space-y-3 rounded-[10px] border border-sibs-border bg-white p-4">
         <div>
-          <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-tertiary-5">
+          <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-muted">
             Requirement
           </p>
 
-          <p className="mt-1 text-sm font-bold text-sibs-primary-1">
+          <p className="mt-1 text-sm font-bold text-sibs-navy">
             {file.requirement || "—"}
           </p>
         </div>
 
         <div>
-          <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-tertiary-5">
+          <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-muted">
             Uploaded At
           </p>
 
-          <p className="mt-1 text-sm font-bold text-sibs-primary-1">
+          <p className="mt-1 text-sm font-bold text-sibs-navy">
             {formatUploadedDate(file.uploadedAt)}
           </p>
         </div>
 
         {file.uploadedBy && (
           <div>
-            <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-tertiary-5">
+            <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-muted">
               Uploaded By
             </p>
 
-            <p className="mt-1 break-words text-sm font-bold text-sibs-primary-1">
+            <p className="mt-1 break-words text-sm font-bold text-sibs-navy">
               {file.uploadedBy}
             </p>
           </div>
@@ -791,11 +791,11 @@ function FilePreviewPanel({ file }) {
 
         {file.applicantFolderName && (
           <div>
-            <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-tertiary-5">
+            <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-muted">
               Server Folder
             </p>
 
-            <p className="mt-1 break-words text-sm font-bold text-sibs-primary-1">
+            <p className="mt-1 break-words text-sm font-bold text-sibs-navy">
               {file.applicantFolderName}
             </p>
           </div>
@@ -803,7 +803,7 @@ function FilePreviewPanel({ file }) {
       </div>
 
       {isImage && (
-        <div className="mt-5 overflow-hidden rounded-xl border border-[#E6ECF2] bg-white">
+        <div className="mt-5 overflow-hidden rounded-[10px] border border-sibs-border bg-white">
           <img
             src={resolvedFileUrl}
             alt={file.fileName}
@@ -817,7 +817,7 @@ function FilePreviewPanel({ file }) {
           href={resolvedFileUrl}
           target="_blank"
           rel="noreferrer"
-          className="mt-5 inline-flex h-8.5 2xl:h-10 w-full items-center justify-center rounded-lg bg-sibs-primary-1 px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white transition hover:opacity-90"
+          className="mt-5 inline-flex h-8.5 2xl:h-10 w-full items-center justify-center rounded-[10px] bg-sibs-navy px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white transition hover:opacity-90"
         >
           Open File
         </a>
@@ -830,35 +830,35 @@ function UploadedFilesList({ files = [], disabled = false, onSelect, onRemove })
   const uploadedFiles = useMemo(() => sortUploadedFiles(files), [files]);
 
   return (
-    <div className="border-t border-[#E6ECF2] pt-5">
+    <div className="border-t border-sibs-border pt-5">
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h4 className="text-base font-extrabold text-sibs-primary-1">
+          <h4 className="text-base font-extrabold text-sibs-navy">
             Uploaded Files List
           </h4>
 
-          <p className="mt-1 text-sm font-semibold leading-6 text-sibs-tertiary-5">
+          <p className="mt-1 text-sm font-semibold leading-6 text-sibs-muted">
             Complete list of official NHO files uploaded under the
             pre-employment requirements.
           </p>
         </div>
 
-        <span className="inline-flex w-fit rounded-full bg-[#F2F6FA] px-3 py-1 text-xs font-extrabold text-sibs-primary-1">
+        <span className="inline-flex w-fit rounded-full bg-sibs-surface px-3 py-1 text-xs font-extrabold text-sibs-navy">
           {uploadedFiles.length} upload{uploadedFiles.length === 1 ? "" : "s"}
         </span>
       </div>
 
       {uploadedFiles.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-[#C9D6E4] bg-[#F8FAFC] p-5 text-center">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-white text-sibs-primary-1 shadow-sm">
+        <div className="rounded-[10px] border border-dashed border-sibs-border bg-sibs-surface p-5 text-center">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-[10px] bg-white text-sibs-navy shadow-sm">
             <FileText size={23} />
           </div>
 
-          <p className="mt-3 text-sm font-extrabold text-[#101828]">
+          <p className="mt-3 text-sm font-extrabold text-sibs-navy">
             No uploaded files yet
           </p>
 
-          <p className="mt-1 text-xs font-semibold leading-5 text-sibs-tertiary-5">
+          <p className="mt-1 text-xs font-semibold leading-5 text-sibs-muted">
             Official uploaded files will appear here after selecting a
             requirement file.
           </p>
@@ -872,7 +872,7 @@ function UploadedFilesList({ files = [], disabled = false, onSelect, onRemove })
             return (
               <div
                 key={`${file.requirement}-${file.id}-${file.fileName}`}
-                className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-3 transition hover:border-sibs-primary-1/30 hover:bg-white"
+                className="rounded-[10px] border border-sibs-border bg-sibs-surface p-3 transition hover:border-sibs-navy/30 hover:bg-white"
               >
                 <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                   <button
@@ -881,7 +881,7 @@ function UploadedFilesList({ files = [], disabled = false, onSelect, onRemove })
                     onClick={() => onSelect?.(file)}
                     className="flex min-w-0 flex-1 items-start gap-3 text-left disabled:cursor-not-allowed disabled:opacity-70"
                   >
-                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-sibs-primary-1 shadow-sm">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] bg-white text-sibs-navy shadow-sm">
                       <FileIcon size={21} />
                     </div>
 
@@ -889,7 +889,7 @@ function UploadedFilesList({ files = [], disabled = false, onSelect, onRemove })
                       <div className="flex min-w-0 flex-wrap items-center gap-2">
                         <p
                           title={file.requirement}
-                          className="truncate text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1"
+                          className="truncate text-[11px] font-extrabold uppercase tracking-wide text-sibs-navy"
                         >
                           {file.requirement || "Uploaded Requirement"}
                         </p>
@@ -903,12 +903,12 @@ function UploadedFilesList({ files = [], disabled = false, onSelect, onRemove })
 
                       <p
                         title={file.fileName}
-                        className="mt-1 truncate text-sm font-extrabold text-[#101828]"
+                        className="mt-1 truncate text-sm font-extrabold text-sibs-navy"
                       >
                         {file.fileName || "Uploaded file"}
                       </p>
 
-                      <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] font-bold text-sibs-tertiary-5">
+                      <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] font-bold text-sibs-muted">
                         <span>{formatFileSize(file.fileSize)}</span>
                         <span>•</span>
                         <span>{formatUploadedDate(file.uploadedAt)}</span>
@@ -921,7 +921,7 @@ function UploadedFilesList({ files = [], disabled = false, onSelect, onRemove })
                       type="button"
                       disabled={disabled}
                       onClick={() => onSelect?.(file)}
-                      className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-lg border border-[#D6DEE8] bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-primary-1 transition hover:bg-[#F3F8FF] disabled:cursor-not-allowed disabled:opacity-70"
+                      className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-[10px] border border-sibs-border bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-navy transition hover:bg-sky-50/50 disabled:cursor-not-allowed disabled:opacity-70"
                     >
                       <Eye size={15} />
                       View
@@ -932,7 +932,7 @@ function UploadedFilesList({ files = [], disabled = false, onSelect, onRemove })
                         href={resolvedFileUrl}
                         target="_blank"
                         rel="noreferrer"
-                        className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-lg border border-[#D6DEE8] bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-primary-1 transition hover:bg-[#F3F8FF]"
+                        className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-[10px] border border-sibs-border bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-navy transition hover:bg-sky-50/50"
                       >
                         <ExternalLink size={15} />
                         Open
@@ -943,7 +943,7 @@ function UploadedFilesList({ files = [], disabled = false, onSelect, onRemove })
                       type="button"
                       disabled={disabled}
                       onClick={() => onRemove?.(file)}
-                      className="inline-flex h-8.5 2xl:h-10 w-8.5 2xl:w-10 items-center justify-center rounded-lg border border-red-100 bg-red-50 text-red-600 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-70"
+                      className="inline-flex h-8.5 2xl:h-10 w-8.5 2xl:w-10 items-center justify-center rounded-[10px] border border-red-100 bg-red-50 text-red-600 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-70"
                       title="Remove file"
                     >
                       <Trash2 size={15} />
@@ -1606,7 +1606,7 @@ export default function NhoUploadModal({
         <div className={busy ? "pointer-events-none opacity-70" : ""}>
           <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
             <div className="min-w-0 space-y-5">
-              <section className="rounded-2xl border border-[#D9E2EC] bg-white p-5 shadow-sm">
+              <section className="rounded-[10px] border border-sibs-border bg-white p-5 shadow-sm">
                 <CandidateModalSummary
                   candidate={{
                     name: candidateName,
@@ -1633,7 +1633,7 @@ export default function NhoUploadModal({
                     <span>{majorProgress.percent}%</span>
                   </div>
 
-                  <div className="h-3 overflow-hidden rounded-full bg-[#EEF4FA]">
+                  <div className="h-3 overflow-hidden rounded-full bg-sibs-surface">
                     <div
                       className={`h-full rounded-full transition-all duration-300 ${
                         majorProgress.isComplete
@@ -1649,7 +1649,7 @@ export default function NhoUploadModal({
                     <span>{progressPercent}%</span>
                   </div>
 
-                  <div className="h-2 overflow-hidden rounded-full bg-[#EEF4FA]">
+                  <div className="h-2 overflow-hidden rounded-full bg-sibs-surface">
                     <div
                       className="h-full rounded-full bg-sibs-primary-1/70 transition-all duration-300"
                       style={{ width: `${progressPercent}%` }}
@@ -1658,7 +1658,7 @@ export default function NhoUploadModal({
                 </div>
 
                 {!majorProgress.isComplete && (
-                  <div className="mt-4 rounded-xl border border-amber-100 bg-amber-50 px-4 py-3 text-sm font-bold leading-6 text-amber-700">
+                  <div className="mt-4 rounded-[10px] border border-amber-100 bg-amber-50 px-4 py-3 text-sm font-bold leading-6 text-amber-700">
                     Candidate has fewer than 5 major requirements. After saving,
                     this candidate should stay under{" "}
                     <span className="font-extrabold">
@@ -1669,41 +1669,41 @@ export default function NhoUploadModal({
                 )}
 
                 {majorProgress.isComplete && (
-                  <div className="mt-4 rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm font-bold leading-6 text-emerald-700">
+                  <div className="mt-4 rounded-[10px] border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm font-bold leading-6 text-emerald-700">
                     Candidate completed the 5 major requirements. After saving,
                     this candidate can proceed to Onboarding.
                   </div>
                 )}
 
                 {isLoadingFiles && (
-                  <div className="mt-4 flex items-center gap-2 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-bold text-blue-700">
+                  <div className="mt-4 flex items-center gap-2 rounded-[10px] border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-bold text-blue-700">
                     <Loader2 size={16} className="animate-spin" />
                     Loading saved official files from backend...
                   </div>
                 )}
 
                 {loadError && (
-                  <div className="mt-4 rounded-xl border border-amber-100 bg-amber-50 px-4 py-3 text-sm font-bold leading-6 text-amber-700">
+                  <div className="mt-4 rounded-[10px] border border-amber-100 bg-amber-50 px-4 py-3 text-sm font-bold leading-6 text-amber-700">
                     {loadError}
                   </div>
                 )}
 
                 {saveError && (
-                  <div className="mt-4 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-bold leading-6 text-red-600">
+                  <div className="mt-4 rounded-[10px] border border-red-100 bg-red-50 px-4 py-3 text-sm font-bold leading-6 text-red-600">
                     {saveError}
                   </div>
                 )}
 
                 {!candidateId && (
-                  <div className="mt-4 rounded-xl border border-amber-100 bg-amber-50 px-4 py-3 text-sm font-bold leading-6 text-amber-700">
+                  <div className="mt-4 rounded-[10px] border border-amber-100 bg-amber-50 px-4 py-3 text-sm font-bold leading-6 text-amber-700">
                     Candidate ID is missing. Uploads will only be saved through
                     the parent component fallback.
                   </div>
                 )}
               </section>
 
-              <section className="rounded-2xl border border-[#D9E2EC] bg-white p-5 shadow-sm">
-                <h3 className="sibs-modal-section-title text-[#042C51]">
+              <section className="rounded-[10px] border border-sibs-border bg-white p-5 shadow-sm">
+                <h3 className="sibs-modal-section-title text-sibs-navy">
                   Pre-Employment Requirements
                 </h3>
 
@@ -1719,7 +1719,7 @@ export default function NhoUploadModal({
                     return (
                       <div
                         key={group.id}
-                        className="border-t border-[#E6ECF2] pt-5 first:border-t-0 first:pt-0"
+                        className="border-t border-sibs-border pt-5 first:border-t-0 first:pt-0"
                       >
                         <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                           <div className="flex min-w-0 items-center gap-3">
@@ -1727,7 +1727,7 @@ export default function NhoUploadModal({
                               {group.title}
                             </h4>
 
-                            <span className="rounded-full bg-[#F2F6FA] px-3 py-1 text-xs font-extrabold text-sibs-primary-1">
+                            <span className="rounded-full bg-sibs-surface px-3 py-1 text-xs font-extrabold text-sibs-primary-1">
                               {groupCompleted} / {group.requirements.length}
                             </span>
                           </div>

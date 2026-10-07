@@ -34,9 +34,9 @@ export default function CandidateProfileExperience({ data }) {
               return (
                 <div
                   key={`work-exp-${index}`}
-                  className="rounded-xl border border-[#E6ECF2] bg-white p-3.5"
+                  className="rounded-[10px] border border-sibs-border bg-white p-3.5"
                 >
-                  <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#042C51]">
+                  <p className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-navy">
                     Experience {index + 1}
                   </p>
                   <div className="mt-3 grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -56,7 +56,7 @@ export default function CandidateProfileExperience({ data }) {
             })}
           </div>
         ) : (
-          <div className="rounded-lg border border-dashed border-[#D7DEE8] bg-white px-4 py-4 text-xs font-semibold text-[#667085]">
+          <div className="rounded-[10px] border border-dashed border-sibs-border bg-white px-4 py-4 text-xs font-semibold text-sibs-muted">
             No detailed work experience was submitted.
           </div>
         )}

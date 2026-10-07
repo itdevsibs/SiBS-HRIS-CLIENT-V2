@@ -81,15 +81,15 @@ function PrfStatusDropdown({
       <button
         type="button"
         onClick={() => setOpen((previous) => !previous)}
-        className={`flex h-12 w-full min-w-0 items-center justify-between gap-3 rounded-xl border bg-white px-4 text-left text-sm font-extrabold shadow-sm outline-none transition ${
+        className={`flex h-12 w-full min-w-0 items-center justify-between gap-3 rounded-[10px] border bg-white px-4 text-left text-sm font-extrabold shadow-sm outline-none transition ${
           open
-            ? "border-sibs-primary-1 ring-4 ring-sibs-primary-1/10"
-            : "border-[#D0D5DD] hover:border-sibs-primary-1/50 hover:bg-[#F8FAFC]"
+            ? "border-sibs-navy ring-4 ring-sibs-navy/10"
+            : "border-sibs-border hover:border-sibs-navy/50 hover:bg-sibs-surface"
         }`}
       >
         <span
           className={`min-w-0 flex-1 truncate ${
-            selectedOption ? "text-sibs-primary-1" : "text-sibs-tertiary-5"
+            selectedOption ? "text-sibs-navy" : "text-sibs-muted"
           }`}
         >
           {selectedOption?.label || placeholder}
@@ -97,14 +97,14 @@ function PrfStatusDropdown({
 
         <ChevronDown
           size={18}
-          className={`shrink-0 text-sibs-primary-1 transition-transform duration-200 ${
+          className={`shrink-0 text-sibs-navy transition-transform duration-200 ${
             open ? "rotate-180" : ""
           }`}
         />
       </button>
 
       {open && (
-        <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-[10090] overflow-hidden rounded-xl border border-[#D9E2EC] bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)]">
+        <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-[10090] overflow-hidden rounded-[10px] border border-sibs-border bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)]">
           <div className="max-h-72 overflow-y-auto py-1">
             {options.map((option) => {
               const active = String(option.value) === String(value);
@@ -116,15 +116,15 @@ function PrfStatusDropdown({
                   onClick={() => handleSelect(option)}
                   className={`flex w-full items-start gap-3 px-4 py-3 text-left transition ${
                     active
-                      ? "bg-[#EAF4FF] text-sibs-primary-1"
-                      : "bg-white text-[#344054] hover:bg-[#F5F9FF] hover:text-sibs-primary-1"
+                      ? "bg-sky-50 text-sibs-navy"
+                      : "bg-white text-sibs-navy hover:bg-sky-50/50 hover:text-sibs-navy"
                   }`}
                 >
                   <span
                     className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${
                       active
-                        ? "border-sibs-primary-1 bg-sibs-primary-1 text-white"
-                        : "border-[#D0D5DD] bg-white text-transparent"
+                        ? "border-sibs-navy bg-sibs-navy text-white"
+                        : "border-sibs-border bg-white text-transparent"
                     }`}
                   >
                     <Check size={13} strokeWidth={3} />
@@ -136,7 +136,7 @@ function PrfStatusDropdown({
                     </span>
 
                     {option.description && (
-                      <span className="mt-0.5 block text-xs font-semibold leading-5 text-sibs-tertiary-5">
+                      <span className="mt-0.5 block text-xs font-semibold leading-5 text-sibs-muted">
                         {option.description}
                       </span>
                     )}
@@ -171,19 +171,19 @@ const LeadPrfReviewCard = ({ candidate, onUpdatePrfStatus, onAdvanceStage }) => 
   const isMatched = selectedStatus === "Matched";
 
   return (
-    <div className="relative z-[80] overflow-visible rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-[0_8px_22px_rgba(4,44,81,0.04)]">
+    <div className="relative z-[80] overflow-visible rounded-[10px] border border-sibs-border bg-white p-5 shadow-[0_8px_22px_rgba(4,44,81,0.04)]">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h3 className="text-xs font-extrabold uppercase tracking-wide text-[#042C51]">
+          <h3 className="text-xs font-extrabold uppercase tracking-wide text-sibs-navy">
             LEAD PRF REVIEW & ALIGNMENT
           </h3>
-          <p className="mt-0.5 text-xs font-medium text-[#667085]">
+          <p className="mt-0.5 text-xs font-medium text-sibs-muted">
             Validate headcount requisition alignment for candidate placement.
           </p>
         </div>
 
         {/* Segmented Control Button Group */}
-        <div className="flex items-center gap-1 rounded-lg border border-[#D7DEE8] bg-white p-1">
+        <div className="flex items-center gap-1 rounded-[10px] border border-sibs-border bg-white p-1">
           {["Review", "Matched", "Not Matched"].map((statusOption) => {
             const active =
               (selectedStatus === "Matched" && statusOption === "Matched") ||
@@ -195,10 +195,10 @@ const LeadPrfReviewCard = ({ candidate, onUpdatePrfStatus, onAdvanceStage }) => 
                 key={statusOption}
                 type="button"
                 onClick={() => handleStatusChange(statusOption)}
-                className={`rounded-md border px-4 py-1.5 text-xs font-extrabold transition ${
+                className={`rounded-[8px] border px-4 py-1.5 text-xs font-extrabold transition ${
                   active
-                    ? "border-[#FF5C28] bg-[#FFF8F5] text-[#FF5C28]"
-                    : "border-transparent text-[#667085] hover:border-[#FF5C28]/35 hover:bg-[#FFF8F5] hover:text-[#FF5C28]"
+                    ? "border-sibs-orange bg-sibs-cream-light text-sibs-orange"
+                    : "border-transparent text-sibs-muted hover:border-sibs-orange/35 hover:bg-sibs-cream-light hover:text-sibs-orange"
                 }`}
               >
                 {statusOption}
@@ -208,17 +208,17 @@ const LeadPrfReviewCard = ({ candidate, onUpdatePrfStatus, onAdvanceStage }) => 
         </div>
       </div>
 
-      <div className="mt-4 flex flex-col gap-3 border-t border-[#EEF2F6] pt-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mt-4 flex flex-col gap-3 border-t border-sibs-border pt-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-2">
-          <span className="text-xs font-bold text-[#667085]">Current PRF Status:</span>
-          <span className="text-xs font-extrabold text-[#042C51]">{currentStatus}</span>
+          <span className="text-xs font-bold text-sibs-muted">Current PRF Status:</span>
+          <span className="text-xs font-extrabold text-sibs-navy">{currentStatus}</span>
         </div>
 
         {isMatched && (
           <button
             type="button"
             onClick={() => onAdvanceStage?.(candidate)}
-            className="inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-[#FF5C28] px-4 text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E94F1F] active:scale-[0.98]"
+            className="inline-flex h-9 items-center justify-center gap-2 rounded-[10px] bg-sibs-orange px-4 text-xs font-extrabold text-white shadow-sm transition hover:bg-sibs-orange-hover active:scale-[0.98]"
           >
             Advance to Online Assessment
           </button>
