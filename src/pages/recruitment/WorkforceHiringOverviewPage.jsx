@@ -9,7 +9,11 @@ import useWorkforceHiringPage from "../../hooks/workforceHiring/useWorkforceHiri
 
 export default function WorkforceHiringOverviewPage() {
   const { mainScrollRef } = useWorkforceHiringPage({
-    requireFilterSelection: true,
+    // Load the overview immediately using the full accessible scope.
+    // The shared hook initializes both filters to ["All"] when explicit
+    // filter selection is not required, so the header displays
+    // "All Clusters" and "All Accounts" on first open.
+    requireFilterSelection: false,
     fastOverviewMode: true,
   });
 

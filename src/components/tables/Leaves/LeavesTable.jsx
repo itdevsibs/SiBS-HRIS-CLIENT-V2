@@ -1,9 +1,10 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
   AlertCircle,
   CalendarDays,
   Check,
+  ChevronDown,
   Loader2,
   Paperclip,
   RotateCcw,
@@ -22,6 +23,7 @@ import {
   TablePagination,
   TableSkeletonRows,
 } from "@/components/ui";
+import DropdownPortal from "@/components/ui/DropdownPortal.jsx";
 import {
   LEAVES_STATE_KEY,
   PAGE_LIMIT,
@@ -264,6 +266,213 @@ function EmployeeAvatar({ employee, size = "md" }) {
       </span>
       {preview}
     </>
+  );
+}
+
+function LeavesDirectoryFilterDropdown({
+  label,
+  value,
+  options = [],
+  onChange,
+  placeholder = "All",
+  searchPlaceholder = "Search...",
+  disabled = false,
+}) {
+  const [open, setOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const anchorRef = useRef(null);
+  const inputRef = useRef(null);
+
+  const normalizedOptions = useMemo(
+    () =>
+      (Array.isArray(options) ? options : [])
+        .map((option) => ({
+          value: String(option?.value ?? option ?? ""),
+          label: String(option?.label ?? option?.value ?? option ?? ""),
+        }))
+        .filter((option) => option.value && option.label),
+    [options],
+  );
+
+  const allOption = normalizedOptions.find(
+    (option) => option.value === "All",
+  );
+
+  const regularOptions = normalizedOptions.filter(
+    (option) => option.value !== "All",
+  );
+
+  const selectedLabel = useMemo(
+    () =>
+      normalizedOptions.find(
+        (option) => option.value === String(value ?? ""),
+      )?.label ||
+      (value && value !== "All"
+        ? String(value)
+        : allOption?.label || placeholder),
+    [allOption?.label, normalizedOptions, placeholder, value],
+  );
+
+  const filteredOptions = useMemo(() => {
+    const keyword = searchQuery.trim().toLowerCase();
+
+    if (!keyword) return regularOptions;
+
+    return regularOptions.filter((option) =>
+      option.label.toLowerCase().includes(keyword),
+    );
+  }, [regularOptions, searchQuery]);
+
+  function openMenu() {
+    if (disabled) return;
+
+    setOpen(true);
+    setSearchQuery("");
+    window.requestAnimationFrame(() => inputRef.current?.focus());
+  }
+
+  function closeMenu() {
+    setOpen(false);
+    setSearchQuery("");
+  }
+
+  function toggleMenu() {
+    if (disabled) return;
+
+    if (open) {
+      closeMenu();
+      return;
+    }
+
+    openMenu();
+  }
+
+  function selectValue(nextValue) {
+    onChange?.(nextValue);
+    closeMenu();
+  }
+
+  const allSelected = !value || value === "All";
+
+  return (
+    <div ref={anchorRef} className="relative w-full min-w-0 font-jakarta">
+      <label className="mb-1 block sibs-text-xs font-bold text-sibs-navy">
+        {label}
+      </label>
+
+      <div className="group relative">
+        <input
+          ref={inputRef}
+          type="text"
+          role="combobox"
+          aria-expanded={open}
+          aria-haspopup="listbox"
+          aria-label={label}
+          disabled={disabled}
+          value={open ? searchQuery : selectedLabel}
+          placeholder={open ? searchPlaceholder : placeholder}
+          autoComplete="off"
+          onFocus={openMenu}
+          onClick={openMenu}
+          onChange={(event) => {
+            if (!open) setOpen(true);
+            setSearchQuery(event.target.value);
+          }}
+          onKeyDown={(event) => {
+            if (event.key === "Escape") {
+              event.preventDefault();
+              closeMenu();
+              inputRef.current?.blur();
+            }
+          }}
+          className={`h-8.5 sm:h-9 2xl:h-10 w-full rounded-[10px] border bg-[#F8FAFC] px-3 pr-10 font-jakarta sibs-text-xs font-bold text-[#042C51] shadow-sm outline-none transition placeholder:text-[#98A2B3] hover:bg-white disabled:cursor-not-allowed disabled:opacity-50 ${
+            open
+              ? "border-[#FF5C28] bg-white ring-4 ring-[#FF5C28]/10"
+              : "border-[#E6ECF2] hover:border-[#FF5C28]/40"
+          }`}
+          style={{ outline: "none", boxShadow: open ? undefined : "none" }}
+        />
+
+        <button
+          type="button"
+          tabIndex={-1}
+          disabled={disabled}
+          aria-label={`Toggle ${label} dropdown`}
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={toggleMenu}
+          className="absolute right-2 top-1/2 flex h-6.5 w-6.5 2xl:h-7 2xl:w-7 -translate-y-1/2 items-center justify-center rounded-md text-[#667085] transition hover:bg-[#FFF0EB] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <ChevronDown
+            className={`h-3.5 w-3.5 2xl:h-4 2xl:w-4 transition-transform duration-300 ${
+              open ? "rotate-180 text-[#FF5C28]" : ""
+            }`}
+          />
+        </button>
+      </div>
+
+      <DropdownPortal
+        open={open && !disabled}
+        anchorRef={anchorRef}
+        onClose={closeMenu}
+        maxHeight={320}
+        offset={6}
+        className="!rounded-[10px] !border-[#D7DEE8]"
+      >
+        <div className="sibs-scrollbar max-h-[320px] overflow-y-auto py-1">
+          {allOption ? (
+            <button
+              type="button"
+              role="option"
+              aria-selected={allSelected}
+              onClick={() => selectValue("All")}
+              className={`flex w-full items-center justify-between gap-2 px-3 py-2.5 text-left sibs-text-xs transition ${
+                allSelected
+                  ? "bg-[#FFF0EB] font-extrabold text-[#FF5C28]"
+                  : "font-semibold text-[#344054] hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
+              }`}
+            >
+              <span className="truncate">{allOption.label}</span>
+              {allSelected ? (
+                <Check size={14} className="shrink-0 text-[#FF5C28]" />
+              ) : null}
+            </button>
+          ) : null}
+
+          {filteredOptions.length > 0 ? (
+            filteredOptions.map((option) => {
+              const selected = String(value ?? "") === option.value;
+
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  role="option"
+                  aria-selected={selected}
+                  onClick={() => selectValue(option.value)}
+                  className={`flex w-full items-center gap-2 px-3 py-2.5 text-left sibs-text-xs transition ${
+                    selected
+                      ? "bg-[#FFF0EB] font-extrabold text-[#FF5C28]"
+                      : "font-semibold text-[#344054] hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
+                  }`}
+                >
+                  <span className="block min-w-0 flex-1 truncate">
+                    {option.label}
+                  </span>
+
+                  {selected ? (
+                    <Check size={14} className="shrink-0 text-[#FF5C28]" />
+                  ) : null}
+                </button>
+              );
+            })
+          ) : (
+            <div className="px-3 py-4 text-center sibs-text-xs font-semibold text-[#667085]">
+              No options found.
+            </div>
+          )}
+        </div>
+      </DropdownPortal>
+    </div>
   );
 }
 
@@ -823,7 +1032,7 @@ export default function LeavesTable({
 
             {showDepartmentFilter ? (
               <div className="w-full sm:w-48 xl:w-[170px] 2xl:w-[200px] xl:flex-none">
-                <SelectDropdown
+                <LeavesDirectoryFilterDropdown
                   label="Department"
                   value={departmentFilter || "All"}
                   onChange={onDepartmentSelect}
@@ -832,9 +1041,7 @@ export default function LeavesTable({
                     ...departmentDropdownOptions,
                   ]}
                   placeholder="All Departments"
-                  searchable
                   searchPlaceholder="Search departments..."
-                  clearable={false}
                   disabled={loading}
                 />
               </div>
@@ -842,7 +1049,7 @@ export default function LeavesTable({
 
             {showAccountFilter ? (
               <div className="w-full sm:w-48 xl:w-[170px] 2xl:w-[200px] xl:flex-none">
-                <SelectDropdown
+                <LeavesDirectoryFilterDropdown
                   label="Account"
                   value={accountFilter || "All"}
                   onChange={onAccountSelect}
@@ -851,9 +1058,7 @@ export default function LeavesTable({
                     ...accountDropdownOptions,
                   ]}
                   placeholder="All Accounts"
-                  searchable
                   searchPlaceholder="Search accounts..."
-                  clearable={false}
                   disabled={loading}
                 />
               </div>

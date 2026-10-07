@@ -133,7 +133,7 @@ function isAvailablePositionUnlinkedFromJd(position = {}) {
   ].includes(status);
 }
 
-function getAdminAccess(user = {}) {
+function getRawAdminAccess(user = {}) {
   const access = Number(
     user?.adminAccess ??
       user?.admin_access ??
@@ -143,8 +143,14 @@ function getAdminAccess(user = {}) {
       0,
   );
 
-  // Team Leaders (admin_access 8) and WFM (admin_access 9) intentionally
-  // inherit every Manager sidebar item without duplicating access lists.
+  return Number.isFinite(access) ? access : 0;
+}
+
+function getAdminAccess(user = {}) {
+  const access = getRawAdminAccess(user);
+
+  // Team Leaders (8) and WFM (9) keep Manager-compatible visibility for
+  // existing modules. Dashboard selection uses the raw access value.
   if (access === 8 || access === 9) return 5;
 
   return access;
@@ -995,8 +1001,30 @@ export default function Sidebar() {
     {
       name: "Dashboard",
       icon: LayoutDashboard,
+      path: "/dashboard/finance",
+      allowedUsers: DASHBOARD_ACCESS.FINANCE,
+      useRawAdminAccess: true,
+    },
+    {
+      name: "Dashboard",
+      icon: LayoutDashboard,
       path: "/recruitment/om-dashboard",
       allowedUsers: DASHBOARD_ACCESS.OM,
+      excludeRawAdminAccess: [9, 10],
+    },
+    {
+      name: "Dashboard",
+      icon: LayoutDashboard,
+      path: "/dashboard/wfm",
+      allowedUsers: DASHBOARD_ACCESS.WFM,
+      useRawAdminAccess: true,
+    },
+    {
+      name: "Dashboard",
+      icon: LayoutDashboard,
+      path: "/dashboard/som",
+      allowedUsers: DASHBOARD_ACCESS.SOM,
+      useRawAdminAccess: true,
     },
     {
       name: "Employee Directory",
@@ -1239,12 +1267,20 @@ export default function Sidebar() {
   const coreSectionTitle = isAdminSide ? "CORE HR" : "EMPLOYEE ACCESS";
   const coreSectionShort = isAdminSide ? "HR" : "EMP";
 
+  const rawAdminAccess = getRawAdminAccess(user);
+
   const getVisibleItems = (items) =>
-    items.filter((item) =>
-      item.allowedUsers
-        ? item.allowedUsers.includes(getAdminAccess(user))
-        : true,
-    );
+    items.filter((item) => {
+      if (item.excludeRawAdminAccess?.includes(rawAdminAccess)) return false;
+
+      if (!item.allowedUsers) return true;
+
+      const accessValue = item.useRawAdminAccess
+        ? rawAdminAccess
+        : getAdminAccess(user);
+
+      return item.allowedUsers.includes(accessValue);
+    });
 
   const visibleAdminGroups = getVisibleSidebarGroups(
     adminNavigationGroups,

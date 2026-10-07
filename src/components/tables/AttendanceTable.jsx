@@ -451,6 +451,29 @@ function isWfmUser(user) {
   );
 }
 
+function isFinanceUser(user) {
+  if (isEmployeeAttendanceSession(user)) return false;
+
+  const access = getAccessValue(user);
+
+  if (access) {
+    return access === 4;
+  }
+
+  const roles = [
+    user?.role,
+    user?.tokenType,
+    user?.userRole,
+    user?.accountType,
+    user?.user_type,
+    user?.gy_user_type,
+  ].map(normalizeRole);
+
+  return roles.some((role) =>
+    ["finance", "finance_admin", "finance_administrator"].includes(role),
+  );
+}
+
 function isSomUser(user) {
   if (isEmployeeAttendanceSession(user)) return false;
 
@@ -487,7 +510,8 @@ function canUseAttendanceFilters(user) {
     isSomUser(user) ||
     isManagerUser(user) ||
     isTeamLeaderUser(user) ||
-    isWfmUser(user)
+    isWfmUser(user) ||
+    isFinanceUser(user)
   );
 }
 
@@ -1027,6 +1051,7 @@ export default function AttendanceTable() {
   const superAdminView = isSuperAdminUser(user);
   const managerView = isManagerUser(user);
   const talentAcquisitionView = isTalentAcquisitionUser(user);
+  const financeView = isFinanceUser(user);
 
   const attendanceFiltersView = canUseAttendanceFilters(user);
   const attendanceDateRangeView = true;
@@ -1036,33 +1061,25 @@ export default function AttendanceTable() {
     hrAdminView ||
     superAdminView ||
     managerView ||
-    talentAcquisitionView;
+    talentAcquisitionView ||
+    financeView;
 
   useEffect(() => {
     setLoadingRef.current = setLoading;
     setPaginationRef.current = setPagination;
   }, [setLoading, setPagination]);
 
-  // Match the Employee Directory search behavior: every time the Attendance
-  // page/table is entered again, do not keep the previous search text/query.
+  // Reset transient Attendance filters whenever the user leaves this page and
+  // later returns. The date range always starts again at the approved default:
+  // previous week Monday through the current week Sunday.
   useEffect(() => {
     setSearch?.("");
     setSearchInput?.("");
+    paginationContext.setDateRange?.(defaultAttendanceDateRange);
 
     // This intentionally runs once for each AttendanceTable mount.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  useEffect(() => {
-    if (rawDateFrom || rawDateTo) return;
-
-    paginationContext.setDateRange?.(defaultAttendanceDateRange);
-  }, [
-    defaultAttendanceDateRange,
-    paginationContext,
-    rawDateFrom,
-    rawDateTo,
-  ]);
 
   const safePagination = pagination || {
     currentPage: page || 1,

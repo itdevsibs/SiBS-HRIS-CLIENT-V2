@@ -37,7 +37,10 @@ function lazyWithRetry(componentImport) {
 // Dashboards
 const AdminDashboardPage = lazyWithRetry(() => import("./pages/dashboard/HrAdmin/AdminDashboardPage"));
 const EmployeeDashboardPage = lazyWithRetry(() => import("./pages/dashboard/EmployeeDashboardPage"));
+const FinanceDashboardPage = lazyWithRetry(() => import("./pages/dashboard/FinanceDashboard/FinanceDashboardPage"));
 const OMDashboardPage = lazyWithRetry(() => import("./pages/dashboard/OMDashboard/OMDashboardPage"));
+const WFMDashboardPage = lazyWithRetry(() => import("./pages/dashboard/WFMDashboard/WFMDashboardPage"));
+const SOMDashboardPage = lazyWithRetry(() => import("./pages/dashboard/SOMDashboard/SOMDashboardPage"));
 const SuperAdminDashboardPage = lazyWithRetry(() => import("./pages/dashboard/SuperAdmin/SuperAdminDashboardPage"));
 const TADashboardPage = lazyWithRetry(() => import("./pages/dashboard/TADashboard/TADashboardPage"));
 
@@ -271,10 +274,37 @@ function MainApplicationRoutes() {
       />
 
       <Route
+        path="/dashboard/finance"
+        element={
+          <PrivateRoute>
+            <FinanceDashboardPage />
+          </PrivateRoute>
+        }
+      />
+
+      <Route
         path="/recruitment/om-dashboard"
         element={
           <PrivateRoute>
             <OMDashboardPage />
+          </PrivateRoute>
+        }
+      />
+
+      <Route
+        path="/dashboard/wfm"
+        element={
+          <PrivateRoute>
+            <WFMDashboardPage />
+          </PrivateRoute>
+        }
+      />
+
+      <Route
+        path="/dashboard/som"
+        element={
+          <PrivateRoute>
+            <SOMDashboardPage />
           </PrivateRoute>
         }
       />
