@@ -9,7 +9,7 @@ export default function WorkforceHiringPlanPage() {
   const { mainScrollRef, ...workforceHiringPlanModals } =
     useWorkforceHiringPage({
       forecastPlanMode: true,
-      requireFilterSelection: true,
+      requireFilterSelection: false,
     });
 
   return (

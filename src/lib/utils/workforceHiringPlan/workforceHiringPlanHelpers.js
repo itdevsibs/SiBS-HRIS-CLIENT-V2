@@ -559,7 +559,12 @@ export function getWeekHiringPlanPercent(week) {
 
 export function buildWeeklyAccess(user) {
   const role = getCurrentRoleKey(user);
-  const hasFullAccess = FULL_WEEKLY_ACCESS_ROLES.includes(role);
+  const adminAccess = getCurrentAdminAccess(user);
+
+  // WFM (admin_access = 9) has company-wide Workforce & Hiring visibility.
+  // Keep Manager/TL assignment scoping unchanged.
+  const hasFullAccess =
+    adminAccess === 9 || FULL_WEEKLY_ACCESS_ROLES.includes(role);
 
   const assignedAccounts = Array.isArray(user?.assignedAccounts)
     ? user.assignedAccounts

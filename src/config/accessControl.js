@@ -39,13 +39,13 @@ export const DASHBOARD_ACCESS = {
   TA: [
     ADMIN_ACCESS.TA,
   ],
-  OM: [
-    ADMIN_ACCESS.MANAGER,
-    ADMIN_ACCESS.SOM,
-  ],
+  FINANCE: [ADMIN_ACCESS.FINANCE],
+  OM: [ADMIN_ACCESS.MANAGER],
+  WFM: [ADMIN_ACCESS.WFM],
+  SOM: [ADMIN_ACCESS.SOM],
 };
 
-export function getAdminAccess(user = {}) {
+export function getRawAdminAccess(user = {}) {
   const role = cleanRole(user?.role);
   if (role === "super_admin" || role === "superadmin") {
     return ADMIN_ACCESS.SUPER_ADMIN;
@@ -60,8 +60,14 @@ export function getAdminAccess(user = {}) {
       0,
   );
 
-  // Team Leaders (admin_access 8) and WFM (admin_access 9) use the exact
-  // same route permissions and dashboard behavior as Managers (admin_access 5).
+  return Number.isFinite(access) ? access : 0;
+}
+
+export function getAdminAccess(user = {}) {
+  const access = getRawAdminAccess(user);
+
+  // Team Leaders (8) and WFM (9) keep Manager-compatible permissions for
+  // existing modules. Their dedicated dashboards are resolved separately.
   if (access === 8 || access === 9) return ADMIN_ACCESS.MANAGER;
 
   return access;
@@ -74,6 +80,25 @@ export function getDefaultDashboardPath(user = {}) {
 
   if (role === "super_admin" || role === "superadmin") {
     return "/dashboard/super-admin";
+  }
+
+  const rawAccess = getRawAdminAccess(user);
+  if (rawAccess === ADMIN_ACCESS.WFM || role === "wfm" || role === "workforce_management") {
+    return "/dashboard/wfm";
+  }
+  if (
+    rawAccess === ADMIN_ACCESS.FINANCE ||
+    role === "finance" ||
+    role === "finance_admin"
+  ) {
+    return "/dashboard/finance";
+  }
+  if (
+    rawAccess === ADMIN_ACCESS.SOM ||
+    role === "som" ||
+    role === "senior_operations_manager"
+  ) {
+    return "/dashboard/som";
   }
 
   const access = getAdminAccess(user);
@@ -95,7 +120,7 @@ export function getDefaultDashboardPath(user = {}) {
     return "/recruitment/ta-dashboard";
   }
   if (
-    ["om", "manager", "som"].includes(role) ||
+    ["om", "manager"].includes(role) ||
     DASHBOARD_ACCESS.OM.includes(access)
   ) {
     return "/recruitment/om-dashboard";
@@ -115,6 +140,20 @@ export const EMPLOYEE_ALLOWED_PATHS = [
 ];
 
 export const ACCESS_RULES = [
+  {
+    paths: ["/dashboard/finance"],
+    roles: ["finance", "finance_admin"],
+    adminAccess: [ADMIN_ACCESS.FINANCE],
+  },
+  {
+    paths: ["/dashboard/wfm"],
+    roles: ["wfm", "workforce_management", "workforce_manager"],
+  },
+  {
+    paths: ["/dashboard/som"],
+    roles: ["som", "senior_operations_manager"],
+    adminAccess: [ADMIN_ACCESS.SOM],
+  },
   {
     paths: ["/dashboard/super-admin"],
     roles: ["super_admin"],
@@ -141,10 +180,9 @@ export const ACCESS_RULES = [
   },
   {
     paths: ["/recruitment/om-dashboard"],
-    roles: ["manager", "som", "executive", "super_admin"],
+    roles: ["manager", "executive", "super_admin"],
     adminAccess: [
       ADMIN_ACCESS.MANAGER,
-      ADMIN_ACCESS.SOM,
       ADMIN_ACCESS.EXECUTIVE,
       ADMIN_ACCESS.SUPER_ADMIN,
     ],
@@ -268,6 +306,35 @@ export function canAccessPath(user, pathname) {
   if (!user) return false;
 
   const role = cleanRole(user?.role);
+  const rawAccess = getRawAdminAccess(user);
+
+  if (pathMatches(pathname, "/dashboard/finance")) {
+    return (
+      rawAccess === ADMIN_ACCESS.FINANCE ||
+      ["finance", "finance_admin"].includes(role)
+    );
+  }
+
+  if (pathMatches(pathname, "/dashboard/wfm")) {
+    return (
+      rawAccess === ADMIN_ACCESS.WFM ||
+      ["wfm", "workforce_management", "workforce_manager"].includes(role)
+    );
+  }
+
+  if (pathMatches(pathname, "/dashboard/som")) {
+    return (
+      rawAccess === ADMIN_ACCESS.SOM ||
+      ["som", "senior_operations_manager"].includes(role)
+    );
+  }
+
+  if (
+    pathMatches(pathname, "/recruitment/om-dashboard") &&
+    [ADMIN_ACCESS.WFM, ADMIN_ACCESS.SOM].includes(rawAccess)
+  ) {
+    return false;
+  }
 
   if (role === "employee") {
     return isEmployeeAllowedPath(pathname);

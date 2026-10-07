@@ -76,38 +76,6 @@ function normalizeRole(value) {
     .replace(/[\s-]+/g, "_");
 }
 
-function isManagerUser(user) {
-  const roles = [
-    user?.role,
-    user?.tokenType,
-    user?.userRole,
-    user?.accountType,
-    user?.user_type,
-    user?.gy_user_type,
-  ].map(normalizeRole);
-
-  const access = Number(
-    user?.admin_access ??
-      user?.adminAccess ??
-      user?.access ??
-      user?.gy_user_access ??
-      user?.gyUserAccess ??
-      0,
-  );
-
-  // Prefer the numeric access returned by the backend. The role text can be
-  // stale for a short time after User Settings changes an account from
-  // Manager to HR. When a valid access value is present, do not let the old
-  // role string keep the Employee Directory in manager mode.
-  if (access > 0) {
-    return access === 5;
-  }
-
-  return roles.some((role) =>
-    ["manager", "operations_manager", "team_manager"].includes(role),
-  );
-}
-
 function canRequestEmployeeFilters(user) {
   const roles = [
     user?.role,
@@ -127,32 +95,40 @@ function canRequestEmployeeFilters(user) {
       0,
   );
 
-  return (
-    [1, 2, 3, 5, 7, 8, 9, 10].includes(access) ||
-    roles.some((role) =>
-      [
-        "ta",
-        "talent_acquisition",
-        "hr",
-        "human_resource",
-        "human_resources",
-        "hr_admin",
-        "hradmin",
-        "super_admin",
-        "superadmin",
-        "super_administrator",
-        "manager",
-        "operations_manager",
-        "team_manager",
-        "team_leader",
-        "teamleader",
-        "tl",
-        "wfm",
-        "workforce_management",
-        "som",
-        "senior_operations_manager",
-      ].includes(role),
-    )
+  // Any administrative access (1-10) can use the Department and Account
+  // filters. A regular Employee session has no administrative access and
+  // therefore stays in personal/view-only mode without directory filters.
+  if (access > 0) {
+    return access >= 1 && access <= 10;
+  }
+
+  // Role text is kept only as a legacy fallback when an older session does
+  // not expose admin_access yet. Numeric admin_access remains authoritative.
+  return roles.some((role) =>
+    [
+      "ta",
+      "talent_acquisition",
+      "hr",
+      "human_resource",
+      "human_resources",
+      "hr_admin",
+      "hradmin",
+      "finance",
+      "manager",
+      "operations_manager",
+      "team_manager",
+      "executive",
+      "super_admin",
+      "superadmin",
+      "super_administrator",
+      "team_leader",
+      "teamleader",
+      "tl",
+      "wfm",
+      "workforce_management",
+      "som",
+      "senior_operations_manager",
+    ].includes(role),
   );
 }
 
@@ -846,7 +822,6 @@ export default function EmployeeTable({
   const { user } = useUser();
   const navigate = useNavigate();
   const canRequestFilters = canRequestEmployeeFilters(user);
-  const managerView = isManagerUser(user);
 
   const tableScrollRef = useRef(null);
   const mobileScrollRef = useRef(null);
@@ -974,7 +949,7 @@ export default function EmployeeTable({
   const totalRecords = safePagination.total;
   const showEmployeeFilterControls =
     canRequestFilters &&
-    (employeeAccess?.showEmployeeFilters ?? !managerView);
+    (employeeAccess?.showEmployeeFilters ?? true);
 
   const departmentDropdownOptions = useMemo(() => {
     return (Array.isArray(departmentOptions) ? departmentOptions : [])

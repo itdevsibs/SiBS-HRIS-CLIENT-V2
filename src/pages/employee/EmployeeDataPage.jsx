@@ -461,41 +461,6 @@ function normalizeRole(value) {
     .replace(/[\s-]+/g, "_");
 }
 
-function canEditProfileDetails(user) {
-  const access = Number(
-    user?.admin_access ??
-      user?.adminAccess ??
-      user?.access ??
-      user?.gy_user_access ??
-      user?.gyUserAccess ??
-      0,
-  );
-
-  const roles = [
-    user?.role,
-    user?.tokenType,
-    user?.userRole,
-    user?.accountType,
-    user?.user_type,
-    user?.gy_user_type,
-  ].map(normalizeRole);
-
-  return (
-    (access >= 1 && access <= 7) ||
-    roles.some((role) =>
-      [
-        "admin",
-        "hr",
-        "hr_admin",
-        "hradmin",
-        "super_admin",
-        "superadmin",
-        "super_administrator",
-      ].includes(role),
-    )
-  );
-}
-
 function getUserAdminAccessValues(user) {
   const directValues = [
     user?.admin_access,
@@ -505,8 +470,10 @@ function getUserAdminAccessValues(user) {
     user?.gyUserAccess,
   ];
 
-  const assignedValues = Array.isArray(user?.assignedAccounts)
-    ? user.assignedAccounts.flatMap((account) => [
+  const assignedAccounts =
+    user?.assignedAccounts || user?.assigned_accounts || user?.accounts || [];
+  const assignedValues = Array.isArray(assignedAccounts)
+    ? assignedAccounts.flatMap((account) => [
         account?.admin_access,
         account?.adminAccess,
         account?.access,
@@ -516,26 +483,26 @@ function getUserAdminAccessValues(user) {
     : [];
 
   return [...directValues, ...assignedValues]
+    .filter(
+      (value) => value !== null && value !== undefined && value !== "",
+    )
     .map((value) => Number(value))
     .filter((value) => Number.isFinite(value));
 }
 
-function canManageEmployeePosition(user) {
+function canEditProfileDetails(user) {
   const allowedAccessValues = new Set([1, 2, 3, 7]);
+  const accessValues = getUserAdminAccessValues(user);
 
-  if (
-    getUserAdminAccessValues(user).some((value) =>
-      allowedAccessValues.has(value),
-    )
-  ) {
-    return true;
+  // assigned_accounts.admin_access is authoritative whenever it is available.
+  if (accessValues.length > 0) {
+    return accessValues.some((value) => allowedAccessValues.has(value));
   }
 
   const roles = [
     user?.resolvedRole,
     user?.resolved_role,
     user?.role,
-    user?.tokenType,
     user?.userRole,
     user?.user_role,
     user?.accountType,
@@ -564,6 +531,16 @@ function canManageEmployeePosition(user) {
 
   return roles.some((role) => allowedRoles.has(role));
 }
+
+function canManageEmployeePosition(user) {
+  return canEditProfileDetails(user);
+}
+
+/*
+ * Employee profile editing is intentionally restricted to the canonical
+ * assigned_accounts.admin_access values:
+ * 1 = TA, 2 = HR, 3 = HR Admin, 7 = Super Admin.
+ */
 
 export default function EmployeeDataPage() {
   const navigate = useNavigate();
@@ -1084,6 +1061,7 @@ export default function EmployeeDataPage() {
     displayEmployee,
     isEditing,
     isSaving,
+    canEditDetails,
     onEdit:
       canEditActiveSection &&
       activeSectionSupportsSave &&

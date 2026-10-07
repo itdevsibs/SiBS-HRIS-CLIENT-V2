@@ -44,6 +44,7 @@ function DepartmentsPageContent() {
   const [approvalRequests, setApprovalRequests] = useState([]);
   const [approvalLoading, setApprovalLoading] = useState(true);
   const [canApproveDepartments, setCanApproveDepartments] = useState(false);
+  const [canManageDepartments, setCanManageDepartments] = useState(false);
   const [canManageLobs, setCanManageLobs] = useState(false);
   const [processingRequestId, setProcessingRequestId] = useState("");
   const [statusModal, setStatusModal] = useState({
@@ -61,28 +62,40 @@ function DepartmentsPageContent() {
     setApprovalLoading(true);
 
     try {
-      const [requestsPayload, accessPayload] = await Promise.all([
-        getDepartmentApprovalRequests(),
-        getDepartmentApprovalAccess(),
-      ]);
+      const accessPayload = await getDepartmentApprovalAccess();
+      const canManage = Boolean(
+        accessPayload?.canManageDepartments ??
+          accessPayload?.data?.canManageDepartments,
+      );
+      const canApprove = Boolean(
+        accessPayload?.canApprove ?? accessPayload?.data?.canApprove,
+      );
 
-      setApprovalRequests(
-        Array.isArray(requestsPayload?.data)
-          ? requestsPayload.data
-          : Array.isArray(requestsPayload?.rows)
-            ? requestsPayload.rows
-            : [],
-      );
-      setCanApproveDepartments(
-        Boolean(accessPayload?.canApprove ?? accessPayload?.data?.canApprove),
-      );
+      setCanManageDepartments(canManage);
+      setCanApproveDepartments(canApprove);
       setCanManageLobs(
-        Boolean(accessPayload?.canManageLobs ?? accessPayload?.data?.canManageLobs),
+        Boolean(
+          accessPayload?.canManageLobs ?? accessPayload?.data?.canManageLobs,
+        ),
       );
+
+      if (canManage) {
+        const requestsPayload = await getDepartmentApprovalRequests();
+        setApprovalRequests(
+          Array.isArray(requestsPayload?.data)
+            ? requestsPayload.data
+            : Array.isArray(requestsPayload?.rows)
+              ? requestsPayload.rows
+              : [],
+        );
+      } else {
+        setApprovalRequests([]);
+      }
     } catch (error) {
       console.error("LOAD DEPARTMENT APPROVAL DATA ERROR:", error);
       setApprovalRequests([]);
       setCanApproveDepartments(false);
+      setCanManageDepartments(false);
       setCanManageLobs(false);
     } finally {
       setApprovalLoading(false);
@@ -99,6 +112,8 @@ function DepartmentsPageContent() {
   }
 
   async function handleCreateDepartment({ departmentName }) {
+    if (!canManageDepartments) return;
+
     setSubmittingDepartment(true);
 
     try {
@@ -182,18 +197,24 @@ function DepartmentsPageContent() {
         <PageHeaderHero
           kicker="Organization View"
           title="Departments, Accounts & Lines of Business"
-          description="Manage the organization hierarchy from Department to Account to account-specific Lines of Business."
+          description={
+            canManageDepartments
+              ? "Manage the organization hierarchy from Department to Account to account-specific Lines of Business."
+              : "View the organization hierarchy from Department to Account to account-specific Lines of Business."
+          }
           className="mb-5"
           actions={
             <div className="flex items-center gap-2">
-              <button
-                type="button"
-                className="sibs-btn-primary"
-                onClick={() => setAddModalOpen(true)}
-              >
-                <Plus className="h-4 w-4" />
-                Add Department
-              </button>
+              {canManageDepartments ? (
+                <button
+                  type="button"
+                  className="sibs-btn-primary"
+                  onClick={() => setAddModalOpen(true)}
+                >
+                  <Plus className="h-4 w-4" />
+                  Add Department
+                </button>
+              ) : null}
 
               <button
                 type="button"
@@ -216,14 +237,16 @@ function DepartmentsPageContent() {
 
         <DepartmentSummaryCards summary={departments.summary} />
 
-        <DepartmentApprovalRequests
-          requests={approvalRequests}
-          loading={approvalLoading}
-          canApprove={canApproveDepartments}
-          processingId={processingRequestId}
-          onApprove={handleApproveDepartment}
-          onReject={handleRejectDepartment}
-        />
+        {canManageDepartments ? (
+          <DepartmentApprovalRequests
+            requests={approvalRequests}
+            loading={approvalLoading}
+            canApprove={canApproveDepartments}
+            processingId={processingRequestId}
+            onApprove={handleApproveDepartment}
+            onReject={handleRejectDepartment}
+          />
+        ) : null}
 
         <section className="mt-5 overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-sm">
           <div className="flex flex-col gap-3 border-b border-sibs-border px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
@@ -301,12 +324,14 @@ function DepartmentsPageContent() {
         onClose={() => setSelectedDepartment(null)}
       />
 
-      <AddDepartmentModal
-        open={addModalOpen}
-        onClose={() => setAddModalOpen(false)}
-        onSubmit={handleCreateDepartment}
-        submitting={submittingDepartment}
-      />
+      {canManageDepartments ? (
+        <AddDepartmentModal
+          open={addModalOpen}
+          onClose={() => setAddModalOpen(false)}
+          onSubmit={handleCreateDepartment}
+          submitting={submittingDepartment}
+        />
+      ) : null}
 
       <StatusModal
         open={statusModal.open}
