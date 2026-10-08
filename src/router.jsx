@@ -648,11 +648,20 @@ export default function Router() {
   const hostname =
     typeof window !== "undefined" ? window.location.hostname : "";
   const isPublic = isPublicOrExternalRoute(location.pathname, hostname);
+  const isDashboardRoute =
+    location.pathname === "/dashboard" ||
+    location.pathname.startsWith("/dashboard/") ||
+    location.pathname === "/recruitment/om-dashboard" ||
+    location.pathname === "/recruitment/ta-dashboard";
 
   return (
     <Suspense
       fallback={
-        isPublic ? <PublicRouteFallback /> : <PageFallback showHeader />
+        isPublic
+          ? <PublicRouteFallback />
+          : isDashboardRoute
+            ? null
+            : <PageFallback showHeader />
       }
     >
       {isPublicApplicationHostname(hostname) ? (

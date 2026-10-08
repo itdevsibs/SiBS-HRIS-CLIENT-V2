@@ -179,7 +179,19 @@ export default function OMDashboardPage() {
   };
 
   if (initialLoading && roles.length === 0) {
-    return <OMDashboardSkeleton />;
+    return (
+      <OMDashboardSkeleton
+        hero={
+          <OMDashboardWelcome
+            departmentBadge={departmentBadge}
+            scopeText={scopeText}
+            onOpenHiringPlan={() => navigate(HIRING_PLAN_ROUTE)}
+            onRefresh={() => loadDashboard({ forceRefresh: true, background: true })}
+            isManualRefreshing
+          />
+        }
+      />
+    );
   }
 
   if (error && roles.length === 0) {

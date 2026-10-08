@@ -1,10 +1,10 @@
 import React from "react";
 import DashboardLoadingSkeleton from "../shared/DashboardLoadingSkeleton";
 
-export default function AdminDashboardSkeleton({ hero = null }) {
+export default function FinanceDashboardSkeleton({ hero = null }) {
   return (
     <DashboardLoadingSkeleton
-      ariaLabel="Loading HR Dashboard"
+      ariaLabel="Loading Finance Dashboard"
       hero={hero}
     />
   );

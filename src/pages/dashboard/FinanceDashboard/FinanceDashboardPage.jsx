@@ -15,7 +15,6 @@ import {
   ClipboardCheck,
   Clock3,
   Layers3,
-  LoaderCircle,
   Percent,
   RefreshCw,
   Search,
@@ -24,6 +23,8 @@ import {
 } from "lucide-react";
 
 import Header from "../../../components/layout/Header";
+import FinanceDashboardSkeleton from "../../../components/Dashboard/FinanceDashboard/FinanceDashboardSkeleton";
+import StatutoryCoverageModal from "../../../components/Dashboard/FinanceDashboard/StatutoryCoverageModal";
 import { getFinanceDashboardBootstrap } from "../../../lib/axios/getFinanceDashboard";
 
 const PAGE_SHELL_CLASS = "sibs-dashboard-shell";
@@ -143,37 +144,6 @@ function writeCachedDashboard(payload) {
   }
 }
 
-function FinanceDashboardLoadingState() {
-  return (
-    <div className={PAGE_SHELL_CLASS}>
-      <Header />
-      <main
-        className={`${MAIN_SHELL_CLASS} flex min-h-[calc(100vh-76px)] items-center justify-center bg-[#e8eef5] px-6 py-10`}
-      >
-        <div
-          className="flex w-full max-w-sm flex-col items-center rounded-2xl border border-[#dfe7ef] bg-white px-8 py-10 text-center shadow-sm"
-          role="status"
-          aria-live="polite"
-          aria-label="Loading Finance dashboard"
-        >
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-orange-50">
-            <LoaderCircle
-              className="h-8 w-8 animate-spin text-[#ff5c28]"
-              aria-hidden="true"
-            />
-          </div>
-          <h2 className="mt-5 text-lg font-extrabold text-[#042c51]">
-            Loading Finance Dashboard
-          </h2>
-          <p className="mt-2 max-w-[300px] text-sm font-medium leading-6 text-[#667085]">
-            Loading company-wide payroll readiness and statutory coverage.
-          </p>
-        </div>
-      </main>
-    </div>
-  );
-}
-
 function FinanceDashboardErrorState({ message, onRetry }) {
   return (
     <div className={PAGE_SHELL_CLASS}>
@@ -253,11 +223,15 @@ function MetricCard({ label, value, description, icon: Icon, tone = "navy" }) {
   );
 }
 
-function CoverageRow({ label, coverage }) {
+function CoverageRow({ label, coverage, onClick }) {
   const percentage = Math.min(Math.max(Number(coverage?.percentage || 0), 0), 100);
 
   return (
-    <div className="rounded-xl border border-[#E6ECF2] bg-[#FBFCFE] p-4">
+    <button
+      type="button"
+      onClick={onClick}
+      className="group w-full rounded-xl border border-[#E6ECF2] bg-[#FBFCFE] p-4 text-left transition hover:border-[#FFB59C] hover:bg-white hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-[#FF5C28]/15"
+    >
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <p className="text-sm font-extrabold text-[#042C51]">{label}</p>
@@ -275,7 +249,10 @@ function CoverageRow({ label, coverage }) {
           style={{ width: `${percentage}%` }}
         />
       </div>
-    </div>
+      <p className="mt-3 text-[10px] font-extrabold uppercase tracking-wide text-[#98A2B3] transition group-hover:text-[#FF5C28]">
+        View complete and missing employees
+      </p>
+    </button>
   );
 }
 
@@ -316,6 +293,7 @@ export default function FinanceDashboardPage() {
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [coverageModal, setCoverageModal] = useState(null);
 
   const loadingRef = useRef(false);
   const requestIdRef = useRef(0);
@@ -402,7 +380,7 @@ export default function FinanceDashboardPage() {
   );
 
   if (initialLoading && !hasDataRef.current) {
-    return <FinanceDashboardLoadingState />;
+    return <FinanceDashboardSkeleton />;
   }
 
   if (error && !hasDataRef.current) {
@@ -515,10 +493,30 @@ export default function FinanceDashboardPage() {
             </div>
 
             <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
-              <CoverageRow label="SSS" coverage={coverage.sss} />
-              <CoverageRow label="PhilHealth (PHIC)" coverage={coverage.philHealth} />
-              <CoverageRow label="Pag-IBIG (HDMF)" coverage={coverage.pagIbig} />
-              <CoverageRow label="TIN" coverage={coverage.tin} />
+              <CoverageRow
+                label="SSS"
+                coverage={coverage.sss}
+                onClick={() => setCoverageModal({ benefit: "sss", label: "SSS" })}
+              />
+              <CoverageRow
+                label="PhilHealth (PHIC)"
+                coverage={coverage.philHealth}
+                onClick={() =>
+                  setCoverageModal({ benefit: "philHealth", label: "PhilHealth (PHIC)" })
+                }
+              />
+              <CoverageRow
+                label="Pag-IBIG (HDMF)"
+                coverage={coverage.pagIbig}
+                onClick={() =>
+                  setCoverageModal({ benefit: "pagIbig", label: "Pag-IBIG (HDMF)" })
+                }
+              />
+              <CoverageRow
+                label="TIN"
+                coverage={coverage.tin}
+                onClick={() => setCoverageModal({ benefit: "tin", label: "TIN" })}
+              />
             </div>
           </article>
 
@@ -678,6 +676,18 @@ export default function FinanceDashboardPage() {
           </div>
         </section>
       </main>
+
+      <StatutoryCoverageModal
+        open={Boolean(coverageModal)}
+        onClose={() => setCoverageModal(null)}
+        benefit={coverageModal?.benefit}
+        label={coverageModal?.label}
+        coverage={
+          coverageModal?.benefit
+            ? coverage?.[coverageModal.benefit]
+            : null
+        }
+      />
     </div>
   );
 }

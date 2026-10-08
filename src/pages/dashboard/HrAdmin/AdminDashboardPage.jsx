@@ -39,6 +39,7 @@ import AdminDashboardQuickActions from "../../../components/Dashboard/HRAdminDas
 import AdminDashboardWorkforceKpi from "../../../components/Dashboard/HRAdminDashboard/AdminDashboardWorkforceKpi";
 import AdminDashboardToast from "../../../components/Dashboard/HRAdminDashboard/AdminDashboardToast";
 import AdminDashboardSkeleton from "../../../components/Dashboard/HRAdminDashboard/AdminDashboardSkeleton";
+import StatutoryCoveragePanel from "../../../components/Dashboard/shared/StatutoryCoveragePanel";
 import { DashboardModalManager } from "../../../components/modals/dashboard/AdminDashboardModals";
 import {
   EMPTY_OVERVIEW,
@@ -573,7 +574,22 @@ export default function AdminDashboardPage() {
   }, []);
 
   if ((loading || !initialLoadFinished) && !overview.generatedAt) {
-    return <AdminDashboardSkeleton />;
+    return (
+      <AdminDashboardSkeleton
+        hero={
+          user ? (
+            <AdminDashboardWelcome
+              title={dashboardTitle}
+              fullName={fullName}
+              badge={userRole === "super_admin" ? "Super Admin View" : "HR Admin View"}
+              onOpenEmployees={() => navigate(EXISTING_ADMIN_ROUTES.employees)}
+              onRefresh={() => refreshOverview({ manual: true, forceRefresh: true })}
+              isManualRefreshing
+            />
+          ) : null
+        }
+      />
+    );
   }
 
   return (
@@ -607,6 +623,8 @@ export default function AdminDashboardPage() {
             metrics={metricCards}
             onMetricClick={handleMetricClick}
           />
+
+          <StatutoryCoveragePanel />
 
           <section className="grid grid-cols-1 gap-5 lg:grid-cols-12">
             <div className="space-y-5 lg:col-span-8">

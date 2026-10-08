@@ -43,6 +43,7 @@ import TARecruiterLoad from "../../../components/Dashboard/TADashboard/TARecruit
 import TADashboardSkeleton from "../../../components/Dashboard/TADashboard/TADashboardSkeleton";
 import TADashboardError from "../../../components/Dashboard/TADashboard/TADashboardError";
 import TADashboardToast from "../../../components/Dashboard/TADashboard/TADashboardToast";
+import StatutoryCoveragePanel from "../../../components/Dashboard/shared/StatutoryCoveragePanel";
 
 const TA_ROLES_ENTITY = "ta-dashboard-roles";
 const HIRING_PLAN_ROUTE = "/recruitment/workforce-hiring-overview";
@@ -362,7 +363,17 @@ export default function TADashboardPage() {
   }
 
   if (initialLoading && rolesData.length === 0) {
-    return <TADashboardSkeleton />;
+    return (
+      <TADashboardSkeleton
+        hero={
+          <TADashboardWelcome
+            onOpenHiringPlan={() => navigate(HIRING_PLAN_ROUTE)}
+            onRefresh={() => loadDashboard({ forceRefresh: true, background: true })}
+            isManualRefreshing
+          />
+        }
+      />
+    );
   }
 
   if (loadError && rolesData.length === 0) {
@@ -424,6 +435,8 @@ export default function TADashboardPage() {
           ) : null}
 
           <TADashboardStats metrics={metricCards} />
+
+          <StatutoryCoveragePanel />
 
           <section className="grid grid-cols-1 items-stretch gap-5 xl:grid-cols-2">
             <TARequirementProgress roles={rolesData} delay={120} />
