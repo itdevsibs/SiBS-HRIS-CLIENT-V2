@@ -302,6 +302,8 @@ export const ACCESS_RULES = [
   {
     paths: ["/departments", "/locations"],
     roles: [
+      "finance",
+      "finance_admin",
       "hr_admin",
       "manager",
       "som",
@@ -348,6 +350,16 @@ export function canAccessPath(user, pathname) {
       rawAccess === ADMIN_ACCESS.SOM ||
       ["som", "senior_operations_manager"].includes(role)
     );
+  }
+
+  // Finance (canonical admin_access = 4) can view organization and office
+  // location directories. Create/edit permissions stay backend-enforced.
+  if (
+    rawAccess === ADMIN_ACCESS.FINANCE &&
+    (pathMatches(pathname, "/departments") ||
+      pathMatches(pathname, "/locations"))
+  ) {
+    return true;
   }
 
   if (

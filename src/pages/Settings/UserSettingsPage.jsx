@@ -1062,7 +1062,7 @@ function AccessModal({
   const [employeeResults, setEmployeeResults] = useState([]);
   const [employeeLoading, setEmployeeLoading] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
-  const [adminAccess, setAdminAccess] = useState("0");
+  const [adminAccess, setAdminAccess] = useState("");
   const [selectedAccountIds, setSelectedAccountIds] = useState([]);
   const [accountSearch, setAccountSearch] = useState("");
   const [saving, setSaving] = useState(false);
@@ -1096,13 +1096,15 @@ function AccessModal({
         profile_picture_url:
           user.profilePictureUrl || user.profile_picture_url,
       });
-      setAdminAccess(String(user.adminAccess ?? 0));
+      setAdminAccess(
+        Number(user.adminAccess) > 0 ? String(user.adminAccess) : "",
+      );
       setSelectedAccountIds(
         (user.assignedAccounts || []).map(getAccountId).filter(Boolean),
       );
     } else {
       setSelectedEmployee(null);
-      setAdminAccess("0");
+      setAdminAccess("");
       setSelectedAccountIds([]);
     }
 
@@ -1151,7 +1153,7 @@ function AccessModal({
     setAccountSearch("");
 
     if (!employee) {
-      setAdminAccess("0");
+      setAdminAccess("");
       setSelectedAccountIds([]);
       return;
     }
@@ -1181,9 +1183,23 @@ function AccessModal({
     );
   }
 
+  const selectedAccessOption = getRoleOptionByAccess(Number(adminAccess));
+  const hasSelectedAccess = Boolean(
+    adminAccess &&
+      adminAccess !== "0" &&
+      selectedAccessOption &&
+      selectedAccessOption.value !== "employee" &&
+      selectedAccessOption.value !== "All",
+  );
+
   async function handleSave() {
     if (!selectedEmployee?.gyEmpId || !selectedEmployee?.sibsId) {
       openStatus("error", "Employee Required", "Select an employee.");
+      return;
+    }
+
+    if (!hasSelectedAccess) {
+      openStatus("error", "Access Required", "Select an access level.");
       return;
     }
 
@@ -1199,7 +1215,7 @@ function AccessModal({
     try {
       setSaving(true);
 
-      const selectedRoleOption = getRoleOptionByAccess(Number(adminAccess));
+      const selectedRoleOption = selectedAccessOption;
 
       const payload = {
         gyEmpId: selectedEmployee.gyEmpId,
@@ -1262,6 +1278,7 @@ function AccessModal({
       onClose={() => {
         if (!saving) onClose();
       }}
+      closeOnBackdrop={false}
       footer={
         <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-end">
           <button
@@ -1273,21 +1290,23 @@ function AccessModal({
             Cancel
           </button>
 
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={saving}
-            className="sibs-btn-primary h-10 px-5 text-sm"
-          >
-            {saving ? (
-              <Loader2 size={17} className="animate-spin" />
-            ) : isEdit ? (
-              <Edit3 size={17} />
-            ) : (
-              <Plus size={17} />
-            )}
-            {isEdit ? "Save Changes" : "Add User Access"}
-          </button>
+          {hasSelectedAccess ? (
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={saving}
+              className="sibs-btn-primary h-10 px-5 text-sm"
+            >
+              {saving ? (
+                <Loader2 size={17} className="animate-spin" />
+              ) : isEdit ? (
+                <Edit3 size={17} />
+              ) : (
+                <Plus size={17} />
+              )}
+              {isEdit ? "Save Changes" : "Add User Access"}
+            </button>
+          ) : null}
         </div>
       }
     >

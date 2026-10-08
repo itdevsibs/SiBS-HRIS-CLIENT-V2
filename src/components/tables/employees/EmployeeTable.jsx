@@ -28,6 +28,7 @@ import {
   DataCard,
   ResponsiveTableShell,
   StatusFilterTabs,
+  TablePagination,
   TableSkeletonRows,
 } from "@/components/ui";
 
@@ -1508,18 +1509,21 @@ export default function EmployeeTable({
       </div>
 
       <div className="shrink-0 px-4 pb-4 sm:px-5 sm:pb-5">
-        <PaginationTable
-          loading={loading}
-          showSearch={false}
+        <TablePagination
           currentPage={currentPage}
           totalPages={totalPages}
-          loadedCount={employees.length}
           totalRecords={totalRecords}
+          pageSize={PAGE_LIMIT}
+          loadedCount={employees.length}
+          onPageChange={(nextPage) => {
+            const safePage = Math.min(
+              Math.max(Number(nextPage) || 1, 1),
+              Math.max(totalPages, 1),
+            );
+            setPage?.(safePage);
+          }}
           recordLabel="employee records"
-          onPrevious={() => setPage?.(Math.max(currentPage - 1, 1))}
-          onNext={() => setPage?.(Math.min(currentPage + 1, totalPages))}
-          showCount
-          className="border-0 bg-transparent p-0 shadow-none"
+          loading={loading}
         />
       </div>
 

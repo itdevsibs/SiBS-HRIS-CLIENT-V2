@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import Header from "../../../components/layout/Header";
+import DashboardLoadingSkeleton from "../../../components/Dashboard/shared/DashboardLoadingSkeleton";
 import { useUser } from "../../../services/context/UserContext";
 import { usePagination } from "../../../services/context/PaginationContext";
 import useRefetchOnFocus from "../../../hooks/useRefetchOnFocus";
@@ -47,6 +48,7 @@ import {
   SuperAdminDashboardStatsSkeleton,
   SuperAdminTabPanelSkeleton,
 } from "../../../components/Dashboard/SuperAdminDashboard/SuperAdminDashboardSkeleton";
+import StatutoryCoveragePanel from "../../../components/Dashboard/shared/StatutoryCoveragePanel";
 
 const SUPER_ADMIN_ENTITY = "super-admin-dashboard";
 
@@ -449,6 +451,23 @@ export default function SuperAdminDashboardPage() {
     }
   }
 
+  if (isInitialLoading) {
+    return (
+      <DashboardLoadingSkeleton
+        ariaLabel="Loading Super Admin Dashboard"
+        hero={
+          <SuperAdminDashboardHeader
+            displayName={getUserDisplayName(user)}
+            onAddUser={() => setIsAddAdminOpen(true)}
+            onOpenEmployees={() => navigate(SUPER_ADMIN_ROUTES.employees)}
+            onRefresh={handleManualRefresh}
+            isManualRefreshing
+          />
+        }
+      />
+    );
+  }
+
   return (
     <div className="sibs-dashboard-shell">
       <Header />
@@ -481,6 +500,8 @@ export default function SuperAdminDashboardPage() {
               onMetricClick={handleMetricClick}
             />
           )}
+
+          <StatutoryCoveragePanel />
 
           <SuperAdminQuickActions
             onNavigate={navigate}

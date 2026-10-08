@@ -14,7 +14,6 @@ import {
   Building2,
   CalendarDays,
   Clock3,
-  LoaderCircle,
   RefreshCw,
   Target,
   TrendingDown,
@@ -22,6 +21,7 @@ import {
 } from "lucide-react";
 
 import Header from "../../../components/layout/Header";
+import RoleDashboardSkeleton from "../../../components/Dashboard/shared/RoleDashboardSkeleton";
 import { getWfmDashboardBootstrap } from "../../../lib/axios/getWfmDashboard";
 
 const PAGE_SHELL_CLASS = "sibs-dashboard-shell";
@@ -179,37 +179,6 @@ function writeCachedDashboard(payload) {
   } catch {
     // Session storage is optional.
   }
-}
-
-function WfmDashboardLoadingState() {
-  return (
-    <div className={PAGE_SHELL_CLASS}>
-      <Header />
-      <main
-        className={`${MAIN_SHELL_CLASS} flex min-h-[calc(100vh-76px)] items-center justify-center bg-[#e8eef5] px-6 py-10`}
-      >
-        <div
-          className="flex w-full max-w-sm flex-col items-center rounded-2xl border border-[#dfe7ef] bg-white px-8 py-10 text-center shadow-sm"
-          role="status"
-          aria-live="polite"
-          aria-label="Loading WFM dashboard"
-        >
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-orange-50">
-            <LoaderCircle
-              className="h-8 w-8 animate-spin text-[#ff5c28]"
-              aria-hidden="true"
-            />
-          </div>
-          <h2 className="mt-5 text-lg font-extrabold text-[#042c51]">
-            Loading WFM Dashboard
-          </h2>
-          <p className="mt-2 max-w-[300px] text-sm font-medium leading-6 text-[#667085]">
-            Loading company-wide workforce and hiring information.
-          </p>
-        </div>
-      </main>
-    </div>
-  );
 }
 
 function WfmDashboardErrorState({ message, onRetry }) {
@@ -433,8 +402,48 @@ export default function WFMDashboardPage() {
     [recruiters],
   );
 
+  const dashboardHero = (
+    <section className="sibs-page-header-in sibs-card relative overflow-hidden p-5 sm:p-6">
+      <span className="sibs-top-accent" aria-hidden="true" />
+      <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
+        <div>
+          <span className="inline-flex items-center gap-1.5 rounded border border-blue-100 bg-[#E9F0FC] px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-normal text-[#042C51]">
+            <span className="h-1.5 w-1.5 rounded-full bg-[#FF5C28]" />
+            Workforce Management View
+          </span>
+          <h1 className="mt-3 text-xl font-extrabold tracking-tight text-[#042C51] sm:text-2xl">
+            WFM Dashboard
+          </h1>
+          <p className="mt-1 text-xs font-semibold leading-relaxed text-[#667085] sm:text-sm">
+            Company-wide workforce and hiring visibility across all departments and accounts.
+          </p>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => loadDashboard({ forceRefresh: true, background: true })}
+            disabled={initialLoading || refreshing}
+            className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-[#DCE5EE] bg-white text-[#042C51] transition hover:border-[#FF5C28]/40 hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-60"
+            title="Refresh WFM dashboard"
+          >
+            <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate(HIRING_OVERVIEW_ROUTE)}
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[#FF5C28] px-4 text-xs font-extrabold text-white shadow-sm transition hover:bg-[#ea4d1c]"
+          >
+            Workforce & Hiring
+            <ArrowRight className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+    </section>
+  );
+
   if (initialLoading && roles.length === 0) {
-    return <WfmDashboardLoadingState />;
+    return <RoleDashboardSkeleton kind="wfm" hero={dashboardHero} />;
   }
 
   if (error && roles.length === 0) {
@@ -545,43 +554,7 @@ export default function WFMDashboardPage() {
       <Header />
       <main className={MAIN_SHELL_CLASS}>
         <div className="mx-auto flex min-h-full w-full max-w-[1700px] flex-1 flex-col space-y-4 2xl:space-y-5">
-          <section className="sibs-page-header-in sibs-card relative overflow-hidden p-5 sm:p-6">
-            <span className="sibs-top-accent" aria-hidden="true" />
-            <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
-              <div>
-                <span className="inline-flex items-center gap-1.5 rounded border border-blue-100 bg-[#E9F0FC] px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-normal text-[#042C51]">
-                  <span className="h-1.5 w-1.5 rounded-full bg-[#FF5C28]" />
-                  Workforce Management View
-                </span>
-                <h1 className="mt-3 text-xl font-extrabold tracking-tight text-[#042C51] sm:text-2xl">
-                  WFM Dashboard
-                </h1>
-                <p className="mt-1 text-xs font-semibold leading-relaxed text-[#667085] sm:text-sm">
-                  Company-wide workforce and hiring visibility across all departments and accounts.
-                </p>
-              </div>
-
-              <div className="flex flex-wrap items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => loadDashboard({ forceRefresh: true, background: true })}
-                  disabled={refreshing}
-                  className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-[#DCE5EE] bg-white text-[#042C51] transition hover:border-[#FF5C28]/40 hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-60"
-                  title="Refresh WFM dashboard"
-                >
-                  <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => navigate(HIRING_OVERVIEW_ROUTE)}
-                  className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[#FF5C28] px-4 text-xs font-extrabold text-white shadow-sm transition hover:bg-[#ea4d1c]"
-                >
-                  Workforce & Hiring
-                  <ArrowRight className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
-          </section>
+          {dashboardHero}
 
           {error ? (
             <section className="flex items-center justify-between gap-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-semibold text-amber-900">

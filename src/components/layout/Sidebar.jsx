@@ -1213,13 +1213,13 @@ export default function Sidebar() {
       name: "Departments",
       icon: Building2,
       path: "/departments",
-      allowedUsers: [3, 5, 6, 7, 10],
+      allowedUsers: [3, 4, 5, 6, 7, 10],
     },
     {
       name: "Office Locations",
       icon: MapPin,
       path: "/locations",
-      allowedUsers: [3, 5, 6, 7, 10],
+      allowedUsers: [3, 4, 5, 6, 7, 10],
     },
   ];
 
