@@ -1,5 +1,5 @@
 import React from "react";
-import { ArrowRight, RefreshCw, UserPlus, Users } from "lucide-react";
+import { ArrowRight, RefreshCw, Users } from "lucide-react";
 import { PageHeaderHero } from "@/components/ui";
 
 function getSafeDisplayName(value) {
@@ -17,7 +17,6 @@ function getSafeDisplayName(value) {
 
 export default function SuperAdminDashboardHeader({
   displayName = "Super Admin",
-  onAddUser,
   onOpenEmployees,
   onRefresh,
   isManualRefreshing = false,
@@ -52,15 +51,6 @@ export default function SuperAdminDashboardHeader({
               />
             </button>
           ) : null}
-
-          <button
-            type="button"
-            onClick={onAddUser}
-            className="sibs-btn-secondary max-sm:flex-1"
-          >
-            <UserPlus className="h-3.5 w-3.5 2xl:h-4 2xl:w-4 text-sibs-orange" />
-            Add User Access
-          </button>
 
           <button
             type="button"
