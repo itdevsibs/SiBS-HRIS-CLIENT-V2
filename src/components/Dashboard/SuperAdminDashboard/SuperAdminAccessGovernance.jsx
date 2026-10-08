@@ -1,5 +1,5 @@
 import React from "react";
-import { Lock, Plus } from "lucide-react";
+import { Lock } from "lucide-react";
 
 import {
   DataCard,
@@ -18,8 +18,6 @@ export default function SuperAdminAccessGovernance({
   admins,
   totalItems,
   pagination,
-  onAddUser,
-  onEditAccess,
   searchInput = "",
   onSearchChange,
   onSearchKeyDown,
@@ -75,12 +73,13 @@ export default function SuperAdminAccessGovernance({
       >
         <h2 className="sibs-section-title flex items-center gap-1.5 2xl:gap-2">
           <Lock size={14} className="text-sibs-orange" />
-          Grounded Admin Access Levels Hierarchy
+          User Access Levels Hierarchy
         </h2>
 
         <div className="mt-2 2xl:mt-2.5 grid grid-cols-2 gap-1.5 2xl:gap-2 sm:grid-cols-5 xl:grid-cols-10">
           {ACCESS_HIERARCHY.map(([level, description], index) => {
-            const superAdmin = String(level).startsWith("7");
+            const levelLabel = String(level).replace(/^\s*\d+\s*-\s*/, "");
+            const superAdmin = levelLabel === "Super Admin";
 
             return (
               <div
@@ -100,7 +99,7 @@ export default function SuperAdminAccessGovernance({
                     superAdmin ? "text-sibs-orange" : ""
                   }`}
                 >
-                  {level}
+                  {levelLabel}
                 </span>
                 <span
                   className={`mt-0.5 block text-[8px] 2xl:text-[9px] font-semibold leading-3.5 line-clamp-2 ${
@@ -118,20 +117,12 @@ export default function SuperAdminAccessGovernance({
       <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="font-heading text-base 2xl:text-lg font-bold text-sibs-navy tracking-tight">
-            Admin Users &amp; Access Levels ({totalItems})
+            User Accounts &amp; Access Levels ({totalItems})
           </h2>
           <p className="sibs-text-xs font-semibold text-sibs-muted">
-            Review account-group mappings, access tiers, and user status.
+            View assigned account mappings, access tiers, and user status.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={onAddUser}
-          className="sibs-btn-primary"
-        >
-          <Plus className="h-3.5 w-3.5 2xl:h-4 2xl:w-4 text-white" />
-          New Admin Account
-        </button>
       </div>
 
       <div className="flex flex-col gap-2.5 lg:flex-row lg:items-center">
@@ -141,8 +132,8 @@ export default function SuperAdminAccessGovernance({
             onChange={(val) => onSearchChange?.(val)}
             onClear={() => onSearchChange?.("")}
             onKeyDown={onSearchKeyDown}
-            placeholder="Search admin name or email..."
-            ariaLabel="Search admin name or email"
+            placeholder="Search user name or email..."
+            ariaLabel="Search user name or email"
           />
         </div>
 
@@ -236,23 +227,13 @@ export default function SuperAdminAccessGovernance({
                       Last active: {item.lastActive || "—"}
                     </span>
                   </div>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onEditAccess(item);
-                    }}
-                    className="inline-flex items-center justify-center whitespace-nowrap h-7.5 2xl:h-8 rounded-lg bg-sibs-surface border border-sibs-border px-3 text-[10px] font-extrabold text-sibs-navy transition hover:border-sibs-orange/40 hover:bg-sibs-cream-subtle hover:text-sibs-orange"
-                  >
-                    Edit Access
-                  </button>
                 </div>
               </DataCard>
             ))
           ) : (
             <DataCard.Empty
-              title="No Admin Users Found"
-              description="No admin users match the active filters."
+              title="No User Accounts Found"
+              description="No users match the active filters."
             />
           )
         }
@@ -261,13 +242,12 @@ export default function SuperAdminAccessGovernance({
             <div className="max-h-[520px] overflow-auto sibs-scrollbar">
               <table className="w-full min-w-[1020px] table-fixed border-collapse bg-white text-left text-xs">
                 <colgroup>
-                  <col className="w-[19%]" />
-                  <col className="w-[14%]" />
-                  <col className="w-[18%]" />
-                  <col className="w-[23%]" />
+                  <col className="w-[22%]" />
+                  <col className="w-[16%]" />
+                  <col className="w-[20%]" />
+                  <col className="w-[25%]" />
                   <col className="w-[9%]" />
                   <col className="w-[8%]" />
-                  <col className="w-[9%]" />
                 </colgroup>
                 <thead className="sibs-data-table-head">
                   <tr className="sibs-data-table-head-row">
@@ -277,7 +257,6 @@ export default function SuperAdminAccessGovernance({
                     <th className="sibs-data-table-th text-left px-3 2xl:px-4 py-2.5 2xl:py-3">Account Group</th>
                     <th className="sibs-data-table-th text-left px-3 2xl:px-4 py-2.5 2xl:py-3">Last Active</th>
                     <th className="sibs-data-table-th text-left px-3 2xl:px-4 py-2.5 2xl:py-3">Status</th>
-                    <th className="sibs-data-table-th text-right px-3 2xl:px-4 py-2.5 2xl:py-3">Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-sibs-border">
@@ -322,21 +301,12 @@ export default function SuperAdminAccessGovernance({
                             {item.status}
                           </span>
                         </td>
-                        <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-right">
-                          <button
-                            type="button"
-                            onClick={() => onEditAccess(item)}
-                            className="inline-flex items-center justify-center whitespace-nowrap h-7.5 2xl:h-8 rounded-lg border border-sibs-border bg-sibs-surface px-2.5 2xl:px-3 text-[10px] 2xl:text-[11px] font-extrabold text-sibs-navy transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange"
-                          >
-                            Edit Access
-                          </button>
-                        </td>
                       </tr>
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={7} className="px-4 py-10 text-center text-xs font-bold text-sibs-muted">
-                        No admin users match the active filters.
+                      <td colSpan={6} className="px-4 py-10 text-center text-xs font-bold text-sibs-muted">
+                        No users match the active filters.
                       </td>
                     </tr>
                   )}
@@ -352,7 +322,7 @@ export default function SuperAdminAccessGovernance({
         totalPages={pagination?.totalPages || 1}
         loadedCount={admins.length}
         totalItems={totalItems}
-        itemName="admin users"
+        itemName="users"
         onPageChange={pagination?.onPageChange}
       />
     </div>

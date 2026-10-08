@@ -59,7 +59,7 @@ export default function SuperAdminDashboardHeader({
             className="sibs-btn-secondary max-sm:flex-1"
           >
             <UserPlus className="h-3.5 w-3.5 2xl:h-4 2xl:w-4 text-sibs-orange" />
-            Add Admin / User
+            Add User Access
           </button>
 
           <button

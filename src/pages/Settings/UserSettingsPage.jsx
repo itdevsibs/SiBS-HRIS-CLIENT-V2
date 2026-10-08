@@ -1048,7 +1048,7 @@ function AccountMultiSelect({
   );
 }
 
-function AccessModal({
+export function AccessModal({
   open,
   mode,
   user,
