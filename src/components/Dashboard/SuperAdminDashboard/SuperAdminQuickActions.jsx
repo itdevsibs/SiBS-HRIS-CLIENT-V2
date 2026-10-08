@@ -4,27 +4,19 @@ import {
   Lock,
   PieChart,
   Settings,
-  ShieldCheck,
   SlidersHorizontal,
-  UserPlus,
+  UsersRound,
 } from "lucide-react";
 
 import { SUPER_ADMIN_ROUTES } from "../../../lib/utils/Dashboards/SuperAdminDashboard/superAdminDashboardHelpers.js";
 
 const ACTIONS = [
   {
-    id: "add-employee",
-    icon: UserPlus,
-    title: "Add Employee",
-    description: "New hire profile entry",
+    id: "view-employee",
+    icon: UsersRound,
+    title: "View Employee",
+    description: "Open employee directory",
     path: SUPER_ADMIN_ROUTES.employees,
-  },
-  {
-    id: "add-admin",
-    icon: ShieldCheck,
-    title: "Add User Access",
-    description: "Assign access tier & accounts",
-    action: "add-user",
   },
   {
     id: "manage-access",
@@ -58,15 +50,9 @@ const ACTIONS = [
 
 export default function SuperAdminQuickActions({
   onNavigate,
-  onAddUser,
   onTabChange,
 }) {
   function handleAction(item) {
-    if (item.action === "add-user") {
-      onAddUser();
-      return;
-    }
-
     if (item.tab) {
       onTabChange(item.tab);
       return;
@@ -95,7 +81,7 @@ export default function SuperAdminQuickActions({
         </span>
       </div>
 
-      <div className="mt-2.5 2xl:mt-3 grid grid-cols-2 gap-2 2xl:gap-2.5 sm:grid-cols-3 xl:grid-cols-6">
+      <div className="mt-2.5 2xl:mt-3 grid grid-cols-2 gap-2 2xl:gap-2.5 sm:grid-cols-3 xl:grid-cols-5">
         {ACTIONS.map((item, index) => (
           <button
             key={item.id}

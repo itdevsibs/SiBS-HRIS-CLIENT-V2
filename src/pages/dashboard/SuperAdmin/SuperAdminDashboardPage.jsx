@@ -13,10 +13,7 @@ import {
 import { getEmployee } from "../../../lib/axios/getEmployee";
 import { getApprovalRequests } from "../../../lib/axios/getApprovalRequest";
 import { getLeaves } from "../../../lib/axios/getLeaves";
-import {
-  getUserSettingsAccounts,
-  getUserSettingsUsers,
-} from "../../../lib/axios/userSettings";
+import { getUserSettingsUsers } from "../../../lib/axios/userSettings";
 import { normalizeDashboardOverview } from "../../../lib/utils/Dashboards/AdminDashboard/adminDashboardHelpers";
 import {
   ACCESS_LEVELS,
@@ -51,7 +48,6 @@ import {
   SuperAdminTabPanelSkeleton,
 } from "../../../components/Dashboard/SuperAdminDashboard/SuperAdminDashboardSkeleton";
 import StatutoryCoveragePanel from "../../../components/Dashboard/shared/StatutoryCoveragePanel";
-import { AccessModal as UserSettingsAccessModal } from "../../Settings/UserSettingsPage";
 
 const SUPER_ADMIN_ENTITY = "super-admin-dashboard";
 
@@ -73,8 +69,6 @@ export default function SuperAdminDashboardPage() {
   } = usePagination(SUPER_ADMIN_ENTITY);
 
   const [activeTab, setActiveTab] = useState("overview");
-  const [isAddAdminOpen, setIsAddAdminOpen] = useState(false);
-  const [userAccessAccountOptions, setUserAccessAccountOptions] = useState([]);
   const [adminUsers, setAdminUsers] = useState([]);
   const [exceptions, setExceptions] = useState([]);
   const [activityLogs, setActivityLogs] = useState([]);
@@ -130,12 +124,6 @@ export default function SuperAdminDashboardPage() {
           deptTotal = Array.isArray(empVal.departmentOptions)
             ? empVal.departmentOptions.length
             : null;
-        }
-
-        if (assignedUsersData.status === "fulfilled") {
-          if (Array.isArray(assignedUsersData.value?.accountOptions)) {
-            setUserAccessAccountOptions(assignedUsersData.value.accountOptions);
-          }
         }
 
         if (
@@ -389,30 +377,6 @@ export default function SuperAdminDashboardPage() {
     setPage(1);
   }
 
-  const openUserAccessStatus = useCallback((type, title, message) => {
-    const statusMessage = String(message || title || "").trim();
-    if (statusMessage) setNotice(statusMessage);
-  }, []);
-
-  const openAddUserAccessModal = useCallback(async () => {
-    setIsAddAdminOpen(true);
-
-    if (userAccessAccountOptions.length > 0) return;
-
-    try {
-      const accounts = await getUserSettingsAccounts();
-      setUserAccessAccountOptions(Array.isArray(accounts) ? accounts : []);
-    } catch (error) {
-      setNotice(error?.message || "Unable to load account options.");
-    }
-  }, [userAccessAccountOptions.length]);
-
-  const handleUserAccessSaved = useCallback(async () => {
-    await fetchDashboardData({ forceRefresh: true });
-    setActiveTab("access_roles");
-    setPage(1);
-  }, [fetchDashboardData, setPage]);
-
   function resolveException(id) {
     const target = exceptions.find((item) => item.id === id);
     setExceptions((current) => current.filter((item) => item.id !== id));
@@ -471,7 +435,6 @@ export default function SuperAdminDashboardPage() {
         hero={
           <SuperAdminDashboardHeader
             displayName={getUserDisplayName(user)}
-            onAddUser={openAddUserAccessModal}
             onOpenEmployees={() => navigate(SUPER_ADMIN_ROUTES.employees)}
             onRefresh={handleManualRefresh}
             isManualRefreshing
@@ -498,7 +461,6 @@ export default function SuperAdminDashboardPage() {
 
           <SuperAdminDashboardHeader
             displayName={getUserDisplayName(user)}
-            onAddUser={openAddUserAccessModal}
             onOpenEmployees={() => navigate(SUPER_ADMIN_ROUTES.employees)}
             onRefresh={handleManualRefresh}
             isManualRefreshing={isManualRefreshing}
@@ -518,7 +480,6 @@ export default function SuperAdminDashboardPage() {
 
           <SuperAdminQuickActions
             onNavigate={navigate}
-            onAddUser={openAddUserAccessModal}
             onTabChange={handleTabChange}
           />
 
@@ -618,16 +579,6 @@ export default function SuperAdminDashboardPage() {
           </section>
         </div>
       </main>
-
-      <UserSettingsAccessModal
-        open={isAddAdminOpen}
-        mode="add"
-        user={null}
-        accountOptions={userAccessAccountOptions}
-        onClose={() => setIsAddAdminOpen(false)}
-        onSaved={handleUserAccessSaved}
-        openStatus={openUserAccessStatus}
-      />
 
       <SuperAdminToast message={notice} onClose={() => setNotice("")} />
     </div>
