@@ -13,7 +13,10 @@ import {
 import { getEmployee } from "../../../lib/axios/getEmployee";
 import { getApprovalRequests } from "../../../lib/axios/getApprovalRequest";
 import { getLeaves } from "../../../lib/axios/getLeaves";
-import { getUserSettingsUsers } from "../../../lib/axios/userSettings";
+import {
+  getUserSettingsAccounts,
+  getUserSettingsUsers,
+} from "../../../lib/axios/userSettings";
 import { normalizeDashboardOverview } from "../../../lib/utils/Dashboards/AdminDashboard/adminDashboardHelpers";
 import {
   ACCESS_LEVELS,
@@ -42,13 +45,13 @@ import SuperAdminExceptions from "../../../components/Dashboard/SuperAdminDashbo
 import SuperAdminAccessGovernance from "../../../components/Dashboard/SuperAdminDashboard/SuperAdminAccessGovernance";
 import SuperAdminSnapshot from "../../../components/Dashboard/SuperAdminDashboard/SuperAdminSnapshot";
 import SuperAdminActivity from "../../../components/Dashboard/SuperAdminDashboard/SuperAdminActivity";
-import SuperAdminAddUserModal from "../../../components/Dashboard/SuperAdminDashboard/SuperAdminAddUserModal";
 import SuperAdminToast from "../../../components/Dashboard/SuperAdminDashboard/SuperAdminToast";
 import {
   SuperAdminDashboardStatsSkeleton,
   SuperAdminTabPanelSkeleton,
 } from "../../../components/Dashboard/SuperAdminDashboard/SuperAdminDashboardSkeleton";
 import StatutoryCoveragePanel from "../../../components/Dashboard/shared/StatutoryCoveragePanel";
+import { AccessModal as UserSettingsAccessModal } from "../../Settings/UserSettingsPage";
 
 const SUPER_ADMIN_ENTITY = "super-admin-dashboard";
 
@@ -71,6 +74,7 @@ export default function SuperAdminDashboardPage() {
 
   const [activeTab, setActiveTab] = useState("overview");
   const [isAddAdminOpen, setIsAddAdminOpen] = useState(false);
+  const [userAccessAccountOptions, setUserAccessAccountOptions] = useState([]);
   const [adminUsers, setAdminUsers] = useState([]);
   const [exceptions, setExceptions] = useState([]);
   const [activityLogs, setActivityLogs] = useState([]);
@@ -128,6 +132,12 @@ export default function SuperAdminDashboardPage() {
             : null;
         }
 
+        if (assignedUsersData.status === "fulfilled") {
+          if (Array.isArray(assignedUsersData.value?.accountOptions)) {
+            setUserAccessAccountOptions(assignedUsersData.value.accountOptions);
+          }
+        }
+
         if (
           assignedUsersData.status === "fulfilled" &&
           Array.isArray(assignedUsersData.value?.data) &&
@@ -155,8 +165,8 @@ export default function SuperAdminDashboardPage() {
                 emp.fullName ||
                 emp.name ||
                 `${emp.firstName || ""} ${emp.lastName || ""}`.trim() ||
-                "Admin User",
-              email: emp.email || "admin@thesiblingssolutions.com",
+                "User",
+              email: emp.email || "—",
               accessLevel: `${emp.adminAccess || emp.admin_access || 7} - ${emp.role || "Admin"}`,
               department: emp.department || "Operations",
               accountGroup: emp.account || "Internal HR Ops",
@@ -379,26 +389,29 @@ export default function SuperAdminDashboardPage() {
     setPage(1);
   }
 
-  function addAdmin(newAdmin) {
-    setAdminUsers((current) => [newAdmin, ...current]);
-    setActivityLogs((current) => [
-      {
-        id: `LOG-${String(Date.now()).slice(-6)}`,
-        timestamp: new Date().toLocaleString("en-PH", { month: "long", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit", hour12: true }),
-        actor: user?.email || "Super Admin",
-        accessLevel: "7 - Super Admin",
-        module: "Access Governance",
-        action: "CREATED_ADMIN_USER",
-        details: `Created ${newAdmin.accessLevel} access for ${newAdmin.email}.`,
-        status: "Success",
-      },
-      ...current,
-    ]);
-    setIsAddAdminOpen(false);
-    setNotice(`Added administrator account for ${newAdmin.email}.`);
+  const openUserAccessStatus = useCallback((type, title, message) => {
+    const statusMessage = String(message || title || "").trim();
+    if (statusMessage) setNotice(statusMessage);
+  }, []);
+
+  const openAddUserAccessModal = useCallback(async () => {
+    setIsAddAdminOpen(true);
+
+    if (userAccessAccountOptions.length > 0) return;
+
+    try {
+      const accounts = await getUserSettingsAccounts();
+      setUserAccessAccountOptions(Array.isArray(accounts) ? accounts : []);
+    } catch (error) {
+      setNotice(error?.message || "Unable to load account options.");
+    }
+  }, [userAccessAccountOptions.length]);
+
+  const handleUserAccessSaved = useCallback(async () => {
+    await fetchDashboardData({ forceRefresh: true });
     setActiveTab("access_roles");
     setPage(1);
-  }
+  }, [fetchDashboardData, setPage]);
 
   function resolveException(id) {
     const target = exceptions.find((item) => item.id === id);
@@ -458,7 +471,7 @@ export default function SuperAdminDashboardPage() {
         hero={
           <SuperAdminDashboardHeader
             displayName={getUserDisplayName(user)}
-            onAddUser={() => setIsAddAdminOpen(true)}
+            onAddUser={openAddUserAccessModal}
             onOpenEmployees={() => navigate(SUPER_ADMIN_ROUTES.employees)}
             onRefresh={handleManualRefresh}
             isManualRefreshing
@@ -485,7 +498,7 @@ export default function SuperAdminDashboardPage() {
 
           <SuperAdminDashboardHeader
             displayName={getUserDisplayName(user)}
-            onAddUser={() => setIsAddAdminOpen(true)}
+            onAddUser={openAddUserAccessModal}
             onOpenEmployees={() => navigate(SUPER_ADMIN_ROUTES.employees)}
             onRefresh={handleManualRefresh}
             isManualRefreshing={isManualRefreshing}
@@ -505,7 +518,7 @@ export default function SuperAdminDashboardPage() {
 
           <SuperAdminQuickActions
             onNavigate={navigate}
-            onAddUser={() => setIsAddAdminOpen(true)}
+            onAddUser={openAddUserAccessModal}
             onTabChange={handleTabChange}
           />
 
@@ -556,8 +569,6 @@ export default function SuperAdminDashboardPage() {
                   admins={activePagination.items}
                   totalItems={filteredAdmins.length}
                   pagination={paginationProps}
-                  onAddUser={() => setIsAddAdminOpen(true)}
-                  onEditAccess={handleEditAccess}
                   searchInput={searchInput}
                   onSearchChange={setSearchInput}
                   onSearchKeyDown={handleSearchKeyDown}
@@ -608,10 +619,14 @@ export default function SuperAdminDashboardPage() {
         </div>
       </main>
 
-      <SuperAdminAddUserModal
+      <UserSettingsAccessModal
         open={isAddAdminOpen}
+        mode="add"
+        user={null}
+        accountOptions={userAccessAccountOptions}
         onClose={() => setIsAddAdminOpen(false)}
-        onSave={addAdmin}
+        onSaved={handleUserAccessSaved}
+        openStatus={openUserAccessStatus}
       />
 
       <SuperAdminToast message={notice} onClose={() => setNotice("")} />

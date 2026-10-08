@@ -21,8 +21,8 @@ const METRICS = [
   },
   {
     key: "admins",
-    label: "Admin Users",
-    badge: "7 Access Tiers",
+    label: "Users with Access",
+    badge: "10 Access Tiers",
     description: "TA, HR, Finance & Execs",
     icon: ShieldCheck,
     tone: "navy",

@@ -22,15 +22,15 @@ const ACTIONS = [
   {
     id: "add-admin",
     icon: ShieldCheck,
-    title: "Add Admin / User",
-    description: "Set 7 access tiers",
+    title: "Add User Access",
+    description: "Assign access tier & accounts",
     action: "add-user",
   },
   {
     id: "manage-access",
     icon: Lock,
-    title: "Manage Access",
-    description: "Review role permissions",
+    title: "View Access",
+    description: "View role permissions",
     tab: "access_roles",
   },
   {
