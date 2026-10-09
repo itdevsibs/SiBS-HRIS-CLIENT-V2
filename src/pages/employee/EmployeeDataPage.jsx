@@ -296,20 +296,20 @@ function ResignationHistorySection({ items = [], onView }) {
   return (
     <div className="space-y-3">
       <div className="rounded-xl border border-blue-100 bg-blue-50 px-4 py-3">
-        <p className="text-xs font-bold text-[#042C51]">
+        <p className="text-xs font-bold text-sibs-navy">
           Resignation Application History
         </p>
-        <p className="mt-1 text-[10px] font-semibold leading-4 text-[#667085]">
+        <p className="mt-1 text-[10px] font-semibold leading-4 text-sibs-muted">
           Review the selected employee&apos;s previous and current resignation
           applications. Select a record to open the complete case details.
         </p>
       </div>
 
-      <div className="overflow-hidden rounded-xl border border-[#E6ECF2]">
+      <div className="sibs-data-table-shell overflow-hidden rounded-xl border border-sibs-border">
         <div className="hidden overflow-x-auto lg:block">
           <table className="w-full min-w-[980px] border-collapse text-left">
-            <thead className="bg-[#F8FAFC]">
-              <tr className="border-b border-[#E6ECF2]">
+            <thead className="sibs-data-table-head bg-sibs-surface">
+              <tr className="sibs-data-table-head-row border-b border-sibs-border">
                 {[
                   "Case ID",
                   "Filed Date",
@@ -320,14 +320,14 @@ function ResignationHistorySection({ items = [], onView }) {
                 ].map((label) => (
                   <th
                     key={label}
-                    className="px-3 py-3 text-[10px] font-extrabold uppercase tracking-wide text-[#7B8DB3]"
+                    className="sibs-data-table-th px-3 py-3 text-[10px] font-extrabold uppercase tracking-wide text-sibs-muted"
                   >
                     {label}
                   </th>
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#EEF2F6] bg-white">
+            <tbody className="divide-y divide-sibs-border bg-white">
               {items.map((item, index) => {
                 const status = getResignationStatus(item);
                 return (
@@ -346,15 +346,15 @@ function ResignationHistorySection({ items = [], onView }) {
                         onView?.(item);
                       }
                     }}
-                    className="cursor-pointer transition hover:bg-[#FFF9F6] focus-visible:bg-[#FFF9F6] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#FF5C28]/30"
+                    className="sibs-data-table-row cursor-pointer transition hover:bg-sibs-cream-subtle focus-visible:bg-sibs-cream-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sibs-orange/30"
                   >
-                    <td className="px-3 py-3 text-xs font-extrabold text-[#FF5C28]">
+                    <td className="px-3 py-3 text-xs font-extrabold text-sibs-orange">
                       {getResignationCaseId(item)}
                     </td>
-                    <td className="px-3 py-3 text-xs font-semibold text-[#344054]">
+                    <td className="px-3 py-3 text-xs font-semibold text-sibs-text-secondary">
                       {formatResignationDate(getResignationDateValue(item))}
                     </td>
-                    <td className="px-3 py-3 text-xs font-semibold text-[#344054]">
+                    <td className="px-3 py-3 text-xs font-semibold text-sibs-text-secondary">
                       {formatResignationDate(getResignationLastWorkingDate(item))}
                     </td>
                     <td className="px-3 py-3">
@@ -366,12 +366,12 @@ function ResignationHistorySection({ items = [], onView }) {
                         {status}
                       </span>
                     </td>
-                    <td className="max-w-[280px] px-3 py-3 text-xs font-semibold text-[#344054]">
+                    <td className="max-w-[280px] px-3 py-3 text-xs font-semibold text-sibs-text-secondary">
                       <span className="line-clamp-2">
                         {getResignationReason(item)}
                       </span>
                     </td>
-                    <td className="px-3 py-3 text-xs font-bold text-[#042C51]">
+                    <td className="px-3 py-3 text-xs font-bold text-sibs-navy">
                       {getResignationStage(item)}
                     </td>
                   </tr>
@@ -381,7 +381,7 @@ function ResignationHistorySection({ items = [], onView }) {
           </table>
         </div>
 
-        <div className="space-y-3 bg-[#F8FAFC] p-3 lg:hidden">
+        <div className="space-y-3 bg-sibs-surface p-3 lg:hidden">
           {items.map((item, index) => {
             const status = getResignationStatus(item);
             return (
@@ -393,14 +393,14 @@ function ResignationHistorySection({ items = [], onView }) {
                 }
                 type="button"
                 onClick={() => onView?.(item)}
-                className="w-full rounded-xl border border-[#E6ECF2] bg-white p-4 text-left shadow-sm transition hover:border-[#FF5C28]/30 hover:bg-[#FFF9F6]"
+                className="w-full rounded-xl border border-sibs-border bg-white p-4 text-left shadow-sm transition hover:border-sibs-orange/30 hover:bg-sibs-cream-subtle"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#8A98B8]">
+                    <p className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-muted">
                       Case ID
                     </p>
-                    <p className="mt-1 text-sm font-extrabold text-[#FF5C28]">
+                    <p className="mt-1 text-sm font-extrabold text-sibs-orange">
                       {getResignationCaseId(item)}
                     </p>
                   </div>
@@ -415,18 +415,18 @@ function ResignationHistorySection({ items = [], onView }) {
 
                 <div className="mt-4 grid grid-cols-2 gap-3 text-xs">
                   <div>
-                    <p className="text-[10px] font-bold uppercase text-[#8A98B8]">
+                    <p className="text-[10px] font-bold uppercase text-sibs-muted">
                       Filed
                     </p>
-                    <p className="mt-1 font-semibold text-[#344054]">
+                    <p className="mt-1 font-semibold text-sibs-text-secondary">
                       {formatResignationDate(getResignationDateValue(item))}
                     </p>
                   </div>
                   <div>
-                    <p className="text-[10px] font-bold uppercase text-[#8A98B8]">
+                    <p className="text-[10px] font-bold uppercase text-sibs-muted">
                       Last Working Day
                     </p>
-                    <p className="mt-1 font-semibold text-[#344054]">
+                    <p className="mt-1 font-semibold text-sibs-text-secondary">
                       {formatResignationDate(
                         getResignationLastWorkingDate(item),
                       )}
@@ -434,14 +434,14 @@ function ResignationHistorySection({ items = [], onView }) {
                   </div>
                 </div>
 
-                <div className="mt-3 border-t border-[#EEF2F6] pt-3">
-                  <p className="text-[10px] font-bold uppercase text-[#8A98B8]">
+                <div className="mt-3 border-t border-sibs-border pt-3">
+                  <p className="text-[10px] font-bold uppercase text-sibs-muted">
                     Reason
                   </p>
-                  <p className="mt-1 line-clamp-2 text-xs font-semibold text-[#344054]">
+                  <p className="mt-1 line-clamp-2 text-xs font-semibold text-sibs-text-secondary">
                     {getResignationReason(item)}
                   </p>
-                  <p className="mt-2 text-[10px] font-bold text-[#042C51]">
+                  <p className="mt-2 text-[10px] font-bold text-sibs-navy">
                     Approval Stage: {getResignationStage(item)}
                   </p>
                 </div>
@@ -1087,11 +1087,11 @@ export default function EmployeeDataPage() {
   return (
     <div
       onClick={() => setOpenProfileDropdown(false)}
-      className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-[#E8EDF3] font-jakarta"
+      className="sibs-dashboard-shell flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-sibs-canvas font-jakarta"
     >
       <Header />
 
-      <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-[#E8EDF3] px-3 py-4 sm:p-6">
+      <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-sibs-canvas px-3 py-4 sm:p-6">
         <div className="mx-auto w-full max-w-[1600px]">
           <div className="mb-4 flex items-center justify-between gap-4">
             <button
@@ -1101,19 +1101,19 @@ export default function EmployeeDataPage() {
             >
               <ChevronLeft
                 size={15}
-                className="text-[#FF5C28] hover:scale-110 hover:text-[#FF3C00]"
+                className="text-sibs-orange transition hover:scale-110"
               />
-              <span className="text-sm font-bold text-[#042C51] hover:text-[#FF5C28]">
+              <span className="text-sm font-bold text-sibs-navy hover:text-sibs-orange">
                 Back to Employees
               </span>
             </button>
 
-            <div className="hidden min-w-0 items-center gap-1.5 text-[10px] font-semibold text-[#667085] sm:flex">
+            <div className="hidden min-w-0 items-center gap-1.5 text-[10px] font-semibold text-sibs-muted sm:flex">
               <span>SiBS HRIS Portal</span>
               <span>/</span>
               <span>Employee Directory</span>
               <span>/</span>
-              <span className="max-w-[260px] truncate font-black text-[#042C51]">
+              <span className="max-w-[260px] truncate font-black text-sibs-navy">
                 {displayEmployee
                   ? `${displayEmployee.lastName || ""}, ${
                       displayEmployee.firstName || ""
@@ -1126,7 +1126,7 @@ export default function EmployeeDataPage() {
           {loading ? (
             <EmployeeProfileSkeleton />
           ) : !displayEmployee ? (
-            <div className="rounded-2xl border border-[#D6E0EA] bg-white p-6 text-sm font-semibold text-[#667085] shadow-sm">
+            <div className="rounded-2xl border border-sibs-border bg-white p-6 text-sm font-semibold text-sibs-muted shadow-sm">
               Profile not found.
             </div>
           ) : (
@@ -1179,11 +1179,11 @@ export default function EmployeeDataPage() {
               <div className="sibs-page-card-in grid grid-cols-1 items-start gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(280px,1fr)]">
                 <section
                   key={activeTab}
-                  className="sibs-profile-tab-panel min-w-0 rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm"
+                  className="sibs-profile-tab-panel min-w-0 rounded-2xl border border-sibs-border bg-white p-5 shadow-sm"
                 >
-                  <div className="mb-5 flex min-w-0 flex-col gap-3 border-b border-[#F1F5F9] pb-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="mb-5 flex min-w-0 flex-col gap-3 border-b border-slate-100 pb-3 sm:flex-row sm:items-start sm:justify-between">
                     <div className="min-w-0 flex-1">
-                      <h2 className="break-words text-sm font-black uppercase tracking-wider text-[#042C51]">
+                      <h2 className="break-words text-sm font-black uppercase tracking-wider text-sibs-navy">
                         {activeProfileLabel.primary}
                         {activeProfileLabel.secondary
                           ? ` - ${activeProfileLabel.secondary}`
@@ -1209,7 +1209,7 @@ export default function EmployeeDataPage() {
                         className={`h-2.5 w-2.5 rounded-full ${
                           isEditing
                             ? "animate-pulse bg-amber-400"
-                            : "bg-[#042C51]"
+                            : "bg-sibs-navy"
                         }`}
                       />
                       <span className="text-[10px] font-bold uppercase text-slate-500">

@@ -4,7 +4,7 @@ import { Info } from "lucide-react";
 export default function OnboardingProcessNote({ delay = 0 }) {
   return (
     <section
-      className="sibs-profile-tab-panel mt-6 rounded-xl border border-blue-100 bg-blue-50 p-5 shadow-sm"
+      className="sibs-profile-tab-panel mt-6 rounded-[14px] border border-blue-100 bg-blue-50 p-5 shadow-sm"
       style={{ animationDelay: `${delay}ms` }}
     >
       <h3 className="text-sm font-bold text-sibs-primary-1 flex items-center gap-2">

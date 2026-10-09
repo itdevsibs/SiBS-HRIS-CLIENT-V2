@@ -5,9 +5,10 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { CalendarDays, ChevronDown, ChevronRight, ChevronUp, GripHorizontal } from "lucide-react";
+import { CalendarDays, ChevronDown, ChevronRight, ChevronUp, GripHorizontal, RotateCcw } from "lucide-react";
 import { useWorkforceHiringView } from "../../../services/context/WorkforceHiringContextAdapter";
 import { usePagination } from "../../../services/context/PaginationContext";
+import PaginationTable from "../../../services/pagination/PaginationTable";
 import {
   DataCard,
   ResponsiveTableShell,
@@ -1764,61 +1765,68 @@ export default function WorkforceHiringOverviewDetailsTable() {
               />
             </div>
 
-            <div className="grid grid-cols-1 gap-2 overflow-visible sm:grid-cols-2 xl:grid-cols-[minmax(240px,1fr)_190px_170px_auto] xl:items-end">
-              <div className="relative w-full min-w-0 sm:col-span-2 xl:col-span-1">
-                <SearchInput
-                  value={searchInput}
-                  onChange={(val) => {
-                    setSearchInput(val);
-                    setSearch?.(val);
-                  }}
-                  onKeyDown={handleSearchKeyDown}
-                  onClear={clearSearch}
-                  placeholder="Search account / cluster..."
-                />
-              </div>
+            <div className="relative z-[90] mt-3.5 2xl:mt-4 overflow-visible">
+              <PaginationTable
+                filterLayout="ta-inline"
+                showFilterPanel={false}
+                showFilterHeader={false}
+                showPagination={false}
+                searchValue={searchInput}
+                onSearchChange={(val) => {
+                  const nextVal = typeof val === "string" ? val : val?.target?.value ?? "";
+                  setSearchInput(nextVal);
+                  setSearch?.(nextVal);
+                }}
+                onSearchKeyDown={handleSearchKeyDown}
+                searchPlaceholder="Search account / cluster..."
+                className="border-0 bg-transparent p-0 shadow-none"
+                filters={[
+                  {
+                    key: "cluster",
+                    value: activeCluster,
+                    onChange: (val) => setSelectedCluster(val || "All Clusters"),
+                    options: clusterOptions.map((opt) => ({
+                      label: opt,
+                      value: opt,
+                    })),
+                    placeholder: "All Clusters",
+                    allLabel: "All Clusters",
+                    label: "Cluster",
+                    searchable: true,
+                  },
+                  {
+                    key: "risk",
+                    value: selectedRisk,
+                    onChange: (val) => setSelectedRisk(val || "All Risks"),
+                    options: WORKFORCE_RISK_OPTIONS.map((opt) => ({
+                      label: opt,
+                      value: opt,
+                    })),
+                    placeholder: "All Risks",
+                    allLabel: "All Risks",
+                    label: "Risk Level",
+                    searchable: false,
+                  },
+                ]}
+                rightContent={
+                  <div className="flex w-full flex-wrap items-center justify-start gap-2 xl:w-auto xl:justify-end">
+                    <span className="inline-flex h-8.5 2xl:h-10 items-center rounded-[10px] border border-sibs-border bg-sibs-surface px-3 text-xs font-bold tabular-nums text-sibs-navy">
+                      {sortedRows.length} account rows
+                    </span>
 
-              <div className="w-full xl:w-[190px]">
-                <SelectDropdown
-                  value={activeCluster}
-                  onChange={(val) => setSelectedCluster(val || "All Clusters")}
-                  options={clusterOptions.map((opt) => ({
-                    label: opt,
-                    value: opt,
-                  }))}
-                  placeholder="All Clusters"
-                  searchable
-                />
-              </div>
-
-              <div className="w-full xl:w-[170px]">
-                <SelectDropdown
-                  value={selectedRisk}
-                  onChange={(val) => setSelectedRisk(val || "All Risks")}
-                  options={WORKFORCE_RISK_OPTIONS.map((opt) => ({
-                    label: opt,
-                    value: opt,
-                  }))}
-                  placeholder="All Risks"
-                  searchable
-                />
-              </div>
-
-              <div className="flex w-full flex-wrap items-center justify-start gap-2 xl:w-auto xl:justify-end">
-                <span className="inline-flex h-10 items-center rounded-xl border border-sibs-border bg-sibs-surface px-3 text-xs font-bold tabular-nums text-sibs-navy">
-                  {sortedRows.length} account rows
-                </span>
-
-                {hasActiveFilters ? (
-                  <button
-                    type="button"
-                    onClick={clearAllFilters}
-                    className="h-10 rounded-xl border border-sibs-border bg-sibs-surface px-3 text-xs font-bold text-sibs-muted transition hover:border-sibs-orange/40 hover:bg-orange-50/50 hover:text-sibs-orange focus:outline-none focus:ring-4 focus:ring-sibs-orange/10"
-                  >
-                    Clear
-                  </button>
-                ) : null}
-              </div>
+                    {hasActiveFilters ? (
+                      <button
+                        type="button"
+                        onClick={clearAllFilters}
+                        className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 rounded-[10px] border border-sibs-border bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-muted transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange focus:outline-none xl:w-auto"
+                      >
+                        <RotateCcw size={14} />
+                        Clear
+                      </button>
+                    ) : null}
+                  </div>
+                }
+              />
             </div>
           </div>
         </div>

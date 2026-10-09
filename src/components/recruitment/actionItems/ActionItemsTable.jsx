@@ -114,7 +114,7 @@ export default function ActionItemsTable() {
   };
 
   return (
-    <div className="overflow-hidden rounded-xl border border-[#E6ECF2] bg-white">
+    <div className="overflow-hidden rounded-[10px] border border-sibs-border bg-white">
       <div
         ref={dragScrollRef}
         tabIndex={0}
@@ -124,13 +124,13 @@ export default function ActionItemsTable() {
         onMouseMove={handleDragMove}
         onMouseUp={handleDragEnd}
         onMouseLeave={handleDragEnd}
-        className={`hidden overflow-x-auto sibs-scrollbar focus:outline-none focus:ring-2 focus:ring-[#FF5C28]/20 lg:block ${
+        className={`hidden overflow-x-auto sibs-scrollbar focus:outline-none focus:ring-2 focus:ring-sibs-orange/20 lg:block ${
           isDragging ? "cursor-grabbing" : "cursor-grab"
         }`}
       >
         <table className="w-full min-w-[1240px] border-collapse font-jakarta text-xs text-left">
-          <thead className="bg-[#F8FAFC]">
-            <tr className="border-b border-[#E6ECF2]">
+          <thead className="bg-sibs-surface">
+            <tr className="border-b border-sibs-border">
               {[
                 ["Action Item", "text-left"],
                 ["Role / Account", "text-left"],
@@ -143,7 +143,7 @@ export default function ActionItemsTable() {
               ].map(([label, alignment], idx, arr) => (
                 <th
                   key={label}
-                  className={`border-r border-[#E6ECF2] px-3 py-2.5 text-[10px] font-extrabold uppercase tracking-wider text-[#667085] ${
+                  className={`border-r border-sibs-border px-3 py-2.5 text-[10px] font-extrabold uppercase tracking-wider text-sibs-muted ${
                     idx === arr.length - 1 ? "border-r-0" : ""
                   } ${alignment}`}
                 >
@@ -152,7 +152,7 @@ export default function ActionItemsTable() {
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-[#E6ECF2] font-jakarta">
+          <tbody className="divide-y divide-sibs-border font-jakarta">
             {loading ? (
               <TableSkeletonRows count={6} columns={8} />
             ) : paginatedItems.length ? (
@@ -162,39 +162,39 @@ export default function ActionItemsTable() {
                   <tr
                     key={`${item.sourceType}-${item.id}-${item.actionId}`}
                     onClick={() => setSelectedItem(item)}
-                    className="sibs-data-table-row sibs-page-card-in cursor-pointer transition hover:bg-[#F8FAFC]"
+                    className="sibs-data-table-row sibs-page-card-in cursor-pointer transition hover:bg-sibs-surface"
                     style={{ animationDelay: `${index * 35}ms`, animationFillMode: "both" }}
                   >
-                    <td className="max-w-[360px] border-r border-[#E6ECF2] px-2.5 2xl:px-3.5 py-1.5 2xl:py-2.5 align-middle">
+                    <td className="max-w-[360px] border-r border-sibs-border px-2.5 2xl:px-3.5 py-1.5 2xl:py-2.5 align-middle">
                       <div className="flex items-center gap-2">
-                        <span className="rounded bg-[#F2F4F7] px-1.5 py-0.5 font-jakarta text-[9px] font-extrabold text-[#042C51]">{item.actionId}</span>
+                        <span className="rounded bg-sibs-surface-subtle px-1.5 py-0.5 font-jakarta text-[9px] font-extrabold text-sibs-navy">{item.actionId}</span>
                         <span className={`rounded border px-1.5 py-0.5 text-[8px] font-extrabold uppercase ${systemGenerated ? "border-purple-100 bg-purple-50 text-purple-700" : "border-blue-100 bg-blue-50 text-blue-700"}`}>
                           {systemGenerated ? "System" : "Manual"}
                         </span>
                       </div>
-                      <p className="mt-1 line-clamp-2 sibs-text-xs font-extrabold leading-5 text-[#042C51]" title={item.actionItem}>{item.actionItem}</p>
+                      <p className="mt-1 line-clamp-2 sibs-text-xs font-extrabold leading-5 text-sibs-navy" title={item.actionItem}>{item.actionItem}</p>
                     </td>
-                    <td className="border-r border-[#E6ECF2] px-2.5 2xl:px-3.5 py-1.5 2xl:py-2.5 align-middle">
-                      <p className="sibs-text-xs font-extrabold text-[#042C51]">{item.account || "—"}</p>
-                      <p className="mt-0.5 text-[10px] font-semibold uppercase text-[#667085]">{item.roleTitle || item.roleAccount || "—"}</p>
+                    <td className="border-r border-sibs-border px-2.5 2xl:px-3.5 py-1.5 2xl:py-2.5 align-middle">
+                      <p className="sibs-text-xs font-extrabold text-sibs-navy">{item.account || "—"}</p>
+                      <p className="mt-0.5 text-[10px] font-semibold uppercase text-sibs-muted">{item.roleTitle || item.roleAccount || "—"}</p>
                     </td>
-                    <td className="border-r border-[#E6ECF2] px-2.5 2xl:px-3 py-1.5 2xl:py-2.5 align-middle sibs-text-xs font-bold text-[#042C51]">{item.owner || "—"}</td>
-                    <td className="border-r border-[#E6ECF2] px-2.5 2xl:px-3 py-1.5 2xl:py-2.5 align-middle">
-                      <p className="sibs-text-xs font-extrabold tabular-nums text-[#042C51]">{formatDate(item.deadline)}</p>
-                      <p className="mt-0.5 text-[9px] font-extrabold tabular-nums text-[#667085]">
+                    <td className="border-r border-sibs-border px-2.5 2xl:px-3 py-1.5 2xl:py-2.5 align-middle sibs-text-xs font-bold text-sibs-navy">{item.owner || "—"}</td>
+                    <td className="border-r border-sibs-border px-2.5 2xl:px-3 py-1.5 2xl:py-2.5 align-middle">
+                      <p className="sibs-text-xs font-extrabold tabular-nums text-sibs-navy">{formatDate(item.deadline)}</p>
+                      <p className="mt-0.5 text-[9px] font-extrabold tabular-nums text-sibs-muted">
                         {item.status === "Completed"
                           ? `Completed${item.completedDate ? ` ${formatDate(item.completedDate)}` : ""}`
                           : getDaysLeft(item.deadline)}
                       </p>
                     </td>
-                    <td className="border-r border-[#E6ECF2] px-2.5 2xl:px-3 py-1.5 2xl:py-2.5 align-middle">
+                    <td className="border-r border-sibs-border px-2.5 2xl:px-3 py-1.5 2xl:py-2.5 align-middle">
                       <span className={`rounded-full border px-2.5 py-1 text-[10px] font-extrabold ${getStatusClass(item.status)}`}>{item.status}</span>
                     </td>
-                    <td className="border-r border-[#E6ECF2] px-2.5 2xl:px-3 py-1.5 2xl:py-2.5 align-middle">
+                    <td className="border-r border-sibs-border px-2.5 2xl:px-3 py-1.5 2xl:py-2.5 align-middle">
                       <span className={`rounded-full border px-2.5 py-1 text-[10px] font-extrabold ${getRiskClass(item.riskLevel)}`}>{item.riskLevel}</span>
                     </td>
-                    <td className="max-w-[300px] border-r border-[#E6ECF2] px-2.5 2xl:px-3.5 py-1.5 2xl:py-2.5 align-middle">
-                      <p className="line-clamp-2 sibs-text-xs font-semibold leading-4 text-[#667085]" title={item.remarks}>{item.remarks || "No remarks logged"}</p>
+                    <td className="max-w-[300px] border-r border-sibs-border px-2.5 2xl:px-3.5 py-1.5 2xl:py-2.5 align-middle">
+                      <p className="line-clamp-2 sibs-text-xs font-semibold leading-4 text-sibs-muted" title={item.remarks}>{item.remarks || "No remarks logged"}</p>
                     </td>
                     <td className="px-2.5 2xl:px-3 py-1.5 2xl:py-2.5 text-right" onClick={(event) => event.stopPropagation()}>
                       <div className="flex justify-end gap-1.5">
@@ -202,7 +202,7 @@ export default function ActionItemsTable() {
                           <button
                             type="button"
                             onClick={() => completeActionItem(item)}
-                            className="inline-flex h-7.5 2xl:h-8 items-center gap-1 rounded-lg bg-emerald-600 px-2.5 2xl:px-3 text-[10px] 2xl:text-xs font-black text-white transition hover:bg-emerald-700 active:scale-[0.98]"
+                            className="inline-flex h-7.5 2xl:h-8 items-center gap-1 rounded-[10px] bg-emerald-600 px-2.5 2xl:px-3 text-[10px] 2xl:text-xs font-black text-white transition hover:bg-emerald-700 active:scale-[0.98]"
                           >
                             <CheckCircle2 size={12} /> Resolve
                           </button>
@@ -210,7 +210,7 @@ export default function ActionItemsTable() {
                         <button
                           type="button"
                           onClick={() => setSelectedItem(item)}
-                          className="inline-flex h-7.5 2xl:h-8 items-center gap-1 rounded-lg bg-[#042C51] px-2.5 2xl:px-3 text-[10px] 2xl:text-xs font-black text-white transition hover:bg-[#073966] active:scale-[0.98]"
+                          className="inline-flex h-7.5 2xl:h-8 items-center gap-1 rounded-[10px] bg-sibs-navy px-2.5 2xl:px-3 text-[10px] 2xl:text-xs font-black text-white transition hover:bg-sibs-navy-hover active:scale-[0.98]"
                         >
                           <Eye size={12} /> Details
                         </button>
@@ -221,7 +221,7 @@ export default function ActionItemsTable() {
               })
             ) : (
               <tr>
-                <td colSpan={8} className="px-5 py-12 text-center text-sm font-semibold text-[#98A2B3]">
+                <td colSpan={8} className="px-5 py-12 text-center text-sm font-semibold text-sibs-faint">
                   No action items match the current reporting scope and registry filters.
                 </td>
               </tr>
@@ -244,13 +244,13 @@ export default function ActionItemsTable() {
             />
           ))
         ) : (
-          <div className="rounded-xl border border-dashed border-[#D9E2EC] p-8 text-center text-sm font-semibold text-[#98A2B3]">
+          <div className="rounded-[10px] border border-dashed border-sibs-border p-8 text-center text-sm font-semibold text-sibs-faint">
             No action items match the current filters.
           </div>
         )}
       </div>
 
-      <footer className="border-t border-[#E6ECF2] bg-white px-5 py-3.5">
+      <footer className="border-t border-sibs-border bg-white px-5 py-3.5">
         <div className="sibs-pagination sibs-pagination--compact">
           <p className="sibs-pagination__summary">
             Showing <span>{showingFrom}–{showingTo}</span> of <span>{sortedItems.length}</span> actions

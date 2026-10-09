@@ -181,7 +181,7 @@ export default function OnboardingTable({ onView, loading: propLoading }) {
           )
         }
         desktopContent={
-          <div className="overflow-hidden rounded-xl border border-[#E6ECF2] bg-white">
+          <div className="overflow-hidden rounded-[14px] border border-sibs-border bg-white">
             <div className="overflow-x-auto sibs-scrollbar">
               <table className="w-full min-w-[1020px] border-collapse bg-white">
             <thead className="sibs-data-table-head">
@@ -208,12 +208,12 @@ export default function OnboardingTable({ onView, loading: propLoading }) {
             </tr>
           </thead>
 
-          <tbody className="divide-y divide-[#F1F5F9]">
+          <tbody className="divide-y divide-sibs-border">
             {loading ? (
               <TableSkeletonRows count={6} columns={10} />
             ) : paginatedData.length === 0 ? (
               <tr>
-                <td colSpan={10} className="px-5 py-12 text-center sibs-text-xs font-bold text-[#667085]">
+                <td colSpan={10} className="px-5 py-12 text-center sibs-text-xs font-bold text-sibs-muted">
                   No onboarding records match the current search and filters.
                 </td>
               </tr>
@@ -331,7 +331,7 @@ export default function OnboardingTable({ onView, loading: propLoading }) {
                       <button
                         type="button"
                         onClick={() => onView(item)}
-                        className="inline-flex h-7.5 2xl:h-8 items-center justify-center gap-1.5 rounded-lg border border-sibs-border-subtle bg-white px-2.5 2xl:px-3 text-[10px] 2xl:text-[10.5px] font-extrabold text-sibs-navy transition hover:border-sibs-orange/35 hover:bg-[#FFF7F3] hover:text-sibs-orange active:scale-[0.98]"
+                        className="inline-flex h-7.5 2xl:h-8 items-center justify-center gap-1.5 rounded-[10px] border border-sibs-border-subtle bg-white px-2.5 2xl:px-3 text-[10px] 2xl:text-[10.5px] font-extrabold text-sibs-navy transition hover:border-sibs-orange/35 hover:bg-sibs-cream-light hover:text-sibs-orange active:scale-[0.98]"
                       >
                         <Eye size={13} />
                         View Record

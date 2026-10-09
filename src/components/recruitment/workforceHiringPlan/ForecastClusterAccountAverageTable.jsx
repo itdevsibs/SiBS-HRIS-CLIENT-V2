@@ -135,7 +135,7 @@ function ForecastClusterAccountTableView({
       onMouseMove={onMouseMove}
       onMouseUp={onMouseUp}
       onMouseLeave={onMouseLeave}
-      className={`sibs-data-table-shell !block overflow-auto sibs-scrollbar rounded-xl border border-slate-200 bg-white select-none ${
+      className={`sibs-data-table-shell !block overflow-auto sibs-scrollbar rounded-[14px] border border-slate-200 bg-white select-none ${
         isDragging ? "cursor-grabbing" : "cursor-grab"
       } ${containerClassName}`}
     >
@@ -512,11 +512,11 @@ function ForecastClusterAccountAverageModal({
       />
 
       {/* Modal Dialog Card */}
-      <div className="sibs-modal-pop-in relative flex h-full max-h-[96vh] w-full max-w-[99vw] 2xl:max-w-[1850px] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl font-jakarta">
+      <div className="sibs-modal-pop-in relative flex h-full max-h-[96vh] w-full max-w-[99vw] 2xl:max-w-[1850px] flex-col overflow-hidden rounded-[14px] border border-slate-200 bg-white shadow-2xl font-jakarta">
         {/* Tier 1: Dark Navy Brand Header Bar */}
         <div className="flex shrink-0 items-center justify-between gap-3 border-b border-white/10 bg-sibs-navy px-4 py-3 sm:px-5 sm:py-3.5 2xl:px-6 2xl:py-4 text-white">
           <div className="flex min-w-0 items-center gap-2.5 2xl:gap-3">
-            <div className="flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg bg-sibs-orange text-white shadow-xs">
+            <div className="flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-[10px] bg-sibs-orange text-white shadow-xs">
               <Maximize2 size={16} />
             </div>
 
@@ -574,7 +574,7 @@ function ForecastClusterAccountAverageModal({
             <button
               type="button"
               onClick={() => setFitToScreen((prev) => !prev)}
-              className={`inline-flex h-10 items-center justify-center rounded-xl border px-3 text-xs font-bold transition ${
+              className={`inline-flex h-10 items-center justify-center rounded-[14px] border px-3 text-xs font-bold transition ${
                 fitToScreen
                   ? "border-sibs-orange bg-sibs-cream-light text-sibs-orange"
                   : "border-sibs-border bg-sibs-surface text-sibs-navy hover:border-sibs-orange/40 hover:bg-orange-50/50 hover:text-sibs-orange"
@@ -586,7 +586,7 @@ function ForecastClusterAccountAverageModal({
         </div>
 
         {error ? (
-          <div className="mx-6 mt-3 rounded-xl border border-red-100 bg-red-50 px-4 py-2.5 text-xs font-semibold text-red-600">
+          <div className="mx-6 mt-3 rounded-[14px] border border-red-100 bg-red-50 px-4 py-2.5 text-xs font-semibold text-red-600">
             Account-level forecast details are unavailable: {error}
           </div>
         ) : null}
@@ -666,7 +666,7 @@ export default function ForecastClusterAccountAverageTable({
   };
 
   return (
-    <section className="sibs-card overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <section className="sibs-card overflow-hidden rounded-[14px] border border-slate-200 bg-white shadow-sm">
       <div className="flex flex-col gap-3.5 border-b border-slate-200 px-4 py-3.5 2xl:px-5 2xl:py-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
@@ -699,7 +699,7 @@ export default function ForecastClusterAccountAverageTable({
           <button
             type="button"
             onClick={() => setIsExpandedModalOpen(true)}
-            className="inline-flex h-10 shrink-0 items-center justify-center gap-1.5 rounded-xl border border-sibs-border bg-sibs-surface px-3 sibs-text-xs font-bold text-sibs-navy shadow-xs transition hover:border-sibs-orange/40 hover:bg-orange-50/50 hover:text-sibs-orange active:scale-[0.98]"
+            className="inline-flex h-10 shrink-0 items-center justify-center gap-1.5 rounded-[14px] border border-sibs-border bg-sibs-surface px-3 sibs-text-xs font-bold text-sibs-navy shadow-xs transition hover:border-sibs-orange/40 hover:bg-orange-50/50 hover:text-sibs-orange active:scale-[0.98]"
             title="Expand view to show all columns at once"
           >
             <Maximize2 size={14} className="text-sibs-orange" />
@@ -709,7 +709,7 @@ export default function ForecastClusterAccountAverageTable({
       </div>
 
       {error ? (
-        <div className="mx-4 mt-3.5 2xl:mx-5 2xl:mt-4 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-xs font-semibold text-red-600">
+        <div className="mx-4 mt-3.5 2xl:mx-5 2xl:mt-4 rounded-[14px] border border-red-100 bg-red-50 px-4 py-3 text-xs font-semibold text-red-600">
           Account-level forecast details are unavailable: {error}
         </div>
       ) : null}

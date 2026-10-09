@@ -85,7 +85,7 @@ function StatCard({ card, value, delay }) {
             </p>
           </div>
 
-          <p className="line-clamp-1 truncate sibs-text-micro font-bold text-[#667085]">
+          <p className="line-clamp-1 truncate sibs-text-micro font-bold text-sibs-muted">
             {card.description}
           </p>
         </div>

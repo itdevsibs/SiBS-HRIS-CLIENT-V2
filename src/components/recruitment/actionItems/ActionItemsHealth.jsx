@@ -9,13 +9,13 @@ function ProgressBar({ label, value, total, helper }) {
     <div>
       <div className="mb-2 flex items-center justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-xs font-bold text-[#344054]">{label}</p>
-          <p className="truncate text-[10px] font-semibold text-[#98A2B3]">{helper}</p>
+          <p className="text-xs font-bold text-sibs-navy">{label}</p>
+          <p className="truncate text-[10px] font-semibold text-sibs-faint">{helper}</p>
         </div>
-        <span className="text-xs font-black text-[#042C51]">{percentage}%</span>
+        <span className="text-xs font-black text-sibs-navy">{percentage}%</span>
       </div>
-      <div className="h-2 overflow-hidden rounded-full bg-[#EEF2F6]">
-        <div className="h-full rounded-full bg-[#042C51] transition-all duration-500" style={{ width: `${percentage}%` }} />
+      <div className="h-2 overflow-hidden rounded-full bg-sibs-surface-subtle">
+        <div className="h-full rounded-full bg-sibs-navy transition-all duration-500" style={{ width: `${percentage}%` }} />
       </div>
     </div>
   );
@@ -25,13 +25,13 @@ export default function ActionItemsHealth() {
   const { filteredActionItems } = useActionItemsReport();
   const stats = useMemo(() => getActionItemsStats(filteredActionItems), [filteredActionItems]);
   return (
-    <section className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4">
+    <section className="rounded-[10px] border border-sibs-border bg-sibs-surface p-4">
       <div className="mb-4 flex items-center justify-between gap-4">
         <div>
           <h3 className="font-heading text-sm 2xl:text-base font-bold text-sibs-navy tracking-tight">Recruitment Action Health</h3>
-          <p className="mt-0.5 sibs-text-xs font-semibold text-[#667085]">Distribution across the active reporting scope.</p>
+          <p className="mt-0.5 sibs-text-xs font-semibold text-sibs-muted">Distribution across the active reporting scope.</p>
         </div>
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-[#042C51]"><ListChecks size={20} /></div>
+        <div className="flex h-10 w-10 items-center justify-center rounded-[10px] border border-sibs-border bg-white text-sibs-navy shadow-xs"><ListChecks size={20} /></div>
       </div>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
         <ProgressBar label="Planned" value={stats.planned} total={stats.total} helper="Not started" />

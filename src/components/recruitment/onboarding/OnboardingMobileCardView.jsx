@@ -37,19 +37,19 @@ export default function OnboardingMobileCardView({
     >
       <DataCard.Header
         avatar={
-          <span className="flex h-8.5 w-8.5 shrink-0 items-center justify-center rounded-full bg-[#042C51] text-xs font-extrabold text-white shadow-sm">
+          <span className="flex h-8.5 w-8.5 shrink-0 items-center justify-center rounded-full bg-sibs-navy text-xs font-extrabold text-white shadow-sm">
             {getInitials(candidateName)}
           </span>
         }
         title={candidateName}
         subtitle={
           <div className="mt-0.5 space-y-0.5">
-            <span className="font-mono text-[10px] font-extrabold uppercase tracking-wide text-[#FF5C28]">
+            <span className="font-mono text-[10px] font-extrabold uppercase tracking-wide text-sibs-orange">
               {onboardingId}
             </span>
             {email ? (
-              <p className="flex items-center gap-1.5 truncate text-[11px] font-medium text-[#667085]">
-                <Mail size={11} className="shrink-0 text-[#98A2B3]" />
+              <p className="flex items-center gap-1.5 truncate text-[11px] font-medium text-sibs-muted">
+                <Mail size={11} className="shrink-0 text-sibs-faint" />
                 <span className="truncate">{email}</span>
               </p>
             ) : null}
@@ -77,18 +77,18 @@ export default function OnboardingMobileCardView({
 
       <DataCard.ContextRow>
         <div className="min-w-0 flex-1">
-          <p className="text-[9px] font-extrabold uppercase tracking-wider text-[#8A98B8]">
+          <p className="text-[9px] font-extrabold uppercase tracking-wider text-sibs-faint">
             Role Assignment
           </p>
-          <p className="mt-0.5 truncate text-xs font-bold text-[#042C51]">
+          <p className="mt-0.5 truncate text-xs font-bold text-sibs-navy">
             {record.roleTitle || "Not assigned"}
           </p>
         </div>
-        <div className="min-w-0 flex-1 border-l border-[#E6ECF2] pl-2.5">
-          <p className="text-[9px] font-extrabold uppercase tracking-wider text-[#8A98B8]">
+        <div className="min-w-0 flex-1 border-l border-sibs-border pl-2.5">
+          <p className="text-[9px] font-extrabold uppercase tracking-wider text-sibs-faint">
             Account
           </p>
-          <p className="mt-0.5 truncate text-xs font-semibold text-[#344054]">
+          <p className="mt-0.5 truncate text-xs font-semibold text-sibs-muted">
             {record.account || "No account assigned"}
           </p>
         </div>
@@ -99,42 +99,42 @@ export default function OnboardingMobileCardView({
           label="Offer Accepted"
           value={
             <span className="inline-flex items-center gap-1">
-              <CalendarDays size={11} className="shrink-0 text-[#98A2B3]" />
+              <CalendarDays size={11} className="shrink-0 text-sibs-faint" />
               <span>{formatDate(record.acceptedOfferDate)}</span>
             </span>
           }
-          valueClassName="text-xs font-bold text-[#042C51]"
+          valueClassName="text-xs font-bold text-sibs-navy"
         />
         <DataCard.MetricItem
           label="Expected Start"
           value={
             <span className="inline-flex items-center gap-1">
-              <CalendarDays size={11} className="shrink-0 text-[#98A2B3]" />
+              <CalendarDays size={11} className="shrink-0 text-sibs-faint" />
               <span>{formatDate(record.expectedStartDate)}</span>
             </span>
           }
-          valueClassName="text-xs font-bold text-[#042C51]"
+          valueClassName="text-xs font-bold text-sibs-navy"
         />
         <DataCard.MetricItem
           label="Actual Start"
           value={
             <span className="inline-flex items-center gap-1">
-              <CalendarDays size={11} className="shrink-0 text-[#98A2B3]" />
+              <CalendarDays size={11} className="shrink-0 text-sibs-faint" />
               <span>{formatDate(record.actualStartDate)}</span>
             </span>
           }
-          valueClassName="text-xs font-bold text-[#042C51]"
+          valueClassName="text-xs font-bold text-sibs-navy"
         />
       </DataCard.Metrics>
 
       <DataCard.Footer>
         <div className="flex w-full items-center justify-between gap-2">
-          <p className="flex items-center gap-1 truncate text-[10px] font-semibold text-[#667085]">
-            <UserRound size={11} className="shrink-0 text-[#98A2B3]" />
+          <p className="flex items-center gap-1 truncate text-[10px] font-semibold text-sibs-muted">
+            <UserRound size={11} className="shrink-0 text-sibs-faint" />
             <span className="truncate">TA Owner: {owner}</span>
           </p>
 
-          <span className="flex shrink-0 items-center gap-1 text-[11px] font-bold text-[#FF5C28] group-hover:underline">
+          <span className="flex shrink-0 items-center gap-1 text-[11px] font-bold text-sibs-orange group-hover:underline">
             <Eye size={12} />
             View Record
             <ChevronRight size={12} />

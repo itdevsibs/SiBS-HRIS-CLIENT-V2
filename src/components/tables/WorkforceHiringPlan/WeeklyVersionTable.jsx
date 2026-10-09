@@ -397,7 +397,7 @@ function DropdownPortal({
       onMouseDown={(e) => e.stopPropagation()}
       onTouchStartCapture={(e) => e.stopPropagation()}
       onTouchStart={(e) => e.stopPropagation()}
-      className={`fixed z-[999999] overflow-hidden ${EDGE} border border-[#D7DEE8] bg-white shadow-[0_18px_40px_rgba(15,23,42,0.16)] ${className}`}
+      className={`fixed z-[999999] overflow-hidden ${EDGE} border border-sibs-border bg-white shadow-[0_18px_40px_rgba(15,23,42,0.16)] ${className}`}
       style={{
         top: `${style.top}px`,
         left: `${style.left}px`,
@@ -623,7 +623,7 @@ export default function WeeklyVersionTable(props = {}) {
             ref={weekDropdownRef}
             className="relative z-[80] min-w-0 overflow-visible"
           >
-            <label className="mb-1 block text-sm font-bold text-[#101828]">
+            <label className="mb-1 block text-sm font-bold text-sibs-muted">
               Weekly Version
             </label>
 
@@ -638,7 +638,7 @@ export default function WeeklyVersionTable(props = {}) {
                 closeOtherDropdowns("week");
               }}
               disabled={weeksLoading || isForecastWeeklyVersionLoading}
-              className={`flex h-11 w-full items-center justify-between ${EDGE} border border-[#D0D5DD] bg-white px-4 text-left text-sm font-bold text-[#344054] outline-none transition disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400 hover:border-sibs-primary-1/30 hover:bg-[#F8FAFC] focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10`}
+              className={`flex h-11 w-full items-center justify-between ${EDGE} border border-sibs-border bg-white px-4 text-left text-sm font-bold text-sibs-muted outline-none transition disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400 hover:border-sibs-primary-1/30 hover:bg-sibs-surface focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10`}
             >
               <span className="min-w-0 truncate">
                 {isForecastWeeklyVersionLoading
@@ -680,8 +680,8 @@ export default function WeeklyVersionTable(props = {}) {
                       onClick={() => handleWeeklyVersionChange(week)}
                       className={`block w-full px-4 py-3 text-left text-sm transition ${
                         isSelected
-                          ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
-                          : "text-sibs-primary-1 hover:bg-[#F8FAFC]"
+                          ? "bg-blue-50 font-bold text-sibs-primary-1"
+                          : "text-sibs-primary-1 hover:bg-sibs-surface"
                       }`}
                     >
                       <p className="truncate font-bold">
@@ -706,7 +706,7 @@ export default function WeeklyVersionTable(props = {}) {
             ref={clusterDropdownRef}
             className="relative z-[70] min-w-0 overflow-visible"
           >
-            <label className="mb-1 block text-sm font-bold text-[#101828]">
+            <label className="mb-1 block text-sm font-bold text-sibs-muted">
               Cluster
             </label>
 
@@ -717,7 +717,7 @@ export default function WeeklyVersionTable(props = {}) {
                 setShowClusterDropdown?.((prev) => !prev);
                 closeOtherDropdowns("cluster");
               }}
-              className={`flex h-11 w-full items-center justify-between ${EDGE} border border-[#D0D5DD] bg-white px-4 text-left text-sm font-bold text-[#344054] outline-none transition hover:border-sibs-primary-1/30 hover:bg-[#F8FAFC] focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10`}
+              className={`flex h-11 w-full items-center justify-between ${EDGE} border border-sibs-border bg-white px-4 text-left text-sm font-bold text-sibs-muted outline-none transition hover:border-sibs-primary-1/30 hover:bg-sibs-surface focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10`}
             >
               <span className="min-w-0 truncate">
                 {getClusterFilterLabel(selectedClusters, isRestrictedManager)}
@@ -742,15 +742,15 @@ export default function WeeklyVersionTable(props = {}) {
                 onClick={() => handleClusterClick("All")}
                 className={`flex w-full items-center gap-3 px-4 py-3 text-left text-sm transition ${
                   safeIsAllClustersSelected()
-                    ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
-                    : "text-[#344054] hover:bg-[#F8FAFC]"
+                    ? "bg-blue-50 font-bold text-sibs-primary-1"
+                    : "text-sibs-muted hover:bg-sibs-surface"
                 }`}
               >
                 <input
                   type="checkbox"
                   checked={safeIsAllClustersSelected()}
                   readOnly
-                  className="h-4 w-4 rounded border-[#D0D5DD] accent-sibs-primary-1"
+                  className="h-4 w-4 rounded border-sibs-border accent-sibs-primary-1"
                 />
 
                 <span className="truncate">
@@ -773,15 +773,15 @@ export default function WeeklyVersionTable(props = {}) {
                       onClick={() => handleClusterClick(cluster)}
                       className={`flex w-full items-center gap-3 px-4 py-3 text-left text-sm transition ${
                         checked
-                          ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
-                          : "text-[#344054] hover:bg-[#F8FAFC]"
+                          ? "bg-blue-50 font-bold text-sibs-primary-1"
+                          : "text-sibs-muted hover:bg-sibs-surface"
                       }`}
                     >
                       <input
                         type="checkbox"
                         checked={checked}
                         readOnly
-                        className="h-4 w-4 rounded border-[#D0D5DD] accent-sibs-primary-1"
+                        className="h-4 w-4 rounded border-sibs-border accent-sibs-primary-1"
                       />
 
                       <span className="truncate">{cluster}</span>
@@ -800,7 +800,7 @@ export default function WeeklyVersionTable(props = {}) {
             ref={accountDropdownRef}
             className="relative z-[60] min-w-0 overflow-visible sm:col-span-2 lg:col-span-1"
           >
-            <label className="mb-1 block text-sm font-bold text-[#101828]">
+            <label className="mb-1 block text-sm font-bold text-sibs-muted">
               Account
             </label>
 
@@ -833,7 +833,7 @@ export default function WeeklyVersionTable(props = {}) {
                 disabled={accountsLoading}
                 placeholder="Search accounts..."
                 autoComplete="off"
-                className={`h-11 w-full ${EDGE} border border-[#D0D5DD] bg-white px-4 pr-11 text-sm font-bold text-[#344054] outline-none transition disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400 placeholder:text-sibs-tertiary-5 hover:border-sibs-primary-1/30 hover:bg-[#F8FAFC] focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10`}
+                className={`h-11 w-full ${EDGE} border border-sibs-border bg-white px-4 pr-11 text-sm font-bold text-sibs-muted outline-none transition disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400 placeholder:text-sibs-tertiary-5 hover:border-sibs-primary-1/30 hover:bg-sibs-surface focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10`}
               />
 
               <ChevronDown
@@ -861,15 +861,15 @@ export default function WeeklyVersionTable(props = {}) {
                   onClick={() => handleAccountClick("All")}
                   className={`flex w-full items-center gap-3 px-4 py-3 text-left text-sm transition ${
                     safeIsAllAccountsSelected()
-                      ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
-                      : "text-[#344054] hover:bg-[#F8FAFC]"
+                      ? "bg-blue-50 font-bold text-sibs-primary-1"
+                      : "text-sibs-muted hover:bg-sibs-surface"
                   }`}
                 >
                   <input
                     type="checkbox"
                     checked={safeIsAllAccountsSelected()}
                     readOnly
-                    className="h-4 w-4 rounded border-[#D0D5DD] accent-sibs-primary-1"
+                    className="h-4 w-4 rounded border-sibs-border accent-sibs-primary-1"
                   />
 
                   <span className="truncate">
@@ -894,15 +894,15 @@ export default function WeeklyVersionTable(props = {}) {
                         onClick={() => handleAccountClick(accountName)}
                         className={`flex w-full items-center gap-3 px-4 py-3 text-left text-sm transition ${
                           checked
-                            ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
-                            : "text-[#344054] hover:bg-[#F8FAFC]"
+                            ? "bg-blue-50 font-bold text-sibs-primary-1"
+                            : "text-sibs-muted hover:bg-sibs-surface"
                         }`}
                       >
                         <input
                           type="checkbox"
                           checked={checked}
                           readOnly
-                          className="h-4 w-4 rounded border-[#D0D5DD] accent-sibs-primary-1"
+                          className="h-4 w-4 rounded border-sibs-border accent-sibs-primary-1"
                         />
 
                         <span className="truncate">{accountName}</span>

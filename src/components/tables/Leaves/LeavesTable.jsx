@@ -12,7 +12,8 @@ import {
   XCircle,
 } from "lucide-react";
 
-import { PaginationDateRangeFilter } from "@/services/context/PaginationContext";
+import { usePagination, PaginationDateRangeFilter } from "@/services/context/PaginationContext";
+import PaginationTable from "@/services/pagination/PaginationTable";
 import {
   DataCard,
   ModalShell,
@@ -76,11 +77,11 @@ function Badge({ children, className = "" }) {
 function SectionHeading({ children }) {
   return (
     <div className="mb-3 flex items-center gap-3">
-      <h3 className="sibs-modal-section-title shrink-0 text-sibs-navy">
+      <h3 className="sibs-modal-section-title shrink-0">
         {children}
       </h3>
 
-      <span className="h-px flex-1 bg-slate-200" />
+      <span className="h-px flex-1 bg-sibs-border" />
     </div>
   );
 }
@@ -385,10 +386,10 @@ function LeavesDirectoryFilterDropdown({
               inputRef.current?.blur();
             }
           }}
-          className={`h-8.5 sm:h-9 2xl:h-10 w-full rounded-[10px] border bg-[#F8FAFC] px-3 pr-10 font-jakarta sibs-text-xs font-bold text-[#042C51] shadow-sm outline-none transition placeholder:text-[#98A2B3] hover:bg-white disabled:cursor-not-allowed disabled:opacity-50 ${
+          className={`h-8.5 sm:h-9 2xl:h-10 w-full rounded-[10px] border bg-sibs-surface px-3 pr-10 font-jakarta sibs-text-xs font-bold text-sibs-navy shadow-sm outline-none transition placeholder:text-sibs-muted hover:bg-white disabled:cursor-not-allowed disabled:opacity-50 ${
             open
-              ? "border-[#FF5C28] bg-white ring-4 ring-[#FF5C28]/10"
-              : "border-[#E6ECF2] hover:border-[#FF5C28]/40"
+              ? "border-sibs-orange bg-white ring-4 ring-sibs-orange/10"
+              : "border-sibs-border hover:border-sibs-orange/40"
           }`}
           style={{ outline: "none", boxShadow: open ? undefined : "none" }}
         />
@@ -400,11 +401,11 @@ function LeavesDirectoryFilterDropdown({
           aria-label={`Toggle ${label} dropdown`}
           onMouseDown={(event) => event.preventDefault()}
           onClick={toggleMenu}
-          className="absolute right-2 top-1/2 flex h-6.5 w-6.5 2xl:h-7 2xl:w-7 -translate-y-1/2 items-center justify-center rounded-md text-[#667085] transition hover:bg-[#FFF0EB] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-50"
+          className="absolute right-2 top-1/2 flex h-6.5 w-6.5 2xl:h-7 2xl:w-7 -translate-y-1/2 items-center justify-center rounded-md text-sibs-muted transition hover:bg-sibs-cream-light hover:text-sibs-orange disabled:cursor-not-allowed disabled:opacity-50"
         >
           <ChevronDown
             className={`h-3.5 w-3.5 2xl:h-4 2xl:w-4 transition-transform duration-300 ${
-              open ? "rotate-180 text-[#FF5C28]" : ""
+              open ? "rotate-180 text-sibs-orange" : ""
             }`}
           />
         </button>
@@ -416,7 +417,7 @@ function LeavesDirectoryFilterDropdown({
         onClose={closeMenu}
         maxHeight={320}
         offset={6}
-        className="!rounded-[10px] !border-[#D7DEE8]"
+        className="!rounded-[10px] !border-sibs-border"
       >
         <div className="sibs-scrollbar max-h-[320px] overflow-y-auto py-1">
           {allOption ? (
@@ -427,13 +428,13 @@ function LeavesDirectoryFilterDropdown({
               onClick={() => selectValue("All")}
               className={`flex w-full items-center justify-between gap-2 px-3 py-2.5 text-left sibs-text-xs transition ${
                 allSelected
-                  ? "bg-[#FFF0EB] font-extrabold text-[#FF5C28]"
-                  : "font-semibold text-[#344054] hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
+                  ? "bg-sibs-cream-light font-extrabold text-sibs-orange"
+                  : "font-semibold text-slate-700 hover:bg-sibs-cream-subtle hover:text-sibs-orange"
               }`}
             >
               <span className="truncate">{allOption.label}</span>
               {allSelected ? (
-                <Check size={14} className="shrink-0 text-[#FF5C28]" />
+                <Check size={14} className="shrink-0 text-sibs-orange" />
               ) : null}
             </button>
           ) : null}
@@ -451,8 +452,8 @@ function LeavesDirectoryFilterDropdown({
                   onClick={() => selectValue(option.value)}
                   className={`flex w-full items-center gap-2 px-3 py-2.5 text-left sibs-text-xs transition ${
                     selected
-                      ? "bg-[#FFF0EB] font-extrabold text-[#FF5C28]"
-                      : "font-semibold text-[#344054] hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
+                      ? "bg-sibs-cream-light font-extrabold text-sibs-orange"
+                      : "font-semibold text-slate-700 hover:bg-sibs-cream-subtle hover:text-sibs-orange"
                   }`}
                 >
                   <span className="block min-w-0 flex-1 truncate">
@@ -460,13 +461,13 @@ function LeavesDirectoryFilterDropdown({
                   </span>
 
                   {selected ? (
-                    <Check size={14} className="shrink-0 text-[#FF5C28]" />
+                    <Check size={14} className="shrink-0 text-sibs-orange" />
                   ) : null}
                 </button>
               );
             })
           ) : (
-            <div className="px-3 py-4 text-center sibs-text-xs font-semibold text-[#667085]">
+            <div className="px-3 py-4 text-center sibs-text-xs font-semibold text-sibs-muted">
               No options found.
             </div>
           )}
@@ -554,26 +555,31 @@ function LeaveDetailsModal({
   return (
     <ModalShell
       open={open}
-      onClose={onClose}
+      onClose={() => {
+        if (!busy) onClose?.();
+      }}
+      closeOnBackdrop={!busy}
+      closeOnEscape={!busy}
       title="Leave Request & Ledger Audit"
       subtitle="Detailed ledger breakdown, leave balances, and approval sign-off"
       icon={CalendarDays}
       maxWidth="max-w-3xl"
-      footer={
-        <div className="flex w-full items-center justify-between gap-3 font-jakarta">
+      footerMeta={
+        item.gy_user_code ? (
           <span className="sibs-text-micro font-semibold text-sibs-muted">
-            {item.gy_user_code ? `SiBS ID: ${item.gy_user_code}` : ""}
+            SiBS ID: {item.gy_user_code}
           </span>
-
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={busy}
-            className="sibs-btn-secondary"
-          >
-            Close Panel
-          </button>
-        </div>
+        ) : null
+      }
+      footer={
+        <button
+          type="button"
+          onClick={onClose}
+          disabled={busy}
+          className="sibs-btn-secondary"
+        >
+          Close Panel
+        </button>
       }
     >
       <div className="space-y-3.5 2xl:space-y-4">
@@ -584,7 +590,7 @@ function LeaveDetailsModal({
             </div>
 
             <div className="min-w-0">
-              <h3 className="sibs-modal-section-title break-words text-sibs-navy">
+              <h3 className="sibs-modal-section-title break-words">
                 {item.gy_full_name || item.gy_username || "Unknown User"}
               </h3>
 
@@ -779,11 +785,11 @@ function LeaveDetailsModal({
                 />
 
                 <div className="min-w-0">
-                  <h3 className="sibs-modal-section-title text-sibs-navy">
+                  <h3 className="sibs-modal-section-title">
                     Pending Approval Action
                   </h3>
 
-                  <p className="sibs-modal-section-subtitle mt-0.5 leading-tight text-sibs-muted">
+                  <p className="sibs-modal-section-subtitle mt-0.5 leading-tight">
                     {canRunApproval
                       ? "Sign off or reject this request with your configured administrative access."
                       : "This request is pending approval from an authorized leave approver."}
@@ -797,7 +803,7 @@ function LeaveDetailsModal({
                     type="button"
                     onClick={() => handleDecision("approve")}
                     disabled={busy}
-                    className="inline-flex h-8.5 items-center justify-center gap-1.5 rounded-lg bg-emerald-600 px-3.5 font-jakarta sibs-text-xs font-extrabold uppercase tracking-wide text-white shadow-sm transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+                    className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 rounded-lg bg-emerald-600 px-3.5 2xl:px-4 text-[11.5px] 2xl:text-[12px] font-extrabold uppercase tracking-wide text-white shadow-xs transition hover:bg-emerald-700 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {decisionAction === "approve" ? (
                       <Loader2 size={13} className="animate-spin" />
@@ -811,7 +817,7 @@ function LeaveDetailsModal({
                     type="button"
                     onClick={() => handleDecision("reject")}
                     disabled={busy}
-                    className="inline-flex h-8.5 items-center justify-center gap-1.5 rounded-lg bg-rose-600 px-3.5 font-jakarta sibs-text-xs font-extrabold uppercase tracking-wide text-white shadow-sm transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-60"
+                    className="sibs-btn-danger uppercase tracking-wide"
                   >
                     {decisionAction === "reject" ? (
                       <Loader2 size={13} className="animate-spin" />
@@ -829,6 +835,8 @@ function LeaveDetailsModal({
     </ModalShell>
   );
 }
+
+export { LeaveDetailsModal };
 
 export default function LeavesTable({
   leaves = [],
@@ -881,8 +889,23 @@ export default function LeavesTable({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const { setDateRange: setLeavesDateRange } = usePagination("leaves");
   const dateFrom = filterValues?.dateFrom || "";
   const dateTo = filterValues?.dateTo || "";
+
+  function handleLeavesDateFromChange(value) {
+    setLeavesDateRange?.({
+      dateFrom: value,
+      dateTo: dateTo && value && dateTo < value ? value : dateTo,
+    });
+  }
+
+  function handleLeavesDateToChange(value) {
+    setLeavesDateRange?.({
+      dateFrom,
+      dateTo: value,
+    });
+  }
 
   function runSearch() {
     const cleanSearch = String(searchInput || "").trim();
@@ -927,23 +950,8 @@ export default function LeavesTable({
     if (typeof onStatusChange === "function") onStatusChange("All");
     if (typeof onDepartmentSelect === "function") onDepartmentSelect("All");
     if (typeof onAccountSelect === "function") onAccountSelect("All");
+    setLeavesDateRange?.({ dateFrom: "", dateTo: "" });
     setPage?.(1);
-  }
-
-  function handlePreviousPage() {
-    const currentPaginationPage = Number(pagination.currentPage || page || 1);
-
-    if (loading || currentPaginationPage <= 1) return;
-
-    setPage(Math.max(currentPaginationPage - 1, 1));
-  }
-
-  function handleNextPage() {
-    const currentPaginationPage = Number(pagination.currentPage || page || 1);
-
-    if (loading || !pagination.hasNextPage) return;
-
-    setPage(currentPaginationPage + 1);
   }
 
   useEffect(() => {
@@ -994,93 +1002,108 @@ export default function LeavesTable({
               : "Review employee leave requests, approval statuses, justifications, and attachment records."}
           </p>
 
-          <div className="mt-4 flex flex-col gap-3 xl:flex-row xl:items-end">
-            <div className="min-w-0 flex-1 xl:flex-[1_1_220px] 2xl:flex-[1_1_360px]">
-              <SearchInput
-                label="Search"
-                value={searchInput}
-                onChange={(e) => setSearchInput(typeof e === "string" ? e : e?.target?.value ?? "")}
-                onClear={() => {
-                  setSearchInput("");
-                  if (typeof setSearchKeyword === "function") setSearchKeyword("");
-                  setPage(1);
-                }}
-                onKeyDown={handleSearchKeyDown}
-                placeholder="Search by employee, SiBS ID, leave type, or status..."
-                ariaLabel="Search leave records"
-                disabled={loading}
-                className="w-full"
-              />
-            </div>
-
-            <div className="w-full sm:w-44 xl:w-[150px] 2xl:w-[170px] xl:flex-none">
-              <SelectDropdown
-                label="Status"
-                value={statusFilter || "All"}
-                onChange={onStatusChange}
-                options={[
-                  { label: "All Statuses", value: "All" },
-                  { label: "Approved", value: "Approved" },
-                  { label: "Pending", value: "Pending" },
-                  { label: "Rejected", value: "Rejected" },
-                ]}
-                placeholder="All Statuses"
-                clearable={false}
-                disabled={loading}
-              />
-            </div>
-
-            {showDepartmentFilter ? (
-              <div className="w-full sm:w-48 xl:w-[170px] 2xl:w-[200px] xl:flex-none">
-                <LeavesDirectoryFilterDropdown
-                  label="Department"
-                  value={departmentFilter || "All"}
-                  onChange={onDepartmentSelect}
-                  options={[
-                    { label: "All Departments", value: "All" },
-                    ...departmentDropdownOptions,
-                  ]}
-                  placeholder="All Departments"
-                  searchPlaceholder="Search departments..."
-                  disabled={loading}
-                />
-              </div>
-            ) : null}
-
-            {showAccountFilter ? (
-              <div className="w-full sm:w-48 xl:w-[170px] 2xl:w-[200px] xl:flex-none">
-                <LeavesDirectoryFilterDropdown
-                  label="Account"
-                  value={accountFilter || "All"}
-                  onChange={onAccountSelect}
-                  options={[
-                    { label: "All Accounts", value: "All" },
-                    ...accountDropdownOptions,
-                  ]}
-                  placeholder="All Accounts"
-                  searchPlaceholder="Search accounts..."
-                  disabled={loading}
-                />
-              </div>
-            ) : null}
-
-            <div className="w-full xl:w-auto xl:flex-none">
-              <InlineDateRangeFilter visible />
-            </div>
-
-            {hasActiveFilters && (
-              <div className="shrink-0">
-                <button
-                  type="button"
-                  onClick={handleClearLeavesFilters}
-                  disabled={loading}
-                  className="inline-flex h-8.5 2xl:h-10 w-full xl:w-auto items-center justify-center gap-1.5 rounded-lg border border-sibs-border bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-muted transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  <RotateCcw size={14} />
-                  Clear
-                </button>
-              </div>
-            )}
+          <div className="relative z-[90] mt-3.5 2xl:mt-4 overflow-visible">
+            <PaginationTable
+              filterLayout="ta-inline"
+              showFilterPanel={false}
+              showFilterHeader={false}
+              showPagination={false}
+              loading={loading}
+              searchValue={searchInput}
+              searchPlaceholder="Search by employee, SiBS ID, leave type, or status..."
+              onSearchChange={(e) => setSearchInput(typeof e === "string" ? e : e?.target?.value ?? "")}
+              onSearchKeyDown={handleSearchKeyDown}
+              className="border-0 bg-transparent p-0 shadow-none"
+              filters={[
+                {
+                  key: "status",
+                  value: statusFilter || "All",
+                  options: [
+                    { label: "All Statuses", value: "All" },
+                    { label: "Approved", value: "Approved" },
+                    { label: "Pending", value: "Pending" },
+                    { label: "Rejected", value: "Rejected" },
+                  ],
+                  onChange: onStatusChange,
+                  includeAll: false,
+                  allLabel: "All Statuses",
+                  label: "Status",
+                  placeholder: "All Statuses",
+                  searchable: false,
+                  disabled: loading,
+                },
+                ...(showDepartmentFilter
+                  ? [
+                      {
+                        key: "department",
+                        value: departmentFilter || "All",
+                        options: [
+                          { label: "All Departments", value: "All" },
+                          ...departmentDropdownOptions,
+                        ],
+                        onChange: onDepartmentSelect,
+                        includeAll: false,
+                        allLabel: "All Departments",
+                        label: "Department",
+                        placeholder: "All Departments",
+                        searchable: true,
+                        disabled: loading,
+                      },
+                    ]
+                  : []),
+                ...(showAccountFilter
+                  ? [
+                      {
+                        key: "account",
+                        value: accountFilter || "All",
+                        options: [
+                          { label: "All Accounts", value: "All" },
+                          ...accountDropdownOptions,
+                        ],
+                        onChange: onAccountSelect,
+                        includeAll: false,
+                        allLabel: "All Accounts",
+                        label: "Account",
+                        placeholder: "All Accounts",
+                        searchable: true,
+                        disabled: loading,
+                      },
+                    ]
+                  : []),
+              ]}
+              dateFilters={[
+                {
+                  key: "dateFrom",
+                  label: "From Date",
+                  leadingLabel: "From",
+                  value: dateFrom,
+                  onChange: handleLeavesDateFromChange,
+                  disabled: loading,
+                },
+                {
+                  key: "dateTo",
+                  label: "To Date",
+                  leadingLabel: "To",
+                  value: dateTo,
+                  min: dateFrom || undefined,
+                  onChange: handleLeavesDateToChange,
+                  disabled: loading,
+                },
+              ]}
+              rightContent={
+                hasActiveFilters ? (
+                  <button
+                    type="button"
+                    onClick={handleClearLeavesFilters}
+                    disabled={loading}
+                    className="inline-flex h-8.5 2xl:h-10 w-full items-center justify-center gap-1.5 rounded-[10px] border border-sibs-border bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-muted transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange disabled:cursor-not-allowed disabled:opacity-50 xl:w-auto"
+                  >
+                    <RotateCcw size={14} />
+                    Clear
+                  </button>
+                ) : null
+              }
+            />
           </div>
 
           <button

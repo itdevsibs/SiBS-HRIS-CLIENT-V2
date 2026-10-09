@@ -251,7 +251,7 @@ function AnalyticsCard({
   footerValueClassName,
 }) {
   return (
-    <article className="flex h-full min-h-[360px] 2xl:min-h-[390px] flex-col overflow-hidden rounded-xl border border-sibs-border bg-white p-3.5 2xl:p-4 shadow-sm">
+    <article className="flex h-full min-h-[360px] 2xl:min-h-[390px] flex-col overflow-hidden rounded-[14px] border border-sibs-border bg-white p-3.5 2xl:p-4 shadow-sm">
       <div className="flex shrink-0 items-start justify-between gap-3 border-b border-sibs-border pb-2.5">
         <div className="min-w-0">
           <h3 className="truncate font-heading text-sm 2xl:text-base font-bold text-sibs-navy tracking-tight">
@@ -283,11 +283,11 @@ function AnalyticsCard({
 
 function PipelineFlowVisual({ pipeline }) {
   const stages = [
-    { key: "acceptedJo", lines: ["Accepted", "Job Offer"], color: "#042C51" },
-    { key: "nho", lines: ["NHO", "Count"], color: "#2563EB" },
-    { key: "fst", lines: ["FST", "Count"], color: "#0D9488" },
-    { key: "pst", lines: ["PST", "Count"], color: "#F97316" },
-    { key: "goLive", lines: ["Go", "Live"], color: "#15803D" },
+    { key: "acceptedJo", lines: ["Accepted", "Job Offer"], color: "var(--color-sibs-navy, sibs-navy)" },
+    { key: "nho", lines: ["NHO", "Count"], color: "var(--tw-colors-blue-600, blue)" },
+    { key: "fst", lines: ["FST", "Count"], color: "var(--tw-colors-teal-600, teal)" },
+    { key: "pst", lines: ["PST", "Count"], color: "var(--tw-colors-orange-500, orange)" },
+    { key: "goLive", lines: ["Go", "Live"], color: "var(--tw-colors-green-700, green)" },
   ].map((stage) => ({
     ...stage,
     value: safeNumber(pipeline?.[stage.key]),
@@ -325,12 +325,12 @@ function PipelineFlowVisual({ pipeline }) {
               x={x + barWidth / 2}
               y="18"
               textAnchor="middle"
-              fill="#042C51"
+              fill="var(--color-sibs-navy, sibs-navy)"
               fontSize="10"
               fontWeight="800"
             >
               <tspan x={x + barWidth / 2}>{stage.lines[0]}</tspan>
-              <tspan x={x + barWidth / 2} dy="11" fill="#6B88A8" fontSize="8.5">
+              <tspan x={x + barWidth / 2} dy="11" fill="var(--tw-colors-sibs-faint, lightslategray)" fontSize="8.5">
                 {stage.lines[1]}
               </tspan>
             </text>
@@ -338,8 +338,8 @@ function PipelineFlowVisual({ pipeline }) {
             {nextStage ? (
               <polygon
                 points={`${x + barWidth},${y} ${nextX},${nextY} ${nextX},${baseY} ${x + barWidth},${baseY}`}
-                fill="#FDEAEA"
-                stroke="#F8CACA"
+                fill="var(--tw-colors-red-50, mistyrose)"
+                stroke="var(--tw-colors-red-200, lightpink)"
                 strokeWidth="0.6"
               />
             ) : null}
@@ -357,7 +357,7 @@ function PipelineFlowVisual({ pipeline }) {
               x={x + barWidth / 2}
               y={y + barHeight / 2 + 4}
               textAnchor="middle"
-              fill="#FFFFFF"
+              fill="var(--tw-colors-white, white)"
               fontSize="14"
               fontWeight="900"
             >
@@ -369,13 +369,13 @@ function PipelineFlowVisual({ pipeline }) {
               x2={x + barWidth / 2}
               y1={baseY + 7}
               y2={baseY + 18}
-              stroke="#94A3B8"
+              stroke="var(--tw-colors-slate-400, slategray)"
               strokeWidth="0.9"
             />
             <path
               d={`M ${x + barWidth / 2 - 3} ${baseY + 13} L ${x + barWidth / 2} ${baseY + 7} L ${x + barWidth / 2 + 3} ${baseY + 9}`}
               fill="none"
-              stroke="#94A3B8"
+              stroke="var(--tw-colors-slate-400, slategray)"
               strokeWidth="0.9"
             />
 
@@ -384,7 +384,7 @@ function PipelineFlowVisual({ pipeline }) {
                 x={dropX}
                 y={baseY + 27}
                 textAnchor="middle"
-                fill="#DC2626"
+                fill="var(--tw-colors-red-600, red)"
                 fontSize="8.5"
                 fontWeight="800"
               >
@@ -399,7 +399,7 @@ function PipelineFlowVisual({ pipeline }) {
         x={width / 2}
         y={height - 10}
         textAnchor="middle"
-        fill="#DC2626"
+        fill="var(--tw-colors-red-600, red)"
         fontSize="10"
         fontWeight="800"
       >
@@ -415,7 +415,7 @@ function AttritionStageList({ drops = [] }) {
       {drops.map((drop) => (
         <div
           key={drop.label}
-          className="flex items-center justify-between gap-3 rounded-lg border border-sibs-border bg-sibs-surface px-3 py-3"
+          className="flex items-center justify-between gap-3 rounded-[10px] border border-sibs-border bg-sibs-surface px-3 py-3"
         >
           <span className="text-[11px] font-semibold text-sibs-navy">
             {drop.label}:
@@ -544,14 +544,14 @@ function LeadsTrendChart({ rows = [] }) {
                 y1={y}
                 x2={width - padRight}
                 y2={y}
-                stroke="#E8EDF3"
+                stroke="var(--tw-colors-sibs-border, lightgray)"
                 strokeWidth="1"
               />
               <text
                 x={padLeft - 7}
                 y={y + 3}
                 textAnchor="end"
-                fill="#0F172A"
+                fill="var(--tw-colors-slate-900, darkslategray)"
                 fontSize="10"
                 fontWeight="700"
               >
@@ -567,7 +567,7 @@ function LeadsTrendChart({ rows = [] }) {
             x2={getX(activeIndex)}
             y1={padTop - 10}
             y2={height - padBottom}
-            stroke="#042C51"
+            stroke="var(--color-sibs-navy, sibs-navy)"
             strokeWidth="1.3"
             strokeDasharray="4 4"
             pointerEvents="none"
@@ -577,7 +577,7 @@ function LeadsTrendChart({ rows = [] }) {
         <path
           d={leadPath}
           fill="none"
-          stroke="#C084FC"
+          stroke="var(--tw-colors-purple-400, mediumpurple)"
           strokeWidth="2"
           strokeDasharray="4 3"
           opacity="0.65"
@@ -586,7 +586,7 @@ function LeadsTrendChart({ rows = [] }) {
         <path
           d={interviewPath}
           fill="none"
-          stroke="#7C3AED"
+          stroke="var(--tw-colors-violet-600, blueviolet)"
           strokeWidth="3.5"
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -610,7 +610,7 @@ function LeadsTrendChart({ rows = [] }) {
                 x={x}
                 y={y - (isActive ? 10 : 8)}
                 textAnchor="middle"
-                fill={isActive ? "#7C3AED" : "#0F172A"}
+                fill={isActive ? "var(--tw-colors-violet-600, blueviolet)" : "var(--tw-colors-slate-900, darkslategray)"}
                 fontSize={isActive ? "12" : "11"}
                 fontWeight="800"
               >
@@ -620,15 +620,15 @@ function LeadsTrendChart({ rows = [] }) {
                 cx={x}
                 cy={y}
                 r={isActive ? "6.5" : "5"}
-                fill="#7C3AED"
-                stroke="#FFFFFF"
+                fill="var(--tw-colors-violet-600, blueviolet)"
+                stroke="var(--tw-colors-white, white)"
                 strokeWidth={isActive ? "2" : "1.5"}
               />
               <text
                 x={x}
                 y={height - 5}
                 textAnchor="middle"
-                fill={isActive ? "#042C51" : "#64748B"}
+                fill={isActive ? "var(--color-sibs-navy, sibs-navy)" : "var(--tw-colors-slate-500, slategray)"}
                 fontSize="10"
                 fontWeight={isActive ? "800" : "700"}
               >
@@ -642,26 +642,26 @@ function LeadsTrendChart({ rows = [] }) {
       {activeRow ? (
         <div
           style={tooltipStyle}
-          className="pointer-events-none absolute z-20 min-w-[165px] rounded-xl border border-[#315779] bg-[#042C51]/95 p-3 text-xs font-semibold text-white shadow-2xl backdrop-blur-sm transition-all duration-75"
+          className="pointer-events-none absolute z-20 min-w-[165px] rounded-[14px] border border-[var(--tw-colors-sibs-navy-light, steelblue)] bg-sibs-navy/95 p-3 text-xs font-semibold text-white shadow-2xl backdrop-blur-sm transition-all duration-75"
         >
-          <p className="border-b border-[#315779] pb-1.5 font-jakarta text-[11px] font-extrabold uppercase tracking-wide text-[#D7E0EA]">
+          <p className="border-b border-[var(--tw-colors-sibs-navy-light, steelblue)] pb-1.5 font-jakarta text-[11px] font-extrabold uppercase tracking-wide text-[var(--tw-colors-sibs-border, lightgray)]">
             {activeRow.weekLabel.toUpperCase()} DETAILS
           </p>
           <div className="mt-2 space-y-1.5 text-[11px]">
             <p className="flex items-center justify-between gap-3">
-              <span className="text-[#D7E0EA]">Interviews:</span>
+              <span className="text-[var(--tw-colors-sibs-border, lightgray)]">Interviews:</span>
               <strong className="font-extrabold text-violet-300">
                 {formatOverviewNumber(activeRow.interviewsCompleted)}
               </strong>
             </p>
             <p className="flex items-center justify-between gap-3">
-              <span className="text-[#D7E0EA]">Total Leads:</span>
+              <span className="text-[var(--tw-colors-sibs-border, lightgray)]">Total Leads:</span>
               <strong className="font-extrabold text-slate-200">
                 {formatOverviewNumber(activeRow.leadsToInterview)}
               </strong>
             </p>
             <p className="flex items-center justify-between gap-3">
-              <span className="text-[#D7E0EA]">Yield %:</span>
+              <span className="text-[var(--tw-colors-sibs-border, lightgray)]">Yield %:</span>
               <strong className="font-extrabold text-emerald-400">
                 {formatPercent(activeRow.yieldPct, 1)}
               </strong>
@@ -786,14 +786,14 @@ function HiringRateTrendChart({ rows = [] }) {
                 y1={y}
                 x2={width - padRight}
                 y2={y}
-                stroke="#E8EDF3"
+                stroke="var(--tw-colors-sibs-border, lightgray)"
                 strokeWidth="1"
               />
               <text
                 x={padLeft - 7}
                 y={y + 3}
                 textAnchor="end"
-                fill="#0F172A"
+                fill="var(--tw-colors-slate-900, darkslategray)"
                 fontSize="10"
                 fontWeight="700"
               >
@@ -809,7 +809,7 @@ function HiringRateTrendChart({ rows = [] }) {
             x2={getX(activeIndex)}
             y1={padTop - 10}
             y2={height - padBottom}
-            stroke="#042C51"
+            stroke="var(--color-sibs-navy, sibs-navy)"
             strokeWidth="1.3"
             strokeDasharray="4 4"
             pointerEvents="none"
@@ -821,7 +821,7 @@ function HiringRateTrendChart({ rows = [] }) {
           y1={targetY}
           x2={width - padRight}
           y2={targetY}
-          stroke="#F59E0B"
+          stroke="var(--tw-colors-amber-500, orange)"
           strokeWidth="1.8"
           strokeDasharray="3 2"
         />
@@ -829,7 +829,7 @@ function HiringRateTrendChart({ rows = [] }) {
         <path
           d={ratePath}
           fill="none"
-          stroke="#0D9488"
+          stroke="var(--tw-colors-teal-600, teal)"
           strokeWidth="3.5"
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -853,7 +853,7 @@ function HiringRateTrendChart({ rows = [] }) {
                 x={x}
                 y={y - (isActive ? 10 : 8)}
                 textAnchor="middle"
-                fill={isActive ? "#0D9488" : "#0F172A"}
+                fill={isActive ? "var(--tw-colors-teal-600, teal)" : "var(--tw-colors-slate-900, darkslategray)"}
                 fontSize={isActive ? "12" : "11"}
                 fontWeight="800"
               >
@@ -863,15 +863,15 @@ function HiringRateTrendChart({ rows = [] }) {
                 cx={x}
                 cy={y}
                 r={isActive ? "6.5" : "5"}
-                fill="#0D9488"
-                stroke="#FFFFFF"
+                fill="var(--tw-colors-teal-600, teal)"
+                stroke="var(--tw-colors-white, white)"
                 strokeWidth={isActive ? "2" : "1.5"}
               />
               <text
                 x={x}
                 y={height - 5}
                 textAnchor="middle"
-                fill={isActive ? "#042C51" : "#64748B"}
+                fill={isActive ? "var(--color-sibs-navy, sibs-navy)" : "var(--tw-colors-slate-500, slategray)"}
                 fontSize="10"
                 fontWeight={isActive ? "800" : "700"}
               >
@@ -885,26 +885,26 @@ function HiringRateTrendChart({ rows = [] }) {
       {activeRow ? (
         <div
           style={tooltipStyle}
-          className="pointer-events-none absolute z-20 min-w-[165px] rounded-xl border border-[#315779] bg-[#042C51]/95 p-3 text-xs font-semibold text-white shadow-2xl backdrop-blur-sm transition-all duration-75"
+          className="pointer-events-none absolute z-20 min-w-[165px] rounded-[14px] border border-[var(--tw-colors-sibs-navy-light, steelblue)] bg-sibs-navy/95 p-3 text-xs font-semibold text-white shadow-2xl backdrop-blur-sm transition-all duration-75"
         >
-          <p className="border-b border-[#315779] pb-1.5 font-jakarta text-[11px] font-extrabold uppercase tracking-wide text-[#D7E0EA]">
+          <p className="border-b border-[var(--tw-colors-sibs-navy-light, steelblue)] pb-1.5 font-jakarta text-[11px] font-extrabold uppercase tracking-wide text-[var(--tw-colors-sibs-border, lightgray)]">
             {activeRow.weekLabel.toUpperCase()} YIELD DETAILS
           </p>
           <div className="mt-2 space-y-1.5 text-[11px]">
             <p className="flex items-center justify-between gap-3">
-              <span className="text-[#D7E0EA]">Hiring Rate:</span>
+              <span className="text-[var(--tw-colors-sibs-border, lightgray)]">Hiring Rate:</span>
               <strong className="font-extrabold text-teal-300">
                 {formatPercent(activeRow.hiringRate, 1)}
               </strong>
             </p>
             <p className="flex items-center justify-between gap-3">
-              <span className="text-[#D7E0EA]">Target Floor:</span>
+              <span className="text-[var(--tw-colors-sibs-border, lightgray)]">Target Floor:</span>
               <strong className="font-extrabold text-amber-300">
                 {formatPercent(activeRow.targetFloor, 0)}
               </strong>
             </p>
             <p className="flex items-center justify-between gap-3">
-              <span className="text-[#D7E0EA]">Deployed Hires:</span>
+              <span className="text-[var(--tw-colors-sibs-border, lightgray)]">Deployed Hires:</span>
               <strong className="font-extrabold text-emerald-400">
                 {formatOverviewNumber(activeRow.hiredCount)}
               </strong>
@@ -1005,8 +1005,8 @@ export default function ForecastBottomGraphs({ rows = [] }) {
               <span className="h-2 w-2 rounded-full bg-violet-600" />
               Interviews Completed
             </span>
-            <span className="inline-flex items-center gap-1 text-[#A78BFA]">
-              <span className="w-3 border-t border-dashed border-[#C084FC]" />
+            <span className="inline-flex items-center gap-1 text-[var(--tw-colors-violet-400, mediumpurple)]">
+              <span className="w-3 border-t border-dashed border-[var(--tw-colors-purple-400, mediumpurple)]" />
               Leads Vol (Ref)
             </span>
           </div>

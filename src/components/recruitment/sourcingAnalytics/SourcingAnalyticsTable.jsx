@@ -66,7 +66,7 @@ function getSourceStatusClass(source) {
   }
 
   if (status === "With Applicants") {
-    return "border-blue-200 bg-blue-50 text-[#042C51]";
+    return "border-blue-200 bg-blue-50 text-sibs-navy";
   }
 
   return "border-gray-200 bg-gray-50 text-gray-600";
@@ -256,10 +256,10 @@ export default function SourcingAnalyticsTable({
           )
         }
         desktopContent={
-          <div className="overflow-hidden rounded-xl border border-sibs-border bg-white">
+          <div className="overflow-hidden rounded-[14px] border border-sibs-border bg-white">
             <div className="overflow-x-auto max-h-[480px] 2xl:max-h-[640px] overflow-y-auto sibs-scrollbar">
               <table className="w-full min-w-[1450px] border-collapse bg-white text-left text-xs">
-            <thead className="sibs-data-table-head sticky top-0 z-10 bg-[#F8FAFC]">
+            <thead className="sibs-data-table-head sticky top-0 z-10 bg-sibs-surface">
               <tr className="sibs-data-table-head-row">
                 <th className="sibs-data-table-th px-3 2xl:px-4 py-2 2xl:py-2.5 text-left text-[10px] 2xl:text-[11px] font-extrabold uppercase tracking-wider text-sibs-navy">
                   Source Channel
@@ -311,7 +311,7 @@ export default function SourcingAnalyticsTable({
               </tr>
             </thead>
 
-            <tbody className="divide-y divide-[#E6ECF2]">
+            <tbody className="divide-y divide-sibs-border">
               {loading ? (
                 <TableSkeletonRows count={8} columns={12} />
               ) : paginatedData.length > 0 ? (
@@ -331,7 +331,7 @@ export default function SourcingAnalyticsTable({
                           source,
                         )
                       }
-                      className="sibs-data-table-row sibs-page-card-in cursor-pointer outline-none transition hover:bg-[#F8FAFC] focus-visible:bg-[#F8FAFC] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#FF5C28]/40"
+                      className="sibs-data-table-row sibs-page-card-in cursor-pointer outline-none transition hover:bg-sibs-surface focus-visible:bg-sibs-surface focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sibs-orange/40"
                       style={{
                         animationDelay:
                           `${index * 30}ms`,
@@ -389,7 +389,7 @@ export default function SourcingAnalyticsTable({
                       </td>
 
                       <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-center align-middle">
-                        <span className="inline-flex rounded-lg bg-sibs-canvas px-2 py-0.5 text-[10px] 2xl:text-[10.5px] font-extrabold tabular-nums text-sibs-navy">
+                        <span className="inline-flex rounded-[10px] bg-sibs-canvas px-2 py-0.5 text-[10px] 2xl:text-[10.5px] font-extrabold tabular-nums text-sibs-navy">
                           {Number(
                             source?.conversionRate || 0,
                           ).toFixed(1)}%

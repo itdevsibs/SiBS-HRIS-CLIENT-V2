@@ -26,12 +26,12 @@ function formatNumber(value) {
 
 function InfoBox({ label, value }) {
   return (
-    <div className="rounded-xl border border-[#E6ECF2] bg-white p-3.5 2xl:p-4 shadow-sm">
-      <p className="mb-1 text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+    <div className="rounded-[14px] border border-sibs-border bg-white p-3.5 2xl:p-4 shadow-sm">
+      <p className="mb-1 text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-sibs-faint">
         {label}
       </p>
 
-      <div className="font-heading text-base 2xl:text-lg font-bold text-[#042C51] tabular-nums">{value ?? "—"}</div>
+      <div className="font-heading text-base 2xl:text-lg font-bold text-sibs-navy tabular-nums">{value ?? "—"}</div>
     </div>
   );
 }
@@ -64,10 +64,10 @@ export default function KPISnapshotModal({ open, week, records = [], onClose }) 
   return (
     <div className="sibs-modal-blur sibs-modal-backdrop-in fixed inset-0 z-[9999] flex h-dvh items-center justify-center px-4 py-4 font-jakarta">
       <div
-        className="sibs-modal-pop-in relative flex max-h-[92dvh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-[#D6DEE8] bg-white shadow-2xl"
+        className="sibs-modal-pop-in relative flex max-h-[92dvh] w-full max-w-4xl flex-col overflow-hidden rounded-[14px] border border-sibs-border bg-white shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-start justify-between gap-4 border-b border-[#E6ECF2] bg-[#042C51] px-5 py-3 text-white sm:px-6 2xl:py-3.5">
+        <div className="flex items-start justify-between gap-4 border-b border-sibs-border bg-sibs-navy px-5 py-3 text-white sm:px-6 2xl:py-3.5">
           <div className="min-w-0">
             <h2 className="sibs-modal-title truncate text-white">
               Weekly KPI Snapshot
@@ -80,19 +80,19 @@ export default function KPISnapshotModal({ open, week, records = [], onClose }) 
           <button
             type="button"
             onClick={onClose}
-            className="inline-flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg text-white/70 transition hover:bg-white/10 hover:text-white"
+            className="inline-flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-[14px] text-white/70 transition hover:bg-white/10 hover:text-white sibs-modal-close-btn"
             aria-label="Close modal"
           >
             <X size={18} />
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4 sm:p-5 2xl:p-6 bg-[#F8FAFC]">
-          <div className="mb-5 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 sm:px-5 sm:py-3.5">
-            <p className="sibs-text-xs font-extrabold text-[#042C51]">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-5 2xl:p-6 bg-sibs-surface">
+          <div className="mb-5 rounded-[14px] border border-blue-100 bg-blue-50 px-4 py-3 sm:px-5 sm:py-3.5">
+            <p className="sibs-text-xs font-extrabold text-sibs-navy">
               {week.label || "Selected Week"}
             </p>
-            <p className="mt-0.5 sibs-text-micro font-semibold text-[#042C51]/70">
+            <p className="mt-0.5 sibs-text-micro font-semibold text-sibs-navy/70">
               {week.weekRange ||
                 [week.startDate, week.endDate].filter(Boolean).join(" - ") ||
                 "Workforce hiring plan snapshot"}
@@ -107,12 +107,12 @@ export default function KPISnapshotModal({ open, week, records = [], onClose }) 
           </div>
         </div>
 
-        <div className="border-t border-[#E6ECF2] bg-white px-5 py-3 2xl:py-3.5">
+        <div className="border-t border-sibs-border bg-white px-5 py-3 2xl:py-3.5">
           <div className="flex justify-end">
             <button
               type="button"
               onClick={onClose}
-              className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg border border-[#D6DEE8] bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-[#042C51] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28]"
+              className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-[14px] border border-sibs-border bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-navy transition hover:border-sibs-orange/40 hover:bg-orange-50 hover:text-sibs-orange sibs-modal-close-btn"
             >
               Close
             </button>

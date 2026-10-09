@@ -200,15 +200,15 @@ function userName(user = {}) {
 }
 
 const labelClass =
-  "mb-1 block font-jakarta sibs-text-micro font-extrabold uppercase tracking-wider text-[#667085]";
+  "mb-1 block font-jakarta sibs-text-micro font-extrabold uppercase tracking-wider text-sibs-muted";
 
 const inputClass =
-  "h-8.5 2xl:h-10 w-full rounded-lg 2xl:rounded-xl border border-[#D7E0EA] bg-[#F8FAFC] px-3 font-jakarta sibs-text-xs font-semibold text-[#082E55] outline-none transition placeholder:text-[#8CA0BA] focus:border-[#4B6F95] focus:bg-white focus:ring-2 focus:ring-[#4B6F95]/10";
+  "h-8.5 2xl:h-10 w-full rounded-[14px] 2xl:rounded-[10px] border border-sibs-border bg-sibs-surface px-3 font-jakarta sibs-text-xs font-semibold text-sibs-navy outline-none transition placeholder:text-sibs-faint focus:border-[#4B6F95] focus:bg-white focus:ring-2 focus:ring-[#4B6F95]/10";
 
-const readOnlyClass = `${inputClass} cursor-default bg-[#F4F7FA] text-[#082E55]`;
+const readOnlyClass = `${inputClass} cursor-default bg-[#F4F7FA] text-sibs-navy`;
 
 const textareaClass =
-  "w-full resize-none rounded-lg 2xl:rounded-xl border border-[#D7E0EA] bg-[#F8FAFC] px-3 py-2 font-jakarta sibs-text-xs font-semibold leading-5 text-[#082E55] outline-none transition placeholder:text-[#8CA0BA] focus:border-[#4B6F95] focus:bg-white focus:ring-2 focus:ring-[#4B6F95]/10";
+  "w-full resize-none rounded-[10px] 2xl:rounded-[10px] border border-sibs-border bg-sibs-surface px-3 py-2 font-jakarta sibs-text-xs font-semibold leading-5 text-sibs-navy outline-none transition placeholder:text-sibs-faint focus:border-[#4B6F95] focus:bg-white focus:ring-2 focus:ring-[#4B6F95]/10";
 
 function unique(values) {
   return [...new Set(values.filter(Boolean))];
@@ -437,12 +437,12 @@ export default function AddExperienceModal({
         role="dialog"
         aria-modal="true"
         aria-label="Log Candidate Experience Record"
-        className="sibs-modal-pop-in flex max-h-[90dvh] w-full max-w-4xl 2xl:max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl font-jakarta"
+        className="sibs-modal-pop-in flex max-h-[90dvh] w-full max-w-4xl 2xl:max-w-5xl flex-col overflow-hidden rounded-[14px] bg-white shadow-2xl font-jakarta"
         onClick={(event) => event.stopPropagation()}
       >
-        <header className="flex shrink-0 items-center justify-between gap-4 bg-[#042C51] px-5 py-3 text-white sm:px-6 2xl:py-3.5 font-jakarta">
+        <header className="flex shrink-0 items-center justify-between gap-4 bg-sibs-navy px-5 py-3 text-white sm:px-6 2xl:py-3.5 font-jakarta">
           <div className="flex min-w-0 items-center gap-2.5 2xl:gap-3">
-            <span className="flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg bg-[#FF5C28] text-white shadow-sm">
+            <span className="flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-[14px] bg-sibs-orange text-white shadow-sm">
               <Sparkles size={16} />
             </span>
             <div className="min-w-0">
@@ -450,7 +450,7 @@ export default function AddExperienceModal({
                 <h2 className="sibs-modal-title truncate text-white">
                   Log Candidate Experience Record
                 </h2>
-                <span className="hidden rounded-md border border-[#FF5C28]/35 bg-[#FF5C28]/15 px-2 py-0.5 text-[8.5px] 2xl:text-[9.5px] font-extrabold uppercase tracking-wider text-[#FFB69E] sm:inline-flex">
+                <span className="hidden rounded-[10px] border border-sibs-orange/35 bg-sibs-orange/15 px-2 py-0.5 text-[8.5px] 2xl:text-[9.5px] font-extrabold uppercase tracking-wider text-[#FFB69E] sm:inline-flex">
                   TA Manual Entry
                 </span>
               </div>
@@ -463,7 +463,7 @@ export default function AddExperienceModal({
           <button
             type="button"
             onClick={onClose}
-            className="inline-flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg text-white/70 transition hover:bg-white/10 hover:text-white"
+            className="inline-flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-[10px] text-white/70 transition hover:bg-white/10 hover:text-white sibs-modal-close-btn"
             aria-label="Close modal"
           >
             <X size={18} />
@@ -478,13 +478,13 @@ export default function AddExperienceModal({
             {/* Candidate Search Dropdown */}
             <div className="relative">
               <label className={labelClass}>
-                CANDIDATE FULL NAME <span className="text-[#FF5C28]">*</span>
+                CANDIDATE FULL NAME <span className="text-sibs-orange">*</span>
               </label>
 
               <div className="relative">
                 <Search
                   size={14}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8CA0BA]"
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-sibs-faint"
                 />
                 <input
                   value={candidateSearch}
@@ -500,9 +500,9 @@ export default function AddExperienceModal({
               </div>
 
               {candidateMenuOpen ? (
-                <div className="absolute left-0 right-0 top-full z-[100] mt-1 max-h-52 overflow-y-auto rounded-xl border border-[#D7E0EA] bg-white p-1.5 shadow-xl">
+                <div className="absolute left-0 right-0 top-full z-[100] mt-1 max-h-52 overflow-y-auto rounded-[10px] border border-sibs-border bg-white p-1.5 shadow-xl">
                   {candidatesLoading ? (
-                    <p className="px-3 py-4 text-center text-xs font-semibold text-[#8CA0BA]">
+                    <p className="px-3 py-4 text-center text-xs font-semibold text-sibs-faint">
                       Loading Candidate Pipeline...
                     </p>
                   ) : candidateOptions.length ? (
@@ -515,13 +515,13 @@ export default function AddExperienceModal({
                         }
                         type="button"
                         onClick={() => selectCandidate(candidate)}
-                        className={`mb-1 w-full rounded-lg px-3 py-2 text-left transition last:mb-0 ${
+                        className={`mb-1 w-full rounded-[10px] px-3 py-2 text-left transition last:mb-0 ${
                           form.candidatePipelineId === candidate.candidatePipelineId
                             ? "bg-[#E9F0FC]"
-                            : "hover:bg-[#F8FAFC]"
+                            : "hover:bg-sibs-surface"
                         }`}
                       >
-                        <p className="truncate text-xs font-black text-[#082E55]">
+                        <p className="truncate text-xs font-black text-sibs-navy">
                           {candidate.candidateName || "Unnamed Candidate"}
                         </p>
                         <p className="mt-0.5 truncate text-[10px] font-semibold text-[#7D90A9]">
@@ -533,7 +533,7 @@ export default function AddExperienceModal({
                       </button>
                     ))
                   ) : (
-                    <p className="px-3 py-4 text-center text-xs font-semibold text-[#8CA0BA]">
+                    <p className="px-3 py-4 text-center text-xs font-semibold text-sibs-faint">
                       No Candidate Pipeline records found.
                     </p>
                   )}
@@ -638,7 +638,7 @@ export default function AddExperienceModal({
             {/* Star Rating */}
             <div>
               <label className={labelClass}>CANDIDATE RATING (1–5 STARS)</label>
-              <div className="flex h-10 items-center gap-1.5 rounded-xl border border-[#D7E0EA] bg-[#F8FAFC] px-3">
+              <div className="flex h-10 items-center gap-1.5 rounded-[10px] border border-sibs-border bg-sibs-surface px-3">
                 {[1, 2, 3, 4, 5].map((rating) => {
                   const active = rating <= Number(form.experienceRating || 0);
 
@@ -647,7 +647,7 @@ export default function AddExperienceModal({
                       key={rating}
                       type="button"
                       onClick={() => setField("experienceRating", rating)}
-                      className="rounded-md p-0.5 transition hover:-translate-y-0.5"
+                      className="rounded-[10px] p-0.5 transition hover:-translate-y-0.5"
                       aria-label={`${rating} star`}
                     >
                       <Star
@@ -655,14 +655,14 @@ export default function AddExperienceModal({
                         className={
                           active
                             ? "fill-amber-400 text-amber-400"
-                            : "text-[#D8E1EB]"
+                            : "text-sibs-border"
                         }
                       />
                     </button>
                   );
                 })}
 
-                <span className="ml-2 text-xs font-black text-[#526983]">
+                <span className="ml-2 text-xs font-black text-sibs-muted">
                   ({Number(form.experienceRating || 0)} Stars)
                 </span>
               </div>
@@ -702,17 +702,17 @@ export default function AddExperienceModal({
           </div>
 
           {error ? (
-            <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2.5 font-jakarta text-xs font-semibold text-rose-700">
+            <div className="mt-4 rounded-[10px] border border-rose-200 bg-rose-50 px-3 py-2.5 font-jakarta text-xs font-semibold text-rose-700">
               {error}
             </div>
           ) : null}
         </form>
 
-        <footer className="shrink-0 flex items-center justify-end gap-2.5 border-t border-[#DDE5EE] bg-[#F1F5F9] px-5 py-3 2xl:py-3.5 sm:px-6 font-jakarta">
+        <footer className="shrink-0 flex items-center justify-end gap-2.5 border-t border-sibs-border bg-sibs-surface px-5 py-3 2xl:py-3.5 sm:px-6 font-jakarta">
           <button
             type="button"
             onClick={onClose}
-            className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg border border-[#D6DEE8] bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-[#667085] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28]"
+            className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-[10px] border border-sibs-border bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-muted transition hover:border-sibs-orange/40 hover:bg-[#FFF8F5] hover:text-sibs-orange sibs-modal-close-btn"
           >
             Cancel
           </button>
@@ -721,7 +721,7 @@ export default function AddExperienceModal({
             type="button"
             disabled={saving}
             onClick={submit}
-            className="inline-flex h-8.5 2xl:h-10 min-w-[130px] items-center justify-center gap-1.5 rounded-lg bg-[#FF5C28] px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E94F1F] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex h-8.5 2xl:h-10 min-w-[130px] items-center justify-center gap-1.5 rounded-[10px] bg-sibs-orange px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-sibs-orange active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
           >
             <Plus size={14} />
             {saving ? "Saving..." : "Save Record"}
@@ -737,7 +737,7 @@ function Field({ label, required = false, children }) {
     <div>
       <label className={labelClass}>
         {label}
-        {required ? <span className="text-[#FF5C28]"> *</span> : null}
+        {required ? <span className="text-sibs-orange"> *</span> : null}
       </label>
       {children}
     </div>

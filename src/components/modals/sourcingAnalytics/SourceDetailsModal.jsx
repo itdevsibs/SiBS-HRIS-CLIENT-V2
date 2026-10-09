@@ -38,10 +38,10 @@ const EMPTY_EXPENSE_FORM = {
 };
 
 const FIELD_CLASS =
-  "h-8.5 2xl:h-10 w-full rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-3 sibs-text-xs font-semibold text-[#042C51] outline-none transition placeholder:text-[#98A2B3] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:bg-[#F2F4F7] disabled:text-[#667085]";
+  "h-8.5 2xl:h-10 w-full rounded-[10px] border border-sibs-border bg-sibs-surface px-3 sibs-text-xs font-semibold text-sibs-navy outline-none transition placeholder:text-sibs-faint hover:border-sibs-orange/40 hover:bg-white focus:border-sibs-orange focus:bg-white focus:ring-4 focus:ring-sibs-orange/10 disabled:cursor-not-allowed disabled:bg-sibs-surface-subtle disabled:text-sibs-muted";
 
 const TEXTAREA_CLASS =
-  "w-full resize-none rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-3 py-2 text-xs font-semibold text-[#042C51] outline-none transition placeholder:text-[#98A2B3] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:bg-[#F2F4F7] disabled:text-[#667085]";
+  "w-full resize-none rounded-[10px] border border-sibs-border bg-sibs-surface px-3 py-2 text-xs font-semibold text-sibs-navy outline-none transition placeholder:text-sibs-faint hover:border-sibs-orange/40 hover:bg-white focus:border-sibs-orange focus:bg-white focus:ring-4 focus:ring-sibs-orange/10 disabled:cursor-not-allowed disabled:bg-sibs-surface-subtle disabled:text-sibs-muted";
 
 function cleanText(value) {
   return String(value ?? "").trim();
@@ -225,10 +225,10 @@ function getSourcePerformance(source = {}) {
 
 function FormLabel({ children, required = false }) {
   return (
-    <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+    <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-sibs-faint">
       {children}
       {required ? (
-        <span className="ml-1 text-[#FF5C28]">*</span>
+        <span className="ml-1 text-sibs-orange">*</span>
       ) : null}
     </label>
   );
@@ -263,7 +263,7 @@ function MetricTile({
 }) {
   return (
     <article
-      className={`min-w-0 rounded-2xl border border-[#0A3D6C] bg-[#042C51] p-3.5 shadow-sm transition hover:border-[#FF5C28]/40 ${className}`}
+      className={`min-w-0 rounded-[14px] border border-sibs-navy bg-sibs-navy p-3.5 shadow-sm transition hover:border-sibs-orange/40 ${className}`}
     >
       <div className="flex items-center justify-between gap-2">
         <p className={`text-[10px] font-extrabold uppercase tracking-wide ${accentClassName}`}>
@@ -297,17 +297,17 @@ function FunnelStage({ stage }) {
     <div className="space-y-1.5">
       <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
         <div className="min-w-0">
-          <p className="text-xs font-extrabold text-[#042C51]">
+          <p className="text-xs font-extrabold text-sibs-navy">
             {stage.label}
           </p>
 
-          <p className="text-[10px] font-semibold text-[#98A2B3]">
+          <p className="text-[10px] font-semibold text-sibs-faint">
             {stage.helper}
           </p>
         </div>
 
         <div className="flex shrink-0 items-center gap-2">
-          <span className="text-xs font-extrabold text-[#344054]">
+          <span className="text-xs font-extrabold text-sibs-muted">
             {stage.value.toLocaleString("en-PH")} candidates
           </span>
 
@@ -427,7 +427,7 @@ export default function SourceDetailsModal({
         helper: "All public applicants",
         value: volume,
         percentage: volume > 0 ? 100 : 0,
-        barClassName: "bg-[#042C51]",
+        barClassName: "bg-sibs-navy",
         badgeClassName:
           "border-slate-200 bg-slate-100 text-slate-700",
       },
@@ -719,17 +719,17 @@ export default function SourceDetailsModal({
           aria-modal="true"
           aria-labelledby="source-performance-title"
           onClick={(event) => event.stopPropagation()}
-          className="sibs-modal-pop-in my-auto flex max-h-[84vh] 2xl:max-h-[86vh] w-full max-w-[1180px] flex-col overflow-hidden rounded-2xl border border-[#9FB3C8] bg-white text-slate-900 shadow-[0_30px_90px_rgba(2,26,48,0.42)] font-jakarta"
+          className="sibs-modal-pop-in my-auto flex max-h-[92dvh] 2xl:max-h-[90dvh] w-full max-w-[1180px] flex-col overflow-hidden rounded-[14px] border border-sibs-border bg-white text-slate-900 shadow-[0_30px_90px_rgba(2,26,48,0.42)] font-jakarta"
         >
-          <header className="relative shrink-0 overflow-hidden border-b border-[#063866] bg-[#042C51] px-4 py-2.5 sm:px-5 2xl:py-3.5 text-white">
+          <header className="relative shrink-0 overflow-hidden border-b border-sibs-navy bg-sibs-navy px-4 py-2.5 sm:px-5 2xl:py-3.5 text-white rounded-t-[14px]">
             <span
-              className="pointer-events-none absolute -right-12 -top-14 h-48 w-48 rounded-full bg-[#FF5C28]/10 blur-3xl"
+              className="pointer-events-none absolute -right-12 -top-14 h-48 w-48 rounded-full bg-sibs-orange/10 blur-3xl"
               aria-hidden="true"
             />
 
             <div className="relative z-10 flex items-start justify-between gap-4">
               <div className="flex min-w-0 items-start gap-2.5 sm:gap-3">
-                <span className="flex h-8 w-8 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-lg border border-white/20 bg-white/10 text-[#FF5C28]">
+                <span className="flex h-8 w-8 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-[10px] border border-white/20 bg-white/10 text-sibs-orange">
                   <Compass className="h-4 w-4 2xl:h-4.5 2xl:w-4.5" />
                 </span>
 
@@ -765,7 +765,7 @@ export default function SourceDetailsModal({
                 onClick={onClose}
                 disabled={mutating || isSaving || isRemoving}
                 aria-label="Close source performance modal"
-                className="inline-flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg bg-white/10 text-white/80 transition hover:bg-white/20 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+                className="sibs-modal-close-btn"
               >
                 <X size={16} />
               </button>
@@ -831,17 +831,17 @@ export default function SourceDetailsModal({
                   )}
                   helper="Total cost / hires"
                   icon={TrendingUp}
-                  accentClassName="text-[#FF855F]"
-                  iconClassName="text-[#FF5C28]"
+                  accentClassName="text-sibs-orange"
+                  iconClassName="text-sibs-orange"
                   className="col-span-2 sm:col-span-1"
                 />
               </div>
 
-              <section className="rounded-2xl border border-slate-200/80 bg-slate-50 p-4 sm:p-5">
+              <section className="rounded-[14px] border border-slate-200/80 bg-slate-50 p-4 sm:p-5">
                 <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex items-center gap-2">
-                    <BarChart3 size={16} className="text-[#042C51]" />
-                    <h3 className="text-xs font-black uppercase tracking-wide text-[#042C51]">
+                    <BarChart3 size={16} className="text-sibs-navy" />
+                    <h3 className="text-xs font-black uppercase tracking-wide text-sibs-navy">
                       Candidate Recruitment Funnel
                     </h3>
                   </div>
@@ -864,8 +864,8 @@ export default function SourceDetailsModal({
               <section className="space-y-3">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                   <div>
-                    <h3 className="flex items-center gap-2 text-xs font-black uppercase tracking-wide text-[#042C51]">
-                      <DollarSign size={16} className="text-[#FF5C28]" />
+                    <h3 className="flex items-center gap-2 text-xs font-black uppercase tracking-wide text-sibs-navy">
+                      <DollarSign size={16} className="text-sibs-orange" />
                       Channel Expense Entries & Budget Logs
                     </h3>
 
@@ -878,14 +878,14 @@ export default function SourceDetailsModal({
                     type="button"
                     onClick={openAddExpense}
                     disabled={mutating}
-                    className="inline-flex h-9 items-center justify-center gap-1.5 rounded-[10px] bg-[#042C51] px-3.5 text-xs font-extrabold text-white shadow-sm transition hover:bg-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-50"
+                    className="inline-flex h-9 items-center justify-center gap-1.5 rounded-[10px] bg-sibs-navy px-3.5 text-xs font-extrabold text-white shadow-sm transition hover:bg-sibs-orange disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     <Plus size={14} />
                     Add Expense Entry
                   </button>
                 </div>
 
-                <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                <div className="overflow-hidden rounded-[14px] border border-slate-200 bg-white shadow-sm">
                   <div className="overflow-x-auto">
                     <table className="w-full min-w-[900px] border-collapse text-left text-xs">
                       <thead className="bg-slate-50 text-[10px] font-extrabold uppercase tracking-wide text-slate-600">
@@ -909,7 +909,7 @@ export default function SourceDetailsModal({
                               }
                               className="transition hover:bg-slate-50/80"
                             >
-                              <td className="px-3 py-3 text-[10px] font-extrabold text-[#042C51]">
+                              <td className="px-3 py-3 text-[10px] font-extrabold text-sibs-navy">
                                 {entry.id || "—"}
                               </td>
 
@@ -930,7 +930,7 @@ export default function SourceDetailsModal({
                                 </span>
                               </td>
 
-                              <td className="px-3 py-3 text-right text-xs font-black text-[#FF5C28]">
+                              <td className="px-3 py-3 text-right text-xs font-black text-sibs-orange">
                                 {formatCurrency(entry.amount)}
                               </td>
 
@@ -945,7 +945,7 @@ export default function SourceDetailsModal({
                                     onClick={() => openEditExpense(entry)}
                                     disabled={mutating || !entry?.id}
                                     title="Edit expense"
-                                    className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-[#042C51] disabled:cursor-not-allowed disabled:opacity-40"
+                                    className="inline-flex h-8 w-8 items-center justify-center rounded-[10px] text-slate-500 transition hover:bg-slate-100 hover:text-sibs-navy disabled:cursor-not-allowed disabled:opacity-40"
                                   >
                                     <Edit2 size={14} />
                                   </button>
@@ -955,7 +955,7 @@ export default function SourceDetailsModal({
                                     onClick={() => openRemoveExpense(entry)}
                                     disabled={mutating || !entry?.id}
                                     title="Remove expense"
-                                    className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-40"
+                                    className="inline-flex h-8 w-8 items-center justify-center rounded-[10px] text-slate-400 transition hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-40"
                                   >
                                     <Trash2 size={14} />
                                   </button>
@@ -985,14 +985,14 @@ export default function SourceDetailsModal({
               </section>
 
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                <article className="rounded-2xl border border-slate-200/80 bg-slate-50 p-4">
+                <article className="rounded-[14px] border border-slate-200/80 bg-slate-50 p-4">
                   <p className="text-[10px] font-extrabold uppercase tracking-wide text-slate-400">
                     Latest Applicant
                   </p>
 
                   <div className="mt-2 flex items-center gap-2">
-                    <UserRound size={16} className="shrink-0 text-[#042C51]" />
-                    <p className="min-w-0 truncate text-xs font-black text-[#042C51]">
+                    <UserRound size={16} className="shrink-0 text-sibs-navy" />
+                    <p className="min-w-0 truncate text-xs font-black text-sibs-navy">
                       {liveSource.latestCandidate || "None yet"}
                     </p>
                   </div>
@@ -1002,14 +1002,14 @@ export default function SourceDetailsModal({
                   </p>
                 </article>
 
-                <article className="rounded-2xl border border-slate-200/80 bg-slate-50 p-4">
+                <article className="rounded-[14px] border border-slate-200/80 bg-slate-50 p-4">
                   <p className="text-[10px] font-extrabold uppercase tracking-wide text-slate-400">
                     Last Activity
                   </p>
 
                   <div className="mt-2 flex items-center gap-2">
-                    <Clock3 size={16} className="shrink-0 text-[#FF5C28]" />
-                    <p className="text-xs font-black text-[#042C51]">
+                    <Clock3 size={16} className="shrink-0 text-sibs-orange" />
+                    <p className="text-xs font-black text-sibs-navy">
                       {formatDate(liveSource.lastActivity)}
                     </p>
                   </div>
@@ -1019,7 +1019,7 @@ export default function SourceDetailsModal({
                   </p>
                 </article>
 
-                <article className="rounded-2xl border border-amber-200 bg-amber-50/80 p-4">
+                <article className="rounded-[14px] border border-amber-200 bg-amber-50/80 p-4">
                   <p className="flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-wide text-amber-900">
                     <Info size={14} className="text-amber-700" />
                     Cost per Hire Formula
@@ -1037,9 +1037,9 @@ export default function SourceDetailsModal({
             </div>
           </div>
 
-          <footer className="flex shrink-0 flex-col gap-2 border-t border-slate-200 bg-slate-50 px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+          <footer className="flex shrink-0 flex-col gap-2 border-t border-slate-200 bg-slate-50 px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between sm:px-5 rounded-b-[14px]">
             <div className="flex items-center gap-2 text-[10px] font-semibold text-slate-500">
-              <Sparkles size={15} className="text-[#FF5C28]" />
+              <Sparkles size={15} className="text-sibs-orange" />
               <span>Live ROI metrics refresh after each database update.</span>
             </div>
 
@@ -1047,7 +1047,7 @@ export default function SourceDetailsModal({
               type="button"
               onClick={onClose}
               disabled={mutating || isSaving || isRemoving}
-              className="inline-flex h-9 items-center justify-center rounded-[10px] bg-[#042C51] px-5 text-xs font-extrabold text-white transition hover:bg-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex h-9 items-center justify-center rounded-[10px] bg-sibs-navy px-5 text-xs font-extrabold text-white transition hover:bg-sibs-orange disabled:cursor-not-allowed disabled:opacity-50"
             >
               Done
             </button>
@@ -1066,16 +1066,16 @@ export default function SourceDetailsModal({
             aria-labelledby="expense-form-title"
             onSubmit={handleSaveExpense}
             onClick={(event) => event.stopPropagation()}
-            className="sibs-modal-pop-in flex max-h-[92dvh] w-full max-w-lg flex-col overflow-hidden rounded-t-2xl border border-[#9FB3C8] bg-white shadow-[0_30px_90px_rgba(2,26,48,0.42)] sm:rounded-2xl"
+            className="sibs-modal-pop-in flex max-h-[92dvh] w-full max-w-lg flex-col overflow-hidden rounded-t-2xl border border-sibs-border bg-white shadow-[0_30px_90px_rgba(2,26,48,0.42)] sm:rounded-[14px]"
           >
-            <header className="flex items-start justify-between gap-4 bg-[#042C51] px-4 py-4 text-white sm:px-5">
+            <header className="flex items-start justify-between gap-4 bg-sibs-navy px-4 py-4 text-white sm:px-5 rounded-t-[14px]">
               <div className="flex min-w-0 items-start gap-2.5">
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/10 text-[#FF5C28]">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-white/10 text-sibs-orange">
                   <DollarSign size={17} />
                 </span>
 
                 <div className="min-w-0">
-                  <span className="inline-flex rounded bg-[#FF5C28] px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-white">
+                  <span className="inline-flex rounded bg-sibs-orange px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-white">
                     Source Cost Entry
                   </span>
 
@@ -1099,7 +1099,7 @@ export default function SourceDetailsModal({
                 onClick={closeExpenseForm}
                 disabled={isSaving || mutating}
                 aria-label="Close expense form"
-                className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/10 text-slate-300 transition hover:bg-white/20 hover:text-white disabled:opacity-50"
+                className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-white/10 text-slate-300 transition hover:bg-white/20 hover:text-white disabled:opacity-50"
               >
                 <X size={16} />
               </button>
@@ -1110,10 +1110,10 @@ export default function SourceDetailsModal({
 
               <div>
                 <FormLabel>Sourcing Option</FormLabel>
-                <div className="flex h-10 items-center rounded-[10px] border border-[#D7DEE8] bg-[#F2F4F7] px-3 text-xs font-semibold text-[#667085]">
+                <div className="flex h-10 items-center rounded-[10px] border border-sibs-border bg-sibs-surface-subtle px-3 text-xs font-semibold text-sibs-muted">
                   {sourceName || "—"}
                 </div>
-                <p className="mt-1 text-[10px] font-semibold text-[#98A2B3]">
+                <p className="mt-1 text-[10px] font-semibold text-sibs-faint">
                   The sourcing channel is fixed for this expense.
                 </p>
               </div>
@@ -1139,8 +1139,8 @@ export default function SourceDetailsModal({
 
               <div>
                 <FormLabel required>Expense Amount</FormLabel>
-                <div className="flex h-10 overflow-hidden rounded-[10px] border border-[#D7DEE8] bg-[#F8FAFC] focus-within:border-[#FF5C28] focus-within:bg-white focus-within:ring-4 focus-within:ring-[#FF5C28]/10">
-                  <span className="flex items-center border-r border-[#E6ECF2] bg-[#F2F4F7] px-3 text-sm font-extrabold text-[#042C51]">
+                <div className="flex h-10 overflow-hidden rounded-[10px] border border-sibs-border bg-sibs-surface focus-within:border-sibs-orange focus-within:bg-white focus-within:ring-4 focus-within:ring-sibs-orange/10">
+                  <span className="flex items-center border-r border-sibs-border bg-sibs-surface-subtle px-3 text-sm font-extrabold text-sibs-navy">
                     ₱
                   </span>
 
@@ -1157,7 +1157,7 @@ export default function SourceDetailsModal({
                     }
                     disabled={isSaving || mutating}
                     placeholder="0.00"
-                    className="min-w-0 flex-1 bg-transparent px-3 text-xs font-semibold text-[#042C51] outline-none disabled:cursor-not-allowed"
+                    className="min-w-0 flex-1 bg-transparent px-3 text-xs font-semibold text-sibs-navy outline-none disabled:cursor-not-allowed"
                   />
                 </div>
               </div>
@@ -1205,12 +1205,12 @@ export default function SourceDetailsModal({
               </div>
             </div>
 
-            <footer className="flex justify-end gap-2.5 border-t border-slate-200 bg-slate-50 px-4 py-3 sm:px-5">
+            <footer className="flex justify-end gap-2.5 border-t border-slate-200 bg-slate-50 px-4 py-3 sm:px-5 rounded-b-[14px]">
               <button
                 type="button"
                 onClick={closeExpenseForm}
                 disabled={isSaving || mutating}
-                className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg border border-[#D7DEE8] bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-[#042C51] transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-[10px] border border-sibs-border bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-navy transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Cancel
               </button>
@@ -1218,7 +1218,7 @@ export default function SourceDetailsModal({
               <button
                 type="submit"
                 disabled={isSaving || mutating}
-                className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 2xl:gap-2 rounded-lg bg-[#042C51] px-4 2xl:px-5 sibs-text-xs font-extrabold text-white transition hover:bg-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 2xl:gap-2 rounded-[10px] bg-sibs-navy px-4 2xl:px-5 sibs-text-xs font-extrabold text-white transition hover:bg-sibs-orange disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {isSaving || mutating ? (
                   <>
@@ -1251,16 +1251,16 @@ export default function SourceDetailsModal({
             aria-modal="true"
             aria-labelledby="remove-expense-title"
             onClick={(event) => event.stopPropagation()}
-            className="sibs-modal-pop-in w-full max-w-sm overflow-hidden rounded-2xl border border-[#9FB3C8] bg-white text-center shadow-[0_30px_90px_rgba(2,26,48,0.42)]"
+            className="sibs-modal-pop-in w-full max-w-sm overflow-hidden rounded-[14px] border border-sibs-border bg-white text-center shadow-[0_30px_90px_rgba(2,26,48,0.42)]"
           >
             <div className="p-5">
-              <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-red-50 text-red-600">
+              <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-[14px] bg-red-50 text-red-600">
                 <Trash2 size={22} />
               </span>
 
               <h3
                 id="remove-expense-title"
-                className="mt-4 text-base font-black text-[#042C51]"
+                className="mt-4 text-base font-black text-sibs-navy"
               >
                 Remove Expense Entry?
               </h3>
@@ -1269,14 +1269,14 @@ export default function SourceDetailsModal({
                 Remove this database-backed cost entry? Source cost and cost-per-hire totals will refresh after the update.
               </p>
 
-              <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3 text-left">
+              <div className="mt-4 rounded-[10px] border border-slate-200 bg-slate-50 p-3 text-left">
                 <p className="truncate text-xs font-extrabold text-slate-800">
                   {removingEntry.description || "—"}
                 </p>
                 <p className="mt-1 text-[10px] font-semibold text-slate-500">
                   {formatDateRange(removingEntry)}
                 </p>
-                <p className="mt-2 font-mono text-sm font-black text-[#FF5C28]">
+                <p className="mt-2 font-mono text-sm font-black text-sibs-orange">
                   {formatCurrency(removingEntry.amount)}
                 </p>
               </div>
@@ -1286,12 +1286,12 @@ export default function SourceDetailsModal({
               </div>
             </div>
 
-            <footer className="flex justify-center gap-2.5 border-t border-slate-200 bg-slate-50 px-4 py-3 sm:px-5">
+            <footer className="flex justify-center gap-2.5 border-t border-slate-200 bg-slate-50 px-4 py-3 sm:px-5 rounded-b-[14px]">
               <button
                 type="button"
                 onClick={closeRemoveExpense}
                 disabled={isRemoving || mutating}
-                className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg border border-[#D7DEE8] bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-[#042C51] transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-[10px] border border-sibs-border bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-navy transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Cancel
               </button>
@@ -1300,7 +1300,7 @@ export default function SourceDetailsModal({
                 type="button"
                 onClick={handleRemoveExpense}
                 disabled={isRemoving || mutating}
-                className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 2xl:gap-2 rounded-lg bg-red-600 px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 2xl:gap-2 rounded-[10px] bg-red-600 px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {isRemoving || mutating ? (
                   <>

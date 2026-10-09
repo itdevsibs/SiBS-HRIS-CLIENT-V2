@@ -47,7 +47,7 @@ export default function ActionItemsHeader() {
             <button
               type="button"
               onClick={openEmailModal}
-              className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-lg bg-sibs-navy px-3.5 2xl:px-4 text-[11.5px] 2xl:text-[12px] font-extrabold text-white shadow-xs transition hover:bg-sibs-tertiary-2 active:scale-[0.98] flex-1 sm:flex-none sm:w-auto whitespace-nowrap"
+              className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-[10px] bg-sibs-navy px-3.5 2xl:px-4 text-[11.5px] 2xl:text-[12px] font-extrabold text-white shadow-xs transition hover:bg-sibs-tertiary-2 active:scale-[0.98] flex-1 sm:flex-none sm:w-auto whitespace-nowrap"
             >
               <Mail className="h-3.5 w-3.5 2xl:h-4 2xl:w-4 text-sibs-orange" />
               Send Report via Email

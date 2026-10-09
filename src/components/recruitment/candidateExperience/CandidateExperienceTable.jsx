@@ -33,7 +33,7 @@ export default function CandidateExperienceTable({ records = [], onSelect, loadi
           />
         }
         desktopContent={
-          <div className="overflow-x-auto rounded-xl border border-sibs-border bg-white">
+          <div className="overflow-x-auto rounded-[10px] border border-sibs-border bg-white">
             <table className="w-full min-w-[1200px] border-collapse font-jakarta text-xs text-left">
 
           <thead className="bg-sibs-surface">
@@ -74,7 +74,7 @@ export default function CandidateExperienceTable({ records = [], onSelect, loadi
                       onSelect(record);
                     }
                   }}
-                  className="sibs-data-table-row sibs-page-card-in cursor-pointer bg-white outline-none transition hover:bg-[#F8FAFC] focus:bg-[#E9F0FC]/60 focus:ring-2 focus:ring-inset focus:ring-[#FF5C28]/20"
+                  className="sibs-data-table-row sibs-page-card-in cursor-pointer bg-white outline-none transition hover:bg-sibs-surface focus:bg-blue-50/60 focus:ring-2 focus:ring-inset focus:ring-sibs-orange/20"
                   style={{ animationDelay: `${index * 35}ms`, animationFillMode: "both" }}
                 >
                   <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle">

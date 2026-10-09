@@ -65,17 +65,17 @@ function ReadOnlyField({ label, value }) {
   return (
     <div>
       <label className="sibs-modal-field-label">{label}</label>
-      <div className="flex min-h-10 w-full items-center rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-3 sibs-text-xs font-bold text-[#475467]">
+      <div className="flex min-h-10 w-full items-center rounded-[10px] border border-sibs-border bg-sibs-surface px-3 sibs-text-xs font-bold text-sibs-muted">
         <span className="truncate">{value || "—"}</span>
       </div>
     </div>
   );
 }
 
-function SummaryRow({ label, value, tone = "text-[#344054]" }) {
+function SummaryRow({ label, value, tone = "text-sibs-muted" }) {
   return (
-    <div className="flex items-start justify-between gap-4 border-b border-[#E6ECF2] py-2.5 last:border-b-0">
-      <span className="text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+    <div className="flex items-start justify-between gap-4 border-b border-sibs-border py-2.5 last:border-b-0">
+      <span className="text-[9px] font-extrabold uppercase tracking-wide text-sibs-faint">
         {label}
       </span>
       <span className={`max-w-[62%] break-words text-right text-[10px] font-extrabold ${tone}`}>
@@ -129,23 +129,38 @@ function OnboardingSelect({ value, options = [], onChange, placeholder = "Select
 
   return (
     <div ref={anchorRef} className="relative min-w-0 font-jakarta">
-      <button type="button" disabled={disabled} onClick={() => setOpen((current) => !current)} className={`flex h-8.5 2xl:h-10 w-full items-center justify-between gap-2 rounded-xl border px-3 2xl:px-3.5 text-left font-jakarta sibs-text-xs font-semibold outline-none transition ${disabled ? "cursor-not-allowed border-[#D7DEE8] bg-[#EEF2F6] text-[#98A2B3]" : open ? "border-[#FF5C28] bg-white text-[#042C51] ring-2 ring-[#FF5C28]/10" : "border-[#D7DEE8] bg-[#F8FAFC] text-[#042C51] hover:border-[#FF5C28]/45"}`}>
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => setOpen((current) => !current)}
+        className={`flex h-8.5 2xl:h-10 w-full items-center justify-between gap-2 rounded-[10px] border px-3 2xl:px-3.5 text-left font-jakarta sibs-text-xs font-semibold outline-none transition ${disabled ? "cursor-not-allowed border-sibs-border bg-sibs-surface-subtle text-sibs-faint" : open ? "border-sibs-orange bg-white text-sibs-navy ring-2 ring-sibs-orange/10" : "border-sibs-border bg-sibs-surface text-sibs-navy hover:border-sibs-orange/45"}`}
+      >
         <span className="flex min-w-0 items-center gap-2 truncate">
-          {Icon ? <Icon size={14} className="shrink-0 text-[#98A2B3]" /> : null}
-          <span className={`truncate ${selected ? "text-[#042C51]" : "text-[#98A2B3]"}`}>{selected?.label || placeholder}</span>
+          {Icon ? <Icon size={14} className="shrink-0 text-sibs-faint" /> : null}
+          <span className={`truncate ${selected ? "text-sibs-navy" : "text-sibs-faint"}`}>{selected?.label || placeholder}</span>
         </span>
-        <ChevronDown size={15} className={`shrink-0 transition-transform ${open ? "rotate-180 text-[#FF5C28]" : "text-[#215789]"}`} />
+        <ChevronDown size={15} className={`shrink-0 transition-transform ${open ? "rotate-180 text-sibs-orange" : "text-sibs-navy"}`} />
       </button>
       {open && menuStyle ? createPortal(
-        <div ref={menuRef} style={{ left: menuStyle.left, top: menuStyle.top, width: menuStyle.width }} className="sibs-dropdown-pop-in fixed z-[11000] overflow-hidden rounded-xl border border-[#D7DEE8] bg-white shadow-2xl">
+        <div ref={menuRef} style={{ left: menuStyle.left, top: menuStyle.top, width: menuStyle.width }} className="sibs-dropdown-pop-in fixed z-[11000] overflow-hidden rounded-[10px] border border-sibs-border bg-white shadow-2xl">
           <div className="sibs-scrollbar overflow-y-auto py-1" style={{ maxHeight: menuStyle.maxHeight }}>
             {options.length === 0 ? (
-              <div className="px-3.5 py-3 text-center font-jakarta text-xs font-semibold text-[#98A2B3]">
+              <div className="px-3.5 py-3 text-center font-jakarta text-xs font-semibold text-sibs-faint">
                 No accepted offers available.
               </div>
             ) : options.map((option) => {
               const active = String(option.value) === String(value);
-              return <button key={option.value} type="button" onClick={() => { onChange(option.value, option); setOpen(false); }} className={`flex w-full items-center justify-between gap-2 px-3.5 py-2.5 text-left font-jakarta text-xs font-bold transition ${active ? "bg-[#FFF0EB] text-[#FF5C28]" : "bg-white text-[#042C51] hover:bg-[#FFF7F3] hover:text-[#FF5C28]"}`}><span className="truncate">{option.label}</span>{active ? <CheckCircle2 size={14} className="shrink-0 text-[#FF5C28]" /> : null}</button>;
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => { onChange(option.value, option); setOpen(false); }}
+                  className={`flex w-full items-center justify-between gap-2 px-3.5 py-2.5 text-left font-jakarta text-xs font-bold transition ${active ? "bg-sibs-cream-light text-sibs-orange" : "bg-white text-sibs-navy hover:bg-sibs-cream-light hover:text-sibs-orange"}`}
+                >
+                  <span className="truncate">{option.label}</span>
+                  {active ? <CheckCircle2 size={14} className="shrink-0 text-sibs-orange" /> : null}
+                </button>
+              );
             })}
           </div>
         </div>, document.body,
@@ -208,22 +223,42 @@ function OnboardingDateDropdown({ value, onChange, disabled = false }) {
 
   return (
     <div ref={anchorRef} className="relative min-w-0 font-jakarta">
-      <button type="button" disabled={disabled} onClick={() => setOpen((current) => !current)} className={`flex h-8.5 2xl:h-10 w-full items-center justify-between gap-2 rounded-xl border px-3 2xl:px-3.5 text-left font-jakarta sibs-text-xs font-semibold outline-none transition ${open ? "border-[#FF5C28] bg-white ring-2 ring-[#FF5C28]/10" : "border-[#D7DEE8] bg-[#F8FAFC] hover:border-[#FF5C28]/45"}`}>
-        <span className={`flex items-center gap-2 truncate ${value ? "text-[#042C51]" : "text-[#98A2B3]"}`}><CalendarDays size={14} className="text-[#FF5C28]" />{value || "Select date"}</span>
-        <ChevronDown size={14} className={`text-[#FF5C28] transition-transform ${open ? "rotate-180" : ""}`} />
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => setOpen((current) => !current)}
+        className={`flex h-8.5 2xl:h-10 w-full items-center justify-between gap-2 rounded-[10px] border px-3 2xl:px-3.5 text-left font-jakarta sibs-text-xs font-semibold outline-none transition ${open ? "border-sibs-orange bg-white ring-2 ring-sibs-orange/10" : "border-sibs-border bg-sibs-surface hover:border-sibs-orange/45"}`}
+      >
+        <span className={`flex items-center gap-2 truncate ${value ? "text-sibs-navy" : "text-sibs-faint"}`}>
+          <CalendarDays size={14} className="text-sibs-orange" />
+          {value || "Select date"}
+        </span>
+        <ChevronDown size={14} className={`text-sibs-orange transition-transform ${open ? "rotate-180" : ""}`} />
       </button>
       {open && menuStyle && createPortal(
-        <div ref={menuRef} className="sibs-dropdown-pop-in fixed z-[11000] overflow-visible rounded-xl border border-[#D7DEE8] bg-white p-3 shadow-2xl" style={{ left: menuStyle.left, top: menuStyle.top, width: menuStyle.width }}>
-          <div className="mb-3 flex items-center gap-1.5 rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] p-1.5">
-            <button type="button" onClick={() => setViewDate((date) => new Date(date.getFullYear(), date.getMonth() - 1, 1))} className="flex h-7 w-7 items-center justify-center rounded-lg border border-[#D7DEE8] bg-white text-[#042C51]"><ChevronLeft size={15} /></button>
-            <div className="flex-1 text-center text-xs font-extrabold text-[#042C51]">{monthNames[viewDate.getMonth()]} {viewDate.getFullYear()}</div>
-            <button type="button" onClick={() => setViewDate((date) => new Date(date.getFullYear(), date.getMonth() + 1, 1))} className="flex h-7 w-7 items-center justify-center rounded-lg border border-[#D7DEE8] bg-white text-[#042C51]"><ChevronRight size={15} /></button>
+        <div ref={menuRef} className="sibs-dropdown-pop-in fixed z-[11000] overflow-visible rounded-[10px] border border-sibs-border bg-white p-3 shadow-2xl" style={{ left: menuStyle.left, top: menuStyle.top, width: menuStyle.width }}>
+          <div className="mb-3 flex items-center gap-1.5 rounded-[10px] border border-sibs-border bg-sibs-surface p-1.5">
+            <button type="button" onClick={() => setViewDate((date) => new Date(date.getFullYear(), date.getMonth() - 1, 1))} className="flex h-7 w-7 items-center justify-center rounded-[10px] border border-sibs-border bg-white text-sibs-navy"><ChevronLeft size={15} /></button>
+            <div className="flex-1 text-center text-xs font-extrabold text-sibs-navy">{monthNames[viewDate.getMonth()]} {viewDate.getFullYear()}</div>
+            <button type="button" onClick={() => setViewDate((date) => new Date(date.getFullYear(), date.getMonth() + 1, 1))} className="flex h-7 w-7 items-center justify-center rounded-[10px] border border-sibs-border bg-white text-sibs-navy"><ChevronRight size={15} /></button>
           </div>
           <div className="grid grid-cols-7 gap-1">
-            {["SU", "MO", "TU", "WE", "TH", "FR", "SA"].map((day) => <div key={day} className="py-1 text-center text-[10px] font-extrabold text-[#98A2B3]">{day}</div>)}
-            {days.map((date, index) => date ? <button key={toDateInputValue(date)} type="button" onClick={() => { onChange(toDateInputValue(date)); setOpen(false); }} className={`flex h-8 items-center justify-center rounded-lg text-xs font-bold ${value === toDateInputValue(date) ? "bg-[#FF5C28] text-white" : "text-[#042C51] hover:bg-[#FFF0EB]"}`}>{date.getDate()}</button> : <span key={`blank-${index}`} />)}
+            {["SU", "MO", "TU", "WE", "TH", "FR", "SA"].map((day) => <div key={day} className="py-1 text-center text-[10px] font-extrabold text-sibs-faint">{day}</div>)}
+            {days.map((date, index) => date ? (
+              <button
+                key={toDateInputValue(date)}
+                type="button"
+                onClick={() => { onChange(toDateInputValue(date)); setOpen(false); }}
+                className={`flex h-8 items-center justify-center rounded-[10px] text-xs font-bold ${value === toDateInputValue(date) ? "bg-sibs-orange text-white" : "text-sibs-navy hover:bg-sibs-cream-light"}`}
+              >
+                {date.getDate()}
+              </button>
+            ) : <span key={`blank-${index}`} />)}
           </div>
-          <div className="mt-3 flex justify-between border-t border-[#E6ECF2] pt-2.5"><button type="button" onClick={() => { onChange(""); setOpen(false); }} className="h-8 rounded-lg border border-[#D7DEE8] px-3 text-xs font-extrabold text-[#042C51]">Clear</button><button type="button" onClick={() => { const today = new Date(); onChange(toDateInputValue(today)); setViewDate(today); setOpen(false); }} className="h-8 rounded-lg bg-[#FF5C28] px-3 text-xs font-extrabold text-white">Today</button></div>
+          <div className="mt-3 flex justify-between border-t border-sibs-border pt-2.5">
+            <button type="button" onClick={() => { onChange(""); setOpen(false); }} className="h-8 rounded-[10px] border border-sibs-border px-3 text-xs font-extrabold text-sibs-navy">Clear</button>
+            <button type="button" onClick={() => { const today = new Date(); onChange(toDateInputValue(today)); setViewDate(today); setOpen(false); }} className="h-8 rounded-[10px] bg-sibs-orange px-3 text-xs font-extrabold text-white">Today</button>
+          </div>
         </div>, document.body,
       )}
     </div>
@@ -321,12 +356,12 @@ export function CreateOnboardingModal({
       }}
     >
       <div
-        className="sibs-modal-pop-in flex max-h-[92dvh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-[#D7DEE8] bg-white shadow-2xl"
+        className="sibs-modal-pop-in flex max-h-[92dvh] w-full max-w-5xl flex-col overflow-hidden rounded-[14px] border border-sibs-border bg-white shadow-2xl"
         onMouseDown={(event) => event.stopPropagation()}
       >
-        <header className="flex shrink-0 items-center justify-between gap-4 bg-[#042C51] px-5 py-4 text-white sm:px-6">
+        <header className="flex shrink-0 items-center justify-between gap-4 bg-sibs-navy px-5 py-4 text-white sm:px-6 rounded-t-[14px]">
           <div className="flex min-w-0 items-center gap-3">
-            <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#FF5C28] text-white shadow-sm">
+            <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-sibs-orange text-white shadow-sm">
               <UserCheck size={17} />
             </span>
 
@@ -359,22 +394,22 @@ export function CreateOnboardingModal({
         <form
           id="create-onboarding-form"
           onSubmit={onSubmit}
-          className="sibs-scrollbar min-h-0 flex-1 overflow-y-auto bg-[#F7F9FC] p-4 sm:p-5"
+          className="sibs-scrollbar min-h-0 flex-1 overflow-y-auto bg-sibs-surface p-4 sm:p-5"
         >
           <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_330px]">
             <div className="min-w-0 space-y-4">
-              <section className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
-                <div className="mb-4 flex items-start justify-between gap-3 border-b border-[#EEF2F6] pb-3">
+              <section className="rounded-[14px] border border-sibs-border bg-white p-4 shadow-sm sm:p-5">
+                <div className="mb-4 flex items-start justify-between gap-3 border-b border-sibs-surface-subtle pb-3">
                   <div className="min-w-0">
                     <p className="sibs-kicker">Step 1</p>
-                    <h3 className="sibs-modal-section-title mt-0.5 text-[#042C51]">
+                    <h3 className="sibs-modal-section-title mt-0.5 text-sibs-navy">
                       Select Accepted Offer
                     </h3>
-                    <p className="sibs-modal-section-subtitle mt-0.5 text-[#667085]">
+                    <p className="sibs-modal-section-subtitle mt-0.5 text-sibs-muted">
                       Only accepted offers that are not yet assigned to onboarding are listed.
                     </p>
                   </div>
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-blue-100 bg-blue-50 text-[#042C51]">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] border border-blue-100 bg-blue-50 text-sibs-navy">
                     <BriefcaseBusiness size={16} />
                   </span>
                 </div>
@@ -406,18 +441,18 @@ export function CreateOnboardingModal({
                 </div>
               </section>
 
-              <section className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
-                <div className="mb-4 flex items-start justify-between gap-3 border-b border-[#EEF2F6] pb-3">
+              <section className="rounded-[14px] border border-sibs-border bg-white p-4 shadow-sm sm:p-5">
+                <div className="mb-4 flex items-start justify-between gap-3 border-b border-sibs-surface-subtle pb-3">
                   <div>
                     <p className="sibs-kicker">Step 2</p>
-                    <h3 className="sibs-modal-section-title mt-0.5 text-[#042C51]">
+                    <h3 className="sibs-modal-section-title mt-0.5 text-sibs-navy">
                       Start Details
                     </h3>
-                    <p className="sibs-modal-section-subtitle mt-0.5 text-[#667085]">
+                    <p className="sibs-modal-section-subtitle mt-0.5 text-sibs-muted">
                       Set the expected start date and site before activating the record.
                     </p>
                   </div>
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-orange-100 bg-orange-50 text-[#FF5C28]">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] border border-orange-100 bg-orange-50 text-sibs-orange">
                     <CalendarDays size={16} />
                   </span>
                 </div>
@@ -464,13 +499,13 @@ export function CreateOnboardingModal({
             </div>
 
             <aside className="space-y-4 xl:sticky xl:top-0 xl:self-start">
-              <section className="rounded-2xl border border-[#083A69] bg-[#042C51] p-4 text-white shadow-sm">
+              <section className="rounded-[14px] border border-sibs-navy bg-sibs-navy p-4 text-white shadow-sm">
                 <div className="flex items-start gap-3">
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[#FF5C28]/30 bg-[#FF5C28]/15 text-[#FF5C28]">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] border border-sibs-orange/30 bg-sibs-orange/15 text-sibs-orange">
                     <Info size={16} />
                   </span>
                   <div>
-                    <p className="text-[9px] font-extrabold uppercase tracking-wide text-[#FFB9A2]">
+                    <p className="text-[9px] font-extrabold uppercase tracking-wide text-sibs-orange/80">
                       System Relationship
                     </p>
                     <h3 className="sibs-modal-section-title mt-1 text-white">
@@ -483,10 +518,10 @@ export function CreateOnboardingModal({
                 </div>
               </section>
 
-              <section className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm">
+              <section className="rounded-[14px] border border-sibs-border bg-white p-4 shadow-sm">
                 <div className="flex items-center gap-2">
                   <CheckCircle2 size={15} className="text-emerald-600" />
-                  <h3 className="sibs-modal-section-title text-[#042C51]">
+                  <h3 className="sibs-modal-section-title text-sibs-navy">
                     Default Initial Status
                   </h3>
                 </div>
@@ -498,7 +533,7 @@ export function CreateOnboardingModal({
                 </div>
               </section>
 
-              <section className="rounded-2xl border border-amber-100 bg-amber-50 p-4">
+              <section className="rounded-[14px] border border-amber-100 bg-amber-50 p-4">
                 <p className="text-[9px] font-extrabold uppercase tracking-wide text-amber-700">
                   Automation Note
                 </p>
@@ -510,13 +545,13 @@ export function CreateOnboardingModal({
           </div>
         </form>
 
-        <footer className="shrink-0 border-t border-[#E6ECF2] bg-white px-5 py-3.5 sm:px-6">
+        <footer className="shrink-0 border-t border-sibs-border bg-white px-5 py-3.5 sm:px-6 rounded-b-[14px]">
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-between">
             <button
               type="button"
               onClick={handleResetClick}
               disabled={isSubmitting}
-              className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-lg border border-[#D6E0EA] bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-[#667085] transition hover:border-[#FF5C28]/35 hover:bg-[#FFF8F5] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-[10px] border border-sibs-border bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-muted transition hover:border-sibs-orange/35 hover:bg-sibs-cream-light hover:text-sibs-orange disabled:cursor-not-allowed disabled:opacity-50"
             >
               <RotateCcw size={14} />
               Reset
@@ -527,7 +562,7 @@ export function CreateOnboardingModal({
                 type="button"
                 onClick={onClose}
                 disabled={isSubmitting}
-                className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg border border-[#D6E0EA] bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-[#667085] transition hover:border-[#FF5C28]/35 hover:bg-[#FFF8F5] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-[10px] border border-sibs-border bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-muted transition hover:border-sibs-orange/35 hover:bg-sibs-cream-light hover:text-sibs-orange disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Cancel
               </button>
@@ -535,7 +570,7 @@ export function CreateOnboardingModal({
                 type="submit"
                 form="create-onboarding-form"
                 disabled={saveDisabled}
-                className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-lg bg-[#FF5C28] px-3.5 2xl:px-5 font-jakarta sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E94F1F] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-[10px] bg-sibs-orange px-3.5 2xl:px-5 font-jakarta sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-sibs-orange/90 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <Plus size={14} />
                 {isSubmitting ? "Saving..." : "Save Onboarding Record"}

@@ -75,19 +75,19 @@ function OnboardingDateDropdown({ value, onChange, disabled = false }) {
         type="button"
         disabled={disabled}
         onClick={() => setOpen((current) => !current)}
-        className={`flex h-8.5 2xl:h-10 w-full items-center justify-between gap-2 rounded-xl border px-3 2xl:px-3.5 text-left font-jakarta sibs-text-xs font-semibold outline-none transition ${
+        className={`flex h-8.5 2xl:h-10 w-full items-center justify-between gap-2 rounded-[10px] border px-3 2xl:px-3.5 text-left font-jakarta sibs-text-xs font-semibold outline-none transition ${
           open
-            ? "border-[#FF5C28] bg-white ring-2 ring-[#FF5C28]/10"
-            : "border-[#D7DEE8] bg-[#F8FAFC] hover:border-[#FF5C28]/45"
+            ? "border-sibs-orange bg-white ring-2 ring-sibs-orange/10"
+            : "border-sibs-border bg-sibs-surface hover:border-sibs-orange/45"
         }`}
       >
-        <span className={`flex items-center gap-2 truncate ${value ? "text-[#042C51]" : "text-[#98A2B3]"}`}>
-          <CalendarDays size={14} className="text-[#FF5C28]" />
+        <span className={`flex items-center gap-2 truncate ${value ? "text-sibs-navy" : "text-sibs-faint"}`}>
+          <CalendarDays size={14} className="text-sibs-orange" />
           {value || "Select date"}
         </span>
         <ChevronDown
           size={14}
-          className={`text-[#FF5C28] transition-transform ${open ? "rotate-180" : ""}`}
+          className={`text-sibs-orange transition-transform ${open ? "rotate-180" : ""}`}
         />
       </button>
       {open &&
@@ -95,20 +95,20 @@ function OnboardingDateDropdown({ value, onChange, disabled = false }) {
         createPortal(
           <div
             ref={menuRef}
-            className="sibs-dropdown-pop-in fixed z-[11000] overflow-visible rounded-xl border border-[#D7DEE8] bg-white p-3 shadow-2xl"
+            className="sibs-dropdown-pop-in fixed z-[11000] overflow-visible rounded-[10px] border border-sibs-border bg-white p-3 shadow-2xl"
             style={{ left: menuStyle.left, top: menuStyle.top, width: menuStyle.width }}
           >
-            <div className="mb-3 flex items-center gap-1.5 rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] p-1.5">
+            <div className="mb-3 flex items-center gap-1.5 rounded-[10px] border border-sibs-border bg-sibs-surface p-1.5">
               <button
                 type="button"
                 onClick={() =>
                   setViewDate((date) => new Date(date.getFullYear(), date.getMonth() - 1, 1))
                 }
-                className="flex h-7 w-7 items-center justify-center rounded-lg border border-[#D7DEE8] bg-white text-[#042C51]"
+                className="flex h-7 w-7 items-center justify-center rounded-[10px] border border-sibs-border bg-white text-sibs-navy"
               >
                 <ChevronLeft size={15} />
               </button>
-              <div className="flex-1 text-center text-xs font-extrabold text-[#042C51]">
+              <div className="flex-1 text-center text-xs font-extrabold text-sibs-navy">
                 {monthNames[viewDate.getMonth()]} {viewDate.getFullYear()}
               </div>
               <button
@@ -116,14 +116,14 @@ function OnboardingDateDropdown({ value, onChange, disabled = false }) {
                 onClick={() =>
                   setViewDate((date) => new Date(date.getFullYear(), date.getMonth() + 1, 1))
                 }
-                className="flex h-7 w-7 items-center justify-center rounded-lg border border-[#D7DEE8] bg-white text-[#042C51]"
+                className="flex h-7 w-7 items-center justify-center rounded-[10px] border border-sibs-border bg-white text-sibs-navy"
               >
                 <ChevronRight size={15} />
               </button>
             </div>
             <div className="grid grid-cols-7 gap-1">
               {["SU", "MO", "TU", "WE", "TH", "FR", "SA"].map((day) => (
-                <div key={day} className="py-1 text-center text-[10px] font-extrabold text-[#98A2B3]">
+                <div key={day} className="py-1 text-center text-[10px] font-extrabold text-sibs-faint">
                   {day}
                 </div>
               ))}
@@ -136,10 +136,10 @@ function OnboardingDateDropdown({ value, onChange, disabled = false }) {
                       onChange(toDateInputValue(date));
                       setOpen(false);
                     }}
-                    className={`flex h-8 items-center justify-center rounded-lg text-xs font-bold ${
+                    className={`flex h-8 items-center justify-center rounded-[10px] text-xs font-bold ${
                       value === toDateInputValue(date)
-                        ? "bg-[#FF5C28] text-white"
-                        : "text-[#042C51] hover:bg-[#FFF0EB]"
+                        ? "bg-sibs-orange text-white"
+                        : "text-sibs-navy hover:bg-sibs-cream-light"
                     }`}
                   >
                     {date.getDate()}
@@ -149,14 +149,14 @@ function OnboardingDateDropdown({ value, onChange, disabled = false }) {
                 ),
               )}
             </div>
-            <div className="mt-3 flex justify-between border-t border-[#E6ECF2] pt-2.5">
+            <div className="mt-3 flex justify-between border-t border-sibs-border pt-2.5">
               <button
                 type="button"
                 onClick={() => {
                   onChange("");
                   setOpen(false);
                 }}
-                className="h-8 rounded-lg border border-[#D7DEE8] px-3 text-xs font-extrabold text-[#042C51]"
+                className="h-8 rounded-[10px] border border-sibs-border px-3 text-xs font-extrabold text-sibs-navy"
               >
                 Clear
               </button>
@@ -168,7 +168,7 @@ function OnboardingDateDropdown({ value, onChange, disabled = false }) {
                   setViewDate(today);
                   setOpen(false);
                 }}
-                className="h-8 rounded-lg bg-[#FF5C28] px-3 text-xs font-extrabold text-white"
+                className="h-8 rounded-[10px] bg-sibs-orange px-3 text-xs font-extrabold text-white"
               >
                 Today
               </button>
@@ -266,10 +266,10 @@ export default function OutcomeModal({
       onMouseDown={onClose}
     >
       <div
-        className="sibs-modal-pop-in flex max-h-[92dvh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
+        className="sibs-modal-pop-in flex max-h-[92dvh] w-full max-w-2xl flex-col overflow-hidden rounded-[14px] bg-white shadow-2xl"
         onMouseDown={(event) => event.stopPropagation()}
       >
-        <header className="flex shrink-0 items-start justify-between gap-4 bg-[#042C51] px-5 py-4 text-white sm:px-6">
+        <header className="flex shrink-0 items-start justify-between gap-4 bg-sibs-navy px-5 py-4 text-white sm:px-6 rounded-t-[14px]">
           <div className="min-w-0">
             <span
               className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[9px] font-extrabold uppercase tracking-wide ${theme.badge}`}
@@ -298,28 +298,28 @@ export default function OutcomeModal({
         <form
           id="outcome-form"
           onSubmit={onSubmit}
-          className="sibs-scrollbar min-h-0 flex-1 overflow-y-auto bg-[#F7F9FC] p-4 sm:p-5"
+          className="sibs-scrollbar min-h-0 flex-1 overflow-y-auto bg-sibs-surface p-4 sm:p-5"
         >
           <div className="space-y-4">
-            <section className={`rounded-2xl border p-4 ${theme.panel}`}>
+            <section className={`rounded-[14px] border p-4 ${theme.panel}`}>
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div className="min-w-0">
-                  <p className="text-[9px] font-extrabold uppercase tracking-wide text-[#667085]">
+                  <p className="text-[9px] font-extrabold uppercase tracking-wide text-sibs-muted">
                     Candidate
                   </p>
                   <h3 className={`sibs-modal-section-title mt-1 ${theme.text}`}>
                     {record.candidateName}
                   </h3>
-                  <p className="sibs-modal-section-subtitle mt-0.5 text-[#667085]">
+                  <p className="sibs-modal-section-subtitle mt-0.5 text-sibs-muted">
                     {record.roleTitle || "Not assigned"} • {record.account || "No account"}
                   </p>
                 </div>
 
                 <div className="flex flex-wrap gap-2 sm:justify-end">
-                  <span className="rounded-full border border-white/80 bg-white/75 px-2.5 py-1 text-[9px] font-extrabold text-[#475467]">
+                  <span className="rounded-full border border-white/80 bg-white/75 px-2.5 py-1 text-[9px] font-extrabold text-sibs-muted">
                     Expected: {formatDateDisplay(record.expectedStartDate)}
                   </span>
-                  <span className="rounded-full border border-white/80 bg-white/75 px-2.5 py-1 text-[9px] font-extrabold text-[#475467]">
+                  <span className="rounded-full border border-white/80 bg-white/75 px-2.5 py-1 text-[9px] font-extrabold text-sibs-muted">
                     Current: {record.showStatus || "Pending"}
                   </span>
                 </div>
@@ -327,7 +327,7 @@ export default function OutcomeModal({
             </section>
 
             {isShow ? (
-              <section className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm">
+              <section className="rounded-[14px] border border-sibs-border bg-white p-4 shadow-sm">
                 <div>
                   <label className="sibs-modal-field-label">
                     Actual Start Date <span className="text-red-500">*</span>
@@ -341,7 +341,7 @@ export default function OutcomeModal({
                 </div>
 
                 <div className="mt-4">
-                  <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">Internal Remarks</label>
+                  <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-sibs-faint">Internal Remarks</label>
                   <textarea
                     rows={3}
                     value={form.remarks}
@@ -354,11 +354,11 @@ export default function OutcomeModal({
             ) : null}
 
             {(isNoShow || isWithdrawn) ? (
-              <section className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm">
+              <section className="rounded-[14px] border border-sibs-border bg-white p-4 shadow-sm">
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div>
-                    <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
-                      Reason Category <span className="text-[#FF5C28]"> *</span>
+                    <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-sibs-faint">
+                      Reason Category <span className="text-sibs-orange"> *</span>
                     </label>
                     <select
                       required
@@ -378,7 +378,7 @@ export default function OutcomeModal({
                   </div>
 
                   <div>
-                    <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">Experience Rating</label>
+                    <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-sibs-faint">Experience Rating</label>
                     <select
                       value={String(form.experienceRating ?? 3)}
                       onChange={(event) =>
@@ -395,9 +395,9 @@ export default function OutcomeModal({
                   </div>
 
                   <div className="sm:col-span-2">
-                    <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+                    <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-sibs-faint">
                       {isNoShow ? "No Show Reason" : "Withdrawal Reason"}{" "}
-                      <span className="text-[#FF5C28]"> *</span>
+                      <span className="text-sibs-orange"> *</span>
                     </label>
                     <textarea
                       required
@@ -416,7 +416,7 @@ export default function OutcomeModal({
                   </div>
 
                   <div>
-                    <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">Feedback Tag</label>
+                    <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-sibs-faint">Feedback Tag</label>
                     <input
                       value={form.feedbackTag}
                       onChange={(event) => setForm({ ...form, feedbackTag: event.target.value })}
@@ -426,7 +426,7 @@ export default function OutcomeModal({
                   </div>
 
                   <div>
-                    <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">Internal Remarks</label>
+                    <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-sibs-faint">Internal Remarks</label>
                     <input
                       value={form.remarks}
                       onChange={(event) => setForm({ ...form, remarks: event.target.value })}
@@ -436,7 +436,7 @@ export default function OutcomeModal({
                   </div>
 
                   <div className="sm:col-span-2">
-                    <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">Candidate Feedback</label>
+                    <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-sibs-faint">Candidate Feedback</label>
                     <textarea
                       rows={3}
                       value={form.candidateFeedback}
@@ -451,16 +451,16 @@ export default function OutcomeModal({
               </section>
             ) : null}
 
-            <section className="rounded-2xl border border-blue-100 bg-blue-50 p-4">
+            <section className="rounded-[14px] border border-blue-100 bg-blue-50 p-4">
               <div className="flex items-start gap-3">
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#042C51] text-[#FF5C28]">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-sibs-navy text-sibs-orange">
                   <Info size={15} />
                 </span>
                 <div>
-                  <p className="text-[9px] font-extrabold uppercase tracking-wide text-[#042C51]">
+                  <p className="text-[9px] font-extrabold uppercase tracking-wide text-sibs-navy">
                     System Action
                   </p>
-                  <p className="mt-1 text-[10px] font-semibold leading-5 text-[#475467]">
+                  <p className="mt-1 text-[10px] font-semibold leading-5 text-sibs-muted">
                     {isShow
                       ? "Confirming this outcome marks the candidate as a True Hire and allows the record to contribute to the final placement count."
                       : "Confirming this outcome keeps the candidate out of the True Hire count and preserves the reason/experience data for reporting and Candidate Experience workflows."}
@@ -471,19 +471,19 @@ export default function OutcomeModal({
           </div>
         </form>
 
-        <footer className="shrink-0 border-t border-[#E6ECF2] bg-white px-5 py-3.5 sm:px-6">
+        <footer className="shrink-0 border-t border-sibs-border bg-white px-5 py-3.5 sm:px-6 rounded-b-[14px]">
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <button
               type="button"
               onClick={onClose}
-              className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg border border-[#D6E0EA] bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-[#667085] hover:bg-[#F8FAFC]"
+              className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-[10px] border border-sibs-border bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-muted hover:bg-sibs-surface"
             >
               Cancel
             </button>
             <button
               type="submit"
               form="outcome-form"
-              className={`inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-lg px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white shadow-sm transition active:scale-[0.98] ${theme.button}`}
+              className={`inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-[10px] px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white shadow-sm transition active:scale-[0.98] ${theme.button}`}
             >
               {isShow ? <CheckCircle2 size={14} /> : <AlertTriangle size={14} />}
               Confirm Outcome
