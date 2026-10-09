@@ -66,12 +66,23 @@ function deriveForecastMetrics(source = {}) {
   const hiringRate = acceptedJo > 0 ? (fst / acceptedJo) * 100 : 0;
   const hiringRateDecimal = hiringRate / 100;
 
-  const leadsToInterview =
+  /*
+   * Expected Leads is the calculated number of leads required to satisfy
+   * Hiring Needed using the current hiring conversion rate.
+   *
+   * Leads To Interview is kept separate and comes from the actual/saved
+   * weekly hiring-plan leads_to_interview value.
+   */
+  const expectedLeads =
     hiringNeeded <= 0
       ? 0
       : hiringRateDecimal > 0
         ? Math.ceil(hiringNeeded / hiringRateDecimal)
         : hiringNeeded;
+
+  const leadsToInterview = Math.round(
+    safeNumber(source.leadsToInterview),
+  );
 
   return {
     requiredHeadcount,
@@ -90,6 +101,7 @@ function deriveForecastMetrics(source = {}) {
     goLive,
     hiredCount,
     hiringRate,
+    expectedLeads,
     leadsToInterview,
   };
 }
@@ -150,6 +162,10 @@ export function normalizeForecastAccountRow(row = {}) {
       "projected_to_be_endorsed",
     ]),
     hiredCount: getRowNumber(row, ["hiredCount", "hired_count", "hired"]),
+    leadsToInterview: getRowNumber(row, [
+      "leadsToInterview",
+      "leads_to_interview",
+    ]),
   };
 }
 
@@ -188,6 +204,7 @@ export function buildForecastAccountAverageRows(
           pst: 0,
           goLive: 0,
           hiredCount: 0,
+          leadsToInterview: 0,
         });
       }
 
@@ -203,6 +220,7 @@ export function buildForecastAccountAverageRows(
       accumulator.pst += row.pst;
       accumulator.goLive += row.goLive;
       accumulator.hiredCount += row.hiredCount;
+      accumulator.leadsToInterview += row.leadsToInterview;
     });
   });
 
@@ -221,6 +239,7 @@ export function buildForecastAccountAverageRows(
         pst: source.pst / forecastWeekCount,
         goLive: source.goLive / forecastWeekCount,
         hiredCount: source.hiredCount / forecastWeekCount,
+        leadsToInterview: source.leadsToInterview / forecastWeekCount,
       }),
     }))
     .sort((left, right) => {
@@ -244,6 +263,7 @@ export function buildForecastAccountTotals(rows = []) {
       total.pst += safeNumber(row?.pst);
       total.goLive += safeNumber(row?.goLive);
       total.hiredCount += safeNumber(row?.hiredCount);
+      total.leadsToInterview += safeNumber(row?.leadsToInterview);
 
       return total;
     },
@@ -258,6 +278,7 @@ export function buildForecastAccountTotals(rows = []) {
       pst: 0,
       goLive: 0,
       hiredCount: 0,
+      leadsToInterview: 0,
     },
   );
 

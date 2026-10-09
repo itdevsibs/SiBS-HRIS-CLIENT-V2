@@ -398,8 +398,57 @@ export default function useWorkforceHiringPage({
   ]);
 
   useEffect(() => {
-    fetchSixWeekTrends();
-  }, [fetchSixWeekTrends]);
+    let secondaryDataTimer = null;
+    let secondaryIdleHandle = null;
+    let cancelled = false;
+
+    /*
+      Overview loading priority:
+      1. Selected-week account/KPI data
+      2. Allow React/browser to fully paint the visible dashboard
+      3. Start historical 6-week trend/detail work during browser idle time
+
+      In development React StrictMode can replay mount effects. The Axios layer
+      now also deduplicates identical reads, so the replay cannot start a second
+      expensive workforce calculation while the first one is still running.
+    */
+    if (fastOverviewMode && canLoadSecondaryData) {
+      const runSecondaryLoad = () => {
+        if (!cancelled) {
+          fetchSixWeekTrends();
+        }
+      };
+
+      if (typeof window.requestIdleCallback === "function") {
+        secondaryIdleHandle = window.requestIdleCallback(runSecondaryLoad, {
+          timeout: 1800,
+        });
+      } else {
+        secondaryDataTimer = window.setTimeout(runSecondaryLoad, 1200);
+      }
+    } else {
+      fetchSixWeekTrends();
+    }
+
+    return () => {
+      cancelled = true;
+
+      if (
+        secondaryIdleHandle !== null &&
+        typeof window.cancelIdleCallback === "function"
+      ) {
+        window.cancelIdleCallback(secondaryIdleHandle);
+      }
+
+      if (secondaryDataTimer) {
+        window.clearTimeout(secondaryDataTimer);
+      }
+    };
+  }, [
+    canLoadSecondaryData,
+    fastOverviewMode,
+    fetchSixWeekTrends,
+  ]);
 
   useEffect(() => {
     let cancelled = false;
