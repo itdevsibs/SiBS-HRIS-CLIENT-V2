@@ -115,113 +115,276 @@ function filterRows(rows = [], searchValue = "") {
 
 function ForecastClusterAccountColGroup({ fitToScreen = false }) {
   return (
+    <colgroup>
+      <col style={{ width: fitToScreen ? "9%" : "150px" }} />
+      <col style={{ width: fitToScreen ? "11.5%" : "190px" }} />
+      <col style={{ width: fitToScreen ? "5.5%" : "115px" }} />
+      <col style={{ width: fitToScreen ? "5%" : "105px" }} />
+      <col style={{ width: fitToScreen ? "5%" : "95px" }} />
+      <col style={{ width: fitToScreen ? "6%" : "125px" }} />
+      <col style={{ width: fitToScreen ? "5.5%" : "115px" }} />
+      <col style={{ width: fitToScreen ? "6%" : "135px" }} />
+      <col style={{ width: fitToScreen ? "6%" : "135px" }} />
+      <col style={{ width: fitToScreen ? "5.5%" : "125px" }} />
+      <col style={{ width: fitToScreen ? "5%" : "110px" }} />
+      <col style={{ width: fitToScreen ? "5%" : "105px" }} />
+      <col style={{ width: fitToScreen ? "5%" : "105px" }} />
+      <col style={{ width: fitToScreen ? "4.5%" : "95px" }} />
+      <col style={{ width: fitToScreen ? "5.5%" : "115px" }} />
+      <col style={{ width: fitToScreen ? "6.5%" : "135px" }} />
+      <col style={{ width: fitToScreen ? "7.5%" : "150px" }} />
+      <col style={{ width: fitToScreen ? "8.5%" : "170px" }} />
+    </colgroup>
+  );
+}
+
+function ForecastClusterAccountTableView({
+  filteredRows = [],
+  hasRows = false,
+  averageRows = [],
+  totals = {},
+  loading = false,
+  fitToScreen = false,
+  dragScrollRef,
+  isDragging = false,
+  onMouseDown,
+  onMouseMove,
+  onMouseUp,
+  onMouseLeave,
+  containerClassName = "",
+  bodyScrollClassName = "",
+}) {
+  const headerScrollRef = useRef(null);
+
+  const accountStickyLeft = fitToScreen ? "9%" : "150px";
+
+  const tableClassName = `table-fixed border-collapse font-jakarta whitespace-nowrap ${
+    fitToScreen
+      ? "w-full min-w-[1320px] text-[11px] 2xl:text-xs"
+      : "w-[2260px] min-w-[2260px] text-xs"
+  }`;
+
+  function handleBodyScroll(event) {
+    if (headerScrollRef.current) {
+      headerScrollRef.current.scrollLeft = event.currentTarget.scrollLeft;
+    }
+  }
+
+  return (
     <div
-      ref={dragScrollRef}
-      onMouseDown={onMouseDown}
-      onMouseMove={onMouseMove}
-      onMouseUp={onMouseUp}
-      onMouseLeave={onMouseLeave}
-      className={`sibs-data-table-shell !block overflow-auto sibs-scrollbar rounded-[14px] border border-slate-200 bg-white select-none ${
-        isDragging ? "cursor-grabbing" : "cursor-grab"
-      } ${containerClassName}`}
+      className={`sibs-data-table-shell !block flex flex-col overflow-hidden rounded-[14px] border border-slate-200 bg-white select-none ${containerClassName}`}
     >
-      <table
-        className={`table-fixed border-collapse font-jakarta whitespace-nowrap ${
-          fitToScreen
-            ? "w-full min-w-[1320px] text-[11px] 2xl:text-xs"
-            : "w-[2105px] min-w-[2105px] text-xs"
+      {/* Header is split so scrollable headers never pass behind Cluster / Account. */}
+      {fitToScreen ? (
+        <div
+          ref={headerScrollRef}
+          className="shrink-0 overflow-x-hidden overflow-y-hidden bg-white"
+        >
+          <table className={tableClassName}>
+            <ForecastClusterAccountColGroup fitToScreen={fitToScreen} />
+
+            <thead className="bg-sibs-canvas">
+              <tr className="sibs-data-table-head-row">
+                <WorkforceGroupHeaderTh
+                  rowSpan={2}
+                  className="!sticky left-0 !z-50 !bg-sibs-surface !text-left"
+                >
+                  Cluster
+                </WorkforceGroupHeaderTh>
+
+                <WorkforceGroupHeaderTh
+                  rowSpan={2}
+                  className="!sticky !z-50 !bg-sibs-surface !border-r-slate-300 !text-left shadow-[8px_0_12px_-10px_rgba(15,23,42,0.55)]"
+                  style={{ left: accountStickyLeft }}
+                >
+                  Account
+                </WorkforceGroupHeaderTh>
+
+                <WorkforceGroupHeaderTh colSpan={7}>
+                  Workforce Capacity &amp; Gap
+                </WorkforceGroupHeaderTh>
+
+                <WorkforceGroupHeaderTh colSpan={6}>
+                  Recruitment Pipeline
+                </WorkforceGroupHeaderTh>
+
+                <WorkforceGroupHeaderTh colSpan={3} className="border-r-0">
+                  Yield &amp; Demand
+                </WorkforceGroupHeaderTh>
+              </tr>
+
+              <tr className="sibs-data-table-head-row">
+                <WorkforceHeaderTh className="!text-center !font-black !text-sibs-navy">
+                  Required HC
+                </WorkforceHeaderTh>
+                <WorkforceHeaderTh className="!text-center">
+                  Actual HC
+                </WorkforceHeaderTh>
+                <WorkforceHeaderTh className="!text-center">
+                  Buffer %
+                </WorkforceHeaderTh>
+                <WorkforceHeaderTh className="!text-center">
+                  Absenteeism
+                </WorkforceHeaderTh>
+                <WorkforceHeaderTh className="!text-center">
+                  Attrition
+                </WorkforceHeaderTh>
+                <WorkforceHeaderTh className="!text-center !font-black !text-sibs-navy">
+                  Net Actual HC
+                </WorkforceHeaderTh>
+                <WorkforceHeaderTh className="!text-center !font-black !text-rose-600">
+                  Hiring Needed
+                </WorkforceHeaderTh>
+                <WorkforceHeaderTh className="!text-center !font-black !text-sibs-navy">
+                  Accepted JO
+                </WorkforceHeaderTh>
+                <WorkforceHeaderTh className="!text-center">
+                  NHO Count
+                </WorkforceHeaderTh>
+                <WorkforceHeaderTh className="!text-center">
+                  FST Count
+                </WorkforceHeaderTh>
+                <WorkforceHeaderTh className="!text-center">
+                  PST Count
+                </WorkforceHeaderTh>
+                <WorkforceHeaderTh className="!text-center !font-black !text-emerald-700">
+                  Go Live
+                </WorkforceHeaderTh>
+                <WorkforceHeaderTh className="!text-center !font-black !text-sibs-navy">
+                  Hired
+                </WorkforceHeaderTh>
+                <WorkforceHeaderTh className="!text-center !font-black !text-sibs-orange">
+                  Hiring Rate
+                </WorkforceHeaderTh>
+                <WorkforceHeaderTh className="!text-center font-black !text-purple-700">
+                  Expected Leads
+                </WorkforceHeaderTh>
+                <WorkforceHeaderTh className="border-r-0 !text-center font-black !text-purple-700">
+                  Leads To Interview
+                </WorkforceHeaderTh>
+              </tr>
+            </thead>
+          </table>
+        </div>
+      ) : (
+        <div className="flex shrink-0 bg-sibs-surface">
+          {/* These two headers are completely outside the horizontal-scroll header viewport. */}
+          <div className="flex h-[54px] w-[340px] shrink-0 2xl:h-[62px]">
+            <div className="flex w-[150px] shrink-0 items-center border-r border-sibs-border bg-sibs-surface px-2.5 text-left font-jakarta text-[9px] font-black uppercase tracking-wider text-sibs-primary-1 2xl:px-3 2xl:text-[10px]">
+              Cluster
+            </div>
+            <div className="flex w-[190px] shrink-0 items-center border-r border-slate-300 bg-sibs-surface px-2.5 text-left font-jakarta text-[9px] font-black uppercase tracking-wider text-sibs-primary-1 shadow-[8px_0_12px_-10px_rgba(15,23,42,0.55)] 2xl:px-3 2xl:text-[10px]">
+              Account
+            </div>
+          </div>
+
+          <div
+            ref={headerScrollRef}
+            className="min-w-0 flex-1 overflow-x-hidden overflow-y-hidden bg-sibs-surface"
+          >
+            <table className="w-[1920px] min-w-[1920px] table-fixed border-collapse font-jakarta text-xs whitespace-nowrap">
+              <colgroup>
+                <col style={{ width: "115px" }} />
+                <col style={{ width: "105px" }} />
+                <col style={{ width: "95px" }} />
+                <col style={{ width: "125px" }} />
+                <col style={{ width: "115px" }} />
+                <col style={{ width: "135px" }} />
+                <col style={{ width: "135px" }} />
+                <col style={{ width: "125px" }} />
+                <col style={{ width: "110px" }} />
+                <col style={{ width: "105px" }} />
+                <col style={{ width: "105px" }} />
+                <col style={{ width: "95px" }} />
+                <col style={{ width: "115px" }} />
+                <col style={{ width: "120px" }} />
+                <col style={{ width: "150px" }} />
+                <col style={{ width: "170px" }} />
+              </colgroup>
+
+              <thead className="bg-sibs-canvas">
+                <tr className="sibs-data-table-head-row">
+                  <WorkforceGroupHeaderTh colSpan={7}>
+                    Workforce Capacity &amp; Gap
+                  </WorkforceGroupHeaderTh>
+                  <WorkforceGroupHeaderTh colSpan={6}>
+                    Recruitment Pipeline
+                  </WorkforceGroupHeaderTh>
+                  <WorkforceGroupHeaderTh colSpan={3} className="border-r-0">
+                    Yield &amp; Demand
+                  </WorkforceGroupHeaderTh>
+                </tr>
+
+                <tr className="sibs-data-table-head-row">
+                  <WorkforceHeaderTh className="!text-center !font-black !text-sibs-navy">
+                    Required HC
+                  </WorkforceHeaderTh>
+                  <WorkforceHeaderTh className="!text-center">
+                    Actual HC
+                  </WorkforceHeaderTh>
+                  <WorkforceHeaderTh className="!text-center">
+                    Buffer %
+                  </WorkforceHeaderTh>
+                  <WorkforceHeaderTh className="!text-center">
+                    Absenteeism
+                  </WorkforceHeaderTh>
+                  <WorkforceHeaderTh className="!text-center">
+                    Attrition
+                  </WorkforceHeaderTh>
+                  <WorkforceHeaderTh className="!text-center !font-black !text-sibs-navy">
+                    Net Actual HC
+                  </WorkforceHeaderTh>
+                  <WorkforceHeaderTh className="!text-center !font-black !text-rose-600">
+                    Hiring Needed
+                  </WorkforceHeaderTh>
+                  <WorkforceHeaderTh className="!text-center !font-black !text-sibs-navy">
+                    Accepted JO
+                  </WorkforceHeaderTh>
+                  <WorkforceHeaderTh className="!text-center">
+                    NHO Count
+                  </WorkforceHeaderTh>
+                  <WorkforceHeaderTh className="!text-center">
+                    FST Count
+                  </WorkforceHeaderTh>
+                  <WorkforceHeaderTh className="!text-center">
+                    PST Count
+                  </WorkforceHeaderTh>
+                  <WorkforceHeaderTh className="!text-center !font-black !text-emerald-700">
+                    Go Live
+                  </WorkforceHeaderTh>
+                  <WorkforceHeaderTh className="!text-center !font-black !text-sibs-navy">
+                    Hired
+                  </WorkforceHeaderTh>
+                  <WorkforceHeaderTh className="!text-center !font-black !text-sibs-orange">
+                    Hiring Rate
+                  </WorkforceHeaderTh>
+                  <WorkforceHeaderTh className="!text-center font-black !text-purple-700">
+                    Expected Leads
+                  </WorkforceHeaderTh>
+                  <WorkforceHeaderTh className="border-r-0 !text-center font-black !text-purple-700">
+                    Leads To Interview
+                  </WorkforceHeaderTh>
+                </tr>
+              </thead>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Only the table body/footer scrolls vertically and horizontally. */}
+      <div
+        ref={dragScrollRef}
+        onScroll={handleBodyScroll}
+        onMouseDown={onMouseDown}
+        onMouseMove={onMouseMove}
+        onMouseUp={onMouseUp}
+        onMouseLeave={onMouseLeave}
+        className={`min-h-0 flex-1 overflow-x-scroll overflow-y-auto sibs-scrollbar [scrollbar-gutter:stable] ${bodyScrollClassName} ${
+          isDragging ? "cursor-grabbing" : "cursor-grab"
         }`}
       >
-        <colgroup>
-          <col style={{ width: fitToScreen ? "9%" : "150px" }} />
-          <col style={{ width: fitToScreen ? "11.5%" : "190px" }} />
-          <col style={{ width: fitToScreen ? "5.5%" : "115px" }} />
-          <col style={{ width: fitToScreen ? "5%" : "105px" }} />
-          <col style={{ width: fitToScreen ? "5%" : "95px" }} />
-          <col style={{ width: fitToScreen ? "6%" : "125px" }} />
-          <col style={{ width: fitToScreen ? "5.5%" : "115px" }} />
-          <col style={{ width: fitToScreen ? "6%" : "135px" }} />
-          <col style={{ width: fitToScreen ? "6%" : "135px" }} />
-          <col style={{ width: fitToScreen ? "5.5%" : "125px" }} />
-          <col style={{ width: fitToScreen ? "5%" : "110px" }} />
-          <col style={{ width: fitToScreen ? "5%" : "105px" }} />
-          <col style={{ width: fitToScreen ? "5%" : "105px" }} />
-          <col style={{ width: fitToScreen ? "4.5%" : "95px" }} />
-          <col style={{ width: fitToScreen ? "5.5%" : "115px" }} />
-          <col style={{ width: fitToScreen ? "5.5%" : "120px" }} />
-          <col style={{ width: fitToScreen ? "8.5%" : "170px" }} />
-        </colgroup>
-
-        <thead className="bg-sibs-canvas">
-          <tr className="sibs-data-table-head-row">
-            <WorkforceGroupHeaderTh
-              rowSpan={2}
-              className="!text-left"
-            >
-              Cluster
-            </WorkforceGroupHeaderTh>
-            <WorkforceGroupHeaderTh
-              rowSpan={2}
-              className="!text-left"
-            >
-              Account
-            </WorkforceGroupHeaderTh>
-            <WorkforceGroupHeaderTh colSpan={7}>
-              Workforce Capacity &amp; Gap
-            </WorkforceGroupHeaderTh>
-            <WorkforceGroupHeaderTh colSpan={6}>
-              Recruitment Pipeline
-            </WorkforceGroupHeaderTh>
-            <WorkforceGroupHeaderTh colSpan={2} className="border-r-0">
-              Yield &amp; Demand
-            </WorkforceGroupHeaderTh>
-          </tr>
-
-          <tr className="sibs-data-table-head-row">
-            <WorkforceHeaderTh className="!text-center !font-black !text-sibs-navy">
-              Required HC
-            </WorkforceHeaderTh>
-            <WorkforceHeaderTh className="!text-center">
-              Actual HC
-            </WorkforceHeaderTh>
-            <WorkforceHeaderTh className="!text-center">
-              Buffer %
-            </WorkforceHeaderTh>
-            <WorkforceHeaderTh className="!text-center">
-              Absenteeism
-            </WorkforceHeaderTh>
-            <WorkforceHeaderTh className="!text-center">
-              Attrition
-            </WorkforceHeaderTh>
-            <WorkforceHeaderTh className="!text-center !font-black !text-sibs-navy">
-              Net Actual HC
-            </WorkforceHeaderTh>
-            <WorkforceHeaderTh className="!text-center !font-black !text-rose-600">
-              Hiring Needed
-            </WorkforceHeaderTh>
-            <WorkforceHeaderTh className="!text-center !font-black !text-sibs-navy">
-              Accepted JO
-            </WorkforceHeaderTh>
-            <WorkforceHeaderTh className="!text-center">NHO Count</WorkforceHeaderTh>
-            <WorkforceHeaderTh className="!text-center">FST Count</WorkforceHeaderTh>
-            <WorkforceHeaderTh className="!text-center">PST Count</WorkforceHeaderTh>
-            <WorkforceHeaderTh className="!text-center !font-black !text-emerald-700">
-              Go Live
-            </WorkforceHeaderTh>
-            <WorkforceHeaderTh className="!text-center !font-black !text-sibs-navy">
-              Hired
-            </WorkforceHeaderTh>
-            <WorkforceHeaderTh className="!text-center !font-black !text-sibs-orange">
-              Hiring Rate
-            </WorkforceHeaderTh>
-            <WorkforceHeaderTh className="!text-center font-black !text-purple-700">
-              Expected Leads
-            </WorkforceHeaderTh>
-            <WorkforceHeaderTh className="border-r-0 !text-center font-black !text-purple-700">
-              Leads To Interview
-            </WorkforceHeaderTh>
-          </tr>
-        </thead>
+        <table className={tableClassName}>
+          <ForecastClusterAccountColGroup fitToScreen={fitToScreen} />
 
           <tbody className="sibs-data-table-body">
             {loading ? (

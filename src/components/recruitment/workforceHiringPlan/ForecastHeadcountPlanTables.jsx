@@ -962,35 +962,38 @@ export default function ForecastHeadcountPlanTable({
               )
             }
             desktopContent={
-              <div
-                ref={dragScrollRef}
-                onMouseDown={handleDragStart}
-                onMouseMove={handleDragMove}
-                onMouseUp={handleDragEnd}
-                onMouseLeave={handleDragEnd}
-                className={`sibs-data-table-shell !block max-h-[480px] 2xl:max-h-[640px] overflow-auto sibs-scrollbar rounded-[14px] border border-slate-200 bg-white shadow-sm select-none ${
-                  isDragging ? "cursor-grabbing" : "cursor-grab"
-                }`}
-              >
-                <table className="w-[2070px] min-w-[2070px] table-fixed border-collapse font-jakarta text-xs whitespace-nowrap">
-                  <colgroup>
-                    <col style={{ width: "300px" }} />
-                    <col style={{ width: "115px" }} />
-                    <col style={{ width: "105px" }} />
-                    <col style={{ width: "95px" }} />
-                    <col style={{ width: "125px" }} />
-                    <col style={{ width: "115px" }} />
-                    <col style={{ width: "135px" }} />
-                    <col style={{ width: "135px" }} />
-                    <col style={{ width: "125px" }} />
-                    <col style={{ width: "110px" }} />
-                    <col style={{ width: "105px" }} />
-                    <col style={{ width: "105px" }} />
-                    <col style={{ width: "95px" }} />
-                    <col style={{ width: "115px" }} />
-                    <col style={{ width: "120px" }} />
-                    <col style={{ width: "170px" }} />
-                  </colgroup>
+              <div className="sibs-data-table-shell !block overflow-hidden rounded-[14px] border border-slate-200 bg-white shadow-sm select-none">
+                {/* Fixed Forecast Period header + separately clipped scrollable headers.
+                    This prevents the moving headers from passing underneath/behind
+                    the Forecast Period header when scrolling horizontally. */}
+                <div className="flex shrink-0 bg-sibs-surface">
+                  <div className="relative z-40 flex h-[54px] w-[300px] shrink-0 items-center border-r border-slate-300 bg-sibs-surface px-2.5 text-left font-jakarta text-[9px] font-black uppercase tracking-wider text-sibs-primary-1 2xl:h-[62px] 2xl:px-3 2xl:text-[10px]">
+                    Forecast Period
+                  </div>
+
+                  <div
+                    ref={headerScrollRef}
+                    className="min-w-0 flex-1 overflow-x-hidden overflow-y-hidden bg-sibs-surface"
+                  >
+                    <table className="w-[1920px] min-w-[1920px] table-fixed border-collapse font-jakarta text-xs whitespace-nowrap">
+                      <colgroup>
+                        <col style={{ width: "115px" }} />
+                        <col style={{ width: "105px" }} />
+                        <col style={{ width: "95px" }} />
+                        <col style={{ width: "125px" }} />
+                        <col style={{ width: "115px" }} />
+                        <col style={{ width: "135px" }} />
+                        <col style={{ width: "135px" }} />
+                        <col style={{ width: "125px" }} />
+                        <col style={{ width: "110px" }} />
+                        <col style={{ width: "105px" }} />
+                        <col style={{ width: "105px" }} />
+                        <col style={{ width: "95px" }} />
+                        <col style={{ width: "115px" }} />
+                        <col style={{ width: "120px" }} />
+                        <col style={{ width: "150px" }} />
+                        <col style={{ width: "170px" }} />
+                      </colgroup>
 
                       <thead className="sibs-data-table-head bg-sibs-surface">
                         <tr className="sibs-data-table-head-row">
