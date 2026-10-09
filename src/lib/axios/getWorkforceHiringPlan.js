@@ -1,17 +1,88 @@
 import api from "./api-template";
 
+/*
+  Workforce Hiring read-request cache / in-flight dedupe.
+
+  Why this exists:
+  - React StrictMode in development can replay mount effects.
+  - Workforce endpoints are expensive because they aggregate employee,
+    attendance, attrition, and recruitment pipeline data.
+  - Two identical requests arriving together should share one Promise instead
+    of making the server calculate the same dashboard twice.
+
+  The cache is intentionally short-lived so normal refreshes still get fresh
+  HRIS/Kronos data.
+*/
+const workforceReadCache = new Map();
+const workforceReadInflight = new Map();
+
+function stableRequestKey(name, params = {}) {
+  const normalized = Object.keys(params || {})
+    .sort()
+    .map((key) => [key, params[key] ?? ""]);
+
+  return `${name}:${JSON.stringify(normalized)}`;
+}
+
+async function getCachedWorkforceRead({
+  name,
+  params = {},
+  ttlMs = 5000,
+  loader,
+}) {
+  const key = stableRequestKey(name, params);
+  const now = Date.now();
+  const cached = workforceReadCache.get(key);
+
+  if (cached && now - cached.createdAt <= ttlMs) {
+    return cached.value;
+  }
+
+  if (workforceReadInflight.has(key)) {
+    return workforceReadInflight.get(key);
+  }
+
+  const request = Promise.resolve()
+    .then(loader)
+    .then((value) => {
+      workforceReadCache.set(key, {
+        createdAt: Date.now(),
+        value,
+      });
+
+      return value;
+    })
+    .finally(() => {
+      workforceReadInflight.delete(key);
+    });
+
+  workforceReadInflight.set(key, request);
+  return request;
+}
+
+function clearWorkforceHiringPlanReadCache() {
+  workforceReadCache.clear();
+}
+
+
 /* =========================================
    WORKFORCE HIRING PLAN API
 ========================================= */
 
 export async function getWorkforceHiringPlanWeeks() {
   try {
-    const res = await api.get("/api/weekly-hiring-plan/weeks", {
-      withCredentials: true,
-    });
+    return await getCachedWorkforceRead({
+      name: "weeks",
+      ttlMs: 30000,
+      loader: async () => {
+        const res = await api.get("/api/weekly-hiring-plan/weeks", {
+          withCredentials: true,
+        });
 
-    console.log("getWorkforceHiringPlanWeeks res:", res.data);
-    return res.data?.data || [];
+        console.log("getWorkforceHiringPlanWeeks res:", res.data);
+        return res.data?.data || [];
+      },
+    });
   } catch (err) {
     console.error(
       "Axios getWorkforceHiringPlanWeeks API error:",
@@ -25,16 +96,22 @@ export async function getWorkforceHiringPlanWeeks() {
 
 export async function getWorkforceHiringPlanFilterOptions() {
   try {
-    const res = await api.get("/api/weekly-hiring-plan/filter-options", {
-      withCredentials: true,
+    return await getCachedWorkforceRead({
+      name: "filter-options",
+      ttlMs: 30000,
+      loader: async () => {
+        const res = await api.get("/api/weekly-hiring-plan/filter-options", {
+          withCredentials: true,
+        });
+
+        console.log("getWorkforceHiringPlanFilterOptions res:", res.data);
+
+        return {
+          clusters: res.data?.clusters || [],
+          accounts: res.data?.accounts || [],
+        };
+      },
     });
-
-    console.log("getWorkforceHiringPlanFilterOptions res:", res.data);
-
-    return {
-      clusters: res.data?.clusters || [],
-      accounts: res.data?.accounts || [],
-    };
   } catch (err) {
     console.error(
       "Axios getWorkforceHiringPlanFilterOptions API error:",
@@ -52,13 +129,22 @@ export async function getWorkforceHiringPlanFilterOptions() {
 export async function getWorkforceHiringPlanAccountOptions(
   cluster = "All",
 ) {
-  try {
-    const res = await api.get("/api/weekly-hiring-plan/account-options", {
-      params: { cluster },
-      withCredentials: true,
-    });
+  const params = { cluster };
 
-    return res.data?.data || [];
+  try {
+    return await getCachedWorkforceRead({
+      name: "account-options",
+      params,
+      ttlMs: 15000,
+      loader: async () => {
+        const res = await api.get("/api/weekly-hiring-plan/account-options", {
+          params,
+          withCredentials: true,
+        });
+
+        return res.data?.data || [];
+      },
+    });
   } catch (err) {
     console.error(
       "Axios getWorkforceHiringPlanAccountOptions API error:",
@@ -77,21 +163,30 @@ export async function getWorkforceHiringPlanAccounts(
   account = "All",
   includeWeeklySeries = true,
 ) {
+  const params = {
+    cluster,
+    account,
+    startDate,
+    endDate,
+    includeWeeklySeries: includeWeeklySeries ? 1 : 0,
+  };
+
   try {
-    const res = await api.get("/api/weekly-hiring-plan/accounts", {
-      params: {
-        cluster,
-        account,
-        startDate,
-        endDate,
-        includeWeeklySeries: includeWeeklySeries ? 1 : 0,
+    return await getCachedWorkforceRead({
+      name: "accounts",
+      params,
+      ttlMs: 10000,
+      loader: async () => {
+        const res = await api.get("/api/weekly-hiring-plan/accounts", {
+          params,
+          withCredentials: true,
+        });
+
+        console.log("getWorkforceHiringPlanAccounts res:", res.data);
+
+        return res.data?.data || [];
       },
-      withCredentials: true,
     });
-
-    console.log("getWorkforceHiringPlanAccounts res:", res.data);
-
-    return res.data?.data || [];
   } catch (err) {
     console.error(
       "Axios getWorkforceHiringPlanAccounts API error:",
@@ -117,27 +212,39 @@ export async function getWorkforceHiringPlanTrends({
   rangeStartDate = "",
   rangeEndDate = "",
 } = {}) {
+  const params = {
+    cluster,
+    account,
+    weekStart,
+    weekEnd,
+    startDate,
+    endDate,
+
+    /*
+      Only modal filter sends these.
+      Dashboard default should NOT send these.
+    */
+    rangeStartDate,
+    rangeEndDate,
+  };
+
   try {
-    const response = await api.get("/api/weekly-hiring-plan/accounts/trends", {
-      params: {
-        cluster,
-        account,
-        weekStart,
-        weekEnd,
-        startDate,
-        endDate,
+    return await getCachedWorkforceRead({
+      name: "account-trends",
+      params,
+      ttlMs: 15000,
+      loader: async () => {
+        const response = await api.get(
+          "/api/weekly-hiring-plan/accounts/trends",
+          {
+            params,
+            withCredentials: true,
+          },
+        );
 
-        /*
-          Only modal filter sends these.
-          Dashboard default should NOT send these.
-        */
-        rangeStartDate,
-        rangeEndDate,
+        return response.data;
       },
-      withCredentials: true,
     });
-
-    return response.data;
   } catch (error) {
     console.error(
       "Axios getWorkforceHiringPlanAccountTrends API error:",
@@ -191,6 +298,7 @@ export async function saveWorkforceHiringPlanActionItem(payload) {
       },
     );
 
+    clearWorkforceHiringPlanReadCache();
     return res.data;
   } catch (err) {
     console.error(
@@ -215,6 +323,7 @@ export async function saveRequiredHeadcount(payload) {
     withCredentials: true,
   });
 
+  clearWorkforceHiringPlanReadCache();
   return res.data;
 }
 
@@ -227,6 +336,7 @@ export async function lockWorkforceHiringPlanSnapshot(payload) {
     },
   );
 
+  clearWorkforceHiringPlanReadCache();
   return res.data;
 }
 
@@ -256,6 +366,7 @@ export async function updateWorkforceHiringPlanFile(payload) {
     },
   );
 
+  clearWorkforceHiringPlanReadCache();
   return res.data;
 }
 
@@ -292,25 +403,34 @@ export async function getWorkforceHiringPlanSixWeekTable({
   rangeStartDate = "",
   rangeEndDate = "",
 } = {}) {
-  try {
-    const response = await api.get(
-      "/api/weekly-hiring-plan/accounts/six-week-table",
-      {
-        params: {
-          cluster,
-          account,
-          weekStart,
-          weekEnd,
-          startDate,
-          endDate,
-          rangeStartDate,
-          rangeEndDate,
-        },
-        withCredentials: true,
-      },
-    );
+  const params = {
+    cluster,
+    account,
+    weekStart,
+    weekEnd,
+    startDate,
+    endDate,
+    rangeStartDate,
+    rangeEndDate,
+  };
 
-    return response.data;
+  try {
+    return await getCachedWorkforceRead({
+      name: "six-week-table",
+      params,
+      ttlMs: 15000,
+      loader: async () => {
+        const response = await api.get(
+          "/api/weekly-hiring-plan/accounts/six-week-table",
+          {
+            params,
+            withCredentials: true,
+          },
+        );
+
+        return response.data;
+      },
+    });
   } catch (error) {
     console.error(
       "Axios getWorkforceHiringPlanSixWeekTable API error:",
@@ -344,25 +464,34 @@ export async function getWorkforceHiringPlanForecast({
   basisWeeks = 6,
   forecastWeeks = 6,
 } = {}) {
-  try {
-    const response = await api.get(
-      "/api/weekly-hiring-plan/accounts/forecast",
-      {
-        params: {
-          cluster,
-          account,
-          weekStart,
-          weekEnd,
-          startDate,
-          endDate,
-          basisWeeks,
-          forecastWeeks,
-        },
-        withCredentials: true,
-      },
-    );
+  const params = {
+    cluster,
+    account,
+    weekStart,
+    weekEnd,
+    startDate,
+    endDate,
+    basisWeeks,
+    forecastWeeks,
+  };
 
-    return response.data;
+  try {
+    return await getCachedWorkforceRead({
+      name: "forecast",
+      params,
+      ttlMs: 15000,
+      loader: async () => {
+        const response = await api.get(
+          "/api/weekly-hiring-plan/accounts/forecast",
+          {
+            params,
+            withCredentials: true,
+          },
+        );
+
+        return response.data;
+      },
+    });
   } catch (error) {
     console.error(
       "Axios getWorkforceHiringPlanForecast API error:",

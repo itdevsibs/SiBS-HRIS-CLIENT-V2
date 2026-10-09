@@ -178,7 +178,7 @@ function HeaderTh({
     <th
       rowSpan={rowSpan}
       colSpan={colSpan}
-      className={`sibs-data-table-th border border-slate-200 !px-2.5 2xl:!px-3 text-center align-middle font-jakarta uppercase tracking-wider ${
+      className={`sibs-data-table-th z-[41] border border-slate-200 !px-2.5 2xl:!px-3 text-center align-middle font-jakarta uppercase tracking-wider ${
         group
           ? "!bg-blue-50 !py-1.5 2xl:!py-2 sibs-text-micro !font-black !text-sibs-navy"
           : "!bg-sibs-surface !py-1.5 2xl:!py-2.5 sibs-text-micro !font-extrabold !text-slate-500"
@@ -647,14 +647,14 @@ function getSixWeekHistory(row = {}, selectedWeekNumber = 28) {
 }
 
 
-export const ALL_SIX_WEEKS = "All 6 Weeks";
+const ALL_SIX_WEEKS = "All 6 Weeks";
 
 function getPeriodWeekNumber(value) {
   const match = String(value || "").match(/(?:week|wk)\s*-?\s*(\d+)/i);
   return match?.[1] ? Number(match[1]) : 0;
 }
 
-export function buildPeriodOptions(selectedWeekNumber = 28) {
+function buildPeriodOptions(selectedWeekNumber = 28) {
   const currentWeek = Math.max(6, Number(selectedWeekNumber) || 28);
   const startWeek = currentWeek - 5;
 
@@ -832,7 +832,7 @@ function buildAllWeeksDisplayRow(row = {}, history = []) {
   };
 }
 
-export function buildPeriodDisplayRow(
+function buildPeriodDisplayRow(
   row = {},
   selectedPeriod = "",
   selectedWeekNumber = 28,
@@ -1574,6 +1574,7 @@ export default function WorkforceHiringOverviewDetailsTable() {
   );
 
   const dragScrollRef = useRef(null);
+  const metricHeaderTableRef = useRef(null);
   const isDraggingRef = useRef(false);
   const startXRef = useRef(0);
   const scrollLeftRef = useRef(0);
@@ -1732,6 +1733,15 @@ export default function WorkforceHiringOverviewDetailsTable() {
     if (container) container.style.userSelect = "";
   }
 
+  function handleBodyScroll(event) {
+    const horizontalOffset = Number(event.currentTarget.scrollLeft || 0);
+
+    if (metricHeaderTableRef.current) {
+      metricHeaderTableRef.current.style.transform =
+        `translate3d(${-horizontalOffset}px, 0, 0)`;
+    }
+  }
+
   return (
     <section className="sibs-page-card-in sibs-card overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-sm">
       <div className="border-b border-sibs-border px-3 py-2 2xl:px-5 2xl:py-4">
@@ -1870,17 +1880,165 @@ export default function WorkforceHiringOverviewDetailsTable() {
           }
           desktopContent={
             <div className="sibs-data-table-shell !block overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+              {/* Fixed identity headers + separately clipped metric headers.
+                  This prevents horizontally scrolling headers from passing
+                  underneath # / Cluster / Account. */}
+              <div className="flex shrink-0 bg-white">
+                <div className="w-[310px] shrink-0 bg-white">
+                  <table className="w-[310px] min-w-[310px] table-fixed border-collapse text-left font-jakarta text-xs whitespace-nowrap">
+                    <colgroup>
+                      <col style={{ width: "40px" }} />
+                      <col style={{ width: "120px" }} />
+                      <col style={{ width: "150px" }} />
+                    </colgroup>
+
+                    <thead className="bg-white font-jakarta">
+                      <tr className="border-b border-slate-200 text-slate-600 font-extrabold text-[10px] tracking-wider uppercase">
+                        <HeaderTh className="!bg-sibs-surface !text-center">#</HeaderTh>
+                        <HeaderTh className="!bg-sibs-surface">Cluster</HeaderTh>
+                        <HeaderTh className="!bg-sibs-surface !border-r-slate-300 shadow-[8px_0_12px_-10px_rgba(15,23,42,0.55)]">
+                          Account
+                        </HeaderTh>
+                      </tr>
+
+                      <tr className="border-b border-slate-200 text-slate-500 font-bold text-[10px] uppercase tracking-wider">
+                        <HeaderTh className="!bg-sibs-surface !text-center">
+                          <GripHorizontal className="w-3.5 h-3.5 mx-auto text-slate-400" />
+                        </HeaderTh>
+                        <HeaderTh className="!bg-sibs-surface">
+                          Cluster Group
+                        </HeaderTh>
+                        <HeaderTh className="!bg-sibs-surface !border-r-slate-300 shadow-[8px_0_12px_-10px_rgba(15,23,42,0.55)]">
+                          Account Name
+                        </HeaderTh>
+                      </tr>
+                    </thead>
+                  </table>
+                </div>
+
+                <div
+                  className="min-w-0 flex-1 overflow-hidden bg-white"
+                  aria-hidden="false"
+                >
+                  <table
+                    ref={metricHeaderTableRef}
+                    className="w-[2135px] min-w-[2135px] table-fixed border-collapse text-left font-jakarta text-xs whitespace-nowrap will-change-transform"
+                  >
+                    <colgroup>
+                      <col style={{ width: "95px" }} />
+                      <col style={{ width: "90px" }} />
+                      <col style={{ width: "85px" }} />
+                      <col style={{ width: "95px" }} />
+                      <col style={{ width: "105px" }} />
+
+                      <col style={{ width: "90px" }} />
+                      <col style={{ width: "75px" }} />
+                      <col style={{ width: "85px" }} />
+                      <col style={{ width: "75px" }} />
+
+                      <col style={{ width: "95px" }} />
+                      <col style={{ width: "85px" }} />
+                      <col style={{ width: "85px" }} />
+                      <col style={{ width: "85px" }} />
+                      <col style={{ width: "80px" }} />
+
+                      <col style={{ width: "155px" }} />
+                      <col style={{ width: "155px" }} />
+                      <col style={{ width: "155px" }} />
+                      <col style={{ width: "155px" }} />
+
+                      <col style={{ width: "90px" }} />
+                      <col style={{ width: "90px" }} />
+                      <col style={{ width: "110px" }} />
+                    </colgroup>
+
+                    <thead className="bg-white font-jakarta">
+                      <tr className="border-b border-slate-200 text-slate-600 font-extrabold text-[10px] tracking-wider uppercase">
+                        <HeaderTh colSpan={5} className="!text-center !bg-slate-100 !border-r-slate-200">
+                          Workforce Capacity
+                        </HeaderTh>
+
+                        <HeaderTh colSpan={4} className="!text-center !bg-slate-100 !border-r-slate-200">
+                          Shrinkage &amp; Attrition
+                        </HeaderTh>
+
+                        <HeaderTh colSpan={5} className="!text-center !bg-slate-100 !border-r-slate-200">
+                          Hiring Funnel Milestones
+                        </HeaderTh>
+
+                        <HeaderTh colSpan={4} className="!text-center !bg-slate-100 !border-r-slate-200">
+                          Pipeline Conversion &amp; Retention
+                        </HeaderTh>
+
+                        <HeaderTh colSpan={3} className="!text-center !bg-slate-100">
+                          Fulfillment Summary
+                        </HeaderTh>
+                      </tr>
+
+                      <tr className="border-b border-slate-200 text-slate-500 font-bold text-[10px] uppercase tracking-wider">
+                        <HeaderTh className="!text-right">Planned HC</HeaderTh>
+                        <HeaderTh className="!text-right">Actual HC</HeaderTh>
+                        <HeaderTh className="!text-right">Buffer %</HeaderTh>
+
+                        <HeaderTh className="!text-right !font-black !text-sibs-primary-1">
+                          Net Actual
+                        </HeaderTh>
+
+                        <HeaderTh className="!border-r-slate-200 !text-right !font-black !text-rose-600">
+                          Hiring Needed
+                        </HeaderTh>
+
+                        <HeaderTh className="!text-right">Absenteeism</HeaderTh>
+
+                        <HeaderTh className="!text-right !font-black !text-sibs-primary-1">
+                          ABS %
+                        </HeaderTh>
+
+                        <HeaderTh className="!text-right">Attrition</HeaderTh>
+
+                        <HeaderTh className="!border-r-slate-200 !text-right !font-black !text-sibs-primary-1">
+                          ATT %
+                        </HeaderTh>
+
+                        <HeaderTh className="!text-right">Accepted JO</HeaderTh>
+                        <HeaderTh className="!text-right">NHO Count</HeaderTh>
+                        <HeaderTh className="!text-right">FST Count</HeaderTh>
+                        <HeaderTh className="!text-right">PST Count</HeaderTh>
+
+                        <HeaderTh className="!border-r-slate-200 !text-right">
+                          Go Live
+                        </HeaderTh>
+
+                        <HeaderTh>JO → NHO (Drop / Ret%)</HeaderTh>
+                        <HeaderTh>NHO → FST (Drop / Ret%)</HeaderTh>
+                        <HeaderTh>FST → PST (Drop / Ret%)</HeaderTh>
+
+                        <HeaderTh className="!border-r-slate-200">
+                          PST → Go Live (Drop / Ret%)
+                        </HeaderTh>
+
+                        <HeaderTh className="!text-right">Hired Count</HeaderTh>
+                        <HeaderTh className="!text-right">Hiring Rate %</HeaderTh>
+                        <HeaderTh>Hiring Risk</HeaderTh>
+                      </tr>
+                    </thead>
+                  </table>
+                </div>
+              </div>
+
+              {/* Body-only scrolling: the vertical scrollbar starts below the header. */}
               <div
                 ref={dragScrollRef}
-                className={`overflow-x-auto sibs-scrollbar ${
+                className={`max-h-[520px] overflow-x-auto overflow-y-auto sibs-scrollbar ${
                   isDragging ? "cursor-grabbing" : "cursor-grab"
                 }`}
+                onScroll={handleBodyScroll}
                 onMouseDown={handleDragStart}
                 onMouseMove={handleDragMove}
                 onMouseUp={handleDragEnd}
                 onMouseLeave={handleDragEnd}
               >
-                <table className="w-[2500px] min-w-[2500px] table-fixed border-collapse text-left font-jakarta text-xs whitespace-nowrap">
+                <table className="w-[2445px] min-w-[2445px] table-fixed border-collapse text-left font-jakarta text-xs whitespace-nowrap">
                   <colgroup>
                     <col style={{ width: "40px" }} />
                     <col style={{ width: "120px" }} />
@@ -1913,87 +2071,6 @@ export default function WorkforceHiringOverviewDetailsTable() {
                     <col style={{ width: "110px" }} />
                   </colgroup>
 
-                  <thead className="bg-sibs-surface font-jakarta">
-                    <tr className="border-b border-slate-200 text-slate-600 font-extrabold text-[10px] tracking-wider uppercase">
-                      <HeaderTh className="!text-center">#</HeaderTh>
-                      <HeaderTh sortable sortKey="cluster">Cluster</HeaderTh>
-                      <HeaderTh sortable sortKey="account">Account</HeaderTh>
-
-                      <HeaderTh colSpan={5} className="!text-center !bg-slate-100/70 !border-r-slate-200">
-                        Workforce Capacity
-                      </HeaderTh>
-
-                      <HeaderTh colSpan={4} className="!text-center !bg-slate-100/70 !border-r-slate-200">
-                        Shrinkage & Attrition
-                      </HeaderTh>
-
-                      <HeaderTh colSpan={5} className="!text-center !bg-slate-100/70 !border-r-slate-200">
-                        Hiring Funnel Milestones
-                      </HeaderTh>
-
-                      <HeaderTh colSpan={4} className="!text-center !bg-slate-100/70 !border-r-slate-200">
-                        Pipeline Conversion & Retention
-                      </HeaderTh>
-
-                      <HeaderTh colSpan={3} className="!text-center !bg-slate-100/70">
-                        Fulfillment Summary
-                      </HeaderTh>
-                    </tr>
-
-                    <tr className="border-b border-slate-200 text-slate-500 font-bold text-[10px] uppercase tracking-wider">
-                      <HeaderTh className="!text-center">
-                        <GripHorizontal className="w-3.5 h-3.5 mx-auto text-slate-400" />
-                      </HeaderTh>
-                      <HeaderTh sortable sortKey="cluster">Cluster Group</HeaderTh>
-                      <HeaderTh sortable sortKey="account">Account Name</HeaderTh>
-
-                      <HeaderTh className="!text-right">Planned HC</HeaderTh>
-                      <HeaderTh className="!text-right">Actual HC</HeaderTh>
-                      <HeaderTh className="!text-right">Buffer %</HeaderTh>
-
-                      <HeaderTh className="!text-right !font-black !text-sibs-primary-1">
-                        Net Actual
-                      </HeaderTh>
-
-                      <HeaderTh className="!border-r-slate-200 !text-right !font-black !text-rose-600">
-                        Hiring Needed
-                      </HeaderTh>
-
-                      <HeaderTh className="!text-right">Absenteeism</HeaderTh>
-
-                      <HeaderTh className="!text-right !font-black !text-sibs-primary-1">
-                        ABS %
-                      </HeaderTh>
-
-                      <HeaderTh className="!text-right">Attrition</HeaderTh>
-
-                      <HeaderTh className="!border-r-slate-200 !text-right !font-black !text-sibs-primary-1">
-                        ATT %
-                      </HeaderTh>
-
-                      <HeaderTh className="!text-right">Accepted JO</HeaderTh>
-                      <HeaderTh className="!text-right">NHO Count</HeaderTh>
-                      <HeaderTh className="!text-right">FST Count</HeaderTh>
-                      <HeaderTh className="!text-right">PST Count</HeaderTh>
-
-                      <HeaderTh className="!border-r-slate-200 !text-right">
-                        Go Live
-                      </HeaderTh>
-
-                      <HeaderTh>JO → NHO (Drop / Ret%)</HeaderTh>
-                      <HeaderTh>NHO → FST (Drop / Ret%)</HeaderTh>
-                      <HeaderTh>FST → PST (Drop / Ret%)</HeaderTh>
-
-                      <HeaderTh className="!border-r-slate-200">
-                        PST → Go Live (Drop / Ret%)
-                      </HeaderTh>
-
-                      <HeaderTh className="!text-right">Hired Count</HeaderTh>
-                      <HeaderTh className="!text-right">Hiring Rate %</HeaderTh>
-                      <HeaderTh>Hiring Risk</HeaderTh>
-                    </tr>
-                  </thead>
-
                   <tbody className="bg-white font-jakarta font-medium">
                     {isLoading ? (
                       <TableSkeletonRows count={6} columns={TABLE_COLUMN_COUNT} rowHeight="h-7" />
@@ -2021,14 +2098,18 @@ export default function WorkforceHiringOverviewDetailsTable() {
                         return (
                           <Fragment key={rowKey}>
                             <tr
-                              className={`border-b border-sibs-border transition-colors cursor-pointer text-xs ${
+                              className={`group border-b border-sibs-border transition-colors cursor-pointer text-xs ${
                                 isExpanded ? "bg-amber-50/60" : "hover:bg-slate-50/80"
                               }`}
                             >
                               <BodyTd
                                 align="center"
                                 numeric={false}
-                                className="!px-2 !py-2.5"
+                                className={`sticky left-0 z-30 !px-2 !py-2.5 ${
+                                  isExpanded
+                                    ? "!bg-amber-50"
+                                    : "!bg-white group-hover:!bg-slate-50"
+                                }`}
                               >
                                 <button
                                   type="button"
@@ -2050,7 +2131,11 @@ export default function WorkforceHiringOverviewDetailsTable() {
                               <BodyTd
                                 align="left"
                                 numeric={false}
-                                className="font-normal text-slate-500"
+                                className={`sticky left-[40px] z-30 font-normal text-slate-500 ${
+                                  isExpanded
+                                    ? "!bg-amber-50"
+                                    : "!bg-white group-hover:!bg-slate-50"
+                                }`}
                               >
                                 <span
                                   className="block max-w-[105px] truncate font-normal text-slate-500"
@@ -2063,7 +2148,11 @@ export default function WorkforceHiringOverviewDetailsTable() {
                               <BodyTd
                                 align="left"
                                 numeric={false}
-                                className={BOLD_NUMBER_CLASS}
+                                className={`sticky left-[160px] z-30 !border-r-slate-300 shadow-[8px_0_12px_-10px_rgba(15,23,42,0.55)] ${
+                                  isExpanded
+                                    ? "!bg-amber-50"
+                                    : "!bg-white group-hover:!bg-slate-50"
+                                } ${BOLD_NUMBER_CLASS}`}
                               >
                                 <span
                                   className="block max-w-[135px] truncate !font-black !text-sibs-navy"
@@ -2118,7 +2207,7 @@ export default function WorkforceHiringOverviewDetailsTable() {
                           colSpan={3}
                           align="left"
                           numeric={false}
-                          className="font-extrabold uppercase text-sibs-primary-1 !border-r-slate-200"
+                          className="sticky left-0 z-30 !bg-sibs-surface font-extrabold uppercase text-sibs-primary-1 !border-r-slate-300 shadow-[8px_0_12px_-10px_rgba(15,23,42,0.55)]"
                         >
                           Total / Average ({sortedRows.length} Accounts)
                         </BodyTd>

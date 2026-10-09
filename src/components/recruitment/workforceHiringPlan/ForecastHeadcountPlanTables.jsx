@@ -202,6 +202,30 @@ function normalizeForecastRow(row = {}) {
     Math.max(0, requiredHeadcount - netActualHc),
   );
 
+  const hiringRate = getRowNumber(row, [
+    "hiringRate",
+    "hiring_rate",
+    "hiringPlanPercent",
+    "hiring_plan_percent",
+  ]);
+
+  const hiringRateDecimal = hiringRate / 100;
+
+  const expectedLeads = getRowNumber(
+    row,
+    [
+      "expectedLeads",
+      "expected_leads",
+      "expectedLeadCount",
+      "expected_lead_count",
+    ],
+    hiringNeeded <= 0
+      ? 0
+      : hiringRateDecimal > 0
+        ? Math.ceil(hiringNeeded / hiringRateDecimal)
+        : hiringNeeded,
+  );
+
   return {
     weekStart: getWeekStart(row),
     weekEnd: getWeekEnd(row),
@@ -256,12 +280,8 @@ function normalizeForecastRow(row = {}) {
 
     hiredCount: getRowNumber(row, ["hiredCount", "hired_count", "hired"]),
 
-    hiringRate: getRowNumber(row, [
-      "hiringRate",
-      "hiring_rate",
-      "hiringPlanPercent",
-      "hiring_plan_percent",
-    ]),
+    hiringRate,
+    expectedLeads,
 
     leadsToInterview: getRowNumber(row, [
       "leadsToInterview",
@@ -427,12 +447,28 @@ function buildSixWeekForecastAverageSummary(rows = []) {
 
   const hiringRateDecimal = hiringRate / 100;
 
-  const leadsToInterview =
+  const expectedLeads =
     hiringNeeded <= 0
       ? 0
       : hiringRateDecimal > 0
         ? Math.ceil(hiringNeeded / hiringRateDecimal)
         : hiringNeeded;
+
+  /*
+   * Preserve the existing Leads To Interview total behavior.
+   * If the rows contain an explicit Leads To Interview value, average it.
+   * Otherwise fall back to Expected Leads so existing forecast responses
+   * continue to display correctly.
+   */
+  const leadsToInterview =
+    safeRows.some((row) => safeNumber(row.leadsToInterview) > 0)
+      ? Math.round(
+          safeRows.reduce(
+            (total, row) => total + safeNumber(row.leadsToInterview),
+            0,
+          ) / divisor,
+        )
+      : expectedLeads;
 
   return {
     requiredHeadcount,
@@ -451,6 +487,7 @@ function buildSixWeekForecastAverageSummary(rows = []) {
     goLive,
     hiredCount,
     hiringRate,
+    expectedLeads,
     leadsToInterview,
   };
 }
@@ -625,8 +662,8 @@ function ForecastWeekMobileCard({ row, index, onOpen }) {
           tone="secondary"
         />
         <DataCard.MetricItem
-          label="Leads to Int."
-          value={formatOverviewNumber(row.leadsToInterview)}
+          label="Expected Leads"
+          value={formatOverviewNumber(row.expectedLeads)}
           tone="orange"
         />
       </DataCard.Metrics>
@@ -638,6 +675,7 @@ function ForecastWeekMobileCard({ row, index, onOpen }) {
           <span>FST: <strong className="text-sibs-navy">{formatOverviewNumber(row.fst)}</strong></span>
           <span>PST: <strong className="text-sibs-navy">{formatOverviewNumber(row.pst)}</strong></span>
           <span>Go Live: <strong className="text-emerald-700">{formatOverviewNumber(row.goLive)}</strong></span>
+          <span>Leads to Int.: <strong className="text-purple-700">{formatOverviewNumber(row.leadsToInterview)}</strong></span>
         </div>
         <span className="shrink-0 text-[10px] font-extrabold uppercase text-sibs-orange">
           View Accounts →
@@ -813,6 +851,7 @@ export default function ForecastHeadcountPlanTable({
   const hasRows = forecastRows.length > 0;
 
   const dragScrollRef = useRef(null);
+  const headerScrollRef = useRef(null);
   const [isDragging, setIsDragging] = useState(false);
   const [startX, setStartX] = useState(0);
   const [scrollLeft, setScrollLeft] = useState(0);
@@ -826,6 +865,12 @@ export default function ForecastHeadcountPlanTable({
 
   const handleDragEnd = () => {
     setIsDragging(false);
+  };
+
+  const handleBodyScroll = (event) => {
+    if (headerScrollRef.current) {
+      headerScrollRef.current.scrollLeft = event.currentTarget.scrollLeft;
+    }
   };
 
   const handleDragMove = (e) => {
@@ -917,102 +962,140 @@ export default function ForecastHeadcountPlanTable({
               )
             }
             desktopContent={
-              <div
-                ref={dragScrollRef}
-                onMouseDown={handleDragStart}
-                onMouseMove={handleDragMove}
-                onMouseUp={handleDragEnd}
-                onMouseLeave={handleDragEnd}
-                className={`sibs-data-table-shell !block max-h-[480px] 2xl:max-h-[640px] overflow-auto sibs-scrollbar rounded-xl border border-slate-200 bg-white shadow-sm select-none ${
-                  isDragging ? "cursor-grabbing" : "cursor-grab"
-                }`}
-              >
-                <table className="w-[2070px] min-w-[2070px] table-fixed border-collapse font-jakarta text-xs whitespace-nowrap">
-                  <colgroup>
-                    <col style={{ width: "300px" }} />
-                    <col style={{ width: "115px" }} />
-                    <col style={{ width: "105px" }} />
-                    <col style={{ width: "95px" }} />
-                    <col style={{ width: "125px" }} />
-                    <col style={{ width: "115px" }} />
-                    <col style={{ width: "135px" }} />
-                    <col style={{ width: "135px" }} />
-                    <col style={{ width: "125px" }} />
-                    <col style={{ width: "110px" }} />
-                    <col style={{ width: "105px" }} />
-                    <col style={{ width: "105px" }} />
-                    <col style={{ width: "95px" }} />
-                    <col style={{ width: "115px" }} />
-                    <col style={{ width: "120px" }} />
-                    <col style={{ width: "170px" }} />
-                  </colgroup>
+              <div className="sibs-data-table-shell !block overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm select-none">
+                {/* Fixed Forecast Period header + separately clipped scrollable headers.
+                    This prevents the moving headers from passing underneath/behind
+                    the Forecast Period header when scrolling horizontally. */}
+                <div className="flex shrink-0 bg-sibs-surface">
+                  <div className="relative z-40 flex h-[54px] w-[300px] shrink-0 items-center border-r border-slate-300 bg-sibs-surface px-2.5 text-left font-jakarta text-[9px] font-black uppercase tracking-wider text-sibs-primary-1 2xl:h-[62px] 2xl:px-3 2xl:text-[10px]">
+                    Forecast Period
+                  </div>
 
-                  <thead className="sibs-data-table-head bg-sibs-surface">
-                    <tr className="sibs-data-table-head-row">
-                      <WorkforceGroupHeaderTh rowSpan={2} className="!text-left">
-                         Forecast Period
-                      </WorkforceGroupHeaderTh>
-                      <WorkforceGroupHeaderTh colSpan={7}>
-                        Workforce Capacity &amp; Gap
-                      </WorkforceGroupHeaderTh>
-                      <WorkforceGroupHeaderTh colSpan={6}>
-                        Recruitment Pipeline
-                      </WorkforceGroupHeaderTh>
-                      <WorkforceGroupHeaderTh colSpan={2} className="border-r-0">
-                        Yield &amp; Demand
-                      </WorkforceGroupHeaderTh>
-                    </tr>
+                  <div
+                    ref={headerScrollRef}
+                    className="min-w-0 flex-1 overflow-x-hidden overflow-y-hidden bg-sibs-surface"
+                  >
+                    <table className="w-[1920px] min-w-[1920px] table-fixed border-collapse font-jakarta text-xs whitespace-nowrap">
+                      <colgroup>
+                        <col style={{ width: "115px" }} />
+                        <col style={{ width: "105px" }} />
+                        <col style={{ width: "95px" }} />
+                        <col style={{ width: "125px" }} />
+                        <col style={{ width: "115px" }} />
+                        <col style={{ width: "135px" }} />
+                        <col style={{ width: "135px" }} />
+                        <col style={{ width: "125px" }} />
+                        <col style={{ width: "110px" }} />
+                        <col style={{ width: "105px" }} />
+                        <col style={{ width: "105px" }} />
+                        <col style={{ width: "95px" }} />
+                        <col style={{ width: "115px" }} />
+                        <col style={{ width: "120px" }} />
+                        <col style={{ width: "150px" }} />
+                        <col style={{ width: "170px" }} />
+                      </colgroup>
 
-                    <tr className="sibs-data-table-head-row">
-                      <WorkforceHeaderTh className="!text-center !font-black !text-sibs-navy">
-                        Required HC
-                      </WorkforceHeaderTh>
-                      <WorkforceHeaderTh className="!text-center">
-                        Actual HC
-                      </WorkforceHeaderTh>
-                      <WorkforceHeaderTh className="!text-center">
-                        Buffer %
-                      </WorkforceHeaderTh>
-                      <WorkforceHeaderTh className="!text-center">
-                        Absenteeism
-                      </WorkforceHeaderTh>
-                      <WorkforceHeaderTh className="!text-center">
-                        Attrition
-                      </WorkforceHeaderTh>
-                      <WorkforceHeaderTh className="!text-center !font-black !text-sibs-navy">
-                        Net Actual HC
-                      </WorkforceHeaderTh>
-                      <WorkforceHeaderTh className="!text-center !font-black !text-rose-600">
-                        Hiring Needed
-                      </WorkforceHeaderTh>
-                      <WorkforceHeaderTh className="!text-center">
-                        Accepted JO
-                      </WorkforceHeaderTh>
-                      <WorkforceHeaderTh className="!text-center">
-                        NHO Count
-                      </WorkforceHeaderTh>
-                      <WorkforceHeaderTh className="!text-center">
-                        FST Count
-                      </WorkforceHeaderTh>
-                      <WorkforceHeaderTh className="!text-center">
-                        PST Count
-                      </WorkforceHeaderTh>
-                      <WorkforceHeaderTh className="!text-center !font-black !text-emerald-700">
-                        Go Live
-                      </WorkforceHeaderTh>
-                      <WorkforceHeaderTh className="!text-center !font-black !text-sibs-navy">
-                        Hired Count
-                      </WorkforceHeaderTh>
-                      <WorkforceHeaderTh className="!text-center !font-black !text-sibs-orange">
-                        Hiring Rate
-                      </WorkforceHeaderTh>
-                      <WorkforceHeaderTh className="border-r-0 !text-center !font-black !text-purple-700">
-                        Leads to Interview
-                      </WorkforceHeaderTh>
-                    </tr>
-                  </thead>
+                      <thead className="sibs-data-table-head bg-sibs-surface">
+                        <tr className="sibs-data-table-head-row">
+                          <WorkforceGroupHeaderTh colSpan={7}>
+                            Workforce Capacity &amp; Gap
+                          </WorkforceGroupHeaderTh>
+                          <WorkforceGroupHeaderTh colSpan={6}>
+                            Recruitment Pipeline
+                          </WorkforceGroupHeaderTh>
+                          <WorkforceGroupHeaderTh colSpan={3} className="border-r-0">
+                            Yield &amp; Demand
+                          </WorkforceGroupHeaderTh>
+                        </tr>
 
-                  <tbody className="bg-white font-jakarta font-medium">
+                        <tr className="sibs-data-table-head-row">
+                          <WorkforceHeaderTh className="!text-center !font-black !text-sibs-navy">
+                            Required HC
+                          </WorkforceHeaderTh>
+                          <WorkforceHeaderTh className="!text-center">
+                            Actual HC
+                          </WorkforceHeaderTh>
+                          <WorkforceHeaderTh className="!text-center">
+                            Buffer %
+                          </WorkforceHeaderTh>
+                          <WorkforceHeaderTh className="!text-center">
+                            Absenteeism
+                          </WorkforceHeaderTh>
+                          <WorkforceHeaderTh className="!text-center">
+                            Attrition
+                          </WorkforceHeaderTh>
+                          <WorkforceHeaderTh className="!text-center !font-black !text-sibs-navy">
+                            Net Actual HC
+                          </WorkforceHeaderTh>
+                          <WorkforceHeaderTh className="!text-center !font-black !text-rose-600">
+                            Hiring Needed
+                          </WorkforceHeaderTh>
+                          <WorkforceHeaderTh className="!text-center">
+                            Accepted JO
+                          </WorkforceHeaderTh>
+                          <WorkforceHeaderTh className="!text-center">
+                            NHO Count
+                          </WorkforceHeaderTh>
+                          <WorkforceHeaderTh className="!text-center">
+                            FST Count
+                          </WorkforceHeaderTh>
+                          <WorkforceHeaderTh className="!text-center">
+                            PST Count
+                          </WorkforceHeaderTh>
+                          <WorkforceHeaderTh className="!text-center !font-black !text-emerald-700">
+                            Go Live
+                          </WorkforceHeaderTh>
+                          <WorkforceHeaderTh className="!text-center !font-black !text-sibs-navy">
+                            Hired Count
+                          </WorkforceHeaderTh>
+                          <WorkforceHeaderTh className="!text-center !font-black !text-sibs-orange">
+                            Hiring Rate
+                          </WorkforceHeaderTh>
+                          <WorkforceHeaderTh className="!text-center !font-black !text-purple-700">
+                            Expected Leads
+                          </WorkforceHeaderTh>
+                          <WorkforceHeaderTh className="border-r-0 !text-center !font-black !text-purple-700">
+                            Leads to Interview
+                          </WorkforceHeaderTh>
+                        </tr>
+                      </thead>
+                    </table>
+                  </div>
+                </div>
+
+                <div
+                  ref={dragScrollRef}
+                  onScroll={handleBodyScroll}
+                  onMouseDown={handleDragStart}
+                  onMouseMove={handleDragMove}
+                  onMouseUp={handleDragEnd}
+                  onMouseLeave={handleDragEnd}
+                  className={`max-h-[426px] 2xl:max-h-[578px] overflow-auto sibs-scrollbar ${
+                    isDragging ? "cursor-grabbing" : "cursor-grab"
+                  }`}
+                >
+                  <table className="w-[2220px] min-w-[2220px] table-fixed border-collapse font-jakarta text-xs whitespace-nowrap">
+                    <colgroup>
+                      <col style={{ width: "300px" }} />
+                      <col style={{ width: "115px" }} />
+                      <col style={{ width: "105px" }} />
+                      <col style={{ width: "95px" }} />
+                      <col style={{ width: "125px" }} />
+                      <col style={{ width: "115px" }} />
+                      <col style={{ width: "135px" }} />
+                      <col style={{ width: "135px" }} />
+                      <col style={{ width: "125px" }} />
+                      <col style={{ width: "110px" }} />
+                      <col style={{ width: "105px" }} />
+                      <col style={{ width: "105px" }} />
+                      <col style={{ width: "95px" }} />
+                      <col style={{ width: "115px" }} />
+                      <col style={{ width: "120px" }} />
+                      <col style={{ width: "150px" }} />
+                      <col style={{ width: "170px" }} />
+                    </colgroup>
+
+                    <tbody className="bg-white font-jakarta font-medium">
                     {hasRows ? (
                       forecastRows.map((row, index) => (
                         <tr
@@ -1027,12 +1110,12 @@ export default function ForecastHeadcountPlanTable({
                               openForecastWeekDetails(row, index);
                             }
                           }}
-                          className="sibs-data-table-row cursor-pointer hover:!bg-blue-50/40 focus:!bg-blue-50/60"
+                          className="sibs-data-table-row group cursor-pointer hover:!bg-blue-50/40 focus:!bg-blue-50/60"
                         >
                           <WorkforceBodyTd
                             align="left"
                             numeric={false}
-                            className="border-r border-sibs-border !pr-5 font-black text-sibs-navy"
+                            className="sticky left-0 z-30 !bg-white !border-r-slate-300 !pr-5 font-black text-sibs-navy shadow-[8px_0_12px_-10px_rgba(15,23,42,0.55)] group-hover:!bg-blue-50 group-focus:!bg-blue-50"
                             title={formatForecastWeekLabel(row)}
                           >
                             <span className="block w-full overflow-hidden text-ellipsis whitespace-nowrap">
@@ -1108,6 +1191,10 @@ export default function ForecastHeadcountPlanTable({
                             {formatOverviewPercent(row.hiringRate)}
                           </WorkforceBodyTd>
 
+                          <WorkforceBodyTd className="font-bold text-purple-700">
+                            {formatOverviewNumber(row.expectedLeads)}
+                          </WorkforceBodyTd>
+
                           <WorkforceBodyTd className="border-r-0 font-black text-purple-700">
                             {formatOverviewNumber(row.leadsToInterview)}
                           </WorkforceBodyTd>
@@ -1116,13 +1203,13 @@ export default function ForecastHeadcountPlanTable({
                     ) : forecastData.loading ? (
                       <TableSkeletonRows
                         count={6}
-                        columns={16}
+                        columns={17}
                         cellClassName="border-b border-r border-sibs-border px-2 py-1.5 2xl:px-3 2xl:py-2 align-middle"
                       />
                     ) : (
                       <tr>
                         <WorkforceBodyTd
-                          colSpan={16}
+                          colSpan={17}
                           align="center"
                           numeric={false}
                           className="border-r-0 py-12 font-semibold text-slate-400"
@@ -1139,7 +1226,7 @@ export default function ForecastHeadcountPlanTable({
                         <WorkforceFooterTd
                           align="left"
                           numeric={false}
-                          className="rounded-bl-xl border-r border-sibs-border !pr-5 font-black uppercase"
+                          className="sticky left-0 z-30 rounded-bl-xl !bg-sibs-surface !border-r-slate-300 !pr-5 font-black uppercase shadow-[8px_0_12px_-10px_rgba(15,23,42,0.55)]"
                         >
                           TOTAL / AVG.
                         </WorkforceFooterTd>
@@ -1217,13 +1304,18 @@ export default function ForecastHeadcountPlanTable({
                           {formatOverviewPercent(totals.hiringRate)}
                         </WorkforceFooterTd>
 
+                        <WorkforceFooterTd className="font-bold text-purple-700">
+                          {formatOverviewNumber(totals.expectedLeads)}
+                        </WorkforceFooterTd>
+
                         <WorkforceFooterTd className="rounded-br-xl border-r-0 font-black text-purple-700">
                           {formatOverviewNumber(totals.leadsToInterview)}
                         </WorkforceFooterTd>
                       </tr>
                     </tfoot>
                   ) : null}
-                </table>
+                  </table>
+                </div>
               </div>
             }
           />
