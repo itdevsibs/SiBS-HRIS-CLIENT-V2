@@ -447,6 +447,21 @@ function isSeniorManagersAccount(account = {}) {
   );
 }
 
+function isManagersAccount(account = {}) {
+  const normalizedNames = [account?.name, account?.longName]
+    .map(normalizeAccountRoleName)
+    .filter(Boolean);
+
+  return normalizedNames.some((name) =>
+    [
+      "manager",
+      "managers",
+      "operations_manager",
+      "operations_managers",
+    ].includes(name),
+  );
+}
+
 function isBodAccount(account = {}) {
   const normalizedNames = [account?.name, account?.longName]
     .map(normalizeAccountRoleName)
@@ -490,9 +505,10 @@ function AccountCard({
     ? account.boardOfDirectors
     : [];
   const seniorManagersAccount = isSeniorManagersAccount(account);
+  const managersAccount = isManagersAccount(account);
   const bodAccount = isBodAccount(account) || Number(account?.id) === 29;
   const boardOfDirectors =
-    (bodAccount || seniorManagersAccount) &&
+    (bodAccount || seniorManagersAccount || managersAccount) &&
     Array.isArray(bodPeople) &&
     bodPeople.length
       ? bodPeople
@@ -625,7 +641,11 @@ function AccountCard({
         </div>
       </div>
 
-      <div className="grid items-start gap-4 p-4 lg:grid-cols-3">
+      <div
+        className={`grid items-start gap-4 p-4 ${
+          seniorManagersAccount ? "lg:grid-cols-2" : "lg:grid-cols-3"
+        }`}
+      >
         {bodAccount ? (
           <div className="lg:col-span-3">
             <LeadershipGroup
@@ -648,6 +668,38 @@ function AccountCard({
             />
           </div>
         ) : seniorManagersAccount ? (
+          <>
+            <LeadershipGroup
+              title="Senior Operations Manager"
+              icon={ShieldCheck}
+              people={seniorOperationsManagers}
+              emptyText="No Senior Operations Manager resolved for this account."
+              onClick={() =>
+                onViewLeadership?.(
+                  account,
+                  "Senior Operations Manager",
+                  seniorOperationsManagers,
+                  ShieldCheck,
+                )
+              }
+            />
+
+            <LeadershipGroup
+              title="BOD"
+              icon={UsersRound}
+              people={boardOfDirectors}
+              emptyText="No BOD owner resolved for this account."
+              onClick={() =>
+                onViewLeadership?.(
+                  account,
+                  "BOD",
+                  boardOfDirectors,
+                  UsersRound,
+                )
+              }
+            />
+          </>
+        ) : managersAccount ? (
           <>
             <LeadershipGroup
               title="Operations Manager"
@@ -1376,14 +1428,16 @@ export default function DepartmentDetailsModal({
                     bodPeople={
                       isBodAccount(account) ||
                       Number(account?.id) === 29 ||
-                      isSeniorManagersAccount(account)
+                      isSeniorManagersAccount(account) ||
+                      isManagersAccount(account)
                         ? sharedBodPeople
                         : []
                     }
                     bodLoading={
                       isBodAccount(account) ||
                       Number(account?.id) === 29 ||
-                      isSeniorManagersAccount(account)
+                      isSeniorManagersAccount(account) ||
+                      isManagersAccount(account)
                         ? sharedBodLoading
                         : false
                     }
