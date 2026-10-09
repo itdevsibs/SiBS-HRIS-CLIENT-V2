@@ -23,8 +23,10 @@ import {
   createDepartmentRequest,
   getDepartmentApprovalAccess,
   getDepartmentApprovalRequests,
+  getDepartmentDetails,
   rejectDepartmentRequest,
 } from "@/lib/axios/getDepartments";
+import { normalizeDepartmentDetailsResponse } from "@/lib/utils/departments/departmentDirectory";
 import { DepartmentsProvider } from "@/services/context/DepartmentsContext";
 
 function errorMessage(error, fallback) {
@@ -39,6 +41,7 @@ function errorMessage(error, fallback) {
 function DepartmentsPageContent() {
   const departments = useDepartments();
   const [selectedDepartment, setSelectedDepartment] = useState(null);
+  const [loadingDepartmentId, setLoadingDepartmentId] = useState("");
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [submittingDepartment, setSubmittingDepartment] = useState(false);
   const [approvalRequests, setApprovalRequests] = useState([]);
@@ -105,6 +108,33 @@ function DepartmentsPageContent() {
   useEffect(() => {
     loadApprovalData();
   }, [loadApprovalData]);
+
+  async function handleViewDepartment(department) {
+    const departmentId = String(department?.id ?? "").trim();
+    if (!departmentId || loadingDepartmentId) return;
+
+    setLoadingDepartmentId(departmentId);
+
+    try {
+      const payload = await getDepartmentDetails(departmentId);
+      setSelectedDepartment(
+        normalizeDepartmentDetailsResponse(payload),
+      );
+    } catch (error) {
+      console.error("LOAD DEPARTMENT DETAILS ERROR:", error);
+
+      showStatus(
+        "error",
+        "Department Details Unavailable",
+        errorMessage(
+          error,
+          "Failed to load the selected department details.",
+        ),
+      );
+    } finally {
+      setLoadingDepartmentId("");
+    }
+  }
 
   async function handleRefresh() {
     departments.refresh();
@@ -300,7 +330,7 @@ function DepartmentsPageContent() {
                 <DepartmentCard
                   key={department.id}
                   department={department}
-                  onView={setSelectedDepartment}
+                  onView={handleViewDepartment}
                 />
               ))}
             </div>
