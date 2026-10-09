@@ -1,19 +1,25 @@
 import React, { useMemo } from "react";
-import { Filter, Search, X } from "lucide-react";
-import ThemedDropdown from "../../layout/dropdown/ThemedDropdown.jsx";
+import { RotateCcw } from "lucide-react";
 import { useOnboarding } from "../../../services/context/OnboardingContext";
 import { usePagination } from "../../../services/context/PaginationContext";
+import PaginationTable from "../../../services/pagination/PaginationTable";
 
 function cleanText(value) {
   return String(value ?? "").trim();
 }
 
-const labelClass =
-  "mb-1.5 block font-jakarta text-xs font-extrabold tracking-normal text-sibs-navy";
-
 function toOptions(options) {
   return options.map((option) => ({ label: option, value: option }));
 }
+
+const STATUS_OPTIONS = ["All Status", "Pending", "Show", "No Show", "Withdrawn"];
+const OUTCOME_OPTIONS = [
+  "All Outcomes",
+  "Pending Start",
+  "True Hire",
+  "No Show",
+  "Pre-start Withdrawal",
+];
 
 export default function OnboardingFilters() {
   const { list = [] } = useOnboarding();
@@ -50,11 +56,6 @@ export default function OnboardingFilters() {
       owner !== "All Owners",
   );
 
-  function handleClearSearch() {
-    setSearchInput("");
-    setSearch("");
-  }
-
   function handleResetFilters() {
     setSearchInput("");
     setSearch("");
@@ -64,67 +65,74 @@ export default function OnboardingFilters() {
     setFilter("owner", "All Owners");
   }
 
+  function handleSearchKeyDown(event) {
+    if (event.key === "Enter") {
+      commitSearch();
+    }
+  }
+
   return (
-    <div className="bg-white font-jakarta">
-      <div className="flex flex-col gap-3 overflow-visible sm:flex-row sm:flex-wrap sm:items-end">
-        <div className="relative w-full min-w-0 sm:min-w-[240px] 2xl:sm:min-w-[280px] sm:flex-1">
-          <label className={labelClass}>Search</label>
-          <div className="relative">
-            <Search
-              size={15}
-              className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-sibs-faint"
-            />
-            <input
-              value={searchInput}
-              onChange={(event) => setSearchInput(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") commitSearch();
-              }}
-              placeholder="Search candidate, onboarding ID, email, role, account, or owner..."
-              className="h-8.5 2xl:h-10 w-full rounded-lg 2xl:rounded-xl border border-sibs-border-subtle bg-white pl-9 pr-9 sibs-text-xs font-semibold text-sibs-navy outline-none transition placeholder:text-sibs-faint focus:border-sibs-orange focus:ring-2 focus:ring-sibs-orange/20"
-            />
-
-            {cleanText(searchInput) ? (
-              <button
-                type="button"
-                onClick={handleClearSearch}
-                aria-label="Clear onboarding search"
-                className="absolute right-2.5 top-1/2 inline-flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-md text-sibs-faint hover:bg-white hover:text-sibs-orange"
-              >
-                <X size={13} />
-              </button>
-            ) : null}
-          </div>
-        </div>
-
-        {[
-          ["Status", showStatus, ["All Status", "Pending", "Show", "No Show", "Withdrawn"], "showStatus", "sm:w-[145px] 2xl:sm:w-[175px]"],
-          ["Outcome", outcome, ["All Outcomes", "Pending Start", "True Hire", "No Show", "Pre-start Withdrawal"], "outcome", "sm:w-[175px] 2xl:sm:w-[210px]"],
-          ["Owner", owner, ownerOptions, "owner", "sm:w-[155px] 2xl:sm:w-[185px]"],
-        ].map(([label, selectedValue, options, key, widthClass]) => (
-          <div key={key} className={`w-full min-w-0 ${widthClass}`}>
-            <label className={labelClass}>{label}</label>
-            <ThemedDropdown
-              value={selectedValue}
-              options={toOptions(options)}
-              onChange={(nextValue) => setFilter(key, nextValue)}
-              searchable={false}
-              showPlaceholderOption={false}
-              className="w-full"
-            />
-          </div>
-        ))}
-
+    <PaginationTable
+      filterLayout="ta-inline"
+      showFilterPanel={false}
+      showFilterHeader={false}
+      showPagination={false}
+      searchValue={searchInput}
+      searchPlaceholder="Search candidate, onboarding ID, email, role, account, or owner..."
+      onSearchChange={(val) =>
+        setSearchInput(typeof val === "string" ? val : val?.target?.value ?? "")
+      }
+      onSearchKeyDown={handleSearchKeyDown}
+      className="border-0 bg-transparent p-0 shadow-none font-jakarta"
+      filters={[
+        {
+          key: "showStatus",
+          value: showStatus,
+          options: toOptions(STATUS_OPTIONS),
+          onChange: (nextValue) => setFilter("showStatus", nextValue),
+          includeAll: false,
+          allLabel: "All Status",
+          label: "Status",
+          placeholder: "All Status",
+          searchable: false,
+          className: "w-full xl:w-[140px] 2xl:w-[170px] xl:flex-none",
+        },
+        {
+          key: "outcome",
+          value: outcome,
+          options: toOptions(OUTCOME_OPTIONS),
+          onChange: (nextValue) => setFilter("outcome", nextValue),
+          includeAll: false,
+          allLabel: "All Outcomes",
+          label: "Outcome",
+          placeholder: "All Outcomes",
+          searchable: false,
+          className: "w-full xl:w-[170px] 2xl:w-[200px] xl:flex-none",
+        },
+        {
+          key: "owner",
+          value: owner,
+          options: toOptions(ownerOptions),
+          onChange: (nextValue) => setFilter("owner", nextValue),
+          includeAll: false,
+          allLabel: "All Owners",
+          label: "Owner",
+          placeholder: "All Owners",
+          searchable: true,
+          className: "w-full xl:w-[160px] 2xl:w-[190px] xl:flex-none",
+        },
+      ]}
+      rightContent={
         <button
           type="button"
           onClick={handleResetFilters}
           disabled={!isFiltered}
-          className="inline-flex h-8.5 2xl:h-10 w-full items-center justify-center gap-2 rounded-lg 2xl:rounded-xl border border-sibs-border-subtle bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-secondary transition hover:bg-sibs-surface disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+          className="inline-flex h-8.5 2xl:h-10 w-full items-center justify-center gap-1.5 rounded-[10px] border border-sibs-border bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-muted transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-sibs-border disabled:hover:bg-white disabled:hover:text-sibs-muted xl:w-auto"
         >
-          <Filter size={14} />
+          <RotateCcw size={14} />
           Clear
         </button>
-      </div>
-    </div>
+      }
+    />
   );
 }

@@ -19,17 +19,17 @@ function OutcomeBar({ label, value, count, toneClass, delay = 0 }) {
       <div className="flex items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-2">
           <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${toneClass}`} />
-          <span className="truncate sibs-text-xs font-extrabold text-[#344054]">
+          <span className="truncate sibs-text-xs font-extrabold text-sibs-navy">
             {label}
           </span>
         </div>
 
-        <span className="shrink-0 text-[10px] font-extrabold tabular-nums text-[#667085] 2xl:text-xs">
+        <span className="shrink-0 text-[10px] font-extrabold tabular-nums text-sibs-muted 2xl:text-xs">
           {percentage}% ({Number(count || 0).toLocaleString("en-US")})
         </span>
       </div>
 
-      <div className="h-2.5 overflow-hidden rounded-full border border-[#E6ECF2] bg-[#F2F4F7] p-0.5">
+      <div className="h-2.5 overflow-hidden rounded-full border border-sibs-border bg-sibs-surface-subtle p-0.5">
         <div
           className={`h-full rounded-full transition-[width] duration-700 ease-out ${toneClass}`}
           style={{ width: `${percentage}%` }}
@@ -73,19 +73,19 @@ export default function OnboardingOutcomeOverview({ loading: propLoading }) {
   return (
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-12 font-jakarta">
       <section
-        className="sibs-page-card-in rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm lg:col-span-7 transition-all duration-200 hover:shadow-md flex flex-col justify-between"
+        className="sibs-page-card-in rounded-[14px] border border-sibs-border bg-white p-5 shadow-sm lg:col-span-7 transition-all duration-200 hover:shadow-md flex flex-col justify-between"
         style={{ animationDelay: "120ms", animationFillMode: "both" }}
       >
         <div>
-          <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between border-b border-[#E6ECF2]/60 pb-3">
+          <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between border-b border-sibs-border/60 pb-3">
             <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <BarChart3 size={16} className="shrink-0 text-[#FF5C28]" />
+                <BarChart3 size={16} className="shrink-0 text-sibs-orange" />
                 <h2 className="font-heading text-sm 2xl:text-base font-bold text-sibs-navy tracking-tight">
                   Onboarding Outcome Distribution
                 </h2>
               </div>
-              <p className="mt-0.5 sibs-text-xs font-semibold text-[#667085]">
+              <p className="mt-0.5 sibs-text-xs font-semibold text-sibs-muted">
                 Current accepted-offer outcomes across active onboarding records.
               </p>
             </div>
@@ -93,7 +93,7 @@ export default function OnboardingOutcomeOverview({ loading: propLoading }) {
             {loading ? (
               <span className="inline-flex h-6 w-28 shrink-0 rounded-full bg-slate-100 animate-sibs-pulse" />
             ) : (
-              <span className="inline-flex w-fit shrink-0 rounded-full border border-[#E6ECF2] bg-[#F8FAFC] px-2.5 py-1 sibs-text-micro font-extrabold text-[#475467]">
+              <span className="inline-flex w-fit shrink-0 rounded-full border border-sibs-border bg-sibs-surface px-2.5 py-1 sibs-text-micro font-extrabold text-sibs-muted">
                 Total Records: {Number(stats.total || 0).toLocaleString("en-US")}
               </span>
             )}
@@ -120,41 +120,41 @@ export default function OnboardingOutcomeOverview({ loading: propLoading }) {
       </section>
 
       <aside
-        className="sibs-page-card-in relative overflow-hidden rounded-2xl border border-[#083A69] bg-[#042C51] p-5 text-white shadow-sm lg:col-span-5 flex flex-col justify-between"
+        className="sibs-page-card-in relative overflow-hidden rounded-[14px] border border-sibs-navy bg-sibs-navy p-5 text-white shadow-sm lg:col-span-5 flex flex-col justify-between"
         style={{ animationDelay: "180ms", animationFillMode: "both" }}
       >
         <div
-          className="pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full bg-[#FF5C28]/15 blur-2xl"
+          className="pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full bg-sibs-orange/15 blur-2xl"
           aria-hidden="true"
         />
 
         <div className="relative z-10">
-          <div className="flex items-center gap-2 text-[#FF5C28]">
+          <div className="flex items-center gap-2 text-sibs-orange">
             <ShieldCheck size={17} />
             <h3 className="sibs-text-micro font-extrabold uppercase tracking-wider">
               Onboarding Governance Rule
             </h3>
           </div>
 
-          <div className="mt-4 rounded-xl border border-white/10 bg-white/10 p-4">
-            <p className="sibs-text-micro font-extrabold uppercase tracking-wider text-[#94A9C1]">
+          <div className="mt-4 rounded-[10px] border border-white/10 bg-white/10 p-4">
+            <p className="sibs-text-micro font-extrabold uppercase tracking-wider text-white/70">
               Target Rule Flow
             </p>
             <p className="mt-1 text-sm 2xl:text-base font-extrabold text-white">
               Accepted Offer → Onboarding → Final Start Outcome
             </p>
 
-            <p className="mt-3.5 sibs-text-micro font-extrabold uppercase tracking-wider text-[#94A9C1]">
+            <p className="mt-3.5 sibs-text-micro font-extrabold uppercase tracking-wider text-white/70">
               Conversion Policy
             </p>
-            <p className="mt-1 sibs-text-xs font-semibold leading-5 text-[#FFB9A2]">
+            <p className="mt-1 sibs-text-xs font-semibold leading-5 text-sibs-orange-light">
               Accepted Offer creates onboarding. Only a candidate marked as
               <span className="font-extrabold text-emerald-300"> Show </span>
               becomes a True Hire.
             </p>
           </div>
 
-          <p className="mt-4 sibs-text-xs font-semibold leading-5 text-[#BECBDA]">
+          <p className="mt-4 sibs-text-xs font-semibold leading-5 text-white/80">
             No Show and Pre-start Withdrawal do not count as filled placements or True Hires.
           </p>
         </div>

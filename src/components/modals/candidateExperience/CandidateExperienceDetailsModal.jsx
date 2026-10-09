@@ -25,8 +25,8 @@ function formatRecordedDate(value) {
 function outcomeStyles(outcome) {
   return outcome === "Drop-off"
     ? {
-      badge: "bg-[#FF5C28] text-white",
-      text: "text-[#FF5C28]",
+      badge: "bg-sibs-orange text-white",
+      text: "text-sibs-orange",
       label: "DROP-OFF",
     }
     : {
@@ -45,7 +45,7 @@ function timelineStyles(status) {
     normalized.includes("withdraw")
   ) {
     return {
-      dot: "bg-[#FF5C28]",
+      dot: "bg-sibs-orange",
       badge: "bg-[#FFE5DC] text-[#D84616]",
     };
   }
@@ -63,7 +63,7 @@ function timelineStyles(status) {
   };
 }
 
-function OverviewItem({ label, value, valueClassName = "text-[#042C51]", pill = false }) {
+function OverviewItem({ label, value, valueClassName = "text-sibs-navy", pill = false }) {
   return (
     <div className="min-w-0">
       <p className="text-[9px] font-black uppercase tracking-wide text-[#91A4BE]">
@@ -88,11 +88,11 @@ function CandidateJourney({ record }) {
 
   return (
     <section>
-      <h3 className="sibs-modal-section-title text-[#042C51]">
+      <h3 className="sibs-modal-section-title text-sibs-navy">
         STAGE TIMELINE CASCADE (CANDIDATE JOURNEY)
       </h3>
 
-      <div className="mt-2 rounded-xl border border-[#D7E0EB] bg-[#F8FAFC] px-4 py-3">
+      <div className="mt-2 rounded-[14px] border border-[#D7E0EB] bg-sibs-surface px-4 py-3">
         {timeline.length > 0 ? (
           <div className="relative space-y-0">
             {timeline.map((item, index) => {
@@ -116,7 +116,7 @@ function CandidateJourney({ record }) {
 
                   <div className="flex min-w-0 flex-1 items-center justify-between gap-3 py-1.5">
                     <div className="min-w-0">
-                      <span className="text-[11px] font-black text-[#042C51]">
+                      <span className="text-[11px] font-black text-sibs-navy">
                         {item.stage || "Unknown Stage"}
                       </span>
                       <span className="ml-2 text-[9px] font-bold text-[#A0AEC0]">
@@ -171,10 +171,10 @@ export default function CandidateExperienceDetailsModal({ record, onClose }) {
         role="dialog"
         aria-modal="true"
         aria-label="Candidate Experience Details"
-        className="sibs-modal-pop-in flex max-h-[90dvh] w-full max-w-4xl 2xl:max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl font-jakarta"
+        className="sibs-modal-pop-in flex max-h-[90dvh] w-full max-w-4xl 2xl:max-w-5xl flex-col overflow-hidden rounded-[14px] bg-white shadow-2xl font-jakarta"
         onClick={(event) => event.stopPropagation()}
       >
-        <header className="shrink-0 bg-[#042C51] px-5 py-3 text-white sm:px-6 2xl:py-3.5 font-jakarta">
+        <header className="shrink-0 bg-sibs-navy px-5 py-3 text-white sm:px-6 2xl:py-3.5 font-jakarta">
           <div className="flex items-start justify-between gap-3 sm:gap-4">
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-1.5 2xl:gap-2">
@@ -233,7 +233,7 @@ export default function CandidateExperienceDetailsModal({ record, onClose }) {
             <button
               type="button"
               onClick={onClose}
-              className="inline-flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg text-white/70 transition hover:bg-white/10 hover:text-white"
+              className="inline-flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-[10px] text-white/70 transition hover:bg-white/10 hover:text-white sibs-modal-close-btn"
               aria-label="Close modal"
             >
               <X size={18} />
@@ -241,14 +241,14 @@ export default function CandidateExperienceDetailsModal({ record, onClose }) {
           </div>
         </header>
 
-        <div className="min-h-0 flex-1 overflow-y-auto bg-[#F7F9FC] p-3.5 sm:p-4 2xl:p-5 sibs-scrollbar font-jakarta">
+        <div className="min-h-0 flex-1 overflow-y-auto bg-sibs-surface p-3.5 sm:p-4 2xl:p-5 sibs-scrollbar font-jakarta">
           <div className="space-y-3.5 2xl:space-y-4">
-            <section className="rounded-xl border border-[#E6ECF2] bg-white p-3 2xl:p-4 shadow-sm">
-              <h3 className="sibs-modal-section-title text-[#042C51]">
+            <section className="rounded-[10px] border border-sibs-border bg-white p-3 2xl:p-4 shadow-sm">
+              <h3 className="sibs-modal-section-title text-sibs-navy">
                 EVENT & EXIT OVERVIEW
               </h3>
 
-              <div className="mt-2 grid grid-cols-2 gap-2.5 rounded-lg border border-[#E6ECF2] bg-[#F8FAFC] p-3 sm:grid-cols-5">
+              <div className="mt-2 grid grid-cols-2 gap-2.5 rounded-[10px] border border-sibs-border bg-sibs-surface p-3 sm:grid-cols-5">
                 <OverviewItem label="Event Type" value={record.eventType} />
                 <OverviewItem
                   label="Final Status"
@@ -261,24 +261,24 @@ export default function CandidateExperienceDetailsModal({ record, onClose }) {
               </div>
             </section>
 
-            <section className="rounded-xl border border-orange-200 bg-[#FFF7F3] p-3.5 2xl:p-4 shadow-sm">
+            <section className="rounded-[10px] border border-orange-200 bg-[#FFF7F3] p-3.5 2xl:p-4 shadow-sm">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <h3 className="inline-flex items-center gap-1.5 sibs-modal-section-title text-[#FF5C28]">
+                <h3 className="inline-flex items-center gap-1.5 sibs-modal-section-title text-sibs-orange">
                   <MessageSquareText size={14} />
                   CANDIDATE QUALITATIVE FEEDBACK (VOICE OF CANDIDATE)
                 </h3>
 
-                <span className="text-[9px] font-mono font-black text-[#FF5C28]">
+                <span className="text-[9px] font-mono font-black text-sibs-orange">
                   Direct Raw Quote
                 </span>
               </div>
 
-              <blockquote className="mt-2.5 border-l-2 border-[#FF5C28] pl-3 text-[11px] font-semibold italic leading-4.5 text-[#173B5E] 2xl:text-xs">
+              <blockquote className="mt-2.5 border-l-2 border-sibs-orange pl-3 text-[11px] font-semibold italic leading-4.5 text-[#173B5E] 2xl:text-xs">
                 “{record.feedback || "No candidate qualitative feedback recorded."}”
               </blockquote>
 
-              <div className="mt-2.5 rounded-lg border border-orange-200/80 bg-white/90 p-2.5 text-[10px] 2xl:text-[11px] leading-4 text-[#274A6B]">
-                <strong className="font-black text-[#042C51]">
+              <div className="mt-2.5 rounded-[10px] border border-orange-200/80 bg-white/90 p-2.5 text-[10px] 2xl:text-[11px] leading-4 text-sibs-muted">
+                <strong className="font-black text-sibs-navy">
                   Root Cause Description:
                 </strong>{" "}
                 {rootCause}
@@ -287,12 +287,12 @@ export default function CandidateExperienceDetailsModal({ record, onClose }) {
 
             <CandidateJourney record={record} />
 
-            <section className="flex flex-col gap-2 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-2.5 2xl:p-3 text-[10px] 2xl:text-[11px] sm:flex-row sm:items-center sm:justify-between">
+            <section className="flex flex-col gap-2 rounded-[10px] border border-sibs-border bg-sibs-surface p-2.5 2xl:p-3 text-[10px] 2xl:text-[11px] sm:flex-row sm:items-center sm:justify-between">
               <div className="inline-flex min-w-0 items-center gap-2 text-[#64748B]">
-                <UserRound size={13} className="shrink-0 text-[#042C51]" />
+                <UserRound size={13} className="shrink-0 text-sibs-navy" />
                 <span>
                   Assigned TA Recruiter:{" "}
-                  <strong className="font-black text-[#042C51]">
+                  <strong className="font-black text-sibs-navy">
                     {record.owner || record.recordedBy || "Unassigned"}
                   </strong>
                 </span>
@@ -311,11 +311,11 @@ export default function CandidateExperienceDetailsModal({ record, onClose }) {
           </div>
         </div>
 
-        <footer className="flex shrink-0 items-center justify-end border-t border-[#DDE5EE] bg-[#F1F5F9] px-5 py-3 2xl:py-3.5 sm:px-6 font-jakarta">
+        <footer className="flex shrink-0 items-center justify-end border-t border-sibs-border bg-sibs-surface px-5 py-3 2xl:py-3.5 sm:px-6 font-jakarta">
           <button
             type="button"
             onClick={onClose}
-            className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg border border-[#D6DEE8] bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-[#667085] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28]"
+            className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-[10px] border border-sibs-border bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-muted transition hover:border-sibs-orange/40 hover:bg-[#FFF8F5] hover:text-sibs-orange sibs-modal-close-btn"
           >
             Close Experience Record
           </button>

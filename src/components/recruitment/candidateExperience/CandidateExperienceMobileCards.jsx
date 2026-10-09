@@ -45,13 +45,13 @@ export default function CandidateExperienceMobileCards({
           >
             <DataCard.Header
               avatar={
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#042C51] text-xs font-bold text-white shadow-xs">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-sibs-navy text-xs font-bold text-white shadow-xs">
                   {initials}
                 </span>
               }
               title={record.candidateName || "Unnamed Candidate"}
               subtitle={
-                <span className="flex items-center gap-1.5 font-mono text-[10px] text-[#667085]">
+                <span className="flex items-center gap-1.5 font-mono text-[10px] text-sibs-muted">
                   <span>{candidateId}</span>
                   {record.candidateEmail && (
                     <>
@@ -73,11 +73,11 @@ export default function CandidateExperienceMobileCards({
 
             <DataCard.ContextRow>
               <div className="flex flex-wrap items-center gap-1.5 text-xs">
-                <span className="font-extrabold text-[#042C51]">
+                <span className="font-extrabold text-sibs-navy">
                   {record.roleTitle || "—"}
                 </span>
-                <span className="text-[#98A2B3]">•</span>
-                <span className="font-semibold text-[#475467]">
+                <span className="text-sibs-faint">•</span>
+                <span className="font-semibold text-sibs-muted">
                   {record.account || "—"}
                 </span>
                 {record.responseSource && (
@@ -100,12 +100,12 @@ export default function CandidateExperienceMobileCards({
                 tone="default"
               />
               <div className="flex flex-col items-center justify-center py-1">
-                <span className="text-[9px] font-extrabold uppercase tracking-wider text-[#667085]">
+                <span className="text-[9px] font-extrabold uppercase tracking-wider text-sibs-muted">
                   Rating
                 </span>
                 <div className="mt-1 flex items-center gap-1">
                   <RatingStars rating={record.experienceRating} />
-                  <span className="font-mono text-xs font-bold text-[#042C51]">
+                  <span className="font-mono text-xs font-bold text-sibs-navy">
                     {record.experienceRating ? `${record.experienceRating}/5` : "—"}
                   </span>
                 </div>
@@ -113,11 +113,11 @@ export default function CandidateExperienceMobileCards({
             </DataCard.Metrics>
 
             {feedbackExcerpt && (
-              <div className="mt-2.5 rounded-lg border border-[#E6ECF2] bg-[#F8FAFC] p-2.5">
-                <div className="flex items-start gap-1.5 text-xs italic text-[#475467]">
+              <div className="mt-2.5 rounded-lg border border-sibs-border bg-sibs-surface p-2.5">
+                <div className="flex items-start gap-1.5 text-xs italic text-sibs-muted">
                   <MessageSquareText
                     size={13}
-                    className="mt-0.5 shrink-0 text-[#FF5C28]"
+                    className="mt-0.5 shrink-0 text-sibs-orange"
                   />
                   <p className="line-clamp-2 leading-relaxed">
                     “{feedbackExcerpt}”
@@ -128,8 +128,8 @@ export default function CandidateExperienceMobileCards({
 
             <DataCard.Footer
               meta={
-                <span className="inline-flex items-center gap-1 font-mono text-[10px] text-[#667085]">
-                  <CalendarDays size={12} className="text-[#98A2B3]" />
+                <span className="inline-flex items-center gap-1 font-mono text-[10px] text-sibs-muted">
+                  <CalendarDays size={12} className="text-sibs-faint" />
                   {formatExperienceDate(
                     record.surveySubmittedAt || record.dateRecorded || record.createdAt
                   )}

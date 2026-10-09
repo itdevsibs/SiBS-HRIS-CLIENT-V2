@@ -67,3 +67,10 @@ tests/
 !src/pages/recruitment/HiringNeedsPage.test.jsx
 !src/pages/recruitment/AvailablePositionsPage.test.jsx
 !src/components/tables/FilterBarsModernization.test.jsx
+
+# Temporary migration & scratch scripts
+*.cjs
+fix-tokens*.*
+replace*.*
+scripts/
+scratch/

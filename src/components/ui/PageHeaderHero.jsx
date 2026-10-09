@@ -1,13 +1,20 @@
 import React from "react";
 
 export default function PageHeaderHero({
-  kicker = "Recruitment View",
+  kicker: kickerProp,
+  badgeText,
   title,
-  description,
+  description: descriptionProp,
+  subtitle,
   actions = null,
   className = "",
-  pulse = true,
+  pulse: pulseProp,
+  badgePulse,
 }) {
+  const kicker = kickerProp !== undefined ? kickerProp : (badgeText ?? "Recruitment View");
+  const description = descriptionProp ?? subtitle;
+  const pulse = badgePulse !== undefined ? Boolean(badgePulse) : (pulseProp ?? true);
+
   return (
     <section
       className={`sibs-page-header-in sibs-page-card-in sibs-card relative overflow-hidden rounded-2xl border border-sibs-border bg-white p-3.5 sm:p-4 2xl:p-6 font-jakarta shadow-sm ${className}`.trim()}

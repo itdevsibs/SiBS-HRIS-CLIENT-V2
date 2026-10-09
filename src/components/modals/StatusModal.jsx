@@ -1,6 +1,6 @@
-import React, { useEffect, useRef } from "react";
-import { createPortal } from "react-dom";
+import React from "react";
 import { AlertTriangle, CheckCircle2, Loader2, XCircle } from "lucide-react";
+import { ModalShell } from "@/components/ui";
 
 export default function StatusModal({
   open,
@@ -14,57 +14,8 @@ export default function StatusModal({
   cancelLabel = "Cancel",
   confirmTone = "danger",
   variant = "center", // center | compact
-  lockScroll = false,
+  lockScroll = true,
 }) {
-  const mounted = typeof document !== "undefined";
-
-  const previousOverflowRef = useRef({
-    body: "",
-    html: "",
-  });
-
-  useEffect(() => {
-    if (!open || typeof document === "undefined") return undefined;
-
-    const handleEscape = (e) => {
-      if (e.key === "Escape") {
-        if (type === "loading") {
-          return;
-        }
-
-        if (type === "confirm") {
-          onCancel?.();
-        } else {
-          onClose?.();
-        }
-      }
-    };
-
-    document.addEventListener("keydown", handleEscape);
-
-    if (lockScroll) {
-      previousOverflowRef.current = {
-        body: document.body.style.overflow,
-        html: document.documentElement.style.overflow,
-      };
-
-      document.body.style.overflow = "hidden";
-      document.documentElement.style.overflow = "hidden";
-    }
-
-    return () => {
-      document.removeEventListener("keydown", handleEscape);
-
-      if (lockScroll) {
-        document.body.style.overflow = previousOverflowRef.current.body || "";
-        document.documentElement.style.overflow =
-          previousOverflowRef.current.html || "";
-      }
-    };
-  }, [open, onClose, onCancel, lockScroll, type]);
-
-  if (!mounted || !open || typeof document === "undefined") return null;
-
   const isSuccess = type === "success";
   const isConfirm = type === "confirm";
   const isLoading = type === "loading";
@@ -74,179 +25,150 @@ export default function StatusModal({
     (isLoading
       ? "Saving Changes"
       : isConfirm
-      ? "Confirm Action"
-      : isSuccess
-        ? "Success"
-        : "Something went wrong");
+        ? "Confirm Action"
+        : isSuccess
+          ? "Success"
+          : "Something went wrong");
 
   const finalMessage =
     message ||
     (isLoading
       ? "Please wait while your changes are being saved."
       : isConfirm
-      ? "Are you sure you want to continue?"
-      : "Operation completed.");
+        ? "Are you sure you want to continue?"
+        : "Operation completed.");
 
   const handleClose = () => {
     if (isLoading) return;
 
     if (isConfirm) {
-      onCancel?.();
+      if (typeof onCancel === "function") {
+        onCancel();
+      } else {
+        onClose?.();
+      }
     } else {
       onClose?.();
     }
-
-    if (!lockScroll && typeof document !== "undefined") {
-      window.setTimeout(() => {
-        document.body.style.overflow = "";
-        document.documentElement.style.overflow = "";
-      }, 0);
-    }
   };
 
-  return createPortal(
-    <div
-      className="sibs-modal-blur sibs-modal-backdrop-in fixed left-0 top-0 z-[999999] flex h-[100dvh] w-[100dvw] items-center justify-center px-4 font-jakarta"
-      onClick={handleClose}
-    >
-      {variant === "compact" ? (
-        <div
-          role="dialog"
-          aria-modal="true"
-          onClick={(e) => e.stopPropagation()}
-          className="sibs-modal-pop-in w-full max-w-md rounded-2xl border border-[#D7DEE8] bg-white p-6 shadow-2xl font-jakarta"
-        >
-          <div className="mb-4 flex items-start gap-4">
-            <div className="flex min-w-0 flex-row items-center gap-3">
-              <div
-                className={`shrink-0 rounded-2xl p-3 ${
-                  isConfirm
-                    ? "bg-amber-50 text-amber-500"
-                    : isLoading
-                      ? "bg-[#EFF6FF] text-sibs-primary-1"
-                    : isSuccess
-                      ? "bg-emerald-50 text-emerald-500"
-                      : "bg-red-50 text-red-500"
-                }`}
-              >
-                {isConfirm ? (
-                  <AlertTriangle size={24} />
-                ) : isLoading ? (
-                  <Loader2 size={24} className="animate-spin" />
-                ) : isSuccess ? (
-                  <CheckCircle2 size={24} />
-                ) : (
-                  <XCircle size={24} />
-                )}
-              </div>
+  const iconComponent = isConfirm ? (
+    <AlertTriangle size={variant === "compact" ? 22 : 26} />
+  ) : isLoading ? (
+    <Loader2 size={variant === "compact" ? 22 : 26} className="animate-spin" />
+  ) : isSuccess ? (
+    <CheckCircle2 size={variant === "compact" ? 22 : 26} />
+  ) : (
+    <XCircle size={variant === "compact" ? 22 : 26} />
+  );
 
-              <h3 className="sibs-modal-title break-words text-sibs-navy">
-                {finalTitle}
-              </h3>
-            </div>
-          </div>
+  const iconContainerClass = isConfirm
+    ? "bg-amber-50 text-amber-600"
+    : isLoading
+      ? "bg-blue-50 text-sibs-navy"
+      : isSuccess
+        ? "bg-emerald-50 text-emerald-600"
+        : "bg-rose-50 text-rose-600";
 
-          <p className="sibs-modal-subtitle mt-2 whitespace-pre-line text-[#475467]">
-            {finalMessage}
-          </p>
+  const confirmBtnClass =
+    confirmTone === "brand" ? "sibs-btn-primary" : "sibs-btn-danger";
 
-          {!isLoading && (
-          <div className="mt-5 2xl:mt-6 flex justify-end gap-2.5">
-            {isConfirm && (
-              <button
-                type="button"
-                onClick={() => onCancel?.()}
-                className="sibs-modal-btn-secondary"
-              >
-                {cancelLabel}
-              </button>
-            )}
-
-            <button
-              type="button"
-              onClick={isConfirm ? () => onConfirm?.() : handleClose}
-              className={`sibs-modal-btn-primary ${
-                  isConfirm
-                    ? confirmTone === "brand"
-                      ? "!bg-[#042C51] hover:!bg-[#073B6C]"
-                      : "!bg-red-600 hover:!bg-red-700"
-                    : ""
-              }`}
-            >
-              {isConfirm ? confirmLabel : "OK"}
-            </button>
-          </div>
-          )}
-        </div>
-      ) : (
-        <div
-          role="dialog"
-          aria-modal="true"
-          onClick={(e) => e.stopPropagation()}
-          className="sibs-modal-pop-in relative w-full max-w-md overflow-hidden rounded-2xl border border-[#D7DEE8] bg-white p-5 2xl:p-6 shadow-2xl font-jakarta"
-        >
-          <div className="flex flex-col items-center text-center">
-            <div
-              className={`mb-3.5 2xl:mb-4 flex h-12 w-12 2xl:h-14 2xl:w-14 items-center justify-center rounded-full ${
-                isConfirm
-                  ? "bg-amber-50 text-amber-500"
-                  : isLoading
-                    ? "bg-[#EFF6FF] text-sibs-primary-1"
-                  : isSuccess
-                    ? "bg-emerald-50 text-emerald-500"
-                    : "bg-red-50 text-red-500"
-              }`}
-            >
-              {isConfirm ? (
-                <AlertTriangle size={26} />
-              ) : isLoading ? (
-                <Loader2 size={26} className="animate-spin" />
-              ) : isSuccess ? (
-                <CheckCircle2 size={26} />
-              ) : (
-                <XCircle size={26} />
-              )}
-            </div>
-
-            <h2 className="sibs-modal-title text-sibs-navy">
-              {finalTitle}
-            </h2>
-
-            <p className="sibs-modal-subtitle mt-2 whitespace-pre-line text-[#475467]">
-              {finalMessage}
-            </p>
-
-            {!isLoading && (
-            <div className="mt-5 2xl:mt-6 flex w-full gap-2.5">
+  return (
+    <ModalShell
+      open={Boolean(open)}
+      onClose={handleClose}
+      variant="white"
+      hideCloseButton
+      closeOnBackdrop={!isLoading}
+      closeOnEscape={!isLoading}
+      lockScroll={lockScroll}
+      maxWidth="max-w-md"
+      bodyClassName="p-4 sm:p-5 font-jakarta"
+      footer={
+        !isLoading ? (
+          variant === "compact" ? (
+            <div className="flex items-center justify-end gap-2.5">
               {isConfirm && (
                 <button
                   type="button"
-                  onClick={() => onCancel?.()}
-                  className="sibs-modal-btn-secondary flex-1"
+                  onClick={() => {
+                    if (typeof onCancel === "function") {
+                      onCancel();
+                    } else {
+                      onClose?.();
+                    }
+                  }}
+                  className="sibs-btn-secondary"
                 >
                   {cancelLabel}
                 </button>
               )}
-
               <button
                 type="button"
                 onClick={isConfirm ? () => onConfirm?.() : handleClose}
-                className={`sibs-modal-btn-primary flex-1 ${
-                isConfirm
-                  ? confirmTone === "brand"
-                    ? "!bg-[#042C51] hover:!bg-[#073B6C]"
-                    : "!bg-red-600 hover:!bg-red-700"
-                  : ""
+                className={isConfirm ? confirmBtnClass : "sibs-btn-primary"}
+              >
+                {isConfirm ? confirmLabel : "OK"}
+              </button>
+            </div>
+          ) : (
+            <div className="flex w-full items-center gap-2.5">
+              {isConfirm && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (typeof onCancel === "function") {
+                      onCancel();
+                    } else {
+                      onClose?.();
+                    }
+                  }}
+                  className="sibs-btn-secondary flex-1"
+                >
+                  {cancelLabel}
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={isConfirm ? () => onConfirm?.() : handleClose}
+                className={`flex-1 ${
+                  isConfirm ? confirmBtnClass : "sibs-btn-primary"
                 }`}
               >
                 {isConfirm ? confirmLabel : "OK"}
               </button>
             </div>
-            )}
+          )
+        ) : null
+      }
+    >
+      {variant === "compact" ? (
+        <div className="flex items-start gap-3.5 sm:gap-4 font-jakarta">
+          <div
+            className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${iconContainerClass}`}
+          >
+            {iconComponent}
+          </div>
+          <div className="min-w-0 flex-1">
+            <h3 className="sibs-modal-title break-words">{finalTitle}</h3>
+            <p className="sibs-modal-subtitle mt-1.5 whitespace-pre-line text-sibs-muted">
+              {finalMessage}
+            </p>
           </div>
         </div>
+      ) : (
+        <div className="flex flex-col items-center text-center font-jakarta">
+          <div
+            className={`mb-3.5 flex h-14 w-14 shrink-0 items-center justify-center rounded-full ${iconContainerClass}`}
+          >
+            {iconComponent}
+          </div>
+          <h2 className="sibs-modal-title">{finalTitle}</h2>
+          <p className="sibs-modal-subtitle mt-2 whitespace-pre-line text-sibs-muted">
+            {finalMessage}
+          </p>
+        </div>
       )}
-    </div>,
-    document.body,
+    </ModalShell>
   );
 }

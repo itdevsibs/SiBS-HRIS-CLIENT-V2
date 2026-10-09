@@ -48,7 +48,7 @@ export default function WeeklyReportsTable({ reports, onView, loading = false })
         </div>
       }
       desktopContent={
-        <div className="overflow-hidden rounded-xl border border-sibs-border bg-white">
+        <div className="overflow-hidden rounded-[14px] border border-sibs-border bg-white">
           <div className="overflow-x-auto sibs-scrollbar">
             <table className="w-full min-w-[1020px] border-collapse bg-white">
               <thead className="sibs-data-table-head">
@@ -63,7 +63,7 @@ export default function WeeklyReportsTable({ reports, onView, loading = false })
               </tr>
             </thead>
 
-            <tbody className="divide-y divide-[#F1F5F9]">
+            <tbody className="divide-y divide-sibs-border">
               {loading ? (
                 <TableSkeletonRows count={5} columns={6} />
               ) : safeReports.length > 0 ? (
@@ -136,7 +136,7 @@ export default function WeeklyReportsTable({ reports, onView, loading = false })
                             event.stopPropagation();
                             onView(report);
                           }}
-                          className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-sibs-border-subtle bg-white px-3 text-[10px] 2xl:text-[10.5px] font-extrabold text-sibs-navy transition hover:border-sibs-orange/35 hover:bg-[#FFF7F3] hover:text-sibs-orange active:scale-[0.98]"
+                          className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-sibs-border-subtle bg-white px-3 text-[10px] 2xl:text-[10.5px] font-extrabold text-sibs-navy transition hover:border-sibs-orange/35 hover:bg-sibs-cream-light hover:text-sibs-orange active:scale-[0.98]"
                         >
                           <Eye size={13} />
                           View Details

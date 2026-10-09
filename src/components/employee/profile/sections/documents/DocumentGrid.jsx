@@ -16,26 +16,26 @@ export default function DocumentGrid({ documents, onPreview, onDelete }) {
               {getDocumentFileType(document?.name)}
             </span>
             <div className="min-w-0 flex-1">
-              <h3 className="truncate text-xs font-extrabold text-[#344054]">
+              <h3 className="truncate text-xs font-extrabold text-sibs-text-secondary">
                 {document?.name}
               </h3>
-              <p className="mt-1 text-[9px] text-[#667085]">
+              <p className="mt-1 text-[9px] text-sibs-muted">
                 Uploaded {formatDisplayDate(document?.uploadedAt)}
               </p>
-              <span className="mt-2 inline-flex rounded-full bg-[#E9F0FC] px-2.5 py-1 text-[9px] font-extrabold text-[#042C51]">
+              <span className="mt-2 inline-flex rounded-full bg-blue-50 px-2.5 py-1 text-[9px] font-extrabold text-sibs-navy">
                 {document?.category || "Other"}
               </span>
             </div>
           </div>
-          <div className="mt-4 flex items-center justify-between border-t border-[#E6ECF2] pt-3">
-            <span className="font-mono text-[10px] text-[#667085]">
+          <div className="mt-4 flex items-center justify-between border-t border-sibs-border pt-3">
+            <span className="font-mono text-[10px] text-sibs-muted">
               {document?.fileSize || "—"}
             </span>
             <div className="flex gap-1">
               <button
                 type="button"
                 onClick={() => onPreview(document)}
-                className="rounded-lg p-1.5 text-[#667085] hover:bg-[#E9F0FC]"
+                className="rounded-lg p-1.5 text-sibs-muted hover:bg-blue-50 hover:text-sibs-navy"
                 aria-label={`Preview ${document?.name || "document"}`}
               >
                 <Eye size={14} />

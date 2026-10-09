@@ -18,7 +18,7 @@ function SummaryCard({ title, value, icon, description, tone = "navy", delay = 0
   return (
     <article
       className={`sibs-metric-card sibs-page-card-in flex h-[104px] 2xl:h-[116px] min-h-[96px] 2xl:min-h-[112px] flex-col justify-between overflow-hidden p-2.5 2xl:p-3.5 font-jakarta ${
-        featured ? "!border-transparent !bg-gradient-to-br !from-[#042C51] !to-[#0A467E] text-white" : ""
+        featured ? "!border-transparent !bg-gradient-to-br !from-sibs-navy !to-sibs-tertiary-2 text-white" : ""
       }`}
       style={{ animationDelay: `${delay}ms`, animationFillMode: "both" }}
     >
@@ -44,7 +44,7 @@ function SummaryCard({ title, value, icon, description, tone = "navy", delay = 0
 
           <p
             className={`line-clamp-1 truncate sibs-text-micro font-bold ${
-              featured ? "text-slate-200" : "text-[#667085]"
+              featured ? "text-slate-200" : "text-sibs-muted"
             }`}
           >
             {description}
@@ -53,7 +53,7 @@ function SummaryCard({ title, value, icon, description, tone = "navy", delay = 0
 
         <span
           className={`flex h-7.5 w-7.5 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-full ${
-            featured ? "bg-white/10 text-[#FF5C28]" : `sibs-tone-${tone}-icon`
+            featured ? "bg-white/10 text-sibs-orange" : `sibs-tone-${tone}-icon`
           }`}
         >
           <Icon className="h-3.5 w-3.5 2xl:h-4.5 2xl:w-4.5" strokeWidth={2} />

@@ -158,7 +158,7 @@ export default function SourcingAnalyticsPage() {
           <SourcingAnalyticsCharts data={sourceRows} loading={loading || refreshing} />
 
           <section
-            className="sibs-profile-tab-panel sibs-page-card-in overflow-visible rounded-2xl border border-sibs-border bg-white font-jakarta shadow-sm"
+            className="sibs-profile-tab-panel sibs-page-card-in overflow-visible rounded-[14px] border border-sibs-border bg-white font-jakarta shadow-sm"
             style={{ animationDelay: "180ms", animationFillMode: "both" }}
           >
             <SourcingAnalyticsFilters />

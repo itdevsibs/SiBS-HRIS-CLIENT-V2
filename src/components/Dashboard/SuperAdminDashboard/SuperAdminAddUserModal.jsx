@@ -48,9 +48,6 @@ export default function SuperAdminAddUserModal({ open, onClose, onSave }) {
     handleClose();
   }
 
-  const inputClass =
-    "h-8.5 2xl:h-9 w-full rounded-xl border border-sibs-border-subtle bg-sibs-surface px-3 font-jakarta sibs-text-xs 2xl:sibs-text-sm font-semibold text-sibs-navy outline-none transition placeholder:text-sibs-faint hover:border-sibs-orange/40 hover:bg-white focus:border-sibs-orange focus:bg-white focus:ring-2 focus:ring-sibs-orange/10";
-
   return (
     <ModalShell
       open={open}
@@ -61,22 +58,22 @@ export default function SuperAdminAddUserModal({ open, onClose, onSave }) {
       maxWidth="max-w-md"
       variant="navy"
       footer={
-        <div className="flex w-full items-center justify-end gap-2.5">
+        <>
           <button
             type="button"
             onClick={handleClose}
-            className="sibs-modal-btn-secondary"
+            className="sibs-btn-secondary"
           >
             Cancel
           </button>
           <button
             type="submit"
             form="super-admin-add-user-form"
-            className="sibs-modal-btn-primary"
+            className="sibs-btn-primary"
           >
             Save Admin Account
           </button>
-        </div>
+        </>
       }
     >
       <form
@@ -85,7 +82,7 @@ export default function SuperAdminAddUserModal({ open, onClose, onSave }) {
         className="space-y-3 font-jakarta"
       >
         <label className="block">
-          <span className="mb-1 block font-jakarta sibs-text-micro font-extrabold uppercase tracking-wide text-sibs-faint">
+          <span className="sibs-modal-field-label">
             Full Name <span className="text-sibs-orange">*</span>
           </span>
           <input
@@ -93,12 +90,12 @@ export default function SuperAdminAddUserModal({ open, onClose, onSave }) {
             value={form.name}
             onChange={(event) => updateField("name", event.target.value)}
             placeholder="e.g. Maria Santos"
-            className={inputClass}
+            className="sibs-modal-input"
           />
         </label>
 
         <label className="block">
-          <span className="mb-1 block font-jakarta sibs-text-micro font-extrabold uppercase tracking-wide text-sibs-faint">
+          <span className="sibs-modal-field-label">
             Work Email <span className="text-sibs-orange">*</span>
           </span>
           <input
@@ -107,7 +104,7 @@ export default function SuperAdminAddUserModal({ open, onClose, onSave }) {
             value={form.email}
             onChange={(event) => updateField("email", event.target.value)}
             placeholder="name@thesiblingssolutions.com"
-            className={inputClass}
+            className="sibs-modal-input"
           />
         </label>
 
@@ -122,13 +119,13 @@ export default function SuperAdminAddUserModal({ open, onClose, onSave }) {
         </div>
 
         <label className="block">
-          <span className="mb-1 block font-jakarta sibs-text-micro font-extrabold uppercase tracking-wide text-sibs-faint">
+          <span className="sibs-modal-field-label">
             Department
           </span>
           <input
             value={form.department}
             onChange={(event) => updateField("department", event.target.value)}
-            className={inputClass}
+            className="sibs-modal-input"
           />
         </label>
 

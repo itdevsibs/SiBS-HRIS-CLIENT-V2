@@ -14,18 +14,18 @@ export default function WeeklyReportSnapshot({ report, onViewReport, loading = f
         data-testid="weekly-report-snapshot-skeleton"
         role="status"
         aria-label="Loading active week snapshot"
-        className="sibs-page-card-in relative overflow-hidden rounded-xl 2xl:rounded-2xl border border-[#083A69] bg-[#042C51] text-white shadow-md font-jakarta"
+        className="sibs-page-card-in relative overflow-hidden rounded-[14px] 2xl:rounded-[14px] border border-sibs-navy bg-sibs-navy text-white shadow-md font-jakarta"
         style={{ animationDelay: "120ms", animationFillMode: "both" }}
       >
         <div
-          className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-[#FF5C28]/15 blur-3xl"
+          className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-sibs-orange/15 blur-3xl"
           aria-hidden="true"
         />
 
         <div className="relative z-10 border-b border-white/10 px-4 py-3 sm:px-5 2xl:px-6 2xl:py-3.5">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="rounded-md bg-[#FF5C28] px-2.5 py-1 sibs-text-micro font-extrabold uppercase tracking-wide text-white shadow-sm">
+              <span className="rounded-md bg-sibs-orange px-2.5 py-1 sibs-text-micro font-extrabold uppercase tracking-wide text-white shadow-sm">
                 Active Week Snapshot
               </span>
               <Skeleton className="h-4 w-32 bg-white/20" />
@@ -39,7 +39,7 @@ export default function WeeklyReportSnapshot({ report, onViewReport, loading = f
         </div>
 
         <div className="relative z-10 grid grid-cols-1 gap-3.5 p-3.5 sm:gap-4 sm:p-4 2xl:gap-5 2xl:p-5 xl:grid-cols-[1.05fr_1.25fr_0.9fr]">
-          <div className="rounded-xl border border-white/10 bg-white/10 p-3.5 backdrop-blur-sm">
+          <div className="rounded-[14px] border border-white/10 bg-white/10 p-3.5 backdrop-blur-sm">
             <div className="grid grid-cols-3 divide-x divide-white/10">
               <div className="px-2 text-center">
                 <p className="sibs-text-micro font-extrabold uppercase tracking-wide text-blue-200">
@@ -80,9 +80,9 @@ export default function WeeklyReportSnapshot({ report, onViewReport, loading = f
             </div>
           </div>
 
-          <div className="rounded-xl border border-white/10 bg-white/10 p-3.5 backdrop-blur-sm">
+          <div className="rounded-[14px] border border-white/10 bg-white/10 p-3.5 backdrop-blur-sm">
             <p className="flex items-center gap-1.5 sibs-text-micro font-extrabold uppercase tracking-wide text-blue-200">
-              <FileText size={13} className="text-[#FF5C28]" />
+              <FileText size={13} className="text-sibs-orange" />
               Current Week Narrative Summary
             </p>
 
@@ -93,9 +93,9 @@ export default function WeeklyReportSnapshot({ report, onViewReport, loading = f
             </div>
           </div>
 
-          <div className="flex flex-col justify-between rounded-xl border border-white/10 bg-white/10 p-3.5 backdrop-blur-sm">
+          <div className="flex flex-col justify-between rounded-[14px] border border-white/10 bg-white/10 p-3.5 backdrop-blur-sm">
             <div>
-              <p className="flex items-center gap-1.5 sibs-text-micro font-extrabold uppercase tracking-wide text-[#FF8C66]">
+              <p className="flex items-center gap-1.5 sibs-text-micro font-extrabold uppercase tracking-wide text-sibs-orange">
                 <Mail size={13} />
                 Management Email Digest
               </p>
@@ -121,18 +121,18 @@ export default function WeeklyReportSnapshot({ report, onViewReport, loading = f
 
   return (
     <section
-      className="sibs-page-card-in relative overflow-hidden rounded-xl 2xl:rounded-2xl border border-[#083A69] bg-[#042C51] text-white shadow-md font-jakarta"
+      className="sibs-page-card-in relative overflow-hidden rounded-[14px] 2xl:rounded-[14px] border border-sibs-navy bg-sibs-navy text-white shadow-md font-jakarta"
       style={{ animationDelay: "120ms", animationFillMode: "both" }}
     >
       <div
-        className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-[#FF5C28]/15 blur-3xl"
+        className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-sibs-orange/15 blur-3xl"
         aria-hidden="true"
       />
 
       <div className="relative z-10 border-b border-white/10 px-4 py-3 sm:px-5 2xl:px-6 2xl:py-3.5">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="rounded-md bg-[#FF5C28] px-2.5 py-1 sibs-text-micro font-extrabold uppercase tracking-wide text-white shadow-sm">
+            <span className="rounded-md bg-sibs-orange px-2.5 py-1 sibs-text-micro font-extrabold uppercase tracking-wide text-white shadow-sm">
               Active Week Snapshot
             </span>
             <span className="sibs-text-xs font-extrabold text-blue-100">
@@ -147,7 +147,7 @@ export default function WeeklyReportSnapshot({ report, onViewReport, loading = f
       </div>
 
       <div className="relative z-10 grid grid-cols-1 gap-3.5 p-3.5 sm:gap-4 sm:p-4 2xl:gap-5 2xl:p-5 xl:grid-cols-[1.05fr_1.25fr_0.9fr]">
-        <div className="rounded-xl border border-white/10 bg-white/10 p-3.5 backdrop-blur-sm">
+        <div className="rounded-[14px] border border-white/10 bg-white/10 p-3.5 backdrop-blur-sm">
           <div className="grid grid-cols-3 divide-x divide-white/10">
             <div className="px-2 text-center">
               <p className="sibs-text-micro font-extrabold uppercase tracking-wide text-blue-200">
@@ -184,16 +184,16 @@ export default function WeeklyReportSnapshot({ report, onViewReport, loading = f
             </div>
             <div className="h-2 overflow-hidden rounded-full bg-white/10">
               <div
-                className="h-full rounded-full bg-[#FF5C28] transition-[width] duration-700 ease-out"
+                className="h-full rounded-full bg-sibs-orange transition-[width] duration-700 ease-out"
                 style={{ width: `${fulfillment}%` }}
               />
             </div>
           </div>
         </div>
 
-        <div className="rounded-xl border border-white/10 bg-white/10 p-3.5 backdrop-blur-sm">
+        <div className="rounded-[14px] border border-white/10 bg-white/10 p-3.5 backdrop-blur-sm">
           <p className="flex items-center gap-1.5 sibs-text-micro font-extrabold uppercase tracking-wide text-blue-200">
-            <FileText size={13} className="text-[#FF5C28]" />
+            <FileText size={13} className="text-sibs-orange" />
             Current Week Narrative Summary
           </p>
 
@@ -202,9 +202,9 @@ export default function WeeklyReportSnapshot({ report, onViewReport, loading = f
           </p>
         </div>
 
-        <div className="flex flex-col justify-between rounded-xl border border-white/10 bg-white/10 p-3.5 backdrop-blur-sm">
+        <div className="flex flex-col justify-between rounded-[14px] border border-white/10 bg-white/10 p-3.5 backdrop-blur-sm">
           <div>
-            <p className="flex items-center gap-1.5 sibs-text-micro font-extrabold uppercase tracking-wide text-[#FF8C66]">
+            <p className="flex items-center gap-1.5 sibs-text-micro font-extrabold uppercase tracking-wide text-sibs-orange">
               <Mail size={13} />
               Management Email Digest
             </p>
@@ -218,7 +218,7 @@ export default function WeeklyReportSnapshot({ report, onViewReport, loading = f
             type="button"
             onClick={() => report && onViewReport?.(report)}
             disabled={!report}
-            className="mt-3 inline-flex h-8.5 2xl:h-10 w-fit items-center gap-2 rounded-lg bg-[#FF5C28] px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white transition hover:bg-[#E94F1F] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+            className="mt-3 inline-flex h-8.5 2xl:h-10 w-fit items-center gap-2 rounded-lg bg-sibs-orange px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white transition hover:bg-sibs-orange active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
           >
             View Current Report
             <ArrowRight size={13} />

@@ -1,7 +1,7 @@
 import React, { useMemo } from "react";
 
 const EDGE = "rounded-[10px]";
-const CARD = `${EDGE} border border-[#E6ECF2] bg-white shadow-sm`;
+const CARD = `${EDGE} border border-sibs-border bg-white shadow-sm`;
 
 function toNumber(value) {
   if (value === null || value === undefined || value === "") return 0;
@@ -486,7 +486,7 @@ function buildPlanRows(totals, activeWeek) {
 function MiniLineChart({
   values = [],
   labels = [],
-  color = "#155EEF",
+  color = "var(--blue-600)",
   suffix = "",
 }) {
   const width = 360;
@@ -540,7 +540,7 @@ function MiniLineChart({
               x2={width - 8}
               y1={y}
               y2={y}
-              stroke="#EEF2F6"
+              stroke="var(--sibs-surface-subtle)"
               strokeWidth="1"
             />
           </g>
@@ -639,8 +639,8 @@ function SummaryTable({ planRows = [] }) {
 
   return (
     <div className={`${CARD} overflow-hidden`}>
-      <div className="border-b border-[#E6ECF2] px-5 py-4">
-        <h2 className="text-base font-extrabold uppercase tracking-wide text-[#101828]">
+      <div className="border-b border-sibs-border px-5 py-4">
+        <h2 className="text-base font-extrabold uppercase tracking-wide text-sibs-muted">
           6-Week Headcount Plan
         </h2>
       </div>
@@ -648,71 +648,71 @@ function SummaryTable({ planRows = [] }) {
       <div className="overflow-x-auto">
         <table className="w-full min-w-[1180px] border-separate border-spacing-0 text-left">
           <thead>
-            <tr className="bg-[#F5F7FA] text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
-              <th className="border-b border-[#E1E7EF] px-4 py-3">
+            <tr className="bg-sibs-surface text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
+              <th className="border-b border-sibs-border px-4 py-3">
                 Week
                 <br />
                 (Start of Week)
               </th>
-              <th className="border-b border-[#E1E7EF] px-4 py-3 text-center">
+              <th className="border-b border-sibs-border px-4 py-3 text-center">
                 Required
                 <br />
                 Headcount
               </th>
-              <th className="border-b border-[#E1E7EF] px-4 py-3 text-center">
+              <th className="border-b border-sibs-border px-4 py-3 text-center">
                 Actual
                 <br />
                 Headcount
               </th>
-              <th className="border-b border-[#E1E7EF] px-4 py-3 text-center">
+              <th className="border-b border-sibs-border px-4 py-3 text-center">
                 Buffer
                 <br />
                 Percentage
               </th>
-              <th className="border-b border-[#E1E7EF] px-4 py-3 text-center">
+              <th className="border-b border-sibs-border px-4 py-3 text-center">
                 Net Actual
                 <br />
                 HC
               </th>
-              <th className="border-b border-[#E1E7EF] px-4 py-3 text-center">
+              <th className="border-b border-sibs-border px-4 py-3 text-center">
                 Hiring
                 <br />
                 Needed
               </th>
-              <th className="border-b border-[#E1E7EF] px-4 py-3 text-center">
+              <th className="border-b border-sibs-border px-4 py-3 text-center">
                 Accepted
                 <br />
                 Job Offer
               </th>
-              <th className="border-b border-[#E1E7EF] px-4 py-3 text-center">
+              <th className="border-b border-sibs-border px-4 py-3 text-center">
                 NHO
                 <br />
                 Count
               </th>
-              <th className="border-b border-[#E1E7EF] px-4 py-3 text-center">
+              <th className="border-b border-sibs-border px-4 py-3 text-center">
                 FST
                 <br />
                 Count
               </th>
-              <th className="border-b border-[#E1E7EF] px-4 py-3 text-center">
+              <th className="border-b border-sibs-border px-4 py-3 text-center">
                 PST
                 <br />
                 Count
               </th>
-              <th className="border-b border-[#E1E7EF] px-4 py-3 text-center">
+              <th className="border-b border-sibs-border px-4 py-3 text-center">
                 Go Live
               </th>
-              <th className="border-b border-[#E1E7EF] px-4 py-3 text-center">
+              <th className="border-b border-sibs-border px-4 py-3 text-center">
                 Hired
                 <br />
                 Count
               </th>
-              <th className="border-b border-[#E1E7EF] px-4 py-3 text-center">
+              <th className="border-b border-sibs-border px-4 py-3 text-center">
                 Hiring Rate
                 <br />
                 (Leads to JO)
               </th>
-              <th className="border-b border-[#E1E7EF] px-4 py-3 text-center">
+              <th className="border-b border-sibs-border px-4 py-3 text-center">
                 Leads to Interview
                 <br />
                 (To Generate)
@@ -722,49 +722,49 @@ function SummaryTable({ planRows = [] }) {
 
           <tbody>
             {planRows.map((item, index) => (
-              <tr key={index} className="transition hover:bg-[#FAFBFC]">
-                <td className="border-b border-[#EDF1F5] px-4 py-3 text-sm font-bold text-sibs-primary-1">
+              <tr key={index} className="transition hover:bg-sibs-surface">
+                <td className="border-b border-sibs-surface-subtle px-4 py-3 text-sm font-bold text-sibs-primary-1">
                   {formatWeekDate(item.weekDate)}
                 </td>
-                <td className="border-b border-[#EDF1F5] px-4 py-3 text-center text-sm font-extrabold text-sibs-primary-1">
+                <td className="border-b border-sibs-surface-subtle px-4 py-3 text-center text-sm font-extrabold text-sibs-primary-1">
                   {formatNumber(item.requiredHeadcount)}
                 </td>
-                <td className="border-b border-[#EDF1F5] px-4 py-3 text-center text-sm font-extrabold text-sibs-primary-1">
+                <td className="border-b border-sibs-surface-subtle px-4 py-3 text-center text-sm font-extrabold text-sibs-primary-1">
                   {formatNumber(item.actualHeadcount)}
                 </td>
                 <td
-                  className={`border-b border-[#EDF1F5] px-4 py-3 text-center text-sm font-extrabold ${getSignedClass(item.bufferPercentage)}`}
+                  className={`border-b border-sibs-surface-subtle px-4 py-3 text-center text-sm font-extrabold ${getSignedClass(item.bufferPercentage)}`}
                 >
                   {formatSignedPercentFromWhole(item.bufferPercentage, 2)}
                 </td>
-                <td className="border-b border-[#EDF1F5] px-4 py-3 text-center text-sm font-extrabold text-sibs-primary-1">
+                <td className="border-b border-sibs-surface-subtle px-4 py-3 text-center text-sm font-extrabold text-sibs-primary-1">
                   {formatNumber(item.netActualHeadcount)}
                 </td>
-                <td className="border-b border-[#EDF1F5] px-4 py-3 text-center text-sm font-extrabold text-red-600">
+                <td className="border-b border-sibs-surface-subtle px-4 py-3 text-center text-sm font-extrabold text-red-600">
                   {formatNumber(item.hiringNeeded)}
                 </td>
-                <td className="border-b border-[#EDF1F5] px-4 py-3 text-center text-sm font-extrabold text-sibs-primary-1">
+                <td className="border-b border-sibs-surface-subtle px-4 py-3 text-center text-sm font-extrabold text-sibs-primary-1">
                   {formatNumber(item.acceptedJobOffer)}
                 </td>
-                <td className="border-b border-[#EDF1F5] px-4 py-3 text-center text-sm font-extrabold text-sibs-primary-1">
+                <td className="border-b border-sibs-surface-subtle px-4 py-3 text-center text-sm font-extrabold text-sibs-primary-1">
                   {formatNumber(item.nhoCount)}
                 </td>
-                <td className="border-b border-[#EDF1F5] px-4 py-3 text-center text-sm font-extrabold text-sibs-primary-1">
+                <td className="border-b border-sibs-surface-subtle px-4 py-3 text-center text-sm font-extrabold text-sibs-primary-1">
                   {formatNumber(item.fstCount)}
                 </td>
-                <td className="border-b border-[#EDF1F5] px-4 py-3 text-center text-sm font-extrabold text-sibs-primary-1">
+                <td className="border-b border-sibs-surface-subtle px-4 py-3 text-center text-sm font-extrabold text-sibs-primary-1">
                   {formatNumber(item.pstCount)}
                 </td>
-                <td className="border-b border-[#EDF1F5] px-4 py-3 text-center text-sm font-extrabold text-emerald-700">
+                <td className="border-b border-sibs-surface-subtle px-4 py-3 text-center text-sm font-extrabold text-emerald-700">
                   {formatNumber(item.goLiveCount)}
                 </td>
-                <td className="border-b border-[#EDF1F5] px-4 py-3 text-center text-sm font-extrabold text-sibs-primary-1">
+                <td className="border-b border-sibs-surface-subtle px-4 py-3 text-center text-sm font-extrabold text-sibs-primary-1">
                   {formatNumber(item.hiredCount)}
                 </td>
-                <td className="border-b border-[#EDF1F5] px-4 py-3 text-center text-sm font-extrabold text-sibs-primary-1">
+                <td className="border-b border-sibs-surface-subtle px-4 py-3 text-center text-sm font-extrabold text-sibs-primary-1">
                   {formatPercent(item.hiringRate, 1)}
                 </td>
-                <td className="border-b border-[#EDF1F5] px-4 py-3 text-center text-sm font-extrabold text-violet-700">
+                <td className="border-b border-sibs-surface-subtle px-4 py-3 text-center text-sm font-extrabold text-violet-700">
                   {formatNumber(item.leadsToGenerate)}
                 </td>
               </tr>
@@ -773,7 +773,7 @@ function SummaryTable({ planRows = [] }) {
 
           {planRows.length > 0 && (
             <tfoot>
-              <tr className="bg-[#F8FAFC] text-sm font-extrabold text-sibs-primary-1">
+              <tr className="bg-sibs-surface text-sm font-extrabold text-sibs-primary-1">
                 <td className="px-4 py-3">TOTAL / AVG.</td>
                 <td className="px-4 py-3 text-center">
                   {formatNumber(average.requiredHeadcount)}
@@ -860,10 +860,10 @@ function PipelineFlowCard({ totals }) {
       x: 16,
       w: 50,
       h: getStageHeight(acceptedJobOffer),
-      color: "#1F5FDA",
-      sideColor: "#D8EEF4",
-      sideShade: "#C8E3EE",
-      labelColor: "#0B315F",
+      color: "var(--blue-600)",
+      sideColor: "var(--sibs-border)",
+      sideShade: "var(--sibs-border)",
+      labelColor: "var(--sibs-navy)",
     },
     {
       key: "nho",
@@ -873,10 +873,10 @@ function PipelineFlowCard({ totals }) {
       x: 82,
       w: 48,
       h: getStageHeight(nhoCount),
-      color: "#6A48A8",
-      sideColor: "#D8EEF4",
-      sideShade: "#C8E3EE",
-      labelColor: "#0B315F",
+      color: "var(--purple-600)",
+      sideColor: "var(--sibs-border)",
+      sideShade: "var(--sibs-border)",
+      labelColor: "var(--sibs-navy)",
     },
     {
       key: "fst",
@@ -886,10 +886,10 @@ function PipelineFlowCard({ totals }) {
       x: 148,
       w: 48,
       h: getStageHeight(fstCount),
-      color: "#078C96",
-      sideColor: "#F5EFE5",
-      sideShade: "#E8DAC3",
-      labelColor: "#0B315F",
+      color: "var(--teal-600)",
+      sideColor: "var(--sibs-surface-subtle)",
+      sideShade: "var(--sibs-border)",
+      labelColor: "var(--sibs-navy)",
     },
     {
       key: "pst",
@@ -899,10 +899,10 @@ function PipelineFlowCard({ totals }) {
       x: 214,
       w: 48,
       h: getStageHeight(pstCount),
-      color: "#F47C0B",
-      sideColor: "#F5EFE5",
-      sideShade: "#E8DAC3",
-      labelColor: "#0B315F",
+      color: "var(--sibs-orange)",
+      sideColor: "var(--sibs-surface-subtle)",
+      sideShade: "var(--sibs-border)",
+      labelColor: "var(--sibs-navy)",
     },
     {
       key: "goLive",
@@ -912,10 +912,10 @@ function PipelineFlowCard({ totals }) {
       x: 280,
       w: 48,
       h: getStageHeight(goLiveCount),
-      color: "#4B9229",
+      color: "var(--green-600)",
       sideColor: "",
       sideShade: "",
-      labelColor: "#4B9229",
+      labelColor: "var(--green-600)",
     },
   ].map((stage) => ({
     ...stage,
@@ -1017,7 +1017,7 @@ function PipelineFlowCard({ totals }) {
 
   return (
     <div className={`${CARD} h-[275px] p-4`}>
-      <h3 className="text-[13px] font-extrabold uppercase tracking-wide text-[#101828]">
+      <h3 className="text-[13px] font-extrabold uppercase tracking-wide text-sibs-muted">
         Pipeline Flow — Total (6 Weeks)
       </h3>
 
@@ -1139,7 +1139,7 @@ function PipelineFlowCard({ totals }) {
                   x={arrowX}
                   y="150"
                   textAnchor="middle"
-                  fill="#A7B4C4"
+                  fill="var(--sibs-faint)"
                   fontSize="10"
                   fontWeight="900"
                 >
@@ -1150,7 +1150,7 @@ function PipelineFlowCard({ totals }) {
                   x={gapCenterX}
                   y="166"
                   textAnchor="middle"
-                  fill="#DC2626"
+                  fill="var(--red-600)"
                   fontSize="8.5"
                   fontWeight="900"
                 >
@@ -1161,7 +1161,7 @@ function PipelineFlowCard({ totals }) {
                   x={gapCenterX}
                   y="179"
                   textAnchor="middle"
-                  fill="#DC2626"
+                  fill="var(--red-600)"
                   fontSize="7.2"
                   fontWeight="900"
                 >
@@ -1178,8 +1178,8 @@ function PipelineFlowCard({ totals }) {
             fontSize="7"
             fontWeight="900"
           >
-            <tspan fill="#DC2626">Drop</tspan>
-            <tspan fill="#64748B"> = Attrition Count (% Attrition)</tspan>
+            <tspan fill="var(--red-600)">Drop</tspan>
+            <tspan fill="var(--sibs-faint)"> = Attrition Count (% Attrition)</tspan>
           </text>
         </svg>
       </div>
@@ -1218,12 +1218,12 @@ function AttritionByStageCard({ totals }) {
 
   return (
     <div className={`${CARD} h-[260px] p-4`}>
-      <h3 className="text-[13px] font-extrabold uppercase tracking-wide text-[#101828]">
+      <h3 className="text-[13px] font-extrabold uppercase tracking-wide text-sibs-muted">
         Attrition by Stage — Total (6 Weeks)
       </h3>
 
       <div className="mt-4">
-        <div className="grid grid-cols-[1.4fr_0.8fr_0.8fr_1fr] border-b border-[#E6ECF2] pb-2 text-[9px] font-extrabold text-sibs-primary-1">
+        <div className="grid grid-cols-[1.4fr_0.8fr_0.8fr_1fr] border-b border-sibs-border pb-2 text-[9px] font-extrabold text-sibs-primary-1">
           <p>Stage</p>
           <p className="text-center">Attrition Count</p>
           <p className="text-center">Attrition %</p>
@@ -1268,7 +1268,7 @@ function CompactTrendCard({
   title,
   values = [],
   labels = [],
-  color = "#155EEF",
+  color = "var(--blue-600)",
   suffix = "",
 }) {
   const width = 300;
@@ -1308,7 +1308,7 @@ function CompactTrendCard({
 
   return (
     <div className={`${CARD} h-[260px] p-4`}>
-      <h3 className="text-[13px] font-extrabold uppercase tracking-wide text-[#101828]">
+      <h3 className="text-[13px] font-extrabold uppercase tracking-wide text-sibs-muted">
         {title}
       </h3>
 
@@ -1336,7 +1336,7 @@ function CompactTrendCard({
                   x2={width - paddingRight}
                   y1={y}
                   y2={y}
-                  stroke="#E9EEF5"
+                  stroke="var(--sibs-border)"
                   strokeWidth="1"
                 />
               </g>
@@ -1422,7 +1422,7 @@ export default function PercentageRiskGraphTable({
     return (
       <div className="bg-transparent">
         <div
-          className={`${EDGE} border border-[#E6ECF2] bg-[#F8FAFC] px-5 py-12 text-center text-sm font-bold text-gray-500`}
+          className={`${EDGE} border border-sibs-border bg-sibs-surface px-5 py-12 text-center text-sm font-bold text-gray-500`}
         >
           No weekly hiring data available for the selected filter.
         </div>
@@ -1493,7 +1493,7 @@ export default function PercentageRiskGraphTable({
               title="Leads to Interview Trend"
               values={planRows.map((row) => row.leadsToGenerate)}
               labels={trendLabels}
-              color="#6938EF"
+              color="var(--indigo-600)"
             />
           </div>
 
@@ -1502,7 +1502,7 @@ export default function PercentageRiskGraphTable({
               title="Hiring Rate Trend"
               values={planRows.map((row) => row.hiringRate * 100)}
               labels={trendLabels}
-              color="#155EEF"
+              color="var(--blue-600)"
               suffix="%"
             />
           </div>

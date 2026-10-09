@@ -257,7 +257,7 @@ export default function OnboardingPage() {
           <OnboardingOutcomeOverview loading={loading} />
 
           <section
-            className="sibs-page-card-in overflow-hidden rounded-2xl border border-sibs-border bg-white font-jakarta shadow-sm"
+            className="sibs-page-card-in overflow-hidden rounded-[14px] border border-sibs-border bg-white font-jakarta shadow-sm"
             style={{ animationDelay: "240ms", animationFillMode: "both" }}
           >
             <header className="border-b border-sibs-border bg-white p-4 sm:p-5 2xl:p-6 font-jakarta">
