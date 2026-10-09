@@ -866,7 +866,7 @@ export default function ForecastHeadcountPlanTable({
 
   return (
     <>
-      <section className="sibs-card overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-sm">
+      <section className="sibs-card overflow-hidden rounded-[14px] border border-sibs-border bg-white shadow-sm">
         <div className="flex flex-wrap items-start justify-between gap-3 border-b border-sibs-border px-4 py-3.5 2xl:px-5 2xl:py-4">
           <div>
             <h3 className="font-heading text-sm 2xl:text-base font-bold text-sibs-navy tracking-tight">
@@ -878,7 +878,7 @@ export default function ForecastHeadcountPlanTable({
             </p>
           </div>
 
-          <span className="rounded-xl border border-sibs-border bg-sibs-surface px-3 py-1 sibs-text-micro font-extrabold text-sibs-navy">
+          <span className="rounded-[14px] border border-sibs-border bg-sibs-surface px-3 py-1 sibs-text-micro font-extrabold text-sibs-navy">
             {forecastData.loading
               ? "Loading forecast..."
               : hasRows
@@ -888,7 +888,7 @@ export default function ForecastHeadcountPlanTable({
         </div>
 
         {forecastData.error ? (
-          <div className="mx-4 mt-3.5 2xl:mx-5 2xl:mt-4 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-xs font-semibold text-red-600">
+          <div className="mx-4 mt-3.5 2xl:mx-5 2xl:mt-4 rounded-[14px] border border-red-100 bg-red-50 px-4 py-3 text-xs font-semibold text-red-600">
             {forecastData.error}
           </div>
         ) : null}
@@ -923,7 +923,7 @@ export default function ForecastHeadcountPlanTable({
                 onMouseMove={handleDragMove}
                 onMouseUp={handleDragEnd}
                 onMouseLeave={handleDragEnd}
-                className={`sibs-data-table-shell !block max-h-[480px] 2xl:max-h-[640px] overflow-auto sibs-scrollbar rounded-xl border border-slate-200 bg-white shadow-sm select-none ${
+                className={`sibs-data-table-shell !block max-h-[480px] 2xl:max-h-[640px] overflow-auto sibs-scrollbar rounded-[14px] border border-slate-200 bg-white shadow-sm select-none ${
                   isDragging ? "cursor-grabbing" : "cursor-grab"
                 }`}
               >

@@ -29,7 +29,7 @@ function ActionItemsContent() {
       <ActionItemsCurrentStatus />
 
       <section
-        className="sibs-page-card-in overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-xs font-jakarta"
+        className="sibs-page-card-in overflow-hidden rounded-[14px] border border-sibs-border bg-white shadow-xs font-jakarta"
         style={{ animationDelay: "240ms", animationFillMode: "both" }}
       >
         <div className="border-b border-sibs-border p-4 sm:p-5 2xl:p-6 font-jakarta">
@@ -53,7 +53,7 @@ function ActionItemsContent() {
       </section>
 
       <section
-        className="sibs-page-card-in rounded-2xl border border-sibs-border bg-white p-4 shadow-sm sm:p-5 font-jakarta"
+        className="sibs-page-card-in rounded-[14px] border border-sibs-border bg-white p-4 shadow-sm sm:p-5 font-jakarta"
         style={{ animationDelay: "300ms", animationFillMode: "both" }}
       >
         <div className="mb-4">

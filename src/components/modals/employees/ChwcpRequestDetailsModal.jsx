@@ -11,7 +11,7 @@ import {
   UserRound,
 } from "lucide-react";
 
-import ModalShell from "@/components/ui/ModalShell";
+import { ModalShell } from "@/components/ui";
 import { getChwcpRequestDetails } from "../../../lib/axios/getChwcp";
 
 function safeText(value, fallback = "N/A") {
@@ -266,7 +266,8 @@ function statusClasses(status) {
   return "border-blue-200 bg-blue-50 text-sibs-navy";
 }
 
-function SectionCard({ title, subtitle, icon: Icon = FileText, children }) {
+function SectionCard({ title, subtitle, icon, children }) {
+  const Icon = icon || FileText;
   return (
     <section className="overflow-hidden rounded-[10px] border border-sibs-border bg-white shadow-xs">
       <div className="flex items-center justify-between gap-3 border-b border-sibs-border px-5 py-4 sm:px-6">
@@ -723,21 +724,20 @@ export default function ChwcpRequestDetailsModal({ requestId, employee, onClose 
       subtitle="Comprehensive health and compliance request record"
       maxWidth="max-w-[1400px]"
       bodyClassName="bg-sibs-surface p-4 sm:p-5"
-      footer={
-        <div className="flex w-full items-center justify-between gap-4">
-          <div className="hidden items-center gap-2 text-[10px] font-semibold text-sibs-muted sm:flex">
-            <span className="h-2 w-2 rounded-full bg-sibs-orange" />
-            Read-only CHWCP form record.
-          </div>
-
-          <button
-            type="button"
-            onClick={onClose}
-            className="sibs-btn-secondary !h-8.5 2xl:!h-10 ml-auto px-4 2xl:px-5"
-          >
-            Close
-          </button>
+      footerMeta={
+        <div className="hidden items-center gap-2 text-[10px] font-semibold text-sibs-muted sm:flex">
+          <span className="h-2 w-2 rounded-full bg-sibs-orange" />
+          Read-only CHWCP form record.
         </div>
+      }
+      footer={
+        <button
+          type="button"
+          onClick={onClose}
+          className="sibs-btn-secondary px-4 2xl:px-5"
+        >
+          Close
+        </button>
       }
     >
       {loading ? (
@@ -774,7 +774,7 @@ export default function ChwcpRequestDetailsModal({ requestId, employee, onClose 
 
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
-                    <h3 className="sibs-modal-section-title break-words text-sibs-navy">
+                    <h3 className="sibs-modal-section-title break-words">
                       {safeText(summaryEmployee.employeeName)}
                     </h3>
 

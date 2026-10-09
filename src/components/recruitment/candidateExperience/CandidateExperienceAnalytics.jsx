@@ -25,7 +25,7 @@ function BarList({ rows, emptyText, accent = "bg-sibs-primary-1" }) {
   const max = Math.max(1, ...rows.map((row) => row.value));
   if (!rows.length) {
     return (
-      <div className="rounded-xl border border-dashed border-sibs-subtle-border bg-sibs-surface p-6 text-center text-xs font-bold text-sibs-tertiary-6">
+      <div className="rounded-[10px] border border-dashed border-sibs-subtle-border bg-sibs-surface p-6 text-center text-xs font-bold text-sibs-tertiary-6">
         {emptyText}
       </div>
     );
@@ -81,17 +81,17 @@ export default function CandidateExperienceAnalytics({ records = [], metrics = {
       </Panel>
 
       <section
-        className="sibs-page-card-in relative overflow-hidden rounded-xl 2xl:rounded-2xl bg-[#042C51] p-3.5 sm:p-4 2xl:p-5 text-white shadow-sm font-jakarta"
+        className="sibs-page-card-in relative overflow-hidden rounded-[10px] 2xl:rounded-[14px] bg-sibs-navy p-3.5 sm:p-4 2xl:p-5 text-white shadow-sm font-jakarta"
         style={{ animationDelay: "255ms", animationFillMode: "both" }}
       >
-        <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-[#FF5C28]/15" />
+        <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-sibs-orange/15" />
         <div className="relative">
-          <div className="flex items-center gap-2 text-[#FF5C28]">
+          <div className="flex items-center gap-2 text-sibs-orange">
             <Sparkles size={16} />
             <h3 className="text-xs font-black uppercase tracking-wider text-white">Experience Insight</h3>
           </div>
 
-          <div className="mt-3 rounded-lg 2xl:rounded-xl border border-white/10 bg-white/10 p-3 2xl:p-3.5">
+          <div className="mt-3 rounded-lg 2xl:rounded-[10px] border border-white/10 bg-white/10 p-3 2xl:p-3.5">
             <p className="text-[9px] 2xl:text-[10px] font-black uppercase tracking-wider text-blue-200">Primary Drop-off Stage</p>
             {loading ? (
               <Skeleton className="mt-1 h-5 w-28 bg-white/20" />
@@ -103,7 +103,7 @@ export default function CandidateExperienceAnalytics({ records = [], metrics = {
             {loading ? (
               <Skeleton className="mt-1 h-4 w-32 bg-white/20" />
             ) : (
-              <p className="mt-0.5 text-xs 2xl:text-sm font-extrabold text-[#FFB69E]">{topCategory}</p>
+              <p className="mt-0.5 text-xs 2xl:text-sm font-extrabold text-sibs-orange-300">{topCategory}</p>
             )}
           </div>
 
@@ -129,7 +129,7 @@ function Panel({ icon, title, subtitle, delay = 120, children }) {
   const Icon = icon;
   return (
     <section
-      className="sibs-page-card-in rounded-xl 2xl:rounded-2xl border border-sibs-border bg-white p-3.5 sm:p-4 2xl:p-5 shadow-sm transition-all duration-200 hover:shadow-md font-jakarta"
+      className="sibs-page-card-in rounded-[10px] 2xl:rounded-[14px] border border-sibs-border bg-white p-3.5 sm:p-4 2xl:p-5 shadow-sm transition-all duration-200 hover:shadow-md font-jakarta"
       style={{ animationDelay: `${delay}ms`, animationFillMode: "both" }}
     >
       <div className="mb-3 flex items-start justify-between gap-3 border-b border-sibs-border pb-2.5">
@@ -137,7 +137,7 @@ function Panel({ icon, title, subtitle, delay = 120, children }) {
           <h3 className="sibs-card-title">{title}</h3>
           <p className="sibs-card-subtitle">{subtitle}</p>
         </div>
-        <span className="flex h-7.5 w-7.5 2xl:h-8 2xl:w-8 shrink-0 items-center justify-center rounded-lg bg-[#E9F0FC] text-sibs-navy">
+        <span className="flex h-7.5 w-7.5 2xl:h-8 2xl:w-8 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-sibs-navy">
           <Icon size={15} strokeWidth={2} />
         </span>
       </div>

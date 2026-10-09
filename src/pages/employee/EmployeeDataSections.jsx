@@ -2292,7 +2292,7 @@ export function DocumentsSection({ employee, onDocumentsChange, onFeedback, canE
   ).length;
 
   return (
-    <div className="rounded-[20px] border border-[#D6E0EA] bg-white p-4 shadow-sm sm:p-6">
+    <div className="rounded-[20px] border border-sibs-border bg-white p-4 shadow-sm sm:p-6">
       {canEditDetails ? (
         <>
           <input
@@ -2314,16 +2314,16 @@ export function DocumentsSection({ employee, onDocumentsChange, onFeedback, canE
         </>
       ) : null}
 
-      <div className="mb-6 border-b border-[#E6ECF2] pb-5">
+      <div className="mb-6 border-b border-sibs-border pb-5">
         <div className="flex items-center gap-3">
-          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#E9F0FC] text-[#042C51]">
+          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-sibs-navy">
             <FolderLock size={19} />
           </span>
           <div>
-            <h2 className="text-base font-extrabold text-[#042C51]">
+            <h2 className="text-base font-extrabold text-sibs-navy">
               Document Vault Manager
             </h2>
-            <p className="mt-1 text-xs font-medium text-[#667085]">
+            <p className="mt-1 text-xs font-medium text-sibs-muted">
               Manage employee, recruitment, onboarding, and HR documents in one centralized repository.
             </p>
           </div>
@@ -2357,28 +2357,28 @@ export function DocumentsSection({ employee, onDocumentsChange, onFeedback, canE
               onClick={() => setActiveDocumentGroup(card.id)}
               className={`rounded-2xl border p-5 text-left transition ${
                 active
-                  ? "border-[#042C51] bg-[#042C51] text-white shadow-md"
-                  : "border-[#D6E0EA] bg-white text-[#042C51] hover:border-[#8EA3BF] hover:shadow-sm"
+                  ? "border-sibs-navy bg-sibs-navy text-white shadow-md"
+                  : "border-sibs-border bg-white text-sibs-navy hover:border-sibs-border-subtle hover:shadow-sm"
               }`}
             >
               <div className="flex items-start justify-between gap-4">
                 <span
                   className={`flex h-11 w-11 items-center justify-center rounded-xl ${
-                    active ? "bg-white/10 text-[#FF9C73]" : "bg-[#E9F0FC] text-[#042C51]"
+                    active ? "bg-white/10 text-sibs-orange" : "bg-blue-50 text-sibs-navy"
                   }`}
                 >
                   {card.icon}
                 </span>
                 <span
                   className={`rounded-full px-3 py-1 text-[10px] font-extrabold ${
-                    active ? "bg-white/10 text-white" : "bg-[#F2F4F7] text-[#52637A]"
+                    active ? "bg-white/10 text-white" : "bg-slate-100 text-sibs-text-secondary"
                   }`}
                 >
                   {card.count} uploaded
                 </span>
               </div>
               <h3 className="mt-4 text-sm font-extrabold">{card.title}</h3>
-              <p className={`mt-1 text-[10px] font-semibold leading-4 ${active ? "text-white/70" : "text-[#667085]"}`}>
+              <p className={`mt-1 text-[10px] font-semibold leading-4 ${active ? "text-white/70" : "text-sibs-muted"}`}>
                 {card.description}
               </p>
             </button>
@@ -2406,25 +2406,25 @@ export function DocumentsSection({ employee, onDocumentsChange, onFeedback, canE
                   onClick={() => setActiveRequirementGroup(group.id)}
                   className={`rounded-2xl border p-4 text-left transition ${
                     active
-                      ? "border-[#042C51] bg-[#E9F0FC] shadow-sm"
-                      : "border-[#D6E0EA] bg-white hover:border-[#8EA3BF]"
+                      ? "border-sibs-navy bg-blue-50 shadow-sm"
+                      : "border-sibs-border bg-white hover:border-sibs-border-subtle"
                   }`}
                 >
                   <div className="flex items-center justify-between gap-3">
                     <div>
-                      <p className="text-xs font-extrabold text-[#042C51]">
+                      <p className="text-xs font-extrabold text-sibs-navy">
                         {getEmployeeRequirementGroupTitle(group)}
                       </p>
-                      <p className="mt-1 text-[10px] font-semibold text-[#667085]">
+                      <p className="mt-1 text-[10px] font-semibold text-sibs-muted">
                         {completed} / {requirements.length} Complete
                       </p>
                     </div>
-                    <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white text-[#042C51] shadow-sm">
+                    <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white text-sibs-navy shadow-sm">
                       {group.id === "major" ? <ShieldCheck size={17} /> : group.id === "previous-employment" ? <Briefcase size={17} /> : <FileText size={17} />}
                     </span>
                   </div>
-                  <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-[#DCE5EF]">
-                    <div className="h-full rounded-full bg-[#FF5C28]" style={{ width: `${percent}%` }} />
+                  <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-slate-200">
+                    <div className="h-full rounded-full bg-sibs-orange" style={{ width: `${percent}%` }} />
                   </div>
                 </button>
               );
@@ -2432,19 +2432,19 @@ export function DocumentsSection({ employee, onDocumentsChange, onFeedback, canE
           </div>
 
           {loadingDocuments ? (
-            <div className="rounded-2xl border border-dashed border-[#D6E0EA] bg-[#F8FAFC] px-5 py-12 text-center text-xs font-bold text-[#667085]">
+            <div className="rounded-2xl border border-dashed border-sibs-border bg-sibs-surface px-5 py-12 text-center text-xs font-bold text-sibs-muted">
               Loading pre-employment requirements...
             </div>
           ) : !activeRequirementDefinition ? (
             <EmptyState message="No Candidate Pipeline requirement configuration is available." />
           ) : (
-            <section className="rounded-2xl border border-[#D6E0EA] bg-[#F8FAFC] p-4 sm:p-5">
-              <div className="mb-5 flex items-center justify-between gap-4 border-b border-[#D6E0EA] pb-4">
+            <section className="rounded-2xl border border-sibs-border bg-sibs-surface p-4 sm:p-5">
+              <div className="mb-5 flex items-center justify-between gap-4 border-b border-sibs-border pb-4">
                 <div>
-                  <h3 className="text-sm font-extrabold text-[#042C51]">
+                  <h3 className="text-sm font-extrabold text-sibs-navy">
                     {getEmployeeRequirementGroupTitle(activeRequirementDefinition)}
                   </h3>
-                  <p className="mt-1 text-[10px] font-semibold text-[#667085]">
+                  <p className="mt-1 text-[10px] font-semibold text-sibs-muted">
                     Upload, preview, download, replace, or remove each requirement file.
                   </p>
                 </div>
@@ -2468,21 +2468,21 @@ export function DocumentsSection({ employee, onDocumentsChange, onFeedback, canE
                     <article
                       key={requirement.id}
                       className={`rounded-2xl border bg-white p-4 transition ${
-                        isUploaded ? "border-emerald-200 shadow-sm" : "border-[#D6E0EA]"
+                        isUploaded ? "border-emerald-200 shadow-sm" : "border-sibs-border"
                       }`}
                     >
                       <div className="flex items-start gap-3">
-                        <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${isUploaded ? "bg-emerald-50 text-emerald-600" : "bg-[#E9F0FC] text-[#042C51]"}`}>
+                        <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${isUploaded ? "bg-emerald-50 text-emerald-600" : "bg-blue-50 text-sibs-navy"}`}>
                           {isUploaded ? <CheckCircle2 size={19} /> : <FileText size={18} />}
                         </span>
                         <div className="min-w-0 flex-1">
-                          <h4 className="text-xs font-extrabold leading-5 text-[#042C51]">
+                          <h4 className="text-xs font-extrabold leading-5 text-sibs-navy">
                             {requirement.name}
                           </h4>
-                          <p className="mt-1 font-mono text-[9px] font-bold text-[#8EA3BF]">
+                          <p className="mt-1 font-mono text-[9px] font-bold text-sibs-muted">
                             {requirement.id}
                           </p>
-                          <span className={`mt-2 inline-flex rounded-full px-2.5 py-1 text-[8px] font-extrabold uppercase ${isUploaded ? "bg-emerald-50 text-emerald-700" : "bg-[#F2F4F7] text-[#667085]"}`}>
+                          <span className={`mt-2 inline-flex rounded-full px-2.5 py-1 text-[8px] font-extrabold uppercase ${isUploaded ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-sibs-muted"}`}>
                             {isUploaded ? "Uploaded" : "Missing"}
                           </span>
                         </div>
@@ -2495,17 +2495,17 @@ export function DocumentsSection({ employee, onDocumentsChange, onFeedback, canE
                               key={getEmployeeDocumentKey(document)}
                               className="rounded-xl border border-emerald-100 bg-emerald-50/50 p-3"
                             >
-                              <p className="truncate text-[10px] font-extrabold text-[#344054]">
+                              <p className="truncate text-[10px] font-extrabold text-sibs-text-secondary">
                                 {document.name}
                               </p>
-                              <p className="mt-1 text-[9px] font-semibold text-[#667085]">
+                              <p className="mt-1 text-[9px] font-semibold text-sibs-muted">
                                 {document.fileSize || "—"} · {formatDate(document.uploadedAt)}
                               </p>
                               <div className="mt-2 flex flex-wrap gap-2">
-                                <button type="button" onClick={() => openDocumentPreview(document)} className="inline-flex h-7 items-center gap-1 rounded-lg border border-[#D6E0EA] bg-white px-2.5 text-[9px] font-extrabold text-[#52637A]">
+                                <button type="button" onClick={() => openDocumentPreview(document)} className="inline-flex h-7 items-center gap-1 rounded-lg border border-sibs-border bg-white px-2.5 text-[9px] font-extrabold text-sibs-text-secondary">
                                   <Eye size={12} /> Preview
                                 </button>
-                                <button type="button" onClick={() => downloadDocument(document)} className="inline-flex h-7 items-center gap-1 rounded-lg border border-[#D6E0EA] bg-white px-2.5 text-[9px] font-extrabold text-[#52637A]">
+                                <button type="button" onClick={() => downloadDocument(document)} className="inline-flex h-7 items-center gap-1 rounded-lg border border-sibs-border bg-white px-2.5 text-[9px] font-extrabold text-sibs-text-secondary">
                                   <Download size={12} /> Download
                                 </button>
                                 {canEditDetails && canDeleteEmployeeDocument(document) ? (
@@ -2518,21 +2518,21 @@ export function DocumentsSection({ employee, onDocumentsChange, onFeedback, canE
                           ))}
                         </div>
                       ) : (
-                        <div className="mt-4 rounded-xl border border-dashed border-[#C8D3DF] bg-[#F8FAFC] p-4 text-center">
-                          <Upload size={18} className="mx-auto text-[#98A2B3]" />
-                          <p className="mt-2 text-[10px] font-bold text-[#667085]">No uploaded files yet.</p>
+                        <div className="mt-4 rounded-xl border border-dashed border-sibs-border bg-sibs-surface p-4 text-center">
+                          <Upload size={18} className="mx-auto text-sibs-faint" />
+                          <p className="mt-2 text-[10px] font-bold text-sibs-muted">No uploaded files yet.</p>
                         </div>
                       )}
 
-                      <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-[#E6ECF2] pt-3">
+                      <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-sibs-border pt-3">
                         {canEditDetails ? (
-                          <button type="button" onClick={() => openRequirementFilePicker(requirement)} disabled={isUploading || isDeleting} className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-[#042C51] px-3 text-[10px] font-extrabold text-white disabled:opacity-60">
-                            <Upload size={13} className="text-[#FF5C28]" />
+                          <button type="button" onClick={() => openRequirementFilePicker(requirement)} disabled={isUploading || isDeleting} className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-sibs-navy px-3 text-[10px] font-extrabold text-white disabled:opacity-60">
+                            <Upload size={13} className="text-sibs-orange" />
                             {isUploading ? "Uploading..." : "Upload Files"}
                           </button>
                         ) : null}
                         {files.length > 0 ? (
-                          <span className="text-[9px] font-bold text-[#667085]">
+                          <span className="text-[9px] font-bold text-sibs-muted">
                             {files.length} active file{files.length === 1 ? "" : "s"}
                           </span>
                         ) : null}
@@ -2546,48 +2546,48 @@ export function DocumentsSection({ employee, onDocumentsChange, onFeedback, canE
         </div>
       ) : (
         <section className="space-y-5">
-          <div className="flex flex-col gap-3 rounded-2xl border border-[#D6E0EA] bg-[#F8FAFC] p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-3 rounded-2xl border border-sibs-border bg-sibs-surface p-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h3 className="text-sm font-extrabold text-[#042C51]">
+              <h3 className="text-sm font-extrabold text-sibs-navy">
                 Other Files
               </h3>
-              <p className="mt-1 text-[10px] font-semibold text-[#667085]">
+              <p className="mt-1 text-[10px] font-semibold text-sibs-muted">
                 Upload employee and HR documents or review files synchronized from recruitment.
               </p>
             </div>
             {canEditDetails ? (
-              <button type="button" onClick={openFilePicker} disabled={uploading} className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-[#042C51] px-4 text-xs font-extrabold text-white disabled:opacity-60">
-                <Upload size={15} className="text-[#FF5C28]" /> Upload Files
+              <button type="button" onClick={openFilePicker} disabled={uploading} className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-sibs-navy px-4 text-xs font-extrabold text-white disabled:opacity-60">
+                <Upload size={15} className="text-sibs-orange" /> Upload Files
               </button>
             ) : null}
           </div>
 
           {loadingDocuments ? (
-            <div className="rounded-2xl border border-dashed border-[#D6E0EA] bg-[#F8FAFC] px-5 py-12 text-center text-xs font-bold text-[#667085]">Loading documents...</div>
+            <div className="rounded-2xl border border-dashed border-sibs-border bg-sibs-surface px-5 py-12 text-center text-xs font-bold text-sibs-muted">Loading documents...</div>
           ) : uploadedDocuments.length === 0 ? (
             <EmptyState message="No other files uploaded or synchronized yet." />
           ) : (
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
               {uploadedDocuments.map((document) => (
-                <article key={getEmployeeDocumentKey(document)} className="rounded-2xl border border-[#D6E0EA] bg-white p-4 shadow-sm">
+                <article key={getEmployeeDocumentKey(document)} className="rounded-2xl border border-sibs-border bg-white p-4 shadow-sm">
                   <div className="flex items-start gap-3">
-                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#E9F0FC] text-[10px] font-extrabold text-[#042C51]">{fileIcon(document?.name)}</span>
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-[10px] font-extrabold text-sibs-navy">{fileIcon(document?.name)}</span>
                     <div className="min-w-0 flex-1">
-                      <h4 className="truncate text-xs font-extrabold text-[#344054]">{document?.name}</h4>
-                      <p className="mt-1 text-[9px] font-semibold text-[#667085]">{document?.category || "Other"}</p>
+                      <h4 className="truncate text-xs font-extrabold text-sibs-text-secondary">{document?.name}</h4>
+                      <p className="mt-1 text-[9px] font-semibold text-sibs-muted">{document?.category || "Other"}</p>
                       <div className="mt-2 flex flex-wrap gap-1.5">
                         <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-[8px] font-extrabold uppercase text-emerald-700">Uploaded</span>
                         <span className={`rounded-full border px-2.5 py-1 text-[8px] font-extrabold ${getEmployeeDocumentSourceClass(document)}`}>{document?.source || "Employee Profile"}</span>
                       </div>
                     </div>
                   </div>
-                  <div className="mt-4 rounded-xl bg-[#F8FAFC] p-3 text-[9px] font-semibold text-[#667085]">
+                  <div className="mt-4 rounded-xl bg-sibs-surface p-3 text-[9px] font-semibold text-sibs-muted">
                     Uploaded by {document?.uploadedBy || "—"}<br />
                     {formatDate(document?.uploadedAt)} · {document?.fileSize || "—"}
                   </div>
-                  <div className="mt-4 flex items-center justify-end gap-2 border-t border-[#E6ECF2] pt-3">
-                    <button type="button" onClick={() => openDocumentPreview(document)} className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-[#D6E0EA] px-3 text-[10px] font-extrabold text-[#52637A]"><Eye size={13} /> Preview</button>
-                    <button type="button" onClick={() => downloadDocument(document)} className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-[#D6E0EA] px-3 text-[10px] font-extrabold text-[#52637A]"><Download size={13} /> Download</button>
+                  <div className="mt-4 flex items-center justify-end gap-2 border-t border-sibs-border pt-3">
+                    <button type="button" onClick={() => openDocumentPreview(document)} className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-sibs-border px-3 text-[10px] font-extrabold text-sibs-text-secondary"><Eye size={13} /> Preview</button>
+                    <button type="button" onClick={() => downloadDocument(document)} className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-sibs-border px-3 text-[10px] font-extrabold text-sibs-text-secondary"><Download size={13} /> Download</button>
                     {canEditDetails && canDeleteEmployeeDocument(document) ? (
                       <button type="button" onClick={() => setDeleteTarget(document)} className="inline-flex h-8 items-center rounded-lg border border-red-200 bg-red-50 px-2.5 text-red-600"><Trash2 size={13} /></button>
                     ) : null}
@@ -2608,26 +2608,26 @@ export function DocumentsSection({ employee, onDocumentsChange, onFeedback, canE
             className="sibs-modal-pop-in w-full max-w-md rounded-2xl bg-white p-5 shadow-2xl font-jakarta"
             onClick={(event) => event.stopPropagation()}
           >
-            <div className="flex items-center justify-between border-b border-[#E6ECF2] pb-3">
-              <h3 className="sibs-modal-title text-[#042C51]">
+            <div className="flex items-center justify-between border-b border-sibs-border pb-3">
+              <h3 className="sibs-modal-title text-sibs-navy">
                 Configure Talent Pool Upload
               </h3>
               <button
                 type="button"
                 onClick={closeUploadModal}
                 disabled={uploading}
-                className="rounded-lg p-1 text-[#98A2B3] hover:bg-[#F8FAFC] disabled:opacity-50"
+                className="rounded-lg p-1 text-sibs-faint hover:bg-sibs-surface disabled:opacity-50"
               >
                 <X size={17} />
               </button>
             </div>
 
             <form onSubmit={uploadDocument} className="mt-4 space-y-4">
-              <div className="rounded-xl border border-[#D6E0EA] bg-[#F8FAFC] p-4">
-                <p className="break-all text-xs font-extrabold text-[#042C51]">
+              <div className="rounded-xl border border-sibs-border bg-sibs-surface p-4">
+                <p className="break-all text-xs font-extrabold text-sibs-navy">
                   {selectedFiles.length === 1 ? selectedFiles[0].name : `${selectedFiles.length} files selected`}
                 </p>
-                <p className="mt-1 text-[10px] font-semibold text-[#667085]">
+                <p className="mt-1 text-[10px] font-semibold text-sibs-muted">
                   {selectedFiles.length === 1 ? formatProfileDocumentSize(selectedFiles[0].size) : `${selectedFiles.length} files`} · Saved in the
                   employee Talent Pool UPLOADED FILES folder.
                 </p>
@@ -2647,14 +2647,14 @@ export function DocumentsSection({ employee, onDocumentsChange, onFeedback, canE
                   type="button"
                   onClick={closeUploadModal}
                   disabled={uploading}
-                  className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg border border-[#D6DEE8] bg-white px-3.5 2xl:px-4 font-jakarta sibs-text-xs font-extrabold text-[#667085] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28] disabled:opacity-50"
+                  className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg border border-sibs-border bg-white px-3.5 2xl:px-4 font-jakarta sibs-text-xs font-extrabold text-sibs-muted transition hover:border-sibs-orange/40 hover:bg-sibs-cream-subtle hover:text-sibs-orange disabled:opacity-50"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={uploading}
-                  className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg bg-[#042C51] px-4 2xl:px-5 font-jakarta sibs-text-xs font-extrabold text-white transition hover:bg-[#073B6C] disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg bg-sibs-navy px-4 2xl:px-5 font-jakarta sibs-text-xs font-extrabold text-white transition hover:bg-sibs-navy/90 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {uploading ? "Uploading..." : "Upload Document"}
                 </button>
@@ -2674,9 +2674,9 @@ export function DocumentsSection({ employee, onDocumentsChange, onFeedback, canE
             className="flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
             onClick={(event) => event.stopPropagation()}
           >
-            <div className="flex items-center justify-between bg-[#042C51] px-5 py-4 text-white">
+            <div className="flex items-center justify-between bg-sibs-navy px-5 py-4 text-white">
               <div className="flex min-w-0 items-center gap-2">
-                <FolderLock size={17} className="shrink-0 text-[#FF5C28]" />
+                <FolderLock size={17} className="shrink-0 text-sibs-orange" />
                 <h3 className="truncate text-xs font-extrabold uppercase tracking-wide">
                   {previewDocument?.name || "Secure Document Preview"}
                 </h3>
@@ -2692,12 +2692,12 @@ export function DocumentsSection({ employee, onDocumentsChange, onFeedback, canE
 
             <div className="min-h-0 flex-1 overflow-auto p-5">
               {previewLoading ? (
-                <div className="flex min-h-[420px] items-center justify-center text-xs font-bold text-[#667085]">
+                <div className="flex min-h-[420px] items-center justify-center text-xs font-bold text-sibs-muted">
                   Loading secure preview...
                 </div>
               ) : previewSupported && preview?.url ? (
                 previewIsImage ? (
-                  <div className="flex min-h-[420px] items-center justify-center rounded-xl bg-[#F8FAFC] p-4">
+                  <div className="flex min-h-[420px] items-center justify-center rounded-xl bg-sibs-surface p-4">
                     <img
                       src={preview.url}
                       alt={previewDocument?.name || "Employee document"}
@@ -2708,37 +2708,37 @@ export function DocumentsSection({ employee, onDocumentsChange, onFeedback, canE
                   <iframe
                     src={preview.url}
                     title={previewDocument?.name || "Employee document"}
-                    className="h-[68vh] w-full rounded-xl border border-[#D6E0EA]"
+                    className="h-[68vh] w-full rounded-xl border border-sibs-border"
                   />
                 )
               ) : (
-                <div className="rounded-xl border border-[#D6E0EA] bg-[#F8FAFC] p-8 text-center">
-                  <FileText size={34} className="mx-auto text-[#042C51]" />
-                  <p className="mt-3 text-sm font-extrabold text-[#042C51]">
+                <div className="rounded-xl border border-sibs-border bg-sibs-surface p-8 text-center">
+                  <FileText size={34} className="mx-auto text-sibs-navy" />
+                  <p className="mt-3 text-sm font-extrabold text-sibs-navy">
                     This document type cannot be previewed in the browser.
                   </p>
-                  <p className="mt-1 text-xs font-semibold text-[#667085]">
+                  <p className="mt-1 text-xs font-semibold text-sibs-muted">
                     Download the document to open it using the appropriate desktop
                     application.
                   </p>
                 </div>
               )}
 
-              <div className="mt-4 flex flex-col gap-3 rounded-xl border border-[#E6ECF2] bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="mt-4 flex flex-col gap-3 rounded-xl border border-sibs-border bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="min-w-0">
-                  <p className="truncate text-xs font-extrabold text-[#344054]">
+                  <p className="truncate text-xs font-extrabold text-sibs-text-secondary">
                     {previewDocument?.name}
                   </p>
-                  <p className="mt-1 text-[10px] font-semibold text-[#667085]">
+                  <p className="mt-1 text-[10px] font-semibold text-sibs-muted">
                     {previewDocument?.category} · {previewDocument?.source || "Employee Profile"} · {previewDocument?.fileSize}
                   </p>
                 </div>
                 <button
                   type="button"
                   onClick={() => downloadDocument(previewDocument)}
-                  className="inline-flex h-9 items-center justify-center gap-2 rounded-xl bg-[#042C51] px-4 text-xs font-extrabold text-white"
+                  className="inline-flex h-9 items-center justify-center gap-2 rounded-xl bg-sibs-navy px-4 text-xs font-extrabold text-white"
                 >
-                  <Download size={14} className="text-[#FF5C28]" />
+                  <Download size={14} className="text-sibs-orange" />
                   Download
                 </button>
               </div>
@@ -2765,22 +2765,22 @@ export function DocumentsSection({ employee, onDocumentsChange, onFeedback, canE
                 </span>
 
                 <div className="min-w-0 flex-1">
-                  <h3 className="text-sm font-extrabold text-[#042C51]">
+                  <h3 className="text-sm font-extrabold text-sibs-navy">
                     Permanently delete document?
                   </h3>
 
-                  <p className="mt-2 text-xs font-semibold leading-5 text-[#667085]">
+                  <p className="mt-2 text-xs font-semibold leading-5 text-sibs-muted">
                     This permanently deletes the physical file and any linked HRIS
                     metadata for:
                   </p>
 
-                  <div className="mt-2 max-w-full rounded-lg bg-[#F8FAFC] px-3 py-2">
-                    <p className="break-all [overflow-wrap:anywhere] text-xs font-extrabold leading-5 text-[#344054]">
+                  <div className="mt-2 max-w-full rounded-lg bg-sibs-surface px-3 py-2">
+                    <p className="break-all [overflow-wrap:anywhere] text-xs font-extrabold leading-5 text-sibs-text-secondary">
                       {deleteTarget.name}
                     </p>
                   </div>
 
-                  <p className="mt-2 text-xs font-semibold leading-5 text-[#667085]">
+                  <p className="mt-2 text-xs font-semibold leading-5 text-sibs-muted">
                     This action cannot be undone.
                   </p>
                 </div>
@@ -2791,7 +2791,7 @@ export function DocumentsSection({ employee, onDocumentsChange, onFeedback, canE
                   type="button"
                   onClick={() => setDeleteTarget(null)}
                   disabled={deleting}
-                  className="h-9 rounded-xl border border-[#D6E0EA] px-4 text-xs font-extrabold text-[#667085] disabled:opacity-50"
+                  className="h-9 rounded-xl border border-sibs-border px-4 text-xs font-extrabold text-sibs-muted disabled:opacity-50"
                 >
                   Cancel
                 </button>
@@ -2828,21 +2828,21 @@ export function DocumentsSection({ employee, onDocumentsChange, onFeedback, canE
                 </span>
 
                 <div className="min-w-0 flex-1">
-                  <h3 className="text-sm font-extrabold text-[#042C51]">
+                  <h3 className="text-sm font-extrabold text-sibs-navy">
                     Delete pre-employment file?
                   </h3>
 
-                  <p className="mt-2 text-xs font-semibold leading-5 text-[#667085]">
+                  <p className="mt-2 text-xs font-semibold leading-5 text-sibs-muted">
                     This permanently deletes the Candidate Pipeline file for:
                   </p>
 
-                  <div className="mt-2 max-w-full rounded-lg bg-[#F8FAFC] px-3 py-2">
-                    <p className="break-all [overflow-wrap:anywhere] text-xs font-extrabold leading-5 text-[#344054]">
+                  <div className="mt-2 max-w-full rounded-lg bg-sibs-surface px-3 py-2">
+                    <p className="break-all [overflow-wrap:anywhere] text-xs font-extrabold leading-5 text-sibs-text-secondary">
                       {requirementDeleteTarget.name}
                     </p>
                   </div>
 
-                  <p className="mt-2 text-xs font-semibold leading-5 text-[#667085]">
+                  <p className="mt-2 text-xs font-semibold leading-5 text-sibs-muted">
                     The linked NHO file metadata will also be removed. This action
                     cannot be undone.
                   </p>
@@ -2854,7 +2854,7 @@ export function DocumentsSection({ employee, onDocumentsChange, onFeedback, canE
                   type="button"
                   onClick={() => setRequirementDeleteTarget(null)}
                   disabled={Boolean(deletingRequirementId)}
-                  className="h-9 rounded-xl border border-[#D6E0EA] px-4 text-xs font-extrabold text-[#667085] disabled:opacity-50"
+                  className="h-9 rounded-xl border border-sibs-border px-4 text-xs font-extrabold text-sibs-muted disabled:opacity-50"
                 >
                   Cancel
                 </button>

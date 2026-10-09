@@ -293,7 +293,7 @@ function AttendanceModal({ attendance }) {
       </div>
 
       <section className="rounded-xl border border-sibs-border p-4">
-        <h3 className="sibs-modal-section-title font-heading text-sm 2xl:text-base font-bold tracking-tight text-sibs-navy">Shift Coverage Details</h3>
+        <h3 className="sibs-modal-section-title">Shift Coverage Details</h3>
         <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
           {(attendance?.shifts || []).length === 0 ? (
             <p className="sibs-text-xs font-semibold text-sibs-muted">No shift attendance has been recorded today.</p>
@@ -464,12 +464,11 @@ export function DashboardModalManager({
       icon={meta.icon}
       maxWidth="max-w-5xl 2xl:max-w-6xl"
       variant="navy"
-      footer={
+      footerMeta={
         <span className="font-jakarta text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-sibs-faint">
           Read-only dashboard records. {formatUpdatedAt(generatedAt)}.
         </span>
       }
-      footerClassName="!justify-start"
     >
       {isPaged || activeModal === "attendance" ? content : null}
     </ModalShell>

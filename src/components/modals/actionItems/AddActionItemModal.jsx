@@ -100,18 +100,18 @@ function ThemedSelectDropdown({
         type="button"
         disabled={disabled}
         onClick={toggleOpen}
-        className={`flex h-9 w-full min-w-0 items-center justify-between gap-2 rounded-lg border px-3 text-left text-xs font-bold outline-none transition ${
+        className={`flex h-9 w-full min-w-0 items-center justify-between gap-2 rounded-[10px] border px-3 text-left text-xs font-bold outline-none transition ${
           open
-            ? "border-[#FF5C28] bg-white text-[#042C51] ring-2 ring-[#FF5C28]/10"
-            : "border-[#D0D5DD] bg-[#F8FAFC] text-[#042C51] hover:border-[#FF5C28]/40 hover:bg-white"
-        } ${disabled ? "cursor-not-allowed bg-[#EEF2F6] opacity-70" : ""}`}
+            ? "border-sibs-orange bg-white text-sibs-navy ring-2 ring-sibs-orange/10"
+            : "border-sibs-border bg-sibs-surface text-sibs-navy hover:border-sibs-orange/40 hover:bg-white"
+        } ${disabled ? "cursor-not-allowed bg-sibs-surface-subtle opacity-70" : ""}`}
       >
-        <span className={`min-w-0 flex-1 truncate ${selectedOption ? "text-[#042C51]" : "text-[#98A2B3]"}`}>
+        <span className={`min-w-0 flex-1 truncate ${selectedOption ? "text-sibs-navy" : "text-sibs-faint"}`}>
           {selectedOption?.label || placeholder}
         </span>
         <ChevronDown
           size={14}
-          className={`shrink-0 text-[#215789] transition-transform duration-200 ${
+          className={`shrink-0 text-sibs-navy transition-transform duration-200 ${
             open ? "rotate-180" : ""
           }`}
         />
@@ -119,7 +119,7 @@ function ThemedSelectDropdown({
 
       {open && !disabled && (
         <div
-          className={`sibs-dropdown-pop-in absolute left-0 top-[calc(100%+6px)] z-[100050] max-h-60 w-full overflow-hidden rounded-xl border border-[#D7DEE8] bg-white shadow-2xl ${menuClassName}`}
+          className={`sibs-dropdown-pop-in absolute left-0 top-[calc(100%+6px)] z-[100050] max-h-60 w-full overflow-hidden rounded-[10px] border border-sibs-border bg-white shadow-2xl ${menuClassName}`}
         >
           <div className="max-h-60 overflow-y-auto py-1 sibs-scrollbar">
             {options.map((option) => {
@@ -132,12 +132,12 @@ function ThemedSelectDropdown({
                   onClick={() => handleSelect(option.value)}
                   className={`flex w-full items-center justify-between gap-2 px-3.5 py-2 text-left text-xs font-extrabold transition ${
                     active
-                      ? "bg-[#FFF0EB] text-[#FF5C28]"
-                      : "bg-white text-[#042C51] hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
+                      ? "bg-sibs-cream-light text-sibs-orange"
+                      : "bg-white text-sibs-navy hover:bg-sibs-cream-light hover:text-sibs-orange"
                   }`}
                 >
                   <span className="min-w-0 flex-1 truncate">{option.label}</span>
-                  {active && <Check size={14} className="shrink-0 text-[#FF5C28]" />}
+                  {active && <Check size={14} className="shrink-0 text-sibs-orange" />}
                 </button>
               );
             })}
@@ -342,51 +342,51 @@ function ActionItemDatePicker({
         type="button"
         disabled={disabled}
         onClick={handleToggleOpen}
-        className={`flex h-9 w-full min-w-0 items-center justify-between gap-3 rounded-lg border px-3 text-left text-xs font-bold outline-none transition ${
+        className={`flex h-9 w-full min-w-0 items-center justify-between gap-3 rounded-[10px] border px-3 text-left text-xs font-bold outline-none transition ${
           open
-            ? "border-[#FF5C28] bg-white text-[#042C51] ring-2 ring-[#FF5C28]/10"
-            : "border-[#D0D5DD] bg-[#F8FAFC] hover:border-[#FF5C28]/40 hover:bg-white"
+            ? "border-sibs-orange bg-white text-sibs-navy ring-2 ring-sibs-orange/10"
+            : "border-sibs-border bg-sibs-surface hover:border-sibs-orange/40 hover:bg-white"
         } ${
           disabled
-            ? "cursor-not-allowed border-[#D7DEE8] bg-[#F2F4F7] text-[#667085] opacity-70"
-            : "text-[#042C51]"
+            ? "cursor-not-allowed border-sibs-border bg-sibs-surface-subtle text-sibs-muted opacity-70"
+            : "text-sibs-navy"
         }`}
       >
         <span className="inline-flex min-w-0 flex-1 items-center gap-2 truncate">
-          <CalendarDays size={15} className="shrink-0 text-[#215789]" />
-          <span className={`min-w-0 truncate ${value ? "text-[#042C51]" : "text-[#98A2B3]"}`}>
+          <CalendarDays size={15} className="shrink-0 text-sibs-navy" />
+          <span className={`min-w-0 truncate ${value ? "text-sibs-navy" : "text-sibs-faint"}`}>
             {displayText}
           </span>
         </span>
 
         <ChevronDown
           size={16}
-          className={`shrink-0 text-[#215789] transition-transform duration-200 ${
+          className={`shrink-0 text-sibs-navy transition-transform duration-200 ${
             open ? "rotate-180" : ""
           }`}
         />
       </button>
 
       {open && !disabled && (
-        <div className="sibs-dropdown-pop-in absolute right-0 top-[calc(100%+6px)] z-[100050] w-[280px] overflow-visible rounded-2xl border border-[#D7DEE8] bg-white p-3.5 shadow-2xl">
+        <div className="sibs-dropdown-pop-in absolute right-0 top-[calc(100%+6px)] z-[100050] w-[280px] overflow-visible rounded-[14px] border border-sibs-border bg-white p-3.5 shadow-2xl">
           {/* Header */}
-          <div className="flex items-center justify-between border-b border-[#E6ECF2] pb-2.5">
+          <div className="flex items-center justify-between border-b border-sibs-border pb-2.5">
             <button
               type="button"
               onClick={goPreviousMonth}
-              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-[#D6E0EA] bg-[#F8FAFC] text-[#042C51] transition hover:bg-[#FFF0EB] hover:text-[#FF5C28]"
+              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-[10px] border border-sibs-border bg-sibs-surface text-sibs-navy transition hover:bg-sibs-cream-light hover:text-sibs-orange"
             >
               <ChevronLeft size={15} />
             </button>
 
-            <span className="text-xs font-extrabold text-[#042C51]">
+            <span className="text-xs font-extrabold text-sibs-navy">
               {monthNames[displayDate.getMonth()]} {displayDate.getFullYear()}
             </span>
 
             <button
               type="button"
               onClick={goNextMonth}
-              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-[#D6E0EA] bg-[#F8FAFC] text-[#042C51] transition hover:bg-[#FFF0EB] hover:text-[#FF5C28]"
+              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-[10px] border border-sibs-border bg-sibs-surface text-sibs-navy transition hover:bg-sibs-cream-light hover:text-sibs-orange"
             >
               <ChevronRight size={15} />
             </button>
@@ -397,7 +397,7 @@ function ActionItemDatePicker({
             {weekdayLabels.map((dayLabel) => (
               <div
                 key={dayLabel}
-                className="flex h-6 items-center justify-center text-[10px] font-extrabold text-[#7B8DB3]"
+                className="flex h-6 items-center justify-center text-[10px] font-extrabold text-sibs-muted"
               >
                 {dayLabel}
               </div>
@@ -412,14 +412,14 @@ function ActionItemDatePicker({
                   key={day.dateValue}
                   type="button"
                   onClick={() => handleSelectDate(day.date)}
-                  className={`flex h-7 w-7 items-center justify-center rounded-lg text-xs font-extrabold transition-all duration-150 mx-auto ${
+                  className={`flex h-7 w-7 items-center justify-center rounded-[10px] text-xs font-extrabold transition-all duration-150 mx-auto ${
                     active
-                      ? "bg-[#FF5C28] text-white shadow-xs"
+                      ? "bg-sibs-orange text-white shadow-xs"
                       : currentDay
-                        ? "border border-[#FF5C28] bg-[#FFF0EB] text-[#FF5C28]"
+                        ? "border border-sibs-orange bg-sibs-cream-light text-sibs-orange"
                         : day.isCurrentMonth
-                          ? "text-[#042C51] hover:bg-[#EAF2FB]"
-                          : "text-[#C2CEDC] hover:bg-[#F8FAFC]"
+                          ? "text-sibs-navy hover:bg-sibs-surface"
+                          : "text-sibs-faint hover:bg-sibs-surface"
                   }`}
                 >
                   {day.dayNumber}
@@ -429,11 +429,11 @@ function ActionItemDatePicker({
           </div>
 
           {/* Footer */}
-          <div className="mt-2.5 flex items-center justify-between border-t border-[#E6ECF2] pt-2 text-xs font-extrabold">
+          <div className="mt-2.5 flex items-center justify-between border-t border-sibs-border pt-2 text-xs font-extrabold">
             <button
               type="button"
               onClick={handleClear}
-              className="text-[#667085] transition hover:text-red-600"
+              className="text-sibs-muted transition hover:text-rose-600"
             >
               Clear
             </button>
@@ -441,7 +441,7 @@ function ActionItemDatePicker({
             <button
               type="button"
               onClick={handleToday}
-              className="text-[#FF5C28] transition hover:underline"
+              className="text-sibs-orange transition hover:underline"
             >
               Today
             </button>
@@ -454,23 +454,23 @@ function ActionItemDatePicker({
 
 function FieldLabel({ children, required = false }) {
   return (
-    <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+    <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-sibs-faint">
       {children}
-      {required ? <span className="text-[#FF5C28]"> *</span> : null}
+      {required ? <span className="text-sibs-orange"> *</span> : null}
     </label>
   );
 }
 
 const inputClass =
-  "h-8.5 2xl:h-10 w-full rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-3 2xl:px-3.5 sibs-text-xs font-semibold text-[#042C51] outline-none transition placeholder:font-normal placeholder:text-[#98A2B3] focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10";
+  "h-8.5 2xl:h-10 w-full rounded-[10px] border border-sibs-border bg-sibs-surface px-3 2xl:px-3.5 sibs-text-xs font-semibold text-sibs-navy outline-none transition placeholder:font-normal placeholder:text-sibs-faint focus:border-sibs-orange focus:bg-white focus:ring-4 focus:ring-sibs-orange/10";
 
 const selectClass = `${inputClass} min-w-0 pr-8`;
 
 const readOnlyInputClass =
-  "h-8.5 2xl:h-10 w-full rounded-xl border border-[#DDE5EE] bg-[#EEF2F6] px-3 2xl:px-3.5 sibs-text-xs font-semibold text-[#475467] outline-none";
+  "h-8.5 2xl:h-10 w-full rounded-[10px] border border-sibs-border bg-sibs-surface-subtle px-3 2xl:px-3.5 sibs-text-xs font-semibold text-sibs-muted outline-none";
 
 const textAreaClass =
-  "w-full resize-none rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-3 2xl:px-3.5 py-2.5 sibs-text-xs font-semibold leading-5 text-[#042C51] outline-none transition placeholder:text-[#98A2B3] focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10";
+  "w-full resize-none rounded-[10px] border border-sibs-border bg-sibs-surface px-3 2xl:px-3.5 py-2.5 sibs-text-xs font-semibold leading-5 text-sibs-navy outline-none transition placeholder:text-sibs-faint focus:border-sibs-orange focus:bg-white focus:ring-4 focus:ring-sibs-orange/10";
 
 function ContextValue({ label, value, mono = false }) {
   return (
@@ -488,10 +488,10 @@ function ContextValue({ label, value, mono = false }) {
   );
 }
 
-function MetricCell({ label, value, valueClass = "text-[#042C51]" }) {
+function MetricCell({ label, value, valueClass = "text-sibs-navy" }) {
   return (
     <div className="flex min-h-[50px] 2xl:min-h-[54px] flex-col items-center justify-center px-2 text-center">
-      <span className="text-[8.5px] 2xl:text-[9px] font-extrabold uppercase leading-3 tracking-wide text-[#98A2B3]">
+      <span className="text-[8.5px] 2xl:text-[9px] font-extrabold uppercase leading-3 tracking-wide text-sibs-faint">
         {label}
       </span>
       <span className={`mt-1 font-mono text-sm 2xl:text-base font-black ${valueClass}`}>
@@ -635,15 +635,15 @@ export default function AddActionItemModal() {
       <form
         onSubmit={addActionItem}
         onMouseDown={(event) => event.stopPropagation()}
-        className="sibs-modal-pop-in flex max-h-[92dvh] w-full max-w-5xl 2xl:max-w-6xl flex-col overflow-hidden rounded-2xl border border-white/70 bg-white shadow-2xl"
+        className="sibs-modal-pop-in flex max-h-[92dvh] w-full max-w-5xl 2xl:max-w-6xl flex-col overflow-hidden rounded-[14px] border border-white/70 bg-white shadow-2xl"
         role="dialog"
         aria-modal="true"
         aria-labelledby="add-action-item-title"
       >
-        <header className="shrink-0 bg-[#042C51] px-5 py-3 text-white sm:px-6 2xl:py-3.5">
+        <header className="shrink-0 bg-sibs-navy px-5 py-3 text-white sm:px-6 2xl:py-3.5 rounded-t-[14px]">
           <div className="flex items-start justify-between gap-4">
             <div className="flex min-w-0 items-start gap-2.5 2xl:gap-3">
-              <span className="flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg bg-[#FF5C28] text-white shadow-sm">
+              <span className="flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-[10px] bg-sibs-orange text-white shadow-sm">
                 <ClipboardList size={16} />
               </span>
 
@@ -675,14 +675,14 @@ export default function AddActionItemModal() {
 
         <main className="sibs-scrollbar min-h-0 flex-1 overflow-y-auto bg-white p-4 sm:p-5">
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:items-stretch">
-            <section className="flex min-w-0 flex-col rounded-xl border border-[#DDE5EE] bg-[#F8FAFC] p-4 shadow-sm sm:p-5">
-              <div className="mb-3 flex items-center justify-between border-b border-[#E9EEF4] pb-2.5">
-                <h3 className="flex items-center gap-1.5 sibs-modal-section-title text-[#042C51]">
-                  <BriefcaseBusiness size={14} className="shrink-0 text-[#FF5C28]" />
+            <section className="flex min-w-0 flex-col rounded-[14px] border border-sibs-border bg-sibs-surface p-4 shadow-sm sm:p-5">
+              <div className="mb-3 flex items-center justify-between border-b border-sibs-border pb-2.5">
+                <h3 className="flex items-center gap-1.5 sibs-modal-section-title text-sibs-navy">
+                  <BriefcaseBusiness size={14} className="shrink-0 text-sibs-orange" />
                   Hiring Gap Source Record
                 </h3>
 
-                <span className="rounded-md border border-[#D0DFEE] bg-white px-2 py-0.5 text-[9px] font-black uppercase text-[#042C51]">
+                <span className="rounded-[10px] border border-sibs-border bg-white px-2 py-0.5 text-[9px] font-black uppercase text-sibs-navy">
                   {selectedRole ? "Linked Record" : "Global Creation"}
                 </span>
               </div>
@@ -713,7 +713,7 @@ export default function AddActionItemModal() {
                 />
               </div>
 
-              <div className="mt-3 grid grid-cols-3 divide-x divide-[#DDE5EE] rounded-xl border border-[#DDE5EE] bg-[#F8FAFC] px-1 py-1.5">
+              <div className="mt-3 grid grid-cols-3 divide-x divide-sibs-border rounded-[10px] border border-sibs-border bg-white px-1 py-1.5">
                 <MetricCell label="Requirement" value={requirement} />
                 <MetricCell
                   label={filledLabel}
@@ -729,7 +729,7 @@ export default function AddActionItemModal() {
 
               <div className="mt-3">
                 <div className="mb-1.5 flex items-center justify-between gap-3">
-                  <span className="text-[9px] font-bold text-[#667085]">
+                  <span className="text-[9px] font-bold text-sibs-muted">
                     Current Fill Rate Progress
                   </span>
                   <span
@@ -745,7 +745,7 @@ export default function AddActionItemModal() {
                   </span>
                 </div>
 
-                <div className="h-2 overflow-hidden rounded-full border border-[#DDE5EE] bg-[#EEF2F6]">
+                <div className="h-2 overflow-hidden rounded-full border border-sibs-border bg-sibs-surface-subtle">
                   <div
                     className={`h-full rounded-full transition-all duration-300 ${
                       currentFillRate >= 80
@@ -760,7 +760,7 @@ export default function AddActionItemModal() {
               </div>
 
               {atRiskReason ? (
-                <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2.5">
+                <div className="mt-4 rounded-[10px] border border-rose-200 bg-rose-50 px-3 py-2.5">
                   <p className="flex items-center gap-1.5 text-[9px] font-black text-rose-700">
                     <AlertTriangle size={12} />
                     Source Risk Trigger:
@@ -772,19 +772,19 @@ export default function AddActionItemModal() {
               ) : null}
 
               {latestStatusNote ? (
-                <div className="mt-3 rounded-xl border border-[#DDE5EE] bg-[#F8FAFC] px-3 py-2.5">
-                  <p className="text-[8px] font-black uppercase tracking-[0.04em] text-[#667085]">
+                <div className="mt-3 rounded-[10px] border border-sibs-border bg-white px-3 py-2.5">
+                  <p className="text-[8px] font-black uppercase tracking-[0.04em] text-sibs-muted">
                     Latest Status Note:
                   </p>
-                  <p className="mt-1 text-[10px] font-semibold italic leading-4 text-[#475467]">
+                  <p className="mt-1 text-[10px] font-semibold italic leading-4 text-sibs-muted">
                     {latestStatusNote}
                   </p>
                 </div>
               ) : null}
 
               <div className="mt-auto pt-4">
-                <div className="flex flex-col gap-2 border-t border-[#E9EEF4] pt-3 sm:flex-row sm:items-center sm:justify-between">
-                  <span className="text-[9px] font-black uppercase tracking-[0.04em] text-[#667085]">
+                <div className="flex flex-col gap-2 border-t border-sibs-border pt-3 sm:flex-row sm:items-center sm:justify-between">
+                  <span className="text-[9px] font-black uppercase tracking-[0.04em] text-sibs-muted">
                     Hiring Gap Link Status:
                   </span>
 
@@ -803,17 +803,17 @@ export default function AddActionItemModal() {
               </div>
             </section>
 
-            <section className="flex min-w-0 flex-col rounded-xl border border-[#DDE5EE] bg-white p-4 shadow-sm sm:p-5">
-              <div className="mb-4 flex items-center justify-between gap-3 border-b border-[#E9EEF4] pb-3">
-                <h3 className="flex min-w-0 items-center gap-2 sibs-modal-section-title text-[#042C51]">
+            <section className="flex min-w-0 flex-col rounded-[14px] border border-sibs-border bg-white p-4 shadow-sm sm:p-5">
+              <div className="mb-4 flex items-center justify-between gap-3 border-b border-sibs-border pb-3">
+                <h3 className="flex min-w-0 items-center gap-2 sibs-modal-section-title text-sibs-navy">
                   <CheckCircle2
                     size={14}
-                    className="shrink-0 text-[#FF5C28]"
+                    className="shrink-0 text-sibs-orange"
                   />
                   Action Definition & Assignment
                 </h3>
 
-                <span className="shrink-0 text-[9px] font-bold text-[#98A2B3]">
+                <span className="shrink-0 text-[9px] font-bold text-sibs-faint">
                   * Required fields
                 </span>
               </div>
@@ -913,17 +913,17 @@ export default function AddActionItemModal() {
                 />
               </div>
 
-              <div className="mt-4 rounded-xl border border-blue-100 bg-blue-50 px-3 py-2.5">
+              <div className="mt-4 rounded-[10px] border border-blue-100 bg-blue-50 px-3 py-2.5">
                 <div className="flex items-start gap-2">
                   <Info
                     size={14}
-                    className="mt-0.5 shrink-0 text-[#042C51]"
+                    className="mt-0.5 shrink-0 text-sibs-navy"
                   />
                   <div>
-                    <p className="text-[9px] font-black text-[#042C51]">
+                    <p className="text-[9px] font-black text-sibs-navy">
                       How this connects to TA-HRIS
                     </p>
-                    <p className="mt-1 text-[9px] font-semibold leading-4 text-[#475467]">
+                    <p className="mt-1 text-[9px] font-semibold leading-4 text-sibs-muted">
                       This action stays linked to the selected weekly hiring plan
                       or hiring need through the existing Action Items context.
                     </p>
@@ -934,7 +934,7 @@ export default function AddActionItemModal() {
           </div>
         </main>
 
-        <footer className="shrink-0 border-t border-[#DDE5EE] bg-[#F1F5F9] px-5 py-3 2xl:py-3.5 sm:px-6">
+        <footer className="shrink-0 border-t border-sibs-border bg-sibs-surface px-5 py-3 2xl:py-3.5 sm:px-6 rounded-b-[14px]">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center">
               <button
@@ -946,8 +946,8 @@ export default function AddActionItemModal() {
                 Reset Form
               </button>
 
-              <div className="flex min-w-0 items-start gap-1.5 text-[8.5px] 2xl:text-[9px] font-medium leading-4 text-[#667085]">
-                <Info size={13} className="mt-0.5 shrink-0 text-[#042C51]" />
+              <div className="flex min-w-0 items-start gap-1.5 text-[8.5px] 2xl:text-[9px] font-medium leading-4 text-sibs-muted">
+                <Info size={13} className="mt-0.5 shrink-0 text-sibs-navy" />
                 <span>
                   Rule: Every role where Current Filled &lt; Requirement must
                   have at least one active action item.

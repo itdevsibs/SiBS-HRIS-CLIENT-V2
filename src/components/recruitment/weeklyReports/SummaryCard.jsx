@@ -11,40 +11,40 @@ export default function SummaryCard({
   const Icon = icon;
   const toneMap = {
     navy: {
-      label: "text-[#042C51]",
-      value: "text-[#042C51]",
-      iconWrap: "bg-[#EAF2FB]",
-      icon: "text-[#042C51]",
+      label: "text-sibs-navy",
+      value: "text-sibs-navy",
+      iconWrap: "bg-blue-50",
+      icon: "text-sibs-navy",
     },
     green: {
-      label: "text-[#047857]",
-      value: "text-[#047857]",
-      iconWrap: "bg-[#ECFDF3]",
-      icon: "text-[#059669]",
+      label: "text-emerald-700",
+      value: "text-emerald-700",
+      iconWrap: "bg-emerald-50",
+      icon: "text-emerald-600",
     },
     amber: {
-      label: "text-[#B45309]",
-      value: "text-[#F59E0B]",
-      iconWrap: "bg-[#FFFBEB]",
-      icon: "text-[#F59E0B]",
+      label: "text-amber-700",
+      value: "text-amber-500",
+      iconWrap: "bg-amber-50",
+      icon: "text-amber-500",
     },
     red: {
-      label: "text-[#BE123C]",
-      value: "text-[#E11D48]",
-      iconWrap: "bg-[#FFF1F2]",
-      icon: "text-[#E11D48]",
+      label: "text-rose-700",
+      value: "text-rose-600",
+      iconWrap: "bg-rose-50",
+      icon: "text-rose-600",
     },
     orange: {
-      label: "text-[#C2410C]",
-      value: "text-[#FF5C28]",
-      iconWrap: "bg-[#FFF3ED]",
-      icon: "text-[#FF5C28]",
+      label: "text-orange-700",
+      value: "text-sibs-orange",
+      iconWrap: "bg-sibs-cream-light",
+      icon: "text-sibs-orange",
     },
     indigo: {
-      label: "text-[#4338CA]",
-      value: "text-[#6366F1]",
-      iconWrap: "bg-[#EEF2FF]",
-      icon: "text-[#6366F1]",
+      label: "text-indigo-700",
+      value: "text-indigo-500",
+      iconWrap: "bg-indigo-50",
+      icon: "text-indigo-500",
     },
   };
 
@@ -69,7 +69,7 @@ export default function SummaryCard({
             </p>
           </div>
 
-          <p className="mt-1 line-clamp-1 truncate sibs-text-micro font-bold text-[#667085]">
+          <p className="mt-1 line-clamp-1 truncate sibs-text-micro font-bold text-sibs-muted">
             {description}
           </p>
         </div>

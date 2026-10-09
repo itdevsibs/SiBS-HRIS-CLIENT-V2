@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import { Filter } from "lucide-react";
+import { RotateCcw } from "lucide-react";
 
 import { useActionItems } from "../../../services/context/ActionItemsContext.jsx";
 import { usePagination } from "../../../services/context/PaginationContext.jsx";
@@ -72,10 +72,12 @@ export default function ActionItemsFilters() {
       showPagination={false}
       searchValue={searchInput}
       searchPlaceholder="Search action, role, account, owner..."
-      onSearchChange={setSearchInput}
+      onSearchChange={(val) =>
+        setSearchInput(typeof val === "string" ? val : val?.target?.value ?? "")
+      }
       onSearchKeyDown={handleSearchKeyDown}
       className="border-0 bg-transparent p-0 shadow-none font-jakarta"
-      dropdownFilters={[
+      filters={[
         {
           key: "status",
           value: filterValues?.status || "All Status",
@@ -86,6 +88,7 @@ export default function ActionItemsFilters() {
           label: "Status",
           placeholder: "All Status",
           searchable: false,
+          className: "w-full xl:w-[130px] 2xl:w-[160px] xl:flex-none",
         },
         {
           key: "risk",
@@ -97,6 +100,7 @@ export default function ActionItemsFilters() {
           label: "Risk",
           placeholder: "All Risk",
           searchable: false,
+          className: "w-full xl:w-[125px] 2xl:w-[150px] xl:flex-none",
         },
         {
           key: "module",
@@ -108,6 +112,7 @@ export default function ActionItemsFilters() {
           label: "Module",
           placeholder: "All Modules",
           searchable: true,
+          className: "w-full xl:w-[145px] 2xl:w-[175px] xl:flex-none",
         },
         {
           key: "gap",
@@ -119,6 +124,7 @@ export default function ActionItemsFilters() {
           label: "Gap",
           placeholder: "All Gaps",
           searchable: true,
+          className: "w-full xl:w-[135px] 2xl:w-[165px] xl:flex-none",
         },
         {
           key: "owner",
@@ -130,6 +136,7 @@ export default function ActionItemsFilters() {
           label: "Owner",
           placeholder: "All Owners",
           searchable: true,
+          className: "w-full xl:w-[155px] 2xl:w-[185px] xl:flex-none",
         },
       ]}
       rightContent={
@@ -137,9 +144,9 @@ export default function ActionItemsFilters() {
           type="button"
           onClick={handleClearAll}
           disabled={!hasActiveFilters}
-          className="inline-flex h-8.5 2xl:h-10 w-full items-center justify-center gap-1.5 rounded-lg border border-sibs-border bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-muted outline-none transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange focus-visible:ring-2 focus-visible:ring-sibs-orange/25 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 xl:w-auto"
+          className="inline-flex h-8.5 2xl:h-10 w-full items-center justify-center gap-1.5 rounded-[10px] border border-sibs-border bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-muted outline-none transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange focus-visible:ring-2 focus-visible:ring-sibs-orange/25 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-sibs-border disabled:hover:bg-white disabled:hover:text-sibs-muted xl:w-auto"
         >
-          <Filter size={14} />
+          <RotateCcw size={14} />
           Clear
         </button>
       }

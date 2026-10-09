@@ -421,10 +421,9 @@ export default function LeavesPage() {
       <main ref={mainScrollRef} className="sibs-dashboard-main-wide">
         <div className="mx-auto flex min-h-full w-full max-w-[1700px] flex-1 flex-col space-y-4 sm:space-y-5">
           <PageHeaderHero
-            badgeText="Core HR View"
-            badgePulse
+            kicker="Core HR View"
             title={isPersonalView ? "My Leaves" : "Leaves"}
-            subtitle={
+            description={
               isPersonalView
                 ? "View your leave requests, credits, plotted leaves, and remaining balance."
                 : "Review employee leave requests, credits, plotted leaves, and remaining balances."

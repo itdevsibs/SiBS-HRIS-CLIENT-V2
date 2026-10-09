@@ -42,8 +42,8 @@ function normalizeChartData(data = []) {
 
 function EmptyChart({ message }) {
   return (
-    <div className="flex h-[200px] items-center justify-center rounded-xl border border-dashed border-[#D7DEE8] bg-[#F8FAFC] px-5 text-center">
-      <p className="text-xs font-bold text-[#98A2B3]">{message}</p>
+    <div className="flex h-[200px] items-center justify-center rounded-[14px] border border-dashed border-sibs-border bg-sibs-surface px-5 text-center">
+      <p className="text-xs font-bold text-sibs-faint">{message}</p>
     </div>
   );
 }
@@ -73,7 +73,7 @@ function ChartSkeleton() {
   );
 }
 
-function NativeSvgBarChart({ items = [], getValue, formatValue, activeColor = "#FF5C28", defaultColor = "#042C51" }) {
+function NativeSvgBarChart({ items = [], getValue, formatValue, activeColor = "var(--sibs-orange)", defaultColor = "var(--sibs-navy)" }) {
   const [hoveredItem, setHoveredItem] = useState(null);
 
   const maxValue = Math.max(1, ...items.map(getValue));
@@ -88,9 +88,9 @@ function NativeSvgBarChart({ items = [], getValue, formatValue, activeColor = "#
   return (
     <div className="relative h-[200px] w-full font-jakarta">
       {hoveredItem ? (
-        <div className="pointer-events-none absolute right-2 top-0 z-10 max-w-[200px] rounded-lg border border-[#042C51]/20 bg-[#042C51] px-2.5 py-1.5 text-white shadow-lg">
+        <div className="pointer-events-none absolute right-2 top-0 z-10 max-w-[200px] rounded-[10px] border border-sibs-navy/20 bg-sibs-navy px-2.5 py-1.5 text-white shadow-lg">
           <p className="truncate text-[10px] font-extrabold">{hoveredItem.source}</p>
-          <p className="text-xs font-extrabold text-[#FFB49B]">{formatValue(getValue(hoveredItem))}</p>
+          <p className="text-xs font-extrabold text-orange-300">{formatValue(getValue(hoveredItem))}</p>
         </div>
       ) : null}
 
@@ -105,7 +105,7 @@ function NativeSvgBarChart({ items = [], getValue, formatValue, activeColor = "#
               y1={y}
               x2={svgWidth}
               y2={y}
-              stroke="#E6ECF2"
+              stroke="var(--sibs-border)"
               strokeDasharray="3 3"
               strokeWidth="1"
             />
@@ -141,7 +141,7 @@ function NativeSvgBarChart({ items = [], getValue, formatValue, activeColor = "#
                 x={x + barWidth / 2}
                 y={svgHeight - 8}
                 textAnchor="middle"
-                fill="#667085"
+                fill="var(--sibs-muted)"
                 fontSize="9"
                 fontWeight="700"
               >
@@ -158,7 +158,7 @@ function NativeSvgBarChart({ items = [], getValue, formatValue, activeColor = "#
 function ChartCard({ title, description, icon, children, delay = 0 }) {
   return (
     <section
-      className="sibs-page-card-in sibs-card rounded-2xl border border-[#E6ECF2] bg-white p-3.5 2xl:p-4 font-jakarta shadow-sm"
+      className="sibs-page-card-in sibs-card rounded-[14px] border border-sibs-border bg-white p-3.5 2xl:p-4 font-jakarta shadow-sm"
       style={{ animationDelay: `${delay}ms`, animationFillMode: "both" }}
     >
       <div className="mb-2.5 2xl:mb-3 flex items-start justify-between gap-3">
@@ -166,12 +166,12 @@ function ChartCard({ title, description, icon, children, delay = 0 }) {
           <h3 className="font-heading text-sm 2xl:text-base font-bold text-sibs-navy tracking-tight">
             {title}
           </h3>
-          <p className="mt-0.5 sibs-text-xs font-semibold text-[#667085]">
+          <p className="mt-0.5 sibs-text-xs font-semibold text-sibs-muted">
             {description}
           </p>
         </div>
 
-        <span className="flex h-7.5 w-7.5 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-full bg-[#EAF2FB] text-[#042C51]">
+        <span className="flex h-7.5 w-7.5 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-full bg-blue-50 text-sibs-navy">
           {icon
             ? React.createElement(icon, {
                 className: "h-3.5 w-3.5 2xl:h-4 2xl:w-4",
@@ -204,8 +204,8 @@ export default function SourcingAnalyticsCharts({ data = [], loading = false }) 
             items={chartData}
             getValue={(item) => item.volume}
             formatValue={(val) => `${val.toLocaleString("en-PH")} applicants`}
-            activeColor="#FF5C28"
-            defaultColor="#042C51"
+            activeColor="var(--sibs-orange)"
+            defaultColor="var(--sibs-navy)"
           />
         ) : (
           <EmptyChart message="No applicant-volume data found." />
@@ -225,8 +225,8 @@ export default function SourcingAnalyticsCharts({ data = [], loading = false }) 
             items={chartData}
             getValue={(item) => item.conversionRate}
             formatValue={(val) => `${val.toFixed(1)}% conversion`}
-            activeColor="#10B981"
-            defaultColor="#042C51"
+            activeColor="var(--sibs-emerald)"
+            defaultColor="var(--sibs-navy)"
           />
         ) : (
           <EmptyChart message="No conversion data found." />
@@ -246,8 +246,8 @@ export default function SourcingAnalyticsCharts({ data = [], loading = false }) 
             items={chartData}
             getValue={(item) => item.sourceCost}
             formatValue={(val) => formatCurrency(val)}
-            activeColor="#FF5C28"
-            defaultColor="#F59E0B"
+            activeColor="var(--sibs-orange)"
+            defaultColor="var(--sibs-amber)"
           />
         ) : (
           <EmptyChart message="No sourcing-cost data found." />

@@ -54,7 +54,7 @@ export default function CandidateExperiencePage() {
           />
 
           {notice ? (
-            <div className="rounded-xl border border-blue-100 bg-blue-50 px-4 py-2.5 2xl:py-3 sibs-text-xs font-semibold text-[#042C51]">
+            <div className="rounded-[10px] border border-blue-100 bg-blue-50 px-4 py-2.5 2xl:py-3 sibs-text-xs font-semibold text-sibs-navy">
               {notice}
               <button
                 type="button"
@@ -67,13 +67,13 @@ export default function CandidateExperiencePage() {
           ) : null}
 
           {error ? (
-            <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-2.5 2xl:py-3 sibs-text-xs font-semibold text-rose-700">
+            <div className="rounded-[10px] border border-rose-200 bg-rose-50 px-4 py-2.5 2xl:py-3 sibs-text-xs font-semibold text-rose-700">
               {error}
             </div>
           ) : null}
 
           {dataMode === "local-fallback" ? (
-            <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 2xl:py-3 sibs-text-xs font-semibold text-amber-800">
+            <div className="rounded-[10px] border border-amber-200 bg-amber-50 px-4 py-2.5 2xl:py-3 sibs-text-xs font-semibold text-amber-800">
               Candidate Experience backend is not connected yet. Existing/manual records are currently using the frontend recruitment store; public survey responses still require the backend endpoint.
             </div>
           ) : null}
@@ -83,7 +83,7 @@ export default function CandidateExperiencePage() {
           <CandidateExperienceAnalytics records={records} metrics={metrics} loading={loading} />
 
           <section
-            className="sibs-page-card-in overflow-hidden rounded-xl 2xl:rounded-2xl border border-sibs-border bg-white shadow-sm font-jakarta"
+            className="sibs-page-card-in overflow-hidden rounded-[10px] 2xl:rounded-[14px] border border-sibs-border bg-white shadow-sm font-jakarta"
             style={{ animationDelay: "240ms", animationFillMode: "both" }}
           >
             <header className="border-b border-sibs-border bg-white p-4 sm:p-5 2xl:p-6 font-jakarta">

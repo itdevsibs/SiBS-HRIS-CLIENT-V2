@@ -51,7 +51,7 @@ function getSourceStatusClass(source) {
   }
 
   if (status === "With Applicants") {
-    return "border-blue-200 bg-blue-50 text-[#042C51]";
+    return "border-blue-200 bg-blue-50 text-sibs-navy";
   }
 
   return "border-gray-200 bg-gray-50 text-gray-600";
@@ -75,7 +75,7 @@ export default function SourcingAnalyticsMobileCard({
       <DataCard.Header
         title={source?.source || "—"}
         subtitle={
-          <span className="flex items-center gap-1.5 truncate text-[10px] font-semibold text-[#667085]">
+          <span className="flex items-center gap-1.5 truncate text-[10px] font-semibold text-sibs-muted">
             <ReceiptText size={12} className="shrink-0" />
             {source?.costEntries?.length || 0} recorded cost entries
           </span>
@@ -108,26 +108,26 @@ export default function SourcingAnalyticsMobileCard({
         <DataCard.MetricItem
           label="Cost / Hire"
           value={costPerHire}
-          valueClassName="text-[#FF5C28] font-extrabold"
+          valueClassName="text-sibs-orange font-extrabold"
         />
       </DataCard.Metrics>
 
-      <div className="mt-3 rounded-[10px] border border-[#EEF2F6] bg-white px-3 py-2">
-        <p className="flex items-center gap-1.5 text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+      <div className="mt-3 rounded-[10px] border border-sibs-border bg-white px-3 py-2">
+        <p className="flex items-center gap-1.5 text-[9px] font-extrabold uppercase tracking-wide text-sibs-faint">
           <UserRound size={12} className="shrink-0" />
           Latest Applicant
         </p>
-        <p className="mt-0.5 truncate text-xs font-bold text-[#475467]">
+        <p className="mt-0.5 truncate text-xs font-bold text-sibs-muted">
           {source?.latestCandidate || "—"}
         </p>
       </div>
 
       <DataCard.Footer>
-        <p className="text-[10px] font-extrabold text-[#042C51]">
+        <p className="text-[10px] font-extrabold text-sibs-navy">
           Conversion: {Number(source?.conversionRate || 0).toFixed(1)}%
         </p>
 
-        <p className="flex items-center gap-1.5 text-[10px] font-semibold text-[#667085]">
+        <p className="flex items-center gap-1.5 text-[10px] font-semibold text-sibs-muted">
           <CalendarDays size={12} className="shrink-0" />
           {formatDate(source?.lastActivity)}
         </p>

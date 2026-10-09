@@ -553,9 +553,9 @@ function SortHeaderButton({
       onClick={onClick}
       data-no-table-drag="true"
       className={[
-        "group inline-flex items-center justify-center gap-1.5 rounded-lg px-2 py-1 text-[11px] font-extrabold uppercase leading-tight transition",
+        "group inline-flex items-center justify-center gap-1.5 rounded-[10px] px-2 py-1 text-[11px] font-extrabold uppercase leading-tight transition",
         active
-          ? "bg-[#EAF2FB] text-sibs-primary-1"
+          ? "bg-blue-50 text-sibs-primary-1"
           : "text-sibs-primary-90 hover:bg-slate-100 hover:text-sibs-primary-1",
       ].join(" ")}
     >
@@ -1380,7 +1380,7 @@ export default function WorkforceHiringAccountsTable({
   }
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+    <section className="rounded-[14px] border border-slate-200 bg-white p-4 shadow-sm">
       <div className="mb-3 border-b border-slate-200 pb-3">
         <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
           <div className="min-w-0 pt-1">
@@ -1416,7 +1416,7 @@ export default function WorkforceHiringAccountsTable({
                 value={searchQuery}
                 onChange={(event) => setSearchQuery(event.target.value)}
                 placeholder="Search cluster or account then press Enter..."
-                className="h-12 w-full rounded-xl border border-[#D0D5DD] bg-white px-12 pr-24 text-sm font-semibold text-sibs-primary-90 outline-none transition placeholder:text-slate-400 hover:border-sibs-primary-1/40 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+                className="h-12 w-full rounded-[14px] border border-sibs-border bg-white px-12 pr-24 text-sm font-semibold text-sibs-primary-90 outline-none transition placeholder:text-slate-400 hover:border-sibs-primary-1/40 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
               />
 
               {searchQuery ? (
@@ -1424,7 +1424,7 @@ export default function WorkforceHiringAccountsTable({
                   type="button"
                   data-no-table-drag="true"
                   onClick={() => setSearchQuery("")}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg px-3 py-1.5 text-xs font-extrabold text-slate-500 transition hover:bg-slate-100 hover:text-sibs-primary-90"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 rounded-[10px] px-3 py-1.5 text-xs font-extrabold text-slate-500 transition hover:bg-slate-100 hover:text-sibs-primary-90"
                 >
                   Clear
                 </button>
@@ -1435,12 +1435,12 @@ export default function WorkforceHiringAccountsTable({
       </div>
 
       {forecastData.error ? (
-        <div className="mb-3 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-semibold text-red-600">
+        <div className="mb-3 rounded-[14px] border border-red-100 bg-red-50 px-4 py-3 text-sm font-semibold text-red-600">
           {forecastData.error}
         </div>
       ) : null}
 
-      <div className="hidden overflow-hidden rounded-xl border border-slate-200 bg-white lg:block">
+      <div className="hidden overflow-hidden rounded-[14px] border border-slate-200 bg-white lg:block">
         <div
           ref={dragScrollRef}
           className={[
@@ -1670,11 +1670,11 @@ export default function WorkforceHiringAccountsTable({
           Array.from({ length: 4 }).map((_, index) => (
             <div
               key={index}
-              className="h-36 animate-sibs-pulse rounded-2xl bg-gray-200"
+              className="h-36 animate-sibs-pulse rounded-[14px] bg-gray-200"
             />
           ))
         ) : visibleRows.length === 0 ? (
-          <div className="rounded-2xl border border-slate-200 bg-slate-50 px-5 py-12 text-center text-sm font-bold text-slate-500">
+          <div className="rounded-[14px] border border-slate-200 bg-slate-50 px-5 py-12 text-center text-sm font-bold text-slate-500">
             No workforce hiring plan records found.
           </div>
         ) : (
@@ -1686,7 +1686,7 @@ export default function WorkforceHiringAccountsTable({
                 key={item.id || `${item.cluster}-${item.account}`}
                 type="button"
                 onClick={() => handleRowClick(item)}
-                className="block w-full rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm transition hover:border-blue-200 hover:bg-slate-50"
+                className="block w-full rounded-[14px] border border-slate-200 bg-white p-4 text-left shadow-sm transition hover:border-blue-200 hover:bg-slate-50"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
@@ -1774,7 +1774,7 @@ function MobileMetric({
   valueClassName = "text-sibs-primary-1",
 }) {
   return (
-    <div className="rounded-xl bg-slate-50 p-3">
+    <div className="rounded-[14px] bg-slate-50 p-3">
       <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">
         {label}
       </p>

@@ -35,9 +35,9 @@ function getTodayISO() {
 
 function FieldLabel({ children, required = false }) {
   return (
-    <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+    <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-sibs-faint">
       {children}
-      {required && <span className="text-[#FF5C28]"> *</span>}
+      {required && <span className="text-sibs-orange"> *</span>}
     </label>
   );
 }
@@ -219,7 +219,7 @@ function DropdownPortal({
   return createPortal(
     <div
       ref={dropdownRef}
-      className="sibs-dropdown-pop-in fixed z-[999999] overflow-hidden rounded-xl border border-[#D7DEE8] bg-white shadow-2xl"
+      className="sibs-dropdown-pop-in fixed z-[999999] overflow-hidden rounded-[10px] border border-sibs-border bg-white shadow-2xl"
       style={{
         top: `${style.top}px`,
         left: `${style.left}px`,
@@ -256,17 +256,17 @@ function CustomSelect({
         type="button"
         disabled={disabled}
         onClick={() => setOpen((prev) => !prev)}
-        className={`flex h-8.5 2xl:h-10 w-full items-center justify-between rounded-xl border px-3 text-left sibs-text-xs font-semibold outline-none transition ${
+        className={`flex h-8.5 2xl:h-10 w-full items-center justify-between rounded-[10px] border px-3 text-left sibs-text-xs font-semibold outline-none transition ${
           disabled
-            ? "cursor-not-allowed border-[#D0D5DD] bg-[#F2F4F7] text-[#667085]"
+            ? "cursor-not-allowed border-sibs-faint bg-sibs-surface-subtle text-sibs-muted"
             : open
-              ? "border-[#FF5C28] bg-white text-[#344054] ring-4 ring-[#FF5C28]/10"
-              : "border-[#D7DEE8] bg-[#F8FAFC] text-[#344054] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:ring-4 focus:ring-[#FF5C28]/10"
+              ? "border-sibs-orange bg-white text-sibs-muted ring-4 ring-sibs-orange/10"
+              : "border-sibs-border bg-sibs-surface text-sibs-muted hover:border-sibs-orange/40 hover:bg-white focus:border-sibs-orange focus:ring-4 focus:ring-sibs-orange/10"
         }`}
       >
         <span
           className={`truncate ${
-            value ? "text-[#344054]" : "text-sibs-tertiary-5"
+            value ? "text-sibs-muted" : "text-sibs-tertiary-5"
           }`}
         >
           {displayValue}
@@ -298,8 +298,8 @@ function CustomSelect({
               }}
               className={`block w-full px-3 py-1.5 2xl:py-2 text-left sibs-text-xs transition ${
                 selected
-                  ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
-                  : "text-[#344054] hover:bg-[#F8FAFC]"
+                  ? "bg-sibs-surface font-bold text-sibs-primary-1"
+                  : "text-sibs-muted hover:bg-sibs-surface"
               }`}
             >
               <span className="block truncate">{option}</span>
@@ -378,12 +378,12 @@ function DateDropdown({
 
           setOpen((prev) => !prev);
         }}
-        className={`flex h-8.5 2xl:h-10 w-full items-center justify-between rounded-xl border px-3 text-left sibs-text-xs font-semibold outline-none transition ${
+        className={`flex h-8.5 2xl:h-10 w-full items-center justify-between rounded-[10px] border px-3 text-left sibs-text-xs font-semibold outline-none transition ${
           disabled
-            ? "cursor-not-allowed border-[#D0D5DD] bg-[#F2F4F7] text-[#667085]"
+            ? "cursor-not-allowed border-sibs-faint bg-sibs-surface-subtle text-sibs-muted"
             : open
-              ? "border-[#FF5C28] bg-white text-[#344054] ring-4 ring-[#FF5C28]/10"
-              : "border-[#D7DEE8] bg-[#F8FAFC] text-[#344054] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:ring-4 focus:ring-[#FF5C28]/10"
+              ? "border-sibs-orange bg-white text-sibs-muted ring-4 ring-sibs-orange/10"
+              : "border-sibs-border bg-sibs-surface text-sibs-muted hover:border-sibs-orange/40 hover:bg-white focus:border-sibs-orange focus:ring-4 focus:ring-sibs-orange/10"
         }`}
       >
         <span className="flex min-w-0 items-center gap-2">
@@ -391,7 +391,7 @@ function DateDropdown({
 
           <span
             className={`truncate ${
-              value ? "text-[#344054]" : "text-sibs-tertiary-5"
+              value ? "text-sibs-muted" : "text-sibs-tertiary-5"
             }`}
           >
             {displayValue}
@@ -415,23 +415,23 @@ function DateDropdown({
         placement="auto"
       >
           <div className="p-3.5">
-            <div className="mb-3 flex items-center justify-between rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-3 py-2">
+            <div className="mb-3 flex items-center justify-between rounded-[10px] border border-sibs-border bg-sibs-surface px-3 py-2">
               <button
                 type="button"
                 onClick={goToPreviousMonth}
-                className="flex h-7 w-7 items-center justify-center rounded-lg border border-[#E6ECF2] bg-white text-[#042C51] transition hover:bg-[#FFF0EB] hover:text-[#FF5C28]"
+                className="flex h-7 w-7 items-center justify-center rounded-[10px] border border-sibs-border bg-white text-sibs-navy transition hover:bg-sibs-cream-light hover:text-sibs-orange"
               >
                 <ChevronLeft size={15} />
               </button>
 
-              <p className="text-xs font-extrabold text-[#042C51]">
+              <p className="text-xs font-extrabold text-sibs-navy">
                 {monthTitle}
               </p>
 
               <button
                 type="button"
                 onClick={goToNextMonth}
-                className="flex h-7 w-7 items-center justify-center rounded-lg border border-[#E6ECF2] bg-white text-[#042C51] transition hover:bg-[#FFF0EB] hover:text-[#FF5C28]"
+                className="flex h-7 w-7 items-center justify-center rounded-[10px] border border-sibs-border bg-white text-sibs-navy transition hover:bg-sibs-cream-light hover:text-sibs-orange"
               >
                 <ChevronRight size={15} />
               </button>
@@ -441,7 +441,7 @@ function DateDropdown({
               {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((day) => (
                 <div
                   key={day}
-                  className="py-1 text-center text-[10px] font-extrabold uppercase tracking-normal text-[#98A2B3]"
+                  className="py-1 text-center text-[10px] font-extrabold uppercase tracking-normal text-sibs-faint"
                 >
                   {day}
                 </div>
@@ -457,13 +457,13 @@ function DateDropdown({
                     key={toDateInputValue(date)}
                     type="button"
                     onClick={() => handleSelectDate(date)}
-                    className={`flex h-8 w-full items-center justify-center rounded-lg text-xs font-bold transition ${
+                    className={`flex h-8 w-full items-center justify-center rounded-[10px] text-xs font-bold transition ${
                       active
-                        ? "bg-[#FF5C28] text-white shadow-sm"
+                        ? "bg-sibs-orange text-white shadow-sm"
                         : isToday
-                          ? "bg-[#FFF0EB] font-extrabold text-[#FF5C28]"
+                          ? "bg-sibs-cream-light font-extrabold text-sibs-orange"
                           : currentMonth
-                            ? "text-[#042C51] hover:bg-[#FFF0EB] hover:text-[#FF5C28]"
+                            ? "text-sibs-navy hover:bg-sibs-cream-light hover:text-sibs-orange"
                             : "text-slate-300 hover:bg-slate-50"
                     }`}
                   >
@@ -473,14 +473,14 @@ function DateDropdown({
               })}
             </div>
 
-            <div className="mt-3 flex items-center justify-between border-t border-[#E6ECF2] pt-2.5">
+            <div className="mt-3 flex items-center justify-between border-t border-sibs-border pt-2.5">
               <button
                 type="button"
                 onClick={() => {
                   onChange("");
                   setOpen(false);
                 }}
-                className="rounded-full px-2.5 py-1 text-[11px] font-extrabold text-[#667085] transition hover:bg-[#FFF0EB] hover:text-[#FF5C28]"
+                className="rounded-full px-2.5 py-1 text-[11px] font-extrabold text-sibs-muted transition hover:bg-sibs-cream-light hover:text-sibs-orange"
               >
                 Clear
               </button>
@@ -488,7 +488,7 @@ function DateDropdown({
               <button
                 type="button"
                 onClick={handleTodayClick}
-                className="rounded-full px-2.5 py-1 text-[11px] font-extrabold text-[#042C51] transition hover:bg-[#FFF0EB] hover:text-[#FF5C28]"
+                className="rounded-full px-2.5 py-1 text-[11px] font-extrabold text-sibs-navy transition hover:bg-sibs-cream-light hover:text-sibs-orange"
               >
                 Today
               </button>
@@ -729,17 +729,17 @@ export default function AddSourceCostModal({ open, onClose, onStatus }) {
         aria-labelledby="source-cost-modal-title"
         onSubmit={handleSubmit}
         onClick={(event) => event.stopPropagation()}
-        className="sibs-modal-pop-in flex max-h-[84vh] 2xl:max-h-[86vh] w-full max-w-2xl 2xl:max-w-3xl flex-col overflow-hidden rounded-2xl border border-[#9FB3C8] bg-[#F7F9FC] shadow-[0_30px_90px_rgba(2,26,48,0.42)]"
+        className="sibs-modal-pop-in flex max-h-[92dvh] 2xl:max-h-[90dvh] w-full max-w-2xl 2xl:max-w-3xl flex-col overflow-hidden rounded-[14px] border border-sibs-border bg-sibs-surface shadow-[0_30px_90px_rgba(2,26,48,0.42)]"
       >
-        <header className="shrink-0 bg-[#042C51] px-4 py-2.5 sm:px-5 2xl:py-3.5 text-white">
+        <header className="shrink-0 bg-sibs-navy px-4 py-2.5 sm:px-5 2xl:py-3.5 text-white rounded-t-[14px]">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex min-w-0 items-center gap-2.5 sm:gap-3">
-              <span className="flex h-8 w-8 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-lg border border-white/15 bg-white/10 text-[#FF5C28]">
+              <span className="flex h-8 w-8 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-[10px] border border-white/15 bg-white/10 text-sibs-orange">
                 <ReceiptText className="h-4 w-4 2xl:h-4.5 2xl:w-4.5" />
               </span>
 
               <div className="min-w-0">
-                <span className="inline-flex rounded bg-[#FF5C28] px-2 py-0.5 text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-white">
+                <span className="inline-flex rounded bg-sibs-orange px-2 py-0.5 text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-white">
                   Sourcing Cost
                 </span>
 
@@ -771,14 +771,14 @@ export default function AddSourceCostModal({ open, onClose, onStatus }) {
           </div>
         </header>
 
-        <div className="sibs-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain bg-[#F7F9FC] p-3 sm:p-4 2xl:p-5">
-          <section className="rounded-2xl border border-[#DCE6F1] bg-white p-3.5 sm:p-4 2xl:p-5 shadow-[0_8px_24px_rgba(4,44,81,0.04)]">
-            <div className="mb-3 2xl:mb-4 border-b border-[#EEF2F6] pb-2.5 2xl:pb-3">
-              <h3 className="text-xs font-extrabold uppercase tracking-wide text-[#042C51]">
+        <div className="sibs-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain bg-sibs-surface p-3 sm:p-4 2xl:p-5">
+          <section className="rounded-[14px] border border-sibs-border bg-white p-3.5 sm:p-4 2xl:p-5 shadow-[0_8px_24px_rgba(4,44,81,0.04)]">
+            <div className="mb-3 2xl:mb-4 border-b border-sibs-border pb-2.5 2xl:pb-3">
+              <h3 className="text-xs font-extrabold uppercase tracking-wide text-sibs-navy">
                 Cost Information
               </h3>
 
-              <p className="mt-0.5 text-xs font-semibold text-[#667085]">
+              <p className="mt-0.5 text-xs font-semibold text-sibs-muted">
                 Fields marked with an asterisk are required.
               </p>
             </div>
@@ -877,12 +877,12 @@ export default function AddSourceCostModal({ open, onClose, onStatus }) {
             </div>
           </section>
 
-          <section className="mt-4 rounded-xl border border-blue-100 bg-blue-50 p-4">
-            <p className="text-xs font-extrabold text-[#042C51]">
+          <section className="mt-4 rounded-[10px] border border-blue-100 bg-blue-50 p-4">
+            <p className="text-xs font-extrabold text-sibs-navy">
               Cost per Hire Formula
             </p>
 
-            <p className="mt-1 text-xs font-semibold leading-5 text-[#042C51]/75">
+            <p className="mt-1 text-xs font-semibold leading-5 text-sibs-navy/75">
               Cost per Hire equals Total Source Cost divided by
               hires from candidates who selected the same source.
               The entry becomes completed automatically after
@@ -891,7 +891,7 @@ export default function AddSourceCostModal({ open, onClose, onStatus }) {
           </section>
         </div>
 
-        <footer className="shrink-0 border-t border-[#DDE5EE] bg-[#F1F5F9] px-5 py-3 2xl:py-3.5 sm:px-6">
+        <footer className="shrink-0 border-t border-sibs-border bg-sibs-surface px-5 py-3 2xl:py-3.5 sm:px-6 rounded-b-[14px]">
           <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center">
               <button

@@ -47,6 +47,7 @@ import {
   TablePagination,
   TableSkeletonRows,
 } from "@/components/ui";
+import PaginationTable from "@/services/pagination/PaginationTable";
 import { useUser } from "../../services/context/UserContext";
 import {
   ResignationManagementModal,
@@ -1319,66 +1320,67 @@ function ResignationTableCard({
           </div>
         </div>
 
-        <div className="mt-4 flex flex-col gap-3 xl:flex-row xl:items-end">
-          <div className="min-w-0 flex-1 xl:flex-[1_1_220px] 2xl:flex-[1_1_360px]">
-            <SearchInput
-              label="Search"
-              value={draftSearch}
-              onChange={(val) => {
-                const nextVal = typeof val === "string" ? val : val?.target?.value ?? "";
-                handleSearchChange(nextVal);
-              }}
-              onClear={() => handleSearchChange("")}
-              onKeyDown={handleFilterSearchKeyDown}
-              placeholder="Search employee, SIBS ID, department, type, status, reason..."
-              ariaLabel="Search resignation records"
-              disabled={loading}
-              className="w-full"
-            />
-          </div>
-
-          <div className="w-full sm:w-48 xl:w-[200px] 2xl:w-[240px] xl:flex-none">
-            <SelectDropdown
-              label="Status"
-              value={draftStatusFilter}
-              onChange={handleStatusChange}
-              options={STATUS_OPTIONS.map((option) => ({
-                value: option,
-                label: option === "All" ? "All Statuses" : option,
-              }))}
-              placeholder="All Statuses"
-              ariaLabel="Filter by status"
-              disabled={loading}
-            />
-          </div>
-
-          <div className="w-full sm:w-44 xl:w-[180px] 2xl:w-[220px] xl:flex-none">
-            <SelectDropdown
-              label="Type"
-              value={draftTypeFilter}
-              onChange={handleTypeChange}
-              options={TYPE_OPTIONS.map((option) => ({
-                value: option,
-                label: option === "All" ? "All Types" : option,
-              }))}
-              placeholder="All Types"
-              ariaLabel="Filter by type"
-              disabled={loading}
-            />
-          </div>
-
-          {hasActiveFilters ? (
-            <div className="shrink-0">
-              <button
-                type="button"
-                onClick={handleClearTableFilters}
-                className="inline-flex h-8.5 2xl:h-10 w-full xl:w-auto items-center justify-center gap-1.5 rounded-lg border border-sibs-border bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-muted transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                <RotateCcw size={14} />
-                Clear
-              </button>
-            </div>
-          ) : null}
+        <div className="relative z-[90] mt-3.5 2xl:mt-4 overflow-visible">
+          <PaginationTable
+            filterLayout="ta-inline"
+            showFilterPanel={false}
+            showFilterHeader={false}
+            showPagination={false}
+            loading={loading}
+            searchValue={draftSearch}
+            searchPlaceholder="Search employee, SIBS ID, department, type, status, reason..."
+            onSearchChange={(val) => {
+              const nextVal = typeof val === "string" ? val : val?.target?.value ?? "";
+              handleSearchChange(nextVal);
+            }}
+            onSearchKeyDown={handleFilterSearchKeyDown}
+            className="border-0 bg-transparent p-0 shadow-none"
+            filters={[
+              {
+                key: "status",
+                value: draftStatusFilter,
+                options: STATUS_OPTIONS.map((option) => ({
+                  value: option,
+                  label: option === "All" ? "All Statuses" : option,
+                })),
+                onChange: handleStatusChange,
+                includeAll: false,
+                allLabel: "All Statuses",
+                label: "Status",
+                placeholder: "All Statuses",
+                searchable: false,
+                disabled: loading,
+              },
+              {
+                key: "type",
+                value: draftTypeFilter,
+                options: TYPE_OPTIONS.map((option) => ({
+                  value: option,
+                  label: option === "All" ? "All Types" : option,
+                })),
+                onChange: handleTypeChange,
+                includeAll: false,
+                allLabel: "All Types",
+                label: "Type",
+                placeholder: "All Types",
+                searchable: false,
+                disabled: loading,
+              },
+            ]}
+            rightContent={
+              hasActiveFilters ? (
+                <button
+                  type="button"
+                  onClick={handleClearTableFilters}
+                  disabled={loading}
+                  className="inline-flex h-8.5 2xl:h-10 w-full items-center justify-center gap-1.5 rounded-[10px] border border-sibs-border bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-muted transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange disabled:cursor-not-allowed disabled:opacity-50 xl:w-auto"
+                >
+                  <RotateCcw size={14} />
+                  Clear
+                </button>
+              ) : null
+            }
+          />
         </div>
 
         {isMobileFilterMode ? (

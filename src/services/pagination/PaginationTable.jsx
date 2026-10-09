@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import TablePagination from "@/components/ui/TablePagination";
+import DatePicker from "@/components/ui/DatePicker";
 
 const EDGE = "rounded-[10px]";
 const INLINE_CONTROLS_CLASS =
@@ -73,27 +74,30 @@ function FieldLabel({ children }) {
   );
 }
 
-function DateFilterField({ filter }) {
+function DateFilterField({ filter, isTaInlineLayout }) {
   return (
-    <div className={`flex w-full flex-col ${filter.className || ""}`}>
+    <div
+      className={`relative min-w-0 overflow-visible ${
+        filter.className ||
+        (isTaInlineLayout
+          ? "w-full xl:w-[165px] 2xl:w-[195px] xl:flex-none"
+          : "w-full sm:min-w-[190px]")
+      }`}
+    >
       {filter.label ? <FieldLabel>{filter.label}</FieldLabel> : null}
 
-      <div className="group relative">
-        <CalendarDays
-          size={16}
-          className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sibs-muted transition-colors group-focus-within:text-sibs-orange"
-        />
-
-        <input
-          type="date"
-          value={filter.value || ""}
-          onChange={(event) => filter.onChange?.(event.target.value, event)}
-          min={filter.min}
-          max={filter.max}
-          disabled={filter.disabled}
-          className={`h-11 w-full ${EDGE} border border-sibs-border bg-sibs-surface px-3 pl-9 font-jakarta text-xs font-bold text-sibs-navy outline-none transition hover:border-sibs-orange/40 hover:bg-white focus:border-sibs-orange focus:bg-white focus:ring-4 focus:ring-sibs-orange/10 disabled:cursor-not-allowed disabled:opacity-50`}
-        />
-      </div>
+      <DatePicker
+        value={filter.value || ""}
+        onChange={(val) => filter.onChange?.(val)}
+        min={filter.min}
+        max={filter.max}
+        disabled={filter.disabled}
+        leadingLabel={filter.leadingLabel}
+        placeholder={filter.placeholder || "Select date"}
+        hideLabel
+        clearable={filter.clearable ?? true}
+        showToday
+      />
     </div>
   );
 }
@@ -629,6 +633,7 @@ export default function PaginationTable({
           <DateFilterField
             key={filter.key || `date-filter-${index}`}
             filter={filter}
+            isTaInlineLayout={isTaInlineLayout}
           />
         ))}
 

@@ -34,7 +34,7 @@ function SummaryCard({
     <article
       className={`sibs-metric-card sibs-page-card-in flex h-[104px] 2xl:h-[116px] flex-col justify-between overflow-hidden p-2.5 2xl:p-3.5 font-jakarta ${
         featured
-          ? "!border-transparent !bg-gradient-to-br !from-sibs-navy !to-[#0A467E] text-white"
+          ? "!border-transparent !bg-gradient-to-br !from-sibs-navy !to-sibs-navy text-white"
           : ""
       }`}
       style={{
@@ -74,7 +74,7 @@ function SummaryCard({
         <span
           className={`flex h-8 w-8 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-full ${
             featured
-              ? "bg-white/10 text-[#FF5C28]"
+              ? "bg-white/10 text-sibs-orange"
               : `sibs-tone-${tone}-icon`
           }`}
         >

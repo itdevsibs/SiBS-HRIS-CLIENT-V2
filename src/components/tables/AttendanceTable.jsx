@@ -18,6 +18,7 @@ import {
   usePagination,
   PaginationDateRangeFilter,
 } from "@/services/context/PaginationContext";
+import PaginationTable from "@/services/pagination/PaginationTable";
 import { formatDate } from "@/components/layout/FormatDateTime";
 import {
   DataCard,
@@ -38,16 +39,7 @@ import {
   PAGE_LIMIT,
   LATE_GRACE_MS,
   formatNumber,
-  normalizeStatus,
   getNumberValue,
-  getValidDate,
-  getTimeOnlyParts,
-  buildDateTimeFromTrackerDate,
-  getHoursBetween,
-  getScheduleStart,
-  getScheduleEnd,
-  isLateBySchedule,
-  getBreakHours,
   getComputedWorkHours,
   capWorkHoursFromItem,
   displayCappedWorkHours,
@@ -855,10 +847,10 @@ function AttendanceDirectoryFilterDropdown({
               inputRef.current?.blur();
             }
           }}
-          className={`h-8.5 sm:h-9 2xl:h-10 w-full rounded-[10px] border bg-[#F8FAFC] px-3 pr-10 font-jakarta sibs-text-xs font-bold text-[#042C51] shadow-sm outline-none transition placeholder:text-[#98A2B3] hover:bg-white disabled:cursor-not-allowed disabled:opacity-50 ${
+          className={`h-8.5 sm:h-9 2xl:h-10 w-full rounded-[10px] border bg-sibs-surface px-3 pr-10 font-jakarta sibs-text-xs font-bold text-sibs-navy shadow-sm outline-none transition placeholder:text-sibs-muted hover:bg-white disabled:cursor-not-allowed disabled:opacity-50 ${
             open
-              ? "border-[#FF5C28] bg-white ring-4 ring-[#FF5C28]/10"
-              : "border-[#E6ECF2] hover:border-[#FF5C28]/40"
+              ? "border-sibs-orange bg-white ring-4 ring-sibs-orange/10"
+              : "border-sibs-border hover:border-sibs-orange/40"
           }`}
           style={{ outline: "none", boxShadow: open ? undefined : "none" }}
         />
@@ -870,11 +862,11 @@ function AttendanceDirectoryFilterDropdown({
           aria-label={`Toggle ${label} dropdown`}
           onMouseDown={(event) => event.preventDefault()}
           onClick={toggleMenu}
-          className="absolute right-2 top-1/2 flex h-6.5 w-6.5 2xl:h-7 2xl:w-7 -translate-y-1/2 items-center justify-center rounded-md text-[#667085] transition hover:bg-[#FFF0EB] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-50"
+          className="absolute right-2 top-1/2 flex h-6.5 w-6.5 2xl:h-7 2xl:w-7 -translate-y-1/2 items-center justify-center rounded-md text-sibs-muted transition hover:bg-sibs-cream-light hover:text-sibs-orange disabled:cursor-not-allowed disabled:opacity-50"
         >
           <ChevronDown
             className={`h-3.5 w-3.5 2xl:h-4 2xl:w-4 transition-transform duration-300 ${
-              open ? "rotate-180 text-[#FF5C28]" : ""
+              open ? "rotate-180 text-sibs-orange" : ""
             }`}
           />
         </button>
@@ -886,7 +878,7 @@ function AttendanceDirectoryFilterDropdown({
         onClose={closeMenu}
         maxHeight={320}
         offset={6}
-        className="!rounded-[10px] !border-[#D7DEE8]"
+        className="!rounded-[10px] !border-sibs-border"
       >
         <div className="sibs-scrollbar max-h-[320px] overflow-y-auto py-1">
           {allOption ? (
@@ -897,13 +889,13 @@ function AttendanceDirectoryFilterDropdown({
               onClick={() => selectValue("All")}
               className={`flex w-full items-center justify-between gap-2 px-3 py-2.5 text-left sibs-text-xs transition ${
                 allSelected
-                  ? "bg-[#FFF0EB] font-extrabold text-[#FF5C28]"
-                  : "font-semibold text-[#344054] hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
+                  ? "bg-sibs-cream-light font-extrabold text-sibs-orange"
+                  : "font-semibold text-slate-700 hover:bg-sibs-cream-subtle hover:text-sibs-orange"
               }`}
             >
               <span className="truncate">{allOption.label}</span>
               {!multiple && allSelected ? (
-                <Check size={14} className="shrink-0 text-[#FF5C28]" />
+                <Check size={14} className="shrink-0 text-sibs-orange" />
               ) : null}
             </button>
           ) : null}
@@ -923,16 +915,16 @@ function AttendanceDirectoryFilterDropdown({
                   onClick={() => selectValue(option.value)}
                   className={`flex w-full items-center gap-2 px-3 py-2.5 text-left sibs-text-xs transition ${
                     selected
-                      ? "bg-[#FFF0EB] font-extrabold text-[#FF5C28]"
-                      : "font-semibold text-[#344054] hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
+                      ? "bg-sibs-cream-light font-extrabold text-sibs-orange"
+                      : "font-semibold text-slate-700 hover:bg-sibs-cream-subtle hover:text-sibs-orange"
                   }`}
                 >
                   {multiple ? (
                     <span
                       className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${
                         selected
-                          ? "border-[#FF5C28] bg-[#FF5C28] text-white"
-                          : "border-[#D0D5DD] bg-white text-transparent"
+                          ? "border-sibs-orange bg-sibs-orange text-white"
+                          : "border-sibs-border bg-white text-transparent"
                       }`}
                       aria-hidden="true"
                     >
@@ -945,13 +937,13 @@ function AttendanceDirectoryFilterDropdown({
                   </span>
 
                   {!multiple && selected ? (
-                    <Check size={14} className="shrink-0 text-[#FF5C28]" />
+                    <Check size={14} className="shrink-0 text-sibs-orange" />
                   ) : null}
                 </button>
               );
             })
           ) : (
-            <div className="px-3 py-4 text-center sibs-text-xs font-semibold text-[#667085]">
+            <div className="px-3 py-4 text-center sibs-text-xs font-semibold text-sibs-muted">
               No options found.
             </div>
           )}
@@ -1097,11 +1089,6 @@ export default function AttendanceTable() {
       ? 0
       : Number(safePagination.total || 0);
 
-  const hasPreviousPage =
-    Boolean(safePagination.hasPreviousPage) || currentPage > 1;
-  const hasNextPage =
-    Boolean(safePagination.hasNextPage) || currentPage < totalPages;
-
   const departmentDropdownOptions = useMemo(() => {
     return (Array.isArray(departmentOptions) ? departmentOptions : [])
       .map(normalizeDepartmentOption)
@@ -1154,16 +1141,6 @@ export default function AttendanceTable() {
     console.error(
       "Pagination context does not expose setPage, setCurrentPage, or handlePageChange.",
     );
-  }
-
-  function goPreviousPage() {
-    if (loading || !hasPreviousPage) return;
-    goToPage(currentPage - 1);
-  }
-
-  function goNextPage() {
-    if (loading || !hasNextPage) return;
-    goToPage(currentPage + 1);
   }
 
   function handleAttendanceSearchSubmit() {
@@ -1225,6 +1202,20 @@ export default function AttendanceTable() {
     accountFilters.length > 0 ||
     hasCustomDateRange
   );
+
+  function handleAttendanceDateFromChange(value) {
+    paginationContext.setDateRange?.({
+      dateFrom: value,
+      dateTo: dateTo && value && dateTo < value ? value : dateTo,
+    });
+  }
+
+  function handleAttendanceDateToChange(value) {
+    paginationContext.setDateRange?.({
+      dateFrom,
+      dateTo: value,
+    });
+  }
 
   function handleClearAttendanceFilters() {
     setSearchInput?.("");
@@ -1590,81 +1581,96 @@ export default function AttendanceTable() {
               : "Review your time entries, work hours, breaks, and approval status."}
           </p>
 
-          <div className="mt-4 flex flex-col gap-3 xl:flex-row xl:items-end">
-            <div className="min-w-0 flex-1 xl:flex-[1_1_220px] 2xl:flex-[1_1_360px]">
-              <SearchInput
-                label="Search"
-                value={searchInput}
-                onChange={(e) => setSearchInput?.(typeof e === "string" ? e : e?.target?.value ?? "")}
-                onClear={() => {
-                  setSearchInput?.("");
-                  if (typeof setSearch === "function") setSearch("");
-                  goToPage(1);
-                }}
-                onKeyDown={handleAttendanceSearchKeyDown}
-                placeholder={
-                  adminView
-                    ? "Search by employee, SIBS ID, department, or account..."
-                    : "Search attendance records..."
-                }
-                ariaLabel="Search attendance"
-                disabled={loading}
-                className="w-full"
-              />
-            </div>
-
-            {attendanceFiltersView ? (
-              <>
-                <div className="w-full sm:w-48 xl:w-[170px] 2xl:w-[200px] xl:flex-none">
-                  <AttendanceDirectoryFilterDropdown
-                    label="Department"
-                    value={departmentFilter || "All"}
-                    onChange={handleDepartmentSelect}
-                    options={[
-                      { value: "All", label: "All Departments" },
-                      ...departmentDropdownOptions,
-                    ]}
-                    placeholder="All Departments"
-                    searchPlaceholder="Search departments..."
+          <div className="relative z-[90] mt-3.5 2xl:mt-4 overflow-visible">
+            <PaginationTable
+              filterLayout="ta-inline"
+              showFilterPanel={false}
+              showFilterHeader={false}
+              showPagination={false}
+              loading={loading}
+              searchValue={searchInput}
+              searchPlaceholder={
+                adminView
+                  ? "Search by employee, SIBS ID, department, or account..."
+                  : "Search attendance records..."
+              }
+              onSearchChange={(val) => setSearchInput?.(typeof val === "string" ? val : val?.target?.value ?? "")}
+              onSearchKeyDown={handleAttendanceSearchKeyDown}
+              className="border-0 bg-transparent p-0 shadow-none"
+              filters={[
+                ...(attendanceFiltersView
+                  ? [
+                      {
+                        key: "department",
+                        value: departmentFilter || "All",
+                        options: [
+                          { value: "All", label: "All Departments" },
+                          ...departmentDropdownOptions,
+                        ],
+                        onChange: handleDepartmentSelect,
+                        includeAll: false,
+                        allLabel: "All Departments",
+                        label: "Department",
+                        placeholder: "All Departments",
+                        searchable: true,
+                        disabled: loading,
+                      },
+                      {
+                        key: "account",
+                        multiple: true,
+                        value: accountFilters,
+                        options: [
+                          { value: "All", label: "All Accounts" },
+                          ...accountDropdownOptions,
+                        ],
+                        onChange: handleAccountSelect,
+                        includeAll: false,
+                        allLabel: "All Accounts",
+                        label: "Account",
+                        placeholder: "All Accounts",
+                        searchable: true,
+                        disabled: loading,
+                      },
+                    ]
+                  : []),
+              ]}
+              dateFilters={
+                attendanceDateRangeView
+                  ? [
+                      {
+                        key: "dateFrom",
+                        label: "From Date",
+                        leadingLabel: "From",
+                        value: dateFrom,
+                        onChange: handleAttendanceDateFromChange,
+                        disabled: loading,
+                      },
+                      {
+                        key: "dateTo",
+                        label: "To Date",
+                        leadingLabel: "To",
+                        value: dateTo,
+                        min: dateFrom || undefined,
+                        onChange: handleAttendanceDateToChange,
+                        disabled: loading,
+                      },
+                    ]
+                  : []
+              }
+              rightContent={
+                hasActiveFilters ? (
+                  <button
+                    type="button"
+                    onClick={handleClearAttendanceFilters}
                     disabled={loading}
-                  />
-                </div>
-
-                <div className="w-full sm:w-48 xl:w-[170px] 2xl:w-[200px] xl:flex-none">
-                  <AttendanceDirectoryFilterDropdown
-                    label="Account"
-                    multiple
-                    values={accountFilters}
-                    onChange={handleAccountSelect}
-                    options={[
-                      { value: "All", label: "All Accounts" },
-                      ...accountDropdownOptions,
-                    ]}
-                    placeholder="All Accounts"
-                    searchPlaceholder="Search accounts..."
-                    disabled={loading}
-                  />
-                </div>
-              </>
-            ) : null}
-
-            <div className="w-full xl:w-auto xl:flex-none">
-              <InlineDateRangeFilter visible={attendanceDateRangeView} />
-            </div>
-
-            {hasActiveFilters && (
-              <div className="shrink-0">
-                <button
-                  type="button"
-                  onClick={handleClearAttendanceFilters}
-                  disabled={loading}
-                  className="inline-flex h-8.5 2xl:h-10 w-full xl:w-auto items-center justify-center gap-1.5 rounded-lg border border-sibs-border bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-muted transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  <RotateCcw size={14} />
-                  Clear
-                </button>
-              </div>
-            )}
+                    className="inline-flex h-8.5 2xl:h-10 w-full items-center justify-center gap-1.5 rounded-[10px] border border-sibs-border bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-muted transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange disabled:cursor-not-allowed disabled:opacity-50 xl:w-auto"
+                  >
+                    <RotateCcw size={14} />
+                    Clear
+                  </button>
+                ) : null
+              }
+            />
           </div>
 
           <button

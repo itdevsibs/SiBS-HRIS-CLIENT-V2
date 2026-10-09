@@ -4,7 +4,7 @@ export default function MovementBar({ label, value, max, delay = 0 }) {
   return (
     <div className="sibs-page-card-in" style={{ animationDelay: `${delay}ms` }}>
       <div className="mb-2 flex items-center justify-between gap-4">
-        <p className="min-w-0 truncate text-sm font-bold text-[#344054]">
+        <p className="min-w-0 truncate text-sm font-bold text-sibs-muted">
           {label}
         </p>
 
@@ -13,7 +13,7 @@ export default function MovementBar({ label, value, max, delay = 0 }) {
         </p>
       </div>
 
-      <div className="h-2.5 overflow-hidden rounded-full bg-[#EEF2F6]">
+      <div className="h-2.5 overflow-hidden rounded-full bg-sibs-surface-subtle">
         <div
           className="h-full rounded-full bg-sibs-primary-1 transition-all duration-700 ease-out"
           style={{ width: `${percentage}%` }}

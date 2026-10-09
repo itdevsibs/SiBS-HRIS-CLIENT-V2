@@ -38,6 +38,9 @@ export default function ConfirmModal({
   icon: CustomIcon = null,
   children = null,
   maxWidth = "max-w-md",
+  closeOnBackdrop = true,
+  closeOnEscape = true,
+  mobileBottomSheet = false,
 }) {
   const config = VARIANT_ICONS[variant] || VARIANT_ICONS.danger;
   const IconComponent = CustomIcon || config.icon;
@@ -49,6 +52,10 @@ export default function ConfirmModal({
       maxWidth={maxWidth}
       title={title}
       hideCloseButton={loading}
+      closeOnBackdrop={!loading && closeOnBackdrop}
+      closeOnEscape={!loading && closeOnEscape}
+      mobileBottomSheet={mobileBottomSheet}
+      bodyClassName="p-4 sm:p-5 font-jakarta"
       footer={
         <div className="flex items-center justify-end gap-2.5">
           <button
@@ -72,7 +79,7 @@ export default function ConfirmModal({
         </div>
       }
     >
-      <div className="flex items-start gap-3.5 p-4 sm:p-5 font-jakarta">
+      <div className="flex items-start gap-3.5 font-jakarta">
         <div
           className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${config.iconBg}`}
         >

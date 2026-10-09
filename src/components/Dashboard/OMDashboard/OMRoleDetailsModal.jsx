@@ -39,7 +39,7 @@ export default function OMRoleDetailsModal({ role, onClose }) {
         <button
           type="button"
           onClick={onClose}
-          className="sibs-btn-primary !h-8.5 2xl:!h-10 w-full sm:w-auto !px-4 sibs-text-xs"
+          className="sibs-btn-secondary w-full sm:w-auto"
         >
           Close Details
         </button>
@@ -47,7 +47,7 @@ export default function OMRoleDetailsModal({ role, onClose }) {
     >
       <div className="flex flex-col justify-between gap-2.5 rounded-xl border border-sibs-border bg-sibs-surface p-3 2xl:p-3.5 sm:flex-row sm:items-center">
         <div className="min-w-0">
-          <h3 className="sibs-modal-section-title font-heading text-sm 2xl:text-base font-bold tracking-tight text-sibs-navy break-words">
+          <h3 className="sibs-modal-section-title break-words">
             {role.roleTitle}
           </h3>
           <p className="font-jakarta mt-0.5 break-words sibs-text-micro font-semibold text-sibs-muted">
@@ -82,7 +82,7 @@ export default function OMRoleDetailsModal({ role, onClose }) {
       </div>
 
       <div>
-        <p className="sibs-modal-section-title font-heading mb-1.5 text-sm 2xl:text-base font-bold tracking-tight text-sibs-navy uppercase">
+        <p className="sibs-modal-section-title mb-1.5 uppercase">
           Movement Pipeline Stages
         </p>
         <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-6">

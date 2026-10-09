@@ -80,36 +80,36 @@ export function RoleKpiDetailsModal({ open, role, onClose, onToast }) {
       className="flex flex-col max-h-[calc(100dvh-1rem)] sm:max-h-[88vh]"
       bodyClassName="min-h-0 flex-1 overflow-y-auto p-4 sm:p-6 text-sibs-navy"
       footerClassName="justify-between sm:flex-row sm:items-center px-4 py-2.5 2xl:py-3 sm:px-6"
+      footerMeta={
+        <p className="text-center font-jakarta text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-sibs-faint sm:text-left">
+          Frontend-only TA data. Values remain unchanged after applying the new theme.
+        </p>
+      }
       footer={
-        <>
-          <p className="text-center font-jakarta text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-sibs-faint sm:text-left">
-            Frontend-only TA data. Values remain unchanged after applying the new theme.
-          </p>
-          <div className="grid w-full grid-cols-1 gap-2 sm:flex sm:w-auto">
-            <button
-              type="button"
-              onClick={handleShare}
-              className="sibs-btn-secondary !h-8.5 2xl:!h-10 w-full sm:w-auto !px-3.5 2xl:!px-4 sibs-text-xs"
-            >
-              <Link2 size={13} />
-              Share Link
-            </button>
-            <button
-              type="button"
-              onClick={onClose}
-              className="sibs-btn-primary !h-8.5 2xl:!h-10 w-full sm:w-auto !px-3.5 2xl:!px-4 sibs-text-xs"
-            >
-              <CheckCircle2 size={13} />
-              Close Details
-            </button>
-          </div>
-        </>
+        <div className="grid w-full grid-cols-1 gap-2 sm:flex sm:w-auto">
+          <button
+            type="button"
+            onClick={handleShare}
+            className="sibs-btn-secondary w-full sm:w-auto"
+          >
+            <Link2 size={13} />
+            Share Link
+          </button>
+          <button
+            type="button"
+            onClick={onClose}
+            className="sibs-btn-primary w-full sm:w-auto"
+          >
+            <CheckCircle2 size={13} />
+            Close Details
+          </button>
+        </div>
       }
     >
       <div className="space-y-5">
         <section className="flex flex-col gap-3 rounded-xl border border-sibs-border bg-sibs-surface p-3 sm:flex-row sm:items-center sm:justify-between sm:p-4">
           <div className="min-w-0">
-            <h3 className="sibs-modal-section-title font-heading text-base sm:text-lg font-bold tracking-tight text-sibs-navy break-words">
+            <h3 className="sibs-modal-section-title break-words">
               {safeValue(role.role, "Untitled Role")}
             </h3>
             <p className="font-jakarta mt-1 break-words text-xs font-semibold leading-relaxed text-sibs-muted">
@@ -140,7 +140,7 @@ export function RoleKpiDetailsModal({ open, role, onClose, onToast }) {
         </section>
 
         <section>
-          <h3 className="sibs-modal-section-title font-heading text-sm 2xl:text-base font-bold tracking-tight text-sibs-navy">
+          <h3 className="sibs-modal-section-title">
             Weekly Movement Breakdown
           </h3>
           <div className="mt-3 grid grid-cols-2 gap-2 text-center sm:grid-cols-3 lg:grid-cols-6">
@@ -161,7 +161,7 @@ export function RoleKpiDetailsModal({ open, role, onClose, onToast }) {
         </section>
 
         <section className="rounded-xl border border-sibs-border-panel bg-sibs-surface p-3.5">
-          <span className="sibs-modal-section-subtitle block font-jakarta text-[10px] font-extrabold uppercase text-sibs-muted">
+          <span className="sibs-modal-section-subtitle block uppercase">
             Current Action Item
           </span>
           <p className="mt-1 font-jakarta text-xs font-semibold leading-relaxed text-sibs-navy">
@@ -172,7 +172,7 @@ export function RoleKpiDetailsModal({ open, role, onClose, onToast }) {
         <section className="rounded-xl border border-sibs-border bg-sibs-surface/60 p-3.5">
           <div className="flex items-center gap-2">
             <ShieldAlert className="h-4 w-4 text-sibs-orange" />
-            <span className="sibs-modal-section-title block font-heading text-sm 2xl:text-base font-bold tracking-tight text-sibs-navy">
+            <span className="sibs-modal-section-title block">
               Role Delivery Details
             </span>
           </div>
@@ -197,7 +197,7 @@ export function RoleKpiDetailsModal({ open, role, onClose, onToast }) {
         </section>
 
         <section className="rounded-xl border border-sibs-border bg-sibs-surface/60 p-3.5">
-          <span className="sibs-modal-section-title block font-heading text-sm 2xl:text-base font-bold tracking-tight text-sibs-navy">
+          <span className="sibs-modal-section-title block">
             Role Snapshot KPI Matrix
           </span>
           <div className="mt-3 grid grid-cols-2 gap-3 text-center sm:grid-cols-4">

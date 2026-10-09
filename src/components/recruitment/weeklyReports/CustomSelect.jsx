@@ -26,19 +26,19 @@ export default function CustomSelect({
 
   return (
     <div ref={dropdownRef} className={`relative ${zIndex}`}>
-      <label className="mb-1 block sibs-text-micro font-extrabold uppercase tracking-wide text-[#667085]">
+      <label className="mb-1 block sibs-text-micro font-extrabold uppercase tracking-wide text-sibs-muted">
         {label}
       </label>
 
       <button
         type="button"
         onClick={() => setOpen((previous) => !previous)}
-        className="flex h-8.5 2xl:h-10 w-full items-center justify-between rounded-lg border border-[#D0D5DD] bg-white px-3 text-left sibs-text-xs font-extrabold text-[#344054] outline-none transition hover:border-[#FF5C28]/30 hover:bg-[#F8FAFC] focus:border-[#FF5C28] focus:ring-2 focus:ring-[#FF5C28]/10"
+        className="flex h-8.5 2xl:h-10 w-full items-center justify-between rounded-lg border border-sibs-border bg-white px-3 text-left sibs-text-xs font-extrabold text-sibs-muted outline-none transition hover:border-sibs-orange/30 hover:bg-sibs-surface focus:border-sibs-orange focus:ring-2 focus:ring-sibs-orange/10"
       >
         <span className="truncate">{displayValue}</span>
         <ChevronDown
           size={15}
-          className={`shrink-0 text-[#667085] transition-transform duration-200 ${open ? "rotate-180" : ""}`}
+          className={`shrink-0 text-sibs-muted transition-transform duration-200 ${open ? "rotate-180" : ""}`}
         />
       </button>
 
@@ -58,8 +58,8 @@ export default function CustomSelect({
                     }}
                     className={`block w-full px-3.5 py-2 text-left sibs-text-xs transition ${
                       selected
-                        ? "bg-[#E9F0FC] font-extrabold text-[#042C51]"
-                        : "font-semibold text-[#344054] hover:bg-[#F8FAFC]"
+                        ? "bg-sibs-surface font-extrabold text-sibs-navy"
+                        : "font-semibold text-sibs-muted hover:bg-sibs-surface"
                     }`}
                   >
                     <span className="block truncate">{option}</span>

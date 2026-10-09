@@ -5,7 +5,7 @@ export default function DetailRow({ label, value }) {
         {label}
       </p>
 
-      <div className="max-w-[60%] break-words text-right text-sm font-bold text-[#344054]">
+      <div className="max-w-[60%] break-words text-right text-sm font-bold text-sibs-muted">
         {value || "—"}
       </div>
     </div>
