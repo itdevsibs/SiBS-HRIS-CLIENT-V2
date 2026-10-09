@@ -1,4 +1,4 @@
-import { createElement, useCallback, useRef, useState } from "react";
+import { createElement, useCallback, useEffect, useRef, useState } from "react";
 
 import {
   BriefcaseBusiness,
@@ -38,24 +38,100 @@ function PersonChip({ person, fallbackTitle }) {
         </p>
         <p className="mt-0.5 break-words text-[10px] font-semibold leading-4 text-sibs-muted">
           {title}
-          {sibsId ? ` · ${sibsId}` : ""}
+          {sibsId ? ` · SiBS ID : ${sibsId}` : ""}
         </p>
       </div>
     </div>
   );
 }
 
-function LeadershipGroup({ title, icon, people, emptyText }) {
+function LeadershipGroup({
+  title,
+  icon,
+  people,
+  emptyText,
+  onClick,
+}) {
+  const visiblePeople = people.slice(0, 2);
+  const remainingCount = Math.max(0, people.length - visiblePeople.length);
+
   return (
-    <div className="min-w-0">
-      <p className="mb-2 flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-wide text-sibs-faint">
-        {createElement(icon, { className: "h-3.5 w-3.5" })}
-        {title}
+    <button
+      type="button"
+      onClick={(event) => {
+        event.stopPropagation();
+        onClick?.();
+      }}
+      className="flex min-w-0 flex-col self-start rounded-xl text-left transition hover:bg-white/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-sibs-orange/20"
+      title={`View ${title}`}
+    >
+      <p className="mb-2 flex min-h-[20px] items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-wide text-sibs-faint">
+        {createElement(icon, { className: "h-3.5 w-3.5 shrink-0" })}
+        <span className="leading-none">{title}</span>
       </p>
 
       {people.length ? (
-        <div className="grid gap-2">
-          {people.map((person, index) => (
+        <div className="grid content-start gap-2">
+          {visiblePeople.map((person, index) => (
+            <PersonChip
+              key={`${person?.sibsId || person?.name || title}-${index}`}
+              person={person}
+              fallbackTitle={title}
+            />
+          ))}
+
+          {remainingCount > 0 ? (
+            <div className="inline-flex w-fit items-center rounded-lg border border-sibs-border bg-white px-3 py-2 text-[11px] font-extrabold text-sibs-muted">
+              +{remainingCount} more
+            </div>
+          ) : null}
+        </div>
+      ) : (
+        <div className="flex min-h-[44px] items-center rounded-lg border border-dashed border-sibs-border bg-white px-3 py-3 text-[11px] font-semibold text-sibs-muted">
+          {emptyText}
+        </div>
+      )}
+    </button>
+  );
+}
+
+function LeadershipPeopleModal({
+  account,
+  title,
+  people,
+  icon,
+  onClose,
+}) {
+  if (!account || !title) return null;
+
+  const safePeople = Array.isArray(people) ? people : [];
+
+  return (
+    <ModalShell
+      open
+      onClose={onClose}
+      title={`${account.name} — ${title}`}
+      subtitle={`Showing only ${title.toLowerCase()} assigned to ${account.name}.`}
+      icon={icon || UsersRound}
+      badge={`${safePeople.length} ${safePeople.length === 1 ? "person" : "people"}`}
+      maxWidth="max-w-3xl"
+      bodyClassName="max-h-[65vh] overflow-y-auto"
+      closeOnBackdrop={false}
+      footer={
+        <div className="flex w-full justify-end">
+          <button
+            type="button"
+            className="sibs-btn-primary !text-sm"
+            onClick={onClose}
+          >
+            Close
+          </button>
+        </div>
+      }
+    >
+      {safePeople.length ? (
+        <div className="grid gap-2 sm:grid-cols-2">
+          {safePeople.map((person, index) => (
             <PersonChip
               key={`${person?.sibsId || person?.name || title}-${index}`}
               person={person}
@@ -64,11 +140,11 @@ function LeadershipGroup({ title, icon, people, emptyText }) {
           ))}
         </div>
       ) : (
-        <div className="rounded-lg border border-dashed border-sibs-border bg-white px-3 py-3 text-[11px] font-semibold text-sibs-muted">
-          {emptyText}
+        <div className="rounded-xl border border-dashed border-sibs-border p-8 text-center text-sm font-semibold text-sibs-muted">
+          No {title.toLowerCase()} resolved for this account.
         </div>
       )}
-    </div>
+    </ModalShell>
   );
 }
 
@@ -347,14 +423,56 @@ function AccountEmployeesModal({
   );
 }
 
+function normalizeAccountRoleName(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/&/g, " and ")
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+}
+
+function isSeniorManagersAccount(account = {}) {
+  const normalizedNames = [account?.name, account?.longName]
+    .map(normalizeAccountRoleName)
+    .filter(Boolean);
+
+  return normalizedNames.some((name) =>
+    [
+      "senior_managers",
+      "senior_manager",
+      "senior_operations_managers",
+      "senior_operations_manager",
+    ].includes(name),
+  );
+}
+
+function isBodAccount(account = {}) {
+  const normalizedNames = [account?.name, account?.longName]
+    .map(normalizeAccountRoleName)
+    .filter(Boolean);
+
+  return normalizedNames.some((name) =>
+    [
+      "bod",
+      "board_of_directors",
+      "board_of_director",
+      "board_of_directors_bod",
+    ].includes(name),
+  );
+}
+
 function AccountCard({
   account,
   onViewEmployees,
+  onViewLeadership,
   onViewLobEmployees,
   onManageLobs,
   lobCount,
   lobNames = [],
   canManageLobs,
+  bodPeople = [],
+  bodLoading = false,
 }) {
   const active = account.status === "active";
   const operationsManagers = Array.isArray(account.operationsManagers)
@@ -368,15 +486,32 @@ function AccountCard({
   )
     ? account.seniorOperationsManagers
     : [];
+  const accountBoardOfDirectors = Array.isArray(account.boardOfDirectors)
+    ? account.boardOfDirectors
+    : [];
+  const seniorManagersAccount = isSeniorManagersAccount(account);
+  const bodAccount = isBodAccount(account) || Number(account?.id) === 29;
+  const boardOfDirectors =
+    (bodAccount || seniorManagersAccount) &&
+    Array.isArray(bodPeople) &&
+    bodPeople.length
+      ? bodPeople
+      : accountBoardOfDirectors;
   const employeeCount = Number(account.employeeCount) || 0;
 
   return (
-    <article
-      title={`View ${account.name} employees`}
-      onClick={() => onViewEmployees?.(account)}
-      className="cursor-pointer overflow-hidden rounded-xl border border-sibs-border bg-sibs-surface transition hover:border-sibs-orange/50 hover:shadow-sm"
-    >
-      <div className="flex flex-col gap-3 border-b border-sibs-border bg-white px-4 py-3 sm:flex-row sm:items-start sm:justify-between">
+    <article className="overflow-hidden rounded-xl border border-sibs-border bg-sibs-surface transition hover:border-sibs-orange/50 hover:shadow-sm">
+      <div
+        title={bodAccount ? undefined : `View all ${account.name} employees`}
+        onClick={() => {
+          if (!bodAccount) onViewEmployees?.(account);
+        }}
+        className={`flex flex-col gap-3 border-b border-sibs-border bg-white px-4 py-3 sm:flex-row sm:items-start sm:justify-between ${
+          bodAccount
+            ? ""
+            : "cursor-pointer transition hover:bg-sibs-orange/[0.02]"
+        }`}
+      >
         <div className="min-w-0">
           <p className="truncate text-base font-extrabold text-sibs-navy">
             {account.name}
@@ -388,17 +523,19 @@ function AccountCard({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            className="inline-flex items-center gap-1.5 rounded-lg border border-sibs-border bg-sibs-surface px-3 py-2 text-[11px] font-extrabold text-sibs-navy transition hover:border-sibs-orange/40 hover:bg-white hover:text-sibs-orange"
-            onClick={(event) => {
-              event.stopPropagation();
-              onViewEmployees?.(account);
-            }}
-          >
-            <UsersRound className="h-3.5 w-3.5" />
-            {employeeCount} employee{employeeCount === 1 ? "" : "s"}
-          </button>
+          {!bodAccount ? (
+            <button
+              type="button"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-sibs-border bg-sibs-surface px-3 py-2 text-[11px] font-extrabold text-sibs-navy transition hover:border-sibs-orange/40 hover:bg-white hover:text-sibs-orange"
+              onClick={(event) => {
+                event.stopPropagation();
+                onViewEmployees?.(account);
+              }}
+            >
+              <UsersRound className="h-3.5 w-3.5" />
+              {employeeCount} employee{employeeCount === 1 ? "" : "s"}
+            </button>
+          ) : null}
 
           <button
             type="button"
@@ -433,7 +570,17 @@ function AccountCard({
         </div>
       </div>
 
-      <div className="border-b border-sibs-border bg-white px-4 py-3">
+      <div
+        title={bodAccount ? undefined : `View all ${account.name} employees`}
+        onClick={() => {
+          if (!bodAccount) onViewEmployees?.(account);
+        }}
+        className={`border-b border-sibs-border bg-white px-4 py-3 ${
+          bodAccount
+            ? ""
+            : "cursor-pointer transition hover:bg-sibs-orange/[0.02]"
+        }`}
+      >
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-faint">
             Line of Business
@@ -447,7 +594,9 @@ function AccountCard({
                   title={`View employees in ${lobName}`}
                   onClick={(event) => {
                     event.stopPropagation();
-                    onViewLobEmployees?.(account, lobName);
+                    if (!bodAccount) {
+                      onViewLobEmployees?.(account, lobName);
+                    }
                   }}
                   className="cursor-pointer rounded-md border border-sibs-border bg-sibs-surface px-2.5 py-1.5 text-[10px] font-bold text-sibs-secondary transition hover:border-sibs-orange/40 hover:bg-sibs-orange/5 hover:text-sibs-orange focus:outline-none focus-visible:border-sibs-orange focus-visible:ring-2 focus-visible:ring-sibs-orange/20"
                 >
@@ -476,27 +625,123 @@ function AccountCard({
         </div>
       </div>
 
-      <div className="grid gap-4 p-4 lg:grid-cols-3">
-        <LeadershipGroup
-          title="Team Leaders"
-          icon={UsersRound}
-          people={teamLeaders}
-          emptyText="No Team Leader resolved for this account."
-        />
+      <div className="grid items-start gap-4 p-4 lg:grid-cols-3">
+        {bodAccount ? (
+          <div className="lg:col-span-3">
+            <LeadershipGroup
+              title="Board of Directors"
+              icon={UsersRound}
+              people={boardOfDirectors}
+              emptyText={
+                bodLoading
+                  ? "Loading Board of Directors..."
+                  : "No BOD owner resolved for this account."
+              }
+              onClick={() =>
+                onViewLeadership?.(
+                  account,
+                  "Board of Directors",
+                  boardOfDirectors,
+                  UsersRound,
+                )
+              }
+            />
+          </div>
+        ) : seniorManagersAccount ? (
+          <>
+            <LeadershipGroup
+              title="Operations Manager"
+              icon={UserRoundCog}
+              people={operationsManagers}
+              emptyText="No Operations Manager resolved for this account."
+              onClick={() =>
+                onViewLeadership?.(
+                  account,
+                  "Operations Manager",
+                  operationsManagers,
+                  UserRoundCog,
+                )
+              }
+            />
 
-        <LeadershipGroup
-          title="Operations Manager"
-          icon={UserRoundCog}
-          people={operationsManagers}
-          emptyText="No Operations Manager resolved for this account."
-        />
+            <LeadershipGroup
+              title="Senior Operations Manager"
+              icon={ShieldCheck}
+              people={seniorOperationsManagers}
+              emptyText="No Senior Operations Manager resolved for this account."
+              onClick={() =>
+                onViewLeadership?.(
+                  account,
+                  "Senior Operations Manager",
+                  seniorOperationsManagers,
+                  ShieldCheck,
+                )
+              }
+            />
 
-        <LeadershipGroup
-          title="Senior Operations Manager"
-          icon={ShieldCheck}
-          people={seniorOperationsManagers}
-          emptyText="No Senior Operations Manager resolved for this account."
-        />
+            <LeadershipGroup
+              title="BOD"
+              icon={UsersRound}
+              people={boardOfDirectors}
+              emptyText="No BOD owner resolved for this account."
+              onClick={() =>
+                onViewLeadership?.(
+                  account,
+                  "BOD",
+                  boardOfDirectors,
+                  UsersRound,
+                )
+              }
+            />
+          </>
+        ) : (
+          <>
+            <LeadershipGroup
+              title="Team Leaders"
+              icon={UsersRound}
+              people={teamLeaders}
+              emptyText="No Team Leader resolved for this account."
+              onClick={() =>
+                onViewLeadership?.(
+                  account,
+                  "Team Leaders",
+                  teamLeaders,
+                  UsersRound,
+                )
+              }
+            />
+
+            <LeadershipGroup
+              title="Operations Manager"
+              icon={UserRoundCog}
+              people={operationsManagers}
+              emptyText="No Operations Manager resolved for this account."
+              onClick={() =>
+                onViewLeadership?.(
+                  account,
+                  "Operations Manager",
+                  operationsManagers,
+                  UserRoundCog,
+                )
+              }
+            />
+
+            <LeadershipGroup
+              title="Senior Operations Manager"
+              icon={ShieldCheck}
+              people={seniorOperationsManagers}
+              emptyText="No Senior Operations Manager resolved for this account."
+              onClick={() =>
+                onViewLeadership?.(
+                  account,
+                  "Senior Operations Manager",
+                  seniorOperationsManagers,
+                  ShieldCheck,
+                )
+              }
+            />
+          </>
+        )}
       </div>
     </article>
   );
@@ -566,6 +811,7 @@ export default function DepartmentDetailsModal({
   onClose,
 }) {
   const [selectedEmployeeAccount, setSelectedEmployeeAccount] = useState(null);
+  const [selectedLeadership, setSelectedLeadership] = useState(null);
   const [selectedLobFilter, setSelectedLobFilter] = useState("");
   const [selectedLobAccount, setSelectedLobAccount] = useState(null);
   const [accountEmployees, setAccountEmployees] = useState([]);
@@ -579,6 +825,8 @@ export default function DepartmentDetailsModal({
   const [employeesLoading, setEmployeesLoading] = useState(false);
   const [employeesError, setEmployeesError] = useState("");
   const [employeeCache, setEmployeeCache] = useState({});
+  const [bodPeopleByAccount, setBodPeopleByAccount] = useState({});
+  const [bodLoadingByAccount, setBodLoadingByAccount] = useState({});
   const [accountLobCache, setAccountLobCache] = useState({});
   const [employeeLobs, setEmployeeLobs] = useState([]);
   const [lobsLoading, setLobsLoading] = useState(false);
@@ -589,6 +837,121 @@ export default function DepartmentDetailsModal({
 
   const active = department?.status === "active";
   const accounts = Array.isArray(department?.accounts) ? department.accounts : [];
+  const bodAccount = accounts.find(
+    (account) => isBodAccount(account) || Number(account?.id) === 29,
+  );
+  const bodAccountId = String(bodAccount?.id ?? "").trim();
+  const sharedBodPeople = bodAccountId
+    ? bodPeopleByAccount[bodAccountId] || []
+    : [];
+  const sharedBodLoading = bodAccountId
+    ? Boolean(bodLoadingByAccount[bodAccountId])
+    : false;
+  const bodAccountKey = accounts
+    .filter((account) => isBodAccount(account) || Number(account?.id) === 29)
+    .map((account) => String(account?.id ?? ""))
+    .filter(Boolean)
+    .join("|");
+
+  useEffect(() => {
+    const bodAccounts = accounts.filter(
+      (account) => isBodAccount(account) || Number(account?.id) === 29,
+    );
+
+    if (!bodAccounts.length) return undefined;
+
+    let cancelled = false;
+
+    bodAccounts.forEach(async (account) => {
+      const accountId = String(account?.id ?? "").trim();
+      if (!accountId) return;
+
+      setBodLoadingByAccount((current) => ({
+        ...current,
+        [accountId]: true,
+      }));
+
+      try {
+        const result = await getDepartmentAccountEmployees(accountId);
+        if (cancelled) return;
+
+        const employees = Array.isArray(result?.employees)
+          ? result.employees
+          : Array.isArray(result?.data)
+            ? result.data
+            : [];
+
+        const bodPeople = employees
+          .filter((employee) =>
+            ["0001", "0002"].includes(
+              String(employee?.sibsId ?? employee?.sibs_id ?? "").padStart(4, "0"),
+            ),
+          )
+          .map((employee) => ({
+            ...employee,
+            sibsId: String(
+              employee?.sibsId ?? employee?.sibs_id ?? "",
+            ).padStart(4, "0"),
+            title:
+              employee?.position ||
+              employee?.employeePosition ||
+              employee?.employee_position ||
+              employee?.jobTitle ||
+              employee?.job_title ||
+              "BOD",
+          }));
+
+        setBodPeopleByAccount((current) => ({
+          ...current,
+          [accountId]: bodPeople,
+        }));
+
+        setEmployeeCache((current) => ({
+          ...current,
+          [accountId]: {
+            employees,
+            summary: result?.summary || {
+              totalEmployees: employees.length,
+              activeEmployees: employees.filter(
+                (employee) => employee?.status === "active",
+              ).length,
+              inactiveEmployees: employees.filter(
+                (employee) => employee?.status !== "active",
+              ).length,
+              lobAssignedEmployees: employees.filter((employee) =>
+                Array.isArray(employee?.lobIds)
+                  ? employee.lobIds.length > 0
+                  : Boolean(employee?.lobId),
+              ).length,
+              lobUnassignedEmployees: employees.filter((employee) =>
+                Array.isArray(employee?.lobIds)
+                  ? employee.lobIds.length === 0
+                  : !employee?.lobId,
+              ).length,
+            },
+          },
+        }));
+      } catch {
+        if (cancelled) return;
+
+        setBodPeopleByAccount((current) => ({
+          ...current,
+          [accountId]: [],
+        }));
+      } finally {
+        if (!cancelled) {
+          setBodLoadingByAccount((current) => ({
+            ...current,
+            [accountId]: false,
+          }));
+        }
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [bodAccountKey]);
 
   const handleLobsChanged = useCallback(
     (accountId, lobs) => {
@@ -636,6 +999,15 @@ export default function DepartmentDetailsModal({
     } finally {
       setLobsLoading(false);
     }
+  }
+
+  function handleViewLeadership(account, title, people, icon) {
+    setSelectedLeadership({
+      account,
+      title,
+      people: Array.isArray(people) ? people : [],
+      icon,
+    });
   }
 
   async function handleViewEmployees(account, lobFilter = "") {
@@ -995,11 +1367,26 @@ export default function DepartmentDetailsModal({
                     key={account.id}
                     account={account}
                     onViewEmployees={handleViewEmployees}
+                    onViewLeadership={handleViewLeadership}
                     onViewLobEmployees={(selectedAccount, lobName) =>
                       handleViewEmployees(selectedAccount, lobName)
                     }
                     onManageLobs={setSelectedLobAccount}
                     canManageLobs={canManageLobs}
+                    bodPeople={
+                      isBodAccount(account) ||
+                      Number(account?.id) === 29 ||
+                      isSeniorManagersAccount(account)
+                        ? sharedBodPeople
+                        : []
+                    }
+                    bodLoading={
+                      isBodAccount(account) ||
+                      Number(account?.id) === 29 ||
+                      isSeniorManagersAccount(account)
+                        ? sharedBodLoading
+                        : false
+                    }
                     lobCount={activeCachedLobs ? activeCachedLobs.length : Number(account.lobCount) || 0}
                     lobNames={lobNames}
                   />
@@ -1038,6 +1425,14 @@ export default function DepartmentDetailsModal({
           </div>
         </section>
       </div>
+
+      <LeadershipPeopleModal
+        account={selectedLeadership?.account}
+        title={selectedLeadership?.title}
+        people={selectedLeadership?.people || []}
+        icon={selectedLeadership?.icon}
+        onClose={() => setSelectedLeadership(null)}
+      />
 
       <AccountEmployeesModal
         account={selectedEmployeeAccount}

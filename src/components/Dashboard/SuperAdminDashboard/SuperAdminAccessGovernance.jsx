@@ -14,6 +14,11 @@ import {
   getStatusPillClass,
 } from "../../../lib/utils/Dashboards/SuperAdminDashboard/superAdminDashboardHelpers.js";
 
+function getAccessDisplayName(value) {
+  const text = String(value ?? "").trim();
+  return text.replace(/^\d+\s*-\s*/, "");
+}
+
 export default function SuperAdminAccessGovernance({
   admins,
   totalItems,
@@ -34,9 +39,16 @@ export default function SuperAdminAccessGovernance({
       (opt) =>
         (typeof opt === "string" ? opt : opt.value) === "All Access Levels",
     );
-    const mapped = accessOptions.map((opt) =>
-      typeof opt === "string" ? { value: opt, label: opt } : opt,
-    );
+    const mapped = accessOptions.map((opt) => {
+      if (typeof opt === "string") {
+        return { value: opt, label: getAccessDisplayName(opt) };
+      }
+
+      return {
+        ...opt,
+        label: getAccessDisplayName(opt.label ?? opt.value),
+      };
+    });
     return hasAll
       ? mapped
       : [{ value: "All Access Levels", label: "All Access Levels" }, ...mapped];
@@ -78,8 +90,7 @@ export default function SuperAdminAccessGovernance({
 
         <div className="mt-2 2xl:mt-2.5 grid grid-cols-2 gap-1.5 2xl:gap-2 sm:grid-cols-5 xl:grid-cols-10">
           {ACCESS_HIERARCHY.map(([level, description], index) => {
-            const levelLabel = String(level).replace(/^\s*\d+\s*-\s*/, "");
-            const superAdmin = levelLabel === "Super Admin";
+            const superAdmin = String(level).startsWith("7");
 
             return (
               <div
@@ -99,7 +110,7 @@ export default function SuperAdminAccessGovernance({
                     superAdmin ? "text-sibs-orange" : ""
                   }`}
                 >
-                  {levelLabel}
+                  {getAccessDisplayName(level)}
                 </span>
                 <span
                   className={`mt-0.5 block text-[8px] 2xl:text-[9px] font-semibold leading-3.5 line-clamp-2 ${
@@ -208,7 +219,7 @@ export default function SuperAdminAccessGovernance({
                 <DataCard.Metrics cols={2}>
                   <DataCard.MetricItem
                     label="Access Level"
-                    value={item.accessLevel}
+                    value={getAccessDisplayName(item.accessLevel)}
                     tone="orange"
                   />
                   <DataCard.MetricItem
@@ -282,7 +293,7 @@ export default function SuperAdminAccessGovernance({
                               item.accessLevel,
                             )}`}
                           >
-                            {item.accessLevel}
+                            {getAccessDisplayName(item.accessLevel)}
                           </span>
                         </td>
                         <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 font-semibold text-sibs-secondary truncate">
