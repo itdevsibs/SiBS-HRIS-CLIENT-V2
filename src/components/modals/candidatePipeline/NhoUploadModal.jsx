@@ -26,7 +26,6 @@ const PREVIOUS_EMPLOYMENT_REQUIREMENTS = [
 ];
 
 const MAJOR_REQUIREMENTS = [
-  "Transcript of Records and/or Diploma",
   "Medical Records",
   "NBI Clearance",
   "Birth Certificate",
@@ -43,6 +42,7 @@ const PRE_EMPLOYMENT_REQUIREMENT_GROUPS = [
     id: "other",
     title: "Other Requirements",
     requirements: [
+      "Transcript of Records and/or Diploma",
       "ID picture (2 pcs passport size)",
       "Urinalysis, Fecalysis, Pregnancy Test, Drug Test, Chest X-ray",
       "TIN Verification Slip",
@@ -963,14 +963,19 @@ export default function NhoUploadModal({
   open,
   onClose,
   candidateId = "",
+  candidatePublicId = "",
   candidateName = "Candidate",
   candidateEmail = "",
   initialFiles = [],
   currentFile = null,
   previousEmploymentEnabled: _initialPreviousEmploymentEnabled = true,
   onSave,
+  onFilesChanged,
+  onDeleteResult,
 }) {
   const onSaveRef = useRef(onSave);
+  const onFilesChangedRef = useRef(onFilesChanged);
+  const onDeleteResultRef = useRef(onDeleteResult);
   const initialFilesRef = useRef(initialFiles);
   const currentFileRef = useRef(currentFile);
   const latestRequestRef = useRef(0);
@@ -986,9 +991,72 @@ export default function NhoUploadModal({
   const [deletingFile, setDeletingFile] = useState(false);
   const [deleteStatus, setDeleteStatus] = useState({ open: false, type: "success", title: "", message: "" });
 
+  // Use the linked public candidate ID to recover the numeric Pipeline ID
+  // when Talent Pool's list row hasn't loaded its Pipeline relationship.
+  const [resolvedIdentity, setResolvedIdentity] = useState(null);
+  const [resolvingIdentity, setResolvingIdentity] = useState(false);
+  const [identityError, setIdentityError] = useState("");
+  const suppliedCandidateId = cleanText(candidateId);
+  const directDatabaseId = /^\d+$/.test(suppliedCandidateId)
+    ? suppliedCandidateId
+    : "";
+  const publicId = cleanText(candidatePublicId) || (directDatabaseId ? "" : suppliedCandidateId);
+  const recoveredId = resolvedIdentity?.publicId === publicId
+    ? cleanText(resolvedIdentity.id)
+    : "";
+  const effectiveCandidateId = directDatabaseId || recoveredId;
+
+  useEffect(() => {
+    if (!open || directDatabaseId || !publicId) {
+      setResolvingIdentity(false);
+      setIdentityError("");
+      return undefined;
+    }
+
+    let cancelled = false;
+    setResolvedIdentity(null);
+    setResolvingIdentity(true);
+    setIdentityError("");
+    async function resolve() {
+      try {
+        const response = await api.get(
+          `/api/candidate-pipeline/${encodeURIComponent(publicId)}`,
+          { withCredentials: true, params: { _t: Date.now() } },
+        );
+        const payload = response?.data || {};
+        const row = payload?.candidate || payload?.data?.candidate || payload?.data || {};
+        const rowIds = [row?.candidateId, row?.candidate_id,
+          row?.candidateApplicationId, row?.candidate_application_id]
+          .map(cleanText).filter(Boolean);
+        const dbId = cleanText(row?.dbId || row?.id);
+        if (!rowIds.includes(publicId) || !/^\d+$/.test(dbId)) {
+          throw new Error("The linked Candidate Pipeline record could not be verified.");
+        }
+        if (!cancelled) setResolvedIdentity({ publicId, id: dbId });
+      } catch (error) {
+        if (!cancelled) setIdentityError(
+          getApiErrorMessage(error, "Unable to resolve the linked Candidate Pipeline record."),
+        );
+      } finally {
+        if (!cancelled) setResolvingIdentity(false);
+      }
+    }
+    void resolve();
+    return () => { cancelled = true; };
+  }, [open, directDatabaseId, publicId]);
+
+
   useEffect(() => {
     onSaveRef.current = onSave;
   }, [onSave]);
+
+  useEffect(() => {
+    onFilesChangedRef.current = onFilesChanged;
+  }, [onFilesChanged]);
+
+  useEffect(() => {
+    onDeleteResultRef.current = onDeleteResult;
+  }, [onDeleteResult]);
 
   useEffect(() => {
     initialFilesRef.current = initialFiles;
@@ -1052,10 +1120,10 @@ export default function NhoUploadModal({
       setFiles(normalizedInitialFiles);
       setSelectedFile(normalizedCurrentFile || normalizedInitialFiles[0] || null);
 
-      if (!candidateId) {
-        setLoadError(
-          "Candidate ID is missing. Saved backend files cannot be loaded.",
-        );
+      if (!effectiveCandidateId) {
+        setLoadError(resolvingIdentity ? "" : identityError ||
+          "Candidate Pipeline ID is unavailable. Saved files cannot be loaded yet.");
+        setIsLoadingFiles(false);
         return;
       }
 
@@ -1063,7 +1131,7 @@ export default function NhoUploadModal({
 
       try {
         const response = await api.get(
-          `/api/candidate-pipeline/${encodeURIComponent(candidateId)}/nho/files`,
+          `/api/candidate-pipeline/${encodeURIComponent(effectiveCandidateId)}/nho/files`,
           {
             withCredentials: true,
             params: {
@@ -1119,7 +1187,7 @@ export default function NhoUploadModal({
     return () => {
       isMounted = false;
     };
-  }, [open, candidateId]);
+  }, [open, effectiveCandidateId, resolvingIdentity, identityError]);
 
   if (!open) return null;
 
@@ -1288,6 +1356,16 @@ export default function NhoUploadModal({
     if (fileToRemove) setDeleteTarget(fileToRemove);
   }
 
+  // The parent owns delete feedback when provided. A requirements save/stage
+  // update can close this NHO modal before its local StatusModal can render.
+  function reportDeleteResult(result) {
+    if (typeof onDeleteResultRef.current === "function") {
+      onDeleteResultRef.current(result);
+      return;
+    }
+    setDeleteStatus({ open: true, ...result });
+  }
+
   async function confirmDeleteFile() {
     const file = deleteTarget;
     if (!file || deletingFile) return;
@@ -1295,7 +1373,7 @@ export default function NhoUploadModal({
 
     if (file.rawFile) {
       removeLocalFile(file);
-      setDeleteStatus({ open: true, type: "success", title: "File Removed", message: "The pending file was removed from the upload list." });
+      reportDeleteResult({ type: "success", title: "File Removed", message: "The pending file was removed from the upload list." });
       return;
     }
 
@@ -1304,7 +1382,7 @@ export default function NhoUploadModal({
       const identity = cleanText(file?.storedPath || file?.filePath || file?.savedFileName || file?.filename || file?.fileUrl || file?.fileName).toLowerCase();
       const response = await api.delete(
         `/api/candidate-pipeline/${encodeURIComponent(
-          candidateId,
+          effectiveCandidateId,
         )}/nho/files/${encodeURIComponent(
           cleanText(file?.id) ||
             identity,
@@ -1348,42 +1426,76 @@ export default function NhoUploadModal({
        * deployment or historical DB state that previously collapsed multiple
        * files under one requirement.
        */
-      const refreshedResponse =
-        await api.get(
-          `/api/candidate-pipeline/${encodeURIComponent(
-            candidateId,
-          )}/nho/files`,
+      // DELETE already succeeded. A subsequent GET failure must not be
+      // reported as "Delete Failed"; the DELETE response also includes the
+      // authoritative remaining file list.
+      let refreshedFiles = filterOfficialUploadedFiles(
+        getFilesFromApiPayload(payload),
+      );
+      try {
+        const refreshedResponse = await api.get(
+          `/api/candidate-pipeline/${encodeURIComponent(effectiveCandidateId)}/nho/files`,
           {
             withCredentials: true,
-            params: {
-              includeAllFiles: 1,
-              _t: Date.now(),
-            },
+            params: { includeAllFiles: 1, _t: Date.now() },
           },
         );
-
-      const refreshedFiles =
-        filterOfficialUploadedFiles(
-          getFilesFromApiPayload(
-            refreshedResponse,
-          ),
+        refreshedFiles = filterOfficialUploadedFiles(
+          getFilesFromApiPayload(refreshedResponse),
         );
+      } catch (refreshError) {
+        console.warn("NHO file was deleted but file-list refresh failed:", refreshError);
+      }
 
-      removeLocalFile(
-        file,
-        refreshedFiles,
-      );
+      removeLocalFile(file, refreshedFiles);
 
-      setDeleteStatus({
-        open: true,
+      // Use the server's post-deletion file list and stage, not stale modal
+      // props. Removing the fourth major document can reverse Onboarding.
+      const remainingMajorProgress =
+        getMajorProgressFromApiPayload(payload, refreshedFiles);
+      const changedCandidate = getCandidateFromApiPayload(payload);
+      const changedStage = getRoutedStageFromApiPayload(payload);
+      // Show the outcome before informing parents, because synchronizing the
+      // candidate stage can unmount this upload dialog immediately.
+      reportDeleteResult({
         type: "success",
         title: "File Deleted",
-        message:
-          payload?.message ||
-          "The file was permanently deleted.",
+        message: payload?.message || "The file was permanently deleted.",
       });
+
+      try {
+        onFilesChangedRef.current?.({
+          files: refreshedFiles,
+          majorProgress: remainingMajorProgress,
+          candidate: changedCandidate,
+          routedStage: changedStage,
+        });
+      } catch (syncError) {
+        console.warn("NHO file deleted, but parent state synchronization failed:", syncError);
+      }
+      window.dispatchEvent(
+        new CustomEvent("ta-pipeline-candidates-updated", {
+          detail: {
+            candidate: changedCandidate,
+            files: refreshedFiles,
+            majorProgress: remainingMajorProgress,
+            routedStage: changedStage,
+          },
+        }),
+      );
+      window.dispatchEvent(
+        new CustomEvent("ta-talent-pool-updated", {
+          detail: {
+            candidate: changedCandidate,
+            files: refreshedFiles,
+            majorProgress: remainingMajorProgress,
+            routedStage: changedStage,
+          },
+        }),
+      );
+
     } catch (error) {
-      setDeleteStatus({ open: true, type: "error", title: "Delete Failed", message: getApiErrorMessage(error, "Unable to delete the physical file. No changes were made.") });
+      reportDeleteResult({ type: "error", title: "Delete Failed", message: getApiErrorMessage(error, "Unable to delete the physical file. No changes were made.") });
     } finally {
       setDeletingFile(false);
     }
@@ -1446,7 +1558,7 @@ export default function NhoUploadModal({
     formData.append("previousEmploymentEnabled", "true");
 
     const response = await api.post(
-      `/api/candidate-pipeline/${encodeURIComponent(candidateId)}/nho/files`,
+      `/api/candidate-pipeline/${encodeURIComponent(effectiveCandidateId)}/nho/files`,
       formData,
       {
         withCredentials: true,
@@ -1467,7 +1579,7 @@ export default function NhoUploadModal({
 
       const officialFiles = filterOfficialUploadedFiles(files);
 
-      if (candidateId) {
+      if (effectiveCandidateId) {
         const response = await saveUploadsToBackend();
 
         if (!response?.success) {
@@ -1536,6 +1648,10 @@ export default function NhoUploadModal({
         return;
       }
 
+      if (publicId) {
+        throw new Error(identityError ||
+          "Candidate Pipeline record has not finished loading. Please retry.");
+      }
       const progress = calculateProgress(officialFiles);
       const fallbackMajorProgress = calculateMajorProgress(officialFiles);
 
@@ -1578,7 +1694,7 @@ export default function NhoUploadModal({
 
         <CandidateModalPrimaryButton
           type="button"
-          disabled={busy || isLoadingFiles}
+          disabled={busy || isLoadingFiles || resolvingIdentity || !effectiveCandidateId}
           onClick={handleSaveUploads}
           className="min-w-[132px]"
         >
@@ -1611,7 +1727,7 @@ export default function NhoUploadModal({
                   candidate={{
                     name: candidateName,
                     email: candidateEmail,
-                    candidateId,
+                    candidateId: effectiveCandidateId,
                     currentStage: "For NHO",
                   }}
                   stage="For NHO"
@@ -1659,7 +1775,7 @@ export default function NhoUploadModal({
 
                 {!majorProgress.isComplete && (
                   <div className="mt-4 rounded-[10px] border border-amber-100 bg-amber-50 px-4 py-3 text-sm font-bold leading-6 text-amber-700">
-                    Candidate has fewer than 5 major requirements. After saving,
+                    Candidate has fewer than 4 major requirements. After saving,
                     this candidate should stay under{" "}
                     <span className="font-extrabold">
                       For Onboarding - Incomplete Requirements
@@ -1670,12 +1786,12 @@ export default function NhoUploadModal({
 
                 {majorProgress.isComplete && (
                   <div className="mt-4 rounded-[10px] border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm font-bold leading-6 text-emerald-700">
-                    Candidate completed the 5 major requirements. After saving,
+                    Candidate completed the 4 major requirements. After saving,
                     this candidate can proceed to Onboarding.
                   </div>
                 )}
 
-                {isLoadingFiles && (
+                {(isLoadingFiles || resolvingIdentity) && (
                   <div className="mt-4 flex items-center gap-2 rounded-[10px] border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-bold text-blue-700">
                     <Loader2 size={16} className="animate-spin" />
                     Loading saved official files from backend...
@@ -1694,10 +1810,9 @@ export default function NhoUploadModal({
                   </div>
                 )}
 
-                {!candidateId && (
+                {!effectiveCandidateId && !resolvingIdentity && (
                   <div className="mt-4 rounded-[10px] border border-amber-100 bg-amber-50 px-4 py-3 text-sm font-bold leading-6 text-amber-700">
-                    Candidate ID is missing. Uploads will only be saved through
-                    the parent component fallback.
+                    {identityError || "Candidate Pipeline ID is unavailable. Please try opening the linked Pipeline record again."}
                   </div>
                 )}
               </section>
@@ -1757,7 +1872,7 @@ export default function NhoUploadModal({
                                 key={requirement}
                                 requirement={requirement}
                                 uploadedFiles={uploadedFiles}
-                                disabled={isSaving || deletingFile || isLoadingFiles}
+                                disabled={isSaving || deletingFile || isLoadingFiles || resolvingIdentity || !effectiveCandidateId}
                                 onUpload={handleUpload}
                                 onSelect={handleSelectFileForPreview}
                                 onRemove={handleRemove}
@@ -1772,7 +1887,7 @@ export default function NhoUploadModal({
 
                   <UploadedFilesList
                     files={files}
-                    disabled={isSaving || deletingFile || isLoadingFiles}
+                    disabled={isSaving || deletingFile || isLoadingFiles || resolvingIdentity || !effectiveCandidateId}
                     onSelect={handleSelectFileForPreview}
                     onRemove={handleRemove}
                   />
@@ -1787,8 +1902,17 @@ export default function NhoUploadModal({
         </div>
       </CandidatePipelineModalShell>
 
-          <StatusModal open={Boolean(deleteTarget)} type="confirm" title="Delete File?" message={`This will permanently remove ${deleteTarget?.fileName || deleteTarget?.savedFileName || "the selected document"} from the Candidate Pipeline server folder. This action cannot be undone.`} confirmLabel="Delete Permanently" cancelLabel="Cancel" variant="center" onConfirm={confirmDeleteFile} onCancel={() => setDeleteTarget(null)} lockScroll={false} />
-      <StatusModal open={deleteStatus.open} type={deleteStatus.type} title={deleteStatus.title} message={deleteStatus.message} variant="center" onClose={() => setDeleteStatus((value) => ({ ...value, open: false }))} lockScroll={false} />
+          <StatusModal open={Boolean(deleteTarget)} type="confirm" title="Delete File?" message={`This will permanently remove ${deleteTarget?.fileName || deleteTarget?.savedFileName || "the selected document"} from the Candidate Pipeline server folder. This action cannot be undone.`} confirmLabel="Delete Permanently" cancelLabel="Cancel" confirmTone="brand" variant="center" design="panel" subtitle="Pre-Employment Requirements" notice="Deleting a file permanently removes it from the candidate's server folder. Review the selected file before continuing." onConfirm={confirmDeleteFile} onCancel={() => setDeleteTarget(null)} lockScroll={false} />
+      <StatusModal
+        open={deleteStatus.open}
+        type={deleteStatus.type}
+        title={deleteStatus.title}
+        subtitle="Pre-Employment Requirements"
+        message={deleteStatus.message}
+        design="panel"
+        onClose={() => setDeleteStatus((value) => ({ ...value, open: false }))}
+        lockScroll={false}
+      />
     </>
   );
 }

@@ -602,6 +602,7 @@ export default function OffersPage() {
       ) : null}
 
       <StatusModal
+        subtitle="Employment Offers"
         open={statusModal.open}
         type={statusModal.type}
         title={statusModal.title}

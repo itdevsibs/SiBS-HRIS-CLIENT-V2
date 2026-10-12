@@ -648,6 +648,9 @@ export default function Router() {
   const hostname =
     typeof window !== "undefined" ? window.location.hostname : "";
   const isPublic = isPublicOrExternalRoute(location.pathname, hostname);
+  const isFinalInterviewForm =
+    location.pathname === "/recruitment/final-interview-form" ||
+    location.pathname.startsWith("/recruitment/final-interview-form/");
   const isDashboardRoute =
     location.pathname === "/dashboard" ||
     location.pathname.startsWith("/dashboard/") ||
@@ -661,7 +664,7 @@ export default function Router() {
           ? <PublicRouteFallback />
           : isDashboardRoute
             ? null
-            : <PageFallback showHeader />
+            : <PageFallback showHeader={!isFinalInterviewForm} />
       }
     >
       {isPublicApplicationHostname(hostname) ? (

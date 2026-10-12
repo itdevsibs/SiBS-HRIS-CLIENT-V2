@@ -51,6 +51,7 @@ export default function ModalShell({
   icon: Icon,
   badge,
   maxWidth = "max-w-xl",
+  zIndex = "z-[9999]",
   children,
   footer,
   closeOnBackdrop = true,
@@ -175,7 +176,7 @@ export default function ModalShell({
     <div
       role="dialog"
       aria-modal="true"
-      className={`fixed inset-0 z-[9999] flex ${
+      className={`fixed inset-0 ${zIndex} flex ${
         mobileBottomSheet
           ? "items-end sm:items-center justify-center p-0 sm:p-4"
           : "items-center justify-center p-3 sm:p-4"

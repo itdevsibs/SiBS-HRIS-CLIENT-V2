@@ -14,6 +14,11 @@ import { PersistentHeaderProvider } from "@/services/context/PersistentHeaderCon
 export default function AppShell({ children }) {
   const location = useLocation();
   const hideSidebar = isPublicPath(location.pathname);
+  // The Job Evaluation / Final Interview form is an authenticated, full-page
+  // workspace. Do not mount the normal HRIS header/sidebar over this route.
+  const isFinalInterviewForm =
+    location.pathname === "/recruitment/final-interview-form" ||
+    location.pathname.startsWith("/recruitment/final-interview-form/");
 
   const [aiOpen, setAiOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
@@ -54,7 +59,11 @@ export default function AppShell({ children }) {
 
   return (
     <Providers>
-      {hideSidebar ? (
+      {isFinalInterviewForm ? (
+        <main className="h-dvh min-h-0 w-full overflow-y-auto overflow-x-hidden bg-[#E9EEF5]">
+          {children}
+        </main>
+      ) : hideSidebar ? (
         <div className="min-h-screen w-full bg-sibs-tertiary-10">
           <main className="min-h-screen w-full">{children}</main>
         </div>
@@ -80,19 +89,19 @@ export default function AppShell({ children }) {
       )}
 
       <SiBSChat
-        enabled={!hideSidebar}
+        enabled={!hideSidebar && !isFinalInterviewForm}
         isOpen={chatOpen}
         onOpenChange={handleChatOpenChange}
         hideTrigger={true}
       />
       <SiBSAIAssistant
-        enabled={!hideSidebar}
+        enabled={!hideSidebar && !isFinalInterviewForm}
         isOpen={aiOpen}
         onOpenChange={handleAiOpenChange}
         hideTrigger={true}
       />
       <SiBSAssistantLauncher
-        enabled={!hideSidebar}
+        enabled={!hideSidebar && !isFinalInterviewForm}
         onOpenAi={handleOpenAi}
         onToggleAi={handleToggleAi}
         onOpenChat={handleOpenChat}

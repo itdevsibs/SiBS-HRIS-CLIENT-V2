@@ -11,6 +11,7 @@ import React, {
 import { useUser } from "./UserContext";
 
 import api from "../../lib/axios/api-template";
+import { socket } from "../../lib/axios/socket";
 
 import { pipelineStages } from "../../lib/utils/candidatePipeline/candidatePipelineConstants";
 
@@ -1095,6 +1096,7 @@ export function CandidatePipelineProvider({ children }) {
     "Current User";
 
   const [candidateList, setCandidateList] = useState([]);
+  const backgroundRefreshInFlightRef = useRef(false);
   const [hasLoadedStorage, setHasLoadedStorage] = useState(true);
 
   const [isLoading, setIsLoading] = useState(false);
@@ -1105,6 +1107,13 @@ export function CandidatePipelineProvider({ children }) {
   const [roleFilter, setRoleFilter] = useState("All Roles");
   const [accountFilter, setAccountFilter] = useState("All Accounts");
   const [activeStage, setActiveStage] = useState("Initial Screening");
+  // Keep the public stage setter stable. CandidatePipelinePage listens to it
+  // when opening deep-linked records from Talent Pool; a new callback on
+  // every context render caused its effect to repeatedly clear and refetch
+  // the selected candidate, making the page flicker.
+  const setNormalizedActiveStage = useCallback((stage) => {
+    setActiveStage(normalizePipelineStageName(stage));
+  }, []);
   const [pageView, setPageView] = useState("pipeline");
 
   const [selectedCandidate, setSelectedCandidate] = useState(null);
@@ -1204,32 +1213,37 @@ export function CandidatePipelineProvider({ children }) {
     });
   }
 
-  const refreshCandidatePipeline = useCallback(async () => {
+  // Background refreshes keep the Kanban mounted. Normal/manual refreshes
+  // retain the existing loading and error behaviors.
+  const refreshCandidatePipeline = useCallback(async ({ silent = false } = {}) => {
     if (!isAuthenticated) {
-      setIsLoading(false);
-      setLoadError("");
-      setCandidateList([]);
-      setHasLoadedStorage(true);
+      if (!silent) {
+        setIsLoading(false);
+        setLoadError("");
+        setCandidateList([]);
+        setHasLoadedStorage(true);
+      }
       return {
         success: false,
         skipped: true,
-        message:
-          "Candidate pipeline refresh skipped because user is not logged in.",
+        message: "Candidate pipeline refresh skipped because user is not logged in.",
       };
     }
 
-    setIsLoading(true);
-    setLoadError("");
+    if (silent && backgroundRefreshInFlightRef.current) {
+      return { success: false, skipped: true };
+    }
+    if (silent) {
+      backgroundRefreshInFlightRef.current = true;
+    } else {
+      setIsLoading(true);
+      setLoadError("");
+    }
 
     try {
-      const response = await getCandidatePipelineCandidates({
-        limit: 500,
-      });
-
+      const response = await getCandidatePipelineCandidates({ limit: 500 });
       if (!response?.success) {
-        throw new Error(
-          response?.message || "Failed to load candidate pipeline.",
-        );
+        throw new Error(response?.message || "Failed to load candidate pipeline.");
       }
 
       const apiRows = Array.isArray(response?.data)
@@ -1237,38 +1251,58 @@ export function CandidatePipelineProvider({ children }) {
         : Array.isArray(response?.candidates)
           ? response.candidates
           : [];
-
-      const rows = apiRows.length > 0 ? apiRows : STATIC_PIPELINE_CANDIDATES;
-
+      const rows = apiRows.length > 0 ? apiRows : silent ? [] : STATIC_PIPELINE_CANDIDATES;
       const normalizedRows = rows.map(normalizePipelineCandidateForBoard);
 
-      setCandidateList(normalizedRows);
+      if (silent) {
+        // Avoid unnecessary re-renders and the deep-link navigation effect
+        // reopening the modal if nothing has changed in the backend.
+        setCandidateList((previous) =>
+          JSON.stringify(previous) === JSON.stringify(normalizedRows)
+            ? previous
+            : normalizedRows,
+        );
+        setSelectedCandidate((previous) => {
+          if (!previous) return previous;
+          const latest = normalizedRows.find((row) =>
+            isSamePipelineCandidate(row, previous),
+          );
+          if (!latest) return previous;
+          // Keep modal-local fields but update its stage and NHO response.
+          const updated = normalizePipelineCandidateForBoard({
+            ...previous,
+            ...latest,
+          });
+          return JSON.stringify(previous) === JSON.stringify(updated)
+            ? previous
+            : updated;
+        });
+      } else {
+        setCandidateList(normalizedRows);
+      }
       setHasLoadedStorage(true);
-
-      return {
-        success: true,
-        data: normalizedRows,
-      };
+      return { success: true, data: normalizedRows };
     } catch (error) {
+      if (silent) {
+        // A transient polling failure must not clear existing Kanban cards
+        // or replace live records with demo candidates.
+        return { success: false, message: error?.message };
+      }
       console.warn(
         "Candidate pipeline API returned error/empty, falling back to static pipeline candidates:",
         error?.message,
       );
-
-      const staticRows = STATIC_PIPELINE_CANDIDATES.map(
-        normalizePipelineCandidateForBoard,
-      );
-
+      const staticRows = STATIC_PIPELINE_CANDIDATES.map(normalizePipelineCandidateForBoard);
       setCandidateList(staticRows);
       setHasLoadedStorage(true);
       setLoadError("");
-
-      return {
-        success: true,
-        data: staticRows,
-      };
+      return { success: true, data: staticRows };
     } finally {
-      setIsLoading(false);
+      if (silent) {
+        backgroundRefreshInFlightRef.current = false;
+      } else {
+        setIsLoading(false);
+      }
     }
   }, [isAuthenticated]);
 
@@ -1324,7 +1358,9 @@ export function CandidatePipelineProvider({ children }) {
       }
 
       if (!updatedLocally || payload?.forceRefresh || payload?.refresh === true) {
-        refreshCandidatePipeline();
+        // Existing HRIS actions should reconcile the board without replacing
+        // it with a loading skeleton or interrupting an open candidate modal.
+        void refreshCandidatePipeline({ silent: true });
       }
     }
 
@@ -1342,6 +1378,43 @@ export function CandidatePipelineProvider({ children }) {
       );
       window.removeEventListener("ta-talent-pool-updated", handleRefreshEvent);
       window.removeEventListener("focus", handleRefreshEvent);
+    };
+  }, [isAuthenticated, refreshCandidatePipeline]);
+
+  useEffect(() => {
+    if (!isAuthenticated) return undefined;
+
+    const isPipelinePageVisible = () =>
+      typeof document !== "undefined" &&
+      document.visibilityState === "visible" &&
+      window.location.pathname.startsWith("/recruitment/candidate-pipeline");
+
+    // Stage changes can originate from other users, public candidate links,
+    // offers, assessments, and interview workflows. Always refresh silently,
+    // preserving the Kanban, filters, scroll position, and open candidate.
+    const syncOpenPipeline = () => {
+      if (isPipelinePageVisible()) {
+        void refreshCandidatePipeline({ silent: true });
+      }
+    };
+
+    socket.on("candidate-pipeline:changed", syncOpenPipeline);
+    if (!socket.connected) socket.connect();
+
+    // Socket.IO gives prompt updates. Poll every 15 seconds even while the
+    // socket is connected: this also covers changes from other server
+    // instances, failed event delivery, and older workflow endpoints.
+    // Never show the full-page loading state for these background reads.
+    const pollId = window.setInterval(syncOpenPipeline, 15000);
+    document.addEventListener("visibilitychange", syncOpenPipeline);
+    window.addEventListener("focus", syncOpenPipeline);
+
+    return () => {
+      socket.off("candidate-pipeline:changed", syncOpenPipeline);
+      window.clearInterval(pollId);
+      document.removeEventListener("visibilitychange", syncOpenPipeline);
+      window.removeEventListener("focus", syncOpenPipeline);
+      // The shared socket also carries notifications: do not disconnect it.
     };
   }, [isAuthenticated, refreshCandidatePipeline]);
 
@@ -3616,7 +3689,7 @@ export function CandidatePipelineProvider({ children }) {
     accountFilter,
     setAccountFilter,
     activeStage: normalizedActiveStage,
-    setActiveStage: (stage) => setActiveStage(normalizePipelineStageName(stage)),
+    setActiveStage: setNormalizedActiveStage,
     pageView,
     setPageView,
 

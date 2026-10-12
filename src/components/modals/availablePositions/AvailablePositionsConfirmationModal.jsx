@@ -1,9 +1,5 @@
 import React, { useState } from "react";
-import {
-  AlertTriangle,
-  Loader2,
-  X,
-} from "lucide-react";
+import StatusModal from "@/components/modals/StatusModal";
 
 function AvailablePositionsConfirmationModal({
   open,
@@ -15,162 +11,58 @@ function AvailablePositionsConfirmationModal({
   onCancel,
   onConfirm,
 }) {
-  if (!open) return null;
-
   return (
-    <div
-      className="sibs-modal-backdrop-in sibs-modal-blur fixed inset-0 z-[12000] flex h-dvh items-center justify-center p-3 sm:p-4 font-jakarta bg-sibs-navy/60"
-      onClick={() => {
-        if (!isSaving) onCancel?.();
-      }}
-    >
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="available-position-confirm-title"
-        className="sibs-modal-pop-in w-full max-w-md overflow-hidden rounded-2xl border border-white/70 bg-white shadow-2xl font-jakarta"
-        onClick={(event) =>
-          event.stopPropagation()
-        }
-      >
-        <header className="bg-sibs-navy px-4 py-3 text-white sm:px-5">
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex min-w-0 items-start gap-2.5 2xl:gap-3">
-              <span className="flex h-8 w-8 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-lg border border-white/15 bg-white/10 text-sibs-orange">
-                <AlertTriangle className="h-4 w-4 text-sibs-orange" />
-              </span>
-
-              <div className="min-w-0">
-                <p className="sibs-modal-subtitle text-white/75 truncate sm:text-clip">
-                  Position Dictionary
-                </p>
-
-                <h3
-                  id="available-position-confirm-title"
-                  className="sibs-modal-title mt-0.5 truncate text-white"
-                >
-                  {title}
-                </h3>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={onCancel}
-              disabled={isSaving}
-              aria-label="Close confirmation"
-              className="sibs-modal-close-btn"
-              title="Close"
-            >
-              <X size={17} />
-            </button>
-          </div>
-        </header>
-
-        <div className="p-4 sm:p-5">
-          <p className="text-xs font-semibold leading-relaxed text-sibs-muted">
-            {message ||
-              "Confirm this Available Position action."}
-          </p>
-
-          <div className="mt-3.5 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-[10px] font-semibold leading-relaxed text-amber-800">
-            Status changes affect applicant-facing
-            availability. Review the requested action
-            before continuing.
-          </div>
-        </div>
-
-        <footer className="flex flex-col-reverse gap-2 border-t border-sibs-border bg-slate-50 px-4 py-3 sm:flex-row sm:justify-end sm:gap-2.5 sm:px-5">
-          <button
-            type="button"
-            onClick={onCancel}
-            disabled={isSaving}
-            className="sibs-modal-btn-secondary"
-          >
-            {cancelLabel}
-          </button>
-
-          <button
-            type="button"
-            onClick={onConfirm}
-            disabled={isSaving}
-            className="sibs-modal-btn-primary gap-2"
-          >
-            {isSaving ? (
-              <Loader2
-                size={13}
-                className="animate-spin"
-              />
-            ) : null}
-
-            {isSaving
-              ? "Processing..."
-              : confirmLabel}
-          </button>
-        </footer>
-      </div>
-    </div>
+    <StatusModal
+      open={open}
+      type="confirm"
+      subtitle="Position Dictionary"
+      title={title}
+      message={message || "Confirm this Available Position action."}
+      notice="Status changes affect applicant-facing availability. Review the requested action before continuing."
+      confirmLabel={confirmLabel}
+      cancelLabel={cancelLabel}
+      onCancel={onCancel}
+      onClose={onCancel}
+      onConfirm={onConfirm}
+      loading={isSaving}
+    />
   );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useConfirmDialog() {
-  const [confirmState, setConfirmState] =
-    useState(null);
+  const [confirmState, setConfirmState] = useState(null);
 
-  function confirmAction(
-    message,
-    options = {},
-  ) {
+  function confirmAction(message, options = {}) {
     return new Promise((resolve) => {
       setConfirmState({
         message,
-        title:
-          options.title ||
-          "Confirm Action",
-        confirmLabel:
-          options.confirmLabel ||
-          options.confirmText ||
-          "Continue",
-        cancelLabel:
-          options.cancelLabel ||
-          "Cancel",
+        title: options.title || "Confirm Action",
+        confirmLabel: options.confirmLabel || options.confirmText || "Continue",
+        cancelLabel: options.cancelLabel || "Cancel",
         resolve,
       });
     });
   }
 
   function closeConfirm(result) {
-    if (confirmState?.resolve) {
-      confirmState.resolve(result);
-    }
-
+    if (confirmState?.resolve) confirmState.resolve(result);
     setConfirmState(null);
   }
 
   const ConfirmationDialog = (
-    <ConfirmationModal
+    <AvailablePositionsConfirmationModal
       open={Boolean(confirmState)}
       title={confirmState?.title}
       message={confirmState?.message}
-      confirmLabel={
-        confirmState?.confirmLabel
-      }
-      cancelLabel={
-        confirmState?.cancelLabel
-      }
-      onCancel={() =>
-        closeConfirm(false)
-      }
-      onConfirm={() =>
-        closeConfirm(true)
-      }
+      confirmLabel={confirmState?.confirmLabel}
+      cancelLabel={confirmState?.cancelLabel}
+      onCancel={() => closeConfirm(false)}
+      onConfirm={() => closeConfirm(true)}
     />
   );
 
-  return {
-    confirmAction,
-    ConfirmationDialog,
-  };
+  return { confirmAction, ConfirmationDialog };
 }
 
 export default AvailablePositionsConfirmationModal;
