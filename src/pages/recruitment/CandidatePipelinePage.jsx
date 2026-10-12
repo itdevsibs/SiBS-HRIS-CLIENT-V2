@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import Header from "../../components/layout/Header";
+import api from "../../lib/axios/api-template";
 import { useCandidatePipeline } from "../../services/context/CandidatePipelineContext";
 
 import {
@@ -601,29 +602,83 @@ export default function CandidatePipelinePage() {
   }, [activeReferenceFilters, filteredCandidates, isLoading]);
 
   useEffect(() => {
-    if (!location) return;
+    if (!location) return undefined;
 
     const queryParams = new URLSearchParams(location.search || "");
     const targetStage = queryParams.get("stage");
-    const targetCandidateId = queryParams.get("candidateId") || queryParams.get("pipelineId");
+    const targetPipelineId = cleanText(queryParams.get("pipelineId"));
+    const targetCandidateId = cleanText(queryParams.get("candidateId"));
     const stateCandidate = location.state?.candidate;
 
     if (targetStage && typeof setActiveStage === "function") {
       setActiveStage(targetStage);
     }
 
+    // "Already Linked" passes a Talent Pool profile in router state. That
+    // object has Talent Pool identifiers, not necessarily candidate_pipeline.id.
+    // Fetch the actual Pipeline record before opening the detail/NHO modals;
+    // otherwise Manage Requirements cannot retrieve the candidate's files.
+    if (targetPipelineId || targetCandidateId) {
+      let cancelled = false;
+      const lookupId = targetPipelineId || targetCandidateId;
+
+      // Do not render a stale Talent Pool profile as a Pipeline record while
+      // the authoritative record is being retrieved.
+      setSelectedCandidate(null);
+
+      async function openVerifiedPipelineRecord() {
+        try {
+          const response = await api.get(
+            `/api/candidate-pipeline/${encodeURIComponent(lookupId)}`,
+            { withCredentials: true, params: { _t: Date.now() } },
+          );
+          if (cancelled) return;
+
+          const record =
+            response?.data?.candidate ||
+            response?.data?.data?.candidate ||
+            response?.data?.data ||
+            null;
+          const numericId = cleanText(record?.dbId || record?.id);
+          const publicId = cleanText(record?.candidateId || record?.candidate_id);
+
+          // Refuse a different record if identifiers in the navigation state
+          // are stale or collide with an unrelated candidate.
+          if (
+            !record ||
+            !/^\d+$/.test(numericId) ||
+            (targetPipelineId && numericId !== targetPipelineId) ||
+            (targetCandidateId && publicId !== targetCandidateId)
+          ) {
+            throw new Error("The linked Candidate Pipeline record does not match the selected candidate.");
+          }
+
+          const verifiedId = Number(numericId);
+          setSelectedCandidate({
+            ...record,
+            id: verifiedId,
+            dbId: verifiedId,
+            candidatePipelineRowId: verifiedId,
+            candidate_pipeline_row_id: verifiedId,
+            candidatePipelineId: verifiedId,
+            candidate_pipeline_id: verifiedId,
+          });
+        } catch (error) {
+          if (!cancelled) {
+            console.error("Unable to open linked Candidate Pipeline record:", error);
+          }
+        }
+      }
+
+      void openVerifiedPipelineRecord();
+      return () => { cancelled = true; };
+    }
+
     if (stateCandidate && typeof setSelectedCandidate === "function") {
       setSelectedCandidate(stateCandidate);
-    } else if (targetCandidateId && Array.isArray(safeFilteredCandidates) && safeFilteredCandidates.length) {
-      const match = safeFilteredCandidates.find((c) => {
-        const id = String(c.id || c.candidateId || c.pipelineRecordId || c.candidatePipelineRowId || "");
-        return id === String(targetCandidateId);
-      });
-      if (match && typeof setSelectedCandidate === "function") {
-        setSelectedCandidate(match);
-      }
     }
-  }, [location, safeFilteredCandidates, setActiveStage, setSelectedCandidate]);
+    return undefined;
+  }, [location.search, location.state, setActiveStage, setSelectedCandidate]);
 
   const safeStageVisibleCandidates = useMemo(() => {
     if (isLoading) return [];

@@ -125,7 +125,6 @@ export async function getOnboardingRecords(
           finalOutcome:
             outcome ||
             finalOutcome,
-          forcePipelineSync: 1,
           _t: Date.now(),
         },
         withCredentials: true,
@@ -249,7 +248,6 @@ export async function getAcceptedOffers() {
       "/api/onboarding/accepted-offers",
       {
         params: {
-          forcePipelineSync: 1,
           _t: Date.now(),
         },
         withCredentials: true,

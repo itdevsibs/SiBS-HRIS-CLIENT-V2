@@ -740,7 +740,6 @@ function getCandidateExpandedProfileDetails(candidate = {}) {
 }
 
 const MAJOR_REQUIREMENTS = [
-  "Transcript of Records and/or Diploma",
   "Medical Records",
   "NBI Clearance",
   "Birth Certificate",
@@ -759,6 +758,7 @@ const PRE_EMPLOYMENT_REQUIREMENT_GROUPS = [
     title: "Other Requirements",
     badge: "",
     requirements: [
+      "Transcript of Records and/or Diploma",
       "ID picture (2 pcs passport size)",
       "Urinalysis, Fecalysis, Pregnancy Test, Drug Test, Chest X-ray",
       "TIN Verification Slip",
@@ -2232,7 +2232,6 @@ function mergeLoadedNhoFilesWithPendingFiles(
 function getNhoRoutedStageFromPayload(
   payload = {},
   candidate = {},
-  savedMajorProgress = {},
 ) {
   const responsePayload = payload?.data ?? payload;
 
@@ -2258,9 +2257,8 @@ function getNhoRoutedStageFromPayload(
   if (payloadStage) return payloadStage;
   if (candidateStage) return candidateStage;
 
-  return savedMajorProgress?.isComplete
-    ? ONBOARDING_STAGE
-    : INCOMPLETE_ONBOARDING_STAGE;
+  // Progress alone must never imply a stage move.
+  return "For NHO";
 }
 
 function sortUploadedFiles(files = []) {
@@ -2543,64 +2541,6 @@ async function refreshNhoCandidate(candidateId) {
   return (
     getCandidateFromApiPayload(payload) ||
     {}
-  );
-}
-
-async function ensureNhoCandidateStage({
-  candidateId,
-  candidate,
-  majorProgress,
-  files,
-}) {
-  const expectedStage =
-    majorProgress?.isComplete
-      ? ONBOARDING_STAGE
-      : INCOMPLETE_ONBOARDING_STAGE;
-
-  if (
-    getCandidateStageValue(candidate) ===
-    expectedStage
-  ) {
-    return candidate;
-  }
-
-  const response = await api.post(
-    `/api/candidate-pipeline/${encodeURIComponent(
-      candidateId,
-    )}/move`,
-    {
-      targetStage: expectedStage,
-      nextStage: expectedStage,
-      stage: expectedStage,
-      reason:
-        expectedStage === ONBOARDING_STAGE
-          ? "Candidate completed all 5 major pre-employment requirements."
-          : "Candidate has incomplete major pre-employment requirements.",
-      remarks:
-        `${majorProgress.completed || 0} / ${
-          majorProgress.total || 5
-        } major requirements saved.`,
-      nhoFiles: files,
-      majorProgress,
-    },
-    {
-      withCredentials: true,
-    },
-  );
-
-  const payload =
-    unwrapCandidatePipelineResponse(response);
-
-  if (payload?.success === false) {
-    throw new Error(
-      payload?.message ||
-        "Files were saved, but the candidate stage could not be updated.",
-    );
-  }
-
-  return (
-    getCandidateFromApiPayload(payload) ||
-    candidate
   );
 }
 
@@ -3530,7 +3470,7 @@ function PreEmploymentRequirementsPanel({
 
             {!majorProgress.isComplete && (
               <div className="mt-4 rounded-[10px] border border-amber-100 bg-amber-50 px-4 py-3 text-sm font-bold leading-6 text-amber-700">
-                Candidate has fewer than 5 major requirements. After saving,
+                Candidate has fewer than 4 major requirements. After saving,
                 this candidate will be moved to{" "}
                 <span className="font-extrabold">
                   For Onboarding - Incomplete Requirements
@@ -3541,7 +3481,7 @@ function PreEmploymentRequirementsPanel({
 
             {majorProgress.isComplete && (
               <div className="mt-4 rounded-[10px] border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm font-bold leading-6 text-emerald-700">
-                Candidate completed the 5 major requirements and can proceed to
+                Candidate completed the 4 major requirements and can proceed to
                 Onboarding.
               </div>
             )}
@@ -7351,6 +7291,8 @@ rawOpenedCandidate || {},
     message: "",
     closeParentOnClose: false,
     afterClose: null,
+    deleteFileResult: false,
+    nhoSaveResult: false,
   });
 
   const {
@@ -7384,12 +7326,16 @@ rawOpenedCandidate || {},
     message = "",
     closeParentOnClose = false,
     afterClose = null,
+    deleteFileResult = false,
+    nhoSaveResult = false,
   }) {
     setStatusModal({
       open: true,
       type,
       title,
       message,
+      deleteFileResult: Boolean(deleteFileResult),
+      nhoSaveResult: Boolean(nhoSaveResult),
       closeParentOnClose:
         Boolean(closeParentOnClose),
       afterClose:
@@ -7485,6 +7431,8 @@ rawOpenedCandidate || {},
       message: "",
       closeParentOnClose: false,
       afterClose: null,
+      deleteFileResult: false,
+      nhoSaveResult: false,
     });
   }, [
     open,
@@ -7668,6 +7616,43 @@ rawOpenedCandidate || {},
 
   const candidateUploadKey =
     candidateNhoUploadIdentity.stateKey;
+
+  // Candidate responses arrive through a public link. Retrieve the latest
+  // authoritative NHO response when this record opens so a proposed date
+  // is not hidden by a stale Kanban/Talent Pool snapshot.
+  useEffect(() => {
+    if (!open || !candidateNhoUploadId) return undefined;
+
+    let active = true;
+
+    async function refreshNhoResponseOnOpen() {
+      try {
+        const response = await api.get(
+          `/api/candidate-pipeline/${encodeURIComponent(candidateNhoUploadId)}`,
+          { params: { _t: Date.now() }, withCredentials: true },
+        );
+        const payload = response?.data || {};
+        const fetched = getCandidateFromApiPayload(payload);
+
+        if (!active || payload.success === false || !fetched) return;
+
+        setLocalCandidate((previous) => {
+          const original = nhoUploadSessionCandidateRef.current || {};
+          const current = previous || original;
+          if (!isSameCandidatePipelineRecord(original, fetched)) {
+            return previous;
+          }
+          return mergeCandidateRealtimeUpdate(current, fetched);
+        });
+      } catch (error) {
+        // The existing record remains usable if a background refresh fails.
+        console.error("Candidate NHO response refresh failed:", error);
+      }
+    }
+
+    refreshNhoResponseOnOpen();
+    return () => { active = false; };
+  }, [open, candidateNhoUploadId]);
 
   const candidateFiles = useMemo(() => {
     if (!candidateUploadKey) return [];
@@ -8312,6 +8297,22 @@ rawOpenedCandidate || {},
         activeCandidate?.workLocation ||
         "—",
       remarks: schedule.remarks || activeCandidate?.nhoRemarks || "",
+      responseStatus: cleanText(
+        schedule.responseStatus ||
+          schedule.response_status ||
+          activeCandidate?.nhoResponseStatus ||
+          activeCandidate?.nho_response_status,
+      ),
+      rescheduleApprovalStatus: cleanText(
+        schedule.rescheduleApprovalStatus ||
+          schedule.reschedule_approval_status ||
+          activeCandidate?.nhoRescheduleApprovalStatus ||
+          activeCandidate?.nho_reschedule_approval_status,
+      ),
+      originalDate: schedule.originalDate || schedule.original_date || "",
+      originalTime: normalizeNhoTimeInput(
+        schedule.originalTime || schedule.original_time,
+      ),
       status:
         schedule.status ||
         activeCandidate?.nhoStatus ||
@@ -8343,6 +8344,18 @@ rawOpenedCandidate || {},
     () => isCandidateNhoRescheduleAwaitingApproval(activeCandidate),
     [activeCandidate],
   );
+
+  const canReviewCandidateNhoRequest =
+    candidateNhoRescheduleAwaitingApproval &&
+    (isAccepted || forNHO) &&
+    canInternalRescheduleNhoAccess;
+
+  const candidateNhoProposedDateDisplay = hasNhoSchedule
+    ? formatNhoScheduleSummaryDisplay(
+        nhoScheduleDetails.startDate,
+        nhoScheduleDetails.startTime,
+      )
+    : "Not provided";
 
   const candidateHasSchedule = hasInterviewSchedule(activeCandidate);
   const latestFinalInterviewAttempt =
@@ -9728,6 +9741,7 @@ candidateId,
       showStatusModal({
         type: "success",
         title: "File Deleted",
+        deleteFileResult: true,
         message:
           successMessage,
       });
@@ -9745,6 +9759,7 @@ candidateId,
       showStatusModal({
         type: "error",
         title: "Delete Failed",
+        deleteFileResult: true,
         message,
       });
     } finally {
@@ -9762,8 +9777,8 @@ candidateId,
 
     const reason =
       targetStage === INCOMPLETE_ONBOARDING_STAGE
-        ? "Candidate has fewer than 5 major pre-employment requirements."
-        : "Candidate completed the 5 major pre-employment requirements and is ready for onboarding.";
+        ? "Candidate has fewer than 4 major pre-employment requirements."
+        : "Candidate completed the 4 major pre-employment requirements and is ready for onboarding.";
 
     const response = await api.post(
       `/api/candidate-pipeline/${encodeURIComponent(candidateNhoUploadId)}/move`,
@@ -10240,26 +10255,13 @@ candidateId,
           saveIdentity.recordId,
         );
 
-      const stageCheckedCandidate =
-        await ensureNhoCandidateStage({
-          candidateId:
-            saveIdentity.recordId,
-          candidate:
-            candidateAfterRefresh,
-          majorProgress:
-            savedMajorProgress,
-          files: savedFiles,
-        });
-
-      const routedStage =
-        getCandidateStageValue(
-          stageCheckedCandidate,
-        ) ||
-        getNhoRoutedStageFromPayload(
-          savePayload,
-          candidateAfterRefresh,
-          savedMajorProgress,
-        );
+      // The server's save response is authoritative. Never issue a second
+      // /move request based on upload progress (even when 4/4 is complete).
+      const stageCheckedCandidate = candidateAfterRefresh;
+      const routedStage = getNhoRoutedStageFromPayload(
+        savePayload,
+        candidateAfterRefresh,
+      );
 
       const nextCandidate =
         lockCandidatePipelinePrimaryKey(
@@ -10320,12 +10322,13 @@ saveCandidate.pipelineStage ||
       setSelectedNhoFile(savedFiles[0] || null);
       setLocalCandidate(nextCandidate);
 
+      const stageChangedBySave =
+        savePayload?.stageChanged === true ||
+        savePayload?.data?.stageChanged === true;
       const movedToIncompleteStage =
-        routedStage ===
-        INCOMPLETE_ONBOARDING_STAGE;
-
+        stageChangedBySave && routedStage === INCOMPLETE_ONBOARDING_STAGE;
       const movedToOnboarding =
-        routedStage === ONBOARDING_STAGE;
+        stageChangedBySave && routedStage === ONBOARDING_STAGE;
 
       const savedNewFileText =
         newFiles.length > 0
@@ -10335,10 +10338,12 @@ saveCandidate.pipelineStage ||
           : "requirements";
 
       const successMessage = movedToIncompleteStage
-        ? `Saved ${savedNewFileText}. Candidate has fewer than 5 major requirements and was moved to ${INCOMPLETE_ONBOARDING_STAGE}.`
+        ? `Saved ${savedNewFileText}. Candidate has fewer than 4 major requirements and was moved to ${INCOMPLETE_ONBOARDING_STAGE}.`
         : movedToOnboarding
-          ? `Saved ${savedNewFileText}. Candidate completed all 5 major requirements and was moved to Onboarding.`
-          : `Saved successfully. ${savedMajorProgress.completed} of ${savedMajorProgress.total} major requirements completed. ${savedTotalProgress.completed} of ${savedTotalProgress.total} total requirements completed.`;
+          ? `Saved ${savedNewFileText}. Candidate completed all 4 major requirements and was moved to Onboarding.`
+          : savedMajorProgress.isComplete && routedStage !== ONBOARDING_STAGE
+            ? `Saved successfully. All ${savedMajorProgress.total} major requirements are complete. Use Move to Onboarding in Talent Pool to proceed.`
+            : `Saved successfully. ${savedMajorProgress.completed} of ${savedMajorProgress.total} major requirements completed. ${savedTotalProgress.completed} of ${savedTotalProgress.total} total requirements completed.`;
 
       setNhoFilesSuccess(successMessage);
 
@@ -10424,7 +10429,7 @@ saveCandidate.pipelineStage ||
   async function handleMoveToOnboarding() {
     if (!majorNhoProgress.isComplete) {
       const message =
-        "Candidate must complete all 5 major requirements before moving to Onboarding.";
+        "Candidate must complete all 4 major requirements before moving to Onboarding.";
 
       setNhoFilesError(message);
 
@@ -10457,7 +10462,7 @@ saveCandidate.pipelineStage ||
       );
 
       const successMessage =
-        "Candidate completed the 5 major requirements and was moved to Onboarding.";
+        "Candidate completed the 4 major requirements and was moved to Onboarding.";
 
       setNhoFilesSuccess(successMessage);
 
@@ -11990,7 +11995,7 @@ const concretePreferredFinalInterviewFormId =
         </CandidateModalSecondaryButton>
       )}
 
-      {forNHO && canInternalRescheduleNhoAccess && (
+      {forNHO && !candidateNhoRescheduleAwaitingApproval && canInternalRescheduleNhoAccess && (
         <CandidateModalSecondaryButton
           type="button"
           disabled={isReschedulingNho}
@@ -12017,33 +12022,6 @@ const concretePreferredFinalInterviewFormId =
             <Mail size={15} />
           )}
           {isResendingNhoEmail ? "Resending..." : "Resend NHO Email"}
-        </CandidateModalSecondaryButton>
-      )}
-
-      {forNHO &&
-        candidateNhoRescheduleAwaitingApproval &&
-        canInternalRescheduleNhoAccess && (
-          <CandidateModalPrimaryButton
-            type="button"
-            disabled={isAcceptingNhoReschedule}
-            onClick={handleAcceptNhoReschedule}
-          >
-            {isAcceptingNhoReschedule ? (
-              <Loader2 size={15} className="animate-spin" />
-            ) : (
-              <Check size={15} />
-            )}
-            {isAcceptingNhoReschedule ? "Accepting..." : "Accept NHO"}
-          </CandidateModalPrimaryButton>
-        )}
-
-      {isIncompleteOnboarding && majorNhoProgress.isComplete && (
-        <CandidateModalSecondaryButton
-          type="button"
-          onClick={() => setShowNhoUploadModal(true)}
-        >
-          <UploadCloud size={15} />
-          Manage Requirements
         </CandidateModalSecondaryButton>
       )}
 
@@ -12136,7 +12114,7 @@ const concretePreferredFinalInterviewFormId =
           </CandidateModalPrimaryButton>
         )}
 
-      {isAccepted && (
+      {isAccepted && !candidateNhoRescheduleAwaitingApproval && (
         <CandidateModalPrimaryButton
           type="button"
           disabled={isSchedulingNho}
@@ -12151,8 +12129,7 @@ const concretePreferredFinalInterviewFormId =
         </CandidateModalPrimaryButton>
       )}
 
-      {((forNHO && candidateHasRespondedToNhoSchedule) ||
-        (isIncompleteOnboarding && !majorNhoProgress.isComplete)) && (
+      {(forNHO || isIncompleteOnboarding) && (
         <CandidateModalPrimaryButton type="button" onClick={() => setShowNhoUploadModal(true)}>
           <UploadCloud size={15} />
           Manage Requirements
@@ -12848,12 +12825,16 @@ const concretePreferredFinalInterviewFormId =
                     NHO Schedule
                   </p>
                   <p className="mt-0.5 text-[11px] 2xl:text-xs font-extrabold text-sibs-navy">
-                    {hasNhoSchedule
-                      ? formatNhoScheduleSummaryDisplay(
-                          nhoScheduleDetails.startDate,
-                          nhoScheduleDetails.startTime,
-                        )
-                      : "Not Scheduled"}
+                    {candidateNhoRescheduleAwaitingApproval
+                      ? `Requested: ${candidateNhoProposedDateDisplay} (Pending approval)`
+                      : nhoScheduleDetails.responseStatus.toLowerCase() === "pending"
+                        ? `Proposed: ${candidateNhoProposedDateDisplay} (Awaiting candidate response)`
+                        : hasNhoSchedule
+                          ? formatNhoScheduleSummaryDisplay(
+                              nhoScheduleDetails.startDate,
+                              nhoScheduleDetails.startTime,
+                            )
+                          : "Not Scheduled"}
                   </p>
                 </div>
                 <div>
@@ -12863,6 +12844,56 @@ const concretePreferredFinalInterviewFormId =
                   <p className="mt-0.5 text-[11px] 2xl:text-xs font-extrabold text-sibs-navy">{currentStage}</p>
                 </div>
               </div>
+
+              {candidateNhoRescheduleAwaitingApproval && (
+                <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3 sm:p-4">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="min-w-0">
+                      <p className="text-xs font-extrabold text-amber-900">
+                        Candidate NHO Negotiation — Pending Decision
+                      </p>
+                      <p className="mt-1 text-sm font-bold text-sibs-navy">
+                        Requested: {candidateNhoProposedDateDisplay}
+                      </p>
+                      {nhoScheduleDetails.originalDate && (
+                        <p className="mt-1 text-xs text-amber-800">
+                          Original: {formatNhoScheduleSummaryDisplay(
+                            nhoScheduleDetails.originalDate,
+                            nhoScheduleDetails.originalTime,
+                          )}
+                        </p>
+                      )}
+                      <p className="mt-1 text-xs text-amber-800">
+                        Accept the applicant's requested date or negotiate another NHO date.
+                      </p>
+                    </div>
+                    {canReviewCandidateNhoRequest && (
+                      <div className="flex shrink-0 flex-wrap gap-2">
+                        <CandidateModalSecondaryButton
+                          type="button"
+                          disabled={isReschedulingNho || isAcceptingNhoReschedule}
+                          onClick={handleNhoRescheduleClick}
+                        >
+                          <CalendarDays size={15} />
+                          Negotiate Date
+                        </CandidateModalSecondaryButton>
+                        <CandidateModalPrimaryButton
+                          type="button"
+                          disabled={isAcceptingNhoReschedule || isReschedulingNho}
+                          onClick={handleAcceptNhoReschedule}
+                        >
+                          {isAcceptingNhoReschedule ? (
+                            <Loader2 size={15} className="animate-spin" />
+                          ) : (
+                            <Check size={15} />
+                          )}
+                          {isAcceptingNhoReschedule ? "Accepting..." : "Accept Requested Date"}
+                        </CandidateModalPrimaryButton>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
 
               <div className="mt-2.5">
                 <div className="mb-1 flex items-center justify-between text-[9.5px] font-extrabold text-sibs-muted">
@@ -12885,12 +12916,30 @@ const concretePreferredFinalInterviewFormId =
       <NhoUploadModal
         open={showNhoUploadModal}
         onClose={() => setShowNhoUploadModal(false)}
+        onDeleteResult={({ type = "success", title = "File Deleted", message = "" } = {}) => {
+          showStatusModal({ type, title, message, deleteFileResult: true });
+        }}
         candidateId={candidateNhoUploadId}
+        candidatePublicId={candidateNhoUploadIdentity.candidateId || activeCandidate.candidateId || activeCandidate.candidate_id || ""}
         candidateName={activeCandidate.name || "Candidate"}
         candidateEmail={activeCandidate.email || ""}
         initialFiles={candidateFiles}
         currentFile={selectedNhoFile || candidateFiles[0] || null}
         previousEmploymentEnabled
+        onFilesChanged={({ files: remainingFiles = [], candidate, routedStage } = {}) => {
+          if (candidateUploadKey) {
+            setCandidateFilesById((previous) => ({
+              ...previous,
+              [candidateUploadKey]: remainingFiles,
+            }));
+          }
+          if (candidate && typeof candidate === "object") {
+            syncCandidateAfterAction(candidate, {
+              files: remainingFiles,
+              routedStage,
+            });
+          }
+        }}
         onSave={(payload = {}) => {
           const savedFiles = Array.isArray(payload.files) ? payload.files : candidateFiles;
           const saveResultAction = getNhoSaveResultAction({
@@ -12917,6 +12966,7 @@ const concretePreferredFinalInterviewFormId =
 
           if (saveResultAction.navigateToIncompleteRequirements) {
             showStatusModal({
+              nhoSaveResult: true,
               type: "success",
               title: "Requirements Saved",
               message:
@@ -12932,6 +12982,7 @@ const concretePreferredFinalInterviewFormId =
 
           if (saveResultAction.kind === "for-nho") {
             showStatusModal({
+              nhoSaveResult: true,
               type: "success",
               title: "Requirements Saved",
               message:
@@ -12944,15 +12995,17 @@ const concretePreferredFinalInterviewFormId =
 
           if (saveResultAction.kind === "complete") {
             showStatusModal({
+              nhoSaveResult: true,
               type: "success",
               title: "Requirements Saved",
               message:
-                "The requirement files were saved successfully. All major requirements are complete.",
+                "All 4 major requirements are complete. Open Talent Pool and click Move to Onboarding when ready.",
             });
             return;
           }
 
           showStatusModal({
+            nhoSaveResult: true,
             type: "success",
             title: "Requirements Saved",
             message: "The requirement files were saved successfully.",
@@ -12960,6 +13013,7 @@ const concretePreferredFinalInterviewFormId =
         }}
         onSaveError={(message) => {
           showStatusModal({
+            nhoSaveResult: true,
             type: "error",
             title: "Save Failed",
             message: message || "Unable to save the requirement files.",
@@ -13055,12 +13109,16 @@ const concretePreferredFinalInterviewFormId =
         open={deleteFileConfirmation.open}
         type="confirm"
         title="Delete File?"
+        subtitle="Pre-Employment Requirements"
         message={`This will permanently remove ${getCandidatePipelineDeleteFileDisplay(
           deleteFileConfirmation.file || {},
         )} from the Candidate Pipeline server folder. This action cannot be undone.`}
+        notice="Deleting a file permanently removes it from the candidate's server folder. Review the selected file before continuing."
         confirmLabel="Delete Permanently"
         cancelLabel="Cancel"
+        confirmTone="brand"
         variant="center"
+        design="panel"
         onConfirm={confirmRequirementFileDelete}
         onCancel={cancelRequirementFileDelete}
         lockScroll={false}
@@ -13070,8 +13128,18 @@ const concretePreferredFinalInterviewFormId =
         open={statusModal.open}
         type={statusModal.type}
         title={statusModal.title}
+        subtitle={
+          statusModal.deleteFileResult || statusModal.nhoSaveResult
+            ? "Pre-Employment Requirements"
+            : undefined
+        }
         message={statusModal.message}
         variant="center"
+        design={
+          statusModal.deleteFileResult || statusModal.nhoSaveResult
+            ? "panel"
+            : "default"
+        }
         onClose={closeStatusModal}
         lockScroll={false}
       />

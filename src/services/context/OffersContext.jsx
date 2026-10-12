@@ -1925,6 +1925,7 @@ export function OffersProvider({ children }) {
       {ConfirmationDialog}
 
       <StatusModal
+        subtitle="Employment Offers"
         open={statusModal.open}
         type={statusModal.type}
         title={statusModal.title}

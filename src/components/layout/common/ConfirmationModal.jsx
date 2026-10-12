@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
+import StatusModal from "@/components/modals/StatusModal";
 
 function ConfirmationModal({
   open,
@@ -12,82 +13,38 @@ function ConfirmationModal({
   notes = "",
   onNotesChange,
 }) {
-  useEffect(() => {
-    if (!open || typeof document === "undefined") return undefined;
-
-    const previousBodyOverflow = document.body.style.overflow;
-    const previousHtmlOverflow = document.documentElement.style.overflow;
-
-    document.body.style.overflow = "hidden";
-    document.documentElement.style.overflow = "hidden";
-
-    return () => {
-      document.body.style.overflow = previousBodyOverflow;
-      document.documentElement.style.overflow = previousHtmlOverflow;
-    };
-  }, [open]);
-
-  if (!open) return null;
-
   return (
-    <div
-      className="sibs-modal-blur sibs-modal-backdrop-in fixed inset-0 z-[12000] flex h-dvh touch-none overscroll-contain items-center justify-center px-4 py-4 font-jakarta"
-      role="presentation"
+    <StatusModal
+      open={open}
+      type="confirm"
+      subtitle="SiBS HRIS"
+      title={title}
+      message={message}
+      confirmLabel={confirmLabel}
+      cancelLabel={cancelLabel}
+      onCancel={onCancel}
+      onClose={onCancel}
+      onConfirm={onConfirm}
     >
-      <div
-        className="sibs-modal-pop-in w-full max-w-md overflow-hidden rounded-2xl border border-[#D7DEE8] bg-white font-jakarta shadow-[0_20px_45px_rgba(4,44,81,0.18)]"
-      >
-        <div className="border-b border-[#E6ECF2] bg-white px-5 py-4">
-          <h3 className="sibs-modal-title text-[#042C51]">
-            {title}
-          </h3>
-
-          {message && (
-            <p className="sibs-modal-subtitle mt-1 text-[#667085]">
-              {message}
-            </p>
-          )}
-        </div>
-
-        {showNotes && (
-          <div className="border-b border-[#E6ECF2] px-5 py-4">
-            <label className="block">
-              <span className="mb-1.5 block text-[9px] font-extrabold uppercase tracking-wide text-[#667085]">
-                Notes <span className="font-semibold normal-case tracking-normal text-[#98A2B3]">(Optional)</span>
-              </span>
-              <textarea
-                rows={3}
-                value={notes}
-                onChange={(event) => onNotesChange?.(event.target.value)}
-                placeholder="Add notes for this action..."
-                className="w-full resize-none rounded-xl border border-[#D7DEE8] bg-white px-3 py-2.5 text-[12px] font-medium text-[#344054] outline-none transition focus:border-[#FF5C28] focus:ring-2 focus:ring-[#FF5C28]/10"
-              />
-            </label>
-          </div>
-        )}
-
-        <div className="flex flex-col-reverse gap-2 px-5 py-4 sm:flex-row sm:justify-end">
-          <button
-            type="button"
-            onClick={onCancel}
-            className="sibs-modal-btn-secondary min-w-[88px]"
-          >
-            {cancelLabel}
-          </button>
-
-          <button
-            type="button"
-            onClick={onConfirm}
-            className="sibs-modal-btn-primary min-w-[104px]"
-          >
-            {confirmLabel}
-          </button>
-        </div>
-      </div>
-    </div>
+      {showNotes ? (
+        <label className="mt-3.5 block">
+          <span className="mb-1.5 block text-[10px] font-extrabold uppercase tracking-wide text-sibs-muted">
+            Notes <span className="font-semibold normal-case">(Optional)</span>
+          </span>
+          <textarea
+            rows={3}
+            value={notes}
+            onChange={(event) => onNotesChange?.(event.target.value)}
+            placeholder="Add notes for this action..."
+            className="sibs-input min-h-20 w-full resize-none py-2.5"
+          />
+        </label>
+      ) : null}
+    </StatusModal>
   );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useConfirmDialog() {
   const [confirmState, setConfirmState] = useState(null);
   const [notes, setNotes] = useState("");

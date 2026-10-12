@@ -1,5 +1,4 @@
 const MAJOR_ONBOARDING_REQUIREMENTS = Object.freeze([
-  "Transcript of Records and/or Diploma",
   "Medical Records",
   "NBI Clearance",
   "Birth Certificate",

@@ -91,10 +91,7 @@ export default function OnboardingPage() {
     loadingDataRef.current = true;
 
     try {
-      /*
-       * GET /api/onboarding performs the Candidate Pipeline-to-Onboarding
-       * synchronization before returning the records.
-       */
+      // Refresh from saved onboarding records without modifying pipeline data.
       await fetchList();
 
       const response = await getAcceptedOffers();

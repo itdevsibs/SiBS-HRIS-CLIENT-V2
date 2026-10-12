@@ -108,7 +108,6 @@ const TALENT_POOL_STATUS_OPTIONS = [
 ];
 
 const MAJOR_PRE_EMPLOYMENT_REQUIREMENTS = [
-  "Transcript of Records and/or Diploma",
   "Medical Records",
   "NBI Clearance",
   "Birth Certificate",
@@ -130,6 +129,7 @@ const PRE_EMPLOYMENT_REQUIREMENT_GROUPS = [
     id: "other",
     title: "Other Requirements",
     requirements: [
+      "Transcript of Records and/or Diploma",
       "ID picture (2 pcs passport size)",
       "Urinalysis, Fecalysis, Pregnancy Test, Drug Test, Chest X-ray",
       "TIN Verification Slip",
@@ -2226,11 +2226,38 @@ async function fetchPipelineCandidateByAnyIdentity(candidate = {}) {
 
       const directCandidate = getPipelineCandidateFromResponse(response);
 
-      if (directCandidate && directCandidate.success !== false) {
+      if (
+        directCandidate &&
+        directCandidate.success !== false &&
+        candidateMatchesPipeline(candidate, directCandidate)
+      ) {
         return safeObject(directCandidate);
       }
     } catch {
       // Continue to list fallback.
+    }
+  }
+
+  // Talent Pool public IDs (PUB-...) are not the database primary key.
+  // The Pipeline detail endpoint resolves candidate_id safely without needing
+  // the list search to match a potentially stale Talent Pool snapshot.
+  const publicCandidateId = getCandidatePublicId(candidate);
+  if (publicCandidateId && publicCandidateId !== directLookupId) {
+    try {
+      const response = await api.get(
+        `/api/candidate-pipeline/${encodeURIComponent(publicCandidateId)}`,
+        { withCredentials: true, params: { _t: Date.now() } },
+      );
+      const pipelineCandidate = safeObject(getPipelineCandidateFromResponse(response));
+      const pipelinePublicIds = collectCandidateIdentityIds(pipelineCandidate);
+      if (
+        pipelinePublicIds.includes(publicCandidateId) &&
+        candidateMatchesPipeline(candidate, pipelineCandidate)
+      ) {
+        return pipelineCandidate;
+      }
+    } catch {
+      // Use the filtered list as a final fallback.
     }
   }
 
@@ -2805,10 +2832,10 @@ function getHistoryDescription(item = {}) {
   if (title === "Accepted") return "Candidate accepted the offer.";
   if (title === "For NHO") return "Candidate moved to For NHO.";
   if (title === INCOMPLETE_ONBOARDING_STAGE) {
-    return "Candidate has fewer than 5 major requirements and was routed to Talent Pool for follow-up.";
+    return "Candidate has fewer than 4 major requirements and was routed to Talent Pool for follow-up.";
   }
   if (title === ONBOARDING_STAGE) {
-    return "Candidate completed the 5 major requirements and moved to Onboarding.";
+    return "Candidate completed the 4 major requirements and moved to Onboarding.";
   }
 
   return "Candidate application record updated.";
@@ -3885,7 +3912,7 @@ function CandidateNhoFilesSection({
 
             {!majorProgress.isComplete && (
               <div className="mt-4 rounded-[10px] border border-amber-100 bg-amber-50 px-4 py-3 text-sm font-bold leading-6 text-amber-700">
-                Candidate has fewer than 5 major requirements. Candidate should
+                Candidate has fewer than 4 major requirements. Candidate should
                 remain under{" "}
                 <span className="font-extrabold">
                   For Onboarding - Incomplete Requirements
@@ -3896,7 +3923,7 @@ function CandidateNhoFilesSection({
 
             {majorProgress.isComplete && (
               <div className="mt-4 rounded-[10px] border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm font-bold leading-6 text-emerald-700">
-                Candidate completed the 5 major requirements and can proceed to
+                Candidate completed the 4 major requirements and can proceed to
                 Onboarding.
               </div>
             )}
@@ -4190,6 +4217,7 @@ export default function CandidateProfileModal() {
 
   const [selectedNhoFile, setSelectedNhoFile] = useState(null);
   const [showNhoUploadModal, setShowNhoUploadModal] = useState(false);
+  const [isOpeningNhoRequirements, setIsOpeningNhoRequirements] = useState(false);
   const [isMovingToOnboarding, setIsMovingToOnboarding] = useState(false);
 
   const [statusUpdateOpen, setStatusUpdateOpen] = useState(false);
@@ -4208,17 +4236,25 @@ export default function CandidateProfileModal() {
     [selectedCandidate],
   );
 
+  // The initial Talent Pool list row may not carry its linked Pipeline ID.
+  // Resolve using the complete Talent Pool detail after it has loaded, rather
+  // than treating a missing ID on the list snapshot as an unlinked candidate.
+  const pipelineLookupCandidate = useMemo(
+    () => talentPoolCandidateDetails || selectedCandidate,
+    [talentPoolCandidateDetails, selectedCandidate],
+  );
+
   const shouldLoadCandidatePipelineData = useMemo(
-    () => isCandidateActivelyLinkedToPipeline(selectedCandidate),
-    [selectedCandidate],
+    () => isCandidateActivelyLinkedToPipeline(pipelineLookupCandidate),
+    [pipelineLookupCandidate],
   );
 
   const candidatePipelineLookupId = useMemo(
     () =>
       shouldLoadCandidatePipelineData
-        ? getCandidatePipelineLookupId(selectedCandidate)
+        ? getCandidatePipelineLookupId(pipelineLookupCandidate)
         : "",
-    [selectedCandidate, shouldLoadCandidatePipelineData],
+    [pipelineLookupCandidate, shouldLoadCandidatePipelineData],
   );
 
   useEffect(() => {
@@ -4458,7 +4494,7 @@ export default function CandidateProfileModal() {
 
     try {
       const resolvedPipelineCandidate =
-        await fetchPipelineCandidateByAnyIdentity(selectedCandidate);
+        await fetchPipelineCandidateByAnyIdentity(pipelineLookupCandidate);
 
       const pipelineCandidate = safeObject(resolvedPipelineCandidate);
       const pipelineId =
@@ -4548,6 +4584,7 @@ export default function CandidateProfileModal() {
     }
   }, [
     selectedCandidate,
+    pipelineLookupCandidate,
     candidatePipelineLookupId,
     shouldLoadCandidatePipelineData,
   ]);
@@ -4890,12 +4927,6 @@ export default function CandidateProfileModal() {
   const isDoNotReprocess = activeCandidate.status === "Do Not Reprocess";
   const isDropOffCandidate = isDropOffCandidateRecord(activeCandidate);
   const isUnderAgeCandidate = isUnder18Candidate(activeCandidate);
-  const candidateDisplayStatus = isUnderAgeCandidate
-    ? "Under Age"
-    : isDropOffCandidate
-      ? "Drop-off"
-      : activeCandidate.status;
-
   const isAlreadyInPipeline =
     isCandidateActivelyLinkedToPipeline(activeCandidate);
   const shouldShowMoveToPipeline = shouldShowMoveToPipelineAction(
@@ -4905,10 +4936,23 @@ export default function CandidateProfileModal() {
   const hasActivePipelineLink = Boolean(
     isAlreadyInPipeline && !isDropOffCandidate
   );
+  // Prefer the fresh Candidate Pipeline record over a Talent Pool snapshot.
+  // A file deletion may already have routed the candidate back to For NHO.
   const currentStage = isAlreadyInPipeline
-    ? getCandidateStageValue(activeCandidate)
+    ? getCandidateStageValue(safeObject(pipelineCandidateDetails)) ||
+      getCandidateStageValue(activeCandidate)
     : "";
   const normalizedCurrentStage = normalizeLower(currentStage);
+  const candidateDisplayStatus = isUnderAgeCandidate
+    ? "Under Age"
+    : isDropOffCandidate
+      ? "Drop-off"
+      : hasActivePipelineLink && normalizedCurrentStage === "for nho"
+        ? "For NHO"
+        : hasActivePipelineLink &&
+            normalizedCurrentStage === normalizeLower(INCOMPLETE_ONBOARDING_STAGE)
+          ? "Incomplete Requirements"
+          : activeCandidate.status;
 
   const isIncompleteRequirementsStage =
     normalizedCurrentStage === normalizeLower(INCOMPLETE_ONBOARDING_STAGE);
@@ -4916,14 +4960,26 @@ export default function CandidateProfileModal() {
   const isAlreadyOnboarding =
     normalizedCurrentStage === normalizeLower(ONBOARDING_STAGE);
 
+  const isNhoRequirementsStage =
+    normalizedCurrentStage === "for nho" ||
+    isIncompleteRequirementsStage ||
+    isAlreadyOnboarding;
+  const canManageNhoRequirements = Boolean(
+    (resolvedPipelineId || candidatePipelineLookupId) &&
+      hasActivePipelineLink &&
+      isNhoRequirementsStage
+  );
+  // Preserve the existing document-vault upload action, even for linked
+  // candidates who are not currently in the NHO workflow.
   const canUploadFollowUpNhoRequirements = Boolean(
     (resolvedPipelineId || candidatePipelineLookupId) &&
       hasActivePipelineLink &&
-      hasMissingPreEmploymentRequirements
+      (hasMissingPreEmploymentRequirements || canManageNhoRequirements)
   );
 
   const canMoveToOnboarding = Boolean(
     hasActivePipelineLink &&
+      isNhoRequirementsStage &&
       majorRequirementProgress.isComplete &&
       (resolvedPipelineId || candidatePipelineLookupId) &&
       !isAlreadyOnboarding,
@@ -5530,6 +5586,54 @@ export default function CandidateProfileModal() {
     }
   }
 
+  async function handleOpenNhoRequirements() {
+    if (isOpeningNhoRequirements) return;
+    setIsOpeningNhoRequirements(true);
+
+    try {
+      // Never use Talent Pool's own numeric ID as candidate_pipeline.id.
+      // Look up the linked Pipeline candidate by its public applicant ID,
+      // then supply the verified numeric primary key to the NHO file modal.
+      const expectedPublicId = getCandidatePublicId(selectedCandidate || {});
+      const existingPipelineId = cleanText(resolvedPipelineId || candidatePipelineLookupId);
+      const lookupId = expectedPublicId || existingPipelineId;
+      if (!lookupId) {
+        throw new Error("No linked Candidate Pipeline identifier is available.");
+      }
+
+      const response = await api.get(
+        `/api/candidate-pipeline/${encodeURIComponent(lookupId)}`,
+        { withCredentials: true, params: { _t: Date.now() } },
+      );
+      const pipelineCandidate = safeObject(getPipelineCandidateFromResponse(response));
+      const verifiedId = cleanText(pipelineCandidate.dbId || pipelineCandidate.id);
+      const actualPublicId = getCandidatePublicId(pipelineCandidate);
+
+      if (
+        !/^\d+$/.test(verifiedId) ||
+        (expectedPublicId && expectedPublicId !== actualPublicId) ||
+        !candidateMatchesPipeline(selectedCandidate || {}, pipelineCandidate)
+      ) {
+        throw new Error("The linked Candidate Pipeline record could not be verified.");
+      }
+
+      setResolvedPipelineId(verifiedId);
+      setPipelineCandidateDetails(pipelineCandidate);
+      setShowNhoUploadModal(true);
+    } catch (error) {
+      showStatusModal({
+        type: "error",
+        title: "Unable to Open Requirements",
+        message: getApiErrorMessage(
+          error,
+          "Unable to load the linked Candidate Pipeline record. Please try again.",
+        ),
+      });
+    } finally {
+      setIsOpeningNhoRequirements(false);
+    }
+  }
+
   function handleOpenLinkedCandidateDestination() {
     const stage = getCandidateStageValue(activeCandidate);
     const pipelineId = cleanText(resolvedPipelineId || candidatePipelineLookupId);
@@ -5654,7 +5758,7 @@ export default function CandidateProfileModal() {
         type: "error",
         title: "Incomplete Major Requirements",
         message:
-          "The candidate must complete all 5 major requirements before moving to Onboarding.",
+          "The candidate must complete all 4 major requirements before moving to Onboarding.",
       });
       return;
     }
@@ -5677,9 +5781,9 @@ export default function CandidateProfileModal() {
           targetStage: ONBOARDING_STAGE,
           stage: ONBOARDING_STAGE,
           reason:
-            "Candidate completed the 5 major pre-employment requirements from Talent Pool follow-up.",
+            "Candidate completed the 4 major pre-employment requirements from Talent Pool follow-up.",
           remarks:
-            "Candidate completed the 5 major pre-employment requirements and was moved to Onboarding from Talent Pool.",
+            "Candidate completed the 4 major pre-employment requirements and was moved to Onboarding from Talent Pool.",
         },
         {
           withCredentials: true,
@@ -5777,7 +5881,7 @@ export default function CandidateProfileModal() {
         type: "success",
         title: "Moved to Onboarding",
         message:
-          "Candidate completed all 5 major requirements and was moved to Onboarding.",
+          "Candidate completed all 4 major requirements and was moved to Onboarding.",
         closeProfileOnClose: true,
       });
     } catch (error) {
@@ -5791,6 +5895,68 @@ export default function CandidateProfileModal() {
       });
     } finally {
       setIsMovingToOnboarding(false);
+    }
+  }
+
+  function handleTalentPoolNhoFilesChanged({
+    files = [],
+    candidate: updatedCandidate = null,
+    majorProgress = null,
+    routedStage = "",
+  } = {}) {
+    // A delete response is the full authoritative remaining set. Do not
+    // merge it with the old profile files or deleted files will reappear.
+    const remainingFiles = normalizeCandidateFiles(files, activeCandidate);
+    const responseCandidate = safeObject(updatedCandidate || {});
+    const nextStage = cleanText(
+      routedStage ||
+        responseCandidate.currentStage ||
+        responseCandidate.current_stage ||
+        responseCandidate.currentPipelineStage ||
+        responseCandidate.current_pipeline_stage ||
+        activeCandidate.currentPipelineStage ||
+        activeCandidate.current_stage ||
+        "",
+    );
+    const updatedMajorProgress =
+      majorProgress || calculateMajorRequirementProgress(remainingFiles);
+    const nextBase = {
+      ...activeCandidate,
+      ...responseCandidate,
+      nhoFiles: remainingFiles,
+      nho_files: remainingFiles,
+      preEmploymentFiles: remainingFiles,
+      pre_employment_files: remainingFiles,
+      uploadedFiles: remainingFiles,
+      files: remainingFiles,
+      majorNhoUploadProgress: updatedMajorProgress,
+      major_nho_upload_progress: updatedMajorProgress,
+      ...(nextStage
+        ? {
+            status: getTalentPoolStatusForNhoStage(
+              nextStage,
+              activeCandidate.status,
+            ),
+            currentPipelineStage: nextStage,
+            current_pipeline_stage: nextStage,
+            currentStage: nextStage,
+            current_stage: nextStage,
+            pipelineStage: nextStage,
+            pipeline_stage: nextStage,
+            stage: nextStage,
+          }
+        : {}),
+    };
+    const nextCandidate = mergeCandidateWithPipelineDetails(
+      nextBase,
+      responseCandidate,
+    );
+    setCandidatePipelineFiles(remainingFiles);
+    setSelectedNhoFile(remainingFiles[0] || null);
+    applyLocalCandidateUpdate(nextCandidate);
+    // Refresh after the server has synced the pipeline and Talent Pool stage.
+    if (typeof refreshTalentPool === "function") {
+      window.setTimeout(() => refreshTalentPool(), 300);
     }
   }
 
@@ -5914,13 +6080,10 @@ export default function CandidateProfileModal() {
 
     showStatusModal({
       type: "success",
-      title:
-        nextStage === ONBOARDING_STAGE
-          ? "Moved to Onboarding"
-          : "Requirements Saved",
+      title: "Requirements Saved",
       message:
-        nextStage === ONBOARDING_STAGE
-          ? "Candidate completed the 5 major requirements and was moved to Onboarding."
+        computedMajorProgress.isComplete && nextStage !== ONBOARDING_STAGE
+          ? "All 4 major requirements are complete. Click Move to Onboarding in this Talent Pool profile when ready."
           : "NHO uploaded files were saved and displayed in the candidate profile.",
     });
   }
@@ -8581,7 +8744,7 @@ export default function CandidateProfileModal() {
                 </span>
               ) : canMoveToOnboarding ? (
                 <span className="font-extrabold text-emerald-600">
-                  Candidate completed the 5 major requirements and can be moved
+                  Candidate completed the 4 major requirements and can be moved
                   to Onboarding.
                 </span>
               ) : isIncompleteRequirementsStage ? (
@@ -8627,6 +8790,18 @@ export default function CandidateProfileModal() {
                 >
                   <UserX size={14} />
                   {dropOffSaving ? "Saving..." : "Mark as Drop Off"}
+                </button>
+              )}
+
+              {!editCandidate && canManageNhoRequirements && (
+                <button
+                  type="button"
+                  onClick={handleOpenNhoRequirements}
+                  disabled={candidatePipelineFilesLoading || isMovingToOnboarding || isOpeningNhoRequirements}
+                  className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 rounded-[10px] border border-sibs-border bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-navy transition hover:border-sibs-orange/40 hover:bg-sibs-cream-subtle hover:text-sibs-orange focus-visible:ring-2 focus-visible:ring-sibs-orange/30 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <UploadCloud size={14} className="text-sibs-orange" />
+                  {isOpeningNhoRequirements ? "Loading Requirements..." : "Manage Requirements"}
                 </button>
               )}
 
@@ -8911,11 +9086,19 @@ export default function CandidateProfileModal() {
           open={showNhoUploadModal}
           onClose={() => setShowNhoUploadModal(false)}
           candidateId={resolvedPipelineId || candidatePipelineLookupId}
+          candidatePublicId={
+            getCandidatePublicId(activeCandidate) ||
+            getCandidatePublicId(selectedCandidate)
+          }
           candidateName={activeCandidate.name || "Candidate"}
           candidateEmail={activeCandidate.email || ""}
           initialFiles={displayedPreEmploymentFiles}
           currentFile={selectedNhoFile || displayedPreEmploymentFiles[0] || null}
           previousEmploymentEnabled
+          onFilesChanged={handleTalentPoolNhoFilesChanged}
+          onDeleteResult={({ type = "success", title = "File Deleted", message = "" } = {}) => {
+            showStatusModal({ type, title, message });
+          }}
           onSave={handleTalentPoolNhoSave}
         />
       )}
@@ -9012,7 +9195,9 @@ export default function CandidateProfileModal() {
         type={statusModal.type}
         title={statusModal.title}
         message={statusModal.message}
+        subtitle="Talent Pool Candidate Profile"
         variant="center"
+        design="panel"
         onClose={closeStatusModal}
         lockScroll={false}
       />
