@@ -331,6 +331,12 @@ export function canAccessPath(user, pathname) {
   const role = cleanRole(user?.role);
   const rawAccess = getRawAdminAccess(user);
 
+  // Switching to Employee mode does not erase a user's assigned admin access.
+  // Route permissions must follow the active session role, not dormant access.
+  if (role === "employee") {
+    return isEmployeeAllowedPath(pathname);
+  }
+
   if (pathMatches(pathname, "/dashboard/finance")) {
     return (
       rawAccess === ADMIN_ACCESS.FINANCE ||
@@ -367,13 +373,6 @@ export function canAccessPath(user, pathname) {
     [ADMIN_ACCESS.WFM, ADMIN_ACCESS.SOM].includes(rawAccess)
   ) {
     return false;
-  }
-
-  const hasCanonicalAdminAccess =
-    Number.isInteger(rawAccess) && rawAccess >= 1 && rawAccess <= 10;
-
-  if (role === "employee" && !hasCanonicalAdminAccess) {
-    return isEmployeeAllowedPath(pathname);
   }
 
   const matchedRule = ACCESS_RULES.find((rule) =>
