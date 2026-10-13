@@ -49,6 +49,14 @@ function DepartmentsPageContent() {
   const departments = useDepartments();
   const [searchParams, setSearchParams] = useSearchParams();
   const linkedAccountRequestId = searchParams.get("accountApprovalRequestId") || "";
+  const linkedDepartmentRequestId = searchParams.get("departmentApprovalRequestId") || "";
+  const clearDepartmentApprovalLink = useCallback(() => {
+    setSearchParams((current) => {
+      const next = new URLSearchParams(current);
+      next.delete("departmentApprovalRequestId");
+      return next;
+    }, { replace: true });
+  }, [setSearchParams]);
   const clearAccountApprovalLink = useCallback(() => {
     setSearchParams((current) => {
       const next = new URLSearchParams(current);
@@ -416,6 +424,12 @@ function DepartmentsPageContent() {
           <DepartmentApprovalRequests
             requests={approvalRequests}
             loading={approvalLoading}
+            linkedRequestId={approvalRequestsError ? "" : linkedDepartmentRequestId}
+            onLinkOpened={clearDepartmentApprovalLink}
+            onLinkUnavailable={() => {
+              clearDepartmentApprovalLink();
+              showStatus("error", "Department Request Unavailable", "This department request is no longer pending or could not be found.");
+            }}
             canApprove={canApproveDepartments}
             processingId={processingRequestId}
             onApprove={handleApproveDepartment}
