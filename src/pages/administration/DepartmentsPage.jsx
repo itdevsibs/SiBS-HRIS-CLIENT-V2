@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 
 import {
   AlertTriangle,
@@ -46,6 +47,23 @@ function errorMessage(error, fallback) {
 
 function DepartmentsPageContent() {
   const departments = useDepartments();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const linkedAccountRequestId = searchParams.get("accountApprovalRequestId") || "";
+  const linkedDepartmentRequestId = searchParams.get("departmentApprovalRequestId") || "";
+  const clearDepartmentApprovalLink = useCallback(() => {
+    setSearchParams((current) => {
+      const next = new URLSearchParams(current);
+      next.delete("departmentApprovalRequestId");
+      return next;
+    }, { replace: true });
+  }, [setSearchParams]);
+  const clearAccountApprovalLink = useCallback(() => {
+    setSearchParams((current) => {
+      const next = new URLSearchParams(current);
+      next.delete("accountApprovalRequestId");
+      return next;
+    }, { replace: true });
+  }, [setSearchParams]);
   const [selectedDepartment, setSelectedDepartment] = useState(null);
   const [loadingDepartmentId, setLoadingDepartmentId] = useState("");
   const [addModalOpen, setAddModalOpen] = useState(false);
@@ -389,6 +407,12 @@ function DepartmentsPageContent() {
           <AccountApprovalRequests
             requests={accountApprovalRequests}
             loading={approvalLoading}
+            linkedRequestId={linkedAccountRequestId}
+            onLinkOpened={clearAccountApprovalLink}
+            onLinkUnavailable={() => {
+              clearAccountApprovalLink();
+              showStatus("error", "Account Request Unavailable", "This account request is no longer pending or is not accessible to your account.");
+            }}
             canApprove={canApproveAccounts}
             processingId={processingAccountRequestId}
             onApprove={handleApproveAccount}
@@ -400,6 +424,12 @@ function DepartmentsPageContent() {
           <DepartmentApprovalRequests
             requests={approvalRequests}
             loading={approvalLoading}
+            linkedRequestId={approvalRequestsError ? "" : linkedDepartmentRequestId}
+            onLinkOpened={clearDepartmentApprovalLink}
+            onLinkUnavailable={() => {
+              clearDepartmentApprovalLink();
+              showStatus("error", "Department Request Unavailable", "This department request is no longer pending or could not be found.");
+            }}
             canApprove={canApproveDepartments}
             processingId={processingRequestId}
             onApprove={handleApproveDepartment}
