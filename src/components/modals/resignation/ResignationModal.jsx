@@ -1,3 +1,4 @@
+import { createSystemDateTimeFormatter, formatHrisDateLocalized } from "@/lib/axios/dateFormatter";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertTriangle,
@@ -87,7 +88,7 @@ function formatDisplayDate(value) {
 
   if (!date) return "Select date";
 
-  return date.toLocaleDateString("en-PH", {
+  return formatHrisDateLocalized(date, "en-PH", {
     timeZone: "Asia/Manila",
     month: "long",
     day: "numeric",
@@ -149,7 +150,7 @@ function FileTypeIcon({ filename }) {
 }
 
 function getTodayDate() {
-  return new Intl.DateTimeFormat("en-CA", {
+  return createSystemDateTimeFormatter("en-CA", {
     timeZone: "Asia/Manila",
     year: "numeric",
     month: "2-digit",

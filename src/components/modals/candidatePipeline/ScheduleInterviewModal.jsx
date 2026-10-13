@@ -1,3 +1,4 @@
+import { formatHrisDateTimeLocalized } from "@/lib/axios/dateFormatter";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { getInterviewStatusClass } from "../../../lib/utils/candidatePipeline/candidatePipelineHelpers";
 import { interviewTypeOptions } from "../../../lib/utils/candidatePipeline/candidatePipelineConstants";
@@ -202,7 +203,7 @@ function formatDateTimeDisplay(value) {
 
   if (!parsed) return "Select interview date and time";
 
-  return parsed.toLocaleString("en-PH", {
+  return formatHrisDateTimeLocalized(parsed, "en-PH", {
     year: "numeric",
     month: "long",
     day: "numeric",

@@ -1,3 +1,4 @@
+import { createSystemDateTimeFormatter } from "@/lib/axios/dateFormatter";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { motion as Motion } from "framer-motion";
 import { createPortal } from "react-dom";
@@ -547,7 +548,7 @@ function formatCompactDate(value) {
       Date.UTC(Number(year), Number(month) - 1, Number(day), 12),
     );
 
-    return new Intl.DateTimeFormat("en-US", {
+    return createSystemDateTimeFormatter("en-US", {
       timeZone: "Asia/Manila",
       year: "numeric",
       month: "long",
@@ -558,7 +559,7 @@ function formatCompactDate(value) {
   const parsedDate = new Date(raw);
   if (Number.isNaN(parsedDate.getTime())) return raw;
 
-  return new Intl.DateTimeFormat("en-US", {
+  return createSystemDateTimeFormatter("en-US", {
     timeZone: "Asia/Manila",
     year: "numeric",
     month: "long",

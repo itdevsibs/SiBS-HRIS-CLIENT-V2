@@ -1,3 +1,4 @@
+import { formatHrisDateLocalized, formatHrisDateTimeLocalized } from "@/lib/axios/dateFormatter";
 /**
  * Temporary frontend recruitment data store.
  *
@@ -76,7 +77,7 @@ export function getTodayDate() {
 }
 
 export function getCurrentTimestamp() {
-  return new Date().toLocaleString("en-PH", {
+  return formatHrisDateTimeLocalized(new Date(), "en-PH", {
     year: "numeric",
     month: "long",
     day: "numeric",
@@ -88,7 +89,7 @@ export function getCurrentTimestamp() {
 export function formatDate(date) {
   if (!date) return "—";
 
-  return new Date(date).toLocaleDateString("en-PH", {
+  return formatHrisDateLocalized(new Date(date), "en-PH", {
     month: "long",
     day: "numeric",
     year: "numeric",

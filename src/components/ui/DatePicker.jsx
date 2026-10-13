@@ -1,3 +1,4 @@
+import { createSystemDateTimeFormatter } from "@/lib/axios/dateFormatter";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   CalendarDays,
@@ -65,7 +66,7 @@ function formatDateValue(value) {
   const parsed = parseLocalDate(value);
   if (!parsed) return "";
 
-  return new Intl.DateTimeFormat("en-PH", {
+  return createSystemDateTimeFormatter("en-PH", {
     year: "numeric",
     month: "long",
     day: "numeric",

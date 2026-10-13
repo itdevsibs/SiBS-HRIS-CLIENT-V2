@@ -1,3 +1,4 @@
+import { formatHrisDateLocalized } from "@/lib/axios/dateFormatter";
 import React, {
   useCallback,
   useEffect,
@@ -700,7 +701,7 @@ function ResignationAnalytics({ data = [], loading = false }) {
     const now = new Date();
     for (let i = 5; i >= 0; i--) {
       const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const label = d.toLocaleDateString("en-PH", {
+      const label = formatHrisDateLocalized(d, "en-PH", {
         month: "long",
         timeZone: "Asia/Manila",
       });
@@ -716,7 +717,7 @@ function ResignationAnalytics({ data = [], loading = false }) {
       const date = new Date(rawDate);
       if (Number.isNaN(date.getTime())) return;
 
-      const label = date.toLocaleDateString("en-PH", {
+      const label = formatHrisDateLocalized(date, "en-PH", {
         month: "long",
         timeZone: "Asia/Manila",
       });

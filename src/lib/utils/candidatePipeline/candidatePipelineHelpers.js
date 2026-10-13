@@ -1,3 +1,4 @@
+import { createSystemDateTimeFormatter } from "@/lib/axios/dateFormatter";
 import {
   normalStageFlow,
   canScheduleInterviewFromStage,
@@ -1043,7 +1044,7 @@ export function getFridayOfCurrentWeek() {
 export function formatNhoScheduleDate(date) {
   if (!date) return "—";
 
-  return new Intl.DateTimeFormat("en-US", {
+  return createSystemDateTimeFormatter("en-US", {
     month: "long",
     day: "numeric",
     year: "numeric",

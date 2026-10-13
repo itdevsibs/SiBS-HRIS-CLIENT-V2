@@ -1,3 +1,4 @@
+import { createSystemDateTimeFormatter } from "@/lib/axios/dateFormatter";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
@@ -220,7 +221,7 @@ function formatDate(value) {
     return raw;
   }
 
-  return new Intl.DateTimeFormat("en-US", {
+  return createSystemDateTimeFormatter("en-US", {
     timeZone: "Asia/Manila",
     month: "long",
     day: "numeric",

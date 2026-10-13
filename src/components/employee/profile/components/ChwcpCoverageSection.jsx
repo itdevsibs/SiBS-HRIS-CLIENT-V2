@@ -1,3 +1,4 @@
+import { createSystemDateTimeFormatter } from "@/lib/axios/dateFormatter";
 import { useCallback, useEffect, useState } from "react";
 import {
   Eye,
@@ -65,7 +66,7 @@ function formatDate(value) {
 
   if (Number.isNaN(parsed.getTime())) return text;
 
-  return new Intl.DateTimeFormat("en-US", {
+  return createSystemDateTimeFormatter("en-US", {
     timeZone: "Asia/Manila",
     month: "long",
     day: "numeric",

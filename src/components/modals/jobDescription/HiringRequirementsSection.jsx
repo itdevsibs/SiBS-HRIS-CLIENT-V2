@@ -1,3 +1,4 @@
+import { formatHrisDateLocalized } from "@/lib/axios/dateFormatter";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, CalendarDays } from "lucide-react";
 import { useJobDescription } from "../../../services/context/JobDescriptionContext";
@@ -79,7 +80,7 @@ function DateDropdown({ label, required = false, value, onChange }) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const monthTitle = viewDate.toLocaleDateString("en-US", {
+  const monthTitle = formatHrisDateLocalized(viewDate, "en-US", {
     month: "long",
     year: "numeric",
   });

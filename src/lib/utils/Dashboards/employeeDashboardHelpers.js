@@ -1,3 +1,4 @@
+import { createSystemDateTimeFormatter } from "@/lib/axios/dateFormatter";
 const MANILA_TIME_ZONE = "Asia/Manila";
 
 export function cleanDashboardText(value) {
@@ -277,7 +278,7 @@ export function getAttendanceSummary(user = {}) {
 }
 
 function getPhtDateParts(value = new Date()) {
-  const formatter = new Intl.DateTimeFormat("en-CA", {
+  const formatter = createSystemDateTimeFormatter("en-CA", {
     timeZone: MANILA_TIME_ZONE,
     year: "numeric",
     month: "2-digit",
@@ -620,7 +621,7 @@ export function getDashboardHolidays(user = {}) {
 }
 
 export function formatPhtTime(value = new Date()) {
-  return new Intl.DateTimeFormat("en-PH", {
+  return createSystemDateTimeFormatter("en-PH", {
     timeZone: MANILA_TIME_ZONE,
     hour: "2-digit",
     minute: "2-digit",
@@ -630,7 +631,7 @@ export function formatPhtTime(value = new Date()) {
 }
 
 export function formatPhtDate(value = new Date()) {
-  return new Intl.DateTimeFormat("en-PH", {
+  return createSystemDateTimeFormatter("en-PH", {
     timeZone: MANILA_TIME_ZONE,
     weekday: "long",
     year: "numeric",
@@ -644,7 +645,7 @@ export function formatDashboardDate(value, fallback = "—") {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return cleanDashboardText(value) || fallback;
 
-  return new Intl.DateTimeFormat("en-PH", {
+  return createSystemDateTimeFormatter("en-PH", {
     timeZone: MANILA_TIME_ZONE,
     year: "numeric",
     month: "short",
@@ -753,7 +754,7 @@ function formatDashboardTimeValue(value, fallback = "—") {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return raw || fallback;
 
-  return new Intl.DateTimeFormat("en-US", {
+  return createSystemDateTimeFormatter("en-US", {
     timeZone: MANILA_TIME_ZONE,
     hour: "2-digit",
     minute: "2-digit",

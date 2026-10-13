@@ -1,3 +1,4 @@
+import { createSystemDateTimeFormatter, formatHrisTimeLocalized } from "@/lib/axios/dateFormatter";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
@@ -569,7 +570,7 @@ function getAnimationStyle(delay = 0) {
 }
 
 function getManilaDateParts(value = new Date()) {
-  const parts = new Intl.DateTimeFormat("en-CA", {
+  const parts = createSystemDateTimeFormatter("en-CA", {
     timeZone: "Asia/Manila",
     year: "numeric",
     month: "2-digit",
@@ -1438,7 +1439,7 @@ export default function AttendanceTable() {
 
     if (Number.isNaN(parsed.getTime())) return "—";
 
-    return parsed.toLocaleTimeString("en-PH", {
+    return formatHrisTimeLocalized(parsed, "en-PH", {
       timeZone: "Asia/Manila",
       hour: "2-digit",
       minute: "2-digit",

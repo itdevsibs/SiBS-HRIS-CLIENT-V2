@@ -1,3 +1,4 @@
+import { formatHrisDateLocalized } from "@/lib/axios/dateFormatter";
 import React, { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
@@ -225,7 +226,7 @@ function formatDateDisplay(value) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return String(value);
 
-  return date.toLocaleDateString("en-PH", {
+  return formatHrisDateLocalized(date, "en-PH", {
     month: "long",
     day: "numeric",
     year: "numeric",

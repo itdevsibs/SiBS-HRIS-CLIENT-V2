@@ -1,3 +1,4 @@
+import { formatHrisDateTimeLocalized } from "@/lib/axios/dateFormatter";
 function cleanText(value) {
   return String(value ?? "").trim();
 }
@@ -630,7 +631,7 @@ export function formatOfferVersionDate(value) {
 
   if (Number.isNaN(date.getTime())) return cleanText(value) || "—";
 
-  return date.toLocaleString("en-PH", {
+  return formatHrisDateTimeLocalized(date, "en-PH", {
     timeZone: "Asia/Manila",
     year: "numeric",
     month: "long",

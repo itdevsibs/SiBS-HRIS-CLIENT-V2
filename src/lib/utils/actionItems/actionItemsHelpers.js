@@ -1,3 +1,4 @@
+import { formatHrisDateLocalized } from "@/lib/axios/dateFormatter";
 function formatLocalDateInput(date) {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -25,7 +26,7 @@ export function formatDate(date) {
   const parsed = new Date(date);
   if (Number.isNaN(parsed.getTime())) return "—";
 
-  return parsed.toLocaleDateString("en-PH", {
+  return formatHrisDateLocalized(parsed, "en-PH", {
     month: "long",
     day: "numeric",
     year: "numeric",

@@ -1,3 +1,4 @@
+import { formatHrisDateLocalized, formatHrisDateTimeLocalized } from "@/lib/axios/dateFormatter";
 export const PAGE_LIMIT = 15;
 export const LEAVES_STATE_KEY = "leavesPageState";
 
@@ -18,7 +19,7 @@ export function formatDate(value) {
 
   if (Number.isNaN(date.getTime())) return "—";
 
-  return date.toLocaleDateString("en-PH", {
+  return formatHrisDateLocalized(date, "en-PH", {
     timeZone: "Asia/Manila",
     month: "long",
     day: "numeric",
@@ -33,7 +34,7 @@ export function formatDateTime(value) {
 
   if (Number.isNaN(date.getTime())) return "—";
 
-  return date.toLocaleString("en-PH", {
+  return formatHrisDateTimeLocalized(date, "en-PH", {
     timeZone: "Asia/Manila",
     month: "long",
     day: "numeric",

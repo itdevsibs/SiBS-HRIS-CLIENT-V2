@@ -1,3 +1,4 @@
+import { formatHrisDateLocalized, formatHrisDateTimeLocalized } from "@/lib/axios/dateFormatter";
 import React, { useEffect, useMemo, useState } from "react";
 import {
   BadgeCheck,
@@ -69,7 +70,7 @@ function formatDateTime(value) {
 
   if (Number.isNaN(parsedDate.getTime())) return "—";
 
-  return parsedDate.toLocaleString("en-PH", {
+  return formatHrisDateTimeLocalized(parsedDate, "en-PH", {
     month: "long",
     day: "numeric",
     year: "numeric",
@@ -88,7 +89,7 @@ function formatDateOnly(value) {
     return text || "—";
   }
 
-  return parsedDate.toLocaleDateString("en-PH", {
+  return formatHrisDateLocalized(parsedDate, "en-PH", {
     month: "long",
     day: "numeric",
     year: "numeric",

@@ -1,3 +1,4 @@
+import { formatHrisDateTimeLocalized } from "@/lib/axios/dateFormatter";
 import React, { useEffect, useMemo, useState } from "react";
 import {
   Building2,
@@ -56,7 +57,7 @@ function formatUpdatedAt(value) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "Live HRIS data";
 
-  return `Last updated ${date.toLocaleString("en-PH", {
+  return `Last updated ${formatHrisDateTimeLocalized(date, "en-PH", {
     dateStyle: "medium",
     timeStyle: "short",
   })}`;

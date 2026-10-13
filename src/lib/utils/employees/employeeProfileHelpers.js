@@ -1,3 +1,4 @@
+import { createSystemDateTimeFormatter, formatHrisDateLocalized } from "@/lib/axios/dateFormatter";
 import { PROFILE_TABS } from "./employeeProfileSchemas.js";
 
 export function cleanText(value) {
@@ -116,7 +117,7 @@ export function formatDisplayDate(value) {
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) return String(value);
 
-  return parsed.toLocaleDateString("en-PH", {
+  return formatHrisDateLocalized(parsed, "en-PH", {
     timeZone: "Asia/Manila",
     month: "long",
     day: "numeric",
@@ -129,7 +130,7 @@ export function formatLongDisplayDate(value) {
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) return String(value);
 
-  return parsed.toLocaleDateString("en-PH", {
+  return formatHrisDateLocalized(parsed, "en-PH", {
     timeZone: "Asia/Manila",
     month: "long",
     day: "numeric",
@@ -179,7 +180,7 @@ export function toInputDate(value) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return rawValue.slice(0, 10);
 
-  return new Intl.DateTimeFormat("en-CA", {
+  return createSystemDateTimeFormatter("en-CA", {
     timeZone: "Asia/Manila",
     year: "numeric",
     month: "2-digit",
@@ -188,7 +189,7 @@ export function toInputDate(value) {
 }
 
 export function getCurrentDateKey() {
-  return new Intl.DateTimeFormat("en-CA", {
+  return createSystemDateTimeFormatter("en-CA", {
     timeZone: "Asia/Manila",
     year: "numeric",
     month: "2-digit",

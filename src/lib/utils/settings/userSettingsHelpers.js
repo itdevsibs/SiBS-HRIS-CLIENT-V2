@@ -1,3 +1,4 @@
+import { formatHrisDateLocalized, formatHrisDateTimeLocalized } from "@/lib/axios/dateFormatter";
 import { sanitizeDisplayFullName, sanitizeMiddleName } from "../employees/employeeNameDisplay.js";
 
 export const ROLE_OPTIONS = [
@@ -88,7 +89,7 @@ export function formatDateTime(value) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return String(value);
 
-  return date.toLocaleString("en-PH", {
+  return formatHrisDateTimeLocalized(date, "en-PH", {
     month: "long",
     day: "numeric",
     year: "numeric",
@@ -103,7 +104,7 @@ export function formatCompactDateTime(value) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return String(value);
 
-  return date.toLocaleString("en-PH", {
+  return formatHrisDateTimeLocalized(date, "en-PH", {
     month: "short",
     day: "numeric",
     year: "numeric",
@@ -118,7 +119,7 @@ export function formatCompactDate(value) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return String(value);
 
-  return date.toLocaleDateString("en-PH", {
+  return formatHrisDateLocalized(date, "en-PH", {
     month: "short",
     day: "numeric",
     year: "numeric",

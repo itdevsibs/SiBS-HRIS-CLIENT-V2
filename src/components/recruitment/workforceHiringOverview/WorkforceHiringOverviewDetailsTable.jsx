@@ -1892,12 +1892,12 @@ export default function WorkforceHiringOverviewDetailsTable() {
                   This prevents horizontally scrolling headers from passing
                   underneath # / Cluster / Account. */}
               <div className="flex shrink-0 bg-white">
-                <div className="w-[310px] shrink-0 bg-white">
-                  <table className="w-[310px] min-w-[310px] table-fixed border-collapse text-left font-jakarta text-xs whitespace-nowrap">
+                <div className="w-[420px] shrink-0 bg-white">
+                  <table className="w-[420px] min-w-[420px] table-fixed border-collapse text-left font-jakarta text-xs whitespace-nowrap">
                     <colgroup>
                       <col style={{ width: "40px" }} />
                       <col style={{ width: "120px" }} />
-                      <col style={{ width: "150px" }} />
+                      <col style={{ width: "260px" }} />
                     </colgroup>
 
                     <thead className="bg-white font-jakarta">
@@ -2046,11 +2046,11 @@ export default function WorkforceHiringOverviewDetailsTable() {
                 onMouseUp={handleDragEnd}
                 onMouseLeave={handleDragEnd}
               >
-                <table className="w-[2445px] min-w-[2445px] table-fixed border-collapse text-left font-jakarta text-xs whitespace-nowrap">
+                <table className="w-[2555px] min-w-[2555px] table-fixed border-collapse text-left font-jakarta text-xs whitespace-nowrap">
                   <colgroup>
                     <col style={{ width: "40px" }} />
                     <col style={{ width: "120px" }} />
-                    <col style={{ width: "150px" }} />
+                    <col style={{ width: "260px" }} />
 
                     <col style={{ width: "95px" }} />
                     <col style={{ width: "90px" }} />
@@ -2156,14 +2156,14 @@ export default function WorkforceHiringOverviewDetailsTable() {
                               <BodyTd
                                 align="left"
                                 numeric={false}
-                                className={`sticky left-[160px] z-30 !border-r-slate-300 shadow-[8px_0_12px_-10px_rgba(15,23,42,0.55)] ${
+                                className={`sticky left-[160px] z-30 !whitespace-normal !border-r-slate-300 shadow-[8px_0_12px_-10px_rgba(15,23,42,0.55)] ${
                                   isExpanded
                                     ? "!bg-amber-50"
                                     : "!bg-white group-hover:!bg-slate-50"
                                 } ${BOLD_NUMBER_CLASS}`}
                               >
                                 <span
-                                  className="block max-w-[135px] truncate !font-black !text-sibs-navy"
+                                  className="block whitespace-normal break-words [overflow-wrap:anywhere] leading-snug !font-black !text-sibs-navy"
                                   title={row.account}
                                 >
                                   {row.account}

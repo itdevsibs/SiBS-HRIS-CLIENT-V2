@@ -1,3 +1,4 @@
+import { formatHrisDateLocalized } from "@/lib/axios/dateFormatter";
 import React, {
   useEffect,
   useLayoutEffect,
@@ -150,7 +151,7 @@ function formatModalDateLabel(value) {
 
   if (!parsed) return "Select date";
 
-  return parsed.toLocaleDateString("en-PH", {
+  return formatHrisDateLocalized(parsed, "en-PH", {
     timeZone: "Asia/Manila",
     month: "long",
     day: "numeric",
@@ -159,7 +160,7 @@ function formatModalDateLabel(value) {
 }
 
 function formatMonthYear(date) {
-  return date.toLocaleDateString("en-PH", {
+  return formatHrisDateLocalized(date, "en-PH", {
     timeZone: "Asia/Manila",
     month: "long",
     year: "numeric",

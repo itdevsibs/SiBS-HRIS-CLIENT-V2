@@ -1,3 +1,4 @@
+import { formatHrisDateLocalized, formatHrisDateTimeLocalized } from "@/lib/axios/dateFormatter";
 import { createPortal } from "react-dom";
 import {
   CalendarDays,
@@ -20,7 +21,7 @@ function formatDate(value) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return cleanText(value);
 
-  return date.toLocaleDateString("en-PH", {
+  return formatHrisDateLocalized(date, "en-PH", {
     timeZone: "Asia/Manila",
     month: "long",
     day: "numeric",
@@ -34,7 +35,7 @@ function formatDateTime(value) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return cleanText(value, "Pending");
 
-  return date.toLocaleString("en-PH", {
+  return formatHrisDateTimeLocalized(date, "en-PH", {
     timeZone: "Asia/Manila",
     month: "long",
     day: "numeric",

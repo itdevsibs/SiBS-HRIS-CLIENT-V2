@@ -1,3 +1,4 @@
+import { formatHrisDateLocalized } from "@/lib/axios/dateFormatter";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowRight,
@@ -633,7 +634,7 @@ function StartDatePicker({ value, onChange, hasError = false, inputRef = null })
       >
         <span className={value ? "text-sibs-primary-1" : "text-sibs-tertiary-5"}>
           {selectedDate
-            ? selectedDate.toLocaleDateString("en-PH", { year: "numeric", month: "long", day: "numeric" })
+            ? formatHrisDateLocalized(selectedDate, "en-PH", { year: "numeric", month: "long", day: "numeric" })
             : "Select start date"}
         </span>
         <CalendarDays size={18} className="shrink-0" />
@@ -643,7 +644,7 @@ function StartDatePicker({ value, onChange, hasError = false, inputRef = null })
         <div className="sibs-dropdown-pop-in absolute left-0 top-[calc(100%+8px)] z-[10150] w-full min-w-[310px] rounded-[10px] border border-sibs-border bg-white p-3.5 shadow-[0_18px_45px_rgba(15,23,42,0.18)]">
           <div className="mb-3 flex items-center justify-between">
             <button type="button" onClick={() => setViewDate(new Date(year, month - 1, 1))} className="rounded-[8px] p-2 hover:bg-gray-100"><ChevronLeft size={18} /></button>
-            <span className="text-sm font-extrabold text-sibs-navy">{viewDate.toLocaleDateString("en-PH", { month: "long", year: "numeric" })}</span>
+            <span className="text-sm font-extrabold text-sibs-navy">{formatHrisDateLocalized(viewDate, "en-PH", { month: "long", year: "numeric" })}</span>
             <button type="button" onClick={() => setViewDate(new Date(year, month + 1, 1))} className="rounded-[8px] p-2 hover:bg-gray-100"><ChevronRight size={18} /></button>
           </div>
           <div className="grid grid-cols-7 gap-1 text-center text-[11px] font-extrabold text-sibs-muted">

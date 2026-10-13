@@ -1,3 +1,4 @@
+import { formatHrisDateLocalized } from "@/lib/axios/dateFormatter";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronDown, Eye, RotateCcw, Search } from "lucide-react";
 import { usePagination } from "../../../services/context/PaginationContext";
@@ -31,7 +32,7 @@ function formatDate(date) {
 
   if (Number.isNaN(parsedDate.getTime())) return "—";
 
-  return parsedDate.toLocaleDateString("en-PH", {
+  return formatHrisDateLocalized(parsedDate, "en-PH", {
     month: "long",
     day: "numeric",
     year: "numeric",

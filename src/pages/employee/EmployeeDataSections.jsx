@@ -1,3 +1,4 @@
+import { createSystemDateTimeFormatter, formatHrisDateLocalized } from "@/lib/axios/dateFormatter";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useUser } from "../../services/context/UserContext.jsx";
@@ -102,7 +103,7 @@ function toInputDate(value) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return rawValue.slice(0, 10);
 
-  return new Intl.DateTimeFormat("en-CA", {
+  return createSystemDateTimeFormatter("en-CA", {
     timeZone: "Asia/Manila",
     year: "numeric",
     month: "2-digit",
@@ -114,7 +115,7 @@ function formatDate(value) {
   if (!value) return "—";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return String(value);
-  return date.toLocaleDateString("en-PH", {
+  return formatHrisDateLocalized(date, "en-PH", {
     timeZone: "Asia/Manila",
     month: "long",
     day: "numeric",
@@ -128,7 +129,7 @@ function formatLongDate(value) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return String(value);
 
-  return date.toLocaleDateString("en-PH", {
+  return formatHrisDateLocalized(date, "en-PH", {
     timeZone: "Asia/Manila",
     month: "long",
     day: "numeric",

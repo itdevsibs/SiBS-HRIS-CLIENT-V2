@@ -1,3 +1,4 @@
+import { createSystemDateTimeFormatter } from "@/lib/axios/dateFormatter";
 import React, { useEffect, useMemo, useState } from "react";
 import { History } from "lucide-react";
 
@@ -127,7 +128,7 @@ function formatResignationDate(value) {
 
   if (Number.isNaN(date.getTime())) return raw;
 
-  return new Intl.DateTimeFormat("en-US", {
+  return createSystemDateTimeFormatter("en-US", {
     timeZone: "Asia/Manila",
     month: "long",
     day: "numeric",

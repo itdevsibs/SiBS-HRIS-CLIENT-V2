@@ -1,3 +1,4 @@
+import { createSystemDateTimeFormatter } from "@/lib/axios/dateFormatter";
 import { jsPDF } from "jspdf";
 
 const clean = (value) => String(value ?? "").trim();
@@ -7,7 +8,7 @@ function formatLongDate(value) {
   if (!text) return "";
   const date = new Date(`${text.slice(0, 10)}T00:00:00`);
   if (Number.isNaN(date.getTime())) return "";
-  return new Intl.DateTimeFormat("en-US", {
+  return createSystemDateTimeFormatter("en-US", {
     month: "long",
     day: "numeric",
     year: "numeric",

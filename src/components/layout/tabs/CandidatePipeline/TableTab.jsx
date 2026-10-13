@@ -1,10 +1,11 @@
+import { formatHrisDateLocalized } from "@/lib/axios/dateFormatter";
 import React from "react";
 import { Eye, ArrowRight } from "lucide-react";
 
 function formatDate(date) {
   if (!date) return "—";
 
-  return new Date(date).toLocaleDateString("en-PH", {
+  return formatHrisDateLocalized(new Date(date), "en-PH", {
     month: "long",
     day: "numeric",
     year: "numeric",

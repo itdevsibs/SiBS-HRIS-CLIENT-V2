@@ -1,3 +1,4 @@
+import { formatHrisDateLocalized } from "@/lib/axios/dateFormatter";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import {
@@ -184,7 +185,7 @@ function formatDateOnly(value) {
 
   if (!date) return "—";
 
-  return date.toLocaleDateString("en-PH", {
+  return formatHrisDateLocalized(date, "en-PH", {
     weekday: "long",
     month: "long",
     day: "numeric",

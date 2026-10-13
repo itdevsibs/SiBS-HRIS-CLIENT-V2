@@ -1,3 +1,4 @@
+import { formatHrisDateLocalized } from "@/lib/axios/dateFormatter";
 import React, { useMemo, useState } from "react";
 import { AlertCircle, UsersRound } from "lucide-react";
 import { DataCard, ResponsiveTableShell, TableSkeletonRows } from "@/components/ui";
@@ -35,7 +36,7 @@ function formatFullMonthDate(value) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "—";
 
-  return date.toLocaleDateString("en-PH", {
+  return formatHrisDateLocalized(date, "en-PH", {
     month: "long",
     day: "numeric",
     year: "numeric",

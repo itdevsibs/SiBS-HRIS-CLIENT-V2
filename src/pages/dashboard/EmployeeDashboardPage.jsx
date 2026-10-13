@@ -1,3 +1,4 @@
+import { createSystemDateTimeFormatter, formatHrisDateTimeLocalized } from "@/lib/axios/dateFormatter";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
@@ -181,7 +182,7 @@ function formatDashboardDateTime(value) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return String(value);
 
-  return date.toLocaleString("en-PH", {
+  return formatHrisDateTimeLocalized(date, "en-PH", {
     timeZone: "Asia/Manila",
     month: "long",
     day: "numeric",
@@ -356,7 +357,7 @@ export default function EmployeeDashboardPage() {
   );
   const dashboardDateKey = useMemo(
     () =>
-      new Intl.DateTimeFormat("en-CA", {
+      createSystemDateTimeFormatter("en-CA", {
         timeZone: MANILA_TIME_ZONE,
         year: "numeric",
         month: "2-digit",
@@ -549,7 +550,7 @@ export default function EmployeeDashboardPage() {
   const attendanceTone = getStatusTone(attendance.status);
   const todaySchedule =
     weeklySchedule.find((item) => item.isToday) || weeklySchedule[0] || null;
-  const monthLabel = new Intl.DateTimeFormat("en-PH", {
+  const monthLabel = createSystemDateTimeFormatter("en-PH", {
     timeZone: MANILA_TIME_ZONE,
     month: "long",
     year: "numeric",
@@ -1223,13 +1224,13 @@ export default function EmployeeDashboardPage() {
                       const date = holiday.date ? new Date(holiday.date) : null;
                       const validDate = date && !Number.isNaN(date.getTime());
                       const dayLabel = validDate
-                        ? new Intl.DateTimeFormat("en-PH", {
+                        ? createSystemDateTimeFormatter("en-PH", {
                             timeZone: MANILA_TIME_ZONE,
                             weekday: "short",
                           }).format(date)
                         : "—";
                       const dateNumber = validDate
-                        ? new Intl.DateTimeFormat("en-PH", {
+                        ? createSystemDateTimeFormatter("en-PH", {
                             timeZone: MANILA_TIME_ZONE,
                             day: "2-digit",
                           }).format(date)

@@ -1,3 +1,4 @@
+import { formatHrisDateTimeLocalized, formatHrisTimeLocalized } from "@/lib/axios/dateFormatter";
 const ALLOWED_ROLES = new Set([
   "hr",
   "hr_admin",
@@ -322,7 +323,7 @@ export function formatAuditNotificationExactTime(value) {
     return "Recently";
   }
 
-  return date.toLocaleString("en-PH", {
+  return formatHrisDateTimeLocalized(date, "en-PH", {
     timeZone: "Asia/Manila",
     month: "long",
     day: "numeric",
@@ -355,7 +356,7 @@ export function formatAuditNotificationTime(value, now = new Date()) {
   }
 
   const days = Math.floor(hours / 24);
-  const timeText = date.toLocaleTimeString("en-PH", {
+  const timeText = formatHrisTimeLocalized(date, "en-PH", {
     timeZone: "Asia/Manila",
     hour: "numeric",
     minute: "2-digit",

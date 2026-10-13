@@ -1,3 +1,4 @@
+import { createSystemDateTimeFormatter } from "@/lib/axios/dateFormatter";
 import {
   Activity,
   ArrowRight,
@@ -1028,7 +1029,7 @@ function HeaderContent() {
   }, [mounted, loading, user, pathname, navigate]);
 
   useEffect(() => {
-    const formatter = new Intl.DateTimeFormat("en-PH", {
+    const formatter = createSystemDateTimeFormatter("en-PH", {
       timeZone: "Asia/Manila",
       year: "numeric",
       month: "long",

@@ -1,3 +1,4 @@
+import { formatHrisDateLocalized } from "@/lib/axios/dateFormatter";
 export const RECRUITMENT_HEADCOUNT_PAGE_LIMIT = 15;
 
 export const RECRUITMENT_HEADCOUNT_CLUSTER_OPTIONS = [
@@ -206,7 +207,7 @@ export function formatDateOnly(value) {
     return String(value);
   }
 
-  return date.toLocaleDateString("en-PH", {
+  return formatHrisDateLocalized(date, "en-PH", {
     month: "long",
     day: "numeric",
     year: "numeric",

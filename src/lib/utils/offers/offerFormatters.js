@@ -1,9 +1,10 @@
+import { formatHrisDateTimeLocalized } from "@/lib/axios/dateFormatter";
 export function getTodayDate() {
   return new Date().toISOString().split("T")[0];
 }
 
 export function getCurrentTimestamp() {
-  return new Date().toLocaleString("en-PH", {
+  return formatHrisDateTimeLocalized(new Date(), "en-PH", {
     year: "numeric",
     month: "long",
     day: "numeric",

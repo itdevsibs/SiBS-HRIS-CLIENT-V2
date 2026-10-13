@@ -1,3 +1,4 @@
+import { createSystemDateTimeFormatter } from "@/lib/axios/dateFormatter";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
@@ -321,7 +322,7 @@ function formatRequestDate(value) {
   const date = parseManilaDate(value);
   if (!date) return "N/A";
 
-  const formatted = new Intl.DateTimeFormat("en-US", {
+  const formatted = createSystemDateTimeFormatter("en-US", {
     timeZone: "Asia/Manila",
     month: "long",
     day: "2-digit",
@@ -331,14 +332,14 @@ function formatRequestDate(value) {
     hour12: true,
   }).format(date);
 
-  const todayParts = new Intl.DateTimeFormat("en-CA", {
+  const todayParts = createSystemDateTimeFormatter("en-CA", {
     timeZone: "Asia/Manila",
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
   }).formatToParts(new Date());
 
-  const dateParts = new Intl.DateTimeFormat("en-CA", {
+  const dateParts = createSystemDateTimeFormatter("en-CA", {
     timeZone: "Asia/Manila",
     year: "numeric",
     month: "2-digit",

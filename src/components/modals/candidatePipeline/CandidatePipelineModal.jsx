@@ -1,3 +1,4 @@
+import { createSystemDateTimeFormatter, formatHrisDateLocalized, formatHrisDateTimeLocalized } from "@/lib/axios/dateFormatter";
 import React, {
   useEffect,
   useLayoutEffect,
@@ -1866,7 +1867,7 @@ function getFileIcon(fileName = "") {
 }
 
 function getCurrentTimestamp() {
-  return new Date().toLocaleString("en-PH", {
+  return formatHrisDateTimeLocalized(new Date(), "en-PH", {
     year: "numeric",
     month: "long",
     day: "numeric",
@@ -4045,7 +4046,7 @@ function formatPreviewDeadline(value) {
 
   if (Number.isNaN(date.getTime())) return value;
 
-  return date.toLocaleDateString("en-US", {
+  return formatHrisDateLocalized(date, "en-US", {
     month: "long",
     day: "numeric",
     year: "numeric",
@@ -4123,7 +4124,7 @@ function formatAssessmentDateDisplay(value) {
 
   if (!date) return "Select deadline";
 
-  return date.toLocaleDateString("en-US", {
+  return formatHrisDateLocalized(date, "en-US", {
     month: "long",
     day: "numeric",
     year: "numeric",
@@ -4492,15 +4493,12 @@ function formatNhoScheduleDateDisplay(
     return "Select a Friday";
   }
 
-  return date.toLocaleDateString(
-    "en-PH",
-    {
+  return formatHrisDateLocalized(date, "en-PH", {
       weekday: "long",
       month: "long",
       day: "numeric",
       year: "numeric",
-    },
-  );
+    });
 }
 
 function normalizeNhoTimeInput(value = "") {
@@ -5157,7 +5155,7 @@ function formatNhoScheduleSummaryDisplay(dateValue, timeValue = "") {
 
   if (!date) return "Not Scheduled";
 
-  const dateDisplay = date.toLocaleDateString("en-PH", {
+  const dateDisplay = formatHrisDateLocalized(date, "en-PH", {
     month: "long",
     day: "numeric",
     year: "numeric",
@@ -5235,7 +5233,7 @@ function getManilaCalendarDate(referenceDate = new Date()) {
     ? new Date()
     : sourceDate;
 
-  const parts = new Intl.DateTimeFormat("en-CA", {
+  const parts = createSystemDateTimeFormatter("en-CA", {
     timeZone: "Asia/Manila",
     year: "numeric",
     month: "2-digit",
