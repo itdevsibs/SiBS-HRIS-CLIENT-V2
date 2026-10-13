@@ -1263,11 +1263,16 @@ export default function Sidebar() {
   ];
 
   const rawAdminAccess = getRawAdminAccess(user);
+  const currentRole = normalizeRole(user?.role);
+  // A user may retain assigned_accounts.admin_access while logged into the
+  // Employee portal. Only the active session role determines which sidebar
+  // is displayed; switching to Admin changes the active role separately.
   const isAdminSide =
-    (Number.isInteger(rawAdminAccess) &&
+    currentRole !== "employee" &&
+    ((Number.isInteger(rawAdminAccess) &&
       rawAdminAccess >= 1 &&
       rawAdminAccess <= 10) ||
-    ADMIN_ROLES.includes(normalizeRole(user?.role));
+      ADMIN_ROLES.includes(currentRole));
   const coreMenu = isAdminSide ? adminCoreMenu : employeeCoreMenu;
   const coreSectionTitle = isAdminSide ? "CORE HR" : "EMPLOYEE ACCESS";
   const coreSectionShort = isAdminSide ? "HR" : "EMP";
