@@ -47,7 +47,7 @@ export default function AddDepartmentModal({
       subtitle="Create a department request. Lines of Business are managed separately under each Account after the department is approved."
       icon={Building2}
       maxWidth="max-w-xl"
-      closeOnBackdrop={!submitting}
+      closeOnBackdrop={false}
       closeOnEscape={!submitting}
       footer={
         <>

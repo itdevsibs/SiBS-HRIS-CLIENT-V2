@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 
 import {
   AlertTriangle,
@@ -46,6 +47,15 @@ function errorMessage(error, fallback) {
 
 function DepartmentsPageContent() {
   const departments = useDepartments();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const linkedAccountRequestId = searchParams.get("accountApprovalRequestId") || "";
+  const clearAccountApprovalLink = useCallback(() => {
+    setSearchParams((current) => {
+      const next = new URLSearchParams(current);
+      next.delete("accountApprovalRequestId");
+      return next;
+    }, { replace: true });
+  }, [setSearchParams]);
   const [selectedDepartment, setSelectedDepartment] = useState(null);
   const [loadingDepartmentId, setLoadingDepartmentId] = useState("");
   const [addModalOpen, setAddModalOpen] = useState(false);
@@ -389,6 +399,12 @@ function DepartmentsPageContent() {
           <AccountApprovalRequests
             requests={accountApprovalRequests}
             loading={approvalLoading}
+            linkedRequestId={linkedAccountRequestId}
+            onLinkOpened={clearAccountApprovalLink}
+            onLinkUnavailable={() => {
+              clearAccountApprovalLink();
+              showStatus("error", "Account Request Unavailable", "This account request is no longer pending or is not accessible to your account.");
+            }}
             canApprove={canApproveAccounts}
             processingId={processingAccountRequestId}
             onApprove={handleApproveAccount}

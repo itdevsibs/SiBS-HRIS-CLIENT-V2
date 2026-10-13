@@ -113,7 +113,7 @@ export default function AddAccountModal({ open, onClose, onSubmit, submitting = 
     try {
       await onSubmit?.({ departmentId: selectedDepartment.id, accountName: name, ghlName: ghlName.trim() });
     } catch (submitError) {
-      setError(submitError?.message || "Unable to submit the account request.");
+      setError(submitError?.message || "Unable to create the account.");
     }
   }
 
@@ -122,10 +122,10 @@ export default function AddAccountModal({ open, onClose, onSubmit, submitting = 
       open={open}
       onClose={submitting ? undefined : handleClose}
       title="Add Account"
-      subtitle="Select an approved department, then submit the account for approval."
+      subtitle="Select an approved department, then enter the account and GHL names."
       icon={Building2}
       maxWidth="max-w-xl"
-      closeOnBackdrop={!submitting}
+      closeOnBackdrop={false}
       closeOnEscape={!submitting}
       footer={
         <>
@@ -136,7 +136,7 @@ export default function AddAccountModal({ open, onClose, onSubmit, submitting = 
             className="sibs-btn-primary"
             disabled={submitting || loading || !selectedDepartment || !accountName.trim()}
           >
-            {submitting ? <><Loader2 className="h-4 w-4 animate-spin" />Submitting...</> : "Submit for Approval"}
+            {submitting ? <><Loader2 className="h-4 w-4 animate-spin" />Creating...</> : "Create Account"}
           </button>
         </>
       }
@@ -150,7 +150,7 @@ export default function AddAccountModal({ open, onClose, onSubmit, submitting = 
             <div>
               <p className="text-xs font-extrabold text-sibs-navy">Account Information</p>
               <p className="mt-0.5 text-[11px] font-semibold leading-relaxed text-sibs-muted">
-                Every account belongs to one approved department. The GHL name is an optional alias; Lines of Business can be added after approval.
+                Every account belongs to one approved department. The GHL name is an optional alias; Lines of Business can be added after creation.
               </p>
             </div>
           </div>

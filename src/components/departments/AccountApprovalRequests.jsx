@@ -68,6 +68,9 @@ function DetailItem({ label, children }) {
 export default function AccountApprovalRequests({
   requests = [],
   loading = false,
+  linkedRequestId = "",
+  onLinkOpened,
+  onLinkUnavailable,
   canApprove = false,
   processingId = "",
   onApprove,
@@ -86,6 +89,22 @@ export default function AccountApprovalRequests({
   const processingSelected = Boolean(
     selectedRequest && String(processingId) === String(selectedRequest.id),
   );
+
+  // Open exactly the request linked from the Account Approval email after
+  // pending requests have finished loading. Clear the URL parameter only
+  // after the modal has been selected (or a resolved not-found condition).
+  useEffect(() => {
+    if (!linkedRequestId || loading) return;
+    const matchingRequest = safeRequests.find(
+      (request) => String(request.id) === String(linkedRequestId),
+    );
+    if (matchingRequest) {
+      setSelectedRequestId(matchingRequest.id);
+      onLinkOpened?.();
+    } else {
+      onLinkUnavailable?.();
+    }
+  }, [linkedRequestId, loading, requests, onLinkOpened, onLinkUnavailable]);
 
   // The approved/rejected request is removed from the pending queue after
   // a successful backend operation. Close its details when that happens.
@@ -222,41 +241,31 @@ export default function AccountApprovalRequests({
         icon={Building2}
         badge="Pending Approval"
         maxWidth="max-w-2xl"
-        closeOnBackdrop={!processingSelected}
+        closeOnBackdrop={false}
         closeOnEscape={!processingSelected}
         footer={
-          <>
-            <button
-              type="button"
-              className="sibs-btn-secondary"
-              onClick={closeDetails}
-              disabled={processingSelected}
-            >
-              Close
-            </button>
-            {canApprove ? (
-              <>
-                <button
-                  type="button"
-                  className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-rose-200 bg-white px-4 text-xs font-extrabold text-rose-600 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50"
-                  onClick={() => onReject?.(selectedRequest)}
-                  disabled={!selectedRequest || processingSelected}
-                >
-                  {processingSelected ? <Loader2 className="h-4 w-4 animate-spin" /> : <XCircle className="h-4 w-4" />}
-                  Reject
-                </button>
-                <button
-                  type="button"
-                  className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 text-xs font-extrabold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
-                  onClick={() => onApprove?.(selectedRequest)}
-                  disabled={!selectedRequest || processingSelected}
-                >
-                  {processingSelected ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-                  {processingSelected ? "Processing..." : "Approve"}
-                </button>
-              </>
-            ) : null}
-          </>
+          canApprove ? (
+            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-end">
+              <button
+                type="button"
+                className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3.5 2xl:px-4 text-xs font-extrabold text-red-600 transition hover:bg-red-100 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                onClick={() => onReject?.(selectedRequest)}
+                disabled={!selectedRequest || processingSelected}
+              >
+                {processingSelected ? <Loader2 size={15} className="animate-spin" /> : <XCircle size={15} />}
+                Reject
+              </button>
+              <button
+                type="button"
+                className="sibs-modal-btn-primary gap-2"
+                onClick={() => onApprove?.(selectedRequest)}
+                disabled={!selectedRequest || processingSelected}
+              >
+                {processingSelected ? <Loader2 size={15} className="animate-spin" /> : <CheckCircle2 size={15} />}
+                {processingSelected ? "Processing..." : "Approve"}
+              </button>
+            </div>
+          ) : null
         }
       >
         {selectedRequest ? (
