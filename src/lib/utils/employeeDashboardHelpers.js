@@ -1,3 +1,4 @@
+import { createSystemDateTimeFormatter, formatHrisDateLocalized } from "@/lib/axios/dateFormatter";
 const MANILA_TIME_ZONE = "Asia/Manila";
 
 export function cleanDashboardText(value) {
@@ -15,7 +16,7 @@ export function formatDashboardDate(value, fallback = "—") {
 
   if (Number.isNaN(date.getTime())) return String(value).trim() || fallback;
 
-  return date.toLocaleDateString("en-US", {
+  return formatHrisDateLocalized(date, "en-US", {
     timeZone: MANILA_TIME_ZONE,
     year: "numeric",
     month: "long",
@@ -26,7 +27,7 @@ export function formatDashboardDate(value, fallback = "—") {
 export function formatPhtTime(date = new Date()) {
   const targetDate = date instanceof Date && !Number.isNaN(date.getTime()) ? date : new Date();
 
-  return new Intl.DateTimeFormat("en-US", {
+  return createSystemDateTimeFormatter("en-US", {
     timeZone: MANILA_TIME_ZONE,
     hour: "2-digit",
     minute: "2-digit",
@@ -38,7 +39,7 @@ export function formatPhtTime(date = new Date()) {
 export function formatPhtDate(date = new Date()) {
   const targetDate = date instanceof Date && !Number.isNaN(date.getTime()) ? date : new Date();
 
-  return new Intl.DateTimeFormat("en-US", {
+  return createSystemDateTimeFormatter("en-US", {
     timeZone: MANILA_TIME_ZONE,
     weekday: "long",
     year: "numeric",
@@ -168,7 +169,7 @@ export function formatAttendanceTime(value) {
   const parsed = new Date(raw);
   if (Number.isNaN(parsed.getTime())) return raw;
 
-  return new Intl.DateTimeFormat("en-US", {
+  return createSystemDateTimeFormatter("en-US", {
     timeZone: MANILA_TIME_ZONE,
     hour: "2-digit",
     minute: "2-digit",
@@ -447,7 +448,7 @@ export function getWeeklyScheduleFromResponse({
     now instanceof Date && !Number.isNaN(now.getTime()) ? now : new Date();
 
   // Get current Manila date key YYYY-MM-DD
-  const parts = new Intl.DateTimeFormat("en-CA", {
+  const parts = createSystemDateTimeFormatter("en-CA", {
     timeZone: MANILA_TIME_ZONE,
     year: "numeric",
     month: "2-digit",
@@ -525,7 +526,7 @@ export function getWeeklyScheduleFromResponse({
     const isToday = dateKey === todayKey;
     const isWeekend = index === 5 || index === 6;
 
-    const dateLabel = currentDay.toLocaleDateString("en-US", {
+    const dateLabel = formatHrisDateLocalized(currentDay, "en-US", {
       timeZone: "UTC",
       month: "long",
       day: "numeric",
@@ -720,7 +721,7 @@ export function getDashboardAnnouncements(user = {}) {
 function getManilaDateKey(value = new Date()) {
   const targetDate =
     value instanceof Date && !Number.isNaN(value.getTime()) ? value : new Date();
-  const parts = new Intl.DateTimeFormat("en-CA", {
+  const parts = createSystemDateTimeFormatter("en-CA", {
     timeZone: MANILA_TIME_ZONE,
     year: "numeric",
     month: "2-digit",

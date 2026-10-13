@@ -1,3 +1,4 @@
+import { formatHrisDateLocalized } from "@/lib/axios/dateFormatter";
 /* eslint-disable react-refresh/only-export-components */
 import React from "react";
 import { getSurveyStatusLabel, getResponseSourceLabel } from "@/lib/utils/candidateExperience/index.js";
@@ -6,7 +7,7 @@ export function formatExperienceDate(value) {
   if (!value) return "—";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "—";
-  return date.toLocaleDateString("en-PH", { month: "long", day: "numeric", year: "numeric" });
+  return formatHrisDateLocalized(date, "en-PH", { month: "long", day: "numeric", year: "numeric" });
 }
 
 export function surveyStatusTone(status) {

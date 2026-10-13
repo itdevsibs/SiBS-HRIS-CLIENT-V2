@@ -1,3 +1,4 @@
+import { createSystemDateTimeFormatter } from "@/lib/axios/dateFormatter";
 import {
   useCallback,
   useEffect,
@@ -445,7 +446,7 @@ function formatClock(value) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "";
 
-  return new Intl.DateTimeFormat("en-PH", {
+  return createSystemDateTimeFormatter("en-PH", {
     timeZone: "Asia/Manila",
     hour: "numeric",
     minute: "2-digit",
@@ -470,7 +471,7 @@ function getManilaDateKey(value) {
   const date = value instanceof Date ? value : new Date(value);
   if (Number.isNaN(date.getTime())) return "";
 
-  const parts = new Intl.DateTimeFormat("en-CA", {
+  const parts = createSystemDateTimeFormatter("en-CA", {
     timeZone: "Asia/Manila",
     year: "numeric",
     month: "2-digit",
@@ -541,7 +542,7 @@ function formatConversationTime(value, nowMs = Date.now()) {
 
   if (sameDate) return formatClock(value);
 
-  return new Intl.DateTimeFormat("en-PH", {
+  return createSystemDateTimeFormatter("en-PH", {
     timeZone: "Asia/Manila",
     month: "long",
     day: "numeric",
@@ -554,7 +555,7 @@ function formatMessageDay(value) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "";
 
-  return new Intl.DateTimeFormat("en-PH", {
+  return createSystemDateTimeFormatter("en-PH", {
     timeZone: "Asia/Manila",
     weekday: "short",
     month: "long",
@@ -613,7 +614,7 @@ function formatMessengerCenterTimestamp(currentValue, previousValue) {
 
   const elapsedDays = Math.floor((now.getTime() - date.getTime()) / 86_400_000);
   if (elapsedDays >= 0 && elapsedDays < 7) {
-    const weekday = new Intl.DateTimeFormat("en-PH", {
+    const weekday = createSystemDateTimeFormatter("en-PH", {
       timeZone: "Asia/Manila",
       weekday: "short",
     }).format(date);
@@ -621,7 +622,7 @@ function formatMessengerCenterTimestamp(currentValue, previousValue) {
   }
 
   const sameYear = date.getFullYear() === now.getFullYear();
-  const dateStr = new Intl.DateTimeFormat("en-PH", {
+  const dateStr = createSystemDateTimeFormatter("en-PH", {
     timeZone: "Asia/Manila",
     month: "long",
     day: "numeric",

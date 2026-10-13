@@ -1,3 +1,4 @@
+import { createSystemDateTimeFormatter } from "@/lib/axios/dateFormatter";
 import React, { useEffect, useState } from "react";
 import {
   AlertCircle,
@@ -25,7 +26,7 @@ function formatDate(dateValue) {
     return String(dateValue);
   }
 
-  return new Intl.DateTimeFormat("en-PH", {
+  return createSystemDateTimeFormatter("en-PH", {
     month: "long",
     day: "numeric",
     year: "numeric",

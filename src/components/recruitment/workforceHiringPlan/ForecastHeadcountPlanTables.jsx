@@ -1,3 +1,4 @@
+import { formatHrisDateLocalized } from "@/lib/axios/dateFormatter";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   formatOverviewNumber,
@@ -47,7 +48,7 @@ function formatDisplayDate(value, includeYear = true) {
 
   if (!date) return "—";
 
-  return date.toLocaleDateString("en-US", {
+  return formatHrisDateLocalized(date, "en-US", {
     month: "long",
     day: "numeric",
     ...(includeYear ? { year: "numeric" } : {}),

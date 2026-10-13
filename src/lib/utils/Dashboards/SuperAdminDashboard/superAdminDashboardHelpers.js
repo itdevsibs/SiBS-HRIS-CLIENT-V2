@@ -1,3 +1,4 @@
+import { formatHrisDateLocalized, formatHrisDateTimeLocalized } from "@/lib/axios/dateFormatter";
 export const SUPER_ADMIN_ROUTES = Object.freeze({
   employees: "/employee",
   hrDashboard: "/dashboard/admin",
@@ -60,7 +61,7 @@ export function buildDynamicSnapshotCards({
   const admins = adminCount || Number(metrics?.admins || 0);
 
   const now = new Date();
-  const monthName = now.toLocaleString("en-US", { month: "long" });
+  const monthName = formatHrisDateTimeLocalized(now, "en-US", { month: "long" });
   const year = now.getFullYear();
   const day = now.getDate();
   const lastDay = new Date(year, now.getMonth() + 1, 0).getDate();
@@ -578,7 +579,7 @@ function formatAuditTimestamp(rawTimestamp) {
     return String(rawTimestamp || "—");
   }
 
-  return date.toLocaleString("en-PH", {
+  return formatHrisDateTimeLocalized(date, "en-PH", {
     timeZone: "Asia/Manila",
     month: "long",
     day: "numeric",
@@ -593,7 +594,7 @@ export function formatLogDate(dateVal) {
   if (!dateVal) return null;
   if (dateVal instanceof Date) {
     if (Number.isNaN(dateVal.getTime())) return null;
-    return dateVal.toLocaleDateString("en-PH", {
+    return formatHrisDateLocalized(dateVal, "en-PH", {
       timeZone: "Asia/Manila",
       month: "long",
       day: "numeric",
@@ -605,7 +606,7 @@ export function formatLogDate(dateVal) {
   const isoMatch = str.match(/^(\d{4})-(\d{2})-(\d{2})/);
   if (isoMatch) {
     const d = new Date(Number(isoMatch[1]), Number(isoMatch[2]) - 1, Number(isoMatch[3]));
-    return d.toLocaleDateString("en-PH", {
+    return formatHrisDateLocalized(d, "en-PH", {
       month: "long",
       day: "numeric",
       year: "numeric",
@@ -614,7 +615,7 @@ export function formatLogDate(dateVal) {
 
   const d = new Date(str);
   if (!Number.isNaN(d.getTime())) {
-    return d.toLocaleDateString("en-PH", {
+    return formatHrisDateLocalized(d, "en-PH", {
       timeZone: "Asia/Manila",
       month: "long",
       day: "numeric",
@@ -763,7 +764,7 @@ export function normalizeAssignedAdminUsers(users = []) {
     if (user.updatedAt || user.updated_at) {
       const d = new Date(user.updatedAt || user.updated_at);
       if (!Number.isNaN(d.getTime())) {
-        lastActive = d.toLocaleDateString("en-PH", {
+        lastActive = formatHrisDateLocalized(d, "en-PH", {
           month: "long",
           day: "numeric",
           year: "numeric",

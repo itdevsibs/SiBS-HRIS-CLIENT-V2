@@ -1,3 +1,4 @@
+import { formatHrisDateLocalized } from "@/lib/axios/dateFormatter";
 import React, {
   createContext,
   useCallback,
@@ -242,7 +243,7 @@ function formatDate(value) {
     return String(value);
   }
 
-  return date.toLocaleDateString("en-US", {
+  return formatHrisDateLocalized(date, "en-US", {
     month: "long",
     day: "numeric",
     year: "numeric",

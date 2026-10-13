@@ -1,3 +1,4 @@
+import { formatHrisDateTimeLocalized } from "@/lib/axios/dateFormatter";
 import React, { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import {
@@ -49,7 +50,7 @@ function formatUploadedAt(value) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "";
 
-  return date.toLocaleString("en-PH", {
+  return formatHrisDateTimeLocalized(date, "en-PH", {
     timeZone: "Asia/Manila",
     month: "long",
     day: "numeric",

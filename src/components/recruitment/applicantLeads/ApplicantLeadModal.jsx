@@ -1,3 +1,4 @@
+import { formatHrisDateTimeLocalized } from "@/lib/axios/dateFormatter";
 import React, { useMemo, useRef, useState } from "react";
 import {
   Check,
@@ -62,7 +63,7 @@ function formatLeadCommentDateTime(value) {
 
   if (Number.isNaN(date.getTime())) return text;
 
-  return date.toLocaleString("en-PH", {
+  return formatHrisDateTimeLocalized(date, "en-PH", {
     timeZone: "Asia/Manila",
     year: "numeric",
     month: "long",

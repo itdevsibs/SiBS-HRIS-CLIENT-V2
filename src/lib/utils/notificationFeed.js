@@ -1,3 +1,4 @@
+import { formatHrisDateLocalized } from "@/lib/axios/dateFormatter";
 const MAJOR_ONBOARDING_REQUIREMENTS = Object.freeze([
   "Medical Records",
   "NBI Clearance",
@@ -75,7 +76,7 @@ export function formatNotificationTime(value, now = Date.now()) {
     return `${days} day${days === 1 ? "" : "s"} ago`;
   }
 
-  return new Date(timestamp).toLocaleDateString("en-PH", {
+  return formatHrisDateLocalized(new Date(timestamp), "en-PH", {
     month: "long",
     day: "numeric",
     year: "numeric",

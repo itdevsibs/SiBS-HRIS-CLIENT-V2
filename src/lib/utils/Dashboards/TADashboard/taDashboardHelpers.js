@@ -1,3 +1,4 @@
+import { formatHrisDateLocalized } from "@/lib/axios/dateFormatter";
 export const EMPTY_FUNNEL = Object.freeze({
   sourced: 0,
   screened: 0,
@@ -38,7 +39,7 @@ export function formatDate(value) {
 
   if (Number.isNaN(date.getTime())) return "—";
 
-  return date.toLocaleDateString("en-PH", {
+  return formatHrisDateLocalized(date, "en-PH", {
     timeZone: "Asia/Manila",
     month: "long",
     day: "numeric",

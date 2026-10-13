@@ -1,9 +1,10 @@
+import { createSystemDateTimeFormatter } from "@/lib/axios/dateFormatter";
 import api from "./api-template";
 
 const MANILA_TIME_ZONE = "Asia/Manila";
 
 function getManilaDateKey(value = new Date()) {
-  const parts = new Intl.DateTimeFormat("en-CA", {
+  const parts = createSystemDateTimeFormatter("en-CA", {
     timeZone: MANILA_TIME_ZONE,
     year: "numeric",
     month: "2-digit",

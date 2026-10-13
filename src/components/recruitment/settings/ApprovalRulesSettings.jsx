@@ -54,6 +54,13 @@ import {
   searchDepartmentApprovalEmployees,
 } from "../../../lib/axios/getDepartmentApprovalSettings.js";
 
+import {
+  addAccountApprovalUser,
+  getAccountApprovalUsers,
+  removeAccountApprovalUser,
+  searchAccountApprovalEmployees,
+} from "../../../lib/axios/getAccountApprovalSettings.js";
+
 const APPROVAL_RULE_TABS = [
   {
     key: "jobDescription",
@@ -105,6 +112,18 @@ const APPROVAL_RULE_TABS = [
     emptyText: "No Department approval users added yet.",
     rowDescription:
       "Can approve or reject new Department requests from the Departments page.",
+    isConnected: true,
+  },
+  {
+    key: "accounts",
+    title: "Account Approval",
+    shortTitle: "Accounts",
+    description:
+      "Manage users authorized to approve or reject new Account requests from the Departments page.",
+    icon: Building2,
+    badgeText: "Account Rules",
+    emptyText: "No Account approval users added yet.",
+    rowDescription: "Can approve or reject new Account requests.",
     isConnected: true,
   },
   {
@@ -369,6 +388,7 @@ function getRuleLabel(ruleKey) {
     return "Available Position Approval";
   }
   if (ruleKey === "departments") return "Department Approval";
+  if (ruleKey === "accounts") return "Account Approval";
 
   return "Offer Approval";
 }
@@ -407,6 +427,15 @@ function getRuleApi(ruleKey) {
       addUser: addDepartmentApprovalUser,
       removeUser: removeDepartmentApprovalUser,
       searchEmployees: searchDepartmentApprovalEmployees,
+    };
+  }
+
+  if (ruleKey === "accounts") {
+    return {
+      getUsers: getAccountApprovalUsers,
+      addUser: addAccountApprovalUser,
+      removeUser: removeAccountApprovalUser,
+      searchEmployees: searchAccountApprovalEmployees,
     };
   }
 
@@ -753,6 +782,7 @@ export default function ApprovalRulesSettings() {
     hiringNeeds: [],
     availablePositions: [],
     departments: [],
+    accounts: [],
   });
 
   const [loadingByRule, setLoadingByRule] = useState({
@@ -761,6 +791,7 @@ export default function ApprovalRulesSettings() {
     hiringNeeds: false,
     availablePositions: false,
     departments: false,
+    accounts: false,
   });
 
   const [searchByRule, setSearchByRule] = useState({
@@ -777,6 +808,7 @@ export default function ApprovalRulesSettings() {
     hiringNeeds: [],
     availablePositions: [],
     departments: [],
+    accounts: [],
   });
 
   const [selectedByRule, setSelectedByRule] = useState({
@@ -785,6 +817,7 @@ export default function ApprovalRulesSettings() {
     hiringNeeds: null,
     availablePositions: null,
     departments: null,
+    accounts: null,
   });
 
   const [searchingByRule, setSearchingByRule] = useState({
@@ -793,6 +826,7 @@ export default function ApprovalRulesSettings() {
     hiringNeeds: false,
     availablePositions: false,
     departments: false,
+    accounts: false,
   });
 
   const [addingByRule, setAddingByRule] = useState({
@@ -801,6 +835,7 @@ export default function ApprovalRulesSettings() {
     hiringNeeds: false,
     availablePositions: false,
     departments: false,
+    accounts: false,
   });
 
   const [removingId, setRemovingId] = useState("");
@@ -828,6 +863,7 @@ export default function ApprovalRulesSettings() {
       hiringNeeds: usersByRule.hiringNeeds.length,
       availablePositions: usersByRule.availablePositions.length,
       departments: usersByRule.departments.length,
+      accounts: usersByRule.accounts.length,
     };
   }, [usersByRule]);
 
@@ -1056,6 +1092,7 @@ export default function ApprovalRulesSettings() {
     loadUsers("hiringNeeds");
     loadUsers("availablePositions");
     loadUsers("departments");
+    loadUsers("accounts");
     loadUsers("offers");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -1081,7 +1118,7 @@ export default function ApprovalRulesSettings() {
 
             <p className="mt-1 sibs-text-xs 2xl:text-sm font-semibold text-sibs-muted">
               Configure approval users for Job Descriptions, Hiring Needs,
-              Available Positions, Departments, and Offers from one settings panel.
+              Available Positions, Departments, Accounts, and Offers from one settings panel.
             </p>
           </div>
         </div>

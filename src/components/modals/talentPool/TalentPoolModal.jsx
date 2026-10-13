@@ -1,3 +1,4 @@
+import { formatHrisDateLocalized } from "@/lib/axios/dateFormatter";
 import React from "react";
 import {
   X,
@@ -130,7 +131,7 @@ function calculateAge(dateOfBirth) {
 function formatDate(date) {
   if (!date) return "—";
 
-  return new Date(date).toLocaleDateString("en-PH", {
+  return formatHrisDateLocalized(new Date(date), "en-PH", {
     month: "long",
     day: "numeric",
     year: "numeric",

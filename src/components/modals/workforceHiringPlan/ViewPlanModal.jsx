@@ -1,3 +1,4 @@
+import { formatHrisDateLocalized } from "@/lib/axios/dateFormatter";
 import React, { useEffect, useMemo, useState } from "react";
 import {
   BarChart3,
@@ -60,7 +61,7 @@ function formatDateOnly(value) {
     return String(value);
   }
 
-  return date.toLocaleDateString("en-PH", {
+  return formatHrisDateLocalized(date, "en-PH", {
     month: "long",
     day: "numeric",
     year: "numeric",

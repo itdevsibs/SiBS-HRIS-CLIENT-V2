@@ -1,3 +1,4 @@
+import { formatHrisDateLocalized } from "@/lib/axios/dateFormatter";
 const CACHE_KEY = "sibs.om-dashboard.bootstrap.v1";
 const CACHE_TTL_MS = 10 * 60_000;
 
@@ -41,7 +42,7 @@ export function formatDate(value) {
 
   if (Number.isNaN(date.getTime())) return "—";
 
-  return date.toLocaleDateString("en-PH", {
+  return formatHrisDateLocalized(date, "en-PH", {
     timeZone: "Asia/Manila",
     month: "long",
     day: "numeric",

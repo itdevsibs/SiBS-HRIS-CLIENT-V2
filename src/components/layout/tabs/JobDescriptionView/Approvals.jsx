@@ -1,3 +1,4 @@
+import { formatHrisDateTimeLocalized } from "@/lib/axios/dateFormatter";
 import React, { useMemo, useState } from "react";
 import {
   AlertTriangle,
@@ -15,7 +16,7 @@ function formatDateTime(value) {
 
   if (Number.isNaN(parsedDate.getTime())) return "";
 
-  return parsedDate.toLocaleString("en-PH", {
+  return formatHrisDateTimeLocalized(parsedDate, "en-PH", {
     month: "long",
     day: "numeric",
     year: "numeric",

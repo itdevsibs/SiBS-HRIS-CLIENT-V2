@@ -1,3 +1,4 @@
+import { formatHrisDateLocalized } from "@/lib/axios/dateFormatter";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import Header from "../../components/layout/Header";
 import { useOnboarding } from "../../services/context/OnboardingContext";
@@ -15,7 +16,7 @@ import { PageHeaderHero } from "@/components/ui";
 const formatDate = (dateValue) =>
   !dateValue
     ? "—"
-    : new Date(dateValue).toLocaleDateString("en-PH", {
+    : formatHrisDateLocalized(new Date(dateValue), "en-PH", {
         month: "long",
         day: "numeric",
         year: "numeric",

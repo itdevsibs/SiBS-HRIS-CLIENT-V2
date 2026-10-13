@@ -1,3 +1,4 @@
+import { formatHrisDateTimeLocalized } from "@/lib/axios/dateFormatter";
 import React, {
   useEffect,
   useLayoutEffect,
@@ -145,7 +146,7 @@ function formatFinalInterviewDateTime(value) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return String(value);
 
-  return date.toLocaleString("en-PH", {
+  return formatHrisDateTimeLocalized(date, "en-PH", {
     month: "long",
     day: "numeric",
     year: "numeric",

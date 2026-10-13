@@ -1,3 +1,4 @@
+import { formatHrisDateLocalized } from "@/lib/axios/dateFormatter";
 import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
   Building2,
@@ -73,7 +74,7 @@ function formatDate(value) {
     return String(value);
   }
 
-  return date.toLocaleDateString("en-PH", {
+  return formatHrisDateLocalized(date, "en-PH", {
     year: "numeric",
     month: "long",
     day: "numeric",

@@ -1,3 +1,4 @@
+import { createSystemDateTimeFormatter } from "@/lib/axios/dateFormatter";
 const DATE_ONLY_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
 const PUBLIC_PATH_PREFIXES = Object.freeze([
   "/login",
@@ -25,7 +26,7 @@ function parseDateOnly(value) {
 }
 
 function businessDateParts(now) {
-  const parts = new Intl.DateTimeFormat("en-US", {
+  const parts = createSystemDateTimeFormatter("en-US", {
     timeZone: "Asia/Manila",
     year: "numeric",
     month: "numeric",

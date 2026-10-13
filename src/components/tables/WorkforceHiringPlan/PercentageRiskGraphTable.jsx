@@ -1,3 +1,4 @@
+import { formatHrisDateLocalized } from "@/lib/axios/dateFormatter";
 import React, { useMemo } from "react";
 
 const EDGE = "rounded-[10px]";
@@ -310,7 +311,7 @@ function getWeekStartDate(activeWeek) {
 }
 
 function formatWeekDate(date) {
-  return date.toLocaleDateString("en-US", {
+  return formatHrisDateLocalized(date, "en-US", {
     month: "long",
     day: "numeric",
     year: "numeric",
@@ -1411,7 +1412,7 @@ export default function PercentageRiskGraphTable({
   );
 
   const trendLabels = planRows.map((row) =>
-    row.weekDate.toLocaleDateString("en-US", {
+    formatHrisDateLocalized(row.weekDate, "en-US", {
       month: "long",
       day: "numeric",
       year: "numeric",

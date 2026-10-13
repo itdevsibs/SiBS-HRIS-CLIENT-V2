@@ -9,7 +9,9 @@ import {
 } from "lucide-react";
 
 import AddDepartmentModal from "@/components/departments/AddDepartmentModal";
+import AddAccountModal from "@/components/departments/AddAccountModal";
 import DepartmentApprovalRequests from "@/components/departments/DepartmentApprovalRequests";
+import AccountApprovalRequests from "@/components/departments/AccountApprovalRequests";
 import DepartmentCard from "@/components/departments/DepartmentCard";
 import DepartmentDetailsModal from "@/components/departments/DepartmentDetailsModal";
 import DepartmentFilters from "@/components/departments/DepartmentFilters";
@@ -20,7 +22,11 @@ import { PageHeaderHero } from "@/components/ui";
 import useDepartments from "@/hooks/departments/useDepartments";
 import {
   approveDepartmentRequest,
+  approveAccountRequest,
+  getAccountApprovalRequests,
+  rejectAccountRequest,
   createDepartmentRequest,
+  createDepartmentAccount,
   getDepartmentApprovalAccess,
   getDepartmentApprovalRequests,
   getDepartmentDetails,
@@ -43,13 +49,21 @@ function DepartmentsPageContent() {
   const [selectedDepartment, setSelectedDepartment] = useState(null);
   const [loadingDepartmentId, setLoadingDepartmentId] = useState("");
   const [addModalOpen, setAddModalOpen] = useState(false);
+  const [addAccountModalOpen, setAddAccountModalOpen] = useState(false);
+  const [submittingAccount, setSubmittingAccount] = useState(false);
   const [submittingDepartment, setSubmittingDepartment] = useState(false);
   const [approvalRequests, setApprovalRequests] = useState([]);
+  const [accountApprovalRequests, setAccountApprovalRequests] = useState([]);
   const [approvalLoading, setApprovalLoading] = useState(true);
   const [canApproveDepartments, setCanApproveDepartments] = useState(false);
+  const [canApproveAccounts, setCanApproveAccounts] = useState(false);
   const [canManageDepartments, setCanManageDepartments] = useState(false);
   const [canManageLobs, setCanManageLobs] = useState(false);
+  const [approvalAccessError, setApprovalAccessError] = useState("");
+  const [approvalRequestsError, setApprovalRequestsError] = useState("");
+  const [accountApprovalRequestsError, setAccountApprovalRequestsError] = useState("");
   const [processingRequestId, setProcessingRequestId] = useState("");
+  const [processingAccountRequestId, setProcessingAccountRequestId] = useState("");
   const [statusModal, setStatusModal] = useState({
     open: false,
     type: "success",
@@ -63,46 +77,73 @@ function DepartmentsPageContent() {
 
   const loadApprovalData = useCallback(async () => {
     setApprovalLoading(true);
+    setApprovalAccessError("");
+    setApprovalRequestsError("");
+    setAccountApprovalRequestsError("");
 
+    let canManage = false;
     try {
+      // Authorization and approval-list retrieval are independent. An error
+      // loading pending requests must NEVER downgrade a Super Admin/HR Admin
+      // to read-only or hide Add Department / LOB management controls.
       const accessPayload = await getDepartmentApprovalAccess();
-      const canManage = Boolean(
+      canManage = Boolean(
         accessPayload?.canManageDepartments ??
           accessPayload?.data?.canManageDepartments,
       );
-      const canApprove = Boolean(
-        accessPayload?.canApprove ?? accessPayload?.data?.canApprove,
-      );
-
       setCanManageDepartments(canManage);
-      setCanApproveDepartments(canApprove);
-      setCanManageLobs(
-        Boolean(
-          accessPayload?.canManageLobs ?? accessPayload?.data?.canManageLobs,
-        ),
+      setCanApproveDepartments(
+        Boolean(accessPayload?.canApprove ?? accessPayload?.data?.canApprove),
       );
-
-      if (canManage) {
-        const requestsPayload = await getDepartmentApprovalRequests();
-        setApprovalRequests(
-          Array.isArray(requestsPayload?.data)
-            ? requestsPayload.data
-            : Array.isArray(requestsPayload?.rows)
-              ? requestsPayload.rows
-              : [],
-        );
-      } else {
-        setApprovalRequests([]);
-      }
+      setCanApproveAccounts(
+        Boolean(accessPayload?.canApproveAccounts ?? accessPayload?.data?.canApproveAccounts),
+      );
+      setCanManageLobs(
+        Boolean(accessPayload?.canManageLobs ?? accessPayload?.data?.canManageLobs),
+      );
     } catch (error) {
-      console.error("LOAD DEPARTMENT APPROVAL DATA ERROR:", error);
-      setApprovalRequests([]);
-      setCanApproveDepartments(false);
+      console.error("LOAD DEPARTMENT APPROVAL ACCESS ERROR:", error);
+      setApprovalAccessError(errorMessage(error, "Unable to verify Department permissions."));
       setCanManageDepartments(false);
+      setCanApproveDepartments(false);
+      setCanApproveAccounts(false);
       setCanManageLobs(false);
-    } finally {
+      setApprovalRequests([]);
+      setAccountApprovalRequests([]);
       setApprovalLoading(false);
+      return;
     }
+
+    if (!canManage) {
+      setApprovalRequests([]);
+      setAccountApprovalRequests([]);
+      setApprovalLoading(false);
+      return;
+    }
+
+    // Independent queues: a failure loading one does not hide management
+    // buttons or suppress requests from the other module.
+    const [departmentResult, accountResult] = await Promise.allSettled([
+      getDepartmentApprovalRequests(),
+      getAccountApprovalRequests(),
+    ]);
+
+    if (departmentResult.status === "fulfilled") {
+      const payload = departmentResult.value;
+      setApprovalRequests(Array.isArray(payload?.data) ? payload.data : Array.isArray(payload?.rows) ? payload.rows : []);
+    } else {
+      setApprovalRequests([]);
+      setApprovalRequestsError(errorMessage(departmentResult.reason, "Unable to load pending Department approvals."));
+    }
+
+    if (accountResult.status === "fulfilled") {
+      const payload = accountResult.value;
+      setAccountApprovalRequests(Array.isArray(payload?.data) ? payload.data : Array.isArray(payload?.rows) ? payload.rows : []);
+    } else {
+      setAccountApprovalRequests([]);
+      setAccountApprovalRequestsError(errorMessage(accountResult.reason, "Unable to load pending Account approvals."));
+    }
+    setApprovalLoading(false);
   }, []);
 
   useEffect(() => {
@@ -166,6 +207,22 @@ function DepartmentsPageContent() {
     }
   }
 
+  async function handleCreateAccount({ departmentId, accountName, ghlName }) {
+    if (!canManageDepartments) throw new Error("Account management access is required.");
+
+    setSubmittingAccount(true);
+    try {
+      const result = await createDepartmentAccount({ departmentId, accountName, ghlName });
+      setAddAccountModalOpen(false);
+      await loadApprovalData();
+      showStatus("success", "Account Submitted", result?.message || `${accountName} was submitted for Account Approval.`);
+    } catch (error) {
+      throw new Error(errorMessage(error, "Unable to create the account."));
+    } finally {
+      setSubmittingAccount(false);
+    }
+  }
+
   async function handleApproveDepartment(request) {
     if (!request?.id) return;
 
@@ -219,6 +276,35 @@ function DepartmentsPageContent() {
     }
   }
 
+  async function handleApproveAccount(request) {
+    if (!request?.id) return;
+    setProcessingAccountRequestId(String(request.id));
+    try {
+      const result = await approveAccountRequest(request.id);
+      departments.refresh();
+      await loadApprovalData();
+      showStatus("success", "Account Approved", result?.message || "Account approved and added to the directory.");
+    } catch (error) {
+      showStatus("error", "Account Approval Failed", errorMessage(error, "Unable to approve Account request."));
+    } finally {
+      setProcessingAccountRequestId("");
+    }
+  }
+
+  async function handleRejectAccount(request) {
+    if (!request?.id) return;
+    setProcessingAccountRequestId(String(request.id));
+    try {
+      const result = await rejectAccountRequest(request.id);
+      await loadApprovalData();
+      showStatus("success", "Account Rejected", result?.message || "Account request rejected.");
+    } catch (error) {
+      showStatus("error", "Account Rejection Failed", errorMessage(error, "Unable to reject Account request."));
+    } finally {
+      setProcessingAccountRequestId("");
+    }
+  }
+
   return (
     <div className="sibs-dashboard-shell">
       <Header />
@@ -234,7 +320,18 @@ function DepartmentsPageContent() {
           }
           className="mb-5"
           actions={
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              {canManageDepartments ? (
+                <button
+                  type="button"
+                  className="sibs-btn-secondary"
+                  onClick={() => setAddAccountModalOpen(true)}
+                >
+                  <Plus className="h-4 w-4" />
+                  Add Account
+                </button>
+              ) : null}
+
               {canManageDepartments ? (
                 <button
                   type="button"
@@ -266,6 +363,38 @@ function DepartmentsPageContent() {
         />
 
         <DepartmentSummaryCards summary={departments.summary} />
+
+        {approvalAccessError ? (
+          <div role="alert" className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-semibold text-amber-800">
+            <span>Department permissions could not be verified: {approvalAccessError}</span>
+            <button type="button" className="underline underline-offset-2" onClick={loadApprovalData}>Retry</button>
+          </div>
+        ) : null}
+
+        {canManageDepartments && approvalRequestsError ? (
+          <div role="alert" className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-semibold text-amber-800">
+            <span>Pending Department approvals could not be loaded: {approvalRequestsError}</span>
+            <button type="button" className="underline underline-offset-2" onClick={loadApprovalData}>Retry</button>
+          </div>
+        ) : null}
+
+        {canManageDepartments && accountApprovalRequestsError ? (
+          <div role="alert" className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-semibold text-amber-800">
+            <span>Pending Account approvals could not be loaded: {accountApprovalRequestsError}</span>
+            <button type="button" className="underline underline-offset-2" onClick={loadApprovalData}>Retry</button>
+          </div>
+        ) : null}
+
+        {canManageDepartments ? (
+          <AccountApprovalRequests
+            requests={accountApprovalRequests}
+            loading={approvalLoading}
+            canApprove={canApproveAccounts}
+            processingId={processingAccountRequestId}
+            onApprove={handleApproveAccount}
+            onReject={handleRejectAccount}
+          />
+        ) : null}
 
         {canManageDepartments ? (
           <DepartmentApprovalRequests
@@ -360,6 +489,15 @@ function DepartmentsPageContent() {
           onClose={() => setAddModalOpen(false)}
           onSubmit={handleCreateDepartment}
           submitting={submittingDepartment}
+        />
+      ) : null}
+
+      {canManageDepartments ? (
+        <AddAccountModal
+          open={addAccountModalOpen}
+          onClose={() => setAddAccountModalOpen(false)}
+          onSubmit={handleCreateAccount}
+          submitting={submittingAccount}
         />
       ) : null}
 

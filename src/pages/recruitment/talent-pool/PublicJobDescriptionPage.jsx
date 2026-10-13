@@ -1,3 +1,4 @@
+import { createSystemDateTimeFormatter } from "@/lib/axios/dateFormatter";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
@@ -98,7 +99,7 @@ function formatDate(value) {
 
   if (Number.isNaN(date.getTime())) return text;
 
-  return new Intl.DateTimeFormat("en-PH", {
+  return createSystemDateTimeFormatter("en-PH", {
     year: "numeric",
     month: "long",
     day: "numeric",

@@ -1,3 +1,4 @@
+import { createSystemDateTimeFormatter } from "@/lib/axios/dateFormatter";
 export const EDITABLE_PROFILE_FIELDS = Object.freeze([
   "nameExtension",
   "preferredName",
@@ -32,7 +33,7 @@ export function toProfileDate(value) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return rawValue.slice(0, 10);
 
-  return new Intl.DateTimeFormat("en-CA", {
+  return createSystemDateTimeFormatter("en-CA", {
     timeZone: "Asia/Manila",
     year: "numeric",
     month: "2-digit",

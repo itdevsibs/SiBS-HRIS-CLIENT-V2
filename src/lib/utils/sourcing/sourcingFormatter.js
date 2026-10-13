@@ -1,3 +1,4 @@
+import { formatHrisDateLocalized } from "@/lib/axios/dateFormatter";
 export function getTodayISO() {
   return new Date().toISOString().slice(0, 10);
 }
@@ -9,7 +10,7 @@ export function formatDate(date) {
 
   if (Number.isNaN(parsed.getTime())) return "—";
 
-  return parsed.toLocaleDateString("en-PH", {
+  return formatHrisDateLocalized(parsed, "en-PH", {
     month: "long",
     day: "numeric",
     year: "numeric",
@@ -23,7 +24,7 @@ export function formatLongDate(date) {
 
   if (Number.isNaN(parsed.getTime())) return "—";
 
-  return parsed.toLocaleDateString("en-PH", {
+  return formatHrisDateLocalized(parsed, "en-PH", {
     month: "long",
     day: "numeric",
     year: "numeric",
@@ -41,7 +42,7 @@ export function formatShortDate(value) {
 
   if (Number.isNaN(parsed.getTime())) return "";
 
-  return parsed.toLocaleDateString("en-PH", {
+  return formatHrisDateLocalized(parsed, "en-PH", {
     month: "long",
     day: "numeric",
     year: "numeric",

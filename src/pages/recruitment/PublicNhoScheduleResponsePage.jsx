@@ -1,3 +1,4 @@
+import { formatHrisDateLocalized } from "@/lib/axios/dateFormatter";
 
 import { useEffect, useRef, useState } from "react";
 import {
@@ -55,7 +56,7 @@ function formatFriday(value = "") {
   const date = parseDateOnly(value);
   if (!date) return value || "—";
 
-  return date.toLocaleDateString("en-PH", {
+  return formatHrisDateLocalized(date, "en-PH", {
     weekday: "long",
     month: "long",
     day: "numeric",
@@ -468,7 +469,7 @@ function formatDatePickerValue(value = "") {
   const date = parseDateOnly(value);
   if (!date) return "Select date";
 
-  return date.toLocaleDateString("en-PH", {
+  return formatHrisDateLocalized(date, "en-PH", {
     month: "long",
     day: "numeric",
     year: "numeric",
@@ -660,7 +661,7 @@ function NhoFridayDatePicker({
             </button>
 
             <p className="text-sm font-extrabold text-[#0D4676]">
-              {displayDate.toLocaleDateString("en-PH", {
+              {formatHrisDateLocalized(displayDate, "en-PH", {
                 month: "long",
                 year: "numeric",
               })}

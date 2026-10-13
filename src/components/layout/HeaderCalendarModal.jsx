@@ -1,3 +1,4 @@
+import { formatHrisDateLocalized, formatHrisTimeLocalized } from "@/lib/axios/dateFormatter";
 import React, {
   useCallback,
   useEffect,
@@ -186,7 +187,7 @@ function formatTimeLabel(value) {
 
   if (Number.isNaN(date.getTime())) return "";
 
-  return date.toLocaleTimeString("en-US", {
+  return formatHrisTimeLocalized(date, "en-US", {
     hour: "2-digit",
     minute: "2-digit",
   });
@@ -364,7 +365,7 @@ function formatDayLabel(dateKey, options = {}) {
 
   if (Number.isNaN(date.getTime())) return "";
 
-  return date.toLocaleDateString("en-US", {
+  return formatHrisDateLocalized(date, "en-US", {
     month: options.month || "long",
     day: "numeric",
     ...(options.weekday ? { weekday: options.weekday } : {}),
@@ -396,7 +397,7 @@ function buildWeekCells(viewDate) {
     return {
       date,
       key: formatDateKey(date),
-      label: date.toLocaleDateString("en-US", {
+      label: formatHrisDateLocalized(date, "en-US", {
         weekday: "short",
         day: "numeric",
       }),
@@ -412,11 +413,11 @@ function buildRangeLabel(cells = []) {
   const sameYear = firstDate.getFullYear() === lastDate.getFullYear();
   const sameMonth = firstDate.getMonth() === lastDate.getMonth();
 
-  const firstLabel = firstDate.toLocaleDateString("en-US", {
+  const firstLabel = formatHrisDateLocalized(firstDate, "en-US", {
     month: "long",
     day: "numeric",
   });
-  const lastLabel = lastDate.toLocaleDateString("en-US", {
+  const lastLabel = formatHrisDateLocalized(lastDate, "en-US", {
     month: sameMonth ? undefined : "long",
     day: "numeric",
     year: sameYear ? undefined : "numeric",

@@ -1,3 +1,4 @@
+import { formatHrisDateLocalized } from "@/lib/axios/dateFormatter";
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 export function normalizeReportText(value) {
@@ -118,7 +119,7 @@ function getIsoWeekNumber(date) {
 }
 
 function formatShortDate(date, includeYear = false) {
-  return date.toLocaleDateString("en-PH", {
+  return formatHrisDateLocalized(date, "en-PH", {
     month: "long",
     day: "numeric",
     ...(includeYear ? { year: "numeric" } : {}),

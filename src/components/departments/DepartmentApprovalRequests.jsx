@@ -1,3 +1,5 @@
+import { formatSystemDateTime } from "@/lib/axios/dateFormatter";
+
 import {
   CheckCircle2,
   Clock3,
@@ -5,24 +7,7 @@ import {
   XCircle,
 } from "lucide-react";
 
-function formatSqlDateTime(value) {
-  const text = String(value || "").trim();
-  const match = text.match(
-    /^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?/,
-  );
 
-  if (!match) return text || "-";
-
-  const [, year, month, day, hour, minute] = match;
-  const monthName = new Intl.DateTimeFormat("en-US", { month: "long" }).format(
-    new Date(2000, Number(month) - 1, 1),
-  );
-  const hourNumber = Number(hour);
-  const displayHour = hourNumber % 12 || 12;
-  const meridiem = hourNumber >= 12 ? "PM" : "AM";
-
-  return `${monthName} ${Number(day)}, ${year} at ${displayHour}:${minute} ${meridiem} GMT+8`;
-}
 
 export default function DepartmentApprovalRequests({
   requests = [],
@@ -80,7 +65,7 @@ export default function DepartmentApprovalRequests({
                       "System"}
                   </p>
                   <p className="mt-0.5 text-[10px] font-semibold text-sibs-tertiary-5">
-                    {formatSqlDateTime(
+                    {formatSystemDateTime(
                       request.requestedAt || request.requested_at,
                     )}
                   </p>

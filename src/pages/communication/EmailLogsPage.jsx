@@ -1,3 +1,4 @@
+import { createSystemDateTimeFormatter } from "@/lib/axios/dateFormatter";
 import { createElement, useMemo, useState } from "react";
 import {
   AlertTriangle,
@@ -85,7 +86,7 @@ function formatDispatchDate(value) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "—";
 
-  return new Intl.DateTimeFormat("en-PH", {
+  return createSystemDateTimeFormatter("en-PH", {
     timeZone: "Asia/Manila",
     year: "numeric",
     month: "2-digit",

@@ -1,3 +1,4 @@
+import { formatHrisDateLocalized } from "@/lib/axios/dateFormatter";
 export function getTodayDate() {
   return new Date().toISOString().split("T")[0];
 }
@@ -23,10 +24,10 @@ export function getCurrentWeekDateRange() {
   const sunday = new Date(monday);
   sunday.setDate(monday.getDate() + 6);
 
-  return `${monday.toLocaleDateString("en-PH", {
+  return `${formatHrisDateLocalized(monday, "en-PH", {
     month: "long",
     day: "numeric",
-  })} - ${sunday.toLocaleDateString("en-PH", {
+  })} - ${formatHrisDateLocalized(sunday, "en-PH", {
     month: "long",
     day: "numeric",
     year: "numeric",
@@ -49,7 +50,7 @@ export function formatDate(date) {
   const parsed = new Date(date);
   if (Number.isNaN(parsed.getTime())) return "—";
 
-  return parsed.toLocaleDateString("en-PH", {
+  return formatHrisDateLocalized(parsed, "en-PH", {
     month: "long",
     day: "numeric",
     year: "numeric",

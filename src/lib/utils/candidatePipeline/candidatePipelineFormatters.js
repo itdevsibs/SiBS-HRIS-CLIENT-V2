@@ -1,5 +1,6 @@
+import { formatHrisDateLocalized, formatHrisDateTimeLocalized, formatHrisTimeLocalized } from "@/lib/axios/dateFormatter";
 export function getCurrentTimestamp() {
-  return new Date().toLocaleString("en-PH", {
+  return formatHrisDateTimeLocalized(new Date(), "en-PH", {
     year: "numeric",
     month: "long",
     day: "numeric",
@@ -15,7 +16,7 @@ export function getCurrentDate() {
 export function formatDateTime(date) {
   if (!date) return "—";
 
-  return new Date(date).toLocaleDateString("en-PH", {
+  return formatHrisDateLocalized(new Date(date), "en-PH", {
     month: "long",
     day: "numeric",
     year: "numeric",
@@ -27,14 +28,14 @@ export function formatDateTime(date) {
 export function formatTime(date) {
   if (!date) return "—";
 
-  return new Date(date).toLocaleTimeString("en-PH", {
+  return formatHrisTimeLocalized(new Date(date), "en-PH", {
     hour: "numeric",
     minute: "2-digit",
   });
 }
 
 export function formatMonthYear(date) {
-  return date.toLocaleDateString("en-PH", {
+  return formatHrisDateLocalized(date, "en-PH", {
     month: "long",
     year: "numeric",
   });

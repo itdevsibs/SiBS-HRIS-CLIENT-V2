@@ -1,3 +1,4 @@
+import { formatHrisDateLocalized } from "@/lib/axios/dateFormatter";
 import React, {
   useEffect,
   useMemo,
@@ -20,7 +21,7 @@ function formatDate(date) {
 
   if (Number.isNaN(parsed.getTime())) return "—";
 
-  return parsed.toLocaleDateString("en-PH", {
+  return formatHrisDateLocalized(parsed, "en-PH", {
     month: "long",
     day: "numeric",
     year: "numeric",

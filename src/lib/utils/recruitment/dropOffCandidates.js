@@ -1,3 +1,4 @@
+import { formatHrisDateLocalized } from "@/lib/axios/dateFormatter";
 export function cleanDropOffText(value) {
   return String(value ?? "").trim();
 }
@@ -113,7 +114,7 @@ export function formatDropOffDate(value) {
     return String(value);
   }
 
-  return date.toLocaleDateString("en-PH", {
+  return formatHrisDateLocalized(date, "en-PH", {
     month: "long",
     day: "numeric",
     year: "numeric",

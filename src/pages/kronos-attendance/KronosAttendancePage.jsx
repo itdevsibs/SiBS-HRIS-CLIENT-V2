@@ -1,3 +1,4 @@
+import { formatHrisDateLocalized, formatHrisTimeLocalized } from "@/lib/axios/dateFormatter";
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
   CalendarDays,
@@ -42,7 +43,7 @@ function formatDate(value) {
 
   if (Number.isNaN(parsed.getTime())) return raw;
 
-  return parsed.toLocaleDateString("en-PH", {
+  return formatHrisDateLocalized(parsed, "en-PH", {
     year: "numeric",
     month: "long",
     day: "numeric",
@@ -82,7 +83,7 @@ function formatDateDisplay(value, fallback = "Select date") {
 
   if (!parsed) return fallback;
 
-  return parsed.toLocaleDateString("en-PH", {
+  return formatHrisDateLocalized(parsed, "en-PH", {
     month: "long",
     day: "numeric",
     year: "numeric",
@@ -90,7 +91,7 @@ function formatDateDisplay(value, fallback = "Select date") {
 }
 
 function getMonthLabel(date) {
-  return date.toLocaleDateString("en-PH", {
+  return formatHrisDateLocalized(date, "en-PH", {
     month: "long",
     year: "numeric",
   });
@@ -148,7 +149,7 @@ function formatTime(value) {
       0,
     );
 
-    return date.toLocaleTimeString("en-PH", {
+    return formatHrisTimeLocalized(date, "en-PH", {
       hour: "2-digit",
       minute: "2-digit",
       hour12: true,
@@ -159,7 +160,7 @@ function formatTime(value) {
 
   if (Number.isNaN(parsed.getTime())) return "—";
 
-  return parsed.toLocaleTimeString("en-PH", {
+  return formatHrisTimeLocalized(parsed, "en-PH", {
     timeZone: "Asia/Manila",
     hour: "2-digit",
     minute: "2-digit",
@@ -1335,7 +1336,7 @@ export default function KronosAttendancePage() {
                 {lastUpdatedAt ? (
                   <span className="sibs-text-micro font-extrabold text-[#667085]">
                     Updated{" "}
-                    {lastUpdatedAt.toLocaleTimeString("en-PH", {
+                    {formatHrisTimeLocalized(lastUpdatedAt, "en-PH", {
                       hour: "2-digit",
                       minute: "2-digit",
                       second: "2-digit",

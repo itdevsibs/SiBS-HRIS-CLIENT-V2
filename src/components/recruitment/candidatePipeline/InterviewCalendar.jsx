@@ -1,3 +1,4 @@
+import { formatHrisDateLocalized } from "@/lib/axios/dateFormatter";
 import React, { useEffect, useMemo, useState } from "react";
 import {
   getAccount,
@@ -112,10 +113,10 @@ const InterviewCalendar = ({ candidates, onViewCandidate }) => {
     if (calendarViewType === "Week") {
       const firstDay = weekDays[0];
       const lastDay = weekDays[weekDays.length - 1];
-      return `${firstDay.toLocaleDateString("en-PH", {
+      return `${formatHrisDateLocalized(firstDay, "en-PH", {
         month: "long",
         day: "numeric",
-      })} - ${lastDay.toLocaleDateString("en-PH", {
+      })} - ${formatHrisDateLocalized(lastDay, "en-PH", {
         month: "long",
         day: "numeric",
         year: "numeric",
@@ -371,7 +372,7 @@ const InterviewCalendar = ({ candidates, onViewCandidate }) => {
                   >
                     <div className="mb-3 rounded-[10px] bg-sibs-surface px-2 py-2.5 text-center">
                       <p className="text-[9px] font-extrabold uppercase tracking-wider text-sibs-navy">
-                        {date.toLocaleDateString("en-PH", { weekday: "short" })}
+                        {formatHrisDateLocalized(date, "en-PH", { weekday: "short" })}
                       </p>
                       <p
                         className={`mx-auto mt-1 flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-extrabold ${
@@ -408,7 +409,7 @@ const InterviewCalendar = ({ candidates, onViewCandidate }) => {
                 >
                   <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                     <h3 className="sibs-text-xs font-extrabold text-sibs-navy">
-                      {new Date(dateKey).toLocaleDateString("en-PH", {
+                      {formatHrisDateLocalized(new Date(dateKey), "en-PH", {
                         weekday: "long",
                         month: "long",
                         day: "numeric",

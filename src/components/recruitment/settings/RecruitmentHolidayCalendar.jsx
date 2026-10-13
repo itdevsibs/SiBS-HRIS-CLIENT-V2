@@ -1,3 +1,4 @@
+import { formatHrisDateLocalized } from "@/lib/axios/dateFormatter";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   CalendarClock,
@@ -47,7 +48,7 @@ function formatHolidayDate(value) {
     Number(match[3]),
   );
 
-  return date.toLocaleDateString("en-PH", {
+  return formatHrisDateLocalized(date, "en-PH", {
     weekday: "long",
     month: "long",
     day: "numeric",

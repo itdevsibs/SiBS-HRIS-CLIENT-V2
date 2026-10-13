@@ -1,3 +1,4 @@
+import { formatHrisDateLocalized } from "@/lib/axios/dateFormatter";
 import React from "react";
 import {
   CircleCheckBig,
@@ -22,7 +23,7 @@ function formatFullMonthDate(value) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return cleanText(value, "—");
 
-  return date.toLocaleDateString("en-PH", {
+  return formatHrisDateLocalized(date, "en-PH", {
     month: "long",
     day: "numeric",
     year: "numeric",
