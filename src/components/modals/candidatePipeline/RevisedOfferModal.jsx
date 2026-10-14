@@ -162,8 +162,8 @@ export default function RevisedOfferModal({
                 </p>
               </div>
               <div className="rounded-[10px] border border-blue-100 bg-blue-50 px-3 py-2">
-                <p className="sibs-kicker text-sibs-primary-1">Current Total Daily Rate</p>
-                <p className="mt-0.5 sibs-text-sm font-extrabold tabular-nums text-sibs-primary-1">
+                <p className="sibs-kicker text-sibs-navy">Current Total Daily Rate</p>
+                <p className="mt-0.5 sibs-text-sm font-extrabold tabular-nums text-sibs-navy">
                   {formatCurrency(toNumber(currentBasicDailyRate) + toNumber(currentDailyDeMinimis))}
                 </p>
               </div>
@@ -185,7 +185,7 @@ export default function RevisedOfferModal({
                   onKeyDown={preventNumberArrowChange}
                   onChange={(event) => setBasicDailyRate(event.target.value)}
                   placeholder="Enter new basic daily rate"
-                  className="h-8.5 2xl:h-10 w-full rounded-[10px] border border-sibs-border bg-sibs-surface px-3 sibs-text-xs font-semibold tabular-nums text-sibs-navy outline-none transition placeholder:text-sibs-faint hover:border-sibs-orange/40 hover:bg-white focus:border-sibs-orange focus:bg-white focus:ring-4 focus:ring-sibs-orange/10 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-sibs-muted"
+                  className="h-8.5 2xl:h-10 w-full rounded-[10px] border border-sibs-border bg-sibs-surface px-3 sibs-text-xs font-semibold tabular-nums text-sibs-navy outline-none transition placeholder:text-sibs-muted hover:border-sibs-orange/40 hover:bg-white focus:border-sibs-orange focus:bg-white focus:ring-4 focus:ring-sibs-orange/10 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-sibs-muted"
                 />
               </label>
 
@@ -202,13 +202,13 @@ export default function RevisedOfferModal({
                   onKeyDown={preventNumberArrowChange}
                   onChange={(event) => setDailyDeMinimis(event.target.value)}
                   placeholder="Enter new daily de minimis"
-                  className="h-8.5 2xl:h-10 w-full rounded-[10px] border border-sibs-border bg-sibs-surface px-3 sibs-text-xs font-semibold tabular-nums text-sibs-navy outline-none transition placeholder:text-sibs-faint hover:border-sibs-orange/40 hover:bg-white focus:border-sibs-orange focus:bg-white focus:ring-4 focus:ring-sibs-orange/10 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-sibs-muted"
+                  className="h-8.5 2xl:h-10 w-full rounded-[10px] border border-sibs-border bg-sibs-surface px-3 sibs-text-xs font-semibold tabular-nums text-sibs-navy outline-none transition placeholder:text-sibs-muted hover:border-sibs-orange/40 hover:bg-white focus:border-sibs-orange focus:bg-white focus:ring-4 focus:ring-sibs-orange/10 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-sibs-muted"
                 />
               </label>
 
               <div className="rounded-[10px] border border-sibs-orange/25 bg-sibs-cream-light px-3 py-2">
                 <p className="sibs-kicker text-sibs-orange">Proposed Total Daily Rate</p>
-                <p className="mt-0.5 sibs-text-sm font-extrabold tabular-nums text-sibs-primary-1">
+                <p className="mt-0.5 sibs-text-sm font-extrabold tabular-nums text-sibs-navy">
                   {formatCurrency(proposedTotal)}
                 </p>
               </div>
@@ -223,7 +223,7 @@ export default function RevisedOfferModal({
             onChange={(event) => setRemarks(event.target.value)}
             rows={3}
             placeholder="Add a reason or justification for the new offer..."
-            className="w-full resize-none rounded-[10px] border border-sibs-border bg-white px-3 py-2 sibs-text-xs font-semibold leading-5 text-sibs-navy outline-none transition placeholder:text-sibs-faint focus:border-sibs-navy focus:ring-4 focus:ring-sibs-navy/10 disabled:cursor-not-allowed disabled:bg-slate-100"
+            className="w-full resize-none rounded-[10px] border border-sibs-border bg-white px-3 py-2 sibs-text-xs font-semibold leading-5 text-sibs-navy outline-none transition placeholder:text-sibs-muted focus:border-sibs-navy focus:ring-4 focus:ring-sibs-navy/10 disabled:cursor-not-allowed disabled:bg-slate-100"
           />
         </CandidateModalSection>
 

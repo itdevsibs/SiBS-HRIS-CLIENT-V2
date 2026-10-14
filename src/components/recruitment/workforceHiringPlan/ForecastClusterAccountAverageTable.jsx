@@ -411,13 +411,13 @@ function ForecastClusterAccountTableView({
                   className="sibs-data-table-row group transition-colors"
                 >
                   <WorkforceBodyTd
-                    className="sticky left-0 z-30 !bg-white text-left font-bold text-sibs-navy group-hover:!bg-[#FFF9F6]"
+                    className="sticky left-0 z-30 !bg-white text-left font-bold text-sibs-navy group-hover:!bg-sibs-cream-light"
                   >
                     {row.cluster}
                   </WorkforceBodyTd>
 
                   <WorkforceBodyTd
-                    className="sticky z-30 !bg-white !border-r-slate-300 text-left font-semibold text-sibs-navy shadow-[8px_0_12px_-10px_rgba(15,23,42,0.55)] group-hover:!bg-[#FFF9F6]"
+                    className="sticky z-30 !bg-white !border-r-slate-300 text-left font-semibold text-sibs-navy shadow-[8px_0_12px_-10px_rgba(15,23,42,0.55)] group-hover:!bg-sibs-cream-light"
                     style={{ left: accountStickyLeft }}
                   >
                     {row.account}

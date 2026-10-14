@@ -1,5 +1,4 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { createPortal } from "react-dom";
 import {
   Award,
   BriefcaseBusiness,
@@ -8,8 +7,8 @@ import {
   RotateCcw,
   Save,
   Sparkles,
-  X,
 } from "lucide-react";
+import ModalShell from "@/components/ui/ModalShell";
 
 import { useUser } from "../../../services/context/UserContext";
 import { useJobDescription } from "../../../services/context/JobDescriptionContext";
@@ -895,69 +894,53 @@ export default function AddJobDescription({
 
   if (!open) return null;
 
-  return createPortal(
-    <div
-      className="sibs-modal-backdrop-in sibs-modal-blur fixed inset-0 z-[99999] flex items-center justify-center p-2 font-jakarta sm:p-4"
-      onClick={handleClose}
-    >
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="add-job-description-modal-title"
-        aria-describedby="add-job-description-modal-description"
-        className="sibs-modal-pop-in relative flex max-h-[92dvh] w-full max-w-5xl 2xl:max-w-6xl flex-col overflow-hidden rounded-2xl border border-white/70 bg-sibs-surface font-jakarta shadow-2xl"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <header className="shrink-0 bg-sibs-navy px-4 py-3 sm:px-5 2xl:px-6 2xl:py-3.5 text-white">
-          <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex min-w-0 items-center gap-2.5 2xl:gap-3">
-              <span className="flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg border border-white/15 bg-white/10 text-sibs-orange">
-                <FileText className="h-4 w-4 text-sibs-orange" />
-              </span>
-
-              <div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-2">
-                  <h2
-                    id="add-job-description-modal-title"
-                    className="sibs-modal-title truncate text-white"
-                  >
-                    Add Job Description
-                  </h2>
-                  <span className="inline-flex rounded bg-sibs-orange px-2 py-0.5 text-[8.5px] 2xl:text-[9px] font-extrabold uppercase text-white">
-                    Specification
-                  </span>
-                </div>
-
-                <p
-                  id="add-job-description-modal-description"
-                  className="sibs-modal-subtitle mt-0.5 text-white/75 truncate sm:text-clip"
-                >
-                  Create or update job description specifications for hiring requirements.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex shrink-0 items-center justify-end">
-              <button
-                type="button"
-                onClick={handleClose}
-                className="sibs-modal-close-btn"
-                aria-label="Close Add Job Description modal"
-                title="Close"
-              >
-                <X size={17} />
-              </button>
-            </div>
-          </div>
-        </header>
-
-        <form
-          id="add-job-description-form"
-          onSubmit={handleCreateJobDescription}
-          className="flex min-h-0 flex-1 flex-col"
+  return (
+    <ModalShell
+      open={open}
+      onClose={handleClose}
+      variant="navy"
+      icon={FileText}
+      title="Add Job Description"
+      subtitle="Create or update job description specifications for hiring requirements."
+      badge="Specification"
+      maxWidth="max-w-5xl 2xl:max-w-6xl"
+      footerMeta={
+        <button
+          type="button"
+          onClick={handleResetForm}
+          className="sibs-modal-btn-secondary w-full sm:w-auto"
+          title="Reset Job Description inputs to default"
         >
-          <div className="thin-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain bg-sibs-surface p-3 sm:p-5">
-            <div className="space-y-4">
+          <RotateCcw size={14} />
+          <span>Reset</span>
+        </button>
+      }
+      footer={
+        <>
+          <button
+            type="button"
+            onClick={handleClose}
+            className="sibs-modal-btn-secondary w-full sm:w-auto"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            form="add-job-description-form"
+            className="sibs-modal-btn-primary w-full sm:w-auto"
+            title="Save this job description record"
+          >
+            <Save size={14} />
+            <span>Save Job Description</span>
+          </button>
+        </>
+      }
+    >
+      <form
+        id="add-job-description-form"
+        onSubmit={handleCreateJobDescription}
+        className="space-y-4"
+      >
               <style>{`
                 /*
                  * Sections 2 and 3 inherit the compact input language used by
@@ -1129,47 +1112,8 @@ export default function AddJobDescription({
                   competencies={competencies}
                   setCompetencies={setCompetencies}
                 />
-              </CompactSection>
-            </div>
-          </div>
-
-          <footer className="shrink-0 border-t border-sibs-border bg-sibs-surface px-5 py-3 2xl:py-3.5 sm:px-6">
-            <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-center">
-                <button
-                  type="button"
-                  onClick={handleResetForm}
-                  className="sibs-modal-btn-secondary w-full sm:w-auto"
-                  title="Reset Job Description inputs to default"
-                >
-                  <RotateCcw size={14} />
-                  <span>Reset</span>
-                </button>
-              </div>
-
-              <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center">
-                <button
-                  type="button"
-                  onClick={handleClose}
-                  className="sibs-modal-btn-secondary w-full sm:w-auto"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  form="add-job-description-form"
-                  className="sibs-modal-btn-primary w-full sm:w-auto"
-                  title="Save this job description record"
-                >
-                  <Save size={14} />
-                  <span>Save Job Description</span>
-                </button>
-              </div>
-            </div>
-          </footer>
-        </form>
-      </div>
-    </div>,
-    document.body,
+        </CompactSection>
+      </form>
+    </ModalShell>
   );
 }

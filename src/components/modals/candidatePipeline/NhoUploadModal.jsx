@@ -607,7 +607,7 @@ function RequirementCard({
 
             <div className="flex shrink-0 items-center gap-2">
               {major && (
-                <span className="rounded-full border border-blue-100 bg-blue-50 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
+                <span className="rounded-full border border-blue-100 bg-blue-50 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-sibs-navy">
                   Major
                 </span>
               )}
@@ -896,7 +896,7 @@ function UploadedFilesList({ files = [], disabled = false, onSelect, onRemove })
                         </p>
 
                         {isMajorRequirement(file.requirement) && (
-                          <span className="rounded-full border border-blue-100 bg-blue-50 px-2 py-0.5 text-[9px] font-extrabold uppercase text-sibs-primary-1">
+                          <span className="rounded-full border border-blue-100 bg-blue-50 px-2 py-0.5 text-[9px] font-extrabold uppercase text-sibs-navy">
                             Major
                           </span>
                         )}
@@ -1739,13 +1739,13 @@ export default function NhoUploadModal({
                   <span className={`rounded-full px-3 py-1 text-[10px] font-extrabold ${majorProgress.isComplete ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"}`}>
                     {majorProgress.completed} / {majorProgress.total} Major
                   </span>
-                  <span className="rounded-full bg-blue-50 px-3 py-1 text-[10px] font-extrabold text-sibs-primary-1">
+                  <span className="rounded-full bg-blue-50 px-3 py-1 text-[10px] font-extrabold text-sibs-navy">
                     {completedRequirements} / {ALL_REQUIREMENTS.length} Total
                   </span>
                 </div>
 
                 <div className="mt-5">
-                  <div className="mb-2 flex items-center justify-between text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
+                  <div className="mb-2 flex items-center justify-between text-xs font-extrabold uppercase tracking-wide text-sibs-navy">
                     <span>Major Completion</span>
                     <span>{majorProgress.percent}%</span>
                   </div>
@@ -1755,20 +1755,20 @@ export default function NhoUploadModal({
                       className={`h-full rounded-full transition-all duration-300 ${
                         majorProgress.isComplete
                           ? "bg-emerald-600"
-                          : "bg-sibs-primary-1"
+                          : "bg-sibs-navy"
                       }`}
                       style={{ width: `${majorProgress.percent}%` }}
                     />
                   </div>
 
-                  <div className="mb-2 mt-4 flex items-center justify-between text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
+                  <div className="mb-2 mt-4 flex items-center justify-between text-xs font-extrabold uppercase tracking-wide text-sibs-navy">
                     <span>Total Completion</span>
                     <span>{progressPercent}%</span>
                   </div>
 
                   <div className="h-2 overflow-hidden rounded-full bg-sibs-surface">
                     <div
-                      className="h-full rounded-full bg-sibs-primary-1/70 transition-all duration-300"
+                      className="h-full rounded-full bg-sibs-navy/70 transition-all duration-300"
                       style={{ width: `${progressPercent}%` }}
                     />
                   </div>
@@ -1839,11 +1839,11 @@ export default function NhoUploadModal({
                       >
                         <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                           <div className="flex min-w-0 items-center gap-3">
-                            <h4 className="font-heading text-sm 2xl:text-base font-bold text-sibs-primary-1">
+                            <h4 className="font-heading text-sm 2xl:text-base font-bold text-sibs-navy">
                               {group.title}
                             </h4>
 
-                            <span className="rounded-full bg-sibs-surface px-3 py-1 text-xs font-extrabold text-sibs-primary-1">
+                            <span className="rounded-full bg-sibs-surface px-3 py-1 text-xs font-extrabold text-sibs-navy">
                               {groupCompleted} / {group.requirements.length}
                             </span>
                           </div>

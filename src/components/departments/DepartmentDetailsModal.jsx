@@ -62,7 +62,7 @@ function LeadershipGroup({
         event.stopPropagation();
         onClick?.();
       }}
-      className="flex min-w-0 flex-col self-start rounded-xl text-left transition hover:bg-white/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-sibs-orange/20"
+      className="flex min-w-0 flex-col self-start rounded-[10px] text-left transition hover:bg-white/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-sibs-orange/20"
       title={`View ${title}`}
     >
       <p className="mb-2 flex min-h-[20px] items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-wide text-sibs-faint">
@@ -140,7 +140,7 @@ function LeadershipPeopleModal({
           ))}
         </div>
       ) : (
-        <div className="rounded-xl border border-dashed border-sibs-border p-8 text-center text-sm font-semibold text-sibs-muted">
+        <div className="rounded-[10px] border border-dashed border-sibs-border p-8 text-center text-sm font-semibold text-sibs-muted">
           No {title.toLowerCase()} resolved for this account.
         </div>
       )}
@@ -253,18 +253,18 @@ function AccountEmployeesModal({
       }
     >
       {assignmentError ? (
-        <div className="mb-3 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-bold text-rose-700">
+        <div className="mb-3 rounded-[10px] border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-bold text-rose-700">
           {assignmentError}
         </div>
       ) : null}
 
       {lobsLoading ? (
-        <div className="mb-3 flex items-center gap-2 rounded-xl border border-sibs-border bg-sibs-surface px-4 py-3 text-xs font-bold text-sibs-muted">
+        <div className="mb-3 flex items-center gap-2 rounded-[10px] border border-sibs-border bg-sibs-surface px-4 py-3 text-xs font-bold text-sibs-muted">
           <Loader2 className="h-3.5 w-3.5 animate-spin text-sibs-orange" />
           Loading account Lines of Business...
         </div>
       ) : !activeLobs.length ? (
-        <div className="mb-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-bold text-amber-800">
+        <div className="mb-3 rounded-[10px] border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-bold text-amber-800">
           No active LOBs are configured for this Account yet. Add an LOB from Account details before assigning employees.
         </div>
       ) : null}
@@ -274,7 +274,7 @@ function AccountEmployeesModal({
           <Loader2 className="h-7 w-7 animate-spin text-sibs-orange" />
         </div>
       ) : error ? (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-center text-sm font-semibold text-rose-700">
+        <div className="rounded-[10px] border border-rose-200 bg-rose-50 p-6 text-center text-sm font-semibold text-rose-700">
           {error}
         </div>
       ) : visibleEmployees.length ? (
@@ -296,7 +296,7 @@ function AccountEmployeesModal({
             return (
               <article
                 key={`${employee.sibsId || employee.employeeId || employee.id || "employee"}-${index}`}
-                className="flex min-w-0 items-start gap-3 rounded-xl border border-sibs-border bg-white p-3"
+                className="flex min-w-0 items-start gap-3 rounded-[10px] border border-sibs-border bg-white p-3"
               >
                 <DepartmentProfileAvatar employee={employee} />
                 <div className="min-w-0 flex-1">
@@ -358,8 +358,8 @@ function AccountEmployeesModal({
                                 !lob.isActive && !currentLobIdSet.has(String(lob.id)),
                             })),
                           ]}
-                          buttonClassName="!h-9 !rounded-lg !border-[#E6ECF2] !bg-[#F8FAFC] !px-3 !text-xs !font-bold !text-[#042C51] hover:!border-[#FF5C28]/40 hover:!bg-white"
-                          menuClassName="sibs-employee-lob-dropdown !rounded-[10px] !border-[#D7DEE8]"
+                          buttonClassName="!h-9 2xl:!h-10 !rounded-[10px] !border-sibs-border !bg-sibs-surface !px-3 !text-xs !font-bold !text-sibs-navy hover:!border-sibs-orange/40 hover:!bg-white"
+                          menuClassName="sibs-employee-lob-dropdown !rounded-[10px] !border-sibs-border"
                         />
 
                         {selectedLobs.length ? (
@@ -413,7 +413,7 @@ function AccountEmployeesModal({
           })}
         </div>
       ) : (
-        <div className="rounded-xl border border-dashed border-sibs-border p-8 text-center text-sm font-semibold text-sibs-muted">
+        <div className="rounded-[10px] border border-dashed border-sibs-border p-8 text-center text-sm font-semibold text-sibs-muted">
           {filteredByLob
             ? `No employees are currently assigned to ${lobFilter}.`
             : "No employees are assigned to this account."}
@@ -516,7 +516,7 @@ function AccountCard({
   const employeeCount = Number(account.employeeCount) || 0;
 
   return (
-    <article className="overflow-hidden rounded-xl border border-sibs-border bg-sibs-surface transition hover:border-sibs-orange/50 hover:shadow-sm">
+    <article className="overflow-hidden rounded-[10px] border border-sibs-border bg-sibs-surface transition hover:border-sibs-orange/50 hover:shadow-xs">
       <div
         title={bodAccount ? undefined : `View all ${account.name} employees`}
         onClick={() => {
@@ -1321,7 +1321,7 @@ export default function DepartmentDetailsModal({
       `}</style>
 
       <div className="space-y-5">
-        <div className="flex flex-col gap-3 rounded-xl border border-sibs-border bg-sibs-surface p-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-3 rounded-[10px] border border-sibs-border bg-sibs-surface p-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex min-w-0 items-center gap-3">
             <DepartmentProfileAvatar
               employee={department.lead || {}}
@@ -1374,7 +1374,7 @@ export default function DepartmentDetailsModal({
           ].map(([label, value, tone]) => (
             <div
               key={label}
-              className="rounded-xl border border-sibs-border bg-white p-4 text-center"
+              className="rounded-[10px] border border-sibs-border bg-white p-4 text-center"
             >
               <p className="text-[11px] font-extrabold uppercase text-sibs-muted">
                 {label}
@@ -1448,7 +1448,7 @@ export default function DepartmentDetailsModal({
               })}
             </div>
           ) : (
-            <div className="mt-3 rounded-xl border border-dashed border-sibs-border p-7 text-center text-sm font-semibold text-sibs-muted">
+            <div className="mt-3 rounded-[10px] border border-dashed border-sibs-border p-7 text-center text-sm font-semibold text-sibs-muted">
               No accounts are linked to this department.
             </div>
           )}
@@ -1460,7 +1460,7 @@ export default function DepartmentDetailsModal({
             Site Allocation
           </h3>
 
-          <div className="mt-3 flex flex-wrap gap-2 rounded-xl border border-sibs-border bg-sibs-surface p-4">
+          <div className="mt-3 flex flex-wrap gap-2 rounded-[10px] border border-sibs-border bg-sibs-surface p-4">
             {department.locations.length ? (
               department.locations.map((location) => (
                 <span

@@ -104,7 +104,7 @@ const MoveStageModal = ({
               </span>
             </div>
 
-            <div className="flex items-center justify-center text-sibs-primary-1">
+            <div className="flex items-center justify-center text-sibs-navy">
               <ArrowRight size={16} />
             </div>
 
@@ -121,7 +121,7 @@ const MoveStageModal = ({
           </div>
 
           {nextStage === "Online Assessment" && (
-            <div className="mt-2.5 rounded-[10px] border border-blue-100 bg-blue-50 px-3 py-2 sibs-text-xs font-semibold leading-5 text-sibs-primary-1">
+            <div className="mt-2.5 rounded-[10px] border border-blue-100 bg-blue-50 px-3 py-2 sibs-text-xs font-semibold leading-5 text-sibs-navy">
               After confirmation, assessment status will be set to Not Take and
               the assessment email workflow will be triggered.
             </div>
@@ -138,7 +138,7 @@ const MoveStageModal = ({
         <CandidateModalSection title="Movement Details">
           <form onSubmit={handleSubmit} className="space-y-2.5 2xl:space-y-3.5">
             <label className="block">
-              <span className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-sibs-faint">
+              <span className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-sibs-muted">
                 Movement Reason <span className="text-sibs-orange"> *</span>
               </span>
               <textarea
@@ -155,7 +155,7 @@ const MoveStageModal = ({
             </label>
 
             <label className="block">
-              <span className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-sibs-faint">
+              <span className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-sibs-muted">
                 Internal Remarks
               </span>
               <textarea

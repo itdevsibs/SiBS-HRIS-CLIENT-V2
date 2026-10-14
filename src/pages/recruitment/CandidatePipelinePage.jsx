@@ -257,7 +257,7 @@ function FilterDropdown({
           placeholder={`Search ${label ? label.toLowerCase() : "options"}...`}
           autoComplete="off"
           disabled={disabled}
-          className={`h-8.5 w-full rounded-[10px] border px-3 pr-8 font-jakarta sibs-text-xs font-bold outline-none transition placeholder:text-sibs-faint disabled:cursor-not-allowed disabled:opacity-50 2xl:h-10 ${
+          className={`h-8.5 w-full rounded-[10px] border px-3 pr-8 font-jakarta sibs-text-xs font-bold outline-none transition placeholder:text-sibs-muted disabled:cursor-not-allowed disabled:opacity-50 2xl:h-10 ${
             open
               ? "border-sibs-orange bg-white ring-4 ring-sibs-orange/10 text-sibs-navy"
               : "border-sibs-border bg-sibs-surface text-sibs-navy hover:border-sibs-orange/40 hover:bg-white"

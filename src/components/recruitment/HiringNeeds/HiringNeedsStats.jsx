@@ -100,12 +100,12 @@ export default function HiringNeedsStats() {
         <ReasonForHiringTable
           data={requisitionByReason}
           loading={loading}
-          delay={metricConfig.length * 60}
+          delay={180}
         />
         <RequisitionByDepartmentTable
           data={requisitionByDepartment}
           loading={loading}
-          delay={(metricConfig.length + 1) * 60}
+          delay={240}
         />
       </div>
     </section>

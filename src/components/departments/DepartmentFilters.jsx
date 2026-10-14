@@ -1,6 +1,12 @@
-import { Filter, Search } from "lucide-react";
+import { RotateCcw } from "lucide-react";
 
-import { SelectDropdown } from "@/components/ui";
+import PaginationTable from "@/services/pagination/PaginationTable";
+
+const STATUS_OPTIONS = [
+  { label: "All Statuses", value: "all" },
+  { label: "Active", value: "active" },
+  { label: "Inactive", value: "inactive" },
+];
 
 export default function DepartmentFilters({
   search,
@@ -11,43 +17,45 @@ export default function DepartmentFilters({
   canClear,
 }) {
   return (
-    <div className="grid gap-3 border-b border-sibs-border px-4 py-4 md:grid-cols-[minmax(280px,1fr)_220px_auto] sm:px-5">
-      <label className="block">
-        <span className="sibs-field-label">Search</span>
-        <span className="relative block">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-sibs-faint" />
-          <input
-            value={search}
-            onChange={(event) => onSearch(event.target.value)}
-            className="sibs-dashboard-input pl-9 pr-3"
-            placeholder="Search department or account..."
-          />
-        </span>
-      </label>
-
-      <div className="block">
-        <SelectDropdown
-          label="Department Status"
-          value={status}
-          onChange={onStatus}
-          options={[
-            { value: "all", label: "All Statuses" },
-            { value: "active", label: "Active" },
-            { value: "inactive", label: "Inactive" },
-          ]}
-          clearable={false}
-          placeholder="All Statuses"
-        />
-      </div>
-
-      <button
-        type="button"
-        className="sibs-btn-secondary self-end"
-        onClick={onClear}
-        disabled={!canClear}
-      >
-        <Filter className="h-4 w-4" /> Clear
-      </button>
+    <div className="relative z-[90] overflow-visible border-b border-sibs-border p-4 font-jakarta sm:p-5">
+      <PaginationTable
+        filterLayout="ta-inline"
+        showFilterPanel={false}
+        showFilterHeader={false}
+        showPagination={false}
+        searchValue={search}
+        searchPlaceholder="Search department or account..."
+        onSearchChange={(val) =>
+          onSearch(typeof val === "string" ? val : val?.target?.value ?? "")
+        }
+        className="border-0 bg-transparent p-0 shadow-none font-jakarta"
+        filters={[
+          {
+            key: "status",
+            value: status || "all",
+            options: STATUS_OPTIONS,
+            onChange: onStatus,
+            includeAll: false,
+            allLabel: "All Statuses",
+            label: "Department Status",
+            placeholder: "All Statuses",
+            searchable: false,
+            className: "w-full xl:w-[170px] 2xl:w-[200px] xl:flex-none",
+          },
+        ]}
+        rightContent={
+          canClear ? (
+            <button
+              type="button"
+              onClick={onClear}
+              className="inline-flex h-8.5 2xl:h-10 w-full items-center justify-center gap-1.5 rounded-[10px] border border-sibs-border bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-muted transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange disabled:cursor-not-allowed disabled:opacity-50 xl:w-auto"
+            >
+              <RotateCcw size={14} />
+              Clear
+            </button>
+          ) : null
+        }
+      />
     </div>
   );
 }

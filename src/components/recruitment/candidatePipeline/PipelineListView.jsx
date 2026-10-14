@@ -325,7 +325,7 @@ const PipelineListView = ({
                           onKeyDown={(event) =>
                             handleRowKeyDown(event, candidate)
                           }
-                          className="sibs-data-table-row sibs-page-card-in cursor-pointer transition hover:bg-sibs-surface"
+                          className="sibs-data-table-row sibs-page-card-in cursor-pointer transition"
                           style={{
                             animationDelay: `${index * 35}ms`,
                             animationFillMode: "both",
@@ -423,7 +423,7 @@ const PipelineListView = ({
                             <p className="max-w-[150px] truncate sibs-text-xs font-bold text-sibs-navy">
                               {candidate.taOwner || candidate.owner || "—"}
                             </p>
-                            <p className="mt-0.5 text-[9px] font-semibold text-sibs-faint">
+                            <p className="mt-0.5 text-[9px] font-semibold text-sibs-muted">
                               {candidate.dateMoved || candidate.updatedAt
                                 ? formatDateTime(candidate.dateMoved || candidate.updatedAt)
                                 : "—"}

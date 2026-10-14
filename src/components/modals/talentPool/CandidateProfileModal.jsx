@@ -3621,7 +3621,7 @@ function NhoFilePreviewPanel({
   if (!activeFile) {
     return (
       <div className="flex min-h-[320px] flex-col items-center justify-center rounded-[14px] border border-dashed border-sibs-border bg-sibs-surface p-6 text-center">
-        <div className="flex h-14 w-14 items-center justify-center rounded-[10px] border border-sibs-border bg-white text-sibs-primary-1 shadow-sm">
+        <div className="flex h-14 w-14 items-center justify-center rounded-[10px] border border-sibs-border bg-white text-sibs-navy shadow-sm">
           <FileText size={27} />
         </div>
 
@@ -3656,7 +3656,7 @@ function NhoFilePreviewPanel({
   return (
     <div className="rounded-[14px] border border-sibs-border bg-sibs-surface p-5">
       <div>
-        <p className="text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
+        <p className="text-xs font-extrabold uppercase tracking-wide text-sibs-navy">
           Requirement Files
         </p>
 
@@ -3680,7 +3680,7 @@ function NhoFilePreviewPanel({
               onClick={() => onSelectFile?.(file)}
               className={`flex w-full min-w-0 items-center gap-2 rounded-[10px] border px-3 py-2 text-left transition ${
                 selected
-                  ? "border-sibs-primary-1 bg-blue-50"
+                  ? "border-sibs-orange bg-sibs-cream-light"
                   : "border-sibs-border bg-white hover:bg-sibs-surface"
               }`}
             >
@@ -3688,7 +3688,7 @@ function NhoFilePreviewPanel({
                 fileName={file.fileName || file.savedFileName}
                 size={17}
                 className={`shrink-0 ${
-                  selected ? "text-sibs-primary-1" : "text-sibs-muted"
+                  selected ? "text-sibs-orange" : "text-sibs-muted"
                 }`}
               />
 
@@ -3696,7 +3696,7 @@ function NhoFilePreviewPanel({
                 <span
                   title={file.fileName || file.savedFileName}
                   className={`block truncate text-xs font-extrabold ${
-                    selected ? "text-sibs-primary-1" : "text-sibs-navy"
+                    selected ? "text-sibs-orange" : "text-sibs-navy"
                   }`}
                 >
                   {file.fileName || file.savedFileName || "Uploaded file"}
@@ -3717,7 +3717,7 @@ function NhoFilePreviewPanel({
             Selected File
           </p>
 
-          <p className="mt-1 break-words text-sm font-bold text-sibs-primary-1">
+          <p className="mt-1 break-words text-sm font-bold text-sibs-navy">
             {activeFile.fileName ||
               activeFile.savedFileName ||
               "Uploaded file"}
@@ -3729,7 +3729,7 @@ function NhoFilePreviewPanel({
             Uploaded At
           </p>
 
-          <p className="mt-1 text-sm font-bold text-sibs-primary-1">
+          <p className="mt-1 text-sm font-bold text-sibs-navy">
             {formatUploadedDate(activeFile.uploadedAt)}
           </p>
         </div>
@@ -3740,7 +3740,7 @@ function NhoFilePreviewPanel({
               Uploaded By
             </p>
 
-            <p className="mt-1 break-words text-sm font-bold text-sibs-primary-1">
+            <p className="mt-1 break-words text-sm font-bold text-sibs-navy">
               {activeFile.uploadedBy}
             </p>
           </div>
@@ -3779,7 +3779,7 @@ function NhoFilePreviewPanel({
             href={resolvedFileUrl}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-[10px] border border-sibs-border bg-white px-4 text-sm font-extrabold text-sibs-primary-1 transition hover:bg-sibs-surface"
+            className="inline-flex h-11 items-center justify-center gap-2 rounded-[10px] border border-sibs-border bg-white px-4 text-sm font-extrabold text-sibs-navy transition hover:bg-sibs-surface"
           >
             <Eye size={16} />
             Preview
@@ -3792,7 +3792,7 @@ function NhoFilePreviewPanel({
               activeFile.savedFileName ||
               "candidate-document"
             }
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-[10px] bg-sibs-primary-1 px-4 text-sm font-extrabold text-white transition hover:opacity-90"
+            className="inline-flex h-11 items-center justify-center gap-2 rounded-[10px] bg-sibs-navy px-4 text-sm font-extrabold text-white transition hover:bg-sibs-navy/90"
           >
             <Download size={16} />
             Download
@@ -3835,7 +3835,7 @@ function CandidateNhoFilesSection({
           <button
             type="button"
             onClick={onUploadFollowUp}
-            className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-[10px] bg-sibs-primary-1 px-5 text-sm font-extrabold text-white shadow-sm transition hover:opacity-90 active:scale-[0.98]"
+            className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-[10px] bg-sibs-navy px-5 text-sm font-extrabold text-white shadow-sm transition hover:bg-sibs-navy/90 active:scale-[0.98]"
           >
             <UploadCloud size={17} />
             Upload Follow-up Requirements
@@ -3852,7 +3852,7 @@ function CandidateNhoFilesSection({
                   Candidate Pipeline NHO Uploaded Files
                 </h3>
 
-                <p className="mt-1 text-sm font-semibold text-sibs-primary-1/80">
+                <p className="mt-1 text-sm font-semibold text-sibs-muted">
                   Review and monitor candidate pre-employment requirements
                   uploaded from Candidate Pipeline.
                 </p>
@@ -3869,7 +3869,7 @@ function CandidateNhoFilesSection({
                   {majorProgress.completed} / {majorProgress.total} Major
                 </span>
 
-                <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-extrabold text-sibs-primary-1">
+                <span className="rounded-full bg-sibs-cream-light px-3 py-1 text-xs font-extrabold text-sibs-orange">
                   {totalProgress.completed} / {totalProgress.total} Total
                 </span>
 
@@ -3882,7 +3882,7 @@ function CandidateNhoFilesSection({
             </div>
 
             <div className="mt-5">
-              <div className="mb-2 flex items-center justify-between text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
+              <div className="mb-2 flex items-center justify-between text-xs font-extrabold uppercase tracking-wide text-sibs-navy">
                 <span>Major Completion</span>
                 <span>{majorProgress.percent}%</span>
               </div>
@@ -3892,20 +3892,20 @@ function CandidateNhoFilesSection({
                   className={`h-full rounded-full transition-all duration-300 ${
                     majorProgress.isComplete
                       ? "bg-emerald-600"
-                      : "bg-sibs-primary-1"
+                      : "bg-sibs-orange"
                   }`}
                   style={{ width: `${majorProgress.percent}%` }}
                 />
               </div>
 
-              <div className="mb-2 mt-4 flex items-center justify-between text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
+              <div className="mb-2 mt-4 flex items-center justify-between text-xs font-extrabold uppercase tracking-wide text-sibs-navy">
                 <span>Total Completion</span>
                 <span>{totalProgress.percent}%</span>
               </div>
 
               <div className="h-2 overflow-hidden rounded-full bg-sibs-surface">
                 <div
-                  className="h-full rounded-full bg-sibs-primary-1/70 transition-all duration-300"
+                  className="h-full rounded-full bg-sibs-orange/70 transition-all duration-300"
                   style={{ width: `${totalProgress.percent}%` }}
                 />
               </div>
@@ -3961,11 +3961,11 @@ function CandidateNhoFilesSection({
                   >
                     <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                       <div className="flex min-w-0 items-center gap-3">
-                        <h4 className="text-base font-extrabold text-sibs-primary-1">
+                        <h4 className="text-base font-extrabold text-sibs-navy">
                           {group.title}
                         </h4>
 
-                        <span className="rounded-full bg-sibs-surface px-3 py-1 text-xs font-extrabold text-sibs-primary-1">
+                        <span className="rounded-full bg-sibs-surface px-3 py-1 text-xs font-extrabold text-sibs-navy">
                           {groupCompleted} / {group.requirements.length}
                         </span>
                       </div>
@@ -6396,12 +6396,12 @@ export default function CandidateProfileModal() {
                     className="overflow-hidden rounded-[14px] border border-sibs-border bg-white"
                   >
                     <div className="flex items-start gap-3 border-b border-sibs-border bg-sibs-surface px-4 py-4 sm:px-5">
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] bg-sibs-surface text-sibs-primary-1">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] bg-sibs-surface text-sibs-navy">
                         <GraduationCap size={19} />
                       </div>
 
                       <div className="min-w-0 flex-1">
-                        <p className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-primary-1/60 sm:text-[11px]">
+                        <p className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-muted sm:text-[11px]">
                           Academic Record {index + 1}
                         </p>
                         <h4 className="mt-1 break-words text-sm font-extrabold text-sibs-navy sm:text-base">
@@ -6751,7 +6751,7 @@ export default function CandidateProfileModal() {
           {[...father, ...mother].some(hasCandidateValue) ? (
             <div className="space-y-5">
               <div>
-                <p className="mb-3 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
+                <p className="mb-3 text-xs font-extrabold uppercase tracking-wide text-sibs-navy">
                   Father
                 </p>
                 <ProfileGrid cols="sm:grid-cols-2 xl:grid-cols-3">
@@ -6762,7 +6762,7 @@ export default function CandidateProfileModal() {
               </div>
 
               <div>
-                <p className="mb-3 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
+                <p className="mb-3 text-xs font-extrabold uppercase tracking-wide text-sibs-navy">
                   Mother
                 </p>
                 <ProfileGrid cols="sm:grid-cols-2 xl:grid-cols-3">
@@ -7106,12 +7106,12 @@ export default function CandidateProfileModal() {
                 className="overflow-hidden rounded-[14px] border border-sibs-border bg-white"
               >
                 <div className="flex items-start gap-3 border-b border-sibs-border bg-sibs-surface px-4 py-4 sm:px-5">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] bg-sibs-surface text-sibs-primary-1">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] bg-sibs-surface text-sibs-navy">
                     <GraduationCap size={19} />
                   </div>
 
                   <div className="min-w-0 flex-1">
-                    <p className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-primary-1/60 sm:text-[11px]">
+                    <p className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-muted sm:text-[11px]">
                       Academic Record {index + 1}
                     </p>
                     <h4 className="mt-1 break-words text-sm font-extrabold text-sibs-navy sm:text-base">
@@ -7393,7 +7393,7 @@ export default function CandidateProfileModal() {
               >
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                   <div className="min-w-0">
-                    <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
+                    <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-muted">
                       Experience {index + 1}
                     </p>
 
@@ -7401,7 +7401,7 @@ export default function CandidateProfileModal() {
                       {experience.role || experience.industry || "—"}
                     </h5>
 
-                    <p className="mt-1 break-words text-sm font-bold text-sibs-primary-1">
+                    <p className="mt-1 break-words text-sm font-bold text-sibs-navy">
                       {experience.company || "Company not provided"}
                     </p>
                   </div>
@@ -7766,7 +7766,7 @@ export default function CandidateProfileModal() {
           <div className="rounded-[10px] border border-sibs-border bg-sibs-surface p-4">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
-                <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
+                <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-muted">
                   Audio Recording
                 </p>
 
@@ -7782,7 +7782,7 @@ export default function CandidateProfileModal() {
                 type="button"
                 disabled={!audioFileUrl}
                 onClick={() => openFile(audioFileUrl, activeCandidate.audioFileName, "audio")}
-                className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-[10px] border border-sibs-border bg-white px-4 text-sm font-extrabold text-sibs-primary-1 transition hover:bg-sibs-surface disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-[10px] border border-sibs-border bg-white px-4 text-sm font-extrabold text-sibs-navy transition hover:bg-sibs-surface disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <Eye size={16} />
                 View
@@ -7807,7 +7807,7 @@ export default function CandidateProfileModal() {
           <div className="rounded-[10px] border border-sibs-border bg-sibs-surface p-4">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
-                <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
+                <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-muted">
                   Attachment
                 </p>
 
@@ -7823,7 +7823,7 @@ export default function CandidateProfileModal() {
                 type="button"
                 disabled={!attachmentFileUrl}
                 onClick={() => openFile(attachmentFileUrl, activeCandidate.attachmentFileName, "attachment")}
-                className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-[10px] border border-sibs-border bg-white px-4 text-sm font-extrabold text-sibs-primary-1 transition hover:bg-sibs-surface disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-[10px] border border-sibs-border bg-white px-4 text-sm font-extrabold text-sibs-navy transition hover:bg-sibs-surface disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <Eye size={16} />
                 View
@@ -7831,7 +7831,7 @@ export default function CandidateProfileModal() {
             </div>
 
             {attachmentFileUrl ? (
-              <div className="mt-4 rounded-[10px] border border-sibs-border bg-white px-4 py-3 text-sm font-bold text-sibs-primary-1">
+              <div className="mt-4 rounded-[10px] border border-sibs-border bg-white px-4 py-3 text-sm font-bold text-sibs-navy">
                 Click View to open the uploaded attachment.
               </div>
             ) : (
@@ -7924,7 +7924,7 @@ export default function CandidateProfileModal() {
                         </div>
                       </div>
 
-                      <div className="rounded-[14px] border border-sibs-border bg-sibs-surface p-4 transition hover:border-sibs-primary-1/30 hover:bg-white hover:shadow-sm">
+                      <div className="rounded-[14px] border border-sibs-border bg-sibs-surface p-4 transition hover:border-sibs-orange/30 hover:bg-white hover:shadow-sm">
                         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                           <div className="min-w-0">
                             <h5
@@ -7934,7 +7934,7 @@ export default function CandidateProfileModal() {
                               {historyTitle}
                             </h5>
 
-                            <p className="mt-1 text-sm font-bold text-sibs-primary-1">
+                            <p className="mt-1 text-sm font-bold text-sibs-muted">
                               {formatDate(historyDate)}
                             </p>
                           </div>
@@ -7981,7 +7981,7 @@ export default function CandidateProfileModal() {
 
                         {item.savedFormLink && (
                           <div className="mt-4 min-w-0">
-                            <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
+                            <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-muted">
                               Job Evaluation Link
                             </p>
 
@@ -8014,7 +8014,7 @@ export default function CandidateProfileModal() {
                         (previousValue) => !previousValue,
                       )
                     }
-                    className="inline-flex h-11 items-center justify-center gap-2 rounded-[10px] border border-sibs-border bg-white px-5 text-sm font-extrabold text-sibs-primary-1 transition hover:border-sibs-primary-1/30 hover:bg-sibs-surface"
+                    className="inline-flex h-11 items-center justify-center gap-2 rounded-[10px] border border-sibs-border bg-white px-5 text-sm font-extrabold text-sibs-navy transition hover:border-sibs-orange/30 hover:bg-sibs-surface"
                   >
                     {showFullApplicationHistory
                       ? "Show Less History"
@@ -8325,7 +8325,7 @@ export default function CandidateProfileModal() {
         </div>
 
         {form.formName ? (
-          <div className="rounded-2xl border border-sibs-border bg-sibs-surface p-4">
+          <div className="rounded-[14px] border border-sibs-border bg-sibs-surface p-4">
             <p className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-muted">
               Application Form
             </p>
@@ -8336,14 +8336,14 @@ export default function CandidateProfileModal() {
         ) : null}
 
         {applicationAnswersLoading ? (
-          <div className="flex min-h-[180px] items-center justify-center rounded-2xl border border-sibs-border bg-white p-6">
+          <div className="flex min-h-[180px] items-center justify-center rounded-[14px] border border-sibs-border bg-white p-6">
             <div className="flex items-center gap-2 text-sm font-bold text-sibs-muted">
               <Loader2 size={18} className="animate-spin text-sibs-orange" />
               Loading application questions and answers...
             </div>
           </div>
         ) : applicationAnswersError ? (
-          <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-sm font-semibold text-red-700">
+          <div className="rounded-[14px] border border-red-200 bg-red-50 p-5 text-sm font-semibold text-red-700">
             {applicationAnswersError}
           </div>
         ) : answers.length === 0 ? (
@@ -8353,7 +8353,7 @@ export default function CandidateProfileModal() {
             {answers.map((answer, index) => (
               <article
                 key={answer.id || `${answer.questionId || "question"}-${index}`}
-                className="rounded-2xl border border-sibs-border bg-white p-4 shadow-sm sm:p-5"
+                className="rounded-[14px] border border-sibs-border bg-white p-4 shadow-sm sm:p-5"
               >
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div className="min-w-0">
@@ -8384,7 +8384,7 @@ export default function CandidateProfileModal() {
                   </div>
                 </div>
 
-                <div className="mt-4 rounded-xl border border-sibs-border bg-sibs-surface p-4">
+                <div className="mt-4 rounded-[10px] border border-sibs-border bg-sibs-surface p-4">
                   <p className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-muted">
                     Applicant Answer
                   </p>
@@ -8417,7 +8417,7 @@ export default function CandidateProfileModal() {
       activeCandidate.remarks_updated_at;
 
     return (
-      <section className="rounded-2xl border border-sibs-border bg-white p-4 shadow-sm sm:p-5">
+      <section className="rounded-[14px] border border-sibs-border bg-white p-4 shadow-sm sm:p-5">
         <div className="flex flex-col gap-2 border-b border-sibs-border pb-3 sm:flex-row sm:items-center sm:justify-between">
           <SectionTitle
             icon={FileText}
@@ -8504,7 +8504,7 @@ export default function CandidateProfileModal() {
         onClick={handleCloseCandidateProfile}
       >
         <div
-          className="sibs-modal-pop-in flex h-[88dvh] xl:h-[92dvh] max-h-[88dvh] xl:max-h-[92dvh] w-full max-w-6xl xl:max-w-7xl 2xl:max-w-[1400px] flex-col overflow-hidden rounded-2xl border border-sibs-border bg-sibs-surface shadow-2xl"
+          className="sibs-modal-pop-in flex h-[88dvh] xl:h-[92dvh] max-h-[88dvh] xl:max-h-[92dvh] w-full max-w-6xl xl:max-w-7xl 2xl:max-w-[1400px] flex-col overflow-hidden rounded-[14px] border border-sibs-border bg-sibs-surface shadow-2xl"
           onClick={(event) => event.stopPropagation()}
         >
           <div className="flex shrink-0 items-center justify-between gap-3 border-b border-white/10 bg-sibs-navy px-3.5 py-2 text-white sm:px-5 xl:px-6 xl:py-3.5">
@@ -8859,14 +8859,14 @@ export default function CandidateProfileModal() {
           }}
         >
           <div
-            className="sibs-modal-pop-in relative flex w-full max-w-lg flex-col overflow-visible rounded-2xl bg-white shadow-2xl"
+            className="sibs-modal-pop-in relative flex w-full max-w-lg flex-col overflow-visible rounded-[14px] bg-white shadow-2xl"
             onClick={(event) => event.stopPropagation()}
           >
             {/* SiBS Standard Dark Navy Modal Header */}
-            <header className="shrink-0 rounded-t-2xl bg-sibs-navy px-5 py-4 text-white sm:px-6">
+            <header className="shrink-0 rounded-t-[14px] bg-sibs-navy px-5 py-4 text-white sm:px-6">
               <div className="flex items-center justify-between gap-3">
                 <div className="flex min-w-0 items-center gap-3">
-                  <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-sibs-orange text-white shadow-sm">
+                  <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-sibs-orange text-white shadow-sm">
                     <RefreshCcw size={17} />
                   </span>
 
@@ -8891,7 +8891,7 @@ export default function CandidateProfileModal() {
                   type="button"
                   onClick={handleCloseStatusUpdate}
                   disabled={statusUpdateSaving}
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-white/15 bg-white/10 text-white/80 transition hover:border-sibs-orange/60 hover:bg-sibs-orange hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+                  className="sibs-modal-close-btn inline-flex h-8 w-8 items-center justify-center rounded-lg border border-white/15 bg-white/10 text-white/80 transition hover:border-sibs-orange/60 hover:bg-sibs-orange hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
                   aria-label="Close update candidate status modal"
                 >
                   <X size={16} />
@@ -8996,7 +8996,7 @@ export default function CandidateProfileModal() {
           }}
         >
           <div
-            className="w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-2xl"
+            className="w-full max-w-lg overflow-hidden rounded-[14px] bg-white shadow-2xl"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="flex items-start justify-between gap-4 border-b border-gray-100 px-5 py-4">
@@ -9106,7 +9106,7 @@ export default function CandidateProfileModal() {
 
       {uploadedFilePreview.open && (
         <div className="fixed inset-0 z-[11000] flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-[1px]">
-          <div className="flex max-h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-white/30 bg-white shadow-2xl">
+          <div className="flex max-h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-[14px] border border-white/30 bg-white shadow-2xl">
             <div className="flex items-center justify-between gap-4 bg-sibs-navy px-5 py-4 text-white">
               <div className="min-w-0">
                 <p className="text-base font-extrabold">File Preview</p>
@@ -9119,7 +9119,7 @@ export default function CandidateProfileModal() {
                 onClick={() =>
                   setUploadedFilePreview({ open: false, url: "", filename: "", kind: "attachment" })
                 }
-                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-white/15 bg-white/10 text-white transition hover:bg-white/20"
+                className="sibs-modal-close-btn inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-white/15 bg-white/10 text-white transition hover:bg-white/20"
                 aria-label="Close file preview"
               >
                 <X size={18} />
@@ -9128,8 +9128,8 @@ export default function CandidateProfileModal() {
 
             <div className="min-h-0 flex-1 overflow-auto bg-sibs-surface p-5">
               {uploadedFilePreview.kind === "audio" ? (
-                <div className="mx-auto max-w-2xl rounded-xl border border-sibs-border bg-white p-5">
-                  <p className="mb-4 break-all text-sm font-extrabold text-sibs-primary-1">
+                <div className="mx-auto max-w-2xl rounded-[14px] border border-sibs-border bg-white p-5">
+                  <p className="mb-4 break-all text-sm font-extrabold text-sibs-navy">
                     {uploadedFilePreview.filename}
                   </p>
                   <audio controls autoPlay src={uploadedFilePreview.url} className="w-full">
@@ -9141,19 +9141,19 @@ export default function CandidateProfileModal() {
                   <img
                     src={uploadedFilePreview.url}
                     alt={uploadedFilePreview.filename}
-                    className="max-h-[70vh] max-w-full rounded-xl border border-sibs-border bg-white object-contain shadow-sm"
+                    className="max-h-[70vh] max-w-full rounded-[10px] border border-sibs-border bg-white object-contain shadow-sm"
                   />
                 </div>
               ) : /\.pdf$/i.test(uploadedFilePreview.filename) ? (
                 <iframe
                   title={uploadedFilePreview.filename}
                   src={uploadedFilePreview.url}
-                  className="h-[70vh] w-full rounded-xl border border-sibs-border bg-white"
+                  className="h-[70vh] w-full rounded-[10px] border border-sibs-border bg-white"
                 />
               ) : (
-                <div className="mx-auto max-w-xl rounded-xl border border-sibs-border bg-white p-8 text-center">
-                  <FileText size={34} className="mx-auto text-sibs-primary-1" />
-                  <p className="mt-3 break-all text-sm font-extrabold text-sibs-primary-1">
+                <div className="mx-auto max-w-xl rounded-[14px] border border-sibs-border bg-white p-8 text-center">
+                  <FileText size={34} className="mx-auto text-sibs-navy" />
+                  <p className="mt-3 break-all text-sm font-extrabold text-sibs-navy">
                     {uploadedFilePreview.filename}
                   </p>
                   <p className="mt-2 text-xs font-semibold text-sibs-text-muted">
@@ -9169,7 +9169,7 @@ export default function CandidateProfileModal() {
                 onClick={() =>
                   setUploadedFilePreview({ open: false, url: "", filename: "", kind: "attachment" })
                 }
-                className="inline-flex h-10 items-center justify-center rounded-[10px] border border-sibs-border bg-white px-5 text-sm font-extrabold text-sibs-primary-1 transition hover:bg-sibs-surface"
+                className="inline-flex h-10 items-center justify-center rounded-[10px] border border-sibs-border bg-white px-5 text-sm font-extrabold text-sibs-navy transition hover:bg-sibs-surface"
               >
                 Close
               </button>

@@ -74,11 +74,11 @@ export default function CandidateExperienceTable({ records = [], onSelect, loadi
                       onSelect(record);
                     }
                   }}
-                  className="sibs-data-table-row sibs-page-card-in cursor-pointer bg-white outline-none transition hover:bg-sibs-surface focus:bg-blue-50/60 focus:ring-2 focus:ring-inset focus:ring-sibs-orange/20"
+                  className="sibs-data-table-row sibs-page-card-in group cursor-pointer transition-colors"
                   style={{ animationDelay: `${index * 35}ms`, animationFillMode: "both" }}
                 >
                   <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle">
-                    <p className="sibs-text-xs font-extrabold text-sibs-navy">{record.candidateName || "Unnamed Candidate"}</p>
+                    <p className="sibs-text-xs font-extrabold text-sibs-navy transition group-hover:text-sibs-orange">{record.candidateName || "Unnamed Candidate"}</p>
                     <p className="mt-0.5 max-w-[220px] truncate font-mono text-[10px] 2xl:text-[10.5px] font-semibold tabular-nums text-sibs-muted">
                       {record.candidateEmail || record.candidateId || "—"}
                     </p>

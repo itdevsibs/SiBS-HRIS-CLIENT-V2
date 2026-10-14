@@ -8,11 +8,16 @@ const ROLE_LABELS = {
   som: "Loading Senior Operations Dashboard",
 };
 
-export default function RoleDashboardSkeleton({ kind = "om", hero = null }) {
+export default function RoleDashboardSkeleton({
+  kind = "om",
+  hero = null,
+  showStatutoryCoverage = false,
+}) {
   return (
     <DashboardLoadingSkeleton
       ariaLabel={ROLE_LABELS[kind] || ROLE_LABELS.om}
       hero={hero}
+      showStatutoryCoverage={kind === "ta" ? true : showStatutoryCoverage}
     />
   );
 }

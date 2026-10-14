@@ -5,7 +5,7 @@ import { BriefcaseBusiness, ChevronLeft, HeartPulse, History } from "lucide-reac
 
 import Header from "../../components/layout/Header";
 import ProfileDropdown from "../../components/layout/profile/ProfileDropdown";
-import StatusModal from "../../components/modals/StatusModal";
+import ConfirmModal from "@/components/ui/ConfirmModal";
 import ResignationModal from "../../components/modals/resignation/ResignationModal";
 import { ViewResignationModal } from "../../components/modals/resignation-management/ResignationManagementModal";
 import EmployeeProfileContent from "../../components/employee/profile/components/EmployeeProfileContent.jsx";
@@ -1284,13 +1284,14 @@ export default function EmployeeDataPage() {
         onClose={() => setSelectedResignation(null)}
       />
 
-      <StatusModal
-        open={statusModal.open}
-        type={statusModal.type}
-        title={statusModal.title}
-        message={statusModal.message}
-        variant="center"
-        lockScroll
+      <ConfirmModal
+        open={Boolean(statusModal.open)}
+        variant={statusModal.type === "error" ? "danger" : "primary"}
+        title={statusModal.title || "Notification"}
+        description={statusModal.message || ""}
+        confirmLabel="OK"
+        cancelLabel="Close"
+        onConfirm={closeStatusModal}
         onClose={closeStatusModal}
       />
     </div>

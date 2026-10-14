@@ -429,7 +429,7 @@ export default function LeavesPage() {
                 : "Review employee leave requests, credits, plotted leaves, and remaining balances."
             }
             actions={
-              <div className="flex shrink-0 items-center gap-2 2xl:gap-2.5">
+              <div className="flex shrink-0 items-center gap-2 2xl:gap-2.5 max-sm:w-full">
                 <button
                   type="button"
                   onClick={handleManualRefresh}
@@ -454,6 +454,7 @@ export default function LeavesPage() {
 
           {loading ? (
             <MetricGridSkeleton
+              columns={6}
               count={6}
               labels={[
                 "Loaded Leaves",
@@ -464,7 +465,6 @@ export default function LeavesPage() {
                 "Page Remaining",
               ]}
               ariaLabel="Loading leaves metrics"
-              className="grid grid-cols-2 gap-2.5 2xl:gap-3 md:grid-cols-3 xl:grid-cols-6"
             />
           ) : (
             <MetricGrid columns={6}>

@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import StatusModal from "@/components/modals/StatusModal";
+import { AlertTriangle } from "lucide-react";
+import ConfirmModal from "@/components/ui/ConfirmModal";
 
 function AvailablePositionsConfirmationModal({
   open,
@@ -12,31 +13,36 @@ function AvailablePositionsConfirmationModal({
   onConfirm,
 }) {
   return (
-    <StatusModal
-      open={open}
-      type="confirm"
-      subtitle="Position Dictionary"
+    <ConfirmModal
+      open={Boolean(open)}
+      variant="warning"
+      icon={AlertTriangle}
       title={title}
-      message={message || "Confirm this Available Position action."}
-      notice="Status changes affect applicant-facing availability. Review the requested action before continuing."
+      description={
+        message ||
+        "Confirm this Available Position action. Status changes affect applicant-facing availability. Review the requested action before continuing."
+      }
       confirmLabel={confirmLabel}
       cancelLabel={cancelLabel}
-      onCancel={onCancel}
+      loading={isSaving}
       onClose={onCancel}
       onConfirm={onConfirm}
-      loading={isSaving}
     />
   );
 }
 
-// eslint-disable-next-line react-refresh/only-export-components
 export function useConfirmDialog() {
   const [confirmState, setConfirmState] = useState(null);
+  const [confirmState, setConfirmState] = useState(null);
 
+  function confirmAction(message, options = {}) {
   function confirmAction(message, options = {}) {
     return new Promise((resolve) => {
       setConfirmState({
         message,
+        title: options.title || "Confirm Action",
+        confirmLabel: options.confirmLabel || options.confirmText || "Continue",
+        cancelLabel: options.cancelLabel || "Cancel",
         title: options.title || "Confirm Action",
         confirmLabel: options.confirmLabel || options.confirmText || "Continue",
         cancelLabel: options.cancelLabel || "Cancel",
@@ -52,9 +58,14 @@ export function useConfirmDialog() {
 
   const ConfirmationDialog = (
     <AvailablePositionsConfirmationModal
+    <AvailablePositionsConfirmationModal
       open={Boolean(confirmState)}
       title={confirmState?.title}
       message={confirmState?.message}
+      confirmLabel={confirmState?.confirmLabel}
+      cancelLabel={confirmState?.cancelLabel}
+      onCancel={() => closeConfirm(false)}
+      onConfirm={() => closeConfirm(true)}
       confirmLabel={confirmState?.confirmLabel}
       cancelLabel={confirmState?.cancelLabel}
       onCancel={() => closeConfirm(false)}

@@ -18,8 +18,7 @@ import {
   getRecruitmentHolidays,
   updateRecruitmentHoliday,
 } from "../../../lib/axios/getRecruitmentSettings";
-import StatusModal from "../../modals/StatusModal";
-import { Skeleton } from "@/components/ui";
+import { ConfirmModal, Skeleton } from "@/components/ui";
 
 const EMPTY_FORM = {
   id: "",
@@ -443,12 +442,15 @@ export default function RecruitmentHolidayCalendar() {
         )}
       </section>
 
-      <StatusModal
-        open={statusModal.open}
-        type={statusModal.type}
+      <ConfirmModal
+        open={Boolean(statusModal.open)}
+        variant={statusModal.type === "error" ? "danger" : "primary"}
         title={statusModal.title}
-        message={statusModal.message}
-        variant="center"
+        description={statusModal.message}
+        confirmLabel="OK"
+        onConfirm={() =>
+          setStatusModal((previous) => ({ ...previous, open: false }))
+        }
         onClose={() =>
           setStatusModal((previous) => ({ ...previous, open: false }))
         }

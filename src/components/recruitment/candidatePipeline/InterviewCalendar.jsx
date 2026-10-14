@@ -325,7 +325,7 @@ const InterviewCalendar = ({ candidates, onViewCandidate }) => {
                               ? "bg-sibs-orange text-white shadow-sm"
                               : isCurrentMonth
                                 ? "text-sibs-navy"
-                                : "text-sibs-faint"
+                                : "text-sibs-muted"
                           }`}
                         >
                           {date.getDate()}
@@ -387,7 +387,7 @@ const InterviewCalendar = ({ candidates, onViewCandidate }) => {
                       {dayCandidates.length > 0 ? (
                         dayCandidates.map((candidate) => renderCandidateEvent(candidate))
                       ) : (
-                        <div className="rounded-[10px] border border-dashed border-sibs-border bg-sibs-surface px-3 py-6 text-center text-[9px] font-semibold text-sibs-faint">
+                        <div className="rounded-[10px] border border-dashed border-sibs-border bg-sibs-surface px-3 py-6 text-center text-[9px] font-semibold text-sibs-muted">
                           No interview
                         </div>
                       )}

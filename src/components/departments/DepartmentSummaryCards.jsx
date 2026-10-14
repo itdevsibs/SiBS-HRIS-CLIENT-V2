@@ -6,16 +6,16 @@ const METRICS = [
   { key: "totalAccounts", label: "Total Accounts", description: "Linked operating accounts", icon: Layers3, tone: "text-violet-600 bg-violet-50" },
   { key: "activeAccounts", label: "Active Accounts", description: "Available in Kronos", icon: CheckCircle2, tone: "text-emerald-600 bg-emerald-50" },
   { key: "inactiveAccounts", label: "Inactive Accounts", description: "Disabled or archived", icon: XCircle, tone: "text-amber-600 bg-amber-50" },
-  { key: "activeRate", label: "Active Rate", description: "Account availability", icon: Activity, tone: "text-sibs-orange bg-orange-50", suffix: "%" },
+  { key: "activeRate", label: "Active Rate", description: "Account availability", icon: Activity, tone: "text-sibs-orange bg-sibs-cream-light", suffix: "%" },
 ];
 
 export default function DepartmentSummaryCards({ summary }) {
   return (
-    <section className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-5">
+    <section className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-5 font-jakarta">
       {METRICS.map(({ key, label, description, icon, tone, suffix = "" }, index) => (
         <article
           key={key}
-          className="sibs-metric-card"
+          className="sibs-metric-card sibs-page-card-in font-jakarta"
           style={{ animationDelay: `${index * 45}ms`, animationFillMode: "both" }}
         >
           <div className="flex items-start justify-between gap-3">

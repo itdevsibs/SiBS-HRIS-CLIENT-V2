@@ -11,6 +11,7 @@ import {
   XCircle,
 } from "lucide-react";
 import api from "../../../lib/axios/api-template";
+import ModalShell from "../../ui/ModalShell";
 import EmploymentOfferPdfPreviewModal from "../common/EmploymentOfferPdfPreviewModal";
 import { getStatusClass } from "../../../lib/utils/offers/offerHelpers";
 import { formatCurrency } from "../../../lib/utils/offers/offerFormatters";
@@ -53,7 +54,7 @@ function getVersionTone(status = "") {
   if (key.includes("review") || key.includes("pending")) {
     return "border-amber-200 bg-amber-50 text-amber-700";
   }
-  return "border-blue-100 bg-blue-50 text-sibs-primary-1";
+  return "border-sibs-border bg-slate-50 text-sibs-navy";
 }
 function getAlignedInternalRemarkLines(value) {
   const text = cleanText(value);
@@ -689,54 +690,74 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
   }
   return (
     <>
-      <div
-        className="sibs-modal-blur sibs-modal-backdrop-in fixed inset-0 z-[12000] flex h-dvh items-center justify-center bg-slate-950/50 p-2 backdrop-blur-[2px] sm:p-4 font-jakarta"
-        onClick={handleClose}
-      >
-        <div
-          className="sibs-modal-pop-in flex max-h-[92dvh] w-full max-w-5xl flex-col overflow-hidden rounded-[14px] border border-sibs-border bg-white shadow-[0_24px_80px_rgba(15,23,42,0.28)] font-jakarta 2xl:max-w-6xl"
-          onClick={(event) => event.stopPropagation()}
-        >
-          <div className="flex shrink-0 items-center justify-between gap-4 border-b border-white/10 bg-sibs-navy px-5 py-4 text-white sm:px-6">
-            <div className="flex min-w-0 items-center gap-3">
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] border border-white/15 bg-white/10 text-sibs-orange">
-                <FileText size={19} />
-              </span>
-              <div className="min-w-0">
-                <div className="flex min-w-0 flex-wrap items-center gap-2">
-                  <h2 className="truncate text-base font-extrabold tracking-tight text-white sm:text-lg">
-                    {offer.candidateName || "Offer Details"}
-                  </h2>
-                  {offer.offerId ? (
-                    <span className="rounded-full border border-white/10 bg-white/10 px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-white/80">
-                      {offer.offerId}
-                    </span>
-                  ) : null}
-                </div>
-                <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] font-semibold text-white/65 sm:text-xs">
-                  <span>{currentRoleTitle}</span>
-                  <span className="text-white/30">•</span>
-                  <span>Candidate ID: {offer.candidateId || "—"}</span>
-                  {offer.hiringRequirementId ? (
-                    <>
-                      <span className="text-white/30">•</span>
-                      <span>Hiring Requirement: {offer.hiringRequirementId}</span>
-                    </>
-                  ) : null}
-                </p>
-              </div>
-            </div>
+      <ModalShell
+        open={open}
+        onClose={handleClose}
+        variant="navy"
+        title={offer.candidateName || "Offer Details"}
+        icon={FileText}
+        badge={offer.offerId || undefined}
+        subtitle={
+          <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+            <span>{currentRoleTitle}</span>
+            <span className="text-white/30">•</span>
+            <span>Candidate ID: {offer.candidateId || "—"}</span>
+            {offer.hiringRequirementId ? (
+              <>
+                <span className="text-white/30">•</span>
+                <span>Hiring Requirement: {offer.hiringRequirementId}</span>
+              </>
+            ) : null}
+          </span>
+        }
+        maxWidth="max-w-5xl 2xl:max-w-6xl"
+        className="rounded-[14px] max-h-[92dvh]"
+        bodyClassName="p-0 flex flex-col min-h-0 flex-1 overflow-hidden font-jakarta"
+        hideCloseButton={isBusy}
+        footer={
+          <div className="flex w-full flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-end">
             <button
               type="button"
               onClick={handleClose}
               disabled={isBusy}
-              className="sibs-modal-close-btn"
-              aria-label="Close offer details"
+              className="inline-flex h-10 items-center justify-center rounded-[10px] border border-sibs-border bg-white px-4 text-xs font-extrabold text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              <X size={18} />
+              Close
             </button>
+            {canReviewOffer ? (
+              <>
+                <button
+                  type="button"
+                  disabled={isBusy}
+                  onClick={() => handleOfferApproval("Rejected")}
+                  className="inline-flex h-10 items-center justify-center gap-2 rounded-[10px] border border-red-200 bg-red-50 px-4 text-xs font-extrabold text-red-600 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {approvalAction === "Rejected" ? (
+                    <Loader2 size={15} className="animate-spin" />
+                  ) : (
+                    <XCircle size={15} />
+                  )}
+                  {approvalAction === "Rejected" ? "Declining..." : "Decline"}
+                </button>
+                <button
+                  type="button"
+                  disabled={isBusy}
+                  onClick={() => handleOfferApproval("Approved")}
+                  className="inline-flex h-10 items-center justify-center gap-2 rounded-[10px] bg-sibs-navy px-4 text-xs font-extrabold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {approvalAction === "Approved" ? (
+                    <Loader2 size={15} className="animate-spin" />
+                  ) : (
+                    <Check size={15} className="text-sibs-orange" />
+                  )}
+                  {approvalAction === "Approved" ? "Approving..." : "Approve"}
+                </button>
+              </>
+            ) : null}
           </div>
-          <div className="flex shrink-0 flex-col gap-2 border-b border-sibs-border bg-slate-50 px-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+        }
+      >
+        <div className="flex shrink-0 flex-col gap-2 border-b border-sibs-border bg-slate-50 px-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
             <div className="flex min-w-0 items-center gap-4 overflow-x-auto no-scrollbar">
               <button
                 type="button"
@@ -1199,50 +1220,7 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
               </div>
             )}
           </div>
-          <div className="shrink-0 border-t border-sibs-border bg-white px-5 py-3 sm:px-6 2xl:py-4">
-            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-end">
-              <button
-                type="button"
-                onClick={handleClose}
-                disabled={isBusy}
-                className="inline-flex h-10 items-center justify-center rounded-[10px] border border-sibs-border bg-white px-4 text-xs font-extrabold text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                Close
-              </button>
-              {canReviewOffer ? (
-                <>
-                  <button
-                    type="button"
-                    disabled={isBusy}
-                    onClick={() => handleOfferApproval("Rejected")}
-                    className="inline-flex h-10 items-center justify-center gap-2 rounded-[10px] border border-red-200 bg-red-50 px-4 text-xs font-extrabold text-red-600 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    {approvalAction === "Rejected" ? (
-                      <Loader2 size={15} className="animate-spin" />
-                    ) : (
-                      <XCircle size={15} />
-                    )}
-                    {approvalAction === "Rejected" ? "Declining..." : "Decline"}
-                  </button>
-                  <button
-                    type="button"
-                    disabled={isBusy}
-                    onClick={() => handleOfferApproval("Approved")}
-                    className="inline-flex h-10 items-center justify-center gap-2 rounded-[10px] bg-sibs-navy px-4 text-xs font-extrabold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    {approvalAction === "Approved" ? (
-                      <Loader2 size={15} className="animate-spin" />
-                    ) : (
-                      <Check size={15} className="text-sibs-orange" />
-                    )}
-                    {approvalAction === "Approved" ? "Approving..." : "Approve"}
-                  </button>
-                </>
-              ) : null}
-            </div>
-          </div>
-        </div>
-      </div>
+      </ModalShell>
       <EmploymentOfferPdfPreviewModal
         open={employmentOfferPreview.open}
         filename={employmentOfferPreview.filename}

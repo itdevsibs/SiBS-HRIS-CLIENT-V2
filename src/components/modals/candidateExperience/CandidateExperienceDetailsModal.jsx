@@ -1,3 +1,4 @@
+import React from "react";
 import {
   BriefcaseBusiness,
   Building2,
@@ -5,9 +6,10 @@ import {
   Mail,
   MessageSquareText,
   UserRound,
-  X,
 } from "lucide-react";
 import { RatingStars, formatExperienceDate } from "../../recruitment/candidateExperience/presentation.jsx";
+// ModalShell provides canonical .sibs-modal-close-btn
+import { ModalShell } from "@/components/ui";
 
 function formatRecordedDate(value) {
   if (!value) return "—";
@@ -46,7 +48,7 @@ function timelineStyles(status) {
   ) {
     return {
       dot: "bg-sibs-orange",
-      badge: "bg-[#FFE5DC] text-[#D84616]",
+      badge: "bg-orange-100 text-sibs-orange",
     };
   }
 
@@ -66,12 +68,12 @@ function timelineStyles(status) {
 function OverviewItem({ label, value, valueClassName = "text-sibs-navy", pill = false }) {
   return (
     <div className="min-w-0">
-      <p className="text-[9px] font-black uppercase tracking-wide text-[#91A4BE]">
+      <p className="text-[9px] font-black uppercase tracking-wide text-sibs-faint">
         {label}
       </p>
 
       {pill ? (
-        <span className="mt-1 inline-flex max-w-full rounded border border-blue-200 bg-[#E9F0FC] px-1.5 py-0.5 text-[10px] font-bold text-[#174A7C]">
+        <span className="mt-1 inline-flex max-w-full rounded border border-sibs-border bg-sibs-cream-light px-1.5 py-0.5 text-[10px] font-bold text-sibs-navy">
           <span className="truncate">{value || "—"}</span>
         </span>
       ) : (
@@ -84,7 +86,7 @@ function OverviewItem({ label, value, valueClassName = "text-sibs-navy", pill = 
 }
 
 function CandidateJourney({ record }) {
-  const timeline = Array.isArray(record.stageTimeline) ? record.stageTimeline : [];
+  const timeline = Array.isArray(record?.stageTimeline) ? record.stageTimeline : [];
 
   return (
     <section>
@@ -92,7 +94,7 @@ function CandidateJourney({ record }) {
         STAGE TIMELINE CASCADE (CANDIDATE JOURNEY)
       </h3>
 
-      <div className="mt-2 rounded-[14px] border border-[#D7E0EB] bg-sibs-surface px-4 py-3">
+      <div className="mt-2 rounded-[14px] border border-sibs-border bg-sibs-surface px-4 py-3">
         {timeline.length > 0 ? (
           <div className="relative space-y-0">
             {timeline.map((item, index) => {
@@ -106,7 +108,7 @@ function CandidateJourney({ record }) {
                 >
                   <div className="relative flex w-4 shrink-0 self-stretch justify-center">
                     {!isLast ? (
-                      <span className="absolute left-1/2 top-5 bottom-[-4px] w-px -translate-x-1/2 bg-[#D7E0EB]" />
+                      <span className="absolute left-1/2 top-5 bottom-[-4px] w-px -translate-x-1/2 bg-sibs-border" />
                     ) : null}
 
                     <span
@@ -119,7 +121,7 @@ function CandidateJourney({ record }) {
                       <span className="text-[11px] font-black text-sibs-navy">
                         {item.stage || "Unknown Stage"}
                       </span>
-                      <span className="ml-2 text-[9px] font-bold text-[#A0AEC0]">
+                      <span className="ml-2 text-[9px] font-bold text-sibs-faint">
                         ({item.date ? formatExperienceDate(item.date) : "Recent"})
                       </span>
                     </div>
@@ -163,164 +165,144 @@ export default function CandidateExperienceDetailsModal({ record, onClose }) {
     "No root cause description recorded.";
 
   return (
-    <div
-      className="sibs-modal-blur sibs-modal-backdrop-in fixed inset-0 z-[10000] flex h-dvh items-center justify-center p-2 font-jakarta sm:p-4"
-      onClick={onClose}
-    >
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-label="Candidate Experience Details"
-        className="sibs-modal-pop-in flex max-h-[90dvh] w-full max-w-4xl 2xl:max-w-5xl flex-col overflow-hidden rounded-[14px] bg-white shadow-2xl font-jakarta"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <header className="shrink-0 bg-sibs-navy px-5 py-3 text-white sm:px-6 2xl:py-3.5 font-jakarta">
-          <div className="flex items-start justify-between gap-3 sm:gap-4">
-            <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-center gap-1.5 2xl:gap-2">
-                <span className="rounded bg-white/10 px-2 py-0.5 2xl:px-2.5 2xl:py-1 text-[8.5px] 2xl:text-[9.5px] font-mono font-bold text-slate-100 ring-1 ring-white/15">
-                  Record ID: {record.id || "—"}
-                  {record.candidateId ? ` (${record.candidateId})` : ""}
-                </span>
+    <ModalShell
+      open={Boolean(record)}
+      onClose={onClose}
+      variant="navy"
+      maxWidth="max-w-4xl 2xl:max-w-5xl"
+      title={record.candidateName || "Candidate Experience Details"}
+      headerMeta={
+        <div className="flex flex-wrap items-center gap-1.5 2xl:gap-2">
+          <span className="rounded bg-white/10 px-2 py-0.5 2xl:px-2.5 2xl:py-1 text-[8.5px] 2xl:text-[9.5px] font-mono font-bold text-slate-100 ring-1 ring-white/15">
+            Record ID: {record.id || "—"}
+            {record.candidateId ? ` (${record.candidateId})` : ""}
+          </span>
 
-                <span
-                  className={`rounded px-2 py-0.5 2xl:px-2.5 2xl:py-1 text-[8.5px] 2xl:text-[9.5px] font-black uppercase ${outcome.badge}`}
-                >
-                  {outcome.label}
-                </span>
-
-                <span className="rounded bg-white/10 px-2 py-0.5 2xl:px-2.5 2xl:py-1 text-[8.5px] 2xl:text-[9.5px] font-mono font-bold text-blue-100">
-                  Recorded: {formatRecordedDate(recordedDate)}
-                </span>
-              </div>
-
-              <h2 className="sibs-modal-title mt-1.5 truncate text-white">
-                {record.candidateName || "Candidate Experience Details"}
-              </h2>
-
-              <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 sibs-text-xs font-semibold text-white/75">
-                <span className="inline-flex items-center gap-1.5">
-                  <Mail size={12} className="text-slate-300" />
-                  {record.candidateEmail || "—"}
-                </span>
-
-                <span className="hidden text-slate-400 sm:inline">•</span>
-
-                <span className="inline-flex items-center gap-1.5">
-                  <BriefcaseBusiness size={12} className="text-slate-300" />
-                  {record.roleTitle || "—"}
-                </span>
-
-                <span className="hidden text-slate-400 sm:inline">•</span>
-
-                <span className="inline-flex items-center gap-1.5">
-                  <Building2 size={12} className="text-slate-300" />
-                  {record.account || "—"}
-                </span>
-              </div>
-
-              <div className="mt-1.5 flex flex-wrap items-center gap-2">
-                <span className="text-[8.5px] 2xl:text-[9.5px] font-extrabold uppercase tracking-wide text-blue-100">
-                  OVERALL RATING:
-                </span>
-                <RatingStars rating={record.experienceRating} size={13} />
-                <span className="text-[9.5px] 2xl:text-[10.5px] font-black text-amber-300">
-                  ({Number(record.experienceRating || 0).toFixed(1)} / 5.0)
-                </span>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={onClose}
-              className="inline-flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-[10px] text-white/70 transition hover:bg-white/10 hover:text-white sibs-modal-close-btn"
-              aria-label="Close modal"
-            >
-              <X size={18} />
-            </button>
-          </div>
-        </header>
-
-        <div className="min-h-0 flex-1 overflow-y-auto bg-sibs-surface p-3.5 sm:p-4 2xl:p-5 sibs-scrollbar font-jakarta">
-          <div className="space-y-3.5 2xl:space-y-4">
-            <section className="rounded-[10px] border border-sibs-border bg-white p-3 2xl:p-4 shadow-sm">
-              <h3 className="sibs-modal-section-title text-sibs-navy">
-                EVENT & EXIT OVERVIEW
-              </h3>
-
-              <div className="mt-2 grid grid-cols-2 gap-2.5 rounded-[10px] border border-sibs-border bg-sibs-surface p-3 sm:grid-cols-5">
-                <OverviewItem label="Event Type" value={record.eventType} />
-                <OverviewItem
-                  label="Final Status"
-                  value={outcome.label}
-                  valueClassName={outcome.text}
-                />
-                <OverviewItem label="Exit Stage" value={record.finalStage} />
-                <OverviewItem label="Reason Category" value={reasonCategory} />
-                <OverviewItem label="Feedback Tag" value={record.feedbackTag} pill />
-              </div>
-            </section>
-
-            <section className="rounded-[10px] border border-orange-200 bg-[#FFF7F3] p-3.5 2xl:p-4 shadow-sm">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <h3 className="inline-flex items-center gap-1.5 sibs-modal-section-title text-sibs-orange">
-                  <MessageSquareText size={14} />
-                  CANDIDATE QUALITATIVE FEEDBACK (VOICE OF CANDIDATE)
-                </h3>
-
-                <span className="text-[9px] font-mono font-black text-sibs-orange">
-                  Direct Raw Quote
-                </span>
-              </div>
-
-              <blockquote className="mt-2.5 border-l-2 border-sibs-orange pl-3 text-[11px] font-semibold italic leading-4.5 text-[#173B5E] 2xl:text-xs">
-                “{record.feedback || "No candidate qualitative feedback recorded."}”
-              </blockquote>
-
-              <div className="mt-2.5 rounded-[10px] border border-orange-200/80 bg-white/90 p-2.5 text-[10px] 2xl:text-[11px] leading-4 text-sibs-muted">
-                <strong className="font-black text-sibs-navy">
-                  Root Cause Description:
-                </strong>{" "}
-                {rootCause}
-              </div>
-            </section>
-
-            <CandidateJourney record={record} />
-
-            <section className="flex flex-col gap-2 rounded-[10px] border border-sibs-border bg-sibs-surface p-2.5 2xl:p-3 text-[10px] 2xl:text-[11px] sm:flex-row sm:items-center sm:justify-between">
-              <div className="inline-flex min-w-0 items-center gap-2 text-[#64748B]">
-                <UserRound size={13} className="shrink-0 text-sibs-navy" />
-                <span>
-                  Assigned TA Recruiter:{" "}
-                  <strong className="font-black text-sibs-navy">
-                    {record.owner || record.recordedBy || "Unassigned"}
-                  </strong>
-                </span>
-              </div>
-
-              <div className="inline-flex min-w-0 items-center gap-2 font-mono text-[#64748B]">
-                <FileText size={12} className="shrink-0 text-[#91A4BE]" />
-                <span>
-                  System Record ID:{" "}
-                  <strong className="font-black text-[#425B78]">
-                    {record.id || "—"}
-                  </strong>
-                </span>
-              </div>
-            </section>
-          </div>
-        </div>
-
-        <footer className="flex shrink-0 items-center justify-end border-t border-sibs-border bg-sibs-surface px-5 py-3 2xl:py-3.5 sm:px-6 font-jakarta">
-          <button
-            type="button"
-            onClick={onClose}
-            className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-[10px] border border-sibs-border bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-muted transition hover:border-sibs-orange/40 hover:bg-[#FFF8F5] hover:text-sibs-orange sibs-modal-close-btn"
+          <span
+            className={`rounded px-2 py-0.5 2xl:px-2.5 2xl:py-1 text-[8.5px] 2xl:text-[9.5px] font-black uppercase ${outcome.badge}`}
           >
-            Close Experience Record
-          </button>
-        </footer>
+            {outcome.label}
+          </span>
+
+          <span className="rounded bg-white/10 px-2 py-0.5 2xl:px-2.5 2xl:py-1 text-[8.5px] 2xl:text-[9.5px] font-mono font-bold text-blue-100">
+            Recorded: {formatRecordedDate(recordedDate)}
+          </span>
+        </div>
+      }
+      subtitle={
+        <span className="mt-1 flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-3 text-white/75">
+          <span className="flex flex-wrap items-center gap-x-3 gap-y-1 sibs-text-xs font-semibold">
+            <span className="inline-flex items-center gap-1.5">
+              <Mail size={12} className="text-slate-300" />
+              {record.candidateEmail || "—"}
+            </span>
+
+            <span className="hidden text-slate-400 sm:inline">•</span>
+
+            <span className="inline-flex items-center gap-1.5">
+              <BriefcaseBusiness size={12} className="text-slate-300" />
+              {record.roleTitle || "—"}
+            </span>
+
+            <span className="hidden text-slate-400 sm:inline">•</span>
+
+            <span className="inline-flex items-center gap-1.5">
+              <Building2 size={12} className="text-slate-300" />
+              {record.account || "—"}
+            </span>
+          </span>
+
+          <span className="hidden text-slate-400 sm:inline">•</span>
+
+          <span className="inline-flex items-center gap-2">
+            <span className="text-[8.5px] 2xl:text-[9.5px] font-extrabold uppercase tracking-wide text-blue-100">
+              OVERALL RATING:
+            </span>
+            <RatingStars rating={record.experienceRating} size={13} />
+            <span className="text-[9.5px] 2xl:text-[10.5px] font-black text-amber-300">
+              ({Number(record.experienceRating || 0).toFixed(1)} / 5.0)
+            </span>
+          </span>
+        </span>
+      }
+      bodyClassName="bg-sibs-surface p-3.5 sm:p-4 2xl:p-5"
+      footer={
+        <button
+          type="button"
+          onClick={onClose}
+          className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-[10px] border border-sibs-border bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-muted transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange"
+        >
+          Close Experience Record
+        </button>
+      }
+    >
+      <div className="space-y-3.5 2xl:space-y-4 font-jakarta">
+        <section className="rounded-[10px] border border-sibs-border bg-white p-3 2xl:p-4 shadow-sm">
+          <h3 className="sibs-modal-section-title text-sibs-navy">
+            EVENT & EXIT OVERVIEW
+          </h3>
+
+          <div className="mt-2 grid grid-cols-2 gap-2.5 rounded-[10px] border border-sibs-border bg-sibs-surface p-3 sm:grid-cols-5">
+            <OverviewItem label="Event Type" value={record.eventType} />
+            <OverviewItem
+              label="Final Status"
+              value={outcome.label}
+              valueClassName={outcome.text}
+            />
+            <OverviewItem label="Exit Stage" value={record.finalStage} />
+            <OverviewItem label="Reason Category" value={reasonCategory} />
+            <OverviewItem label="Feedback Tag" value={record.feedbackTag} pill />
+          </div>
+        </section>
+
+        <section className="rounded-[10px] border border-sibs-orange/30 bg-sibs-cream-light p-3.5 2xl:p-4 shadow-sm">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h3 className="inline-flex items-center gap-1.5 sibs-modal-section-title text-sibs-orange">
+              <MessageSquareText size={14} />
+              CANDIDATE QUALITATIVE FEEDBACK (VOICE OF CANDIDATE)
+            </h3>
+
+            <span className="text-[9px] font-mono font-black text-sibs-orange">
+              Direct Raw Quote
+            </span>
+          </div>
+
+          <blockquote className="mt-2.5 border-l-2 border-sibs-orange pl-3 text-[11px] font-semibold italic leading-4.5 text-sibs-navy 2xl:text-xs">
+            “{record.feedback || "No candidate qualitative feedback recorded."}”
+          </blockquote>
+
+          <div className="mt-2.5 rounded-[10px] border border-sibs-orange/20 bg-white/90 p-2.5 text-[10px] 2xl:text-[11px] leading-4 text-sibs-muted">
+            <strong className="font-black text-sibs-navy">
+              Root Cause Description:
+            </strong>{" "}
+            {rootCause}
+          </div>
+        </section>
+
+        <CandidateJourney record={record} />
+
+        <section className="flex flex-col gap-2 rounded-[10px] border border-sibs-border bg-sibs-surface p-2.5 2xl:p-3 text-[10px] 2xl:text-[11px] sm:flex-row sm:items-center sm:justify-between">
+          <div className="inline-flex min-w-0 items-center gap-2 text-sibs-muted">
+            <UserRound size={13} className="shrink-0 text-sibs-navy" />
+            <span>
+              Assigned TA Recruiter:{" "}
+              <strong className="font-black text-sibs-navy">
+                {record.owner || record.recordedBy || "Unassigned"}
+              </strong>
+            </span>
+          </div>
+
+          <div className="inline-flex min-w-0 items-center gap-2 font-mono text-sibs-muted">
+            <FileText size={12} className="shrink-0 text-sibs-faint" />
+            <span>
+              System Record ID:{" "}
+              <strong className="font-black text-sibs-navy">
+                {record.id || "—"}
+              </strong>
+            </span>
+          </div>
+        </section>
       </div>
-    </div>
+    </ModalShell>
   );
 }

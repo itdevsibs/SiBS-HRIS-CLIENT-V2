@@ -96,8 +96,8 @@ function DropOffCategoryDropdown({
           hasError
             ? "border-red-400 ring-4 ring-red-100"
             : open
-              ? "border-sibs-primary-1 ring-4 ring-sibs-primary-1/10"
-              : "border-sibs-border hover:border-sibs-primary-1"
+              ? "border-sibs-orange ring-4 ring-sibs-orange/10"
+              : "border-sibs-border hover:border-sibs-orange/40"
         } ${
           disabled
             ? "cursor-not-allowed bg-slate-100 text-slate-400 opacity-70"
@@ -108,7 +108,7 @@ function DropOffCategoryDropdown({
           className={`min-w-0 flex-1 truncate ${
             selectedOption
               ? "text-sibs-navy"
-              : "text-sibs-faint"
+              : "text-sibs-muted"
           }`}
         >
           {selectedOption || placeholder}
@@ -116,8 +116,8 @@ function DropOffCategoryDropdown({
 
         <ChevronDown
           size={18}
-          className={`shrink-0 text-sibs-primary-1 transition-transform duration-200 ${
-            open ? "rotate-180" : ""
+          className={`shrink-0 text-sibs-muted transition-transform duration-200 ${
+            open ? "rotate-180 text-sibs-orange" : ""
           }`}
         />
       </button>
@@ -144,7 +144,7 @@ function DropOffCategoryDropdown({
                     className={`flex min-h-[38px] 2xl:min-h-[42px] w-full items-center px-3 py-1.5 2xl:py-2 text-left sibs-text-xs font-semibold transition ${
                       active
                         ? "bg-sky-50 text-sky-800 font-extrabold"
-                        : "bg-white text-sibs-navy hover:bg-sibs-surface hover:text-sibs-primary-1"
+                        : "bg-white text-sibs-navy hover:bg-sibs-surface hover:text-sibs-orange"
                     }`}
                   >
                     <span className="min-w-0 flex-1 truncate">
@@ -154,7 +154,7 @@ function DropOffCategoryDropdown({
                 );
               })
             ) : (
-              <div className="px-4 py-3 text-sm font-semibold text-sibs-faint">
+              <div className="px-4 py-3 text-sm font-semibold text-sibs-muted">
                 No categories available.
               </div>
             )}
@@ -273,7 +273,7 @@ const DropOffModal = ({
         <CandidateModalSection title="Drop-off Details">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="relative z-[50]">
-              <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-sibs-faint">
+              <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-sibs-muted">
                 Reason Category <span className="text-sibs-orange"> *</span>
               </label>
               <DropOffCategoryDropdown
@@ -292,7 +292,7 @@ const DropOffModal = ({
             </div>
 
             <label className="block">
-              <span className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-sibs-faint">
+              <span className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-sibs-muted">
                 Drop-off Reason <span className="text-sibs-orange"> *</span>
               </span>
               <textarea
@@ -309,7 +309,7 @@ const DropOffModal = ({
             </label>
 
             <label className="block">
-              <span className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-sibs-faint">
+              <span className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-sibs-muted">
                 Internal Remarks
               </span>
               <textarea

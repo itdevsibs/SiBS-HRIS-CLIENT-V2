@@ -332,7 +332,7 @@ export default function SourcingAnalyticsTable({
                           source,
                         )
                       }
-                      className="sibs-data-table-row sibs-page-card-in cursor-pointer outline-none transition hover:bg-sibs-surface focus-visible:bg-sibs-surface focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sibs-orange/40"
+                      className="sibs-data-table-row sibs-page-card-in cursor-pointer outline-none transition focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sibs-orange/40"
                       style={{
                         animationDelay:
                           `${index * 30}ms`,

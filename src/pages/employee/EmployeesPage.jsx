@@ -288,7 +288,7 @@ export default function EmployeesPage() {
           </MetricGrid>
 
           <section
-            className="sibs-profile-tab-panel sibs-page-card-in sibs-card min-h-[520px] overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-sm"
+            className="sibs-page-card-in sibs-card min-h-[520px] overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-xs font-jakarta"
             style={getAnimationStyle(animationTiming.table)}
           >
             {renderActiveTable()}

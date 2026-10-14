@@ -19,11 +19,20 @@ import Header from "@/components/layout/Header";
 import RichTextEditor from "@/components/modals/jobDescription/RichTextEditor";
 import {
   DataCard,
+  EmptyStatePanel,
+  MetricCard,
+  MetricGrid,
+  MetricGridSkeleton,
   ModalShell,
   PageHeaderHero,
   ResponsiveTableShell,
+  SearchInput,
+  SelectDropdown,
+  StatusFilterTabs,
   TablePagination,
+  TableSkeletonRows,
 } from "@/components/ui";
+import PaginationTable from "@/services/pagination/PaginationTable";
 import useEmailLogsPage from "@/hooks/emailLogs/useEmailLogsPage";
 import { sendTestEmailDispatch } from "@/lib/axios/getEmailLogs";
 import { EMAIL_STATUS_TABS } from "@/lib/utils/emailLogs/emailLogsData";
@@ -71,6 +80,17 @@ const CATEGORY_STYLES = {
   "Talent Pool": "bg-rose-100 text-rose-800",
 };
 
+const STATUS_FILTER_TABS = [
+  { key: "all", label: "All Emails", icon: Mail },
+  { key: "delivered", label: "Delivered", icon: CheckCircle2 },
+  { key: "opened", label: "Opened", icon: Eye },
+  { key: "clicked", label: "Clicked CTA", icon: MousePointerClick },
+  { key: "bounced", label: "Bounced", icon: AlertTriangle, tone: "alert" },
+  { key: "failed", label: "Failed", icon: XCircle, tone: "danger" },
+  { key: "internal", label: "Internal Approvals", icon: CheckCircle2 },
+  { key: "relay", label: "Relay Status", icon: RotateCcw },
+];
+
 function StatusBadge({ status }) {
   const style = STATUS_STYLES[status] || STATUS_STYLES.delivered;
 
@@ -97,132 +117,106 @@ function formatDispatchDate(value) {
   }).format(date);
 }
 
-function MetricCard({ label, value, description, icon: Icon, tone = "navy", index = 0 }) {
-  const tones = {
-    navy: "bg-blue-50 text-blue-600",
-    blue: "bg-blue-50 text-blue-600",
-    purple: "bg-purple-50 text-purple-600",
-    emerald: "bg-emerald-50 text-emerald-600",
-    orange: "bg-orange-50 text-sibs-orange",
-  };
-
-  const values = {
-    navy: "text-sibs-navy",
-    blue: "text-blue-600",
-    purple: "text-purple-600",
-    emerald: "text-emerald-600",
-    orange: "text-sibs-orange",
-  };
-
-  return (
-    <div
-      className="sibs-metric-card"
-      style={{ animationDelay: `${index * 45}ms`, animationFillMode: "both" }}
-    >
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className={`sibs-kpi-kicker ${tone === "orange" ? "text-sibs-orange" : ""}`}>{label}</p>
-          <p className={`mt-4 sibs-kpi-value ${values[tone]}`}>{value}</p>
-          <p className="mt-3 sibs-kpi-desc">{description}</p>
-        </div>
-        <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${tones[tone]}`}>
-          {createElement(Icon, { className: "h-4 w-4" })}
-        </span>
-      </div>
-    </div>
-  );
-}
-
 function DesktopTable({ candidates, onView }) {
   return (
-    <div className="overflow-x-auto">
-      <table className="min-w-[1150px] w-full border-collapse text-left">
-        <thead className="bg-sibs-surface">
-          <tr className="border-b border-sibs-border">
-            {[
-              "Candidate",
-              "Email Address",
-              "Position & Account",
-              "Email Activity",
-              "Latest Status",
-              "Last Email",
-            ].map((label) => (
-              <th key={label} className="px-4 py-3 text-[9px] font-extrabold uppercase tracking-wide text-sibs-muted last:text-right">
-                {label}
-              </th>
-            ))}
+    <div className="sibs-data-table-shell overflow-x-auto max-h-[480px] 2xl:max-h-[640px] overflow-y-auto sibs-scrollbar">
+      <table className="w-full min-w-[1080px] 2xl:min-w-[1160px] table-fixed border-separate border-spacing-0 text-left font-jakarta">
+        <thead className="sibs-data-table-head sticky top-0 z-10 bg-sibs-surface">
+          <tr className="sibs-data-table-head-row">
+            <th className="sibs-data-table-th w-[20%] px-3 py-2.5 2xl:px-4 2xl:py-3.5 text-left text-[10px] 2xl:text-[10.5px] font-extrabold uppercase tracking-wide text-sibs-muted">
+              Candidate
+            </th>
+            <th className="sibs-data-table-th w-[20%] px-3 py-2.5 2xl:px-4 2xl:py-3.5 text-left text-[10px] 2xl:text-[10.5px] font-extrabold uppercase tracking-wide text-sibs-muted">
+              Email Address
+            </th>
+            <th className="sibs-data-table-th w-[18%] px-3 py-2.5 2xl:px-4 2xl:py-3.5 text-left text-[10px] 2xl:text-[10.5px] font-extrabold uppercase tracking-wide text-sibs-muted">
+              Position & Account
+            </th>
+            <th className="sibs-data-table-th w-[22%] px-3 py-2.5 2xl:px-4 2xl:py-3.5 text-left text-[10px] 2xl:text-[10.5px] font-extrabold uppercase tracking-wide text-sibs-muted">
+              Email Activity
+            </th>
+            <th className="sibs-data-table-th w-[10%] px-3 py-2.5 2xl:px-4 2xl:py-3.5 text-center text-[10px] 2xl:text-[10.5px] font-extrabold uppercase tracking-wide text-sibs-muted">
+              Latest Status
+            </th>
+            <th className="sibs-data-table-th w-[10%] px-3 py-2.5 2xl:px-4 2xl:py-3.5 text-right text-[10px] 2xl:text-[10.5px] font-extrabold uppercase tracking-wide text-sibs-muted">
+              Last Email
+            </th>
           </tr>
         </thead>
         <tbody className="divide-y divide-sibs-border">
-          {candidates.map((candidate) => {
+          {candidates.map((candidate, index) => {
             const latestRecord = candidate.latestRecord;
 
             return (
-            <tr
-              key={candidate.key}
-              role="button"
-              tabIndex={0}
-              aria-label={`View all emails for ${candidate.candidateName}`}
-              onClick={() => onView(candidate)}
-              onKeyDown={(event) => {
-                if (!isEmailLogActivationKey(event.key)) return;
-                event.preventDefault();
-                onView(candidate);
-              }}
-              className="cursor-pointer transition-colors hover:bg-[#FFF9F6] focus-visible:bg-[#FFF9F6] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sibs-orange/40"
-            >
-              <td className="w-[220px] px-4 py-3.5 align-middle">
-                <p className="block max-w-[215px] truncate text-left text-[11px] font-extrabold text-sibs-orange">
-                  {candidate.candidateName}
-                </p>
-                <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[8.5px] font-bold text-sibs-faint">
-                  <span className="rounded bg-slate-100 px-1.5 py-0.5 text-sibs-secondary">{candidate.role || "Candidate"}</span>
-                  {candidate.candidateId ? <span className="font-mono">ID: {candidate.candidateId}</span> : null}
-                </div>
-              </td>
-              <td className="w-[250px] px-4 py-3.5 align-middle">
-                <div className="space-y-1">
-                  {(candidate.emailAddresses?.length
-                    ? candidate.emailAddresses
-                    : [candidate.email]
-                  ).map((email) => (
-                    <p
-                      key={email}
-                      className="flex items-center gap-1.5 truncate text-[10.5px] font-semibold text-sibs-secondary"
-                    >
-                      <Mail className="h-3.5 w-3.5 shrink-0 text-sibs-tertiary-7" />
-                      {email}
-                    </p>
-                  ))}
-                </div>
-                <p className="mt-1 truncate text-[9px] font-semibold text-sibs-faint">{candidate.site}</p>
-              </td>
-              <td className="w-[210px] px-4 py-3.5 align-middle">
-                <p className="max-w-[205px] truncate text-[10px] font-bold text-sibs-secondary">{candidate.position}</p>
-                <p className="mt-1 max-w-[205px] truncate text-[9px] font-medium text-sibs-muted">Account: <span className="text-sibs-secondary">{candidate.account}</span></p>
-              </td>
-              <td className="w-[280px] px-4 py-3.5 align-middle">
-                <div className="flex items-center gap-2">
-                  <span className="inline-flex min-w-8 items-center justify-center rounded-full bg-sibs-navy px-2 py-1 text-[9px] font-extrabold text-white">
-                    {candidate.emailCount}
-                  </span>
-                  <span className="text-[10px] font-extrabold text-sibs-navy">
-                    {candidate.emailCount === 1 ? "email" : "emails"}
-                  </span>
-                </div>
-                <p className="mt-1.5 max-w-[270px] truncate text-[9px] font-semibold text-sibs-muted">
-                  Latest: <span className="text-sibs-secondary">{latestRecord.subject}</span>
-                </p>
-              </td>
-              <td className="w-[140px] px-4 py-3.5 align-middle">
-                <StatusBadge status={latestRecord.status} />
-              </td>
-              <td className="w-[190px] px-4 py-3.5 align-middle text-right">
-                <p className="text-[9px] font-semibold text-sibs-secondary">{formatDispatchDate(candidate.lastDispatchedAt)}</p>
-                <p className="mt-1 truncate text-[8.5px] font-semibold text-sibs-faint">{latestRecord.dispatchedBy}</p>
-              </td>
-            </tr>
-          );
+              <tr
+                key={candidate.key}
+                role="button"
+                tabIndex={0}
+                aria-label={`View all emails for ${candidate.candidateName}`}
+                onClick={() => onView(candidate)}
+                onKeyDown={(event) => {
+                  if (!isEmailLogActivationKey(event.key)) return;
+                  event.preventDefault();
+                  onView(candidate);
+                }}
+                className="sibs-data-table-row sibs-page-card-in group cursor-pointer transition-colors hover:bg-sibs-cream-light focus-visible:bg-sibs-cream-light focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sibs-orange/40"
+                style={{
+                  animationDelay: `${index * 35}ms`,
+                  animationFillMode: "both",
+                }}
+              >
+                <td className="border-b border-sibs-border px-3 py-2 2xl:px-4 2xl:py-2.5 align-middle">
+                  <p className="block max-w-[215px] truncate text-left sibs-text-xs font-extrabold text-sibs-navy transition-colors group-hover:text-sibs-orange tracking-tight">
+                    {candidate.candidateName}
+                  </p>
+                  <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[8.5px] font-bold text-sibs-muted">
+                    <span className="rounded bg-sibs-surface-subtle px-1.5 py-0.5 font-jakarta text-[9px] font-extrabold text-sibs-navy">{candidate.role || "Candidate"}</span>
+                    {candidate.candidateId ? <span className="font-mono text-[9.5px] 2xl:text-[10px] font-semibold text-sibs-muted tabular-nums">ID: {candidate.candidateId}</span> : null}
+                  </div>
+                </td>
+                <td className="border-b border-sibs-border px-3 py-2 2xl:px-4 2xl:py-2.5 align-middle">
+                  <div className="space-y-1">
+                    {(candidate.emailAddresses?.length
+                      ? candidate.emailAddresses
+                      : [candidate.email]
+                    ).map((email) => (
+                      <p
+                        key={email}
+                        className="flex items-center gap-1.5 truncate text-[10.5px] font-semibold text-sibs-navy"
+                      >
+                        <Mail className="h-3.5 w-3.5 shrink-0 text-sibs-tertiary-7" />
+                        {email}
+                      </p>
+                    ))}
+                  </div>
+                  <p className="mt-1 truncate text-[9.5px] font-medium text-sibs-muted">{candidate.site}</p>
+                </td>
+                <td className="border-b border-sibs-border px-3 py-2 2xl:px-4 2xl:py-2.5 align-middle">
+                  <p className="max-w-[205px] truncate sibs-text-xs font-extrabold text-sibs-navy">{candidate.position}</p>
+                  <p className="mt-1 max-w-[205px] truncate text-[9.5px] font-medium text-sibs-muted">Account: <span className="font-semibold text-sibs-navy">{candidate.account}</span></p>
+                </td>
+                <td className="border-b border-sibs-border px-3 py-2 2xl:px-4 2xl:py-2.5 align-middle">
+                  <div className="flex items-center gap-2">
+                    <span className="inline-flex min-w-8 items-center justify-center rounded-full bg-sibs-navy px-2 py-0.5 text-[9px] font-extrabold text-white">
+                      {candidate.emailCount}
+                    </span>
+                    <span className="text-[10px] font-extrabold text-sibs-navy">
+                      {candidate.emailCount === 1 ? "email" : "emails"}
+                    </span>
+                  </div>
+                  <p className="mt-1.5 truncate text-[9.5px] font-medium text-sibs-muted">
+                    Latest: <span className="font-semibold text-sibs-navy">{latestRecord.subject}</span>
+                  </p>
+                </td>
+                <td className="border-b border-sibs-border px-3 py-2 2xl:px-4 2xl:py-2.5 text-center align-middle">
+                  <StatusBadge status={latestRecord.status} />
+                </td>
+                <td className="border-b border-sibs-border px-3 py-2 2xl:px-4 2xl:py-2.5 text-right align-middle">
+                  <p className="sibs-text-xs font-extrabold tabular-nums text-sibs-navy whitespace-nowrap">{formatDispatchDate(candidate.lastDispatchedAt)}</p>
+                  <p className="mt-1 truncate text-[9.5px] font-semibold text-sibs-muted">{latestRecord.dispatchedBy}</p>
+                </td>
+              </tr>
+            );
           })}
         </tbody>
       </table>
@@ -234,7 +228,17 @@ function MobileCards({ candidates, onView }) {
   return (
     <div className="space-y-3 p-3">
       {candidates.map((candidate, index) => (
-        <DataCard key={candidate.key} index={index} interactive onClick={() => onView(candidate)}>
+        <DataCard
+          key={candidate.key}
+          index={index}
+          interactive
+          onClick={() => onView(candidate)}
+          className="sibs-page-card-in"
+          style={{
+            animationDelay: `${index * 35}ms`,
+            animationFillMode: "both",
+          }}
+        >
           <DataCard.Header
             kicker={`${candidate.emailCount} ${candidate.emailCount === 1 ? "EMAIL" : "EMAILS"}`}
             title={candidate.candidateName}
@@ -266,6 +270,7 @@ function MobileCards({ candidates, onView }) {
   );
 }
 
+
 export default function EmailLogsPage() {
   const logs = useEmailLogsPage();
   const [selectedCandidate, setSelectedCandidate] = useState(null);
@@ -283,18 +288,22 @@ export default function EmailLogsPage() {
   const showingStart = logs.totalRecords ? (logs.page - 1) * logs.pageSize + 1 : 0;
   const showingEnd = Math.min(logs.page * logs.pageSize, logs.totalRecords);
 
+  const visibleStatusCounts = useMemo(() => {
+    if (!logs.statusCounts) return {};
+    return Object.fromEntries(
+      Object.entries(logs.statusCounts).filter(([, count]) => Number(count || 0) > 0),
+    );
+  }, [logs.statusCounts]);
+
+  const countKeys = useMemo(
+    () => Object.keys(visibleStatusCounts),
+    [visibleStatusCounts],
+  );
+
   const handlePageChange = (nextPage) => {
     logs.setPage(nextPage);
     window.scrollTo({ top: 0, left: 0, behavior: "auto" });
   };
-
-  const metricCards = useMemo(() => [
-    { label: "Total Emails", value: logs.metrics.total, description: "Active Dispatch Roster", icon: Mail, tone: "navy" },
-    { label: "Delivered", value: logs.metrics.delivered, description: "Delivery Confirmations", icon: CheckCircle2, tone: "blue" },
-    { label: "Opened", value: logs.metrics.opened, description: "Recipient Open Events", icon: Eye, tone: "purple" },
-    { label: "Clicked CTA", value: logs.metrics.clicked, description: "Offer & Assessment Links", icon: MousePointerClick, tone: "emerald" },
-    { label: "Bounce Rate", value: `${logs.metrics.bounceRate}%`, description: `${logs.metrics.bounced + logs.metrics.failed} Bounced / Issues`, icon: AlertTriangle, tone: "orange" },
-  ], [logs.metrics]);
 
   const downloadCsvTemplate = () => {
     const content = "recipient_email,recipient_name,subject,category,position,account\n";
@@ -386,105 +395,182 @@ export default function EmailLogsPage() {
           }
         />
 
-        <section className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-5">
-          {metricCards.map((metric, index) => <MetricCard key={metric.label} {...metric} index={index} />)}
-        </section>
+        {logs.loading ? (
+          <MetricGridSkeleton
+            columns={5}
+            count={5}
+            labels={["Total Emails", "Delivered", "Opened", "Clicked CTA", "Bounce Rate"]}
+            ariaLabel="Loading email metrics"
+          />
+        ) : (
+          <MetricGrid columns={5}>
+            <MetricCard
+              title="Total Emails"
+              value={logs.metrics.total}
+              description="Active Dispatch Roster"
+              icon={Mail}
+              tone="navy"
+              index={0}
+            />
+            <MetricCard
+              title="Delivered"
+              value={logs.metrics.delivered}
+              description="Delivery Confirmations"
+              icon={CheckCircle2}
+              tone="blue"
+              index={1}
+            />
+            <MetricCard
+              title="Opened"
+              value={logs.metrics.opened}
+              description="Recipient Open Events"
+              icon={Eye}
+              tone="purple"
+              index={2}
+            />
+            <MetricCard
+              title="Clicked CTA"
+              value={logs.metrics.clicked}
+              description="Offer & Assessment Links"
+              icon={MousePointerClick}
+              tone="emerald"
+              index={3}
+            />
+            <MetricCard
+              title="Bounce Rate"
+              value={`${logs.metrics.bounceRate}%`}
+              description={`${logs.metrics.bounced + logs.metrics.failed} Bounced / Issues`}
+              icon={AlertTriangle}
+              tone="coral"
+              index={4}
+            />
+          </MetricGrid>
+        )}
 
-        <section className="mt-5 overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-sm">
-          <div className="flex flex-col gap-3 border-b border-sibs-border px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+        <section
+          className="sibs-page-card-in sibs-card mt-5 overflow-visible rounded-[14px] border border-sibs-border bg-white font-jakarta shadow-xs"
+          style={{ animationDelay: "240ms", animationFillMode: "both" }}
+        >
+          <div className="border-b border-sibs-border p-4 sm:p-5 2xl:p-6 font-jakarta">
             <div>
               <h2 className="sibs-card-title">Candidate Email Directory</h2>
               <p className="sibs-card-subtitle">One row per candidate. Open a candidate to review their complete email communication history.</p>
             </div>
-            <span className="self-start rounded-lg border border-sibs-border bg-sibs-surface px-3 py-1.5 text-[10px] font-extrabold text-sibs-secondary sm:self-auto">
-              {logs.totalRecords} candidates · {logs.filteredEmailCount} matching emails · {logs.totalEmails} total emails
-            </span>
+
+            <div className="relative z-[90] mt-3.5 2xl:mt-4 overflow-visible">
+              <PaginationTable
+                filterLayout="ta-inline"
+                showFilterPanel={false}
+                showFilterHeader={false}
+                showPagination={false}
+                loading={logs.loading}
+                searchValue={logs.search}
+                searchPlaceholder="Search candidate, email, subject, position, account..."
+                onSearchChange={(val) => logs.setSearch(typeof val === "string" ? val : val?.target?.value ?? "")}
+                className="border-0 bg-transparent p-0 shadow-none font-jakarta"
+                filters={[
+                  {
+                    key: "category",
+                    value: logs.category,
+                    options: [
+                      { label: "All Categories", value: "all" },
+                      ...logs.categories.map((value) => ({ label: value, value })),
+                    ],
+                    onChange: (val) => logs.setCategory(val || "all"),
+                    includeAll: false,
+                    allLabel: "All Categories",
+                    label: "Category",
+                    placeholder: "All Categories",
+                    searchable: true,
+                    disabled: logs.loading,
+                    className: "w-full xl:w-[210px] 2xl:w-[240px] xl:flex-none",
+                  },
+                  {
+                    key: "account",
+                    value: logs.account,
+                    options: [
+                      { label: "All Accounts", value: "all" },
+                      ...logs.accounts.map((value) => ({ label: value, value })),
+                    ],
+                    onChange: (val) => logs.setAccount(val || "all"),
+                    includeAll: false,
+                    allLabel: "All Accounts",
+                    label: "Account",
+                    placeholder: "All Accounts",
+                    searchable: true,
+                    disabled: logs.loading,
+                    className: "w-full xl:w-[210px] 2xl:w-[240px] xl:flex-none",
+                  },
+                ]}
+                rightContent={
+                  logs.hasActiveFilters ? (
+                    <button
+                      type="button"
+                      onClick={logs.clearFilters}
+                      disabled={logs.loading}
+                      className="inline-flex h-8.5 2xl:h-10 w-full items-center justify-center gap-1.5 rounded-[10px] border border-sibs-border bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-muted transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange xl:w-auto"
+                    >
+                      <RotateCcw size={14} />
+                      Clear
+                    </button>
+                  ) : null
+                }
+              />
+            </div>
           </div>
 
-          <div className="grid gap-3 border-b border-sibs-border px-4 py-4 md:grid-cols-[minmax(280px,1fr)_190px_190px_auto] sm:px-5">
-            <label className="block">
-              <span className="sibs-field-label">Search</span>
-              <span className="relative block">
-                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-sibs-faint" />
-                <input
-                  value={logs.search}
-                  onChange={(event) => logs.setSearch(event.target.value)}
-                  className="sibs-dashboard-input pl-9 pr-3"
-                  placeholder="Search candidate, email, subject, position, account, message ID..."
+          <div className="min-h-0 flex-1 p-4 sm:p-5 2xl:p-6 font-jakarta">
+            <div className="overflow-hidden rounded-[10px] border border-sibs-border bg-white shadow-xs">
+              <StatusFilterTabs
+                tabs={STATUS_FILTER_TABS}
+                activeValue={logs.status}
+                onChange={logs.setStatus}
+                counts={visibleStatusCounts}
+                countKeys={countKeys}
+                layoutId="emailLogsStatusTabIndicator"
+              />
+
+              {logs.visibleCandidates.length ? (
+                <ResponsiveTableShell
+                  desktopContent={<DesktopTable candidates={logs.visibleCandidates} onView={setSelectedCandidate} />}
+                  mobileContent={<MobileCards candidates={logs.visibleCandidates} onView={setSelectedCandidate} />}
                 />
-              </span>
-            </label>
-            <label className="block">
-              <span className="sibs-field-label">Category</span>
-              <select value={logs.category} onChange={(event) => logs.setCategory(event.target.value)} className="sibs-dashboard-input px-3">
-                <option value="all">All Categories</option>
-                {logs.categories.map((value) => <option key={value} value={value}>{value}</option>)}
-              </select>
-            </label>
-            <label className="block">
-              <span className="sibs-field-label">Account</span>
-              <select value={logs.account} onChange={(event) => logs.setAccount(event.target.value)} className="sibs-dashboard-input px-3">
-                <option value="all">All Accounts</option>
-                {logs.accounts.map((value) => <option key={value} value={value}>{value}</option>)}
-              </select>
-            </label>
-            <button type="button" className="sibs-btn-secondary self-end" onClick={logs.clearFilters} disabled={!logs.hasActiveFilters}>
-              <Filter className="h-4 w-4" /> Clear
-            </button>
-          </div>
-
-          <div className="overflow-x-auto border-b border-sibs-border px-4 sm:px-5">
-            <div className="flex min-w-max gap-5">
-              {EMAIL_STATUS_TABS.map((tab) => {
-                const active = logs.status === tab.value;
-                return (
-                  <button
-                    key={tab.value}
-                    type="button"
-                    onClick={() => logs.setStatus(tab.value)}
-                    className={`relative flex h-11 items-center gap-2 text-[10px] font-extrabold uppercase transition ${active ? "text-sibs-navy" : "text-sibs-muted hover:text-sibs-orange"}`}
-                  >
-                    {tab.value === "all" ? <Mail className="h-3.5 w-3.5" /> : null}
-                    {tab.value === "delivered" ? <CheckCircle2 className="h-3.5 w-3.5" /> : null}
-                    {tab.value === "opened" ? <Eye className="h-3.5 w-3.5" /> : null}
-                    {tab.value === "clicked" ? <MousePointerClick className="h-3.5 w-3.5" /> : null}
-                    {tab.value === "bounced" ? <AlertTriangle className="h-3.5 w-3.5" /> : null}
-                    {tab.value === "failed" ? <XCircle className="h-3.5 w-3.5" /> : null}
-                    {tab.value === "internal" ? <CheckCircle2 className="h-3.5 w-3.5" /> : null}
-                    {tab.value === "relay" ? <RotateCcw className="h-3.5 w-3.5" /> : null}
-                    {tab.label}
-                    <span className={`rounded-full px-2 py-0.5 text-[9px] ${active ? "bg-sibs-navy text-white" : "bg-slate-100 text-sibs-muted"}`}>{logs.statusCounts[tab.value]}</span>
-                    {active ? <span className="absolute inset-x-0 bottom-0 h-0.5 bg-sibs-orange" /> : null}
-                  </button>
-                );
-              })}
+              ) : (
+                <div className="p-8 sm:p-12">
+                  <EmptyStatePanel
+                    icon={Mail}
+                    title="No candidates found"
+                    description="Adjust your filters or clear them to restore the candidate email directory."
+                    action={
+                      logs.hasActiveFilters ? (
+                        <button
+                          type="button"
+                          onClick={logs.clearFilters}
+                          className="sibs-btn-primary !h-8.5 text-xs font-extrabold"
+                        >
+                          Reset Search & Filters
+                        </button>
+                      ) : null
+                    }
+                  />
+                </div>
+              )}
             </div>
-          </div>
 
-          {logs.visibleCandidates.length ? (
-            <ResponsiveTableShell
-              desktopContent={<DesktopTable candidates={logs.visibleCandidates} onView={setSelectedCandidate} />}
-              mobileContent={<MobileCards candidates={logs.visibleCandidates} onView={setSelectedCandidate} />}
-            />
-          ) : (
-            <div className="px-4 py-12 text-center">
-              <Mail className="mx-auto h-9 w-9 text-sibs-tertiary-8" />
-              <h3 className="mt-3 text-sm font-extrabold text-sibs-navy">No candidates found</h3>
-              <p className="mt-1 text-xs font-semibold text-sibs-muted">Adjust your filters or clear them to restore the candidate email directory.</p>
+            <div className="pt-4">
+              <TablePagination
+                currentPage={logs.page}
+                totalPages={logs.totalPages}
+                totalRecords={logs.totalRecords}
+                loadedCount={logs.visibleCandidates.length ? `${showingStart}–${showingEnd}` : 0}
+                recordLabel="candidates"
+                onPageChange={handlePageChange}
+                showCount
+              />
             </div>
-          )}
-
-          <div className="px-4 pb-4 sm:px-5">
-            <TablePagination
-              currentPage={logs.page}
-              totalPages={logs.totalPages}
-              totalRecords={logs.totalRecords}
-              loadedCount={logs.visibleCandidates.length ? `${showingStart}–${showingEnd}` : 0}
-              recordLabel="candidates"
-              onPageChange={handlePageChange}
-            />
           </div>
         </section>
+
       </main>
 
       {selectedCandidate ? (
@@ -529,14 +615,41 @@ export default function EmailLogsPage() {
       <ModalShell
         open={testEmailOpen}
         onClose={closeTestEmailModal}
+        variant="navy"
         title="Dispatch Test Email"
         subtitle="Send a real test message through the configured HRIS mail service and record the delivery result in Email Logs."
         icon={Send}
         badge="Live SMTP"
-        footer={!testEmailSent ? null : <button type="button" className="sibs-btn-primary" onClick={closeTestEmailModal}>Done</button>}
+        footer={
+          testEmailSent ? (
+            <button type="button" className="sibs-btn-primary" onClick={closeTestEmailModal}>
+              Done
+            </button>
+          ) : (
+            <div className="flex items-center justify-end gap-2">
+              <button
+                type="button"
+                className="sibs-btn-secondary"
+                onClick={closeTestEmailModal}
+                disabled={testEmailSending}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                form="dispatch-test-email-form"
+                className="sibs-btn-primary"
+                disabled={testEmailSending}
+              >
+                <Send className={`h-4 w-4 ${testEmailSending ? "animate-pulse" : ""}`} />
+                {testEmailSending ? "Sending..." : "Send Test Email"}
+              </button>
+            </div>
+          )
+        }
       >
         {testEmailSent ? (
-          <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-5 text-center">
+          <div className="rounded-[10px] border border-emerald-200 bg-emerald-50 p-5 text-center">
             <CheckCircle2 className="mx-auto h-10 w-10 text-emerald-600" />
             <p className="mt-3 text-sm font-extrabold text-emerald-800">Test email sent</p>
             <p className="mt-1 text-xs font-semibold text-emerald-700">
@@ -549,7 +662,7 @@ export default function EmailLogsPage() {
             ) : null}
           </div>
         ) : (
-          <form className="space-y-4" autoComplete="off" onSubmit={submitTestEmail}>
+          <form id="dispatch-test-email-form" className="space-y-4" autoComplete="off" onSubmit={submitTestEmail}>
             <label className="block">
               <span className="sibs-field-label">Recipient Email</span>
               <input
@@ -602,26 +715,11 @@ export default function EmailLogsPage() {
             </div>
 
             {testEmailError ? (
-              <div className="flex items-start gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2.5 text-xs font-semibold text-rose-700">
+              <div className="flex items-start gap-2 rounded-[10px] border border-rose-200 bg-rose-50 px-3 py-2.5 text-xs font-semibold text-rose-700">
                 <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
                 <span>{testEmailError}</span>
               </div>
             ) : null}
-
-            <div className="flex justify-end gap-2 pt-2">
-              <button
-                type="button"
-                className="sibs-btn-secondary"
-                onClick={closeTestEmailModal}
-                disabled={testEmailSending}
-              >
-                Cancel
-              </button>
-              <button type="submit" className="sibs-btn-primary" disabled={testEmailSending}>
-                <Send className={`h-4 w-4 ${testEmailSending ? "animate-pulse" : ""}`} />
-                {testEmailSending ? "Sending..." : "Send Test Email"}
-              </button>
-            </div>
           </form>
         )}
       </ModalShell>

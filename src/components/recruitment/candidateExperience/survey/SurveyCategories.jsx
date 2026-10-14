@@ -21,7 +21,7 @@ export default function SurveyCategories({ value = [], onChange }) {
   return (
     <section className="font-jakarta">
       <div className="mb-3 flex items-center justify-between border-b border-slate-100 pb-2">
-        <h3 className="text-xs font-black uppercase tracking-wider text-[#042C51]">
+        <h3 className="text-xs font-black uppercase tracking-wider text-sibs-navy">
           EXPERIENCE CATEGORIES (SELECT ALL THAT APPLY) *
         </h3>
         <span className="text-[10px] font-bold text-slate-500">
@@ -40,19 +40,19 @@ export default function SurveyCategories({ value = [], onChange }) {
               key={category}
               type="button"
               onClick={() => toggleCategory(category)}
-              className={`flex items-center justify-between rounded-xl border p-3.5 text-left text-xs font-extrabold transition-all duration-150 ${
+              className={`flex items-center justify-between rounded-[10px] border p-3.5 text-left text-xs font-extrabold transition-all duration-150 ${
                 isSelected
-                  ? "border-[#042C51] bg-[#042C51] text-white shadow-sm ring-2 ring-[#042C51]/20"
-                  : "border-[#E6ECF2] bg-[#F8FAFC] text-slate-700 hover:border-[#D0D5DD] hover:bg-slate-100"
+                  ? "border-sibs-navy bg-sibs-navy text-white shadow-sm ring-2 ring-sibs-navy/20"
+                  : "border-sibs-border bg-sibs-surface text-sibs-navy hover:border-sibs-orange/40 hover:bg-white"
               }`}
             >
               <span className="truncate pr-2">{category}</span>
               {isSelected ? (
-                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-[#FF5C28] text-white shadow-xs">
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-sibs-orange text-white shadow-xs">
                   <Check size={13} strokeWidth={3} />
                 </span>
               ) : (
-                <span className="h-5 w-5 shrink-0 rounded-md border border-[#D0D5DD] bg-white transition hover:border-[#FF5C28]" />
+                <span className="h-5 w-5 shrink-0 rounded-md border border-sibs-border bg-white transition hover:border-sibs-orange" />
               )}
             </button>
           );

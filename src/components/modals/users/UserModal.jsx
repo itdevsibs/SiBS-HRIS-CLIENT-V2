@@ -6,6 +6,7 @@ import {
   AlertTriangle,
   Check,
   Search,
+  X,
 } from "lucide-react";
 
 const adminAccessOptions = [
@@ -258,7 +259,7 @@ function AnimatedDropdown({ open, children, maxHeight = "max-h-64" }) {
     >
       <div className="min-h-0 overflow-hidden">
         <div
-          className={`overflow-hidden rounded-xl border border-[#D7DEE8] bg-white shadow-2xl transition-all duration-200 ease-out ${
+          className={`overflow-hidden rounded-[10px] border border-sibs-border bg-white shadow-2xl transition-all duration-200 ease-out ${
             open ? "translate-y-0 scale-100" : "-translate-y-2 scale-[0.98]"
           }`}
         >
@@ -651,7 +652,7 @@ export default function UserModal({
     return (
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <div ref={clusterDropdownRef} className="relative z-30">
-          <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+          <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-sibs-faint">
             Cluster
           </label>
 
@@ -667,7 +668,7 @@ export default function UserModal({
               setShowEmployeeDropdown?.(false);
             }}
             disabled={saving}
-            className="flex h-8.5 2xl:h-10 w-full items-center justify-between rounded-xl border border-[#D7DEE8] bg-white px-3 2xl:px-3.5 text-left sibs-text-xs font-semibold text-[#042C51] outline-none transition hover:border-[#FF5C28]/40 hover:bg-[#F8FAFC] focus:border-[#FF5C28] focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:opacity-60"
+            className="flex h-8.5 2xl:h-10 w-full items-center justify-between rounded-[10px] border border-sibs-border bg-white px-3 2xl:px-3.5 text-left sibs-text-xs font-semibold text-sibs-navy outline-none transition hover:border-sibs-orange/40 hover:bg-sibs-surface focus:border-sibs-orange focus:ring-4 focus:ring-sibs-orange/10 disabled:cursor-not-allowed disabled:opacity-60"
           >
             <span className="truncate">
               {getClusterFilterLabel(selectedClusters)}
@@ -675,7 +676,7 @@ export default function UserModal({
 
             <ChevronDown
               size={16}
-              className={`shrink-0 text-[#98A2B3] transition-transform duration-200 ${
+              className={`shrink-0 text-sibs-faint transition-transform duration-200 ${
                 showClusterDropdown ? "rotate-180" : ""
               }`}
             />
@@ -687,15 +688,15 @@ export default function UserModal({
               onClick={() => handleToggleCluster("All")}
               className={`flex w-full items-center gap-3 px-3.5 py-2.5 text-left sibs-text-xs transition ${
                 isAllClustersSelected()
-                  ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
-                  : "text-[#344054] hover:bg-[#F8FAFC]"
+                  ? "bg-sibs-cream-light font-bold text-sibs-primary-1"
+                  : "text-sibs-secondary hover:bg-sibs-surface"
               }`}
             >
               <input
                 type="checkbox"
                 checked={isAllClustersSelected()}
                 readOnly
-                className="h-4 w-4 rounded border-[#D0D5DD] accent-sibs-primary-1"
+                className="h-4 w-4 rounded border-sibs-border accent-sibs-primary-1"
               />
 
               <span>All Clusters</span>
@@ -712,15 +713,15 @@ export default function UserModal({
                   onClick={() => handleToggleCluster(cluster)}
                   className={`flex w-full items-center gap-3 px-3.5 py-2.5 text-left sibs-text-xs transition ${
                     checked
-                      ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
-                      : "text-[#344054] hover:bg-[#F8FAFC]"
+                      ? "bg-sibs-cream-light font-bold text-sibs-primary-1"
+                      : "text-sibs-secondary hover:bg-sibs-surface"
                   }`}
                 >
                   <input
                     type="checkbox"
                     checked={checked}
                     readOnly
-                    className="h-4 w-4 rounded border-[#D0D5DD] accent-sibs-primary-1"
+                    className="h-4 w-4 rounded border-sibs-border accent-sibs-primary-1"
                   />
 
                   <span className="truncate">{cluster}</span>
@@ -732,11 +733,11 @@ export default function UserModal({
 
         <div ref={accountDropdownRef} className="relative z-20">
           <div className="mb-1.5 flex items-center justify-between gap-3">
-            <label className="block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+            <label className="block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-sibs-faint">
               Assigned Accounts
             </label>
 
-            <span className="text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#FF5C28]">
+            <span className="text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-sibs-orange">
               Selected: {selectedAccountIds.length}
             </span>
           </div>
@@ -744,7 +745,7 @@ export default function UserModal({
           <div className="relative">
             <Search
               size={15}
-              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#98A2B3]"
+              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sibs-faint"
             />
 
             <input
@@ -774,7 +775,7 @@ export default function UserModal({
               }}
               placeholder="Search and select accounts"
               disabled={saving}
-              className="h-8.5 2xl:h-10 w-full rounded-xl border border-[#D7DEE8] bg-white pl-9 pr-9 sibs-text-xs font-semibold text-[#042C51] outline-none transition placeholder:text-[#98A2B3] focus:border-[#FF5C28] focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:opacity-60"
+              className="h-8.5 2xl:h-10 w-full rounded-[10px] border border-sibs-border bg-white pl-9 pr-9 sibs-text-xs font-semibold text-sibs-navy outline-none transition placeholder:text-sibs-faint focus:border-sibs-orange focus:ring-4 focus:ring-sibs-orange/10 disabled:cursor-not-allowed disabled:opacity-60"
             />
 
             <ChevronDown
@@ -812,15 +813,15 @@ export default function UserModal({
                       disabled={saving}
                       className={`flex w-full items-center gap-3 px-4 py-3 text-left text-sm transition disabled:cursor-not-allowed disabled:opacity-60 ${
                         checked
-                          ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
-                          : "text-[#344054] hover:bg-[#F8FAFC]"
+                          ? "bg-sibs-cream-light font-bold text-sibs-primary-1"
+                          : "text-sibs-secondary hover:bg-sibs-surface"
                       }`}
                     >
                       <span
                         className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${
                           checked
                             ? "border-sibs-primary-1 bg-sibs-primary-1 text-white"
-                            : "border-[#D0D5DD] bg-white"
+                            : "border-sibs-border bg-white"
                         }`}
                       >
                         {checked && <Check size={12} />}
@@ -869,17 +870,17 @@ export default function UserModal({
         aria-modal="true"
         aria-labelledby="user-modal-title"
         onClick={(e) => e.stopPropagation()}
-        className="sibs-modal-pop-in relative z-[10000] flex max-h-[90dvh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-white/70 bg-white shadow-2xl font-jakarta"
+        className="sibs-modal-pop-in relative z-[10000] flex max-h-[90dvh] w-full max-w-3xl flex-col overflow-hidden rounded-[14px] border border-sibs-border bg-white shadow-2xl font-jakarta"
         style={{
           animation: isClosing
             ? "sibsUserModalOut 220ms ease-in both"
             : "sibsUserModalIn 240ms ease-out both",
         }}
       >
-        <div className="flex shrink-0 items-center justify-between gap-4 bg-[#042C51] px-5 py-3 text-white sm:px-6 2xl:py-3.5">
+        <div className="flex shrink-0 items-center justify-between gap-4 bg-sibs-navy rounded-t-[14px] px-5 py-3 text-white sm:px-6 2xl:py-3.5">
           <div className="flex items-center gap-2.5 2xl:gap-3 min-w-0">
             <div
-              className={`flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg ${isDelete ? "bg-red-600 text-white" : "bg-[#FF5C28] text-white"} shadow-sm`}
+              className={`flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg ${isDelete ? "bg-red-600 text-white" : "bg-sibs-orange text-white"} shadow-sm`}
             >
               <Icon size={16} />
             </div>
@@ -896,7 +897,7 @@ export default function UserModal({
           <button
             type="button"
             onClick={handleAnimatedClose}
-            className="sibs-modal-close-btn"
+            className="sibs-modal-close-btn shrink-0"
             aria-label="Close modal"
           >
             <X size={18} />
@@ -907,7 +908,7 @@ export default function UserModal({
           <div className="flex min-h-0 flex-1 flex-col">
             <div className="flex-1 overflow-y-auto p-4 sm:p-5 2xl:p-6 sibs-scrollbar">
               <div className="space-y-4">
-                <div className="rounded-xl border border-red-200 bg-red-50 p-3 2xl:p-4">
+                <div className="rounded-[10px] border border-red-200 bg-red-50 p-3 2xl:p-4">
                   <div className="flex items-start gap-3">
                     <span className="flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg bg-red-100 text-red-600">
                       <AlertTriangle size={18} />
@@ -942,7 +943,7 @@ export default function UserModal({
               </div>
             </div>
 
-            <div className="shrink-0 border-t border-[#DDE5EE] bg-[#F1F5F9] px-5 py-3 2xl:py-3.5 sm:px-6">
+            <div className="shrink-0 border-t border-sibs-border bg-white rounded-b-[14px] px-5 py-3 2xl:py-3.5 sm:px-6">
               <div className="flex gap-2.5 justify-end">
                 <button
                   type="button"
@@ -970,7 +971,7 @@ export default function UserModal({
               <div className="space-y-4">
                 {isAdd && (
                   <div ref={employeeSearchRef} className="relative z-50">
-                    <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+                    <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-sibs-faint">
                       SiBS ID / Employee Name
                     </label>
 
@@ -985,12 +986,12 @@ export default function UserModal({
                       placeholder="Search SiBS ID or employee name"
                       disabled={saving}
                       autoComplete="off"
-                      className="h-8.5 2xl:h-10 w-full rounded-xl border border-[#D7DEE8] bg-white px-3 2xl:px-3.5 sibs-text-xs font-semibold text-[#042C51] outline-none transition placeholder:text-[#98A2B3] focus:border-[#FF5C28] focus:ring-4 focus:ring-[#FF5C28]/10"
+                      className="h-8.5 2xl:h-10 w-full rounded-[10px] border border-sibs-border bg-white px-3 2xl:px-3.5 sibs-text-xs font-semibold text-sibs-navy outline-none transition placeholder:text-sibs-faint focus:border-sibs-orange focus:ring-4 focus:ring-sibs-orange/10"
                     />
 
                     <AnimatedDropdown open={showEmployeeDropdown} maxHeight="max-h-60">
                       {searchingEmployees ? (
-                        <div className="px-4 py-3 text-xs font-semibold text-[#98A2B3]">
+                        <div className="px-4 py-3 text-xs font-semibold text-sibs-faint">
                           Searching...
                         </div>
                       ) : employeeResults.length > 0 ? (
@@ -999,13 +1000,13 @@ export default function UserModal({
                             key={item.gyEmpId}
                             type="button"
                             onClick={() => onSelectEmployee?.(item)}
-                            className="block w-full border-b border-[#E6ECF2] px-3.5 py-2.5 text-left transition last:border-b-0 hover:bg-[#F8FAFC]"
+                            className="block w-full border-b border-sibs-border px-3.5 py-2.5 text-left transition last:border-b-0 hover:bg-sibs-surface"
                           >
-                            <div className="sibs-text-xs font-extrabold text-[#042C51]">
+                            <div className="sibs-text-xs font-extrabold text-sibs-navy">
                               {item.sibsId}
                             </div>
 
-                            <div className="text-[11px] font-semibold text-[#667085]">
+                            <div className="text-[11px] font-semibold text-sibs-muted">
                               {`${item.lastName || ""}${
                                 item.lastName ? ", " : ""
                               }${item.firstName || ""}${
@@ -1015,11 +1016,11 @@ export default function UserModal({
                           </button>
                         ))
                       ) : employeeSearch.trim() ? (
-                        <div className="px-4 py-3 text-xs font-semibold text-[#98A2B3]">
+                        <div className="px-4 py-3 text-xs font-semibold text-sibs-faint">
                           No employees found
                         </div>
                       ) : (
-                        <div className="px-4 py-3 text-xs font-semibold text-[#98A2B3]">
+                        <div className="px-4 py-3 text-xs font-semibold text-sibs-faint">
                           Type to search
                         </div>
                       )}
@@ -1140,22 +1141,22 @@ export default function UserModal({
                 {renderClusterAndAccountSelectors()}
 
                 {(isAdd || isEdit) && (
-                  <div className="rounded-xl border border-[#DDE5EE] bg-[#F8FAFC] p-3">
-                    <p className="text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+                  <div className="rounded-[10px] border border-sibs-border bg-sibs-surface p-3">
+                    <p className="text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-sibs-faint">
                       Current Assigned Accounts
                     </p>
 
-                    <p className="mt-0.5 sibs-text-xs font-bold text-[#042C51]">
+                    <p className="mt-0.5 sibs-text-xs font-bold text-sibs-navy">
                       {assignedAccountsDisplay}
                     </p>
                   </div>
                 )}
 
                 {isEdit && (
-                  <div className="rounded-xl border border-[#DDE5EE] bg-[#F8FAFC] p-3">
-                    <p className="sibs-text-xs text-[#667085]">
+                  <div className="rounded-[10px] border border-sibs-border bg-sibs-surface p-3">
+                    <p className="sibs-text-xs text-sibs-muted">
                       Current Role Preview:
-                      <span className="ml-1.5 font-bold text-[#042C51]">
+                      <span className="ml-1.5 font-bold text-sibs-navy">
                         {formatAdminAccess
                           ? formatAdminAccess(selectedAdminAccessValue)
                           : selectedAdminAccess || "-"}
@@ -1166,7 +1167,7 @@ export default function UserModal({
               </div>
             </div>
 
-            <div className="shrink-0 border-t border-[#DDE5EE] bg-[#F1F5F9] px-5 py-3 2xl:py-3.5 sm:px-6">
+            <div className="shrink-0 border-t border-sibs-border bg-white rounded-b-[14px] px-5 py-3 2xl:py-3.5 sm:px-6">
               <div className="flex gap-2.5 justify-end">
                 <button
                   type="button"
@@ -1209,7 +1210,7 @@ function SingleSelect({
 }) {
   return (
     <div ref={refBox} className={`relative ${zIndex}`}>
-      <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+      <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-sibs-faint">
         {label}
       </label>
 
@@ -1226,15 +1227,15 @@ function SingleSelect({
             setOpen((prev) => !prev);
           }}
           disabled={disabled}
-          className="flex h-8.5 2xl:h-10 w-full items-center justify-between rounded-xl border border-[#D7DEE8] bg-white px-3 2xl:px-3.5 text-left sibs-text-xs font-semibold outline-none transition focus:border-[#FF5C28] focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:opacity-60"
+          className="flex h-8.5 2xl:h-10 w-full items-center justify-between rounded-[10px] border border-sibs-border bg-white px-3 2xl:px-3.5 text-left sibs-text-xs font-semibold outline-none transition focus:border-sibs-orange focus:ring-4 focus:ring-sibs-orange/10 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          <span className={value ? "text-[#042C51]" : "text-[#98A2B3]"}>
+          <span className={value ? "text-sibs-navy" : "text-sibs-faint"}>
             {value || placeholder}
           </span>
 
           <ChevronDown
             size={16}
-            className={`text-[#98A2B3] transition-transform duration-200 ${
+            className={`text-sibs-faint transition-transform duration-200 ${
               open ? "rotate-180" : ""
             }`}
           />
@@ -1248,8 +1249,8 @@ function SingleSelect({
               onClick={() => onSelect(option.value)}
               className={`block w-full px-3.5 py-2.5 text-left sibs-text-xs transition ${
                 String(selectedValue || "") === option.value
-                  ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
-                  : "text-[#344054] hover:bg-[#F8FAFC]"
+                  ? "bg-sibs-cream-light font-bold text-sibs-primary-1"
+                  : "text-sibs-secondary hover:bg-sibs-surface"
               }`}
             >
               {option.label}
@@ -1264,7 +1265,7 @@ function SingleSelect({
 function ReadOnlyField({ label, value }) {
   return (
     <div>
-      <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+      <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-sibs-faint">
         {label}
       </label>
 
@@ -1272,7 +1273,7 @@ function ReadOnlyField({ label, value }) {
         type="text"
         value={value || "-"}
         readOnly
-        className="h-8.5 2xl:h-10 w-full rounded-xl border border-[#DDE5EE] bg-[#EEF2F6] px-3 2xl:px-3.5 sibs-text-xs font-semibold text-[#475467] outline-none"
+        className="h-8.5 2xl:h-10 w-full rounded-[10px] border border-sibs-border bg-sibs-surface px-3 2xl:px-3.5 sibs-text-xs font-semibold text-sibs-muted outline-none"
       />
     </div>
   );

@@ -19,6 +19,7 @@ import { LOCATION_SITE_OPTIONS } from "@/lib/utils/availablePositions/availableP
 import { cleanText } from "@/lib/utils/availablePositions/availablePositionsHelpers";
 import { formatAvailablePositionId } from "@/lib/utils/availablePositions/availablePositionId";
 import DropdownField from "@/components/recruitment/availablePositions/DropdownField";
+import ModalShell from "@/components/ui/ModalShell";
 import RichTextEditor from "@/components/modals/jobDescription/RichTextEditor";
 import { formatDate } from "@/components/layout/FormatDateTime";
 
@@ -859,108 +860,240 @@ export default function PositionFormModal({
   );
 
   return (
-    <div className="sibs-modal-backdrop-in sibs-modal-blur fixed inset-0 z-[10000] flex h-dvh items-center justify-center p-2 sm:p-4 font-jakarta bg-sibs-navy/60">
-      <form
-        id="available-position-form"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="available-position-modal-title"
-        onSubmit={handleFormSubmit}
-        onClick={(event) => event.stopPropagation()}
-        className="sibs-modal-pop-in flex max-h-[92dvh] w-full max-w-5xl 2xl:max-w-6xl flex-col overflow-hidden rounded-[14px] border border-white/70 bg-slate-50 shadow-2xl font-jakarta"
-      >
-        <header className="shrink-0 bg-sibs-navy px-4 py-3 text-white sm:px-5 2xl:px-6 2xl:py-3.5">
-          <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex min-w-0 flex-1 items-center gap-2.5 2xl:gap-3">
-              <div className="flex h-8 w-8 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-[10px] border border-white/15 bg-white/10 text-sibs-orange">
-                <BriefcaseBusiness className="h-4 w-4 text-sibs-orange" />
-              </div>
+    <ModalShell
+      open={Boolean(open)}
+      onClose={onClose}
+      variant="navy"
+      maxWidth="max-w-5xl 2xl:max-w-6xl"
+      title={
+        isRelinkMode
+          ? "Relink Available Position"
+          : isViewMode
+            ? "Available Position Details"
+            : isEditMode
+              ? "Edit Available Position"
+              : "Register Available Position"
+      }
+      subtitle={
+        isRelinkMode
+          ? "This position is disconnected from its Job Description. Select a new approved Job Description before continuing."
+          : isViewMode
+            ? "Review the linked Job Description, organizational mapping, and applicant visibility settings."
+            : "Link an approved JD, confirm the organizational mapping, and manage applicant visibility."
+      }
+      icon={BriefcaseBusiness}
+      badge="Position Dictionary"
+      closeOnBackdrop={!isSaving}
+      closeOnEscape={!isSaving}
+      headerMeta={
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="inline-flex h-4.5 items-center rounded border border-white/15 bg-white/10 px-2 text-[8.5px] font-extrabold uppercase leading-none text-slate-200 2xl:h-5">
+            {isRelinkMode
+              ? "Relink Required"
+              : isViewMode
+                ? "View Mode"
+                : isEditMode
+                  ? "Edit Mode"
+                  : "New Registration"}
+          </span>
 
-              <div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-1.5">
-                  <span className="inline-flex h-4.5 2xl:h-5 items-center rounded bg-sibs-orange px-2 text-[8.5px] font-extrabold uppercase leading-none text-white">
-                    Position Dictionary
-                  </span>
+          {isRelinkMode && isForApproval ? (
+            <span className="inline-flex h-4.5 items-center rounded border border-amber-300/50 bg-amber-400/20 px-2 text-[8.5px] font-extrabold leading-none text-amber-200 2xl:h-5">
+              Pending HR Approval
+            </span>
+          ) : null}
 
-                  <span className="inline-flex h-4.5 2xl:h-5 items-center rounded border border-white/15 bg-white/10 px-2 text-[8.5px] font-extrabold uppercase leading-none text-slate-200">
-                    {isRelinkMode
-                      ? "Relink Required"
-                      : isViewMode
-                        ? "View Mode"
-                        : isEditMode
-                          ? "Edit Mode"
-                          : "New Registration"}
-                  </span>
+          {!isRelinkMode && isViewMode && isForApproval ? (
+            <span className="inline-flex h-4.5 items-center rounded border border-amber-300/50 bg-amber-400/20 px-2 text-[8.5px] font-extrabold leading-none text-amber-200 2xl:h-5">
+              Pending HR Approval
+            </span>
+          ) : null}
 
-                  {isRelinkMode && isForApproval ? (
-                    <span className="inline-flex h-4.5 2xl:h-5 items-center rounded border border-amber-300/50 bg-amber-400/20 px-2 text-[8.5px] font-extrabold leading-none text-amber-200">
-                      Pending HR Approval
-                    </span>
-                  ) : null}
+          {!isRelinkMode && isViewMode && isApproved ? (
+            <span className="inline-flex h-4.5 items-center rounded border border-emerald-400/40 bg-emerald-500/20 px-2 text-[8.5px] font-extrabold leading-none text-emerald-200 2xl:h-5">
+              Approved
+            </span>
+          ) : null}
 
-                  {!isRelinkMode && isViewMode && isForApproval ? (
-                    <span className="inline-flex h-4.5 2xl:h-5 items-center rounded border border-amber-300/50 bg-amber-400/20 px-2 text-[8.5px] font-extrabold leading-none text-amber-200">
-                      Pending HR Approval
-                    </span>
-                  ) : null}
+          {!isRelinkMode && isViewMode && isRejected ? (
+            <span className="inline-flex h-4.5 items-center rounded border border-red-400/40 bg-red-500/20 px-2 text-[8.5px] font-extrabold leading-none text-red-200 2xl:h-5">
+              Rejected
+            </span>
+          ) : null}
 
-                  {!isRelinkMode && isViewMode && isApproved ? (
-                    <span className="inline-flex h-4.5 2xl:h-5 items-center rounded border border-emerald-400/40 bg-emerald-500/20 px-2 text-[8.5px] font-extrabold leading-none text-emerald-200">
-                      Approved
-                    </span>
-                  ) : null}
+          {isRelinkMode ? (
+            <span className="inline-flex h-4.5 items-center rounded border border-amber-400/40 bg-amber-500/20 px-2 text-[8.5px] font-extrabold leading-none text-amber-200 2xl:h-5">
+              Unlinked from JD
+            </span>
+          ) : null}
+        </div>
+      }
+      bodyClassName="p-0 overflow-hidden flex flex-col min-h-0 bg-slate-50"
+      footerMeta={
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-1.5 text-xs text-sibs-muted">
+            <span className="inline-flex items-center gap-1">
+              <Settings2 size={13} className="text-sibs-orange" />
+              <span className="font-semibold text-sibs-navy">Mode:</span>
+              <span className="font-extrabold uppercase text-sibs-orange">
+                {isRelinkMode
+                  ? "Relink"
+                  : isViewMode
+                    ? "View"
+                    : isEditMode
+                      ? "Edit"
+                      : "Create"}
+              </span>
+            </span>
 
-                  {!isRelinkMode && isViewMode && isRejected ? (
-                    <span className="inline-flex h-4.5 2xl:h-5 items-center rounded border border-red-400/40 bg-red-500/20 px-2 text-[8.5px] font-extrabold leading-none text-red-200">
-                      Rejected
-                    </span>
-                  ) : null}
+            {displayPositionId ? (
+              <span>
+                Position ID:{" "}
+                <span className="font-extrabold text-sibs-navy font-mono">
+                  {displayPositionId}
+                </span>
+                <span className="mx-1.5">•</span>
+              </span>
+            ) : null}
 
-                  {isRelinkMode ? (
-                    <span className="inline-flex h-4.5 2xl:h-5 items-center rounded border border-amber-400/40 bg-amber-500/20 px-2 text-[8.5px] font-extrabold leading-none text-amber-200">
-                      Unlinked from JD
-                    </span>
-                  ) : null}
-                </div>
+            <span>
+              Last Updated:{" "}
+              <span className="font-extrabold text-sibs-navy">
+                {lastUpdated ? formatDate(lastUpdated) : "—"}
+              </span>
+            </span>
+          </div>
 
-                <h2
-                  id="available-position-modal-title"
-                  className="sibs-modal-title mt-0.5 truncate text-white"
-                >
-                  {isRelinkMode
-                    ? "Relink Available Position"
-                    : isViewMode
-                      ? "Available Position Details"
-                      : isEditMode
-                        ? "Edit Available Position"
-                        : "Register Available Position"}
-                </h2>
-
-                <p className="sibs-modal-subtitle mt-0.5 text-white/75 truncate sm:text-clip">
-                  {isRelinkMode
-                    ? "This position is disconnected from its Job Description. Select a new approved Job Description before continuing."
-                    : isViewMode
-                      ? "Review the linked Job Description, organizational mapping, and applicant visibility settings."
-                      : "Link an approved JD, confirm the organizational mapping, and manage applicant visibility."}
-                </p>
-              </div>
-            </div>
-
-            <div className="flex shrink-0 items-center justify-end">
+          {!isViewMode && !isRelinkMode && onReset ? (
+            <button
+              type="button"
+              onClick={onReset}
+              disabled={isSaving}
+              className="sibs-modal-btn-secondary"
+              title="Reset position inputs"
+            >
+              <RotateCcw size={13} />
+              <span>Reset</span>
+            </button>
+          ) : null}
+        </div>
+      }
+      footer={
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          {isRelinkMode ? (
+            <>
               <button
                 type="button"
                 onClick={onClose}
                 disabled={isSaving}
-                aria-label="Close Available Position modal"
-                className="sibs-modal-close-btn"
-                title="Close"
+                className="sibs-modal-btn-secondary"
               >
-                <X size={17} strokeWidth={2} />
+                Cancel
               </button>
-            </div>
-          </div>
-        </header>
+              <button
+                type="submit"
+                form="available-position-form"
+                disabled={isSaving || !relinkJdSelected}
+                className="sibs-modal-btn-primary"
+              >
+                {isSaving ? (
+                  <Loader2 size={13} className="animate-spin" />
+                ) : (
+                  <Link2 size={13} />
+                )}
+                <span>{isSaving ? "Relinking..." : "Relink Job Description"}</span>
+              </button>
+            </>
+          ) : (
+            <>
+              {showApprovalActions ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={handleApprove}
+                    disabled={approvalActionsDisabled}
+                    className="inline-flex h-8.5 2xl:h-10 min-w-[92px] items-center justify-center gap-1.5 rounded-[10px] bg-emerald-600 px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98]"
+                  >
+                    <CheckCircle2 size={14} strokeWidth={2} />
+                    <span>Approve</span>
+                  </button>
 
+                  <button
+                    type="button"
+                    onClick={handleReject}
+                    disabled={approvalActionsDisabled}
+                    className="inline-flex h-8.5 2xl:h-10 min-w-[82px] items-center justify-center gap-1.5 rounded-[10px] bg-rose-600 px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98]"
+                  >
+                    <XCircle size={14} strokeWidth={2} />
+                    <span>Reject</span>
+                  </button>
+                </>
+              ) : null}
+
+              {showEditButton ? (
+                <button
+                  type="button"
+                  onClick={handleEnableEdit}
+                  disabled={isSaving}
+                  className="sibs-modal-btn-primary"
+                >
+                  <Pencil size={13} />
+                  <span>Edit Position</span>
+                </button>
+              ) : null}
+
+              {isEditMode ? (
+                <button
+                  type="button"
+                  onClick={handleCancelEdit}
+                  disabled={isSaving}
+                  className="sibs-modal-btn-secondary"
+                >
+                  <X size={13} />
+                  <span>Cancel Edit</span>
+                </button>
+              ) : null}
+
+              {!isViewMode ? (
+                <button
+                  type="submit"
+                  form="available-position-form"
+                  disabled={isSaving}
+                  className="sibs-modal-btn-primary"
+                >
+                  {isSaving ? (
+                    <Loader2 size={13} className="animate-spin" />
+                  ) : (
+                    <Save size={13} />
+                  )}
+                  <span>
+                    {isSaving
+                      ? "Saving..."
+                      : isEditMode
+                        ? "Update Position"
+                        : "Save Position"}
+                  </span>
+                </button>
+              ) : null}
+
+              <button
+                type="button"
+                onClick={onClose}
+                disabled={isSaving}
+                className="sibs-modal-btn-secondary"
+              >
+                Close
+              </button>
+            </>
+          )}
+        </div>
+      }
+    >
+      <form
+        id="available-position-form"
+        onSubmit={handleFormSubmit}
+        className="flex min-h-0 flex-1 flex-col overflow-hidden"
+      >
         <div
           ref={modalBodyRef}
           data-dropdown-boundary="true"
@@ -1213,151 +1346,7 @@ export default function PositionFormModal({
             </PositionFormSection>
           </div>
         </div>
-
-        <footer className="shrink-0 border-t border-sibs-border bg-slate-100 px-5 py-3 2xl:py-3.5 sm:px-6">
-          <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-              <div className="min-w-0 text-[10px] 2xl:text-[11px] font-semibold text-sibs-muted">
-                <span>
-                  Position ID:{" "}
-                  <span className="font-extrabold text-sibs-navy font-mono">
-                    {displayPositionId}
-                  </span>
-                </span>
-
-                <span className="mx-1.5">•</span>
-
-                <span>
-                  Last Updated:{" "}
-                  <span className="font-extrabold text-sibs-navy">
-                    {lastUpdated ? formatDate(lastUpdated) : "—"}
-                  </span>
-                </span>
-              </div>
-
-              {!isViewMode && !isRelinkMode ? (
-                <button
-                  type="button"
-                  onClick={onReset}
-                  disabled={isSaving}
-                  className="sibs-modal-btn-secondary"
-                  title="Reset position inputs"
-                >
-                  <RotateCcw size={13} />
-                  <span>Reset</span>
-                </button>
-              ) : null}
-            </div>
-
-            <div className="flex flex-wrap items-center justify-end gap-2">
-              {isRelinkMode ? (
-                <>
-                  <button
-                    type="button"
-                    onClick={onClose}
-                    disabled={isSaving}
-                    className="sibs-modal-btn-secondary"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={isSaving || !relinkJdSelected}
-                    className="sibs-modal-btn-primary"
-                  >
-                    {isSaving ? (
-                      <Loader2 size={13} className="animate-spin" />
-                    ) : (
-                      <Link2 size={13} />
-                    )}
-                    <span>{isSaving ? "Relinking..." : "Relink Job Description"}</span>
-                  </button>
-                </>
-              ) : (
-                <>
-                  {showApprovalActions ? (
-                    <>
-                      <button
-                        type="button"
-                        onClick={handleApprove}
-                        disabled={approvalActionsDisabled}
-                        className="inline-flex h-8.5 2xl:h-10 min-w-[92px] items-center justify-center gap-1.5 rounded-[10px] bg-emerald-600 px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98]"
-                      >
-                        <CheckCircle2 size={14} strokeWidth={2} />
-                        <span>Approve</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={handleReject}
-                        disabled={approvalActionsDisabled}
-                        className="inline-flex h-8.5 2xl:h-10 min-w-[82px] items-center justify-center gap-1.5 rounded-[10px] bg-rose-600 px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98]"
-                      >
-                        <XCircle size={14} strokeWidth={2} />
-                        <span>Reject</span>
-                      </button>
-                    </>
-                  ) : null}
-
-                  {showEditButton ? (
-                    <button
-                      type="button"
-                      onClick={handleEnableEdit}
-                      disabled={isSaving}
-                      className="sibs-modal-btn-primary"
-                    >
-                      <Pencil size={13} />
-                      <span>Edit Position</span>
-                    </button>
-                  ) : null}
-
-                  {isEditMode ? (
-                    <button
-                      type="button"
-                      onClick={handleCancelEdit}
-                      disabled={isSaving}
-                      className="sibs-modal-btn-secondary"
-                    >
-                      <X size={13} />
-                      <span>Cancel Edit</span>
-                    </button>
-                  ) : null}
-
-                  {!isViewMode ? (
-                    <button
-                      type="submit"
-                      disabled={isSaving}
-                      className="sibs-modal-btn-primary"
-                    >
-                      {isSaving ? (
-                        <Loader2 size={13} className="animate-spin" />
-                      ) : (
-                        <Save size={13} />
-                      )}
-                      <span>
-                        {isSaving
-                          ? "Saving..."
-                          : isEditMode
-                            ? "Update Position"
-                            : "Save Position"}
-                      </span>
-                    </button>
-                  ) : null}
-
-                  <button
-                    type="button"
-                    onClick={onClose}
-                    disabled={isSaving}
-                    className="sibs-modal-btn-secondary"
-                  >
-                    Close
-                  </button>
-                </>
-              )}
-            </div>
-          </div>
-        </footer>
       </form>
-    </div>
+    </ModalShell>
   );
 }

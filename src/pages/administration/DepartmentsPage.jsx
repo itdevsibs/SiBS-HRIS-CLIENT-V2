@@ -4,6 +4,7 @@ import { useSearchParams } from "react-router-dom";
 import {
   AlertTriangle,
   Building2,
+  CheckCircle2,
   Loader2,
   Plus,
   RefreshCw,
@@ -18,8 +19,7 @@ import DepartmentDetailsModal from "@/components/departments/DepartmentDetailsMo
 import DepartmentFilters from "@/components/departments/DepartmentFilters";
 import DepartmentSummaryCards from "@/components/departments/DepartmentSummaryCards";
 import Header from "@/components/layout/Header";
-import StatusModal from "@/components/modals/StatusModal";
-import { PageHeaderHero } from "@/components/ui";
+import { ConfirmModal, PageHeaderHero } from "@/components/ui";
 import useDepartments from "@/hooks/departments/useDepartments";
 import {
   approveDepartmentRequest,
@@ -449,7 +449,10 @@ function DepartmentsPageContent() {
           />
         ) : null}
 
-        <section className="mt-5 overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-sm">
+        <section
+          className="sibs-page-card-in sibs-card mt-5 overflow-hidden rounded-[14px] border border-sibs-border bg-white font-jakarta shadow-xs"
+          style={{ animationDelay: "240ms", animationFillMode: "both" }}
+        >
           <div className="flex flex-col gap-3 border-b border-sibs-border px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
             <div>
               <h2 className="sibs-card-title">
@@ -461,7 +464,7 @@ function DepartmentsPageContent() {
               </p>
             </div>
 
-            <span className="self-start rounded-lg border border-sibs-border bg-sibs-surface px-3 py-1.5 text-[10px] font-extrabold text-sibs-secondary sm:self-auto">
+            <span className="self-start rounded-[10px] border border-sibs-border bg-sibs-surface px-3 py-1.5 text-[10px] font-extrabold text-sibs-secondary sm:self-auto">
               {departments.pagination.total || departments.departments.length}{" "}
               departments found
             </span>
@@ -481,7 +484,7 @@ function DepartmentsPageContent() {
               <Loader2 className="h-8 w-8 animate-spin text-sibs-orange" />
             </div>
           ) : departments.error ? (
-            <div className="m-5 rounded-xl border border-rose-200 bg-rose-50 p-8 text-center text-rose-700">
+            <div className="m-5 rounded-[10px] border border-rose-200 bg-rose-50 p-8 text-center text-rose-700">
               <AlertTriangle className="mx-auto h-8 w-8" />
               <h3 className="mt-3 text-sm font-extrabold">
                 Department report unavailable
@@ -497,11 +500,12 @@ function DepartmentsPageContent() {
             </div>
           ) : departments.departments.length ? (
             <div className="grid gap-4 p-4 md:grid-cols-2 xl:grid-cols-3 sm:p-5">
-              {departments.departments.map((department) => (
+              {departments.departments.map((department, index) => (
                 <DepartmentCard
                   key={department.id}
                   department={department}
                   onView={handleViewDepartment}
+                  index={index}
                 />
               ))}
             </div>
@@ -543,18 +547,19 @@ function DepartmentsPageContent() {
         />
       ) : null}
 
-      <StatusModal
-        open={statusModal.open}
-        type={statusModal.type}
+      <ConfirmModal
+        open={Boolean(statusModal.open)}
+        variant={statusModal.type === "error" ? "danger" : "primary"}
         title={statusModal.title}
-        message={statusModal.message}
-        variant="center"
-        initialFocus="dialog"
+        description={statusModal.message}
+        confirmLabel="Acknowledge"
+        onConfirm={() =>
+          setStatusModal((previous) => ({ ...previous, open: false }))
+        }
         onClose={() =>
           setStatusModal((previous) => ({ ...previous, open: false }))
         }
-        lockScroll
-        closeOnEscape
+        icon={statusModal.type === "error" ? AlertTriangle : CheckCircle2}
       />
     </div>
   );

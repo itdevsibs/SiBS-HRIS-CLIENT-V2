@@ -107,7 +107,7 @@ export default function PipelineMobileCard({
             </span>
             {email ? (
               <p className="flex items-center gap-1.5 truncate text-[11px] font-medium text-sibs-muted">
-                <Mail size={11} className="shrink-0 text-sibs-faint" />
+                <Mail size={11} className="shrink-0 text-sibs-muted" />
                 <span className="truncate">{email}</span>
               </p>
             ) : null}
@@ -126,7 +126,7 @@ export default function PipelineMobileCard({
 
       <DataCard.ContextRow>
         <div className="min-w-0 flex-1">
-          <p className="text-[9px] font-extrabold uppercase tracking-wider text-sibs-faint">
+          <p className="text-[9px] font-extrabold uppercase tracking-wider text-sibs-muted">
             Position
           </p>
           <p className="mt-0.5 truncate text-xs font-bold text-sibs-navy">
@@ -134,7 +134,7 @@ export default function PipelineMobileCard({
           </p>
         </div>
         <div className="min-w-0 flex-1 border-l border-sibs-border pl-2.5">
-          <p className="text-[9px] font-extrabold uppercase tracking-wider text-sibs-faint">
+          <p className="text-[9px] font-extrabold uppercase tracking-wider text-sibs-muted">
             Account
           </p>
           <p className="mt-0.5 truncate text-xs font-semibold text-slate-700">
@@ -190,11 +190,11 @@ export default function PipelineMobileCard({
         <div className="flex w-full items-center justify-between gap-2">
           <div className="min-w-0 flex-1">
             <p className="flex items-center gap-1 truncate text-[10px] font-semibold text-sibs-muted">
-              <UserRound size={11} className="shrink-0 text-sibs-faint" />
+              <UserRound size={11} className="shrink-0 text-sibs-muted" />
               <span className="truncate">TA: {owner}</span>
             </p>
             {(candidate.dateMoved || candidate.updatedAt) && (
-              <p className="mt-0.5 truncate text-[9px] font-medium text-sibs-faint">
+              <p className="mt-0.5 truncate text-[9px] font-medium text-sibs-muted">
                 Updated: {formatDateTime(candidate.dateMoved || candidate.updatedAt)}
               </p>
             )}

@@ -16,17 +16,17 @@ export default function SurveyCandidateContext({ survey }) {
   const outcome = pick(survey, ["outcome", "finalStatus", "final_status"]);
 
   return (
-    <section className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
+    <section className="rounded-[14px] border border-sibs-border bg-white p-5 shadow-sm">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex min-w-0 items-center gap-3">
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#042C51] text-white">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] bg-sibs-navy text-white">
             <UserRound size={18} />
           </span>
           <div className="min-w-0">
             <p className="text-[9px] font-black uppercase tracking-wider text-slate-400">
               Candidate Profile
             </p>
-            <h3 className="truncate text-sm font-black text-[#042C51]">{name}</h3>
+            <h3 className="truncate text-sm font-black text-sibs-navy">{name}</h3>
             <p className="mt-0.5 flex items-center gap-1 truncate text-[10px] text-slate-500">
               <Mail size={11} />
               {email || "Email on file"}
@@ -42,7 +42,7 @@ export default function SurveyCandidateContext({ survey }) {
 
       {outcome ? (
         <div className="mt-3 border-t border-slate-100 pt-3 text-[10px] font-bold text-slate-500">
-          Recruitment outcome: <span className="text-[#042C51]">{outcome}</span>
+          Recruitment outcome: <span className="text-sibs-navy">{outcome}</span>
         </div>
       ) : null}
     </section>
@@ -51,12 +51,12 @@ export default function SurveyCandidateContext({ survey }) {
 
 function Fact({ icon: Icon, label, value }) {
   return (
-    <div className="rounded-xl bg-[#F8FAFC] p-3">
+    <div className="rounded-[10px] bg-sibs-surface p-3">
       <p className="flex items-center justify-end gap-1 text-[9px] font-black uppercase text-slate-400">
         <Icon size={11} />
         {label}
       </p>
-      <p className="mt-1 truncate text-xs font-black text-[#042C51]">{value}</p>
+      <p className="mt-1 truncate text-xs font-black text-sibs-navy">{value}</p>
     </div>
   );
 }

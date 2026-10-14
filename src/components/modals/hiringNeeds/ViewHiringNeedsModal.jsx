@@ -11,6 +11,7 @@ import {
   X,
   XCircle,
 } from "lucide-react";
+import ModalShell from "@/components/ui/ModalShell";
 import { buildHiringNeedsAuditTrail } from "../../../lib/utils/hiringNeeds/hiringNeedsAuditTrail.js";
 import { useUser } from "../../../services/context/UserContext";
 import DropdownField from "../../recruitment/availablePositions/DropdownField";
@@ -600,25 +601,6 @@ export default function ViewHiringNeedsModal({
     setRelinkLoading(false);
   }, [item?.id, open]);
 
-  useEffect(() => {
-    if (!open) return undefined;
-
-    const previousOverflow = document.body.style.overflow;
-    const handleEscape = (event) => {
-      if (event.key === "Escape" && !decisionLoading && !relinkLoading) {
-        onClose?.();
-      }
-    };
-
-    document.body.style.overflow = "hidden";
-    document.addEventListener("keydown", handleEscape);
-
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      document.removeEventListener("keydown", handleEscape);
-    };
-  }, [open, onClose, decisionLoading, relinkLoading]);
-
   const status = normalizeStatus(
     safeItem.approvalStatus || safeItem.approval_status,
   );
@@ -899,75 +881,103 @@ export default function ViewHiringNeedsModal({
   }
 
   return (
-    <div
-      className="sibs-modal-backdrop-in sibs-modal-blur fixed inset-0 z-[9999] flex h-dvh items-center justify-center p-2 font-jakarta sm:p-4"
-      onMouseDown={() => {
-        if (!decisionLoading && !relinkLoading) onClose();
-      }}
-      role="presentation"
-    >
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="view-hiring-needs-title"
-        className="sibs-modal-pop-in flex max-h-[92dvh] w-full max-w-2xl 2xl:max-w-3xl flex-col overflow-hidden rounded-[14px] border border-white/70 bg-white shadow-2xl font-jakarta"
-        onMouseDown={(event) => event.stopPropagation()}
-      >
-        <header className="shrink-0 bg-sibs-navy px-4 py-3 text-white sm:px-5 2xl:px-6 2xl:py-3.5">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex min-w-0 items-start gap-2.5 2xl:gap-3">
-              <FileText
-                className="mt-0.5 h-4.5 w-4.5 2xl:h-5 2xl:w-5 shrink-0 text-sibs-orange"
-              />
+    <ModalShell
+      open={Boolean(open)}
+      onClose={onClose}
+      variant="navy"
+      maxWidth="max-w-2xl 2xl:max-w-3xl"
+      title="Personnel Requisition Form Details"
+      icon={FileText}
+      closeOnBackdrop={!decisionLoading && !relinkLoading}
+      closeOnEscape={!decisionLoading && !relinkLoading}
+      headerMeta={
+        <div className="flex flex-wrap items-center gap-2">
+          {requestIdDisplay ? (
+            <span className="font-mono text-[10px] font-extrabold text-blue-100 2xl:text-[11px]">
+              {requestIdDisplay}
+            </span>
+          ) : null}
 
-              <div className="min-w-0">
-                <h2
-                  id="view-hiring-needs-title"
-                  className="sibs-modal-title truncate text-white"
-                >
-                  Personnel Requisition Form Details
-                </h2>
+          {isRelinkMode ? (
+            <span className="inline-flex rounded-full border border-amber-300/50 bg-amber-400/15 px-2 py-0.5 text-[8.5px] font-extrabold uppercase tracking-wide text-amber-100 2xl:text-[9px]">
+              Relink Required
+            </span>
+          ) : null}
 
-                <div className="mt-0.5 flex flex-wrap items-center gap-2 sibs-modal-subtitle text-white/75 truncate sm:text-clip">
-                  <span className="text-[10px] 2xl:text-[11px] font-extrabold text-blue-100 font-mono">
-                    {requestIdDisplay}
-                  </span>
+          <span
+            className={`inline-flex rounded-full border px-2 py-0.5 text-[8.5px] font-extrabold uppercase tracking-wide 2xl:text-[9px] ${getRequestTypeClass(
+              requestType,
+            )}`}
+          >
+            {requestType}
+          </span>
+        </div>
+      }
+      bodyClassName="thin-scroll min-h-0 flex-1 overflow-y-auto bg-white p-5 sm:p-6"
+      footer={
+        <>
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={decisionLoading || relinkLoading}
+            className="sibs-modal-btn-secondary w-full sm:w-auto"
+          >
+            Close Panel
+          </button>
 
-                  {isRelinkMode ? (
-                    <span className="inline-flex rounded-full border border-amber-300/50 bg-amber-400/15 px-2 py-0.5 text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-amber-100">
-                      Relink Required
-                    </span>
-                  ) : null}
-
-                  <span
-                    className={`inline-flex rounded-full border px-2 py-0.5 text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide ${getRequestTypeClass(
-                      requestType,
-                    )}`}
-                  >
-                    {requestType}
-                  </span>
-                </div>
-              </div>
-            </div>
-
+          {isRelinkMode ? (
             <button
               type="button"
-              onClick={onClose}
-              disabled={decisionLoading || relinkLoading}
-              className="sibs-modal-close-btn"
-              aria-label="Close Personnel Requisition details"
+              onClick={handleRelink}
+              disabled={relinkLoading || !selectedJobDescriptionId}
+              className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-xl bg-sibs-orange px-4 text-xs font-extrabold text-white shadow-xs transition hover:bg-sibs-orange-dark active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-white/70 sm:w-auto"
             >
-              <X size={17} />
+              {relinkLoading ? (
+                <Loader2 size={14} className="animate-spin" />
+              ) : (
+                <Link2 size={14} />
+              )}
+              {relinkLoading ? "Relinking..." : "Relink Job Description"}
             </button>
-          </div>
-        </header>
+          ) : canShowDecisionControls ? (
+            <>
+              <button
+                type="button"
+                onClick={() => handleDecision("reject")}
+                disabled={decisionLoading}
+                className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 text-xs font-extrabold text-red-700 transition hover:bg-red-100 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+              >
+                {decisionLoading && decisionAction === "reject" ? (
+                  <Loader2 size={14} className="animate-spin" />
+                ) : (
+                  <XCircle size={14} />
+                )}
+                Decline PR Request
+              </button>
 
-        <main
-          ref={modalBodyRef}
-          data-dropdown-boundary="true"
-          className="thin-scroll min-h-0 flex-1 overflow-y-auto bg-white px-5 py-5 sm:px-6 sm:py-6"
-        >
-          <div className="space-y-5">
+              <button
+                type="button"
+                onClick={() => handleDecision("approve")}
+                disabled={decisionLoading}
+                className="sibs-modal-btn-primary w-full sm:w-auto"
+              >
+                {decisionLoading && decisionAction === "approve" ? (
+                  <Loader2 size={14} className="animate-spin" />
+                ) : (
+                  <CheckCircle2 size={14} />
+                )}
+                Approve Requisition
+              </button>
+            </>
+          ) : null}
+        </>
+      }
+    >
+      <div
+        ref={modalBodyRef}
+        data-dropdown-boundary="true"
+        className="space-y-5"
+      >
             {isRelinkMode ? (
               <section className="rounded-[10px] border border-amber-400 bg-amber-50 p-4 sm:p-5">
                 <div className="flex items-start gap-3">
@@ -1225,67 +1235,6 @@ export default function ViewHiringNeedsModal({
               </section>
             ) : null}
           </div>
-        </main>
-
-        <footer className="shrink-0 border-t border-sibs-border bg-white px-5 py-3 sm:px-6">
-          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-end">
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={decisionLoading || relinkLoading}
-              className="inline-flex h-9 w-full items-center justify-center rounded-[9px] bg-slate-100 px-4 text-xs font-extrabold text-sibs-navy transition hover:bg-slate-200 hover:text-sibs-navy disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
-            >
-              Close Panel
-            </button>
-
-            {isRelinkMode ? (
-              <button
-                type="button"
-                onClick={handleRelink}
-                disabled={relinkLoading || !selectedJobDescriptionId}
-                className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-[9px] bg-sibs-orange px-4 text-xs font-extrabold text-white shadow-sm transition hover:bg-sibs-orange-dark disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-white/70 sm:w-auto"
-              >
-                {relinkLoading ? (
-                  <Loader2 size={14} className="animate-spin" />
-                ) : (
-                  <Link2 size={14} />
-                )}
-                {relinkLoading ? "Relinking..." : "Relink Job Description"}
-              </button>
-            ) : canShowDecisionControls ? (
-              <>
-                <button
-                  type="button"
-                  onClick={() => handleDecision("reject")}
-                  disabled={decisionLoading}
-                  className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-[9px] border border-red-200 bg-red-50 px-4 text-xs font-extrabold text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
-                >
-                  {decisionLoading && decisionAction === "reject" ? (
-                    <Loader2 size={14} className="animate-spin" />
-                  ) : (
-                    <XCircle size={14} />
-                  )}
-                  Decline PR Request
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => handleDecision("approve")}
-                  disabled={decisionLoading}
-                  className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-[9px] bg-sibs-navy px-4 text-xs font-extrabold text-white shadow-sm transition hover:bg-sibs-orange disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
-                >
-                  {decisionLoading && decisionAction === "approve" ? (
-                    <Loader2 size={14} className="animate-spin" />
-                  ) : (
-                    <CheckCircle2 size={14} />
-                  )}
-                  Approve Requisition
-                </button>
-              </>
-            ) : null}
-          </div>
-        </footer>
-      </div>
-    </div>
+    </ModalShell>
   );
 }

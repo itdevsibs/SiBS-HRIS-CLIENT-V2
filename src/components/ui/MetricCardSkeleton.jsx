@@ -36,8 +36,35 @@ export function MetricCardSkeleton({
   );
 }
 
+export function getMetricGridColClass(columns = 6) {
+  if (typeof columns === "string") return columns;
+  if (columns === 9) {
+    return "grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-5 2xl:grid-cols-9";
+  }
+  if (columns === 7) {
+    return "grid-cols-2 sm:grid-cols-4 xl:grid-cols-7 2xl:grid-cols-7";
+  }
+  if (columns === 6) {
+    return "grid-cols-2 md:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-6";
+  }
+  if (columns === 5) {
+    return "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5";
+  }
+  if (columns === 4) {
+    return "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4";
+  }
+  if (columns === 3) {
+    return "grid-cols-1 sm:grid-cols-3";
+  }
+  if (columns === 2) {
+    return "grid-cols-1 sm:grid-cols-2";
+  }
+  return "grid-cols-2 md:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-6";
+}
+
 export function MetricGridSkeleton({
   count = 4,
+  columns = null,
   labels = [],
   className = "",
   testId = "metric-grid-skeleton",
@@ -45,6 +72,14 @@ export function MetricGridSkeleton({
   ariaLabel = "Loading metrics",
 }) {
   const items = labels.length > 0 ? labels : Array.from({ length: count });
+  const resolvedColumns =
+    columns !== null
+      ? columns
+      : labels.length > 0
+        ? labels.length
+        : count;
+  const autoColClass = getMetricGridColClass(resolvedColumns);
+  const defaultGridClass = `grid gap-2.5 2xl:gap-3 ${autoColClass}`;
 
   return (
     <section
@@ -53,10 +88,7 @@ export function MetricGridSkeleton({
       aria-live="polite"
       aria-busy="true"
       aria-label={ariaLabelProp || ariaLabel}
-      className={
-        className ||
-        "grid grid-cols-1 gap-2.5 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6"
-      }
+      className={className ? cn(defaultGridClass, className) : defaultGridClass}
     >
       {items.map((item, index) => (
         <MetricCardSkeleton

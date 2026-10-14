@@ -29,9 +29,9 @@ export function outcomeTone(outcome) {
 
 export function sourceTone(source) {
   return source === "candidate_survey"
-    ? "border-blue-200 bg-blue-50 text-[#042C51]"
+    ? "border-blue-200 bg-blue-50 text-sibs-navy"
     : source === "ta_manual"
-      ? "border-orange-200 bg-orange-50 text-[#C2410C]"
+      ? "border-orange-200 bg-orange-50 text-sibs-orange"
       : "border-slate-200 bg-slate-50 text-slate-500";
 }
 

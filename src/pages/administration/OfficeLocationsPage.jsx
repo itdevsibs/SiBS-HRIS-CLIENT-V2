@@ -1,8 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Building2, Loader2, MapPin, RefreshCw, UsersRound } from "lucide-react";
+import { Building2, MapPin, RefreshCw, UsersRound } from "lucide-react";
 
 import Header from "../../components/layout/Header";
-import { PageHeaderHero } from "@/components/ui";
+import {
+  EmptyStatePanel,
+  MetricCard,
+  MetricGrid,
+  MetricGridSkeleton,
+  PageHeaderHero,
+} from "@/components/ui";
 import { getOfficeLocations } from "../../lib/axios/officeLocations";
 
 const DEFAULT_LOCATIONS = [
@@ -30,28 +36,70 @@ function safeCount(value) {
   return Number.isFinite(count) && count >= 0 ? count : 0;
 }
 
-function LocationCard({ location, loading }) {
+function getAnimationStyle(delay = 0) {
+  return {
+    animationDelay: `${delay}ms`,
+    animationFillMode: "both",
+  };
+}
+
+function LocationCardSkeleton({ index = 0 }) {
+  return (
+    <article
+      className="sibs-card relative overflow-hidden rounded-[14px] border border-sibs-border bg-white p-5 sm:p-6"
+      style={getAnimationStyle(120 + index * 60)}
+    >
+      <div className="sibs-top-accent opacity-40" />
+
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex min-w-0 items-center gap-3">
+          <div className="h-11 w-11 shrink-0 animate-pulse rounded-[10px] bg-slate-100" />
+          <div className="min-w-0 space-y-2">
+            <div className="h-2.5 w-20 animate-pulse rounded bg-slate-100" />
+            <div className="h-5 w-32 animate-pulse rounded bg-slate-200" />
+            <div className="h-3 w-48 animate-pulse rounded bg-slate-100" />
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-6 border-t border-sibs-border pt-5">
+        <div className="flex items-end justify-between gap-4">
+          <div className="space-y-2">
+            <div className="h-3 w-24 animate-pulse rounded bg-slate-100" />
+            <div className="h-8 w-16 animate-pulse rounded bg-slate-200" />
+          </div>
+          <div className="h-10 w-10 animate-pulse rounded-[10px] bg-slate-100" />
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function LocationCard({ location, loading, index = 0 }) {
   const comingSoon = Boolean(location.comingSoon);
 
   return (
-    <article className="sibs-card relative overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white p-5 sm:p-6">
-      <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-[#FF5C28]/[0.06]" />
+    <article
+      className="sibs-card sibs-page-card-in relative overflow-hidden rounded-[14px] border border-sibs-border bg-white p-5 sm:p-6 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
+      style={getAnimationStyle(120 + index * 60)}
+    >
+      <div className="sibs-top-accent" />
 
       <div className="relative flex items-start justify-between gap-4">
         <div className="flex min-w-0 items-center gap-3">
-          <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#FFF2ED] text-[#FF5C28]">
+          <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] bg-sibs-cream-light text-sibs-orange shadow-xs">
             <MapPin size={20} strokeWidth={2.2} />
           </span>
 
           <div className="min-w-0">
-            <p className="text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#8A98B8]">
+            <p className="sibs-kpi-kicker text-[10px] font-extrabold uppercase tracking-[0.12em] text-sibs-faint">
               Office Location
             </p>
-            <h2 className="mt-0.5 truncate text-base font-extrabold text-[#042C51]">
+            <h2 className="font-heading mt-0.5 truncate text-base 2xl:text-lg font-bold text-sibs-navy tracking-tight">
               {location.name}
             </h2>
             {location.address ? (
-              <p className="mt-1 max-w-md text-xs font-semibold leading-5 text-[#667085]">
+              <p className="font-jakarta mt-1 max-w-md sibs-text-xs font-semibold leading-5 text-sibs-muted">
                 {location.address}
               </p>
             ) : null}
@@ -59,32 +107,32 @@ function LocationCard({ location, loading }) {
         </div>
       </div>
 
-      <div className="relative mt-6 border-t border-[#EEF2F6] pt-5">
+      <div className="relative mt-6 border-t border-sibs-border pt-5">
         {comingSoon ? (
           <div>
-            <div className="inline-flex items-center rounded-full border border-orange-200 bg-orange-50 px-3 py-1 text-xs font-extrabold text-[#D9480F]">
+            <div className="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-3 py-0.5 sibs-text-micro font-extrabold text-amber-700">
               Coming Soon
             </div>
-            <p className="mt-3 text-xs font-semibold leading-5 text-[#667085]">
-              Employee location data is not yet available in Kronos for Mabini Site.
+            <p className="font-jakarta mt-3 sibs-text-xs font-semibold leading-5 text-sibs-muted">
+              Employee location data is not yet available in Kronos for {location.name}.
             </p>
           </div>
         ) : (
           <div className="flex items-end justify-between gap-4">
             <div>
-              <p className="text-xs font-bold text-[#667085]">Active Employees</p>
+              <p className="font-jakarta sibs-text-xs font-bold text-sibs-muted">Active Employees</p>
               <div className="mt-1 flex min-h-10 items-center">
                 {loading ? (
-                  <Loader2 className="h-6 w-6 animate-spin text-[#042C51]" />
+                  <div className="h-8 w-20 animate-pulse rounded bg-slate-100" />
                 ) : (
-                  <span className="text-3xl font-extrabold tracking-tight text-[#042C51]">
+                  <span className="font-heading text-3xl 2xl:text-4xl font-bold tabular-nums tracking-tight text-sibs-navy">
                     {safeCount(location.employeeCount).toLocaleString()}
                   </span>
                 )}
               </div>
             </div>
 
-            <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-[#F2F6FA] text-[#174A7C]">
+            <span className="inline-flex h-10 w-10 items-center justify-center rounded-[10px] bg-sibs-surface text-sibs-navy">
               <UsersRound size={19} />
             </span>
           </div>
@@ -141,79 +189,102 @@ export default function OfficeLocationsPage() {
   );
 
   return (
-    <div className="flex h-dvh min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-sibs-tertiary-10 font-jakarta">
+    <div className="sibs-dashboard-shell font-jakarta">
       <div className="shrink-0">
         <Header />
       </div>
 
       <main className="sibs-dashboard-main-wide">
-        <div className="mx-auto w-full max-w-[1700px] space-y-5">
+        <div className="mx-auto w-full max-w-[1700px] space-y-4 sm:space-y-5">
           <PageHeaderHero
             kicker="Administration"
             title="Office Locations"
             description="View active employee headcount by assigned Kronos office location."
             actions={
-              <button
-                type="button"
-                onClick={() => loadLocations({ refresh: true })}
-                disabled={refreshing || loading}
-                className="sibs-btn-icon"
-                title="Refresh office locations"
-                aria-label="Refresh office locations"
-              >
-                <RefreshCw
-                  className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`}
-                />
-              </button>
+              <div className="flex shrink-0 items-center gap-2 2xl:gap-2.5 max-sm:w-full">
+                <button
+                  type="button"
+                  onClick={() => loadLocations({ refresh: true })}
+                  disabled={refreshing || loading}
+                  className="sibs-btn-icon"
+                  title="Refresh office locations"
+                  aria-label="Refresh office locations"
+                >
+                  <RefreshCw
+                    className={`h-3.5 w-3.5 2xl:h-4 2xl:w-4 ${
+                      refreshing ? "animate-spin text-sibs-orange" : ""
+                    }`}
+                  />
+                </button>
+
+                <span className="sibs-btn-primary pointer-events-none max-sm:flex-1">
+                  <Building2 className="h-3.5 w-3.5 2xl:h-4 2xl:w-4 text-white" />
+                  Kronos Sites
+                </span>
+              </div>
             }
           />
 
-          <section className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <div className="sibs-card rounded-2xl border border-[#E6ECF2] bg-white p-5">
-              <div className="flex items-center gap-3">
-                <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-[#EEF4FA] text-[#174A7C]">
-                  <Building2 size={19} />
-                </span>
-                <div>
-                  <p className="text-[10px] font-extrabold uppercase tracking-[0.1em] text-[#8A98B8]">
-                    Sites
-                  </p>
-                  <p className="text-xl font-extrabold text-[#042C51]">3</p>
-                </div>
-              </div>
-            </div>
+          {loading ? (
+            <MetricGridSkeleton
+              columns={2}
+              count={2}
+              labels={["Configured Sites", "Active Headcount"]}
+              ariaLabel="Loading location metrics"
+            />
+          ) : (
+            <MetricGrid columns={2}>
+              <MetricCard
+                title="Configured Sites"
+                value={locations.length}
+                description="Registered company office locations"
+                icon={Building2}
+                tone="navy"
+                index={0}
+              />
 
-            <div className="sibs-card rounded-2xl border border-[#E6ECF2] bg-white p-5">
-              <div className="flex items-center gap-3">
-                <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-[#FFF2ED] text-[#FF5C28]">
-                  <UsersRound size={19} />
-                </span>
-                <div>
-                  <p className="text-[10px] font-extrabold uppercase tracking-[0.1em] text-[#8A98B8]">
-                    Active Employees
-                  </p>
-                  <p className="text-xl font-extrabold text-[#042C51]">
-                    {loading ? "—" : totalActiveEmployees.toLocaleString()}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </section>
+              <MetricCard
+                title="Active Headcount"
+                value={totalActiveEmployees.toLocaleString()}
+                description="Assigned employees in Kronos biometric systems"
+                icon={UsersRound}
+                tone="coral"
+                index={1}
+              />
+            </MetricGrid>
+          )}
 
           {errorMessage ? (
-            <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-4 text-sm font-semibold text-red-700">
+            <div className="rounded-[10px] border border-rose-200 bg-rose-50 px-4 py-3.5 text-sm font-semibold text-rose-700">
               {errorMessage}
             </div>
           ) : null}
 
-          <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-            {locations.map((location) => (
-              <LocationCard
-                key={location.id}
-                location={location}
-                loading={loading && !location.comingSoon}
-              />
-            ))}
+          <section
+            aria-label="Office locations directory"
+            className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:gap-5"
+          >
+            {loading
+              ? Array.from({ length: 3 }).map((_, idx) => (
+                  <LocationCardSkeleton key={idx} index={idx} />
+                ))
+              : locations.length === 0
+                ? (
+                  <div className="col-span-full">
+                    <EmptyStatePanel
+                      title="No office locations found"
+                      description="No active or pending office locations are registered in Kronos."
+                    />
+                  </div>
+                )
+                : locations.map((location, index) => (
+                    <LocationCard
+                      key={location.id}
+                      location={location}
+                      loading={loading && !location.comingSoon}
+                      index={index}
+                    />
+                  ))}
           </section>
         </div>
       </main>

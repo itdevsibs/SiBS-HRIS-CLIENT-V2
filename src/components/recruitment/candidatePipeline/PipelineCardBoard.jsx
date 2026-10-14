@@ -194,7 +194,7 @@ export default function PipelineCardsBoard({
             <div
               key={stage}
               style={{ animationDelay: `${stageIndex * 60}ms`, animationFillMode: "both" }}
-              className="sibs-page-card-in flex h-[520px] 2xl:h-[720px] w-[275px] 2xl:w-[292px] shrink-0 flex-col overflow-hidden rounded-2xl border border-sibs-border bg-slate-100/70 shadow-[0_7px_18px_rgba(4,44,81,0.035)] transition"
+              className="sibs-page-card-in flex h-[520px] 2xl:h-[720px] w-[275px] 2xl:w-[292px] shrink-0 flex-col overflow-hidden rounded-[14px] border border-sibs-border bg-slate-100/70 shadow-[0_7px_18px_rgba(4,44,81,0.035)] transition"
             >
               <div
                 className={`mx-1.5 mt-1.5 flex min-h-[38px] 2xl:min-h-[44px] items-center justify-between gap-2 rounded-[10px] border px-2.5 2xl:px-3 text-left shadow-[0_1px_2px_rgba(4,44,81,0.025)] ${theme.header}`}
@@ -257,7 +257,7 @@ export default function PipelineCardsBoard({
                       <p className="sibs-text-xs font-extrabold text-sibs-muted">
                         No candidates
                       </p>
-                      <p className="mt-1 text-[9px] font-semibold text-sibs-faint">
+                      <p className="mt-1 text-[9px] font-semibold text-sibs-muted">
                         This stage is currently empty.
                       </p>
                     </div>

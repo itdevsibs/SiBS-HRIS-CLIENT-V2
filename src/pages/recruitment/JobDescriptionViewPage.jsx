@@ -11,7 +11,6 @@ import {
   Trash2,
 } from "lucide-react";
 
-import StatusModal from "../../components/modals/StatusModal";
 import Details from "../../components/layout/tabs/JobDescriptionView/Details";
 import RevisionHistory from "../../components/layout/tabs/JobDescriptionView/RevisionHistory";
 import ReviseJobDescriptionModal from "../../components/modals/jobDescription/ReviseJobDescriptionModal";
@@ -34,7 +33,7 @@ import {
 } from "../../lib/axios/getJobDescription";
 import DeleteJobDescriptionModal from "../../components/modals/jobDescription/DeleteJobDescription";
 import JobDescriptionViewSkeleton from "../../components/layout/tabs/JobDescriptionView/JobDescriptionViewSkeleton";
-import { ModalShell } from "../../components/ui";
+import { ConfirmModal, ModalShell } from "../../components/ui";
 
 const detailTabs = ["Details", "Revision History"];
 
@@ -1992,13 +1991,13 @@ export default function JobDescriptionViewPage() {
         "    max-width: 100% !important;",
         "    min-width: 0 !important;",
         "    grid-template-columns: 170px minmax(0, 1fr) !important;",
-        "    border: 2px solid #000 !important;",
+        "    border: 2px solid black !important;",
         "    overflow: hidden !important;",
         "  }",
         "  #jd-print-root .jd-manual-header-logo-column {",
         "    min-height: 0 !important;",
         "    padding: 1rem !important;",
-        "    border-right: 2px solid #000 !important;",
+        "    border-right: 2px solid black !important;",
         "  }",
         "  #jd-print-root .jd-manual-header-logo {",
         "    width: min(100%, 140px) !important;",
@@ -3222,9 +3221,9 @@ export default function JobDescriptionViewPage() {
           confirmation, but the existing logic remains here.
       ================================================= */}
 
-      <StatusModal
-        open={recordActionModal.open}
-        type={recordActionModal.pending ? "loading" : "confirm"}
+      <ConfirmModal
+        open={Boolean(recordActionModal.open)}
+        variant={recordActionModal.action === "delete" ? "danger" : "primary"}
         title={
           recordActionModal.pending
             ? recordActionModal.action === "delete"
@@ -3238,7 +3237,7 @@ export default function JobDescriptionViewPage() {
                 ? "Restore Job Description?"
                 : "Archive Job Description?"
         }
-        message={
+        description={
           recordActionModal.pending
             ? recordActionModal.action === "restore"
               ? "Please wait while the job description is being restored."
@@ -3250,27 +3249,31 @@ export default function JobDescriptionViewPage() {
                 : "This job description will remain available in history with an Archived status."
         }
         confirmLabel={
-          recordActionModal.action === "delete"
-            ? "Delete"
-            : recordActionModal.action === "restore"
-              ? "Restore"
-              : "Archive"
+          recordActionModal.pending
+            ? "Please wait..."
+            : recordActionModal.action === "delete"
+              ? "Delete"
+              : recordActionModal.action === "restore"
+                ? "Restore"
+                : "Archive"
         }
-        confirmTone={recordActionModal.action === "delete" ? "danger" : "brand"}
+        cancelLabel="Cancel"
         onConfirm={confirmRecordAction}
-        onCancel={closeRecordAction}
-        lockScroll
+        onClose={closeRecordAction}
       />
 
       {/* =================================================
           GENERAL STATUS
       ================================================= */}
 
-      <StatusModal
-        open={statusModal.open}
-        type={statusModal.type}
-        title={statusModal.title}
-        message={statusModal.message}
+      <ConfirmModal
+        open={Boolean(statusModal.open)}
+        variant={statusModal.type === "error" ? "danger" : "primary"}
+        title={statusModal.title || "Notification"}
+        description={statusModal.message || ""}
+        confirmLabel="OK"
+        cancelLabel="Close"
+        onConfirm={closeStatusModal}
         onClose={closeStatusModal}
       />
     </div>

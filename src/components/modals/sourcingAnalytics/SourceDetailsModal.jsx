@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 
 import { useSourcingAnalytics } from "../../../services/context/SourcingContext";
+import ModalShell from "../../ui/ModalShell";
 
 const EMPTY_EXPENSE_FORM = {
   source: "",
@@ -39,10 +40,10 @@ const EMPTY_EXPENSE_FORM = {
 };
 
 const FIELD_CLASS =
-  "h-8.5 2xl:h-10 w-full rounded-[10px] border border-sibs-border bg-sibs-surface px-3 sibs-text-xs font-semibold text-sibs-navy outline-none transition placeholder:text-sibs-faint hover:border-sibs-orange/40 hover:bg-white focus:border-sibs-orange focus:bg-white focus:ring-4 focus:ring-sibs-orange/10 disabled:cursor-not-allowed disabled:bg-sibs-surface-subtle disabled:text-sibs-muted";
+  "h-8.5 2xl:h-10 w-full rounded-[10px] border border-sibs-border bg-sibs-surface px-3 sibs-text-xs font-semibold text-sibs-navy outline-none transition placeholder:text-sibs-muted hover:border-sibs-orange/40 hover:bg-white focus:border-sibs-orange focus:bg-white focus:ring-4 focus:ring-sibs-orange/10 disabled:cursor-not-allowed disabled:bg-sibs-surface-subtle disabled:text-sibs-muted";
 
 const TEXTAREA_CLASS =
-  "w-full resize-none rounded-[10px] border border-sibs-border bg-sibs-surface px-3 py-2 text-xs font-semibold text-sibs-navy outline-none transition placeholder:text-sibs-faint hover:border-sibs-orange/40 hover:bg-white focus:border-sibs-orange focus:bg-white focus:ring-4 focus:ring-sibs-orange/10 disabled:cursor-not-allowed disabled:bg-sibs-surface-subtle disabled:text-sibs-muted";
+  "w-full resize-none rounded-[10px] border border-sibs-border bg-sibs-surface px-3 py-2 text-xs font-semibold text-sibs-navy outline-none transition placeholder:text-sibs-muted hover:border-sibs-orange/40 hover:bg-white focus:border-sibs-orange focus:bg-white focus:ring-4 focus:ring-sibs-orange/10 disabled:cursor-not-allowed disabled:bg-sibs-surface-subtle disabled:text-sibs-muted";
 
 function cleanText(value) {
   return String(value ?? "").trim();
@@ -226,7 +227,7 @@ function getSourcePerformance(source = {}) {
 
 function FormLabel({ children, required = false }) {
   return (
-    <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-sibs-faint">
+    <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-sibs-muted">
       {children}
       {required ? (
         <span className="ml-1 text-sibs-orange">*</span>
@@ -302,7 +303,7 @@ function FunnelStage({ stage }) {
             {stage.label}
           </p>
 
-          <p className="text-[10px] font-semibold text-sibs-faint">
+          <p className="text-[10px] font-semibold text-sibs-muted">
             {stage.helper}
           </p>
         </div>
@@ -707,74 +708,53 @@ export default function SourceDetailsModal({
 
   return (
     <>
-      <div
-        className="sibs-modal-backdrop-in sibs-modal-blur fixed inset-0 z-[9999] flex h-dvh items-center justify-center overflow-y-auto p-3 sm:p-4"
-        onClick={() => {
-          if (!expenseMode && !removingEntry) {
-            onClose?.();
-          }
-        }}
+      <ModalShell
+        open={Boolean(open && source)}
+        onClose={onClose}
+        variant="navy"
+        maxWidth="max-w-[1180px]"
+        className="rounded-[14px] text-slate-900"
+        headerClassName="rounded-t-[14px]"
+        icon={Compass}
+        title={liveSource.source || "—"}
+        headerMeta={
+          <span
+            className={`inline-flex rounded-full border px-2 py-0.5 text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide ${performance.className}`}
+          >
+            {performance.label}
+          </span>
+        }
+        subtitle={
+          <span className="flex flex-wrap items-center gap-2">
+            <span>Channel Sourcing Performance & Cost Metrics</span>
+            <span className="text-white/40">•</span>
+            <span>
+              {costEntries.length} expense log
+              {costEntries.length === 1 ? "" : "s"}
+            </span>
+          </span>
+        }
+        closeOnBackdrop={!expenseMode && !removingEntry}
+        closeOnEscape={!expenseMode && !removingEntry}
+        bodyClassName="p-3 sm:p-4 2xl:p-5 bg-white"
+        footerMeta={
+          <div className="flex items-center gap-2 text-[10px] font-semibold text-slate-500">
+            <Sparkles size={15} className="text-sibs-orange" />
+            <span>Live ROI metrics refresh after each database update.</span>
+          </div>
+        }
+        footer={
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={mutating || isSaving || isRemoving}
+            className="inline-flex h-9 items-center justify-center rounded-[10px] bg-sibs-navy px-5 text-xs font-extrabold text-white transition hover:bg-sibs-orange disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Done
+          </button>
+        }
       >
-        <section
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="source-performance-title"
-          onClick={(event) => event.stopPropagation()}
-          className="sibs-modal-pop-in my-auto flex max-h-[92dvh] 2xl:max-h-[90dvh] w-full max-w-[1180px] flex-col overflow-hidden rounded-[14px] border border-sibs-border bg-white text-slate-900 shadow-[0_30px_90px_rgba(2,26,48,0.42)] font-jakarta"
-        >
-          <header className="relative shrink-0 overflow-hidden border-b border-sibs-navy bg-sibs-navy px-4 py-2.5 sm:px-5 2xl:py-3.5 text-white rounded-t-[14px]">
-            <span
-              className="pointer-events-none absolute -right-12 -top-14 h-48 w-48 rounded-full bg-sibs-orange/10 blur-3xl"
-              aria-hidden="true"
-            />
-
-            <div className="relative z-10 flex items-start justify-between gap-4">
-              <div className="flex min-w-0 items-start gap-2.5 sm:gap-3">
-                <span className="flex h-8 w-8 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-[10px] border border-white/20 bg-white/10 text-sibs-orange">
-                  <Compass className="h-4 w-4 2xl:h-4.5 2xl:w-4.5" />
-                </span>
-
-                <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h2
-                      id="source-performance-title"
-                      className="sibs-modal-title truncate text-white"
-                    >
-                      {liveSource.source || "—"}
-                    </h2>
-
-                    <span
-                      className={`inline-flex rounded-full border px-2 py-0.5 text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide ${performance.className}`}
-                    >
-                      {performance.label}
-                    </span>
-                  </div>
-
-                  <p className="sibs-modal-subtitle mt-0.5 flex flex-wrap items-center gap-2 text-white/75 truncate sm:text-clip">
-                    <span>Channel Sourcing Performance & Cost Metrics</span>
-                    <span className="text-white/40">•</span>
-                    <span>
-                      {costEntries.length} expense log
-                      {costEntries.length === 1 ? "" : "s"}
-                    </span>
-                  </p>
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={onClose}
-                disabled={mutating || isSaving || isRemoving}
-                aria-label="Close source performance modal"
-                className="sibs-modal-close-btn"
-              >
-                <X size={16} />
-              </button>
-            </div>
-          </header>
-
-          <div className="sibs-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain bg-white p-3 sm:p-4 2xl:p-5">
-            <div className="space-y-5">
+        <div className="space-y-5">
               <div className="space-y-3">
                 <ModalMessage type="success">
                   {actionMessage}
@@ -908,7 +888,7 @@ export default function SourceDetailsModal({
                                 entry.id ||
                                 `${entry.description}-${entry.dateFrom}-${entry.amount}`
                               }
-                              className="transition hover:bg-slate-50/80"
+                              className="transition-colors hover:bg-sibs-cream-light"
                             >
                               <td className="px-3 py-3 text-[10px] font-extrabold text-sibs-navy">
                                 {entry.id || "—"}
@@ -1036,25 +1016,7 @@ export default function SourceDetailsModal({
                 </article>
               </div>
             </div>
-          </div>
-
-          <footer className="flex shrink-0 flex-col gap-2 border-t border-slate-200 bg-slate-50 px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between sm:px-5 rounded-b-[14px]">
-            <div className="flex items-center gap-2 text-[10px] font-semibold text-slate-500">
-              <Sparkles size={15} className="text-sibs-orange" />
-              <span>Live ROI metrics refresh after each database update.</span>
-            </div>
-
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={mutating || isSaving || isRemoving}
-              className="inline-flex h-9 items-center justify-center rounded-[10px] bg-sibs-navy px-5 text-xs font-extrabold text-white transition hover:bg-sibs-orange disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              Done
-            </button>
-          </footer>
-        </section>
-      </div>
+      </ModalShell>
 
       {expenseMode ? (
         <div
@@ -1067,7 +1029,7 @@ export default function SourceDetailsModal({
             aria-labelledby="expense-form-title"
             onSubmit={handleSaveExpense}
             onClick={(event) => event.stopPropagation()}
-            className="sibs-modal-pop-in flex max-h-[92dvh] w-full max-w-lg flex-col overflow-hidden rounded-t-2xl border border-sibs-border bg-white shadow-[0_30px_90px_rgba(2,26,48,0.42)] sm:rounded-[14px]"
+            className="sibs-modal-pop-in flex max-h-[92dvh] w-full max-w-lg flex-col overflow-hidden rounded-[14px] border border-sibs-border bg-white shadow-[0_30px_90px_rgba(2,26,48,0.42)]"
           >
             <header className="flex items-start justify-between gap-4 bg-sibs-navy px-4 py-4 text-white sm:px-5 rounded-t-[14px]">
               <div className="flex min-w-0 items-start gap-2.5">
@@ -1114,7 +1076,7 @@ export default function SourceDetailsModal({
                 <div className="flex h-10 items-center rounded-[10px] border border-sibs-border bg-sibs-surface-subtle px-3 text-xs font-semibold text-sibs-muted">
                   {sourceName || "—"}
                 </div>
-                <p className="mt-1 text-[10px] font-semibold text-sibs-faint">
+                <p className="mt-1 text-[10px] font-semibold text-sibs-muted">
                   The sourcing channel is fixed for this expense.
                 </p>
               </div>
