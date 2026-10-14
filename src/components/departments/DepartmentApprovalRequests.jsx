@@ -9,7 +9,6 @@ import {
   Eye,
   Loader2,
   XCircle,
-  f,
 } from "lucide-react";
 
 import { ModalShell } from "@/components/ui";
