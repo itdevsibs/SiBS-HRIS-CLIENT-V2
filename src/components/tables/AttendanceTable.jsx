@@ -1,4 +1,3 @@
-import { createSystemDateTimeFormatter, formatHrisTimeLocalized } from "@/lib/axios/dateFormatter";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
@@ -14,7 +13,7 @@ import {
 } from "lucide-react";
 
 import { useUser } from "../../services/context/UserContext";
-import { getAttendance } from "../../lib/axios/getAttendance";
+import { getAttendance, getAttendanceCount, getAttendanceOptions } from "../../lib/axios/getAttendance";
 import {
   usePagination,
   PaginationDateRangeFilter,
@@ -569,56 +568,6 @@ function getAnimationStyle(delay = 0) {
   };
 }
 
-function getManilaDateParts(value = new Date()) {
-  const parts = createSystemDateTimeFormatter("en-CA", {
-    timeZone: "Asia/Manila",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).formatToParts(value);
-
-  const values = Object.fromEntries(
-    parts
-      .filter((part) => part.type !== "literal")
-      .map((part) => [part.type, part.value]),
-  );
-
-  return {
-    year: Number(values.year),
-    month: Number(values.month),
-    day: Number(values.day),
-  };
-}
-
-function formatUtcDateKey(date) {
-  const year = date.getUTCFullYear();
-  const month = String(date.getUTCMonth() + 1).padStart(2, "0");
-  const day = String(date.getUTCDate()).padStart(2, "0");
-
-  return `${year}-${month}-${day}`;
-}
-
-function getDefaultAttendanceDateRange() {
-  const { year, month, day } = getManilaDateParts();
-  const today = new Date(Date.UTC(year, month - 1, day));
-  const dayOfWeek = today.getUTCDay();
-  const daysSinceMonday = (dayOfWeek + 6) % 7;
-
-  const currentWeekMonday = new Date(today);
-  currentWeekMonday.setUTCDate(today.getUTCDate() - daysSinceMonday);
-
-  const previousWeekMonday = new Date(currentWeekMonday);
-  previousWeekMonday.setUTCDate(currentWeekMonday.getUTCDate() - 7);
-
-  const currentWeekSunday = new Date(currentWeekMonday);
-  currentWeekSunday.setUTCDate(currentWeekMonday.getUTCDate() + 6);
-
-  return {
-    dateFrom: formatUtcDateKey(previousWeekMonday),
-    dateTo: formatUtcDateKey(currentWeekSunday),
-  };
-}
-
 function TimeIndicator({ value, label, tone = "neutral" }) {
   const tones = {
     neutral: {
@@ -1010,19 +959,12 @@ export default function AttendanceTable() {
     handlePageChange,
   } = paginationContext;
 
-  const defaultAttendanceDateRange = useMemo(
-    () => getDefaultAttendanceDateRange(),
-    [],
-  );
-  const rawDateFrom = filterValues?.dateFrom || "";
-  const rawDateTo = filterValues?.dateTo || "";
-  const hasStoredDateRange = Boolean(rawDateFrom || rawDateTo);
-  const dateFrom = hasStoredDateRange
-    ? rawDateFrom
-    : defaultAttendanceDateRange.dateFrom;
-  const dateTo = hasStoredDateRange
-    ? rawDateTo
-    : defaultAttendanceDateRange.dateTo;
+  // Show attendance history from every date on initial entry. The date pickers
+  // continue to narrow the server-side query when the user selects a range.
+  const dateFrom = filterValues?.dateFrom || "";
+  const dateTo = filterValues?.dateTo || "";
+  const [filtersInitialized, setFiltersInitialized] = useState(false);
+  const countCacheRef = useRef(new Map());
 
   const tableScrollRef = useRef(null);
   const mobileScrollRef = useRef(null);
@@ -1062,15 +1004,16 @@ export default function AttendanceTable() {
     setPaginationRef.current = setPagination;
   }, [setLoading, setPagination]);
 
-  // Reset transient Attendance filters whenever the user leaves this page and
-  // later returns. The date range always starts again at the approved default:
-  // previous week Monday through the current week Sunday.
+  // Reset old filters on each visit BEFORE starting the first query. This
+  // prevents one query with the prior page's date range and a second query
+  // after resetting it. "All dates" is represented by two empty date values.
   useEffect(() => {
     setSearch?.("");
     setSearchInput?.("");
-    paginationContext.setDateRange?.(defaultAttendanceDateRange);
+    paginationContext.setDateRange?.({ dateFrom: "", dateTo: "" });
+    setFiltersInitialized(true);
 
-    // This intentionally runs once for each AttendanceTable mount.
+    // This intentionally runs once per AttendanceTable mount.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -1087,7 +1030,7 @@ export default function AttendanceTable() {
   const totalPages = Number(safePagination.totalPages || currentPage || 1);
   const totalRecords =
     safePagination.total === null || safePagination.total === undefined
-      ? 0
+      ? null
       : Number(safePagination.total || 0);
 
   const departmentDropdownOptions = useMemo(() => {
@@ -1192,10 +1135,7 @@ export default function AttendanceTable() {
     handleAttendanceSearchSubmit();
   }
 
-  const hasCustomDateRange = Boolean(
-    dateFrom !== defaultAttendanceDateRange.dateFrom ||
-      dateTo !== defaultAttendanceDateRange.dateTo,
-  );
+  const hasCustomDateRange = Boolean(dateFrom || dateTo);
 
   const hasActiveFilters = Boolean(
     String(searchInput || "").trim() ||
@@ -1224,7 +1164,7 @@ export default function AttendanceTable() {
     setDepartmentFilter("All");
     setAccountFilters([]);
     const { setDateRange } = paginationContext;
-    setDateRange?.(defaultAttendanceDateRange);
+    setDateRange?.({ dateFrom: "", dateTo: "" });
     goToPage(1);
   }
 
@@ -1314,7 +1254,40 @@ export default function AttendanceTable() {
     accountFilterKey,
   ]);
 
+  // Dropdown metadata is fetched independently. A slow Department/Account
+  // lookup cannot hold back the first attendance rows.
   useEffect(() => {
+    if (!filtersInitialized || !attendanceFiltersView) return;
+
+    const shouldLoadDepartments = !loadedDepartmentOptionsRef.current;
+    const accountOptionsKey = departmentFilter || "All";
+    const shouldLoadAccounts =
+      loadedAccountOptionsKeyRef.current !== accountOptionsKey;
+    if (!shouldLoadDepartments && !shouldLoadAccounts) return;
+
+    let cancelled = false;
+    getAttendanceOptions({
+      department: accountOptionsKey,
+      includeDepartments: shouldLoadDepartments,
+      includeAccounts: shouldLoadAccounts,
+    }).then((result) => {
+      if (cancelled || !result?.success) return;
+      if (shouldLoadDepartments && Array.isArray(result.departmentOptions)) {
+        setDepartmentOptions(result.departmentOptions);
+        loadedDepartmentOptionsRef.current = true;
+      }
+      if (shouldLoadAccounts && Array.isArray(result.accountOptions)) {
+        setAccountOptions(result.accountOptions);
+        loadedAccountOptionsKeyRef.current = accountOptionsKey;
+      }
+    });
+    return () => { cancelled = true; };
+  }, [filtersInitialized, attendanceFiltersView, departmentFilter]);
+
+  useEffect(() => {
+    // Wait for mount-time filter reset, avoiding a stale-range fetch.
+    if (!filtersInitialized) return;
+
     let cancelled = false;
     const requestId = latestRequestIdRef.current + 1;
 
@@ -1324,27 +1297,20 @@ export default function AttendanceTable() {
       try {
         setLoadingRef.current?.(true);
 
-        const accountOptionsKey = `${departmentFilter || "All"}`;
-
-        const shouldLoadDepartmentOptions =
-          attendanceFiltersView && !loadedDepartmentOptionsRef.current;
-
-        const shouldLoadAccountOptions =
-          attendanceFiltersView &&
-          loadedAccountOptionsKeyRef.current !== accountOptionsKey;
-
-        const result = await getAttendance(
-          page,
-          search,
-          attendanceFiltersView ? accountFilterQuery : "All",
-          {
-            dateFrom,
-            dateTo,
-            department: attendanceFiltersView ? departmentFilter : "All",
-            includeDepartments: shouldLoadDepartmentOptions,
-            includeAccounts: shouldLoadAccountOptions,
-          },
-        );
+        const currentAccountFilter = attendanceFiltersView
+          ? accountFilterQuery
+          : "All";
+        const currentDepartment = attendanceFiltersView
+          ? departmentFilter
+          : "All";
+        const result = await getAttendance(page, search, currentAccountFilter, {
+          dateFrom,
+          dateTo,
+          department: currentDepartment,
+          includeDepartments: false,
+          includeAccounts: false,
+          fast: true,
+        });
 
         if (cancelled || latestRequestIdRef.current !== requestId) return;
 
@@ -1365,34 +1331,65 @@ export default function AttendanceTable() {
 
         setAttendance(result.data || []);
 
-        if (
-          attendanceFiltersView &&
-          shouldLoadDepartmentOptions &&
-          Array.isArray(result.departmentOptions)
-        ) {
-          setDepartmentOptions(result.departmentOptions);
-          loadedDepartmentOptionsRef.current = true;
-        }
+        const pageInfo = result.pagination || {
+          currentPage: page,
+          totalPages: page,
+          total: null,
+          limit: PAGE_LIMIT,
+          hasPreviousPage: page > 1,
+          hasNextPage: false,
+        };
 
-        if (
-          attendanceFiltersView &&
-          shouldLoadAccountOptions &&
-          Array.isArray(result.accountOptions)
-        ) {
-          setAccountOptions(result.accountOptions);
-          loadedAccountOptionsKeyRef.current = accountOptionsKey;
-        }
+        // A COUNT across the full historical tracker table can be expensive.
+        // Paint the first 15 rows immediately, then resolve the exact total
+        // separately without turning the skeleton back on.
+        const countKey = JSON.stringify([
+          user?.sibs_id || user?.sibsId || user?.username || "",
+          user?.tokenType || user?.role || "",
+          search,
+          dateFrom,
+          dateTo,
+          currentDepartment,
+          currentAccountFilter,
+        ]);
+        const cached = countCacheRef.current.get(countKey);
+        const applyCount = (total) => {
+          if (cancelled || latestRequestIdRef.current !== requestId) return;
+          if (!Number.isFinite(Number(total))) return;
+          const safeTotal = Number(total);
+          setPaginationRef.current?.({
+            ...pageInfo,
+            total: safeTotal,
+            totalPages: Math.max(1, Math.ceil(safeTotal / PAGE_LIMIT)),
+            hasNextPage: page * PAGE_LIMIT < safeTotal,
+          });
+        };
 
-        setPaginationRef.current?.(
-          result.pagination || {
-            currentPage: page,
-            totalPages: page,
-            total: null,
-            limit: PAGE_LIMIT,
-            hasPreviousPage: page > 1,
-            hasNextPage: false,
-          },
-        );
+        setPaginationRef.current?.(pageInfo);
+        if (pageInfo.total === null || pageInfo.total === undefined) {
+          if (typeof cached === "number") {
+            applyCount(cached);
+          } else {
+            const countPromise = cached || getAttendanceCount(
+              search,
+              currentAccountFilter,
+              { dateFrom, dateTo, department: currentDepartment },
+            );
+            if (!cached) countCacheRef.current.set(countKey, countPromise);
+            countPromise.then((countResult) => {
+              if (!countResult?.success) {
+                countCacheRef.current.delete(countKey);
+                return;
+              }
+              const exactTotal = Number(countResult.total);
+              if (!Number.isFinite(exactTotal)) return;
+              countCacheRef.current.set(countKey, exactTotal);
+              applyCount(exactTotal);
+            }).catch(() => {
+              countCacheRef.current.delete(countKey);
+            });
+          }
+        }
       } catch (err) {
         if (cancelled || latestRequestIdRef.current !== requestId) return;
 
@@ -1430,6 +1427,7 @@ export default function AttendanceTable() {
     accountFilterKey,
     accountFilterQuery,
     attendanceFiltersView,
+    filtersInitialized,
   ]);
 
   function formatTime(time) {
@@ -1439,7 +1437,7 @@ export default function AttendanceTable() {
 
     if (Number.isNaN(parsed.getTime())) return "—";
 
-    return formatHrisTimeLocalized(parsed, "en-PH", {
+    return parsed.toLocaleTimeString("en-PH", {
       timeZone: "Asia/Manila",
       hour: "2-digit",
       minute: "2-digit",
@@ -2051,6 +2049,8 @@ export default function AttendanceTable() {
               currentPage={currentPage}
               totalPages={totalPages}
               totalRecords={totalRecords}
+              hasNextPage={safePagination.hasNextPage}
+              unknownTotal={totalRecords === null}
               pageSize={PAGE_LIMIT}
               loadedCount={attendance.length}
               onPageChange={goToPage}

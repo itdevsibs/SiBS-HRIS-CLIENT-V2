@@ -10,6 +10,8 @@ export default function TablePagination({
   currentPage = 1,
   totalPages = 1,
   totalRecords,
+  hasNextPage, // allows fast server pagination before an exact total is known
+  unknownTotal = false, // opt-in, used by fast Attendance page loading
   totalItems, // alias
   total,      // alias
   loadedCount,
@@ -27,13 +29,14 @@ export default function TablePagination({
   const safeTotalPages = Math.max(Number(totalPages) || 1, 1);
   const rawTotal = totalRecords ?? totalItems ?? total;
   const safeTotal = Math.max(Number(rawTotal) || 0, 0);
+  const totalIsKnown = !unknownTotal;
   const label = itemName || recordLabel || "records";
 
   // Calculate range if limit or loadedCount is provided
   let displayCount = "";
   if (typeof loadedCount === "string" && (loadedCount.includes("–") || loadedCount.includes("-"))) {
     displayCount = loadedCount;
-  } else if (rawTotal !== undefined && safeTotal === 0) {
+  } else if (!unknownTotal && rawTotal !== undefined && safeTotal === 0) {
     displayCount = "0";
   } else {
     const effectiveLimit = Number(limit || pageSize || 0);
@@ -54,10 +57,11 @@ export default function TablePagination({
     }
   }
 
-  const rawDisplayTotal = rawTotal !== undefined ? safeTotal : safeTotalPages;
-  const displayTotal = rawDisplayTotal.toLocaleString();
+  const displayTotal = (rawTotal !== undefined ? safeTotal : safeTotalPages).toLocaleString();
   const hasPrevious = safeCurrentPage > 1;
-  const hasNext = safeCurrentPage < safeTotalPages;
+  const hasNext = typeof hasNextPage === "boolean"
+    ? hasNextPage
+    : safeCurrentPage < safeTotalPages;
 
   // Dynamic window of page numbers with ellipsis for large page counts
   const getPageNumbers = () => {
@@ -113,10 +117,12 @@ export default function TablePagination({
             <span className="font-extrabold text-sibs-navy">
               {displayCount}
             </span>{" "}
-            of{" "}
-            <span className="font-extrabold text-sibs-navy">
-              {displayTotal}
-            </span>{" "}
+            {totalIsKnown ? (
+              <>
+                of{" "}
+                <span className="font-extrabold text-sibs-navy">{displayTotal}</span>{" "}
+              </>
+            ) : null}
             {label}
           </p>
         ) : null}
@@ -151,7 +157,7 @@ export default function TablePagination({
 
         {/* Mobile Compact Page Indicator */}
         <span className="inline-flex h-8 items-center px-2 font-jakarta text-xs font-bold text-sibs-navy sm:hidden">
-          {safeCurrentPage} / {safeTotalPages}
+          {totalIsKnown ? `${safeCurrentPage} / ${safeTotalPages}` : `Page ${safeCurrentPage}`}
         </span>
 
         {/* Desktop / Tablet Number Buttons & Ellipsis */}
@@ -208,7 +214,7 @@ export default function TablePagination({
           type="button"
           aria-label="Last page"
           title="Last page"
-          disabled={loading || !hasNext}
+          disabled={loading || !hasNext || !totalIsKnown}
           onClick={() => onPageChange?.(safeTotalPages)}
           className="inline-flex h-8 2xl:h-9 w-8 2xl:w-9 items-center justify-center rounded-lg border border-sibs-border-subtle bg-white text-sibs-navy transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
         >
@@ -220,7 +226,7 @@ export default function TablePagination({
       {showPageInfo ? (
         <div className="flex flex-1 items-center justify-center sm:justify-end">
           <span className="inline-flex items-center gap-1 rounded-lg border border-sibs-border-subtle/80 bg-sibs-surface-ground/60 px-2.5 py-1 font-jakarta text-[11px] 2xl:text-[11.5px] font-bold text-sibs-navy">
-            Page {safeCurrentPage.toLocaleString()} of {safeTotalPages.toLocaleString()}
+            Page {safeCurrentPage.toLocaleString()}{totalIsKnown ? ` of ${safeTotalPages.toLocaleString()}` : ""}
           </span>
         </div>
       ) : (

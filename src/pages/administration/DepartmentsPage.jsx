@@ -93,6 +93,24 @@ function DepartmentsPageContent() {
     setStatusModal({ open: true, type, title, message });
   }, []);
 
+  const handleAccountLinkUnavailable = useCallback(() => {
+    clearAccountApprovalLink();
+    showStatus(
+      "error",
+      "Account Request Unavailable",
+      "This account request is no longer pending or is not accessible to your account.",
+    );
+  }, [clearAccountApprovalLink, showStatus]);
+
+  const handleDepartmentLinkUnavailable = useCallback(() => {
+    clearDepartmentApprovalLink();
+    showStatus(
+      "error",
+      "Department Request Unavailable",
+      "This department request is no longer pending or could not be found.",
+    );
+  }, [clearDepartmentApprovalLink, showStatus]);
+
   const loadApprovalData = useCallback(async () => {
     setApprovalLoading(true);
     setApprovalAccessError("");
@@ -407,12 +425,9 @@ function DepartmentsPageContent() {
           <AccountApprovalRequests
             requests={accountApprovalRequests}
             loading={approvalLoading}
-            linkedRequestId={linkedAccountRequestId}
+            linkedRequestId={accountApprovalRequestsError ? "" : linkedAccountRequestId}
             onLinkOpened={clearAccountApprovalLink}
-            onLinkUnavailable={() => {
-              clearAccountApprovalLink();
-              showStatus("error", "Account Request Unavailable", "This account request is no longer pending or is not accessible to your account.");
-            }}
+            onLinkUnavailable={handleAccountLinkUnavailable}
             canApprove={canApproveAccounts}
             processingId={processingAccountRequestId}
             onApprove={handleApproveAccount}
@@ -426,10 +441,7 @@ function DepartmentsPageContent() {
             loading={approvalLoading}
             linkedRequestId={approvalRequestsError ? "" : linkedDepartmentRequestId}
             onLinkOpened={clearDepartmentApprovalLink}
-            onLinkUnavailable={() => {
-              clearDepartmentApprovalLink();
-              showStatus("error", "Department Request Unavailable", "This department request is no longer pending or could not be found.");
-            }}
+            onLinkUnavailable={handleDepartmentLinkUnavailable}
             canApprove={canApproveDepartments}
             processingId={processingRequestId}
             onApprove={handleApproveDepartment}
@@ -537,10 +549,12 @@ function DepartmentsPageContent() {
         title={statusModal.title}
         message={statusModal.message}
         variant="center"
+        initialFocus="dialog"
         onClose={() =>
           setStatusModal((previous) => ({ ...previous, open: false }))
         }
         lockScroll
+        closeOnEscape
       />
     </div>
   );

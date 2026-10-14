@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import {
   Building2,
@@ -48,6 +48,7 @@ export default function DepartmentApprovalRequests({
   onReject,
 }) {
   const [selectedRequestId, setSelectedRequestId] = useState(null);
+  const handledEmailLinkRef = useRef("");
   const [page, setPage] = useState(1);
   const safeRequests = Array.isArray(requests) ? requests : [];
   const pageCount = Math.max(1, Math.ceil(safeRequests.length / ROWS_PER_PAGE));
@@ -57,11 +58,20 @@ export default function DepartmentApprovalRequests({
   const selectedRequest = safeRequests.find((request) => String(request.id) === String(selectedRequestId));
   const processingSelected = Boolean(selectedRequest && String(processingId) === String(selectedRequest.id));
 
-  // Select the exact request specified in the email after the queue loads.
-  // Keep permissions enforced by the existing Department approval routes.
+  // Dispatch an email deep link once per ID, even if an unavailable-request
+  // status dialog triggers rerenders before the URL parameter is cleared.
   useEffect(() => {
-    if (!linkedRequestId || loading) return;
-    const matchingRequest = safeRequests.find((request) => String(request.id) === String(linkedRequestId));
+    const requestId = String(linkedRequestId || "").trim();
+    if (!requestId) {
+      handledEmailLinkRef.current = "";
+      return;
+    }
+    if (loading || handledEmailLinkRef.current === requestId) return;
+
+    handledEmailLinkRef.current = requestId;
+    const matchingRequest = safeRequests.find(
+      (request) => String(request.id) === requestId,
+    );
     if (matchingRequest) {
       setSelectedRequestId(matchingRequest.id);
       onLinkOpened?.();
