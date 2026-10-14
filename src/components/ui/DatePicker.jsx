@@ -145,6 +145,7 @@ export default function DatePicker({
   showToday = true,
   className = "",
   buttonClassName = "",
+  portalClassName = "",
 }) {
   const anchorRef = useRef(null);
   const yearInputRef = useRef(null);
@@ -422,6 +423,7 @@ export default function DatePicker({
       </button>
 
       <DropdownPortal
+        className={portalClassName}
         open={open && !isLocked}
         anchorRef={anchorRef}
         onClose={closePicker}

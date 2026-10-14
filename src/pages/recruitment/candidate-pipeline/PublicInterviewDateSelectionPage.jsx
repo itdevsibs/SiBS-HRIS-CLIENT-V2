@@ -18,16 +18,15 @@ import {
 
 import {
   getPublicCandidateInterviewDate,
+  getPublicCandidateInterviewAvailability,
   submitPublicCandidateInterviewResponse,
 } from "../../../lib/axios/publicCandidateInterviewDate";
 import {
   buildCandidateInterviewCalendarDays,
-  CANDIDATE_INTERVIEW_MIN_TIME,
   formatCandidateInterviewTime,
   isSelectableCandidateInterviewDate,
   normalizeCandidateInterviewHolidayDates,
   parseCandidateInterviewDateValue,
-  toCandidateInterviewDateValue,
   validateCandidateInterviewTime,
 } from "../../../lib/utils/candidatePipeline/candidateInterviewDateSelection";
 
@@ -566,6 +565,9 @@ export default function PublicInterviewDateSelectionPage() {
   const [action, setAction] = useState("");
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedTime, setSelectedTime] = useState("");
+  const [availableSlots, setAvailableSlots] = useState([]);
+  const [availabilityLoading, setAvailabilityLoading] = useState(false);
+  const [availabilityError, setAvailabilityError] = useState("");
   const [declineReason, setDeclineReason] = useState("");
   const [viewDate, setViewDate] = useState(() => new Date());
   const [message, setMessage] = useState("");
@@ -598,19 +600,10 @@ export default function PublicInterviewDateSelectionPage() {
           )
             ? proposedDate
             : getFirstSelectableDate(data.today, holidayDates);
-        const proposedTimeValidation = validateCandidateInterviewTime(
-          data.proposedTime,
-        );
 
         setSchedule(data);
-        setSelectedDate(toCandidateInterviewDateValue(initialDate));
-        setSelectedTime(
-          normalizePublicInterviewPickerTime(
-            proposedTimeValidation.valid
-              ? proposedTimeValidation.time
-              : CANDIDATE_INTERVIEW_MIN_TIME,
-          ),
-        );
+        setSelectedDate("");
+        setSelectedTime("");
         setViewDate(
           new Date(initialDate.getFullYear(), initialDate.getMonth(), 1),
         );
@@ -642,6 +635,40 @@ export default function PublicInterviewDateSelectionPage() {
       active = false;
     };
   }, [token]);
+
+  useEffect(() => {
+    if (action !== "reschedule" || !["ready", "submitting"].includes(phase)) return;
+    let active = true;
+    const year = viewDate.getFullYear();
+    const month = String(viewDate.getMonth() + 1).padStart(2, '0');
+    const from = `${year}-${month}-01`;
+    const to = `${year}-${month}-${String(new Date(year, viewDate.getMonth() + 1, 0).getDate()).padStart(2, '0')}`;
+    setAvailabilityLoading(true);
+    setAvailabilityError("");
+    getPublicCandidateInterviewAvailability(token, { from, to })
+      .then((data) => { if (active) setAvailableSlots(Array.isArray(data?.slots) ? data.slots : []); })
+      .catch((error) => {
+        if (!active) return;
+        setAvailableSlots([]);
+        setAvailabilityError(error?.response?.data?.message || "Unable to load available interview slots.");
+      })
+      .finally(() => { if (active) setAvailabilityLoading(false); });
+    return () => { active = false; };
+  }, [token, action, viewDate, phase === "ready"]);
+
+  const availableDates = useMemo(() => new Set(availableSlots.map((slot) => slot.date)), [availableSlots]);
+  const timesForSelectedDate = useMemo(() => availableSlots.filter((slot) => slot.date === selectedDate), [availableSlots, selectedDate]);
+
+  // The original appointment may appear in the availability response because the
+  // candidate's own booking is excluded from conflict checks. Keep it visible,
+  // but never allow choosing the same date AND time when rescheduling.
+  const isCurrentInterviewSlot = (date, time) =>
+    Boolean(
+      schedule?.proposedDate &&
+      schedule?.proposedTime &&
+      date === schedule.proposedDate &&
+      time === schedule.proposedTime,
+    );
 
   const holidayDates = useMemo(
     () => normalizeCandidateInterviewHolidayDates(schedule?.holidayDates),
@@ -685,16 +712,21 @@ export default function PublicInterviewDateSelectionPage() {
           selectedDateObject,
           today,
           holidayDates,
-        )
+        ) || !availableDates.has(selectedDate)
       ) {
         setMessage(
-          "Select a future working day that is not a configured holiday.",
+          "Select a date with open interview availability that is not a holiday.",
         );
         return;
       }
 
-      if (!timeValidation.valid) {
-        setMessage(timeValidation.message);
+      if (isCurrentInterviewSlot(selectedDate, selectedTime)) {
+        setMessage("Select a different interview date or time. Your current appointment cannot be selected for rescheduling.");
+        return;
+      }
+
+      if (!timeValidation.valid || !timesForSelectedDate.some((slot) => slot.time === selectedTime)) {
+        setMessage("Choose an available interview time from the calendar.");
         return;
       }
     }
@@ -972,6 +1004,9 @@ export default function PublicInterviewDateSelectionPage() {
                   </button>
                 </div>
 
+                {availabilityError && <p className="mt-3 text-xs font-bold text-red-600">{availabilityError}</p>}
+                {!availabilityLoading && availableSlots.length === 0 && !availabilityError && <p className="mt-3 text-xs font-semibold text-sibs-muted">No open interview slots this month. Please check another month or contact Talent Acquisition.</p>}
+
                 <div className="mt-4 grid grid-cols-7 gap-1">
                   {WEEKDAY_LABELS.map((label) => (
                     <div
@@ -984,10 +1019,8 @@ export default function PublicInterviewDateSelectionPage() {
 
                   {calendarDays.map((item) => {
                     const selectable = isSelectableCandidateInterviewDate(
-                      item.date,
-                      today,
-                      holidayDates,
-                    );
+                      item.date, today, holidayDates,
+                    ) && availableDates.has(item.dateValue) && !availabilityLoading;
                     const active =
                       selectedDateObject &&
                       isSameDate(item.date, selectedDateObject);
@@ -999,15 +1032,15 @@ export default function PublicInterviewDateSelectionPage() {
                         key={item.dateValue}
                         type="button"
                         disabled={!selectable || isSubmitting}
-                        onClick={() => setSelectedDate(item.dateValue)}
+                        onClick={() => { setSelectedDate(item.dateValue); setSelectedTime(""); }}
                         title={
                           holiday
                             ? "Configured Philippine holiday"
                             : weekend
                               ? "Saturday and Sunday are unavailable"
                               : selectable
-                                ? "Select interview date"
-                                : "Past dates are unavailable"
+                                ? "Select an available interview date"
+                                : "No interview availability on this date"
                         }
                         className={`flex h-10 items-center justify-center rounded-[10px] text-sm font-extrabold transition ${
                           active
@@ -1034,13 +1067,35 @@ export default function PublicInterviewDateSelectionPage() {
                     <Clock3 size={17} />
                     Interview Time
                   </label>
-                  <PublicInterviewTimePicker
-                    value={selectedTime}
-                    disabled={isSubmitting}
-                    onChange={setSelectedTime}
-                  />
+                  <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
+                    {timesForSelectedDate.map((slot) => {
+                      const isCurrentSchedule = isCurrentInterviewSlot(slot.date, slot.time);
+                      return (
+                        <button
+                          key={slot.dateTime}
+                          type="button"
+                          disabled={isSubmitting || isCurrentSchedule}
+                          aria-label={`${formatCandidateInterviewTime(slot.time)}${isCurrentSchedule ? " - current interview schedule, unavailable for rescheduling" : ""}`}
+                          title={isCurrentSchedule ? "Current interview schedule — choose a different date or time" : undefined}
+                          onClick={() => setSelectedTime(slot.time)}
+                          className={`rounded-[9px] border px-3 py-3 text-xs font-extrabold transition ${
+                            isCurrentSchedule
+                              ? "cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400"
+                              : selectedTime === slot.time
+                                ? "border-sibs-orange bg-sibs-orange text-white"
+                                : "border-sibs-border bg-white text-sibs-navy hover:border-sibs-orange"
+                          }`}
+                        >
+                          {formatCandidateInterviewTime(slot.time)}
+                          {isCurrentSchedule && (
+                            <span className="mt-1 block text-[10px] font-semibold">Current schedule</span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
                   <p className="mt-2 text-xs font-semibold text-sibs-muted">
-                    Available from 10:00 AM through 5:00 PM.
+                    {availabilityLoading ? "Loading available times..." : timesForSelectedDate.length ? "Select one of the available times above." : "Select a date with available interview slots."}
                   </p>
                 </div>
 
@@ -1049,8 +1104,7 @@ export default function PublicInterviewDateSelectionPage() {
                     New Interview Schedule
                   </p>
                   <p className="mt-1 text-sm font-extrabold text-sibs-navy">
-                    {formatDateOnly(selectedDate)} at{" "}
-                    {formatCandidateInterviewTime(selectedTime)}
+                    {selectedDate ? formatDateOnly(selectedDate) : "No date selected"} {selectedTime ? `at ${formatCandidateInterviewTime(selectedTime)}` : ""}
                   </p>
                 </div>
               </div>

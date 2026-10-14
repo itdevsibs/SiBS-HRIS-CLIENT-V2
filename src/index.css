@@ -2134,3 +2134,30 @@
   color: rgba(255, 255, 255, 0.88);
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.65);
 }
+
+/* Calendar: one orange border on the SELECT BOX only.
+   IMPORTANT: the global :focus-visible !important rule is in @layer base, so
+   the override must be in that same layer (an unlayered important rule loses). */
+@layer base {
+  .sibs-calendar-dropdown-trigger input.sibs-calendar-dropdown-input,
+  .sibs-calendar-dropdown-trigger input.sibs-calendar-dropdown-input:focus,
+  .sibs-calendar-dropdown-trigger input.sibs-calendar-dropdown-input:focus-visible,
+  .sibs-calendar-dropdown-trigger button.sibs-calendar-dropdown-arrow:focus,
+  .sibs-calendar-dropdown-trigger button.sibs-calendar-dropdown-arrow:focus-visible {
+    border-width: 0 !important;
+    outline: 0 none !important;
+    outline-offset: 0 !important;
+    box-shadow: none !important;
+    --tw-ring-shadow: 0 0 #0000 !important;
+  }
+  button.sibs-calendar-date-trigger:focus-visible {
+    /* Keep the date select's outside border and focus halo. */
+    outline: 0 none !important;
+    outline-offset: 0 !important;
+  }
+}
+
+/* The date popover must be above the full-screen HRIS Calendar modal. */
+.sibs-calendar-date-panel {
+  z-index: 2147483600 !important;
+}

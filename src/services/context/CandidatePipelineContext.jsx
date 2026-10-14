@@ -49,7 +49,6 @@ import {
 } from "../../lib/utils/candidatePipeline/candidatePipelineIdentity";
 
 import { useConfirmDialog } from "../../components/layout/common/ConfirmationModal";
-import { STATIC_PIPELINE_CANDIDATES } from "../../lib/utils/candidatePipeline/mockPipelineCandidates";
 
 const CandidatePipelineContext = createContext(null);
 
@@ -1251,7 +1250,8 @@ export function CandidatePipelineProvider({ children }) {
         : Array.isArray(response?.candidates)
           ? response.candidates
           : [];
-      const rows = apiRows.length > 0 ? apiRows : silent ? [] : STATIC_PIPELINE_CANDIDATES;
+      // Empty API responses are valid: never populate the board with sample candidates.
+      const rows = apiRows;
       const normalizedRows = rows.map(normalizePipelineCandidateForBoard);
 
       if (silent) {
@@ -1281,6 +1281,7 @@ export function CandidatePipelineProvider({ children }) {
         setCandidateList(normalizedRows);
       }
       setHasLoadedStorage(true);
+      setLoadError("");
       return { success: true, data: normalizedRows };
     } catch (error) {
       if (silent) {
@@ -1288,15 +1289,13 @@ export function CandidatePipelineProvider({ children }) {
         // or replace live records with demo candidates.
         return { success: false, message: error?.message };
       }
-      console.warn(
-        "Candidate pipeline API returned error/empty, falling back to static pipeline candidates:",
-        error?.message,
-      );
-      const staticRows = STATIC_PIPELINE_CANDIDATES.map(normalizePipelineCandidateForBoard);
-      setCandidateList(staticRows);
+      // A failed request is not an empty successful response. Keep any last
+      // successfully fetched live records, but never substitute demo data.
+      const message = error?.message || "Failed to load candidate pipeline.";
+      console.warn("Candidate pipeline API request failed:", message);
       setHasLoadedStorage(true);
-      setLoadError("");
-      return { success: true, data: staticRows };
+      setLoadError(message);
+      return { success: false, message, data: [] };
     } finally {
       if (silent) {
         backgroundRefreshInFlightRef.current = false;
