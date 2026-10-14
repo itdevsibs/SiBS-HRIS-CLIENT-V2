@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import {
   Building2,
@@ -77,6 +77,7 @@ export default function AccountApprovalRequests({
   onReject,
 }) {
   const [selectedRequestId, setSelectedRequestId] = useState(null);
+  const handledEmailLinkRef = useRef("");
   const [page, setPage] = useState(1);
   const safeRequests = Array.isArray(requests) ? requests : [];
   const pageCount = Math.max(1, Math.ceil(safeRequests.length / ROWS_PER_PAGE));
@@ -90,13 +91,21 @@ export default function AccountApprovalRequests({
     selectedRequest && String(processingId) === String(selectedRequest.id),
   );
 
-  // Open exactly the request linked from the Account Approval email after
-  // pending requests have finished loading. Clear the URL parameter only
-  // after the modal has been selected (or a resolved not-found condition).
+  // Handle each email deep link only once. Clearing the URL is asynchronous,
+  // so unrelated renders (including opening/closing StatusModal) must not
+  // redispatch an unavailable-request message for the same link.
   useEffect(() => {
-    if (!linkedRequestId || loading) return;
+    const requestId = String(linkedRequestId || "").trim();
+    if (!requestId) {
+      handledEmailLinkRef.current = "";
+      return;
+    }
+    if (loading || handledEmailLinkRef.current === requestId) return;
+
+    // Mark before dispatching callbacks that can synchronously update the page.
+    handledEmailLinkRef.current = requestId;
     const matchingRequest = safeRequests.find(
-      (request) => String(request.id) === String(linkedRequestId),
+      (request) => String(request.id) === requestId,
     );
     if (matchingRequest) {
       setSelectedRequestId(matchingRequest.id);

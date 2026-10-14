@@ -165,6 +165,14 @@
     outline-offset: 2px !important;
   }
 
+  /* The status dialog receives programmatic focus for accessibility.
+     Do not draw the global orange focus outline around its outer edge;
+     interactive buttons retain the normal keyboard focus indicator. */
+  .sibs-status-modal-dialog:focus-visible {
+    outline: none !important;
+    outline-offset: 0 !important;
+  }
+
   .jd-rich-text-editor [contenteditable="true"]:focus,
   .jd-rich-text-editor [contenteditable="true"]:focus-visible {
     border-color: transparent !important;

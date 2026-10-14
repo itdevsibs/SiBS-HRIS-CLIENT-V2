@@ -40,6 +40,9 @@ export default function StatusModal({
   icon: CustomIcon,
   maxWidth = "max-w-md",
   closeOnEscape = false,
+  // For detail-page status dialogs, focus the dialog itself on open so the
+  // close icon does not immediately receive a keyboard-only focus outline.
+  initialFocus = "first",
 }) {
   const dialogId = useId();
   const dialogRef = useRef(null);
@@ -100,13 +103,14 @@ export default function StatusModal({
     previouslyFocusedRef.current = document.activeElement;
     const frame = dialogRef.current;
     const first = frame?.querySelector(FOCUSABLE_SELECTOR);
-    (first || frame)?.focus();
+    const target = initialFocus === "dialog" ? frame : first || frame;
+    target?.focus({ preventScroll: true });
     return () => {
       if (previouslyFocusedRef.current?.isConnected) {
         previouslyFocusedRef.current.focus();
       }
     };
-  }, [open]);
+  }, [open, initialFocus]);
 
   const cancelAction = () => (onCancel || onClose)?.();
   const dismissAction = () => {
@@ -136,7 +140,7 @@ export default function StatusModal({
         }
         const first = items[0];
         const last = items[items.length - 1];
-        if (event.shiftKey && (document.activeElement === first || !dialogRef.current.contains(document.activeElement))) {
+        if (event.shiftKey && (document.activeElement === first || document.activeElement === dialogRef.current || !dialogRef.current.contains(document.activeElement))) {
           event.preventDefault();
           last.focus();
         } else if (!event.shiftKey && (document.activeElement === last || !dialogRef.current.contains(document.activeElement))) {
@@ -166,7 +170,7 @@ export default function StatusModal({
         aria-modal="true"
         aria-labelledby={dialogId}
         aria-describedby={`${dialogId}-description`}
-        className={`sibs-modal-pop-in flex max-h-[90dvh] w-full flex-col overflow-hidden rounded-2xl border border-white/70 bg-white shadow-2xl outline-none ${maxWidth}`}
+        className={`sibs-status-modal-dialog sibs-modal-pop-in flex max-h-[90dvh] w-full flex-col overflow-hidden rounded-2xl border border-white/70 bg-white shadow-2xl outline-none ${maxWidth}`}
       >
         <header className="shrink-0 bg-sibs-navy px-4 py-3 text-white sm:px-5">
           <div className="flex items-start justify-between gap-3">
@@ -190,7 +194,7 @@ export default function StatusModal({
               className="sibs-modal-close-btn shrink-0"
               aria-label="Close dialog"
             >
-              <X size={17} />
+              <X size={18} />
             </button>
           </div>
         </header>
