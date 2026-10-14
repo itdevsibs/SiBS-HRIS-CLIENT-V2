@@ -33,16 +33,11 @@ function AvailablePositionsConfirmationModal({
 
 export function useConfirmDialog() {
   const [confirmState, setConfirmState] = useState(null);
-  const [confirmState, setConfirmState] = useState(null);
 
-  function confirmAction(message, options = {}) {
   function confirmAction(message, options = {}) {
     return new Promise((resolve) => {
       setConfirmState({
         message,
-        title: options.title || "Confirm Action",
-        confirmLabel: options.confirmLabel || options.confirmText || "Continue",
-        cancelLabel: options.cancelLabel || "Cancel",
         title: options.title || "Confirm Action",
         confirmLabel: options.confirmLabel || options.confirmText || "Continue",
         cancelLabel: options.cancelLabel || "Cancel",
@@ -58,14 +53,9 @@ export function useConfirmDialog() {
 
   const ConfirmationDialog = (
     <AvailablePositionsConfirmationModal
-    <AvailablePositionsConfirmationModal
       open={Boolean(confirmState)}
       title={confirmState?.title}
       message={confirmState?.message}
-      confirmLabel={confirmState?.confirmLabel}
-      cancelLabel={confirmState?.cancelLabel}
-      onCancel={() => closeConfirm(false)}
-      onConfirm={() => closeConfirm(true)}
       confirmLabel={confirmState?.confirmLabel}
       cancelLabel={confirmState?.cancelLabel}
       onCancel={() => closeConfirm(false)}

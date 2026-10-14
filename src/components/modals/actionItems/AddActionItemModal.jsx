@@ -1,6 +1,5 @@
 import { formatHrisDateLocalized } from "@/lib/axios/dateFormatter";
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import React, { useMemo } from "react";
 import {
   AlertTriangle,
   BriefcaseBusiness,
