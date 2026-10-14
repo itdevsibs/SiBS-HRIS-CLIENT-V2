@@ -163,7 +163,7 @@ function InfoBox({ icon: Icon, label, value }) {
   return (
     <div className="rounded-xl border border-sibs-border bg-white p-4 shadow-sm">
       <div className="mb-2 flex items-center gap-2">
-        <Icon size={16} className="text-sibs-primary-1" />
+        <Icon size={16} className="text-sibs-navy" />
 
         <p className="text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
           {label}
@@ -218,12 +218,12 @@ export function AddCandidateModal({ open, form, setForm, onClose, onSubmit, onRe
       onClick={onClose}
     >
       <div
-        className="flex max-h-[92dvh] w-full max-w-6xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
+        className="flex max-h-[92dvh] w-full max-w-6xl flex-col overflow-hidden rounded-[14px] bg-white shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-4 border-b border-gray-100 px-5 py-4 sm:px-6 sm:py-5">
           <div className="min-w-0">
-            <h2 className="text-lg font-bold text-sibs-primary-1 sm:text-xl">
+            <h2 className="text-lg font-bold text-sibs-navy sm:text-xl">
               Add Candidate
             </h2>
 
@@ -726,7 +726,7 @@ export function AddCandidateModal({ open, form, setForm, onClose, onSubmit, onRe
               >
                 <h3
                   className={`text-sm font-bold ${
-                    isMinor ? "text-red-700" : "text-sibs-primary-1"
+                    isMinor ? "text-red-700" : "text-sibs-navy"
                   }`}
                 >
                   Age Validation
@@ -734,7 +734,7 @@ export function AddCandidateModal({ open, form, setForm, onClose, onSubmit, onRe
 
                 <p
                   className={`mt-2 text-sm leading-6 ${
-                    isMinor ? "text-red-700/90" : "text-sibs-primary-1/80"
+                    isMinor ? "text-red-700/90" : "text-sibs-muted"
                   }`}
                 >
                   {age === null
@@ -746,11 +746,11 @@ export function AddCandidateModal({ open, form, setForm, onClose, onSubmit, onRe
               </div>
 
               <div className="rounded-xl border border-blue-100 bg-blue-50 p-5">
-                <h3 className="text-sm font-bold text-sibs-primary-1">
+                <h3 className="text-sm font-bold text-sibs-navy">
                   Candidate Entry Rule
                 </h3>
 
-                <p className="mt-2 text-sm leading-6 text-sibs-primary-1/80">
+                <p className="mt-2 text-sm leading-6 text-sibs-muted">
                   Every manually added candidate starts as{" "}
                   <span className="font-bold">New Applicant</span>. TA should
                   update the classification only after review.
@@ -845,12 +845,12 @@ export function MoveToPipelineModal({
       onClick={onClose}
     >
       <div
-        className="flex max-h-[92dvh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
+        className="flex max-h-[92dvh] w-full max-w-4xl flex-col overflow-hidden rounded-[14px] bg-white shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-4 border-b border-gray-100 px-5 py-4 sm:px-6 sm:py-5">
           <div className="min-w-0">
-            <h2 className="text-lg font-bold text-sibs-primary-1 sm:text-xl">
+            <h2 className="text-lg font-bold text-sibs-navy sm:text-xl">
               Move Candidate to Pipeline
             </h2>
 
@@ -874,11 +874,11 @@ export function MoveToPipelineModal({
           <div className="grid grid-cols-1 gap-5 xl:grid-cols-[1fr_320px]">
             <div className="space-y-5">
               <div className="rounded-xl border border-blue-100 bg-blue-50 p-5">
-                <p className="text-sm font-bold text-sibs-primary-1">
+                <p className="text-sm font-bold text-sibs-navy">
                   {candidate.candidateId} — {candidate.name}
                 </p>
 
-                <p className="mt-1 text-xs font-semibold text-sibs-primary-1/70">
+                <p className="mt-1 text-xs font-semibold text-sibs-muted">
                   {candidate.roleCapability} / {candidate.skillsLanguage} /
                   Source: {candidate.source}
                 </p>
@@ -1070,12 +1070,12 @@ export function CandidateProfileModal({
       onClick={onClose}
     >
       <div
-        className="flex max-h-[92dvh] w-full max-w-6xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
+        className="flex max-h-[92dvh] w-full max-w-6xl flex-col overflow-hidden rounded-[14px] bg-white shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-4 border-b border-gray-100 px-5 py-4 sm:px-6 sm:py-5">
           <div className="min-w-0">
-            <h2 className="text-lg font-bold text-sibs-primary-1 sm:text-xl">
+            <h2 className="text-lg font-bold text-sibs-navy sm:text-xl">
               Candidate Profile
             </h2>
 
@@ -1099,7 +1099,7 @@ export function CandidateProfileModal({
             <div className="space-y-5">
               <div className="rounded-xl border border-sibs-border bg-white p-5 shadow-sm">
                 <div className="flex flex-col gap-4 md:flex-row md:items-center">
-                  <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl bg-sibs-primary-1 text-xl font-bold text-white">
+                  <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-[10px] bg-sibs-navy text-xl font-bold text-white">
                     {candidate.name
                       .split(" ")
                       .map((word) => word[0])
@@ -1176,7 +1176,7 @@ export function CandidateProfileModal({
 
               <div className="rounded-xl border border-sibs-border bg-white p-5 shadow-sm">
                 <div className="mb-4 flex items-center gap-2">
-                  <GraduationCap size={18} className="text-sibs-primary-1" />
+                  <GraduationCap size={18} className="text-sibs-navy" />
                   <h3 className="text-sm font-bold text-sibs-navy">
                     Education, Certifications, and Trainings
                   </h3>
@@ -1203,7 +1203,7 @@ export function CandidateProfileModal({
 
               <div className="rounded-xl border border-sibs-border bg-white p-5 shadow-sm">
                 <div className="mb-4 flex items-center gap-2">
-                  <Tags size={18} className="text-sibs-primary-1" />
+                  <Tags size={18} className="text-sibs-navy" />
                   <h3 className="text-sm font-bold text-sibs-navy">
                     Skills / Language Tags
                   </h3>
@@ -1223,7 +1223,7 @@ export function CandidateProfileModal({
 
               <div className="rounded-xl border border-sibs-border bg-white p-5 shadow-sm">
                 <div className="mb-4 flex items-center gap-2">
-                  <History size={18} className="text-sibs-primary-1" />
+                  <History size={18} className="text-sibs-navy" />
                   <h3 className="text-sm font-bold text-sibs-navy">
                     Application History
                   </h3>
@@ -1249,7 +1249,7 @@ export function CandidateProfileModal({
                           </div>
 
                           <div className="text-left md:text-right">
-                            <p className="text-xs font-bold text-sibs-primary-1">
+                            <p className="text-xs font-bold text-sibs-navy">
                               {item.outcome}
                             </p>
 
@@ -1346,11 +1346,11 @@ export function CandidateProfileModal({
               </div>
 
               <div className="rounded-xl border border-blue-100 bg-blue-50 p-5">
-                <h3 className="text-sm font-bold text-sibs-primary-1">
+                <h3 className="text-sm font-bold text-sibs-navy">
                   Pipeline Rule
                 </h3>
 
-                <p className="mt-2 text-sm leading-6 text-sibs-primary-1/80">
+                <p className="mt-2 text-sm leading-6 text-sibs-muted">
                   Move to Pipeline creates an active application for a specific
                   hiring requirement. The candidate master profile remains here.
                 </p>
@@ -1424,7 +1424,7 @@ export function UpdateStatusModal({
       onClick={onClose}
     >
       <div
-        className="sibs-modal-pop-in relative flex max-h-[92dvh] w-full max-w-xl flex-col overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-2xl font-jakarta"
+        className="sibs-modal-pop-in relative flex max-h-[92dvh] w-full max-w-xl flex-col overflow-hidden rounded-[14px] border border-sibs-border bg-white shadow-2xl font-jakarta"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-4 border-b border-sibs-border bg-white px-5 py-4.5 sm:px-6">

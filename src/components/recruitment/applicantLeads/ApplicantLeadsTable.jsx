@@ -12,10 +12,14 @@ import {
 import { useApplicantLeadsPage } from "../../../hooks/applicantLeads/useApplicantLeadsPage";
 import PaginationTable from "../../../services/pagination/PaginationTable";
 import { isApplicantLeadApplicationLinkSent } from "../../../lib/utils/applicantLeads/applicantLeadEmailStatus";
-import StatusModal from "../../modals/StatusModal";
+import {
+  ConfirmModal,
+  DataCard,
+  ResponsiveTableShell,
+  TableSkeletonRows,
+} from "@/components/ui";
 import ApplicantLeadStatusBadge from "./ApplicantLeadStatusBadge";
 import ApplicantLeadMobileCard from "./ApplicantLeadMobileCard";
-import { DataCard, ResponsiveTableShell, TableSkeletonRows } from "@/components/ui";
 
 function cleanText(value, fallback = "-") {
   const text = String(value ?? "").trim();
@@ -273,7 +277,7 @@ export default function ApplicantLeadsTable({
                           openEditModal(lead);
                         }
                       }}
-                      className="sibs-page-card-in group cursor-pointer bg-white text-xs transition-colors duration-150 hover:bg-sibs-surface focus:bg-sibs-surface focus:outline-none"
+                      className="sibs-page-card-in group cursor-pointer bg-white text-xs transition-colors duration-150 hover:bg-sibs-cream-light focus:bg-sibs-cream-light focus:outline-none"
                     >
                       {/* REFERRAL CODE & NAME */}
                       <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle">
@@ -440,17 +444,17 @@ export default function ApplicantLeadsTable({
         />
       </div>
 
-      <StatusModal
+      <ConfirmModal
         open={Boolean(emailConfirmationLead)}
-        type="confirm"
+        variant="primary"
+        icon={Mail}
         title="Send Application Link?"
-        message={`Send the application link email to ${confirmationLeadName} at ${confirmationLeadEmail}${
+        description={`Send the application link email to ${confirmationLeadName} at ${confirmationLeadEmail}${
           confirmationLeadPhone !== "-" ? ` (${confirmationLeadPhone})` : ""
         }?`}
         confirmLabel="Send Email"
         cancelLabel="Cancel"
-        confirmTone="brand"
-        onCancel={closeEmailConfirmation}
+        onClose={closeEmailConfirmation}
         onConfirm={confirmSendApplicationLink}
       />
     </div>

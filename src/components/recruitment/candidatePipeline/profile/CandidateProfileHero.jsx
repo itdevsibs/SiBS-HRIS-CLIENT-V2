@@ -68,28 +68,28 @@ export default function CandidateProfileHero({ data }) {
             <div className="mt-1.5 flex flex-wrap items-center gap-x-3.5 gap-y-1 text-[10px] font-semibold text-sibs-muted">
               {data.email ? (
                 <span className="inline-flex items-center gap-1">
-                  <Mail size={11} className="text-sibs-faint" />
+                  <Mail size={11} className="text-sibs-muted" />
                   {data.email}
                 </span>
               ) : null}
 
               {data.submissionDate && data.submissionDate !== "—" ? (
                 <span className="inline-flex items-center gap-1">
-                  <Calendar size={11} className="text-sibs-faint" />
+                  <Calendar size={11} className="text-sibs-muted" />
                   Applied: {data.submissionDate}
                 </span>
               ) : null}
 
               {data.openPosition ? (
                 <span className="inline-flex items-center gap-1">
-                  <GitFork size={11} className="text-sibs-faint" />
+                  <GitFork size={11} className="text-sibs-muted" />
                   Fit: {data.openPosition}
                 </span>
               ) : null}
 
               {data.applyingLocation ? (
                 <span className="inline-flex items-center gap-1">
-                  <MapPin size={11} className="text-sibs-faint" />
+                  <MapPin size={11} className="text-sibs-muted" />
                   {data.applyingLocation}
                 </span>
               ) : null}

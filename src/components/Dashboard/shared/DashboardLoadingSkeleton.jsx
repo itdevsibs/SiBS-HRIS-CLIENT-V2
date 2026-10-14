@@ -1,6 +1,7 @@
 import React from "react";
 import Header from "../../layout/Header";
 import { Skeleton } from "../../ui/skeleton";
+import { StatutoryCoverageSkeleton } from "./StatutoryCoveragePanel";
 
 const METRIC_COUNT = 6;
 const ROW_COUNT = 6;
@@ -38,6 +39,7 @@ function TableRowSkeleton({ index }) {
 export default function DashboardLoadingSkeleton({
   ariaLabel = "Loading dashboard",
   hero = null,
+  showStatutoryCoverage = false,
 }) {
   return (
     <div className="sibs-dashboard-shell font-jakarta">
@@ -64,6 +66,10 @@ export default function DashboardLoadingSkeleton({
                 <MetricCardSkeleton key={index} index={index} />
               ))}
             </section>
+
+            {showStatutoryCoverage ? (
+              <StatutoryCoverageSkeleton />
+            ) : null}
 
             <section
               data-testid="dashboard-loading-table"

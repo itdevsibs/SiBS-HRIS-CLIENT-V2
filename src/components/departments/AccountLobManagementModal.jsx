@@ -248,7 +248,7 @@ export default function AccountLobManagementModal({
         {canManage ? (
           <form
             onSubmit={handleSubmit}
-            className="rounded-2xl border border-sibs-border bg-sibs-surface p-4"
+            className="rounded-[14px] border border-sibs-border bg-sibs-surface p-4"
           >
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div>
@@ -287,7 +287,7 @@ export default function AccountLobManagementModal({
                   maxLength={150}
                   placeholder="e.g. Scheduling"
                   disabled={saving}
-                  className="h-10 w-full rounded-xl border border-sibs-border bg-white px-3 text-xs font-semibold text-sibs-navy outline-none transition focus:border-sibs-orange focus:ring-2 focus:ring-sibs-orange/10"
+                  className="h-9 2xl:h-10 w-full rounded-[10px] border border-sibs-border bg-white px-3 text-xs font-semibold text-sibs-navy outline-none transition focus:border-sibs-orange focus:ring-2 focus:ring-sibs-orange/10"
                 />
               </div>
 
@@ -304,7 +304,7 @@ export default function AccountLobManagementModal({
                   maxLength={50}
                   placeholder="e.g. SCHED"
                   disabled={saving}
-                  className="h-10 w-full rounded-xl border border-sibs-border bg-white px-3 text-xs font-semibold text-sibs-navy outline-none transition focus:border-sibs-orange focus:ring-2 focus:ring-sibs-orange/10"
+                  className="h-9 2xl:h-10 w-full rounded-[10px] border border-sibs-border bg-white px-3 text-xs font-semibold text-sibs-navy outline-none transition focus:border-sibs-orange focus:ring-2 focus:ring-sibs-orange/10"
                 />
               </div>
             </div>
@@ -324,7 +324,7 @@ export default function AccountLobManagementModal({
                 wrap="soft"
                 placeholder="Optional description"
                 disabled={saving}
-                className="min-h-[42px] w-full resize-none overflow-hidden whitespace-pre-wrap break-words rounded-xl border border-sibs-border bg-white px-3 py-2.5 text-xs font-semibold leading-5 text-sibs-navy outline-none transition focus:border-sibs-orange focus:ring-2 focus:ring-sibs-orange/10"
+                className="min-h-[42px] w-full resize-none overflow-hidden whitespace-pre-wrap break-words rounded-[10px] border border-sibs-border bg-white px-3 py-2.5 text-xs font-semibold leading-5 text-sibs-navy outline-none transition focus:border-sibs-orange focus:ring-2 focus:ring-sibs-orange/10"
               />
             </div>
 
@@ -342,24 +342,24 @@ export default function AccountLobManagementModal({
             </div>
           </form>
         ) : (
-          <div className="rounded-xl border border-sibs-border bg-sibs-surface px-4 py-3 text-xs font-semibold text-sibs-muted">
+          <div className="rounded-[10px] border border-sibs-border bg-sibs-surface px-4 py-3 text-xs font-semibold text-sibs-muted">
             You can view account LOBs. Super Admin access is required to add, edit, activate, or deactivate them.
           </div>
         )}
 
         {error ? (
-          <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs font-bold text-rose-700">
+          <div className="rounded-[10px] border border-rose-200 bg-rose-50 px-4 py-3 text-xs font-bold text-rose-700">
             {error}
           </div>
         ) : null}
 
         {notice ? (
-          <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs font-bold text-emerald-700">
+          <div className="rounded-[10px] border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs font-bold text-emerald-700">
             {notice}
           </div>
         ) : null}
 
-        <section className="overflow-hidden rounded-2xl border border-sibs-border bg-white">
+        <section className="overflow-hidden rounded-[14px] border border-sibs-border bg-white">
           <div className="flex items-center justify-between gap-3 border-b border-sibs-border px-4 py-3">
             <div>
               <h3 className="text-xs font-extrabold text-sibs-navy">Account LOBs</h3>
@@ -490,7 +490,7 @@ export default function AccountLobManagementModal({
       }
     >
       <div
-        className={`rounded-xl border px-4 py-4 text-xs font-semibold leading-5 ${
+        className={`rounded-[10px] border px-4 py-4 text-xs font-semibold leading-5 ${
           addResultModal.type === "success"
             ? "border-emerald-200 bg-emerald-50 text-emerald-800"
             : "border-rose-200 bg-rose-50 text-rose-700"

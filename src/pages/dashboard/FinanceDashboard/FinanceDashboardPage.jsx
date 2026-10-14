@@ -25,6 +25,7 @@ import {
 import Header from "../../../components/layout/Header";
 import FinanceDashboardSkeleton from "../../../components/Dashboard/FinanceDashboard/FinanceDashboardSkeleton";
 import StatutoryCoverageModal from "../../../components/Dashboard/FinanceDashboard/StatutoryCoverageModal";
+import { PageHeaderHero } from "../../../components/ui";
 import { getFinanceDashboardBootstrap } from "../../../lib/axios/getFinanceDashboard";
 
 const PAGE_SHELL_CLASS = "sibs-dashboard-shell";
@@ -149,22 +150,22 @@ function FinanceDashboardErrorState({ message, onRetry }) {
     <div className={PAGE_SHELL_CLASS}>
       <Header />
       <main
-        className={`${MAIN_SHELL_CLASS} flex min-h-[calc(100vh-76px)] items-center justify-center bg-[#e8eef5] px-6 py-10`}
+        className={`${MAIN_SHELL_CLASS} flex min-h-[calc(100vh-76px)] items-center justify-center bg-sibs-surface px-6 py-10`}
       >
-        <div className="w-full max-w-md rounded-2xl border border-rose-200 bg-white px-7 py-8 text-center shadow-sm">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-rose-50 text-rose-600">
+        <div className="w-full max-w-md rounded-[14px] border border-rose-200 bg-white px-7 py-8 text-center shadow-sm">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-[10px] bg-rose-50 text-rose-600">
             <AlertCircle className="h-6 w-6" />
           </div>
-          <h2 className="mt-4 text-lg font-extrabold text-[#042c51]">
+          <h2 className="mt-4 text-lg font-extrabold text-sibs-navy">
             Unable to load Finance Dashboard
           </h2>
-          <p className="mt-2 text-sm font-medium leading-6 text-[#667085]">
+          <p className="mt-2 text-sm font-medium leading-6 text-sibs-muted">
             {message}
           </p>
           <button
             type="button"
             onClick={onRetry}
-            className="mt-5 inline-flex items-center gap-2 rounded-xl bg-[#042c51] px-5 py-2.5 text-sm font-bold text-white transition hover:opacity-90"
+            className="mt-5 inline-flex items-center gap-2 rounded-[10px] bg-sibs-navy hover:bg-sibs-tertiary-3 px-5 py-2.5 text-sm font-bold text-white transition"
           >
             <RefreshCw className="h-4 w-4" />
             Retry
@@ -175,12 +176,13 @@ function FinanceDashboardErrorState({ message, onRetry }) {
   );
 }
 
-function MetricCard({ label, value, description, icon: Icon, tone = "navy" }) {
+function MetricCard(props) {
+  const { label, value, description, icon: Icon, tone = "navy" } = props;
   const tones = {
     navy: {
-      label: "text-[#042C51]",
-      value: "text-[#042C51]",
-      icon: "bg-[#E9F0FC] text-[#042C51]",
+      label: "text-sibs-navy",
+      value: "text-sibs-navy",
+      icon: "bg-sibs-cream-light text-sibs-navy",
     },
     green: {
       label: "text-emerald-800",
@@ -202,7 +204,7 @@ function MetricCard({ label, value, description, icon: Icon, tone = "navy" }) {
   const selectedTone = tones[tone] || tones.navy;
 
   return (
-    <article className="rounded-2xl border border-[#DCE5EE] bg-white p-4 shadow-sm">
+    <article className="rounded-[14px] border border-sibs-border bg-white p-4 shadow-sm">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className={`text-[10px] font-extrabold uppercase tracking-wide ${selectedTone.label}`}>
@@ -211,11 +213,11 @@ function MetricCard({ label, value, description, icon: Icon, tone = "navy" }) {
           <p className={`mt-2 text-2xl font-black ${selectedTone.value}`}>
             {value}
           </p>
-          <p className="mt-1 line-clamp-1 text-[11px] font-medium text-[#667085]">
+          <p className="mt-1 line-clamp-1 text-[11px] font-medium text-sibs-muted">
             {description}
           </p>
         </div>
-        <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl ${selectedTone.icon}`}>
+        <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] ${selectedTone.icon}`}>
           <Icon className="h-5 w-5" />
         </span>
       </div>
@@ -230,49 +232,50 @@ function CoverageRow({ label, coverage, onClick }) {
     <button
       type="button"
       onClick={onClick}
-      className="group w-full rounded-xl border border-[#E6ECF2] bg-[#FBFCFE] p-4 text-left transition hover:border-[#FFB59C] hover:bg-white hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-[#FF5C28]/15"
+      className="group w-full rounded-[10px] border border-sibs-border bg-sibs-surface p-4 text-left transition hover:border-sibs-orange/40 hover:bg-white hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-sibs-orange/15"
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <p className="text-sm font-extrabold text-[#042C51]">{label}</p>
-          <p className="mt-0.5 text-[11px] font-medium text-[#667085]">
+          <p className="text-sm font-extrabold text-sibs-navy">{label}</p>
+          <p className="mt-0.5 text-[11px] font-medium text-sibs-muted">
             {formatNumber(coverage?.count)} employees complete · {formatNumber(coverage?.missing)} missing
           </p>
         </div>
-        <span className="rounded-lg bg-white px-2.5 py-1 text-xs font-black text-[#042C51] shadow-sm ring-1 ring-[#E6ECF2]">
+        <span className="rounded-[10px] bg-white px-2.5 py-1 text-xs font-black text-sibs-navy shadow-sm ring-1 ring-sibs-border">
           {formatPercent(percentage)}
         </span>
       </div>
-      <div className="mt-3 h-2 overflow-hidden rounded-full bg-[#E8EEF5]">
+      <div className="mt-3 h-2 overflow-hidden rounded-full bg-sibs-surface">
         <div
-          className="h-full rounded-full bg-[#FF5C28] transition-[width] duration-500"
+          className="h-full rounded-full bg-sibs-orange transition-[width] duration-500"
           style={{ width: `${percentage}%` }}
         />
       </div>
-      <p className="mt-3 text-[10px] font-extrabold uppercase tracking-wide text-[#98A2B3] transition group-hover:text-[#FF5C28]">
+      <p className="mt-3 text-[10px] font-extrabold uppercase tracking-wide text-sibs-faint transition group-hover:text-sibs-orange">
         View complete and missing employees
       </p>
     </button>
   );
 }
 
-function QuickAction({ title, description, icon: Icon, onClick }) {
+function QuickAction(props) {
+  const { title, description, icon: Icon, onClick } = props;
   return (
     <button
       type="button"
       onClick={onClick}
-      className="group flex min-h-[92px] items-center gap-3 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4 text-left transition hover:border-[#FFB59C] hover:bg-white hover:shadow-sm"
+      className="group flex min-h-[92px] items-center gap-3 rounded-[10px] border border-sibs-border bg-sibs-surface p-4 text-left transition hover:border-sibs-orange/40 hover:bg-white hover:shadow-sm"
     >
-      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-[#042C51] shadow-sm ring-1 ring-[#E6ECF2] transition group-hover:text-[#FF5C28]">
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] bg-white text-sibs-navy shadow-sm ring-1 ring-sibs-border transition group-hover:text-sibs-orange">
         <Icon className="h-5 w-5" />
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block text-sm font-extrabold text-[#042C51]">{title}</span>
-        <span className="mt-1 block text-[11px] font-medium leading-4 text-[#667085]">
+        <span className="block text-sm font-extrabold text-sibs-navy">{title}</span>
+        <span className="mt-1 block text-[11px] font-medium leading-4 text-sibs-muted">
           {description}
         </span>
       </span>
-      <ArrowRight className="h-4 w-4 shrink-0 text-[#98A2B3] transition group-hover:translate-x-0.5 group-hover:text-[#FF5C28]" />
+      <ArrowRight className="h-4 w-4 shrink-0 text-sibs-faint transition group-hover:translate-x-0.5 group-hover:text-sibs-orange" />
     </button>
   );
 }
@@ -399,40 +402,35 @@ export default function FinanceDashboardPage() {
       <Header />
 
       <main className={`${MAIN_SHELL_CLASS} space-y-4 pb-8`}>
-        <section className="relative overflow-hidden rounded-2xl border border-[#DCE5EE] bg-white px-5 py-5 shadow-sm sm:px-6">
-          <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-[#042C51] via-[#FF5C28] to-[#042C51]" />
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div>
-              <span className="inline-flex items-center gap-1.5 rounded-md border border-[#DCE5EE] bg-[#F3F7FB] px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide text-[#042C51]">
-                <span className="h-1.5 w-1.5 rounded-full bg-[#FF5C28]" />
-                Finance View
-              </span>
-              <h1 className="mt-2 text-2xl font-black tracking-tight text-[#042C51]">
-                Finance Dashboard
-              </h1>
-              <p className="mt-1 max-w-3xl text-sm font-medium text-[#667085]">
-                Company-wide payroll readiness, statutory coverage, and workforce finance visibility.
-              </p>
-            </div>
-
-            <div className="flex items-center gap-2 self-start lg:self-auto">
-              <span className="hidden rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-[11px] font-extrabold text-emerald-700 sm:inline-flex">
-                Read-only company view
-              </span>
+        <PageHeaderHero
+          kicker="Finance View"
+          title="Finance Dashboard"
+          description="Company-wide payroll readiness, statutory coverage, and workforce finance visibility."
+          actions={
+            <div className="flex shrink-0 items-center gap-2 2xl:gap-2.5 max-sm:w-full">
               <button
                 type="button"
                 onClick={() =>
                   loadDashboard({ forceRefresh: true, background: true })
                 }
                 disabled={refreshing}
-                className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-[#DCE5EE] bg-white text-[#042C51] shadow-sm transition hover:border-[#FFB59C] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-60"
+                className="sibs-btn-icon"
                 title="Refresh Finance Dashboard"
               >
-                <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
+                <RefreshCw
+                  className={`h-3.5 w-3.5 2xl:h-4 2xl:w-4 ${
+                    refreshing ? "animate-spin text-sibs-orange" : ""
+                  }`}
+                />
               </button>
+
+              <span className="sibs-btn-primary pointer-events-none max-sm:flex-1">
+                <ShieldCheck className="h-3.5 w-3.5 2xl:h-4 2xl:w-4 text-white" />
+                Statutory Coverage
+              </span>
             </div>
-          </div>
-        </section>
+          }
+        />
 
         <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
           <MetricCard
@@ -477,16 +475,16 @@ export default function FinanceDashboardPage() {
         </section>
 
         <section className="grid grid-cols-1 gap-4 xl:grid-cols-[1.2fr_0.8fr]">
-          <article className="rounded-2xl border border-[#DCE5EE] bg-white p-5 shadow-sm">
-            <div className="flex items-start gap-3 border-b border-[#EEF2F6] pb-4">
-              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#E9F0FC] text-[#042C51]">
+          <article className="rounded-[14px] border border-sibs-border bg-white p-5 shadow-sm">
+            <div className="flex items-start gap-3 border-b border-sibs-border pb-4">
+              <span className="flex h-10 w-10 items-center justify-center rounded-[10px] bg-sibs-cream-light text-sibs-navy">
                 <ShieldCheck className="h-5 w-5" />
               </span>
               <div>
-                <h2 className="text-base font-black text-[#042C51]">
+                <h2 className="text-base font-black text-sibs-navy">
                   Statutory Coverage
                 </h2>
-                <p className="mt-1 text-xs font-medium text-[#667085]">
+                <p className="mt-1 text-xs font-medium text-sibs-muted">
                   Completion counts only. Government ID values are not displayed on this dashboard.
                 </p>
               </div>
@@ -520,12 +518,12 @@ export default function FinanceDashboardPage() {
             </div>
           </article>
 
-          <article className="rounded-2xl border border-[#DCE5EE] bg-white p-5 shadow-sm">
-            <div className="border-b border-[#EEF2F6] pb-4">
-              <h2 className="text-base font-black text-[#042C51]">
+          <article className="rounded-[14px] border border-sibs-border bg-white p-5 shadow-sm">
+            <div className="border-b border-sibs-border pb-4">
+              <h2 className="text-base font-black text-sibs-navy">
                 Finance Quick Access
               </h2>
-              <p className="mt-1 text-xs font-medium text-[#667085]">
+              <p className="mt-1 text-xs font-medium text-sibs-muted">
                 Open the HRIS modules already available to Finance access.
               </p>
             </div>
@@ -559,38 +557,38 @@ export default function FinanceDashboardPage() {
           </article>
         </section>
 
-        <section className="overflow-hidden rounded-2xl border border-[#DCE5EE] bg-white shadow-sm">
-          <div className="flex flex-col gap-3 border-b border-[#EEF2F6] px-5 py-4 lg:flex-row lg:items-end lg:justify-between">
+        <section className="overflow-hidden rounded-[14px] border border-sibs-border bg-white shadow-sm">
+          <div className="flex flex-col gap-3 border-b border-sibs-border px-5 py-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
-              <h2 className="text-base font-black text-[#042C51]">
+              <h2 className="text-base font-black text-sibs-navy">
                 Payroll Readiness by Account
               </h2>
-              <p className="mt-1 text-xs font-medium text-[#667085]">
+              <p className="mt-1 text-xs font-medium text-sibs-muted">
                 Active employee statutory readiness grouped by HRIS Account and Department.
               </p>
             </div>
 
             <label className="block w-full lg:w-[340px]">
-              <span className="mb-1.5 block text-[10px] font-extrabold uppercase tracking-wide text-[#344054]">
+              <span className="mb-1.5 block text-[10px] font-extrabold uppercase tracking-wide text-sibs-muted">
                 Search
               </span>
-              <span className="flex h-10 items-center gap-2 rounded-xl border border-[#D6E0EA] bg-[#F8FAFC] px-3 transition focus-within:border-[#FF5C28] focus-within:bg-white focus-within:ring-2 focus-within:ring-[#FF5C28]/10">
-                <Search className="h-4 w-4 shrink-0 text-[#98A2B3]" />
+              <span className="flex h-10 items-center gap-2 rounded-[10px] border border-sibs-border bg-sibs-surface px-3 transition focus-within:border-sibs-orange focus-within:bg-white focus-within:ring-2 focus-within:ring-sibs-orange/10">
+                <Search className="h-4 w-4 shrink-0 text-sibs-faint" />
                 <input
                   value={search}
                   onChange={(event) => setSearch(event.target.value)}
                   placeholder="Search account or department..."
-                  className="min-w-0 flex-1 bg-transparent text-sm font-semibold text-[#042C51] outline-none placeholder:font-medium placeholder:text-[#98A2B3]"
+                  className="min-w-0 flex-1 bg-transparent text-sm font-semibold text-sibs-navy outline-none placeholder:font-medium placeholder:text-sibs-faint"
                 />
               </span>
             </label>
           </div>
 
           <div className="overflow-x-auto px-5 py-4">
-            <div className="min-w-[820px] overflow-hidden rounded-xl border border-[#E6ECF2]">
+            <div className="min-w-[820px] overflow-hidden rounded-[10px] border border-sibs-border">
               <table className="w-full border-collapse text-left">
-                <thead className="bg-[#F8FAFC]">
-                  <tr className="text-[10px] font-extrabold uppercase tracking-wide text-[#344054]">
+                <thead className="bg-sibs-surface">
+                  <tr className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-muted">
                     <th className="px-4 py-3">Account</th>
                     <th className="px-4 py-3">Department</th>
                     <th className="px-4 py-3 text-center">Employees</th>
@@ -599,11 +597,11 @@ export default function FinanceDashboardPage() {
                     <th className="px-4 py-3 text-right">Readiness</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#EEF2F6] bg-white">
+                <tbody className="divide-y divide-sibs-border bg-white">
                   {pageRows.length > 0 ? (
                     pageRows.map((row) => (
-                      <tr key={`${row.department}-${row.account}`} className="text-xs text-[#344054] hover:bg-[#FBFCFE]">
-                        <td className="px-4 py-3.5 font-extrabold text-[#042C51]">
+                      <tr key={`${row.department}-${row.account}`} className="text-xs text-sibs-muted hover:bg-sibs-surface">
+                        <td className="px-4 py-3.5 font-extrabold text-sibs-navy">
                           {row.account}
                         </td>
                         <td className="px-4 py-3.5 font-semibold">
@@ -619,7 +617,7 @@ export default function FinanceDashboardPage() {
                           {formatNumber(row.incompleteProfiles)}
                         </td>
                         <td className="px-4 py-3.5 text-right">
-                          <span className="inline-flex min-w-[68px] justify-center rounded-lg border border-[#DCE5EE] bg-[#F8FAFC] px-2.5 py-1 font-black text-[#042C51]">
+                          <span className="inline-flex min-w-[68px] justify-center rounded-[10px] border border-sibs-border bg-sibs-surface px-2.5 py-1 font-black text-sibs-navy">
                             {formatPercent(row.readinessPercentage)}
                           </span>
                         </td>
@@ -628,11 +626,11 @@ export default function FinanceDashboardPage() {
                   ) : (
                     <tr>
                       <td colSpan={6} className="px-4 py-14 text-center">
-                        <Building2 className="mx-auto h-6 w-6 text-[#98A2B3]" />
-                        <p className="mt-2 text-sm font-extrabold text-[#042C51]">
+                        <Building2 className="mx-auto h-6 w-6 text-sibs-faint" />
+                        <p className="mt-2 text-sm font-extrabold text-sibs-navy">
                           No matching accounts found
                         </p>
-                        <p className="mt-1 text-xs font-medium text-[#667085]">
+                        <p className="mt-1 text-xs font-medium text-sibs-muted">
                           Adjust the account or department search.
                         </p>
                       </td>
@@ -643,8 +641,8 @@ export default function FinanceDashboardPage() {
             </div>
           </div>
 
-          <div className="flex flex-col gap-3 border-t border-[#EEF2F6] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-xs font-semibold text-[#667085]">
+          <div className="flex flex-col gap-3 border-t border-sibs-border px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-xs font-semibold text-sibs-muted">
               Showing {pageRows.length ? (safePage - 1) * PAGE_SIZE + 1 : 0}–{Math.min(safePage * PAGE_SIZE, filteredAccounts.length)} of {formatNumber(filteredAccounts.length)} accounts
             </p>
             <div className="flex items-center gap-2">
@@ -652,14 +650,14 @@ export default function FinanceDashboardPage() {
                 type="button"
                 onClick={() => setCurrentPage((page) => Math.max(page - 1, 1))}
                 disabled={safePage <= 1}
-                className="rounded-lg border border-[#DCE5EE] bg-white px-3 py-2 text-xs font-bold text-[#042C51] disabled:cursor-not-allowed disabled:opacity-40"
+                className="rounded-[10px] border border-sibs-border bg-white px-3 py-2 text-xs font-bold text-sibs-navy disabled:cursor-not-allowed disabled:opacity-40"
               >
                 Previous
               </button>
-              <span className="rounded-lg bg-[#FF5C28] px-3 py-2 text-xs font-black text-white">
+              <span className="rounded-[10px] bg-sibs-orange px-3 py-2 text-xs font-black text-white">
                 {safePage}
               </span>
-              <span className="text-xs font-semibold text-[#667085]">
+              <span className="text-xs font-semibold text-sibs-muted">
                 of {totalPages}
               </span>
               <button
@@ -668,7 +666,7 @@ export default function FinanceDashboardPage() {
                   setCurrentPage((page) => Math.min(page + 1, totalPages))
                 }
                 disabled={safePage >= totalPages}
-                className="rounded-lg border border-[#DCE5EE] bg-white px-3 py-2 text-xs font-bold text-[#042C51] disabled:cursor-not-allowed disabled:opacity-40"
+                className="rounded-[10px] border border-sibs-border bg-white px-3 py-2 text-xs font-bold text-sibs-navy disabled:cursor-not-allowed disabled:opacity-40"
               >
                 Next
               </button>

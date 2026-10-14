@@ -17,8 +17,7 @@ import HiringNeedsFilters from "../../components/recruitment/HiringNeeds/HiringN
 import HiringNeedsTable from "../../components/recruitment/HiringNeeds/HiringNeedsTable";
 import ViewHiringNeedsModal from "../../components/modals/hiringNeeds/ViewHiringNeedsModal";
 import AddHiringNeedsModal from "../../components/modals/hiringNeeds/AddHiringNeedsModal";
-import StatusModal from "../../components/modals/StatusModal";
-import { PageHeaderHero } from "@/components/ui";
+import { ConfirmModal, PageHeaderHero } from "@/components/ui";
 
 import { useHiringNeeds } from "../../services/context/HiringNeedsContext";
 import { useUser } from "../../services/context/UserContext";
@@ -471,8 +470,8 @@ export default function HiringNeedsPage() {
           <HiringNeedsStats />
 
           <section
-            className="sibs-profile-tab-panel sibs-page-card-in overflow-visible rounded-2xl border border-sibs-border bg-white font-jakarta shadow-sm"
-            style={{ animationDelay: "180ms", animationFillMode: "both" }}
+            className="sibs-page-card-in overflow-hidden rounded-2xl border border-sibs-border bg-white font-jakarta shadow-xs"
+            style={{ animationDelay: "300ms", animationFillMode: "both" }}
           >
             <HiringNeedsFilters />
             <HiringNeedsTable
@@ -482,8 +481,8 @@ export default function HiringNeedsPage() {
           </section>
 
           <section
-            className="sibs-profile-tab-panel sibs-process-note"
-            style={{ animationDelay: "240ms", animationFillMode: "both" }}
+            className="sibs-page-card-in sibs-process-note"
+            style={{ animationDelay: "360ms", animationFillMode: "both" }}
           >
             <div className="flex items-start gap-2.5 sm:gap-3">
               <span className="sibs-process-note__icon">
@@ -528,17 +527,25 @@ export default function HiringNeedsPage() {
         onRelink={handleRelinkJobDescription}
       />
 
-      <StatusModal
-        open={statusModal.open}
-        type={statusModal.type}
+      <ConfirmModal
+        open={Boolean(statusModal.open)}
+        variant={statusModal.type === "error" ? "danger" : "primary"}
+        title={statusModal.title || "Notification"}
+        description={statusModal.message || ""}
+        confirmLabel="OK"
+        cancelLabel="Close"
+        onConfirm={() =>
+          setStatusModal((previous) => ({
+            ...previous,
+            open: false,
+          }))
+        }
         onClose={() =>
           setStatusModal((previous) => ({
             ...previous,
             open: false,
           }))
         }
-        title={statusModal.title}
-        message={statusModal.message}
       />
     </div>
   );

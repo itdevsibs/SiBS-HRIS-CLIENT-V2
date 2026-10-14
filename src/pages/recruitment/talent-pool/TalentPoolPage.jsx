@@ -410,7 +410,7 @@ function TalentPoolPageContent() {
 
           {loadError ? (
             <section
-              className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-xs font-bold leading-5 text-red-700"
+              className="rounded-[10px] border border-red-200 bg-red-50 px-4 py-3 text-xs font-bold leading-5 text-red-700"
               role="alert"
             >
               {loadError}
@@ -420,7 +420,7 @@ function TalentPoolPageContent() {
           <TalentPoolStats />
 
           <section
-            className="sibs-page-card-in sibs-card relative z-[10] overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-xs font-jakarta"
+            className="sibs-page-card-in sibs-card relative z-[10] overflow-hidden rounded-[14px] border border-sibs-border bg-white shadow-xs font-jakarta"
             style={{ animationDelay: "240ms", animationFillMode: "both" }}
           >
             <div className="border-b border-sibs-border p-4 sm:p-5 2xl:p-6 font-jakarta">
@@ -439,7 +439,7 @@ function TalentPoolPageContent() {
             </div>
 
             <div className="min-h-0 flex-1 p-4 sm:p-5 2xl:p-6">
-              <div className="overflow-hidden rounded-xl border border-sibs-border bg-white shadow-xs">
+              <div className="overflow-hidden rounded-[14px] border border-sibs-border bg-white shadow-xs">
                 <TalentPoolTabs
                   activeTab={activeTab}
                   onChange={setActiveTab}

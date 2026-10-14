@@ -15,24 +15,10 @@ import {
   X,
 } from "lucide-react";
 import ActionItemModal from "./ActionItemModal";
+import ModalShell from "@/components/ui/ModalShell";
 import { useWorkforceHiring } from "../../../services/context/WorkforceHiringContext";
 
-function useLockBodyScroll(open) {
-  useEffect(() => {
-    if (!open) return undefined;
 
-    const previousBodyOverflow = document.body.style.overflow;
-    const previousHtmlOverflow = document.documentElement.style.overflow;
-
-    document.body.style.overflow = "hidden";
-    document.documentElement.style.overflow = "hidden";
-
-    return () => {
-      document.body.style.overflow = previousBodyOverflow;
-      document.documentElement.style.overflow = previousHtmlOverflow;
-    };
-  }, [open]);
-}
 
 function formatNumber(value, maximumFractionDigits = 0) {
   return Number(value || 0).toLocaleString("en-PH", {
@@ -834,7 +820,6 @@ export default function ViewPlanModal(props = {}) {
     ...(weeklyPlan.viewPlanModal || {}),
     ...props,
   };
-  useLockBodyScroll(open);
 
   const [showHeadcountModal, setShowHeadcountModal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -1188,72 +1173,67 @@ export default function ViewPlanModal(props = {}) {
   }
 
   return (
-    <div
-      className={`sibs-modal-blur fixed inset-0 z-[1000] flex items-center justify-center px-4 py-6 font-jakarta ${
-        isClosing ? "sibs-modal-backdrop-out" : "sibs-modal-backdrop-in"
-      }`}
-    >
-      <div
-        role="dialog"
-        aria-modal="true"
-        className={`sibs-modal-pop-in relative flex max-h-[92dvh] w-full max-w-6xl flex-col overflow-hidden rounded-[14px] bg-sibs-surface shadow-2xl ${
-          isClosing ? "sibs-modal-pop-out" : ""
-        }`}
-      >
-        <div className="flex items-start justify-between gap-4 border-b border-sibs-border bg-sibs-navy px-5 py-3 text-white sm:px-6 2xl:py-3.5">
-          <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2">
-              <h2 className="sibs-modal-title truncate text-white">
-                {item.account || "Account Plan"}
-              </h2>
-              <span className="rounded-full border border-white/20 bg-white/10 px-2.5 py-0.5 text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-white">
-                Workforce Hiring Plan
-              </span>
-            </div>
-
-            <p className="sibs-modal-subtitle mt-0.5 text-white/75 truncate">
-              {item.cluster || "Unassigned Cluster"} ·{" "}
-              {item.week || "Weekly Plan"}
-            </p>
-          </div>
-
-          <div className="flex shrink-0 items-center gap-2">
-            {computed.recruitmentSettingsStatus &&
-              computed.recruitmentSettingsStatus !== "Kronos" && (
-                <StatusBadge status={computed.recruitmentSettingsStatus} />
-              )}
-
-            {computed.updateHeadcountStatus && (
-              <StatusBadge status={computed.updateHeadcountStatus} />
+    <ModalShell
+      open={Boolean(open)}
+      onClose={handleAnimatedClose}
+      variant="navy"
+      icon={ClipboardList}
+      title={item.account || "Account Plan"}
+      subtitle={`${item.cluster || "Unassigned Cluster"} · ${item.week || "Weekly Plan"}`}
+      badge="Workforce Hiring Plan"
+      headerMeta={
+        <div className="flex shrink-0 items-center gap-2">
+          {computed.recruitmentSettingsStatus &&
+            computed.recruitmentSettingsStatus !== "Kronos" && (
+              <StatusBadge status={computed.recruitmentSettingsStatus} />
             )}
 
-            <StatusBadge status={item.pipelineStatus || "Pending"} />
+          {computed.updateHeadcountStatus && (
+            <StatusBadge status={computed.updateHeadcountStatus} />
+          )}
 
-            <button
-              type="button"
-              onClick={() => onOpenActionItem?.(item)}
-              title="Add Action Item"
-              aria-label="Add Action Item"
-              disabled={isClosing}
-              className="inline-flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 items-center justify-center rounded-[14px] border border-white/20 bg-white/10 text-white transition hover:bg-white/20 hover:text-white active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              <ClipboardList size={16} />
-            </button>
-
-            <button
-              type="button"
-              onClick={handleAnimatedClose}
-              title="Close"
-              aria-label="Close"
-              disabled={isClosing}
-              className="inline-flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 items-center justify-center rounded-[14px] text-white/70 transition hover:bg-white/10 hover:text-white active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 sibs-modal-close-btn"
-            >
-              <X size={18} />
-            </button>
-          </div>
+          <StatusBadge status={item.pipelineStatus || "Pending"} />
         </div>
+      }
+      headerActions={
+        <button
+          type="button"
+          onClick={() => onOpenActionItem?.(item)}
+          title="Add Action Item"
+          aria-label="Add Action Item"
+          disabled={isClosing}
+          className="inline-flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 items-center justify-center rounded-[10px] border border-white/20 bg-white/10 text-white transition hover:bg-white/20 hover:text-white active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          <ClipboardList size={16} />
+        </button>
+      }
+      maxWidth="max-w-6xl"
+      bodyClassName="min-h-0 flex-1 overflow-y-auto p-5 sibs-scrollbar bg-sibs-surface"
+      footer={
+        <div className="flex justify-end gap-2.5">
+          {canEditRequiredHeadcount && (
+            <button
+              type="button"
+              onClick={() => setShowHeadcountModal(true)}
+              disabled={isClosing}
+              className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 rounded-[10px] border border-blue-200 bg-blue-50 px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-navy transition hover:bg-blue-100 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <BarChart3 size={15} />
+              Update Headcount
+            </button>
+          )}
 
-        <div className="min-h-0 flex-1 overflow-y-auto p-5 sibs-scrollbar">
+          <button
+            type="button"
+            onClick={handleAnimatedClose}
+            disabled={isClosing}
+            className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-[10px] border border-sibs-border bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-navy transition hover:border-sibs-orange/40 hover:bg-orange-50 hover:text-sibs-orange active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 sibs-modal-close-btn"
+          >
+            Close
+          </button>
+        </div>
+      }
+    >
           {isUpdateHeadcountPending && (
             <div className="mb-5 rounded-[14px] border border-amber-200 bg-amber-50 px-5 py-4">
               <p className="text-sm font-extrabold text-amber-800">
@@ -1639,31 +1619,6 @@ export default function ViewPlanModal(props = {}) {
           )}
 
           <ActionItemsSection item={item} />
-        </div>
-
-        <div className="flex justify-end gap-2.5 border-t border-sibs-border bg-white px-5 py-3 2xl:py-3.5">
-          {canEditRequiredHeadcount && (
-            <button
-              type="button"
-              onClick={() => setShowHeadcountModal(true)}
-              disabled={isClosing}
-              className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 rounded-[14px] border border-blue-200 bg-blue-50 px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-navy transition hover:bg-blue-100 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              <BarChart3 size={15} />
-              Update Headcount
-            </button>
-          )}
-
-          <button
-            type="button"
-            onClick={handleAnimatedClose}
-            disabled={isClosing}
-            className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-[14px] border border-sibs-border bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-navy transition hover:border-sibs-orange/40 hover:bg-orange-50 hover:text-sibs-orange active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 sibs-modal-close-btn"
-          >
-            Close
-          </button>
-        </div>
-
         <UpdateHeadcountModal
           open={showHeadcountModal}
           item={item}
@@ -1687,7 +1642,6 @@ export default function ViewPlanModal(props = {}) {
           onSubmit={onSubmitActionItem}
           submitting={actionItemSubmitting}
         />
-      </div>
-    </div>
+    </ModalShell>
   );
 }

@@ -505,8 +505,8 @@ export default function AddResignationModal({
   return (
     <>
       <div className="sibs-modal-blur sibs-modal-backdrop-in fixed inset-0 z-50 flex items-center justify-center p-2 font-jakarta sm:p-4">
-        <div className="sibs-modal-pop-in flex max-h-[90dvh] w-full max-w-2xl 2xl:max-w-3xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl font-jakarta">
-          <div className="flex shrink-0 items-center justify-between gap-4 bg-[#042C51] px-5 py-3 text-white sm:px-6 2xl:py-3.5">
+        <div className="sibs-modal-pop-in flex max-h-[90dvh] w-full max-w-2xl 2xl:max-w-3xl flex-col overflow-hidden rounded-[14px] bg-white shadow-2xl font-jakarta">
+          <div className="flex shrink-0 items-center justify-between gap-4 rounded-t-[14px] bg-sibs-navy px-5 py-3 text-white sm:px-6 2xl:py-3.5">
             <div className="min-w-0">
               <h2 className="sibs-modal-title truncate text-white">
                 {isEdit ? "Edit Resignation" : "Submit Resignation"}
@@ -521,7 +521,7 @@ export default function AddResignationModal({
               <button
                 type="button"
                 onClick={handleClose}
-                className="inline-flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg text-white/70 transition hover:bg-white/10 hover:text-white"
+                className="sibs-modal-close-btn"
                 aria-label="Close modal"
               >
                 <X size={18} />
@@ -541,13 +541,13 @@ export default function AddResignationModal({
                     <button
                       type="button"
                       onClick={() => setTypeOpen((prev) => !prev)}
-                      className="flex w-full items-center justify-between rounded-xl border border-[#D7DEE8] bg-white px-4 py-3 text-left text-sm outline-none transition focus:border-[var(--sibs-primary-1)]"
+                      className="flex w-full items-center justify-between rounded-[10px] border border-sibs-border bg-white px-4 py-3 text-left text-sm outline-none transition focus:border-sibs-orange"
                     >
                       <span
                         className={
                           form.resignationType
-                            ? "text-sibs-primary-1"
-                            : "text-gray-400"
+                            ? "text-sibs-navy"
+                            : "text-sibs-muted"
                         }
                       >
                         {form.resignationType || "Select type"}
@@ -555,14 +555,14 @@ export default function AddResignationModal({
 
                       <ChevronDown
                         size={18}
-                        className={`text-sibs-tertiary-5 transition-transform ${
+                        className={`text-sibs-muted transition-transform ${
                           typeOpen ? "rotate-180" : ""
                         }`}
                       />
                     </button>
 
                     {typeOpen && (
-                      <div className="absolute z-20 mt-2 w-full overflow-hidden rounded-xl border border-[#D7DEE8] bg-white shadow-lg">
+                      <div className="absolute z-20 mt-2 w-full overflow-hidden rounded-[10px] border border-sibs-border bg-white shadow-lg">
                         <div className="py-2">
                           {resignationTypes.map((item) => (
                             <button
@@ -571,8 +571,8 @@ export default function AddResignationModal({
                               onClick={() => handleTypeSelect(item)}
                               className={`block w-full px-4 py-3 text-left text-sm transition ${
                                 form.resignationType === item
-                                  ? "bg-[#EAF2FB] font-medium text-sibs-primary-1"
-                                  : "text-sibs-primary-1 hover:bg-[#F8FAFC]"
+                                  ? "bg-sibs-cream-light font-medium text-sibs-orange"
+                                  : "text-sibs-navy hover:bg-sibs-surface"
                               }`}
                             >
                               {item}
@@ -594,7 +594,7 @@ export default function AddResignationModal({
                   value={form.resignationDate}
                   readOnly
                   required
-                  className="pointer-events-none w-full rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-4 py-3 text-sm text-sibs-tertiary-5 outline-none"
+                  className="pointer-events-none w-full rounded-[10px] border border-sibs-border bg-sibs-surface px-4 py-3 text-sm text-sibs-muted outline-none"
                 />
               </Field>
 
@@ -619,17 +619,17 @@ export default function AddResignationModal({
                       : undefined
                   }
                   required
-                  className={`w-full rounded-xl border px-4 py-3 text-sm outline-none transition ${
+                  className={`w-full rounded-[10px] border px-4 py-3 text-sm outline-none transition ${
                     isFormal
-                      ? "pointer-events-none border-[#D7DEE8] bg-[#F8FAFC] text-sibs-tertiary-5"
-                      : "border-[#D7DEE8] bg-white focus:border-[var(--sibs-primary-1)]"
+                      ? "pointer-events-none border-sibs-border bg-sibs-surface text-sibs-muted"
+                      : "border-sibs-border bg-white text-sibs-navy focus:border-sibs-orange"
                   }`}
                 />
               </Field>
             </div>
 
             {isFormal && !isEdit && (
-              <p className="mt-3 text-xs text-sibs-tertiary-5">
+              <p className="mt-3 text-xs text-sibs-muted">
                 For formal resignation, the last working date is automatically
                 set to 30 days from today.
               </p>
@@ -640,22 +640,22 @@ export default function AddResignationModal({
                 role="button"
                 tabIndex={0}
                 onClick={() => setExtendOpen((prev) => !prev)}
-                className="mt-5 rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-4 py-3 transition hover:border-sibs-tertiary-4 hover:bg-white"
+                className="mt-5 rounded-[10px] border border-sibs-border bg-sibs-surface px-4 py-3 transition hover:border-sibs-orange/40 hover:bg-white"
               >
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-semibold text-sibs-primary-1">
+                    <p className="text-sm font-semibold text-sibs-navy">
                       Extend Working Date
                     </p>
 
-                    <p className="mt-0.5 text-xs text-sibs-tertiary-5">
+                    <p className="mt-0.5 text-xs text-sibs-muted">
                       Request to extend your current last working date
                     </p>
                   </div>
 
                   <ChevronDown
                     size={18}
-                    className={`shrink-0 text-sibs-primary-1 transition-transform duration-300 ${
+                    className={`shrink-0 text-sibs-navy transition-transform duration-300 ${
                       extendOpen ? "rotate-180" : ""
                     }`}
                   />
@@ -683,7 +683,7 @@ export default function AddResignationModal({
                           value={form.resignationDate}
                           readOnly
                           required
-                          className="pointer-events-none w-full rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-4 py-3 text-sm text-sibs-tertiary-5 outline-none"
+                          className="pointer-events-none w-full rounded-[10px] border border-sibs-border bg-sibs-surface px-4 py-3 text-sm text-sibs-muted outline-none"
                         />
                       </Field>
 
@@ -703,7 +703,7 @@ export default function AddResignationModal({
                               : undefined
                           }
                           required
-                          className="w-full rounded-xl border border-[#D7DEE8] bg-white px-4 py-3 text-sm outline-none transition focus:border-[var(--sibs-primary-1)]"
+                          className="w-full rounded-[10px] border border-sibs-border bg-white px-4 py-3 text-sm text-sibs-navy outline-none transition focus:border-sibs-orange"
                         />
                       </Field>
                     </div>
@@ -719,7 +719,7 @@ export default function AddResignationModal({
                           rows={3}
                           placeholder="Enter the reason for extending your last working date"
                           required
-                          className="w-full resize-none rounded-xl border border-[#D7DEE8] bg-white px-4 py-3 text-sm outline-none transition focus:border-[var(--sibs-primary-1)]"
+                          className="w-full resize-none rounded-[10px] border border-sibs-border bg-white px-4 py-3 text-sm text-sibs-navy placeholder:text-sibs-muted outline-none transition focus:border-sibs-orange"
                         />
                       </Field>
                     </div>
@@ -729,7 +729,7 @@ export default function AddResignationModal({
             )}
 
             {isImmediate && (
-              <p className="mt-3 text-xs text-sibs-tertiary-5">
+              <p className="mt-3 text-xs text-sibs-muted">
                 For immediate resignation, only dates within 1 to 29 days from
                 today can be selected.
               </p>
@@ -742,11 +742,11 @@ export default function AddResignationModal({
                     <button
                       type="button"
                       onClick={() => setReasonOpen((prev) => !prev)}
-                      className="flex w-full items-center justify-between rounded-xl border border-[#D7DEE8] bg-white px-4 py-3 text-left text-sm outline-none transition focus:border-[var(--sibs-primary-1)]"
+                      className="flex w-full items-center justify-between rounded-[10px] border border-sibs-border bg-white px-4 py-3 text-left text-sm outline-none transition focus:border-sibs-orange"
                     >
                       <span
                         className={
-                          form.reason ? "text-sibs-primary-1" : "text-gray-400"
+                          form.reason ? "text-sibs-navy" : "text-sibs-muted"
                         }
                       >
                         {form.reason || "Select reason"}
@@ -754,14 +754,14 @@ export default function AddResignationModal({
 
                       <ChevronDown
                         size={18}
-                        className={`text-sibs-tertiary-5 transition-transform ${
+                        className={`text-sibs-muted transition-transform ${
                           reasonOpen ? "rotate-180" : ""
                         }`}
                       />
                     </button>
 
                     {reasonOpen && (
-                      <div className="absolute z-20 mt-2 max-h-60 w-full overflow-hidden rounded-xl border border-[#D7DEE8] bg-white shadow-lg">
+                      <div className="absolute z-20 mt-2 max-h-60 w-full overflow-hidden rounded-[10px] border border-sibs-border bg-white shadow-lg">
                         <div className="max-h-60 overflow-y-auto py-2">
                           {resignationReasons.map((item) => (
                             <button
@@ -770,8 +770,8 @@ export default function AddResignationModal({
                               onClick={() => handleReasonSelect(item)}
                               className={`block w-full px-4 py-3 text-left text-sm transition ${
                                 form.reason === item
-                                  ? "bg-[#EAF2FB] font-medium text-sibs-primary-1"
-                                  : "text-sibs-primary-1 hover:bg-[#F8FAFC]"
+                                  ? "bg-sibs-cream-light font-medium text-sibs-orange"
+                                  : "text-sibs-navy hover:bg-sibs-surface"
                               }`}
                             >
                               {item}
@@ -795,7 +795,7 @@ export default function AddResignationModal({
                     rows={4}
                     placeholder="Enter specific reason"
                     required
-                    className="w-full resize-none rounded-xl border border-[#D7DEE8] bg-white px-4 py-3 text-sm outline-none transition focus:border-[var(--sibs-primary-1)]"
+                    className="w-full resize-none rounded-[10px] border border-sibs-border bg-white px-4 py-3 text-sm text-sibs-navy placeholder:text-sibs-muted outline-none transition focus:border-sibs-orange"
                   />
                 </Field>
               </div>
@@ -842,29 +842,29 @@ export default function AddResignationModal({
               <div className="mt-5">
                 <Field label="Upload File *">
                   <div className="space-y-2">
-                    <label className="flex cursor-pointer items-center justify-between rounded-xl border border-[#D7DEE8] bg-white px-4 py-3 text-sm transition hover:border-[var(--sibs-primary-1)] hover:bg-[#F8FAFC]">
+                    <label className="flex cursor-pointer items-center justify-between rounded-[10px] border border-sibs-border bg-white px-4 py-3 text-sm transition hover:border-sibs-orange hover:bg-sibs-surface">
                       <div className="flex min-w-0 items-center gap-3">
                         {selectedFileName ? (
                           <FileTypeIcon filename={selectedFileName} />
                         ) : (
                           <Paperclip
                             size={18}
-                            className="shrink-0 text-sibs-tertiary-5"
+                            className="shrink-0 text-sibs-muted"
                           />
                         )}
 
                         <span
                           className={`truncate text-sm ${
                             selectedFileName
-                              ? "text-gray-700"
-                              : "text-sibs-tertiary-5"
+                              ? "text-sibs-navy"
+                              : "text-sibs-muted"
                           }`}
                         >
                           {selectedFileName || "Choose resignation file"}
                         </span>
                       </div>
 
-                      <span className="ml-4 shrink-0 rounded-lg bg-[var(--sibs-tertiary-9)] px-3 py-1.5 text-xs font-medium text-sibs-primary-1">
+                      <span className="ml-4 shrink-0 rounded-[10px] bg-sibs-surface px-3 py-1.5 text-xs font-medium text-sibs-navy">
                         Browse
                       </span>
 
@@ -878,7 +878,7 @@ export default function AddResignationModal({
                       />
                     </label>
 
-                    <p className="text-xs text-sibs-tertiary-5">
+                    <p className="text-xs text-sibs-muted">
                       Accepted file types: .pdf, .doc, .docx, .jpg, .jpeg, .png,
                       .heic
                     </p>
@@ -887,7 +887,7 @@ export default function AddResignationModal({
               </div>
             </div>
 
-            <div className="flex shrink-0 items-center justify-end gap-2.5 border-t border-[#DDE5EE] bg-[#F1F5F9] px-5 py-3 2xl:py-3.5 sm:px-6">
+            <div className="flex shrink-0 items-center justify-end gap-2.5 border-t border-sibs-border bg-sibs-surface px-5 py-3 2xl:py-3.5 sm:px-6">
               <button
                 type="button"
                 onClick={handleClose}
@@ -920,23 +920,24 @@ export default function AddResignationModal({
 
       {policyModalOpen && (
         <div className="sibs-modal-blur sibs-modal-backdrop-in fixed inset-0 z-[60] flex items-center justify-center px-4 py-6">
-          <div className="sibs-modal-pop-in w-full max-w-lg rounded-3xl bg-white shadow-2xl font-jakarta">
+          <div className="sibs-modal-pop-in w-full max-w-lg rounded-[14px] bg-white shadow-2xl font-jakarta">
             <div className="flex items-start justify-end px-5 pt-4">
               <button
                 type="button"
                 onClick={() => setPolicyModalOpen(false)}
-                className="rounded-xl p-2 text-sibs-tertiary-5 transition hover:bg-[var(--sibs-tertiary-9)] hover:text-sibs-primary-1"
+                className="sibs-modal-close-btn"
+                aria-label="Close policy modal"
               >
                 <X size={18} />
               </button>
             </div>
 
             <div className="px-6 pb-6 pt-1 text-center">
-              <h2 className="sibs-modal-title mx-auto max-w-[320px] leading-tight text-sibs-primary-1">
+              <h2 className="sibs-modal-title mx-auto max-w-[320px] leading-tight text-sibs-navy">
                 Important Notice Regarding Company Policy:
               </h2>
 
-              <div className="mx-auto mt-4 max-w-[360px] space-y-3 text-sm leading-6 text-sibs-tertiary-5">
+              <div className="mx-auto mt-4 max-w-[360px] space-y-3 text-sm leading-6 text-sibs-muted">
                 <p>
                   As per company guidelines, all employees who intend to resign
                   are required to submit a written notice at least 30 calendar
@@ -953,12 +954,12 @@ export default function AddResignationModal({
                 </p>
               </div>
 
-              <label className="mt-6 flex items-center justify-center gap-2 text-sm text-sibs-tertiary-5">
+              <label className="mt-6 flex items-center justify-center gap-2 text-sm text-sibs-muted">
                 <input
                   type="checkbox"
                   checked={policyAccepted}
                   onChange={(e) => setPolicyAccepted(e.target.checked)}
-                  className="h-4 w-4 rounded border-[#D0D5DD]"
+                  className="h-4 w-4 rounded border-sibs-border text-sibs-orange focus:ring-sibs-orange"
                 />
                 <span>I understand and agree with the policy</span>
               </label>
@@ -967,7 +968,7 @@ export default function AddResignationModal({
                 type="button"
                 onClick={() => setPolicyModalOpen(false)}
                 disabled={!policyAccepted}
-                className="mt-6 inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--sibs-primary-1)] px-5 py-2.5 text-sm font-medium text-white shadow-sm transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                className="mt-6 inline-flex items-center justify-center gap-2 rounded-[10px] bg-sibs-navy px-5 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-sibs-navy/90 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Continue <ArrowRight size={16} />
               </button>
@@ -975,20 +976,6 @@ export default function AddResignationModal({
           </div>
         </div>
       )}
-      {/* <StatusModal
-        open={openRetractStatusModal}
-        type={statusModal.type}
-        title={statusModal.title}
-        message={statusModal.message}
-        onClose={() =>
-          setStatusModal({
-            open: false,
-            type: "success",
-            title: "",
-            message: "",
-          })
-        }
-      /> */}
     </>
   );
 }
@@ -997,7 +984,7 @@ function Field({ label, children }) {
   return (
     <div>
       {label ? (
-        <label className="mb-2 block text-sm font-medium text-sibs-primary-1">
+        <label className="mb-2 block text-sm font-medium text-sibs-navy">
           {label}
         </label>
       ) : null}
@@ -1016,42 +1003,42 @@ function ApproverCard({
   remarks,
 }) {
   return (
-    <div className="rounded-xl border border-[#E6ECF2] bg-[var(--sibs-tertiary-10)] p-4">
+    <div className="rounded-[10px] border border-sibs-border bg-sibs-surface p-4">
       <div className="mb-2 flex items-center gap-2">
-        <UserRound size={16} className="text-sibs-primary-1" />
-        <p className="text-sm font-semibold text-sibs-primary-1">{title}</p>
+        <UserRound size={16} className="text-sibs-navy" />
+        <p className="text-sm font-semibold text-sibs-navy">{title}</p>
       </div>
 
-      <p className="text-sm text-sibs-tertiary-5">
+      <p className="text-sm text-sibs-muted">
         {formatPerson(sibsId, fullName)}
       </p>
 
       <div className="mt-4 flex items-center gap-6">
-        <label className="flex items-center gap-2 text-sm text-sibs-primary-1">
+        <label className="flex items-center gap-2 text-sm text-sibs-navy">
           <input
             type="checkbox"
             checked={Number(isApproved) === 1}
             readOnly
             disabled
-            className="h-4 w-4"
+            className="h-4 w-4 rounded border-sibs-border text-sibs-orange"
           />
           <span>Approved</span>
         </label>
 
-        <label className="flex items-center gap-2 text-sm text-sibs-primary-1">
+        <label className="flex items-center gap-2 text-sm text-sibs-navy">
           <input
             type="checkbox"
             checked={Number(isDeclined) === 1}
             readOnly
             disabled
-            className="h-4 w-4"
+            className="h-4 w-4 rounded border-sibs-border text-sibs-orange"
           />
           <span>Declined</span>
         </label>
       </div>
 
       <div className="mt-4">
-        <p className="mb-2 text-xs font-medium uppercase tracking-wide text-sibs-tertiary-5">
+        <p className="mb-2 text-xs font-medium uppercase tracking-wide text-sibs-muted">
           Remarks
         </p>
 
@@ -1059,7 +1046,7 @@ function ApproverCard({
           value={remarks || "N/A"}
           readOnly
           rows={4}
-          className="w-full resize-none rounded-xl border border-[#D7DEE8] bg-white px-3 py-2 text-sm text-sibs-primary-1 outline-none"
+          className="w-full resize-none rounded-[10px] border border-sibs-border bg-white px-3 py-2 text-sm text-sibs-navy outline-none"
         />
       </div>
     </div>

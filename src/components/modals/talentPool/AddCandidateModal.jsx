@@ -1901,7 +1901,7 @@ function CalendarDatePicker({
                 <button
                   type="button"
                   onClick={goPreviousMonth}
-                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sibs-primary-1 transition hover:bg-sibs-surface"
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sibs-navy transition hover:bg-sibs-surface"
                 >
                   <ChevronLeft size={18} />
                 </button>
@@ -1927,7 +1927,7 @@ function CalendarDatePicker({
                 <button
                   type="button"
                   onClick={goNextMonth}
-                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sibs-primary-1 transition hover:bg-sibs-surface"
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sibs-navy transition hover:bg-sibs-surface"
                 >
                   <ChevronRight size={18} />
                 </button>
@@ -2334,7 +2334,7 @@ function EducationSchoolFields({ section, value, onChange }) {
   return (
     <div className="rounded-[12px] border border-sibs-border bg-white p-4 sm:p-5">
       <div className="flex flex-col gap-1">
-        <h4 className="text-sm font-extrabold text-sibs-primary-1">
+        <h4 className="text-sm font-extrabold text-sibs-navy">
           {section.title}
         </h4>
         <p className="text-xs font-semibold leading-5 text-sibs-muted">
@@ -2809,7 +2809,7 @@ function ExperienceFields({
   return (
     <div className="sibs-page-card-in rounded-[12px] border border-sibs-border bg-sibs-surface p-4 shadow-2xs transition-all duration-200 hover:border-sibs-orange/40 sm:p-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h4 className="text-sm font-extrabold text-sibs-primary-1">{title}</h4>
+        <h4 className="text-sm font-extrabold text-sibs-navy">{title}</h4>
 
         {showRemove && (
           <button
@@ -2938,7 +2938,7 @@ function ExperienceFields({
 function PositionInfoItem({ label, value }) {
   return (
     <div className="rounded-[10px] border border-gray-100 bg-white p-4">
-      <p className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
+      <p className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-navy">
         {label}
       </p>
 
@@ -4657,7 +4657,7 @@ export default function AddCandidateModal() {
                   <ShieldCheck size={17} />
                 </span>
                 <div className="min-w-0">
-                  <h3 className="text-xs font-extrabold text-sibs-primary-1">
+                  <h3 className="text-xs font-extrabold text-sibs-navy">
                     Candidate Profile Registration Standard
                   </h3>
                   <p className="mt-1 text-xs font-semibold leading-5 text-sibs-muted">
@@ -4893,10 +4893,10 @@ export default function AddCandidateModal() {
                   <div className="rounded-[12px] border border-sibs-border bg-sibs-surface p-4 sm:p-5">
                     <div className="mb-3 flex items-center justify-between gap-3">
                       <div>
-                        <p className="text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
+                        <p className="text-xs font-extrabold uppercase tracking-wide text-sibs-navy">
                           Selected Position Details
                         </p>
-                        <p className="mt-1 text-sm font-semibold text-sibs-primary-1/80">
+                        <p className="mt-1 text-sm font-semibold text-sibs-muted">
                           These details are loaded from Available Positions.
                         </p>
                       </div>
@@ -5151,7 +5151,7 @@ export default function AddCandidateModal() {
                         <button
                           type="button"
                           onClick={addOtherExperience}
-                          className="inline-flex h-9 items-center justify-center gap-1.5 rounded-[10px] bg-sibs-primary-1 px-4 text-xs font-extrabold text-white shadow-sm transition hover:opacity-90"
+                          className="inline-flex h-9 items-center justify-center gap-1.5 rounded-[10px] bg-sibs-navy px-4 text-xs font-extrabold text-white shadow-sm transition hover:opacity-90"
                         >
                           <Plus size={14} />
                           Add Other Experience
@@ -5551,7 +5551,7 @@ export default function AddCandidateModal() {
                       <Mic
                         size={26}
                         className={
-                          audioFileName ? "text-emerald-700" : "text-sibs-primary-1"
+                          audioFileName ? "text-emerald-700" : "text-sibs-orange"
                         }
                       />
                       <p className="mt-2 max-w-full truncate text-sm font-extrabold text-sibs-navy">
@@ -5597,7 +5597,7 @@ export default function AddCandidateModal() {
                         className={
                           attachmentFileName
                             ? "text-emerald-700"
-                            : "text-sibs-primary-1"
+                            : "text-sibs-orange"
                         }
                       />
                       <p className="mt-2 max-w-full truncate text-sm font-extrabold text-sibs-navy">

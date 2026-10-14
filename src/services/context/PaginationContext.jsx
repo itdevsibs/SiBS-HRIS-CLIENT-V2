@@ -458,7 +458,8 @@ function DateRangeInput({ label, topLabel, value, min, onChange }) {
     <DatePicker
       label={topLabel || label}
       hideLabel={!topLabel}
-      leadingLabel={label}
+      leadingLabel={topLabel ? undefined : label}
+      showCalendarIcon={false}
       value={value}
       min={min}
       onChange={onChange}

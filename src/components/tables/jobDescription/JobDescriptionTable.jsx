@@ -770,7 +770,10 @@ export default function JobDescriptionTable({
   ===================================================== */
 
   return (
-    <section className="sibs-profile-tab-panel sibs-page-card-in overflow-visible rounded-2xl border border-sibs-border bg-white font-jakarta shadow-sm">
+    <section
+      className="sibs-page-card-in overflow-visible rounded-2xl border border-sibs-border bg-white font-jakarta shadow-xs"
+      style={{ animationDelay: "240ms", animationFillMode: "both" }}
+    >
       <div className="border-b border-sibs-border p-4 sm:p-5 2xl:p-6 font-jakarta">
         <h2 className="sibs-card-title">Job Description Records</h2>
 
@@ -954,7 +957,7 @@ export default function JobDescriptionTable({
                               getRecordId(item) || `${roleTitle}-${documentTitle}`
                             }
                             onClick={() => handleOpenFullPageView(item)}
-                            className="sibs-data-table-row sibs-page-card-in cursor-pointer hover:bg-slate-50/50"
+                            className="sibs-data-table-row sibs-page-card-in cursor-pointer"
                             style={{
                               animationDelay: `${index * 30}ms`,
                               animationFillMode: "both",

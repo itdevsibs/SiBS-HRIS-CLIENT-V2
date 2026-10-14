@@ -21,9 +21,13 @@ import {
 } from "lucide-react";
 
 import { useRecruitmentSettings } from "../../../services/context/RecruitmentSettingsContext";
-import StatusModal from "../../modals/StatusModal";
 import RichTextEditor from "../../modals/jobDescription/RichTextEditor";
-import { SelectDropdown, TablePagination, TableSkeletonRows } from "@/components/ui";
+import {
+  ConfirmModal,
+  SelectDropdown,
+  TablePagination,
+  TableSkeletonRows,
+} from "@/components/ui";
 
 const FORM_STATUS_OPTIONS = ["Active", "Inactive", "Draft"];
 const TABLE_STATUS_OPTIONS = ["All", "Active", "Inactive", "Draft"];
@@ -1180,13 +1184,10 @@ export default function FormBuilderCard() {
         )}
       </div>
 
-      <StatusModal
+      <ConfirmModal
         open={manualSaveFeedback.type !== "idle"}
-        type={
-          manualSaveFeedback.type === "saving"
-            ? "loading"
-            : manualSaveFeedback.type
-        }
+        loading={manualSaveFeedback.type === "saving"}
+        variant={manualSaveFeedback.type === "error" ? "danger" : "primary"}
         title={
           manualSaveFeedback.type === "saving"
             ? "Saving Form Settings"
@@ -1194,9 +1195,9 @@ export default function FormBuilderCard() {
               ? "Settings Saved"
               : "Save Failed"
         }
-        message={manualSaveFeedback.message}
-        variant="center"
-        lockScroll
+        description={manualSaveFeedback.message}
+        confirmLabel="OK"
+        onConfirm={() => setManualSaveFeedback({ type: "idle", message: "" })}
         onClose={() => setManualSaveFeedback({ type: "idle", message: "" })}
       />
     </div>

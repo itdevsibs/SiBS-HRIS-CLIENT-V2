@@ -989,7 +989,7 @@ export default function LeavesTable({
   return (
     <>
       <section
-        className="sibs-profile-tab-panel sibs-page-card-in sibs-card flex min-h-full flex-1 flex-col justify-between min-w-0 overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-xs"
+        className="sibs-page-card-in sibs-card flex min-h-full flex-1 flex-col justify-between min-w-0 overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-xs font-jakarta"
         style={{ animationDelay: "240ms", animationFillMode: "both" }}
       >
         <div className="border-b border-sibs-border p-4 sm:p-5 2xl:p-6 font-jakarta">
@@ -1075,7 +1075,6 @@ export default function LeavesTable({
                 {
                   key: "dateFrom",
                   label: "From Date",
-                  leadingLabel: "From",
                   value: dateFrom,
                   onChange: handleLeavesDateFromChange,
                   disabled: loading,
@@ -1083,7 +1082,6 @@ export default function LeavesTable({
                 {
                   key: "dateTo",
                   label: "To Date",
-                  leadingLabel: "To",
                   value: dateTo,
                   min: dateFrom || undefined,
                   onChange: handleLeavesDateToChange,

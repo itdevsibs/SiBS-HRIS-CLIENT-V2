@@ -14,7 +14,7 @@ export { default as DatePicker } from "./DatePicker";
 export { default as SearchInput } from "./SearchInput";
 export { default as MetricCard, MetricGrid } from "./MetricCard";
 export { Skeleton } from "./skeleton";
-export { MetricCardSkeleton, MetricGridSkeleton } from "./MetricCardSkeleton";
+export { MetricCardSkeleton, MetricGridSkeleton, getMetricGridColClass } from "./MetricCardSkeleton";
 export { TableSkeletonRow, TableSkeletonRows } from "./TableSkeleton";
 export { default as PublicRouteFallback } from "./PublicRouteFallback";
 export { default as JobDescriptionViewSkeleton } from "../layout/tabs/JobDescriptionView/JobDescriptionViewSkeleton";

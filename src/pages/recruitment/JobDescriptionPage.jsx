@@ -6,8 +6,8 @@ import React, {
   useState,
 } from "react";
 import Header from "../../components/layout/Header";
-import StatusModal from "../../components/modals/StatusModal";
 import {
+  ConfirmModal,
   MetricCard,
   MetricGrid,
   MetricGridSkeleton,
@@ -837,8 +837,6 @@ export default function JobDescriptionPage() {
 
           <div
             key={jobDescriptionList.length}
-            className="sibs-profile-tab-panel"
-            style={{ animationDelay: "120ms" }}
             onClickCapture={handleTableClickCapture}
           >
             <JobDescriptionTable
@@ -881,11 +879,19 @@ export default function JobDescriptionPage() {
         onSubmit={handleSubmitRevision}
       />
 
-      <StatusModal
-        open={statusModal.open}
-        type={statusModal.type}
-        title={statusModal.title}
-        message={statusModal.message}
+      <ConfirmModal
+        open={Boolean(statusModal.open)}
+        variant={statusModal.type === "error" ? "danger" : "primary"}
+        title={statusModal.title || "Notification"}
+        description={statusModal.message || ""}
+        confirmLabel="OK"
+        cancelLabel="Close"
+        onConfirm={() =>
+          setStatusModal((prev) => ({
+            ...prev,
+            open: false,
+          }))
+        }
         onClose={() =>
           setStatusModal((prev) => ({
             ...prev,

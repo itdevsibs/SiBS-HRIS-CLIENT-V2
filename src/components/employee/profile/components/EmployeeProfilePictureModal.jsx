@@ -91,11 +91,11 @@ export default function MyEmployeeProfilePictureModal({
       }
     >
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[220px_minmax(0,1fr)]">
-        <section className="rounded-xl border border-sibs-border bg-white p-3 shadow-xs">
+        <section className="rounded-[14px] border border-sibs-border bg-white p-3 shadow-xs">
           <button
             type="button"
             disabled={uploading}
-            className={`mb-2 flex h-8.5 2xl:h-10 w-full items-center gap-2.5 rounded-lg px-3.5 2xl:px-4 text-left font-jakarta sibs-text-xs font-extrabold transition ${
+            className={`mb-2 flex h-8.5 2xl:h-10 w-full items-center gap-2.5 rounded-[10px] px-3.5 2xl:px-4 text-left font-jakarta sibs-text-xs font-extrabold transition ${
               uploading
                 ? "bg-sibs-surface text-sibs-navy"
                 : "bg-sibs-navy text-white"
@@ -111,7 +111,7 @@ export default function MyEmployeeProfilePictureModal({
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={uploading}
-                className={`flex h-8.5 2xl:h-10 w-full items-center gap-2.5 rounded-lg px-3.5 2xl:px-4 text-left font-jakarta sibs-text-xs font-extrabold transition ${
+                className={`flex h-8.5 2xl:h-10 w-full items-center gap-2.5 rounded-[10px] px-3.5 2xl:px-4 text-left font-jakarta sibs-text-xs font-extrabold transition ${
                   uploading
                     ? "bg-sibs-navy text-white"
                     : "bg-sibs-surface text-sibs-navy hover:bg-sibs-cream-subtle hover:text-sibs-orange"
@@ -137,11 +137,11 @@ export default function MyEmployeeProfilePictureModal({
           )}
         </section>
 
-        <section className="rounded-2xl border border-sibs-border bg-white p-4 shadow-sm">
-          <div className="flex min-h-[330px] items-center justify-center rounded-2xl border border-dashed border-sibs-border-subtle bg-sibs-surface p-4">
+        <section className="rounded-[14px] border border-sibs-border bg-white p-4 shadow-sm">
+          <div className="flex min-h-[330px] items-center justify-center rounded-[14px] border border-dashed border-sibs-border-subtle bg-sibs-surface p-4">
             {uploading ? (
               <div className="text-center">
-                <div className="mx-auto flex h-28 w-28 items-center justify-center rounded-3xl bg-blue-50">
+                <div className="mx-auto flex h-28 w-28 items-center justify-center rounded-[14px] bg-blue-50">
                   <UploadCloud size={42} className="animate-pulse text-sibs-navy" />
                 </div>
                 <h3 className="sibs-modal-section-title mt-4">
@@ -155,11 +155,11 @@ export default function MyEmployeeProfilePictureModal({
               <img
                 src={imageUrl}
                 alt="Employee profile"
-                className="max-h-[500px] w-full max-w-[520px] rounded-2xl object-contain shadow-sm"
+                className="max-h-[500px] w-full max-w-[520px] rounded-[10px] object-contain shadow-sm"
               />
             ) : (
               <div className="text-center">
-                <div className="mx-auto flex h-28 w-28 items-center justify-center rounded-3xl bg-blue-50 text-3xl font-extrabold text-sibs-navy">
+                <div className="mx-auto flex h-28 w-28 items-center justify-center rounded-[14px] bg-blue-50 text-3xl font-extrabold text-sibs-navy">
                   {getEmployeeInitials(employee) || <User size={42} />}
                 </div>
                 <h3 className="sibs-modal-section-title mt-4">

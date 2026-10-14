@@ -1,5 +1,5 @@
 import React from "react";
-import { Filter } from "lucide-react";
+import { RotateCcw } from "lucide-react";
 
 import {
   accountOptions,
@@ -77,9 +77,9 @@ export default function OfferFilters() {
               type="button"
               onClick={clearFilters}
               disabled={!hasActiveFilters}
-              className="inline-flex h-8.5 2xl:h-10 w-full items-center justify-center gap-1.5 rounded-[10px] border border-sibs-border-subtle bg-white px-3 text-xs font-extrabold text-sibs-faint transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-sibs-border-subtle disabled:hover:bg-white disabled:hover:text-sibs-faint xl:w-auto"
+              className="inline-flex h-8.5 2xl:h-10 w-full items-center justify-center gap-1.5 rounded-[10px] border border-sibs-border bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-muted transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange disabled:cursor-not-allowed disabled:opacity-50 xl:w-auto"
             >
-              <Filter size={14} />
+              <RotateCcw size={14} />
               Clear
             </button>
           }

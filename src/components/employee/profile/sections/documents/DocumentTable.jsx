@@ -28,7 +28,7 @@ export default function DocumentTable({
             {documents.map((document, index) => (
               <tr
                 key={document?.id || index}
-                className="sibs-data-table-row hover:bg-sibs-surface"
+                className="sibs-data-table-row"
               >
                 <td className="px-4 py-4">
                   <div className="flex items-center gap-3">

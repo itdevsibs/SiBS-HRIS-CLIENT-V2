@@ -101,8 +101,8 @@ const DEFAULT_MODULE_NOTIFICATION_COUNTS = REQUEST_MODULES.reduce(
 const PAGE_LIMIT = 15;
 
 const EDGE = "rounded-[10px]";
-const PANEL_BORDER = "border border-[#E1E7EF]";
-const SOFT_PANEL_BORDER = "border border-[#E8EEF5]";
+const PANEL_BORDER = "border border-sibs-border";
+const SOFT_PANEL_BORDER = "border border-sibs-border/60";
 const FLAT_BG = "bg-inherit";
 
 const API_URL = String(
@@ -551,7 +551,7 @@ function getApprovalRequestDisplayTypeClass(type = "") {
     return "border-orange-200 bg-orange-50 text-orange-700";
   }
 
-  return "border-[#E6ECF2] bg-[#F8FAFC] text-[#344054]";
+  return "border-sibs-border bg-sibs-surface text-sibs-navy";
 }
 
 function getStatusClass(status) {
@@ -1234,7 +1234,7 @@ function DropdownPortal({
   return createPortal(
     <div
       ref={dropdownRef}
-      className="fixed z-[999999] overflow-hidden rounded-[10px] border border-[#D7DEE8] bg-white shadow-lg"
+      className="fixed z-[999999] overflow-hidden rounded-[10px] border border-sibs-border bg-white shadow-lg"
       style={{
         top: `${style.top}px`,
         left: `${style.left}px`,
@@ -1339,7 +1339,7 @@ function CustomSelect({ label, value, options = [], onChange, allLabel = "" }) {
 
   return (
     <div className="relative">
-      <label className="mb-1 block text-sm font-bold text-[#101828]">
+      <label className="mb-1 block text-sm font-bold text-sibs-navy">
         {label}
       </label>
 
@@ -1347,10 +1347,10 @@ function CustomSelect({ label, value, options = [], onChange, allLabel = "" }) {
         ref={anchorRef}
         type="button"
         onClick={() => setOpen((prev) => !prev)}
-        className={`flex h-11 w-full items-center justify-between rounded-[10px] border bg-white px-4 text-left text-sm font-bold text-[#344054] outline-none transition-all duration-200 hover:border-sibs-primary-1/40 hover:bg-[#F8FAFC] focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${
+        className={`flex h-11 w-full items-center justify-between rounded-[10px] border bg-white px-4 text-left text-sm font-bold text-sibs-navy outline-none transition-all duration-200 hover:border-sibs-orange/40 hover:bg-sibs-surface focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${
           open
             ? "border-sibs-primary-1 ring-4 ring-sibs-primary-1/10"
-            : "border-[#D0D5DD]"
+            : "border-sibs-border"
         }`}
       >
         <span className="truncate">{displayValue}</span>
@@ -1382,8 +1382,8 @@ function CustomSelect({ label, value, options = [], onChange, allLabel = "" }) {
               }}
               className={`block w-full px-4 py-3 text-left text-sm transition ${
                 selected
-                  ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
-                  : "text-[#344054] hover:bg-[#F8FAFC]"
+                  ? "bg-sibs-cream-light font-bold text-sibs-orange"
+                  : "text-sibs-navy hover:bg-sibs-surface"
               }`}
             >
               <span className="block truncate">{optionLabel}</span>
@@ -2931,21 +2931,21 @@ function ApprovalPaginationToolbar({
           Approval Request Filters
         </h2>
 
-        <p className="mt-2 text-sm font-medium text-[#2F6CA5]">
+        <p className="mt-2 text-sm font-medium text-sibs-muted">
           Search and filter submitted approval requests before review.
         </p>
       </div>
 
       <div className="grid w-full grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_240px_240px_auto] lg:items-end">
         <div className="min-w-0">
-          <label className="mb-2 block text-sm font-extrabold text-[#101828]">
+          <label className="mb-2 block text-sm font-extrabold text-sibs-navy">
             Search
           </label>
 
           <div className="relative">
             <Search
               size={18}
-              className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#2F6CA5]"
+              className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sibs-muted"
             />
 
             <input
@@ -2955,7 +2955,7 @@ function ApprovalPaginationToolbar({
               onKeyDown={onSearchKeyDown}
               disabled={loading}
               placeholder="Search request, requester, department, type, status, approver..."
-              className="h-11 w-full rounded-[10px] border border-[#D0D5DD] bg-white px-4 pl-11 text-sm font-bold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 hover:border-sibs-primary-1/40 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 disabled:cursor-not-allowed disabled:bg-[#F2F4F7] disabled:text-[#667085]"
+              className="h-11 w-full rounded-[10px] border border-sibs-border bg-white px-4 pl-11 text-sm font-bold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 hover:border-sibs-orange/40 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 disabled:cursor-not-allowed disabled:bg-sibs-surface disabled:text-sibs-muted"
             />
           </div>
         </div>
@@ -2982,8 +2982,8 @@ function ApprovalPaginationToolbar({
           disabled={loading || !hasActiveFilters}
           className={`inline-flex h-11 w-full items-center justify-center rounded-[10px] border px-4 text-sm font-extrabold transition active:scale-[0.98] lg:w-auto lg:min-w-[116px] ${
             hasActiveFilters
-              ? "border-[#D6DEE8] bg-white text-sibs-primary-1 hover:bg-[#F8FAFC]"
-              : "cursor-not-allowed border-[#E6ECF2] bg-[#F8FAFC] text-[#98A2B3]"
+              ? "border-sibs-border bg-white text-sibs-primary-1 hover:border-sibs-orange/40 hover:bg-sibs-surface"
+              : "cursor-not-allowed border-sibs-border bg-sibs-surface text-sibs-faint"
           }`}
         >
           Clear Filters
@@ -3020,7 +3020,7 @@ function ApprovalSearchTable({
     <div className={`${EDGE} ${PANEL_BORDER} bg-white p-5`}>
       <div className="grid grid-cols-1 gap-3 xl:grid-cols-[1fr_240px_240px] xl:items-end">
         <div>
-          <label className="mb-1 block text-sm font-bold text-[#101828]">
+          <label className="mb-1 block text-sm font-bold text-sibs-navy">
             Search
           </label>
 
@@ -3034,7 +3034,7 @@ function ApprovalSearchTable({
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search request, requester, department, type, status, approver..."
-              className="h-11 w-full rounded-[10px] border border-[#D0D5DD] bg-white px-4 pl-11 text-sm font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+              className="h-11 w-full rounded-[10px] border border-sibs-border bg-white px-4 pl-11 text-sm font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
             />
           </div>
         </div>
@@ -3061,7 +3061,7 @@ function ApprovalSearchTable({
           <button
             type="button"
             onClick={onClearFilters}
-            className="inline-flex rounded-full border border-[#E6ECF2] bg-white px-3 py-1 text-xs font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC]"
+            className="inline-flex rounded-full border border-sibs-border bg-white px-3 py-1 text-xs font-bold text-sibs-primary-1 transition hover:border-sibs-orange/40 hover:bg-sibs-surface"
           >
             Clear Filters
           </button>
@@ -3132,7 +3132,7 @@ function ApprovalSummaryCards({ stats, loading }) {
           return (
             <div
               key={card.title}
-              className={`${EDGE} ${SOFT_PANEL_BORDER} bg-white p-4 transition hover:bg-[#FAFBFC]`}
+              className={`${EDGE} ${SOFT_PANEL_BORDER} bg-white p-4 transition hover:bg-sibs-surface`}
             >
               <div className="flex items-start justify-between gap-3">
                 <div>
@@ -3168,7 +3168,7 @@ function ApprovalModuleTabs({
 }) {
   if (loading || !requestModules.length) {
     return (
-      <div className="border-t border-[#E6ECF2] bg-white px-5">
+      <div className="border-t border-sibs-border bg-white px-5">
         <div className="flex min-w-0 items-center gap-8 overflow-x-auto py-4">
           <Skeleton className="h-6 w-24 rounded-md" />
           <Skeleton className="h-6 w-32 rounded-md" />
@@ -3178,7 +3178,7 @@ function ApprovalModuleTabs({
   }
 
   return (
-    <div className="border-t border-[#E6ECF2] bg-white px-5">
+    <div className="border-t border-sibs-border bg-white px-5">
       <div className="flex min-w-0 gap-8 overflow-x-auto">
         {requestModules.map((moduleName) => {
           const isActive = activeModule === moduleName;
@@ -3196,7 +3196,7 @@ function ApprovalModuleTabs({
               className={`relative inline-flex h-14 shrink-0 items-center justify-center gap-2 border-b-2 px-1 text-sm font-extrabold transition ${
                 isActive
                   ? "border-blue-600 text-blue-600"
-                  : "border-transparent text-[#344054] hover:border-[#D0D5DD] hover:text-sibs-primary-1"
+                  : "border-transparent text-sibs-navy hover:border-sibs-orange/40 hover:text-sibs-primary-1"
               }`}
             >
               <ModuleIcon
@@ -3246,7 +3246,7 @@ function ApprovalRequestTable({
 
   return (
     <section className={`${EDGE} ${PANEL_BORDER} overflow-hidden bg-white`}>
-      <div className="border-b border-[#E6ECF2] px-5 py-4">
+      <div className="border-b border-sibs-border px-5 py-4">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
           <div className="min-w-0">
             <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
@@ -3264,7 +3264,7 @@ function ApprovalRequestTable({
             </p>
           </div>
 
-          <div className="inline-flex w-fit items-center gap-2 rounded-[10px] border border-[#E6ECF2] bg-[#F8FAFC] px-4 py-3 text-sm font-bold text-[#344054]">
+          <div className="inline-flex w-fit items-center gap-2 rounded-[10px] border border-sibs-border bg-sibs-surface px-4 py-3 text-sm font-bold text-sibs-navy">
             {loading ? (
               <Skeleton className="h-4 w-28 rounded" />
             ) : (
@@ -3325,10 +3325,10 @@ function ApprovalRequestTable({
                 <table
                   className={`w-full ${
                     isWorkforceModule ? "min-w-[1520px]" : "min-w-[1280px]"
-                  } border-separate border-spacing-0 overflow-hidden rounded-[14px] border border-[#D9E2EC] bg-white text-left`}
+                  } border-separate border-spacing-0 overflow-hidden rounded-[14px] border border-sibs-border bg-white text-left`}
                 >
                   <thead>
-                    <tr className="whitespace-nowrap bg-[#F5F7FA] text-xs font-extrabold uppercase tracking-wide text-[#174A7C]">
+                    <tr className="whitespace-nowrap bg-sibs-surface text-xs font-extrabold uppercase tracking-wide text-sibs-navy">
                       <th className="px-5 py-4 first:rounded-tl-[14px]">
                         Request
                       </th>
@@ -3524,9 +3524,9 @@ function AvailablePositionApprovalTable({
           }`}
           aria-label="Available Positions table. Drag left or right to view more columns."
         >
-          <table className="min-w-[1640px] w-full border-separate border-spacing-0 overflow-hidden rounded-[14px] border border-[#D9E2EC] bg-white text-left">
+          <table className="min-w-[1640px] w-full border-separate border-spacing-0 overflow-hidden rounded-[14px] border border-sibs-border bg-white text-left">
             <thead>
-              <tr className="whitespace-nowrap bg-[#F5F7FA] text-xs font-extrabold uppercase tracking-wide text-[#174A7C]">
+              <tr className="whitespace-nowrap bg-sibs-surface text-xs font-extrabold uppercase tracking-wide text-sibs-navy">
                 <th className="px-5 py-4 first:rounded-tl-[14px]">Position</th>
                 <th className="px-5 py-4">JD / Document</th>
                 <th className="px-5 py-4">Department / Account</th>
@@ -3567,10 +3567,10 @@ function AvailablePositionApprovalTable({
                   return (
                     <tr
                       key={`${request.source || "available-position"}-${request.id}`}
-                      className="transition hover:bg-[#FAFBFC]"
+                      className="transition hover:bg-sibs-surface"
                     >
-                      <td className="border-b border-[#E6ECF2] px-5 py-5">
-                        <p className="max-w-[280px] truncate text-sm font-extrabold text-[#101828]">
+                      <td className="border-b border-sibs-border px-5 py-5">
+                        <p className="max-w-[280px] truncate text-sm font-extrabold text-sibs-navy">
                           {getRequestValue(
                             request,
                             ["positionTitle", "position_title", "title"],
@@ -3586,7 +3586,7 @@ function AvailablePositionApprovalTable({
                         </p>
                       </td>
 
-                      <td className="border-b border-[#E6ECF2] px-5 py-5">
+                      <td className="border-b border-sibs-border px-5 py-5">
                         <p className="max-w-[220px] truncate text-sm font-extrabold text-sibs-primary-1">
                           {getRequestValue(request, ["jdCode", "jd_code"], "--")}
                         </p>
@@ -3599,8 +3599,8 @@ function AvailablePositionApprovalTable({
                         </p>
                       </td>
 
-                      <td className="border-b border-[#E6ECF2] px-5 py-5">
-                        <p className="max-w-[220px] truncate text-sm font-bold text-[#344054]">
+                      <td className="border-b border-sibs-border px-5 py-5">
+                        <p className="max-w-[220px] truncate text-sm font-bold text-sibs-navy">
                           {getRequestValue(request, ["department"], "--")}
                         </p>
                         <p className="mt-1 max-w-[220px] truncate text-xs font-semibold text-sibs-tertiary-5">
@@ -3612,7 +3612,7 @@ function AvailablePositionApprovalTable({
                         </p>
                       </td>
 
-                      <td className="border-b border-[#E6ECF2] px-5 py-5 text-sm font-bold text-[#344054]">
+                      <td className="border-b border-sibs-border px-5 py-5 text-sm font-bold text-sibs-navy">
                         {getRequestValue(
                           request,
                           ["locationSite", "location_site"],
@@ -3620,16 +3620,16 @@ function AvailablePositionApprovalTable({
                         )}
                       </td>
 
-                      <td className="border-b border-[#E6ECF2] px-5 py-5 text-center">
+                      <td className="border-b border-sibs-border px-5 py-5 text-center">
                         <PositionAvailabilityBadge status={positionStatus} />
                       </td>
 
-                      <td className="border-b border-[#E6ECF2] px-5 py-5 text-center">
+                      <td className="border-b border-sibs-border px-5 py-5 text-center">
                         <StatusBadge status={approvalStatus} />
                       </td>
 
-                      <td className="border-b border-[#E6ECF2] px-5 py-5">
-                        <p className="max-w-[220px] truncate text-sm font-bold text-[#344054]">
+                      <td className="border-b border-sibs-border px-5 py-5">
+                        <p className="max-w-[220px] truncate text-sm font-bold text-sibs-navy">
                           {requesterInfo.name || "--"}
                         </p>
                         <p className="mt-1 max-w-[220px] truncate text-xs font-semibold text-sibs-tertiary-5">
@@ -3637,21 +3637,21 @@ function AvailablePositionApprovalTable({
                         </p>
                       </td>
 
-                      <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-[#344054]">
+                      <td className="border-b border-sibs-border px-5 py-5 text-center text-sm font-bold text-sibs-navy">
                         {formatDate(request.dateRequested || request.requestDate)}
                       </td>
 
-                      <td className="border-b border-[#E6ECF2] px-5 py-5">
-                        <p className="max-w-[260px] truncate text-sm font-bold text-[#344054]">
+                      <td className="border-b border-sibs-border px-5 py-5">
+                        <p className="max-w-[260px] truncate text-sm font-bold text-sibs-navy">
                           {request.approver || "--"}
                         </p>
                       </td>
 
-                      <td className="border-b border-[#E6ECF2] px-5 py-5 text-right">
+                      <td className="border-b border-sibs-border px-5 py-5 text-right">
                         <button
                           type="button"
                           onClick={() => onView(request)}
-                          className="inline-flex h-9 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-4 text-xs font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC] hover:shadow-sm active:scale-[0.98]"
+                          className="inline-flex h-9 items-center justify-center gap-2 rounded-[10px] border border-sibs-border bg-white px-4 text-xs font-bold text-sibs-navy transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange hover:shadow-sm active:scale-[0.98]"
                         >
                           <Eye size={15} />
                           View
@@ -3670,7 +3670,7 @@ function AvailablePositionApprovalTable({
         {loading ? (
           <DataCard.Skeleton count={4} lines={4} />
         ) : requests.length === 0 ? (
-          <div className="rounded-[14px] border border-[#D9E2EC] bg-white px-5 py-10 text-center shadow-sm">
+          <div className="rounded-[14px] border border-sibs-border bg-white px-5 py-10 text-center shadow-sm">
             <p className="text-sm font-bold text-gray-500">
               No approval requests found for Available Positions.
             </p>
@@ -3691,11 +3691,11 @@ function AvailablePositionApprovalTable({
                   key={`${request.source || "available-position"}-${request.id}`}
                   type="button"
                   onClick={() => onView(request)}
-                  className="w-full rounded-[14px] border border-[#D9E2EC] bg-white p-4 text-left shadow-sm transition hover:bg-[#F8FAFC]"
+                  className="w-full rounded-[14px] border border-sibs-border bg-white p-4 text-left shadow-sm transition hover:bg-sibs-surface"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <h3 className="text-sm font-extrabold leading-tight text-[#101828]">
+                      <h3 className="text-sm font-extrabold leading-tight text-sibs-navy">
                         {getRequestValue(
                           request,
                           ["positionTitle", "position_title", "title"],
@@ -3759,7 +3759,7 @@ function AvailablePositionApprovalTable({
                     <MobileMetric label="Approver" value={request.approver} />
                   </div>
 
-                  <div className="mt-4 inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-4 text-sm font-bold text-sibs-primary-1">
+                  <div className="mt-4 inline-flex h-10 w-full items-center justify-center gap-2 rounded-[10px] border border-sibs-border bg-white px-4 text-sm font-bold text-sibs-navy transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange">
                     <Eye size={16} />
                     View Details
                   </div>
@@ -3815,9 +3815,9 @@ function ApprovalRequestRow({ request, isWorkforceModule, onView }) {
       : request.department || "--";
 
   return (
-    <tr className="transition hover:bg-[#FAFBFC]">
-      <td className="border-b border-[#E6ECF2] px-5 py-5">
-        <p className="max-w-[280px] truncate text-sm font-extrabold text-[#101828]">
+    <tr className="transition hover:bg-sibs-surface">
+      <td className="border-b border-sibs-border px-5 py-5">
+        <p className="max-w-[280px] truncate text-sm font-extrabold text-sibs-navy">
           {request.title || "--"}
         </p>
 
@@ -3826,14 +3826,14 @@ function ApprovalRequestRow({ request, isWorkforceModule, onView }) {
         </p>
       </td>
 
-      <td className="border-b border-[#E6ECF2] px-5 py-5">
+      <td className="border-b border-sibs-border px-5 py-5">
         <p className="max-w-[120px] truncate text-sm font-extrabold text-sibs-primary-1">
           {requesterInfo.sibsId || "--"}
         </p>
       </td>
 
-      <td className="border-b border-[#E6ECF2] px-5 py-5">
-        <p className="max-w-[240px] truncate text-sm font-bold text-[#344054]">
+      <td className="border-b border-sibs-border px-5 py-5">
+        <p className="max-w-[240px] truncate text-sm font-bold text-sibs-navy">
           {requesterInfo.name || "--"}
         </p>
 
@@ -3843,7 +3843,7 @@ function ApprovalRequestRow({ request, isWorkforceModule, onView }) {
       </td>
 
       {isWorkforceModule && (
-        <td className="border-b border-[#E6ECF2] px-5 py-5">
+        <td className="border-b border-sibs-border px-5 py-5">
           <p className="max-w-[240px] truncate text-sm font-extrabold text-sibs-primary-1">
             {accountName}
           </p>
@@ -3857,7 +3857,7 @@ function ApprovalRequestRow({ request, isWorkforceModule, onView }) {
         </td>
       )}
 
-      <td className="border-b border-[#E6ECF2] px-5 py-5 text-center">
+      <td className="border-b border-sibs-border px-5 py-5 text-center">
         <span
           className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getApprovalRequestDisplayTypeClass(
             displayRequestType || requestType || request.type,
@@ -3867,11 +3867,11 @@ function ApprovalRequestRow({ request, isWorkforceModule, onView }) {
         </span>
       </td>
 
-      <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-[#344054]">
+      <td className="border-b border-sibs-border px-5 py-5 text-center text-sm font-bold text-sibs-navy">
         {formatDate(request.dateRequested || request.requestDate)}
       </td>
 
-      <td className="border-b border-[#E6ECF2] px-5 py-5 text-center">
+      <td className="border-b border-sibs-border px-5 py-5 text-center">
         <span
           className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getPriorityClass(
             request.priority,
@@ -3883,11 +3883,11 @@ function ApprovalRequestRow({ request, isWorkforceModule, onView }) {
 
       {isWorkforceModule ? (
         <>
-          <td className="border-b border-[#E6ECF2] px-5 py-5 text-center">
+          <td className="border-b border-sibs-border px-5 py-5 text-center">
             <StatusBadge status={recruitmentSettingsStatus} />
           </td>
 
-          <td className="border-b border-[#E6ECF2] px-5 py-5 text-center">
+          <td className="border-b border-sibs-border px-5 py-5 text-center">
             <StatusBadge
               status={updateHeadcountStatus || "No Request"}
               emptyText="No Request"
@@ -3895,7 +3895,7 @@ function ApprovalRequestRow({ request, isWorkforceModule, onView }) {
           </td>
         </>
       ) : (
-        <td className="border-b border-[#E6ECF2] px-5 py-5 text-center">
+        <td className="border-b border-sibs-border px-5 py-5 text-center">
           <span
             className={`inline-flex items-center justify-center gap-1.5 rounded-full border px-3 py-1 text-xs font-bold ${getStatusClass(
               status,
@@ -3907,17 +3907,17 @@ function ApprovalRequestRow({ request, isWorkforceModule, onView }) {
         </td>
       )}
 
-      <td className="border-b border-[#E6ECF2] px-5 py-5">
-        <p className="max-w-[240px] truncate text-sm font-bold text-[#344054]">
+      <td className="border-b border-sibs-border px-5 py-5">
+        <p className="max-w-[240px] truncate text-sm font-bold text-sibs-navy">
           {request.approver || "--"}
         </p>
       </td>
 
-      <td className="border-b border-[#E6ECF2] px-5 py-5 text-right">
+      <td className="border-b border-sibs-border px-5 py-5 text-right">
         <button
           type="button"
           onClick={onView}
-          className="inline-flex h-9 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-4 text-xs font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC] hover:shadow-sm active:scale-[0.98]"
+          className="inline-flex h-9 items-center justify-center gap-2 rounded-[10px] border border-sibs-border bg-white px-4 text-xs font-bold text-sibs-navy transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange hover:shadow-sm active:scale-[0.98]"
         >
           <Eye size={15} />
           View
@@ -4014,7 +4014,7 @@ function ApprovalRequestMobileCard({ request, isWorkforceModule, onView }) {
         <button
           type="button"
           onClick={onView}
-          className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-xs font-extrabold text-sibs-navy shadow-xs transition hover:border-sibs-orange/40 hover:bg-sibs-surface hover:text-sibs-orange active:scale-[0.98]"
+          className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-[10px] border border-slate-200 bg-white px-4 text-xs font-extrabold text-sibs-navy shadow-xs transition hover:border-sibs-orange/40 hover:bg-sibs-surface hover:text-sibs-orange active:scale-[0.98]"
         >
           <Eye size={16} />
           View Details
@@ -4026,7 +4026,7 @@ function ApprovalRequestMobileCard({ request, isWorkforceModule, onView }) {
 
 function MobileMetric({ label, value }) {
   return (
-    <div className="rounded-[10px] bg-[#F8FAFC] p-3">
+    <div className="rounded-[10px] bg-sibs-surface p-3">
       <p className="text-[10px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
         {label}
       </p>
@@ -4040,7 +4040,7 @@ function MobileMetric({ label, value }) {
 
 function MobileTypeMetric({ label, value }) {
   return (
-    <div className="rounded-[10px] bg-[#F8FAFC] p-3">
+    <div className="rounded-[10px] bg-sibs-surface p-3">
       <p className="text-[10px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
         {label}
       </p>
@@ -4132,16 +4132,16 @@ function ViewApprovalRequestModal({
 
   return createPortal(
     <div className="sibs-modal-blur fixed inset-0 z-[1100] flex items-center justify-center p-4">
-      <div className="flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-[10px] border border-[#E1E7EF] bg-white shadow-xl">
-        <div className="shrink-0 border-b border-[#E6ECF2] bg-white px-6 py-5">
+      <div className="flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-[14px] border border-sibs-border bg-white shadow-xl">
+        <div className="shrink-0 rounded-t-[14px] bg-sibs-navy px-6 py-5 text-white">
           <div className="flex items-start justify-between gap-4">
             <div className="flex min-w-0 items-start gap-3">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] bg-[#EAF2FB] text-sibs-primary-1">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] bg-white/10 text-white">
                 <FileText size={22} />
               </div>
 
               <div className="min-w-0">
-                <h2 className="truncate text-xl font-extrabold text-sibs-primary-1">
+                <h2 className="truncate text-xl font-extrabold text-white">
                   {isAvailablePosition
                     ? "Available Position Request"
                     : isHiringNeeds
@@ -4153,7 +4153,7 @@ function ViewApprovalRequestModal({
                       : request.title || "Approval Request"}
                 </h2>
 
-                <p className="mt-1 text-sm font-medium text-[#2F6CA5]">
+                <p className="mt-1 text-sm font-medium text-white/80">
                   {isAvailablePosition
                     ? showAvailablePositionFooterActions
                       ? "Review the available position details, then approve or decline from the footer."
@@ -4178,10 +4178,10 @@ function ViewApprovalRequestModal({
             <button
               type="button"
               onClick={onClose}
-              className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] text-sibs-primary-1 transition hover:bg-[#F2F6FA] active:scale-[0.98]"
+              className="sibs-modal-close-btn shrink-0"
               aria-label="Close"
             >
-              <X size={22} />
+              <X size={20} />
             </button>
           </div>
         </div>
@@ -4250,7 +4250,7 @@ function ViewApprovalRequestModal({
                   href={getFileUrl(request.uploadedFileUrl)}
                   target="_blank"
                   rel="noreferrer"
-                  className="flex min-h-[74px] items-center gap-3 rounded-[10px] border border-[#D6DEE8] bg-white px-4 py-3 text-sm font-semibold text-[#2F6CA5] transition hover:bg-[#F8FAFC]"
+                  className="flex min-h-[74px] items-center gap-3 rounded-[10px] border border-sibs-border bg-white px-4 py-3 text-sm font-semibold text-sibs-navy transition hover:bg-sibs-surface"
                 >
                   <FileTypeMini filename={request.uploadedFile} />
 
@@ -4279,7 +4279,7 @@ function ViewApprovalRequestModal({
           </div>
         </div>
 
-        <div className="shrink-0 border-t border-[#E6ECF2] bg-white px-6 py-4">
+        <div className="shrink-0 border-t border-sibs-border bg-white px-6 py-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-xs font-bold text-sibs-tertiary-5">
               {isAvailablePosition
@@ -4301,7 +4301,7 @@ function ViewApprovalRequestModal({
               <button
                 type="button"
                 onClick={onClose}
-                className="inline-flex h-11 items-center justify-center rounded-[10px] border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC] active:scale-[0.98]"
+                className="inline-flex h-11 items-center justify-center rounded-[10px] border border-sibs-border bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:border-sibs-orange/40 hover:bg-sibs-surface active:scale-[0.98]"
               >
                 Close
               </button>
@@ -4406,14 +4406,14 @@ function AvailablePositionRequestDetails({ request }) {
   );
 
   return (
-    <section className="rounded-[10px] border border-[#E1E7EF] bg-white p-5">
+    <section className="rounded-[10px] border border-sibs-border bg-white p-5">
       <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h3 className="text-base font-extrabold text-[#101828]">
+          <h3 className="text-base font-extrabold text-sibs-navy">
             Available Position Request Details
           </h3>
 
-          <p className="mt-1 text-sm font-semibold text-[#2F6CA5]">
+          <p className="mt-1 text-sm font-semibold text-sibs-muted">
             Review the submitted position information before making an approval
             decision.
           </p>
@@ -4504,12 +4504,12 @@ function AvailablePositionRequestDetails({ request }) {
         />
       </div>
 
-      <div className="mt-6 border-t border-[#E6ECF2] pt-5">
-        <h3 className="text-base font-extrabold text-[#101828]">
+      <div className="mt-6 border-t border-sibs-border pt-5">
+        <h3 className="text-base font-extrabold text-sibs-navy">
           Approval Details
         </h3>
 
-        <p className="mt-1 text-sm font-semibold text-[#2F6CA5]">
+        <p className="mt-1 text-sm font-semibold text-sibs-muted">
           Current approval decision and recorded remarks.
         </p>
 
@@ -4792,13 +4792,13 @@ function HiringNeedsRequestDetails({ request }) {
   const supportingFileName = getHiringNeedsSupportingFileName(request);
 
   return (
-    <section className="rounded-[10px] border border-[#E1E7EF] bg-white p-5">
+    <section className="rounded-[10px] border border-sibs-border bg-white p-5">
       <div className="mb-5">
-        <h3 className="text-base font-extrabold text-[#101828]">
+        <h3 className="text-base font-extrabold text-sibs-navy">
           {isDownsize ? "Downsize Request Details" : "Request Details"}
         </h3>
 
-        <p className="mt-1 text-sm font-semibold text-[#2F6CA5]">
+        <p className="mt-1 text-sm font-semibold text-sibs-muted">
           {isDownsize
             ? "Submitted downsize request information from the selected Workforce Hiring Plan account."
             : "Submitted request information and staffing requirement."}
@@ -4883,7 +4883,7 @@ function HiringNeedsRequestDetails({ request }) {
             href={getFileUrl(supportingFileUrl)}
             target="_blank"
             rel="noreferrer"
-            className="flex min-h-[74px] items-center gap-3 rounded-[10px] border border-[#D6DEE8] bg-white px-4 py-3 text-sm font-semibold text-[#2F6CA5] transition hover:bg-[#F8FAFC]"
+            className="flex min-h-[74px] items-center gap-3 rounded-[10px] border border-sibs-border bg-white px-4 py-3 text-sm font-semibold text-sibs-navy transition hover:bg-sibs-surface"
           >
             <FileTypeMini filename={supportingFileName} />
 
@@ -4895,11 +4895,11 @@ function HiringNeedsRequestDetails({ request }) {
       )}
 
       <div className="mt-6">
-        <h3 className="text-base font-extrabold text-[#101828]">
+        <h3 className="text-base font-extrabold text-sibs-navy">
           Approval Details
         </h3>
 
-        <p className="mt-1 text-sm font-semibold text-[#2F6CA5]">
+        <p className="mt-1 text-sm font-semibold text-sibs-muted">
           Current approval information and recorded decision details.
         </p>
       </div>
@@ -4978,7 +4978,7 @@ function HiringNeedsApprovalPanel({
       </div>
 
       <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-sm font-bold text-[#344054]">
+        <p className="text-sm font-bold text-sibs-navy">
           {isFinal
             ? "This Personnel Requisition already has a final HR Admin decision."
             : notAuthorized
@@ -4994,7 +4994,7 @@ function HiringNeedsApprovalPanel({
               disabled={disabled}
               className={`inline-flex h-10 items-center justify-center gap-2 rounded-[10px] border px-5 text-sm font-extrabold transition active:scale-[0.98] ${
                 disabled
-                  ? "cursor-not-allowed border-[#D6DEE8] bg-white text-[#667085] opacity-70"
+                  ? "cursor-not-allowed border-sibs-border bg-white text-sibs-muted opacity-70"
                   : "border-red-200 bg-red-50 text-red-700 hover:bg-red-100"
               }`}
             >
@@ -5008,7 +5008,7 @@ function HiringNeedsApprovalPanel({
               disabled={disabled}
               className={`inline-flex h-10 items-center justify-center gap-2 rounded-[10px] border px-5 text-sm font-extrabold transition active:scale-[0.98] ${
                 disabled
-                  ? "cursor-not-allowed border-[#D6DEE8] bg-white text-[#667085] opacity-70"
+                  ? "cursor-not-allowed border-sibs-border bg-white text-sibs-muted opacity-70"
                   : "border-emerald-700 bg-emerald-600 text-white hover:bg-emerald-700"
               }`}
             >
@@ -5078,7 +5078,7 @@ function WorkforceHiringPlanRequestDetails({ request }) {
     0;
 
   return (
-    <section className="rounded-[10px] border border-[#E1E7EF] bg-white p-5">
+    <section className="rounded-[10px] border border-sibs-border bg-white p-5">
       <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <h3 className="text-base font-extrabold text-sibs-primary-1">
@@ -5191,7 +5191,7 @@ function WorkforceHiringPlanApprovalPanel({
       : formatNumber(requestedRequiredHeadcount);
 
   return (
-    <section className="rounded-[10px] border border-[#E1E7EF] bg-[#F8FAFC] p-5">
+    <section className="rounded-[10px] border border-sibs-border bg-sibs-surface p-5">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0">
           <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
@@ -5242,7 +5242,7 @@ function WorkforceHiringPlanApprovalPanel({
             </div>
 
             <div>
-              <label className="mb-2 block text-[11px] font-extrabold uppercase tracking-wide text-[#174A7C]">
+              <label className="mb-2 block text-[11px] font-extrabold uppercase tracking-wide text-sibs-navy">
                 Final Required HC <span className="text-red-500">*</span>
               </label>
 
@@ -5256,7 +5256,7 @@ function WorkforceHiringPlanApprovalPanel({
                 }
                 disabled={disabled}
                 placeholder="Enter final Required HC"
-                className="h-11 w-full rounded-[10px] border border-[#D0D5DD] bg-white px-4 text-sm font-bold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 disabled:cursor-not-allowed disabled:bg-[#F2F4F7] disabled:text-[#667085]"
+                className="h-11 w-full rounded-[10px] border border-sibs-border bg-white px-4 text-sm font-bold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 disabled:cursor-not-allowed disabled:bg-sibs-surface disabled:text-sibs-muted"
               />
 
               {approvedRequiredHeadcountValue === "" && !isFinal && (
@@ -5265,7 +5265,7 @@ function WorkforceHiringPlanApprovalPanel({
                 </p>
               )}
 
-              <p className="mt-2 text-xs font-semibold text-[#2F6CA5]">
+              <p className="mt-2 text-xs font-semibold text-sibs-muted">
                 Final value to apply:{" "}
                 {approvedRequiredHeadcountValue === ""
                   ? "--"
@@ -5284,7 +5284,7 @@ function WorkforceHiringPlanApprovalPanel({
       )}
 
       <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-sm font-semibold text-[#344054]">
+        <p className="text-sm font-semibold text-sibs-navy">
           {isFinal
             ? "This Workforce Hiring Plan request already has a final HR / HR Admin decision."
             : !allowedByRole
@@ -5301,7 +5301,7 @@ function WorkforceHiringPlanApprovalPanel({
             disabled={disabled}
             className={`inline-flex h-10 items-center justify-center rounded-[10px] border px-5 text-sm font-bold transition active:scale-[0.98] ${
               disabled
-                ? "cursor-not-allowed border-[#D6DEE8] bg-white text-[#667085] opacity-70"
+                ? "cursor-not-allowed border-sibs-border bg-white text-sibs-muted opacity-70"
                 : "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
             }`}
           >
@@ -5314,7 +5314,7 @@ function WorkforceHiringPlanApprovalPanel({
             disabled={disabled}
             className={`inline-flex h-10 items-center justify-center rounded-[10px] border px-5 text-sm font-bold transition active:scale-[0.98] ${
               disabled
-                ? "cursor-not-allowed border-[#D6DEE8] bg-white text-[#667085] opacity-70"
+                ? "cursor-not-allowed border-sibs-border bg-white text-sibs-muted opacity-70"
                 : "border-red-200 bg-red-50 text-red-700 hover:bg-red-100"
             }`}
           >
@@ -5349,14 +5349,14 @@ function ApprovalProcessCards({ request, canReview, onApprove, onReject }) {
         return (
           <div
             key={step.key}
-            className="rounded-[10px] border border-[#E1E7EF] bg-[#F8FAFC] p-4 text-sibs-primary-1"
+            className="rounded-[10px] border border-sibs-border bg-sibs-surface p-4 text-sibs-primary-1"
           >
             <div className="mb-3 flex items-center gap-2">
               <UserRoundCheck size={17} />
               <p className="text-sm font-extrabold">{step.label}</p>
             </div>
 
-            <p className="min-h-[44px] text-sm font-semibold leading-5 text-[#2F6CA5]">
+            <p className="min-h-[44px] text-sm font-semibold leading-5 text-sibs-navy">
               {step.name || "--"}
             </p>
 
@@ -5368,7 +5368,7 @@ function ApprovalProcessCards({ request, canReview, onApprove, onReject }) {
                 className={`inline-flex h-10 items-center justify-center rounded-[10px] border px-4 text-sm font-bold transition active:scale-[0.98] ${
                   isActive
                     ? "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
-                    : "cursor-not-allowed border-[#D6DEE8] bg-white text-[#667085] opacity-70"
+                    : "cursor-not-allowed border-sibs-border bg-white text-sibs-muted opacity-70"
                 }`}
               >
                 Approve
@@ -5381,7 +5381,7 @@ function ApprovalProcessCards({ request, canReview, onApprove, onReject }) {
                 className={`inline-flex h-10 items-center justify-center rounded-[10px] border px-4 text-sm font-bold transition active:scale-[0.98] ${
                   isActive
                     ? "border-red-200 bg-red-50 text-red-700 hover:bg-red-100"
-                    : "cursor-not-allowed border-[#D6DEE8] bg-white text-[#667085] opacity-70"
+                    : "cursor-not-allowed border-sibs-border bg-white text-sibs-muted opacity-70"
                 }`}
               >
                 Decline
@@ -5409,9 +5409,9 @@ function ApprovalProcessCards({ request, canReview, onApprove, onReject }) {
                 Remarks
               </p>
 
-              <div className="min-h-[104px] rounded-[10px] border border-[#E6ECF2] bg-white px-4 py-3 text-sm font-medium leading-5 text-[#344054]">
+              <div className="min-h-[104px] rounded-[10px] border border-sibs-border bg-white px-4 py-3 text-sm font-medium leading-5 text-sibs-navy">
                 {step.remarks || (
-                  <span className="text-[#98A2B3]">No remarks yet</span>
+                  <span className="text-sibs-faint">No remarks yet</span>
                 )}
               </div>
             </div>
@@ -5435,7 +5435,7 @@ function ApprovalProcessCards({ request, canReview, onApprove, onReject }) {
 
 function MiniInfo({ label, value }) {
   return (
-    <div className="rounded-[10px] border border-[#E6ECF2] bg-white px-3 py-2">
+    <div className="rounded-[10px] border border-sibs-border bg-white px-3 py-2">
       <p className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-tertiary-5">
         {label}
       </p>
@@ -5453,7 +5453,7 @@ function FormLikeBox({ label, value, large = false }) {
       <p className="mb-2 text-sm font-bold text-sibs-primary-1">{label}</p>
 
       <div
-        className={`rounded-[10px] border border-[#D6DEE8] bg-white px-4 py-3 text-sm font-medium text-[#344054] ${
+        className={`rounded-[10px] border border-sibs-border bg-white px-4 py-3 text-sm font-medium text-sibs-navy ${
           large ? "min-h-[46px] whitespace-pre-line" : "min-h-[43px]"
         }`}
       >
@@ -5555,12 +5555,12 @@ function DecisionModal({
       <form
         onSubmit={onSubmit}
         noValidate
-        className="flex max-h-[94vh] w-full max-w-6xl flex-col overflow-hidden rounded-[10px] border border-[#E1E7EF] bg-white shadow-xl"
+        className="flex max-h-[94vh] w-full max-w-6xl flex-col overflow-hidden rounded-[14px] border border-sibs-border bg-white shadow-xl"
       >
-        <div className="shrink-0 border-b border-[#E6ECF2] bg-white px-6 py-5">
+        <div className="shrink-0 rounded-t-[14px] bg-sibs-navy px-6 py-5 text-white">
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0">
-              <h2 className="truncate text-2xl font-extrabold uppercase tracking-tight text-sibs-primary-1">
+              <h2 className="truncate text-2xl font-extrabold uppercase tracking-tight text-white">
                 {isAvailablePosition
                   ? isApprove
                     ? "Approve Available Position"
@@ -5574,7 +5574,7 @@ function DecisionModal({
                     : "Reject Request"}
               </h2>
 
-              <p className="mt-1 truncate text-sm font-semibold text-[#2F6CA5]">
+              <p className="mt-1 truncate text-sm font-semibold text-white/80">
                 {request.id || "--"} / {request.title || request.type || "--"}
               </p>
             </div>
@@ -5583,10 +5583,10 @@ function DecisionModal({
               type="button"
               onClick={onClose}
               disabled={loading}
-              className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] text-sibs-tertiary-5 transition hover:bg-[#F2F6FA] hover:text-sibs-primary-1 disabled:cursor-not-allowed disabled:opacity-60"
+              className="sibs-modal-close-btn shrink-0"
               aria-label="Close"
             >
-              <X size={22} />
+              <X size={20} />
             </button>
           </div>
         </div>
@@ -5594,18 +5594,18 @@ function DecisionModal({
         <div className="min-h-0 flex-1 overflow-y-auto px-6 py-6 sibs-scrollbar">
           <div className="grid grid-cols-1 gap-5 xl:grid-cols-[1fr_360px]">
             <div className="space-y-5">
-              <div className="rounded-[10px] border border-[#E1E7EF] bg-white p-5">
+              <div className="rounded-[10px] border border-sibs-border bg-white p-5">
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                   <div className="min-w-0">
-                    <p className="text-[11px] font-extrabold uppercase tracking-wide text-[#174A7C]">
+                    <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-navy">
                       Request
                     </p>
 
-                    <h3 className="mt-2 truncate text-xl font-extrabold text-[#101828]">
+                    <h3 className="mt-2 truncate text-xl font-extrabold text-sibs-navy">
                       {request.title || "Approval Request"}
                     </h3>
 
-                    <p className="mt-2 text-sm font-bold text-[#2F6CA5]">
+                    <p className="mt-2 text-sm font-bold text-sibs-muted">
                       {getRequesterDisplayInfo(request).displayNameWithSibs}
                     </p>
 
@@ -5627,7 +5627,7 @@ function DecisionModal({
                   </div>
 
                   <div className="flex h-24 w-32 shrink-0 flex-col items-center justify-center rounded-[10px] border border-blue-100 bg-blue-50 text-center">
-                    <p className="text-[11px] font-extrabold uppercase tracking-wide text-[#174A7C]">
+                    <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-navy">
                       Action
                     </p>
 
@@ -5735,7 +5735,7 @@ function DecisionModal({
                       }
                     />
                     <div>
-                      <label className="mb-2 block text-[11px] font-extrabold uppercase tracking-wide text-[#174A7C]">
+                      <label className="mb-2 block text-[11px] font-extrabold uppercase tracking-wide text-sibs-navy">
                         Final Required HC{" "}
                         <span className="text-red-500">*</span>
                       </label>
@@ -5748,7 +5748,7 @@ function DecisionModal({
                           onChangeEditableRequiredHeadcount?.(e.target.value)
                         }
                         placeholder="Required before approve"
-                        className="h-11 w-full rounded-[10px] border border-[#D0D5DD] bg-white px-4 text-sm font-bold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+                        className="h-11 w-full rounded-[10px] border border-sibs-border bg-white px-4 text-sm font-bold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
                         required={isApprove}
                       />
                       {isApprove && approvedRequiredHeadcountValue === "" && (
@@ -5757,7 +5757,7 @@ function DecisionModal({
                         </p>
                       )}
 
-                      <p className="mt-2 text-xs font-semibold text-[#2F6CA5]">
+                      <p className="mt-2 text-xs font-semibold text-sibs-muted">
                         Final value to apply:{" "}
                         {approvedRequiredHeadcountValue === ""
                           ? "--"
@@ -5783,7 +5783,7 @@ function DecisionModal({
               )}
 
               {isResignation && (
-                <div className="rounded-[10px] border border-[#E1E7EF] bg-white p-5">
+                <div className="rounded-[10px] border border-sibs-border bg-white p-5">
                   <h3 className="text-base font-extrabold text-sibs-primary-1">
                     Resignation Approval Questions
                   </h3>
@@ -5804,7 +5804,7 @@ function DecisionModal({
                         onChange={(e) =>
                           onChangePersonallySpoken(e.target.value)
                         }
-                        className="h-11 w-full rounded-[10px] border border-[#D0D5DD] bg-white px-4 text-sm font-bold text-sibs-primary-1 outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+                        className="h-11 w-full rounded-[10px] border border-sibs-border bg-white px-4 text-sm font-bold text-sibs-primary-1 outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
                         required
                       >
                         <option value="">Select answer</option>
@@ -5824,7 +5824,7 @@ function DecisionModal({
                         onChange={(e) =>
                           onChangeEmployeeRetained(e.target.value)
                         }
-                        className="h-11 w-full rounded-[10px] border border-[#D0D5DD] bg-white px-4 text-sm font-bold text-sibs-primary-1 outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+                        className="h-11 w-full rounded-[10px] border border-sibs-border bg-white px-4 text-sm font-bold text-sibs-primary-1 outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
                         required
                       >
                         <option value="">Select answer</option>
@@ -5846,7 +5846,7 @@ function DecisionModal({
                         onChange={(e) => onChangeActionTaken(e.target.value)}
                         rows={4}
                         placeholder="Enter action taken..."
-                        className="w-full resize-none rounded-[10px] border border-[#D0D5DD] bg-white px-4 py-3 text-sm font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+                        className="w-full resize-none rounded-[10px] border border-sibs-border bg-white px-4 py-3 text-sm font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
                         required
                       />
                     </div>
@@ -5854,8 +5854,8 @@ function DecisionModal({
                 </div>
               )}
 
-              <div className="rounded-[10px] border border-[#E1E7EF] bg-white p-5">
-                <label className="mb-3 block text-sm font-extrabold text-[#101828]">
+              <div className="rounded-[10px] border border-sibs-border bg-white p-5">
+                <label className="mb-3 block text-sm font-extrabold text-sibs-navy">
                   Remarks {isApprove ? "(optional)" : "(required)"}
                 </label>
 
@@ -5870,13 +5870,13 @@ function DecisionModal({
                         ? "Enter reason for declining..."
                         : "Enter reason for rejecting..."
                   }
-                  className="w-full resize-none rounded-[10px] border border-[#D0D5DD] bg-white px-4 py-3 text-sm font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+                  className="w-full resize-none rounded-[10px] border border-sibs-border bg-white px-4 py-3 text-sm font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
                 />
               </div>
             </div>
 
             <div className="space-y-5">
-              <div className="rounded-[10px] border border-[#E1E7EF] bg-white p-5">
+              <div className="rounded-[10px] border border-sibs-border bg-white p-5">
                 <h3 className="text-base font-extrabold text-sibs-primary-1">
                   Approval Checklist
                 </h3>
@@ -5978,7 +5978,7 @@ function DecisionModal({
                   Request Reason
                 </h3>
 
-                <p className="mt-3 whitespace-pre-line text-sm font-medium leading-6 text-[#344054]">
+                <p className="mt-3 whitespace-pre-line text-sm font-medium leading-6 text-sibs-navy">
                   {request.reason || request.remarks || "--"}
                 </p>
               </div>
@@ -5986,13 +5986,13 @@ function DecisionModal({
           </div>
         </div>
 
-        <div className="shrink-0 border-t border-[#E6ECF2] bg-white px-6 py-5">
+        <div className="shrink-0 border-t border-sibs-border bg-white px-6 py-5">
           <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
             <button
               type="button"
               onClick={onClose}
               disabled={loading}
-              className="inline-flex h-11 items-center justify-center rounded-[10px] border border-[#D6DEE8] bg-white px-6 text-sm font-extrabold text-sibs-primary-1 transition hover:bg-[#F8FAFC] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex h-11 items-center justify-center rounded-[10px] border border-sibs-border bg-white px-6 text-sm font-extrabold text-sibs-primary-1 transition hover:border-sibs-orange/40 hover:bg-sibs-surface active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
             >
               Cancel
             </button>
@@ -6030,12 +6030,12 @@ function DecisionModal({
 
 function DecisionInfoBox({ label, value }) {
   return (
-    <div className="rounded-[10px] border border-[#E6ECF2] bg-white p-4">
-      <p className="text-[11px] font-extrabold uppercase tracking-wide text-[#174A7C]">
+    <div className="rounded-[10px] border border-sibs-border bg-white p-4">
+      <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-navy">
         {label}
       </p>
 
-      <p className="mt-2 whitespace-pre-line text-sm font-extrabold leading-6 text-[#344054]">
+      <p className="mt-2 whitespace-pre-line text-sm font-extrabold leading-6 text-sibs-navy">
         {value || "--"}
       </p>
     </div>
@@ -6044,7 +6044,7 @@ function DecisionInfoBox({ label, value }) {
 
 function DecisionChecklistItem({ done = false, title, subtitle }) {
   return (
-    <div className="rounded-[10px] border border-[#E6ECF2] bg-[#F8FAFC] p-4">
+    <div className="rounded-[10px] border border-sibs-border bg-sibs-surface p-4">
       <div className="flex items-start gap-3">
         <div
           className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${
@@ -6057,9 +6057,9 @@ function DecisionChecklistItem({ done = false, title, subtitle }) {
         </div>
 
         <div className="min-w-0">
-          <p className="text-sm font-extrabold text-[#101828]">{title}</p>
+          <p className="text-sm font-extrabold text-sibs-navy">{title}</p>
 
-          <p className="mt-1 line-clamp-2 text-xs font-bold text-[#2F6CA5]">
+          <p className="mt-1 line-clamp-2 text-xs font-bold text-sibs-muted">
             {subtitle || "—"}
           </p>
         </div>

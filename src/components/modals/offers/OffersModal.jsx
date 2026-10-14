@@ -1,5 +1,6 @@
 import React from "react";
-import { X, Plus, RotateCcw } from "lucide-react";
+import { Plus, RotateCcw } from "lucide-react";
+import ModalShell from "../../ui/ModalShell";
 
 const declineCategoryOptions = [
   "Compensation",
@@ -145,37 +146,52 @@ export function CreateOfferModal({
   const computedDailyRate = calculateDailyRate(form.basicPay, form.deMinimis);
 
   return (
-    <div
-      className="sibs-modal-blur sibs-modal-backdrop-in fixed inset-0 z-[10000] flex h-dvh items-center justify-center px-4 py-4 font-jakarta"
-      onClick={onClose}
-    >
-      <div
-        className="sibs-modal-pop-in flex max-h-[92dvh] w-full max-w-6xl flex-col overflow-hidden rounded-[14px] border border-sibs-border bg-white shadow-2xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-start justify-between gap-4 border-b border-sibs-border px-5 py-4 sm:px-6 sm:py-5">
-          <div className="min-w-0">
-            <h2 className="sibs-modal-title truncate text-sibs-primary-1">
-              Create Offer
-            </h2>
-
-            <p className="sibs-modal-subtitle mt-0.5 text-sibs-tertiary-5">
-              Create an offer from a candidate already moved to the Offered
-              stage.
-            </p>
-          </div>
+    <ModalShell
+      open={open}
+      onClose={onClose}
+      variant="navy"
+      title="Create Offer"
+      subtitle="Create an offer from a candidate already moved to the Offered stage."
+      icon={Plus}
+      maxWidth="max-w-6xl"
+      className="rounded-[14px]"
+      bodyClassName="p-0 flex flex-col min-h-0 flex-1 overflow-hidden"
+      footer={
+        <div className="flex w-full flex-col justify-end gap-2 sm:flex-row">
+          <button
+            type="button"
+            onClick={onReset}
+            className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-[10px] border border-sibs-border bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-navy transition hover:border-sibs-orange/35 hover:bg-sibs-cream-light hover:text-sibs-orange"
+          >
+            <RotateCcw size={15} />
+            Reset
+          </button>
 
           <button
             type="button"
             onClick={onClose}
-            className="inline-flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-[10px] text-gray-400 transition hover:bg-gray-100 hover:text-gray-700"
-            aria-label="Close modal"
+            className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-[10px] border border-sibs-border bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-slate-600 transition hover:bg-slate-50"
           >
-            <X size={18} />
+            Cancel
+          </button>
+
+          <button
+            type="submit"
+            form="create-offer-form"
+            onClick={onSubmit}
+            className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-[10px] bg-sibs-orange px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white transition hover:bg-sibs-orange-light active:scale-[0.98]"
+          >
+            <Plus size={15} />
+            Save Offer
           </button>
         </div>
-
-        <form onSubmit={onSubmit} className="flex-1 overflow-y-auto p-4 sm:p-6">
+      }
+    >
+      <form
+        id="create-offer-form"
+        onSubmit={onSubmit}
+        className="flex-1 overflow-y-auto p-4 sm:p-6 font-jakarta"
+      >
           <div className="grid grid-cols-1 gap-5 xl:grid-cols-[1fr_360px]">
             <div className="space-y-5">
               <div className="rounded-[10px] border border-sibs-border bg-white p-5 shadow-sm">
@@ -332,7 +348,7 @@ export function CreateOfferModal({
                     <input
                       readOnly
                       value={formatCurrency(computedDailyRate)}
-                      className="h-8.5 2xl:h-10 w-full cursor-not-allowed rounded-[10px] border border-blue-100 bg-blue-50 px-3 sibs-text-xs font-bold text-sibs-primary-1 outline-none tabular-nums"
+                      className="h-8.5 2xl:h-10 w-full cursor-not-allowed rounded-[10px] border border-sibs-border bg-slate-50 px-3 sibs-text-xs font-bold text-sibs-navy outline-none tabular-nums"
                     />
 
                     <p className="mt-2 text-xs font-semibold text-sibs-tertiary-5">
@@ -519,12 +535,12 @@ export function CreateOfferModal({
             </div>
 
             <div className="space-y-5">
-              <div className="rounded-[10px] border border-blue-100 bg-blue-50 p-5">
-                <h3 className="sibs-modal-section-title text-sibs-primary-1">
+              <div className="rounded-[10px] border border-sibs-border bg-slate-50 p-5">
+                <h3 className="sibs-modal-section-title text-sibs-navy">
                   How this connects to TA-HRIS
                 </h3>
 
-                <p className="mt-2 text-sm leading-6 text-sibs-primary-1/80">
+                <p className="mt-2 text-sm leading-6 text-slate-600">
                   Creating an offer should be linked to a candidate application
                   that already reached the Offered stage. If accepted, this
                   should move the pipeline to Accepted. If declined, the
@@ -606,37 +622,6 @@ export function CreateOfferModal({
             </div>
           </div>
         </form>
-
-        <div className="border-t border-sibs-border px-5 py-3 sm:px-6 2xl:py-4">
-          <div className="flex flex-col justify-end gap-2 sm:flex-row">
-            <button
-              type="button"
-              onClick={onReset}
-              className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-[10px] border border-sibs-border bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-primary-1 transition hover:border-sibs-orange/35 hover:bg-sibs-cream-light hover:text-sibs-orange"
-            >
-              <RotateCcw size={15} />
-              Reset
-            </button>
-
-            <button
-              type="button"
-              onClick={onClose}
-              className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-[10px] border border-sibs-border bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-slate-600 transition hover:bg-slate-50"
-            >
-              Cancel
-            </button>
-
-            <button
-              type="submit"
-              onClick={onSubmit}
-              className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-[10px] bg-sibs-orange px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white transition hover:bg-sibs-orange-light active:scale-[0.98]"
-            >
-              <Plus size={15} />
-              Save Offer
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+    </ModalShell>
   );
 }

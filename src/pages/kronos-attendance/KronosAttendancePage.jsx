@@ -3,6 +3,8 @@ import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from "re
 import {
   CalendarDays,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   CircleCheckBig,
   CircleX,
   Clock,
@@ -244,7 +246,7 @@ function getStatusBadgeClass(status) {
   }
 
   if (cleanStatus === "ongoing" || cleanStatus === "active") {
-    return "border-blue-200 bg-blue-50 text-sibs-primary-1";
+    return "border-blue-200 bg-blue-50 text-sibs-navy";
   }
 
   return "border-amber-200 bg-amber-50 text-amber-600";
@@ -252,7 +254,7 @@ function getStatusBadgeClass(status) {
 
 function getTimeBadgeClass(value, statusKey) {
   if (value === "—") {
-    return "border-slate-200 bg-slate-50 text-sibs-primary-1";
+    return "border-slate-200 bg-slate-50 text-sibs-navy";
   }
 
   const cleanStatus = normalizeStatus(statusKey);
@@ -292,8 +294,8 @@ function StatCard({
   title,
   value,
   icon,
-  valueClassName = "text-sibs-primary-1",
-  iconClassName = "bg-[#F2F6FA] text-sibs-primary-1",
+  valueClassName = "text-sibs-navy",
+  iconClassName = "bg-sibs-surface text-sibs-navy",
   delay = 0,
 }) {
   const IconComponent = icon;
@@ -306,7 +308,7 @@ function StatCard({
       <div className="flex h-full items-start justify-between gap-2.5 2xl:gap-3">
         <div className="min-w-0 flex-1 self-stretch flex flex-col justify-between h-full">
           <div>
-            <p className="m-0 truncate sibs-text-micro font-extrabold uppercase tracking-wide text-[#98A2B3]">
+            <p className="m-0 truncate sibs-text-micro font-extrabold uppercase tracking-wide text-sibs-faint">
               {title}
             </p>
             <p
@@ -329,7 +331,7 @@ function StatCard({
 
 function MobileMetric({ label, value, className = "" }) {
   return (
-    <div className="rounded-xl border border-[#E6ECF2] bg-slate-50 p-3 transition-all duration-200 hover:-translate-y-0.5 hover:bg-white hover:shadow-sm">
+    <div className="rounded-[10px] border border-sibs-border bg-slate-50 p-3 transition-all duration-200 hover:-translate-y-0.5 hover:bg-white hover:shadow-sm">
       <p className="m-0 text-xs font-bold uppercase tracking-wide text-sibs-tertiary-5">
         {label}
       </p>
@@ -341,7 +343,7 @@ function MobileMetric({ label, value, className = "" }) {
           {value}
         </div>
       ) : (
-        <strong className="mt-1 block text-sm font-bold text-sibs-primary-1">
+        <strong className="mt-1 block text-sm font-bold text-sibs-navy">
           {value}
         </strong>
       )}
@@ -465,47 +467,47 @@ function CustomCalendarPicker({
         type="button"
         onClick={toggleOpen}
         disabled={disabled}
-        className={`flex h-11 w-full min-w-0 items-center justify-between gap-3 rounded-xl border bg-white px-3 text-sm font-extrabold outline-none transition disabled:cursor-not-allowed disabled:opacity-60 ${
+        className={`flex h-9 2xl:h-10 w-full min-w-0 items-center justify-between gap-3 rounded-[10px] border bg-white px-3 text-sm font-extrabold outline-none transition disabled:cursor-not-allowed disabled:opacity-60 ${
           isOpen
-            ? "border-sibs-primary-1 ring-4 ring-sibs-primary-1/10"
-            : "border-[#D9E2EC] hover:border-sibs-primary-1/30 hover:bg-[#F8FAFC]"
+            ? "border-sibs-navy ring-4 ring-sibs-navy/10"
+            : "border-sibs-border hover:border-sibs-navy/30 hover:bg-sibs-surface"
         }`}
       >
-        <span className="flex min-w-0 items-center gap-2 text-sibs-primary-1">
+        <span className="flex min-w-0 items-center gap-2 text-sibs-navy">
           <CalendarDays size={16} className="shrink-0" />
           <span className="shrink-0">{label}</span>
-          <span className="min-w-0 truncate text-sibs-primary-1">
+          <span className="min-w-0 truncate text-sibs-navy">
             {formatDateDisplay(value, "Select date")}
           </span>
         </span>
 
         <ChevronDown
           size={16}
-          className={`shrink-0 text-sibs-primary-1 transition ${
+          className={`shrink-0 text-sibs-navy transition ${
             isOpen ? "rotate-180" : ""
           }`}
         />
       </button>
 
       {isOpen ? (
-        <div className="absolute right-0 top-[calc(100%+8px)] z-[80] w-[310px] overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white shadow-[0_18px_40px_rgba(15,23,42,0.14)]">
+        <div className="absolute right-0 top-[calc(100%+8px)] z-[80] w-[310px] overflow-hidden rounded-[14px] border border-sibs-border bg-white shadow-[0_18px_40px_rgba(15,23,42,0.14)]">
           <div className="flex items-center justify-between px-4 py-4">
             <button
               type="button"
               onClick={() => setViewDate((current) => addMonths(current, -1))}
-              className="flex h-9 w-9 items-center justify-center rounded-full text-sibs-primary-1 transition hover:bg-[#EAF2FB]"
+              className="flex h-9 w-9 items-center justify-center rounded-full text-sibs-navy transition hover:bg-sibs-cream-light"
             >
               <ChevronLeft size={18} />
             </button>
 
-            <p className="m-0 text-sm font-extrabold text-sibs-primary-1">
+            <p className="m-0 text-sm font-extrabold text-sibs-navy">
               {getMonthLabel(viewDate)}
             </p>
 
             <button
               type="button"
               onClick={() => setViewDate((current) => addMonths(current, 1))}
-              className="flex h-9 w-9 items-center justify-center rounded-full text-sibs-primary-1 transition hover:bg-[#EAF2FB]"
+              className="flex h-9 w-9 items-center justify-center rounded-full text-sibs-navy transition hover:bg-sibs-cream-light"
             >
               <ChevronRight size={18} />
             </button>
@@ -515,7 +517,7 @@ function CustomCalendarPicker({
             {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((day) => (
               <div
                 key={day}
-                className="py-2 text-xs font-extrabold text-sibs-primary-1"
+                className="py-2 text-xs font-extrabold text-sibs-navy"
               >
                 {day}
               </div>
@@ -534,12 +536,12 @@ function CustomCalendarPicker({
                   onClick={() => handleSelectDate(date)}
                   className={`mx-auto flex h-9 w-9 items-center justify-center rounded-full text-sm font-extrabold transition ${
                     active
-                      ? "bg-[#E7F0FA] text-sibs-primary-1"
+                      ? "bg-sibs-cream-light text-sibs-navy"
                       : currentToday
-                        ? "bg-[#F2F6FA] text-sibs-primary-1"
+                        ? "bg-sibs-surface text-sibs-navy"
                         : isCurrentMonth
-                          ? "text-sibs-primary-1 hover:bg-[#EAF2FB]"
-                          : "text-[#98A7BA] hover:bg-[#F8FAFC]"
+                          ? "text-sibs-navy hover:bg-sibs-cream-light"
+                          : "text-sibs-faint hover:bg-sibs-surface"
                   }`}
                 >
                   {date.getDate()}
@@ -548,13 +550,13 @@ function CustomCalendarPicker({
             })}
           </div>
 
-          <div className="mx-4 border-t border-[#E6ECF2]" />
+          <div className="mx-4 border-t border-sibs-border" />
 
           <div className="flex items-center justify-between px-4 py-3">
             <button
               type="button"
               onClick={handleClear}
-              className="rounded-lg px-3 py-2 text-xs font-extrabold text-sibs-primary-1 transition hover:bg-[#F2F6FA]"
+              className="rounded-lg px-3 py-2 text-xs font-extrabold text-sibs-navy transition hover:bg-sibs-surface"
             >
               Clear
             </button>
@@ -562,7 +564,7 @@ function CustomCalendarPicker({
             <button
               type="button"
               onClick={handleToday}
-              className="rounded-lg px-3 py-2 text-xs font-extrabold text-sibs-primary-1 transition hover:bg-[#F2F6FA]"
+              className="rounded-lg px-3 py-2 text-xs font-extrabold text-sibs-navy transition hover:bg-sibs-surface"
             >
               Today
             </button>
@@ -667,10 +669,10 @@ function SearchableDropdown({
   return (
     <div ref={dropdownRef} className="relative min-w-0">
       <div
-        className={`flex h-11 w-full min-w-0 items-center gap-2 rounded-xl border bg-white px-3 transition disabled:cursor-not-allowed disabled:opacity-60 ${
+        className={`flex h-9 2xl:h-10 w-full min-w-0 items-center gap-2 rounded-[10px] border bg-white px-3 transition disabled:cursor-not-allowed disabled:opacity-60 ${
           isOpen
-            ? "border-sibs-primary-1 ring-4 ring-sibs-primary-1/10"
-            : "border-[#D9E2EC] hover:border-sibs-primary-1/30 hover:bg-[#F8FAFC]"
+            ? "border-sibs-navy ring-4 ring-sibs-navy/10"
+            : "border-sibs-border hover:border-sibs-navy/30 hover:bg-sibs-surface"
         }`}
       >
         {isOpen ? (
@@ -682,14 +684,14 @@ function SearchableDropdown({
             onClick={handleOpen}
             placeholder={placeholder}
             disabled={disabled}
-            className="h-full min-w-0 flex-1 bg-transparent text-sm font-extrabold text-sibs-primary-1 outline-none placeholder:text-sibs-primary-1"
+            className="h-full min-w-0 flex-1 bg-transparent text-sm font-extrabold text-sibs-navy outline-none placeholder:text-sibs-muted"
           />
         ) : (
           <button
             type="button"
             onClick={handleToggle}
             disabled={disabled}
-            className="min-w-0 flex-1 truncate text-left text-sm font-extrabold text-sibs-primary-1 outline-none disabled:cursor-not-allowed"
+            className="min-w-0 flex-1 truncate text-left text-sm font-extrabold text-sibs-navy outline-none disabled:cursor-not-allowed"
           >
             {displayLabel}
           </button>
@@ -699,7 +701,7 @@ function SearchableDropdown({
           type="button"
           onClick={handleToggle}
           disabled={disabled}
-          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sibs-primary-1 transition hover:bg-[#EAF2FB] disabled:cursor-not-allowed"
+          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sibs-navy transition hover:bg-sibs-cream-light disabled:cursor-not-allowed"
         >
           <ChevronDown
             size={16}
@@ -709,15 +711,15 @@ function SearchableDropdown({
       </div>
 
       {isOpen ? (
-        <div className="absolute left-0 top-[calc(100%+8px)] z-[90] w-full min-w-[280px] overflow-hidden rounded-xl border border-[#D9E2EC] bg-white shadow-[0_18px_40px_rgba(15,23,42,0.14)]">
+        <div className="absolute left-0 top-[calc(100%+8px)] z-[90] w-full min-w-[280px] overflow-hidden rounded-[14px] border border-sibs-border bg-white shadow-[0_18px_40px_rgba(15,23,42,0.14)]">
           <div className="max-h-[255px] overflow-y-auto">
             <button
               type="button"
               onClick={() => handleSelect("All")}
-              className={`flex min-h-11 w-full items-center px-4 text-left text-sm font-extrabold transition ${
+              className={`flex min-h-9 2xl:min-h-10 w-full items-center px-4 text-left text-sm font-extrabold transition ${
                 String(value || "All") === "All"
-                  ? "bg-[#E7F0FA] text-sibs-primary-1"
-                  : "text-[#475467] hover:bg-[#F2F6FA] hover:text-sibs-primary-1"
+                  ? "bg-sibs-cream-light text-sibs-navy"
+                  : "text-sibs-muted hover:bg-sibs-surface hover:text-sibs-navy"
               }`}
             >
               {allLabel}
@@ -729,10 +731,10 @@ function SearchableDropdown({
                   key={`${id}-${option.value}-${option.label}`}
                   type="button"
                   onClick={() => handleSelect(option.value)}
-                  className={`flex min-h-11 w-full items-center px-4 text-left text-sm font-medium transition ${
+                  className={`flex min-h-9 2xl:min-h-10 w-full items-center px-4 text-left text-sm font-medium transition ${
                     String(value) === String(option.value)
-                      ? "bg-[#E7F0FA] font-extrabold text-sibs-primary-1"
-                      : "text-[#475467] hover:bg-[#F2F6FA] hover:text-sibs-primary-1"
+                      ? "bg-sibs-cream-light font-extrabold text-sibs-navy"
+                      : "text-sibs-muted hover:bg-sibs-surface hover:text-sibs-navy"
                   }`}
                 >
                   <span className="min-w-0 truncate">{option.label}</span>
@@ -852,6 +854,10 @@ export default function KronosAttendancePage() {
   const totalRecords = Number(pagination.total || 0);
   const hasPreviousPage = Boolean(pagination.hasPreviousPage) || currentPage > 1;
   const hasNextPage = Boolean(pagination.hasNextPage) || currentPage < totalPages;
+
+  const pageStart =
+    totalRecords === 0 ? 0 : (currentPage - 1) * PAGE_LIMIT + 1;
+  const pageEnd = Math.min(currentPage * PAGE_LIMIT, totalRecords);
 
   const pageStats = useMemo(() => {
     const totalLoaded = attendance.length;
@@ -1317,11 +1323,11 @@ export default function KronosAttendancePage() {
           <PageHeaderHero
             kicker={
               <div className="flex flex-wrap items-center gap-2">
-                <span className="inline-flex items-center gap-1.5 rounded border border-blue-100 bg-[#E9F0FC] px-2 py-0.5 2xl:px-2.5 2xl:py-1 sibs-text-micro font-extrabold uppercase tracking-wide text-sibs-navy">
+                <span className="inline-flex items-center gap-1.5 rounded border border-blue-100 bg-sibs-cream-light px-2 py-0.5 2xl:px-2.5 2xl:py-1 sibs-text-micro font-extrabold uppercase tracking-wide text-sibs-navy">
                   <span className="h-1.5 w-1.5 animate-sibs-pulse rounded-full bg-sibs-orange" />
                   Core HR View
                 </span>
-                <Badge className="border-blue-200 bg-blue-50 text-sibs-primary-1">
+                <Badge className="border-blue-200 bg-blue-50 text-sibs-navy">
                   Page {currentPage}
                 </Badge>
                 <Badge className="border-emerald-200 bg-emerald-50 text-emerald-600">
@@ -1334,7 +1340,7 @@ export default function KronosAttendancePage() {
                   </span>
                 ) : null}
                 {lastUpdatedAt ? (
-                  <span className="sibs-text-micro font-extrabold text-[#667085]">
+                  <span className="sibs-text-micro font-extrabold text-sibs-muted">
                     Updated{" "}
                     {formatHrisTimeLocalized(lastUpdatedAt, "en-PH", {
                       hour: "2-digit",
@@ -1373,13 +1379,13 @@ export default function KronosAttendancePage() {
             className="sibs-page-card-in"
             style={{ animationDelay: "60ms", animationFillMode: "both" }}
           >
-            <div className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
+            <div className="rounded-[14px] border border-sibs-border bg-white p-4 shadow-sm sm:p-5">
               <div>
-                <h2 className="text-xs font-extrabold uppercase tracking-wide text-[#042C51]">
+                <h2 className="text-xs font-extrabold uppercase tracking-wide text-sibs-navy">
                   Current Page Summary
                 </h2>
 
-                <p className="mt-1 sibs-text-xs font-semibold text-[#667085]">
+                <p className="mt-1 sibs-text-xs font-semibold text-sibs-muted">
                   These totals are based only on the current Kronos attendance
                   records loaded for this page.
                 </p>
@@ -1422,17 +1428,17 @@ export default function KronosAttendancePage() {
           </section>
 
           <section
-            className="sibs-profile-tab-panel overflow-visible rounded-2xl border border-[#D9E2EC] bg-white shadow-sm transition-all duration-200 hover:border-sibs-primary-1/20 hover:shadow-md"
+            className="overflow-visible rounded-[14px] border border-sibs-border bg-white shadow-xs font-jakarta transition-all duration-200 hover:border-sibs-navy/20 hover:shadow-md"
             style={{ animationDelay: "120ms" }}
           >
-            <div className="relative z-40 border-b border-[#E6ECF2] bg-white p-4 sm:p-5">
+            <div className="relative z-40 border-b border-sibs-border bg-white p-4 sm:p-5">
               <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
                 <div className="min-w-0">
                   <h2 className="font-heading text-sm sm:text-base 2xl:text-lg font-bold text-sibs-navy tracking-tight">
                     Kronos Attendance Records
                   </h2>
 
-                  <p className="mt-1 sibs-text-xs 2xl:text-sm font-semibold text-[#667085]">
+                  <p className="mt-1 sibs-text-xs 2xl:text-sm font-semibold text-sibs-muted">
                     Showing {pageStart} to {pageEnd} of {totalRecords} Kronos
                     attendance records.
                   </p>
@@ -1454,7 +1460,7 @@ export default function KronosAttendancePage() {
                         value={searchInput}
                         onChange={(event) => setSearchInput(event.target.value)}
                         placeholder="Search employee..."
-                        className="h-11 w-full rounded-xl border border-[#D9E2EC] bg-[#F8FAFC] pl-10 pr-3 sibs-text-xs font-medium text-slate-700 outline-none transition focus:border-sibs-primary-1 focus:bg-white focus:ring-4 focus:ring-sibs-primary-1/10"
+                        className="h-9 2xl:h-10 w-full rounded-[10px] border border-sibs-border bg-sibs-surface pl-10 pr-3 sibs-text-xs font-medium text-slate-700 outline-none transition focus:border-sibs-navy focus:bg-white focus:ring-4 focus:ring-sibs-navy/10"
                       />
                     </div>
 
@@ -1504,7 +1510,7 @@ export default function KronosAttendancePage() {
                       <button
                         type="submit"
                         disabled={loading}
-                        className="h-11 rounded-xl bg-sibs-primary-1 px-4 text-sm font-bold text-white transition hover:bg-[#0b3d68] disabled:cursor-not-allowed disabled:opacity-60"
+                        className="h-9 2xl:h-10 rounded-[10px] bg-sibs-navy px-4 text-sm font-bold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
                       >
                         Search
                       </button>
@@ -1513,7 +1519,7 @@ export default function KronosAttendancePage() {
                         type="button"
                         onClick={handleClearFilters}
                         disabled={loading}
-                        className="h-11 rounded-xl border border-[#D9E2EC] bg-white px-4 text-sm font-bold text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                        className="h-9 2xl:h-10 rounded-[10px] border border-sibs-border bg-white px-4 text-sm font-bold text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
                       >
                         Reset
                       </button>
@@ -1523,7 +1529,7 @@ export default function KronosAttendancePage() {
                       <button
                         type="submit"
                         disabled={loading}
-                        className="h-11 rounded-xl bg-sibs-primary-1 px-4 sibs-text-xs font-bold text-white transition hover:bg-[#0b3d68] disabled:cursor-not-allowed disabled:opacity-60"
+                        className="h-9 2xl:h-10 rounded-[10px] bg-sibs-navy px-4 sibs-text-xs font-bold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
                       >
                         Search
                       </button>
@@ -1532,7 +1538,7 @@ export default function KronosAttendancePage() {
                         type="button"
                         onClick={handleClearFilters}
                         disabled={loading}
-                        className="h-11 rounded-xl border border-[#D9E2EC] bg-white px-4 sibs-text-xs font-bold text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                        className="h-9 2xl:h-10 rounded-[10px] border border-sibs-border bg-white px-4 sibs-text-xs font-bold text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
                       >
                         Reset
                       </button>
@@ -1542,7 +1548,7 @@ export default function KronosAttendancePage() {
                       <button
                         type="submit"
                         disabled={loading}
-                        className="h-11 rounded-xl bg-sibs-primary-1 px-4 sibs-text-xs font-bold text-white transition hover:bg-[#0b3d68] disabled:cursor-not-allowed disabled:opacity-60"
+                        className="h-9 2xl:h-10 rounded-[10px] bg-sibs-navy px-4 sibs-text-xs font-bold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
                       >
                         Search
                       </button>
@@ -1551,7 +1557,7 @@ export default function KronosAttendancePage() {
                         type="button"
                         onClick={handleClearFilters}
                         disabled={loading}
-                        className="h-11 rounded-xl border border-[#D9E2EC] bg-white px-4 sibs-text-xs font-bold text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                        className="h-9 2xl:h-10 rounded-[10px] border border-sibs-border bg-white px-4 sibs-text-xs font-bold text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
                       >
                         Reset
                       </button>
@@ -1562,7 +1568,7 @@ export default function KronosAttendancePage() {
             </div>
 
             {loadError ? (
-              <div className="m-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+              <div className="m-5 rounded-[10px] border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
                 {loadError}
               </div>
             ) : null}
@@ -1610,7 +1616,7 @@ export default function KronosAttendancePage() {
                               <span className="inline-flex items-center rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 text-xs font-semibold text-slate-700">
                                 {item.department || "No department"}
                               </span>
-                              <span className="inline-flex items-center rounded-md border border-blue-100 bg-blue-50 px-2 py-0.5 text-xs font-semibold text-sibs-primary-1">
+                              <span className="inline-flex items-center rounded-md border border-blue-100 bg-blue-50 px-2 py-0.5 text-xs font-semibold text-sibs-navy">
                                 {item.gy_emp_account || "No account"}
                               </span>
                               <span className="inline-flex items-center rounded-md border border-slate-200 bg-white px-2 py-0.5 text-xs font-semibold text-slate-600">
@@ -1668,54 +1674,54 @@ export default function KronosAttendancePage() {
                 }
                 desktopContent={
                   <div>
-                    <div className="overflow-hidden rounded-xl border border-[#E6ECF2]">
+                    <div className="overflow-hidden rounded-[14px] border border-sibs-border">
                       <div className="max-h-[580px] overflow-auto sibs-scrollbar">
                         <table className="w-full min-w-[1480px] border-collapse bg-white">
-                          <thead className="sticky top-0 z-10 bg-[#F8FAFC]">
+                          <thead className="sticky top-0 z-10 bg-sibs-surface">
                             <tr>
-                              <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-left sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">
+                              <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-left sibs-text-micro font-extrabold uppercase tracking-wider text-sibs-faint">
                                 SIBS ID
                               </th>
-                              <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-left sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">
+                              <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-left sibs-text-micro font-extrabold uppercase tracking-wider text-sibs-faint">
                                 Employee Name
                               </th>
-                              <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-left sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">
+                              <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-left sibs-text-micro font-extrabold uppercase tracking-wider text-sibs-faint">
                                 Department
                               </th>
-                              <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-left sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">
+                              <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-left sibs-text-micro font-extrabold uppercase tracking-wider text-sibs-faint">
                                 Account
                               </th>
-                              <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-left sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">
+                              <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-left sibs-text-micro font-extrabold uppercase tracking-wider text-sibs-faint">
                                 Site
                               </th>
-                              <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-left sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">
+                              <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-left sibs-text-micro font-extrabold uppercase tracking-wider text-sibs-faint">
                                 Tracker Date
                               </th>
-                              <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">
+                              <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-micro font-extrabold uppercase tracking-wider text-sibs-faint">
                                 Login
                               </th>
-                              <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">
+                              <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-micro font-extrabold uppercase tracking-wider text-sibs-faint">
                                 Start Break
                               </th>
-                              <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">
+                              <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-micro font-extrabold uppercase tracking-wider text-sibs-faint">
                                 End Break
                               </th>
-                              <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">
+                              <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-micro font-extrabold uppercase tracking-wider text-sibs-faint">
                                 Logout
                               </th>
-                              <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">
+                              <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-micro font-extrabold uppercase tracking-wider text-sibs-faint">
                                 WH
                               </th>
-                              <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">
+                              <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-micro font-extrabold uppercase tracking-wider text-sibs-faint">
                                 BH
                               </th>
-                              <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">
+                              <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-micro font-extrabold uppercase tracking-wider text-sibs-faint">
                                 OT
                               </th>
-                              <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">
+                              <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-micro font-extrabold uppercase tracking-wider text-sibs-faint">
                                 ATH
                               </th>
-                              <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">
+                              <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-micro font-extrabold uppercase tracking-wider text-sibs-faint">
                                 Status
                               </th>
                             </tr>
@@ -1727,7 +1733,7 @@ export default function KronosAttendancePage() {
                                 <tr key={index}>
                                   <td
                                     colSpan={15}
-                                    className="border-t border-[#EEF2F6] px-3 2xl:px-4 py-2 2xl:py-2.5"
+                                    className="border-t border-sibs-border px-3 2xl:px-4 py-2 2xl:py-2.5"
                                   >
                                     <div className="h-5 w-full animate-pulse rounded bg-gray-200" />
                                   </td>
@@ -1737,7 +1743,7 @@ export default function KronosAttendancePage() {
                               <tr>
                                 <td
                                   colSpan={15}
-                                  className="border-t border-[#f3f4f6] p-10 text-center sibs-text-sm font-bold text-gray-500"
+                                  className="border-t border-sibs-border p-10 text-center sibs-text-sm font-bold text-gray-500"
                                 >
                                   No Kronos attendance records found.
                                 </td>
@@ -1762,37 +1768,37 @@ export default function KronosAttendancePage() {
                                       item.gy_tracker_date ||
                                       "row"
                                     }-${index}`}
-                                    className="transition hover:bg-[#F8FAFC]"
+                                    className="transition hover:bg-sibs-surface"
                                   >
-                                    <td className="whitespace-nowrap border-t border-[#EEF2F6] px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-extrabold text-[#FF5C28] tabular-nums">
+                                    <td className="whitespace-nowrap border-t border-sibs-border px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-extrabold text-sibs-orange tabular-nums">
                                       {item.gy_emp_code || "—"}
                                     </td>
 
-                                    <td className="whitespace-nowrap border-t border-[#EEF2F6] px-3 2xl:px-4 py-2 2xl:py-2.5">
-                                      <p className="m-0 max-w-[220px] truncate sibs-text-xs font-extrabold text-[#042C51]">
+                                    <td className="whitespace-nowrap border-t border-sibs-border px-3 2xl:px-4 py-2 2xl:py-2.5">
+                                      <p className="m-0 max-w-[220px] truncate sibs-text-xs font-extrabold text-sibs-navy">
                                         {formatEmployeeName(item)}
                                       </p>
                                     </td>
 
-                                    <td className="whitespace-nowrap border-t border-[#EEF2F6] px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-semibold text-[#344054]">
+                                    <td className="whitespace-nowrap border-t border-sibs-border px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-semibold text-sibs-secondary">
                                       {item.department || "—"}
                                     </td>
 
-                                    <td className="whitespace-nowrap border-t border-[#EEF2F6] px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-semibold text-[#344054]">
+                                    <td className="whitespace-nowrap border-t border-sibs-border px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-semibold text-sibs-secondary">
                                       {item.gy_emp_account || "—"}
                                     </td>
 
-                                    <td className="whitespace-nowrap border-t border-[#EEF2F6] px-3 2xl:px-4 py-2 2xl:py-2.5">
-                                      <span className="inline-flex rounded-md border border-blue-100 bg-blue-50 px-2 py-0.5 sibs-text-micro font-extrabold uppercase text-[#164E7A]">
+                                    <td className="whitespace-nowrap border-t border-sibs-border px-3 2xl:px-4 py-2 2xl:py-2.5">
+                                      <span className="inline-flex rounded-md border border-blue-100 bg-blue-50 px-2 py-0.5 sibs-text-micro font-extrabold uppercase text-sibs-navy">
                                         {getAssignedSite(item)}
                                       </span>
                                     </td>
 
-                                    <td className="whitespace-nowrap border-t border-[#EEF2F6] px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-semibold text-[#52637A]">
+                                    <td className="whitespace-nowrap border-t border-sibs-border px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-semibold text-sibs-muted">
                                       {formatDate(item.gy_tracker_date)}
                                     </td>
 
-                                    <td className="whitespace-nowrap border-t border-[#EEF2F6] px-3 2xl:px-4 py-2 2xl:py-2.5 text-center">
+                                    <td className="whitespace-nowrap border-t border-sibs-border px-3 2xl:px-4 py-2 2xl:py-2.5 text-center">
                                       <TimeBadge
                                         value={loginTime}
                                         className={getTimeBadgeClass(
@@ -1802,7 +1808,7 @@ export default function KronosAttendancePage() {
                                       />
                                     </td>
 
-                                    <td className="whitespace-nowrap border-t border-[#EEF2F6] px-3 2xl:px-4 py-2 2xl:py-2.5 text-center">
+                                    <td className="whitespace-nowrap border-t border-sibs-border px-3 2xl:px-4 py-2 2xl:py-2.5 text-center">
                                       <TimeBadge
                                         value={breakoutTime}
                                         className={getTimeBadgeClass(
@@ -1812,7 +1818,7 @@ export default function KronosAttendancePage() {
                                       />
                                     </td>
 
-                                    <td className="whitespace-nowrap border-t border-[#EEF2F6] px-3 2xl:px-4 py-2 2xl:py-2.5 text-center">
+                                    <td className="whitespace-nowrap border-t border-sibs-border px-3 2xl:px-4 py-2 2xl:py-2.5 text-center">
                                       <TimeBadge
                                         value={breakinTime}
                                         className={getTimeBadgeClass(
@@ -1822,7 +1828,7 @@ export default function KronosAttendancePage() {
                                       />
                                     </td>
 
-                                    <td className="whitespace-nowrap border-t border-[#EEF2F6] px-3 2xl:px-4 py-2 2xl:py-2.5 text-center">
+                                    <td className="whitespace-nowrap border-t border-sibs-border px-3 2xl:px-4 py-2 2xl:py-2.5 text-center">
                                       <TimeBadge
                                         value={logoutTime}
                                         className={getTimeBadgeClass(
@@ -1832,23 +1838,23 @@ export default function KronosAttendancePage() {
                                       />
                                     </td>
 
-                                    <td className="whitespace-nowrap border-t border-[#EEF2F6] px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-xs font-extrabold text-[#042C51] tabular-nums">
+                                    <td className="whitespace-nowrap border-t border-sibs-border px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-xs font-extrabold text-sibs-navy tabular-nums">
                                       {getWorkHours(item)}
                                     </td>
 
-                                    <td className="whitespace-nowrap border-t border-[#EEF2F6] px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-xs font-semibold text-[#344054] tabular-nums">
+                                    <td className="whitespace-nowrap border-t border-sibs-border px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-xs font-semibold text-sibs-secondary tabular-nums">
                                       {item.gy_tracker_bh ?? "—"}
                                     </td>
 
-                                    <td className="whitespace-nowrap border-t border-[#EEF2F6] px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-xs font-semibold text-[#344054] tabular-nums">
+                                    <td className="whitespace-nowrap border-t border-sibs-border px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-xs font-semibold text-sibs-secondary tabular-nums">
                                       {item.gy_tracker_ot ?? "—"}
                                     </td>
 
-                                    <td className="whitespace-nowrap border-t border-[#EEF2F6] px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-xs font-semibold text-[#344054] tabular-nums">
+                                    <td className="whitespace-nowrap border-t border-sibs-border px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-xs font-semibold text-sibs-secondary tabular-nums">
                                       {item.gy_tracker_ath ?? "—"}
                                     </td>
 
-                                    <td className="whitespace-nowrap border-t border-[#EEF2F6] px-3 2xl:px-4 py-2 2xl:py-2.5 text-center">
+                                    <td className="whitespace-nowrap border-t border-sibs-border px-3 2xl:px-4 py-2 2xl:py-2.5 text-center">
                                       {renderStatusBadge(item.gy_tracker_status)}
                                     </td>
                                   </tr>

@@ -177,7 +177,7 @@ const PipelineCandidateCard = ({
         <div className="flex min-w-0 flex-1 items-start gap-1.5">
           <GripVertical
             size={12}
-            className="mt-0.5 shrink-0 text-slate-300 transition-colors group-hover:text-sibs-faint"
+            className="mt-0.5 shrink-0 text-slate-300 transition-colors group-hover:text-sibs-muted"
             aria-hidden="true"
           />
 
@@ -190,7 +190,7 @@ const PipelineCandidateCard = ({
             </h3>
             <p
               title={candidate.email || "No email saved"}
-              className="mt-0.5 truncate text-[9px] font-semibold text-sibs-faint"
+              className="mt-0.5 truncate text-[9px] font-semibold text-sibs-muted"
             >
               {candidate.email || "No email saved"}
             </p>
@@ -224,7 +224,7 @@ const PipelineCandidateCard = ({
 
       <div className="mt-2.5 grid grid-cols-2 gap-2 rounded-[10px] border border-sibs-border bg-sibs-surface px-2.5 py-2.5">
         <div className="min-w-0 border-r border-sibs-border pr-2">
-          <p className="text-[8px] font-extrabold uppercase tracking-wide text-sibs-faint">
+          <p className="text-[8px] font-extrabold uppercase tracking-wide text-sibs-muted">
             Position
           </p>
           <p
@@ -244,7 +244,7 @@ const PipelineCandidateCard = ({
         </div>
 
         <div className="min-w-0 pl-0.5">
-          <p className="truncate text-[8px] font-extrabold uppercase tracking-wide text-sibs-faint">
+          <p className="truncate text-[8px] font-extrabold uppercase tracking-wide text-sibs-muted">
             {resolvedAccountLabel}
           </p>
           <p
@@ -261,7 +261,7 @@ const PipelineCandidateCard = ({
           title={`Assessment Status: ${assessmentLabel}`}
           className="flex min-w-0 items-center justify-between gap-1.5 truncate rounded-[10px] border border-sibs-border bg-sibs-surface px-2 py-1.5"
         >
-          <span className="shrink-0 text-[7.5px] font-extrabold uppercase tracking-tight text-sibs-faint">
+          <span className="shrink-0 text-[7.5px] font-extrabold uppercase tracking-tight text-sibs-muted">
             Assess
           </span>
           <span
@@ -277,7 +277,7 @@ const PipelineCandidateCard = ({
           title={`Interview Status: ${interviewStatus || "Pending"}`}
           className="flex min-w-0 items-center justify-between gap-1.5 truncate rounded-[10px] border border-sibs-border bg-sibs-surface px-2 py-1.5"
         >
-          <span className="shrink-0 text-[7.5px] font-extrabold uppercase tracking-tight text-sibs-faint">
+          <span className="shrink-0 text-[7.5px] font-extrabold uppercase tracking-tight text-sibs-muted">
             Interview
           </span>
           <span
@@ -320,7 +320,7 @@ const PipelineCandidateCard = ({
             {dropOffEmailRecipient}
           </p>
           {dropOffEmailLastActivity && (
-            <p className="mt-1 text-[8px] font-semibold text-sibs-faint">
+            <p className="mt-1 text-[8px] font-semibold text-sibs-muted">
               {formatDateTime(dropOffEmailLastActivity)}
             </p>
           )}
@@ -332,7 +332,7 @@ const PipelineCandidateCard = ({
           title={latestTimeline.reason}
           className="mt-2.5 truncate rounded-[10px] border border-sibs-border bg-sibs-surface px-2.5 py-1.5 text-[9px] font-semibold text-sibs-muted"
         >
-          <span className="mr-1 font-extrabold text-sibs-faint">•</span>
+          <span className="mr-1 font-extrabold text-sibs-muted">•</span>
           {latestTimeline.reason}
         </p>
       )}
@@ -340,7 +340,7 @@ const PipelineCandidateCard = ({
       <div className="mt-2.5 flex items-center justify-between gap-2 border-t border-sibs-border pt-2.5">
         <p
           title={candidate.candidateId || candidate.candidateApplicationId || "—"}
-          className="min-w-0 max-w-[118px] truncate font-mono text-[8px] font-bold text-sibs-faint"
+          className="min-w-0 max-w-[118px] truncate font-mono text-[8px] font-bold text-sibs-muted"
         >
           {candidate.candidateId || candidate.candidateApplicationId || "—"}
         </p>

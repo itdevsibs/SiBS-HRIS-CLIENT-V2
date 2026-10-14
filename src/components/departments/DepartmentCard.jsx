@@ -11,7 +11,7 @@ import {
 
 import DepartmentProfileAvatar from "./DepartmentProfileAvatar";
 
-export default function DepartmentCard({ department, onView }) {
+export default function DepartmentCard({ department, onView, index = 0 }) {
   const active = department.status === "active";
   const visibleAccounts = department.accounts.slice(0, 2);
   const remainingAccounts = Math.max(
@@ -37,7 +37,11 @@ export default function DepartmentCard({ department, onView }) {
       onClick={openDepartment}
       onKeyDown={handleKeyDown}
       title={`View ${department.name} details`}
-      className="group flex min-h-[440px] cursor-pointer flex-col overflow-hidden rounded-2xl border border-sibs-border bg-white transition hover:-translate-y-0.5 hover:border-sibs-orange/40 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-sibs-orange/20"
+      className="sibs-page-card-in group flex min-h-[440px] cursor-pointer flex-col overflow-hidden rounded-[14px] border border-sibs-border bg-white font-jakarta shadow-xs transition hover:-translate-y-0.5 hover:border-sibs-orange/40 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-sibs-orange/20"
+      style={{
+        animationDelay: `${Math.min(index, 12) * 50}ms`,
+        animationFillMode: "both",
+      }}
     >
       <div className="flex flex-1 flex-col p-5">
         <div className="flex items-start justify-between gap-3">
@@ -70,7 +74,7 @@ export default function DepartmentCard({ department, onView }) {
           {department.description}
         </p>
 
-        <div className="mt-4 flex min-h-[74px] items-center gap-3 rounded-xl border border-sibs-border bg-sibs-surface p-3">
+        <div className="mt-4 flex min-h-[74px] items-center gap-3 rounded-[10px] border border-sibs-border bg-sibs-surface p-3">
           <DepartmentProfileAvatar
             employee={department.lead || {}}
             size="lg"

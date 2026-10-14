@@ -72,14 +72,14 @@ export default function DocumentPreviewModal({
       }
     >
       {previewUrl ? (
-        <div className="overflow-hidden rounded-xl border border-sibs-border bg-sibs-surface p-2 sm:p-4">
+        <div className="overflow-hidden rounded-[14px] border border-sibs-border bg-sibs-surface p-2 sm:p-4">
           {isImage && !isImageFailed ? (
             <div className="flex min-h-[300px] items-center justify-center">
               <img
                 src={previewUrl}
                 alt={fileName}
                 onError={() => setFailedUrl(previewUrl)}
-                className="max-h-[55vh] sm:max-h-[62vh] 2xl:max-h-[65vh] w-auto max-w-full rounded-lg object-contain shadow-xs"
+                className="max-h-[55vh] sm:max-h-[62vh] 2xl:max-h-[65vh] w-auto max-w-full rounded-[10px] object-contain shadow-xs"
               />
             </div>
           ) : isPdf ? (
@@ -87,10 +87,10 @@ export default function DocumentPreviewModal({
               src={previewUrl}
               title={fileName}
               loading="lazy"
-              className="h-[55vh] sm:h-[62vh] 2xl:h-[65vh] w-full rounded-lg border border-sibs-border bg-white"
+              className="h-[55vh] sm:h-[62vh] 2xl:h-[65vh] w-full rounded-[10px] border border-sibs-border bg-white"
             />
           ) : (
-            <div className="flex min-h-[220px] flex-col items-center justify-center rounded-xl border border-sibs-border bg-white p-6 text-center">
+            <div className="flex min-h-[220px] flex-col items-center justify-center rounded-[10px] border border-sibs-border bg-white p-6 text-center">
               <FileText size={36} className="text-sibs-navy" />
               <p className="mt-2 sibs-text-sm font-extrabold text-sibs-navy">
                 Preview not available for this {isImage ? "image" : "file type"}
@@ -103,8 +103,8 @@ export default function DocumentPreviewModal({
         </div>
       ) : null}
 
-      <div className="flex items-start gap-4 rounded-xl border border-sibs-border bg-sibs-surface p-3.5 2xl:p-4">
-        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-red-50 text-xs font-extrabold text-red-600">
+      <div className="flex items-start gap-4 rounded-[10px] border border-sibs-border bg-sibs-surface p-3.5 2xl:p-4">
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] bg-red-50 text-xs font-extrabold text-red-600">
           {fileType}
         </span>
         <div className="min-w-0 flex-1">

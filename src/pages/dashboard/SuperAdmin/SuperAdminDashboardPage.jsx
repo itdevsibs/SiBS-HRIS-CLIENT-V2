@@ -432,6 +432,7 @@ export default function SuperAdminDashboardPage() {
     return (
       <DashboardLoadingSkeleton
         ariaLabel="Loading Super Admin Dashboard"
+        showStatutoryCoverage={true}
         hero={
           <SuperAdminDashboardHeader
             displayName={getUserDisplayName(user)}

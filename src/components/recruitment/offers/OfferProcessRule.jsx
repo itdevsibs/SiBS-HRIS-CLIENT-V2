@@ -7,7 +7,7 @@ export default function OfferProcessRule() {
       className="sibs-profile-tab-panel sibs-page-card-in flex items-start gap-3 rounded-[10px] border border-blue-100 bg-sky-50/50 px-3.5 py-3 font-jakarta"
       style={{ animationDelay: "240ms", animationFillMode: "both" }}
     >
-      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-sibs-tertiary-10 text-sibs-primary-1">
+      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-sibs-cream-light text-sibs-orange">
         <Target size={15} />
       </span>
 

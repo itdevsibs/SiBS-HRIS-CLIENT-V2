@@ -35,7 +35,7 @@ export default function SuperAdminDashboardHeader({
         </>
       }
       actions={
-        <>
+        <div className="flex shrink-0 items-center gap-2 2xl:gap-2.5 max-sm:w-full">
           {onRefresh ? (
             <button
               type="button"
@@ -55,13 +55,13 @@ export default function SuperAdminDashboardHeader({
           <button
             type="button"
             onClick={onOpenEmployees}
-            className="sibs-btn-primary max-sm:w-full"
+            className="sibs-btn-primary max-sm:flex-1"
           >
             <Users className="h-3.5 w-3.5 2xl:h-4 2xl:w-4 text-white" />
             Launch Employee Directory
             <ArrowRight className="h-3 w-3 2xl:h-3.5 2xl:w-3.5" />
           </button>
-        </>
+        </div>
       }
     />
   );

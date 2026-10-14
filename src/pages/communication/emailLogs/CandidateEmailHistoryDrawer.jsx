@@ -603,6 +603,7 @@ export default function CandidateEmailHistoryDrawer({ candidate, onClose }) {
         ref={drawerRef}
         className="sibs-modal-pop-in relative z-10 flex h-dvh w-full max-w-[760px] flex-col overflow-hidden border-l border-sibs-border bg-sibs-surface shadow-2xl"
       >
+        <div className="sibs-top-accent" />
         <header className="bg-sibs-navy px-5 py-5 text-white">
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0">
@@ -614,7 +615,7 @@ export default function CandidateEmailHistoryDrawer({ candidate, onClose }) {
                   {threadRecords.length} {threadRecords.length === 1 ? "Email" : "Emails"}
                 </span>
               </div>
-              <h2 className="mt-2 truncate font-heading text-xl font-bold tracking-tight">
+              <h2 className="sibs-modal-title mt-2 truncate font-heading text-xl font-bold tracking-tight text-white">
                 {candidate.candidateName}
               </h2>
               <div className="mt-1 space-y-1">
@@ -634,7 +635,7 @@ export default function CandidateEmailHistoryDrawer({ candidate, onClose }) {
               ref={closeButtonRef}
               type="button"
               onClick={onClose}
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-blue-100 hover:bg-white/10 hover:text-white"
+              className="sibs-modal-close-btn shrink-0"
               aria-label="Close drawer"
             >
               <X className="h-5 w-5" />
@@ -644,19 +645,19 @@ export default function CandidateEmailHistoryDrawer({ candidate, onClose }) {
 
         <div className="border-b border-sibs-border bg-white px-5 py-4">
           <div className="grid gap-3 sm:grid-cols-3">
-            <div className="rounded-xl border border-sibs-border bg-sibs-surface px-3 py-3">
+            <div className="rounded-[10px] border border-sibs-border bg-sibs-surface px-3 py-3">
               <p className="flex items-center gap-1.5 text-[9px] font-extrabold uppercase tracking-wide text-sibs-faint">
                 <BriefcaseBusiness className="h-3.5 w-3.5" /> Position
               </p>
               <p className="mt-1 truncate text-[11px] font-extrabold text-sibs-navy">{candidate.position}</p>
             </div>
-            <div className="rounded-xl border border-sibs-border bg-sibs-surface px-3 py-3">
+            <div className="rounded-[10px] border border-sibs-border bg-sibs-surface px-3 py-3">
               <p className="flex items-center gap-1.5 text-[9px] font-extrabold uppercase tracking-wide text-sibs-faint">
                 <UserRound className="h-3.5 w-3.5" /> Account
               </p>
               <p className="mt-1 truncate text-[11px] font-extrabold text-sibs-navy">{candidate.account}</p>
             </div>
-            <div className="rounded-xl border border-sibs-border bg-sibs-surface px-3 py-3">
+            <div className="rounded-[10px] border border-sibs-border bg-sibs-surface px-3 py-3">
               <p className="flex items-center gap-1.5 text-[9px] font-extrabold uppercase tracking-wide text-sibs-faint">
                 <MapPin className="h-3.5 w-3.5" /> Site
               </p>
@@ -722,7 +723,7 @@ export default function CandidateEmailHistoryDrawer({ candidate, onClose }) {
                 <div key={record.id} className="relative">
                   <span
                     aria-hidden="true"
-                    className={`absolute -left-10 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-full border-4 border-sibs-surface shadow-sm ${
+                    className={`absolute -left-10 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-full border-4 border-sibs-surface shadow-xs ${
                       incomingReply
                         ? "bg-sky-600 text-white"
                         : index === 0
@@ -733,7 +734,7 @@ export default function CandidateEmailHistoryDrawer({ candidate, onClose }) {
                     <Mail className="h-3.5 w-3.5" />
                   </span>
 
-                  <article className="w-full overflow-hidden rounded-xl border border-sibs-border bg-white text-left shadow-xs">
+                  <article className="w-full overflow-hidden rounded-[14px] border border-sibs-border bg-white text-left shadow-xs">
                     <div className="flex items-center justify-between gap-3 border-b border-slate-100 bg-slate-50/70 px-4 py-2.5">
                       <div className="flex min-w-0 flex-wrap items-center gap-2">
                         <span className="inline-flex items-center gap-1 text-[9px] font-extrabold uppercase tracking-wide text-sibs-faint">

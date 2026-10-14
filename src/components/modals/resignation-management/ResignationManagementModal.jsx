@@ -24,7 +24,7 @@ import {
   XCircle,
 } from "lucide-react";
 
-import StatusModal from "../StatusModal";
+import ConfirmModal from "@/components/ui/ConfirmModal";
 import { formatDate, formatDateTime } from "../../layout/FormatDateTime";
 import {
   convertHeicBlobToJpeg,
@@ -41,12 +41,13 @@ import {
 
 const RESIGNATION_TYPES = ["Formal", "Immediate"];
 
-const EDGE = "rounded-xl";
-const PANEL_EDGE = "rounded-xl";
+const EDGE = "rounded-[14px]";
+const PANEL_EDGE = "rounded-[14px]";
+const CONTROL_EDGE = "rounded-[10px]";
 const FIELD_HEIGHT = "h-8.5 2xl:h-10";
-const FIELD_BORDER = "border border-[#D7DEE8]";
+const FIELD_BORDER = "border border-sibs-border";
 const FIELD_BASE =
-  "w-full rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-3 2xl:px-3.5 font-jakarta sibs-text-xs font-semibold text-[#042C51] outline-none transition placeholder:text-[#98A2B3] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10";
+  "w-full rounded-[10px] border border-sibs-border bg-sibs-surface px-3 2xl:px-3.5 font-jakarta sibs-text-xs font-semibold text-sibs-navy outline-none transition placeholder:text-sibs-muted hover:border-sibs-orange/40 hover:bg-white focus:border-sibs-orange focus:bg-white focus:ring-4 focus:ring-sibs-orange/10";
 
 const API_URL =
   import.meta.env.VITE_API_URL ||
@@ -446,7 +447,7 @@ function ProfileAvatar({ item, size = "md" }) {
         ref={anchorRef}
         onMouseEnter={showProfilePreview}
         onMouseLeave={hideProfilePreview}
-        className={`flex ${sizeClass} shrink-0 cursor-default items-center justify-center overflow-hidden rounded-full border border-[#D9E2EC] bg-[#F2F6FA] shadow-sm`}
+        className={`flex ${sizeClass} shrink-0 cursor-default items-center justify-center overflow-hidden rounded-full border border-sibs-border bg-sibs-surface shadow-sm`}
       >
         {avatarContent}
       </div>
@@ -457,7 +458,7 @@ function ProfileAvatar({ item, size = "md" }) {
       typeof document !== "undefined"
         ? createPortal(
             <div
-              className="pointer-events-none fixed z-[100000] overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white p-1.5 shadow-2xl"
+              className="pointer-events-none fixed z-[100000] overflow-hidden rounded-[14px] border border-sibs-border bg-white p-1.5 shadow-2xl"
               style={{
                 top: preview.top,
                 left: preview.left,
@@ -777,7 +778,7 @@ function DropdownPortal({
   return createPortal(
     <div
       ref={dropdownRef}
-      className={`fixed z-[999999] overflow-hidden ${EDGE} border border-[#D7DEE8] bg-white shadow-lg`}
+      className={`fixed z-[999999] overflow-hidden rounded-[10px] border border-sibs-border bg-white shadow-lg`}
       style={{
         top: `${style.top}px`,
         left: `${style.left}px`,
@@ -873,7 +874,7 @@ function EmployeeDropdownPortal({ open, anchorRef, children, onClose }) {
   return createPortal(
     <div
       ref={dropdownRef}
-      className={`fixed z-[999999] overflow-hidden ${EDGE} border border-[#D7DEE8] bg-white shadow-lg`}
+      className={`fixed z-[999999] overflow-hidden rounded-[10px] border border-sibs-border bg-white shadow-lg`}
       style={{
         top: `${style.top}px`,
         left: `${style.left}px`,
@@ -959,7 +960,7 @@ function DatePickerPortal({ open, anchorRef, children, onClose }) {
   return createPortal(
     <div
       ref={pickerRef}
-      className={`fixed z-[999999] overflow-hidden ${EDGE} border border-[#D7DEE8] bg-white shadow-lg`}
+      className={`fixed z-[999999] overflow-hidden rounded-[10px] border border-sibs-border bg-white shadow-lg`}
       style={{
         top: `${style.top}px`,
         left: `${style.left}px`,
@@ -1012,11 +1013,11 @@ function CalendarPopover({
 
   return (
     <div className="bg-white">
-      <div className="flex items-center justify-between border-b border-[#E6ECF2] px-5 py-4">
+      <div className="flex items-center justify-between border-b border-sibs-border px-5 py-4">
         <button
           type="button"
           onClick={goPreviousMonth}
-          className="inline-flex h-8 w-8 items-center justify-center rounded-full text-sibs-primary-1 transition hover:bg-[#F2F6FA]"
+          className="inline-flex h-8 w-8 items-center justify-center rounded-full text-sibs-primary-1 transition hover:bg-sibs-surface"
         >
           <ChevronLeft size={18} />
         </button>
@@ -1028,7 +1029,7 @@ function CalendarPopover({
         <button
           type="button"
           onClick={goNextMonth}
-          className="inline-flex h-8 w-8 items-center justify-center rounded-full text-sibs-primary-1 transition hover:bg-[#F2F6FA]"
+          className="inline-flex h-8 w-8 items-center justify-center rounded-full text-sibs-primary-1 transition hover:bg-sibs-surface"
         >
           <ChevronRight size={18} />
         </button>
@@ -1039,7 +1040,7 @@ function CalendarPopover({
           {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((day) => (
             <div
               key={day}
-              className="flex h-8 items-center justify-center text-xs font-extrabold text-[#2F6CA5]"
+              className="flex h-8 items-center justify-center text-xs font-extrabold text-sibs-orange"
             >
               {day}
             </div>
@@ -1061,12 +1062,12 @@ function CalendarPopover({
                   disabled
                     ? "cursor-not-allowed bg-transparent text-slate-300"
                     : selected
-                      ? "bg-[#E7F0FA] text-sibs-primary-1"
+                      ? "bg-sibs-cream-light text-sibs-orange"
                       : current
-                        ? "bg-[#EAF2FB] text-sibs-primary-1"
+                        ? "bg-sibs-surface text-sibs-navy"
                         : isCurrentMonth
-                          ? "bg-transparent text-sibs-primary-1 hover:bg-[#F2F6FA]"
-                          : "bg-transparent text-slate-400 hover:bg-[#F8FAFC]"
+                          ? "bg-transparent text-sibs-primary-1 hover:bg-sibs-surface"
+                          : "bg-transparent text-slate-400 hover:bg-sibs-surface"
                 }`}
               >
                 {date.getDate()}
@@ -1076,11 +1077,11 @@ function CalendarPopover({
         </div>
       </div>
 
-      <div className="flex items-center justify-between border-t border-[#E6ECF2] px-5 py-4">
+      <div className="flex items-center justify-between border-t border-sibs-border px-5 py-4">
         <button
           type="button"
           onClick={onClear}
-          className="text-sm font-extrabold text-[#2F6CA5] transition hover:text-sibs-primary-1"
+          className="text-sm font-extrabold text-sibs-muted transition hover:text-sibs-orange"
         >
           Clear
         </button>
@@ -1088,7 +1089,7 @@ function CalendarPopover({
         <button
           type="button"
           onClick={() => onToday?.(toDateValue(today))}
-          className="text-sm font-extrabold text-sibs-primary-1 transition hover:text-[#2F6CA5]"
+          className="text-sm font-extrabold text-sibs-primary-1 transition hover:text-sibs-orange"
         >
           Today
         </button>
@@ -1168,7 +1169,7 @@ function EmployeePickerField({
           outline: 0 !important;
           box-shadow: none !important;
           background: transparent !important;
-          caret-color: #042C51;
+          caret-color: var(--color-sibs-navy, rgb(4,44,81));
         }
 
         .resignation-employee-search-editor:focus,
@@ -1181,23 +1182,23 @@ function EmployeePickerField({
 
         .resignation-employee-search-editor:empty::before {
           content: attr(data-placeholder);
-          color: #98A2B3;
+          color: var(--color-sibs-muted, rgb(152,162,179));
           pointer-events: none;
         }
       `}</style>
 
-      <label className="mb-1.5 block font-jakarta text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+      <label className="mb-1.5 block font-jakarta text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-sibs-muted">
         {label}
       </label>
 
       <div ref={anchorRef} className="min-w-0">
         {open ? (
           <div
-            className={`flex ${FIELD_HEIGHT} w-full min-w-0 items-center gap-2 ${EDGE} ${FIELD_BORDER} border-[#FF5C28] bg-white px-3 2xl:px-3.5 font-jakarta sibs-text-xs font-semibold outline-none ring-4 ring-[#FF5C28]/10 transition`}
+            className={`flex ${FIELD_HEIGHT} w-full min-w-0 items-center gap-2 ${EDGE} ${FIELD_BORDER} border-sibs-orange bg-white px-3 2xl:px-3.5 font-jakarta sibs-text-xs font-semibold outline-none ring-4 ring-sibs-orange/10 transition`}
           >
             <Search
               size={15}
-              className="shrink-0 text-[#98A2B3]"
+              className="shrink-0 text-sibs-muted"
             />
 
             <div
@@ -1218,14 +1219,14 @@ function EmployeePickerField({
                   event.preventDefault();
                 }
               }}
-              className="resignation-employee-search-editor font-jakarta sibs-text-xs font-semibold text-[#042C51]"
+              className="resignation-employee-search-editor font-jakarta sibs-text-xs font-semibold text-sibs-navy"
               aria-label="Search employee"
             />
 
             <button
               type="button"
               onClick={() => onOpenChange?.(false)}
-              className="flex shrink-0 items-center justify-center text-[#FF5C28]"
+              className="flex shrink-0 items-center justify-center text-sibs-orange"
               aria-label="Close employee dropdown"
             >
               <ChevronDown size={16} className="rotate-180" />
@@ -1235,15 +1236,15 @@ function EmployeePickerField({
           <button
             type="button"
             onClick={() => onOpenChange?.(true)}
-            className={`flex ${FIELD_HEIGHT} w-full min-w-0 items-center justify-between gap-3 ${EDGE} ${FIELD_BORDER} bg-[#F8FAFC] px-3 2xl:px-3.5 text-left font-jakarta sibs-text-xs font-semibold text-[#042C51] outline-none transition hover:border-[#FF5C28]/40 hover:bg-white`}
+            className={`flex ${FIELD_HEIGHT} w-full min-w-0 items-center justify-between gap-3 ${EDGE} ${FIELD_BORDER} bg-sibs-surface px-3 2xl:px-3.5 text-left font-jakarta sibs-text-xs font-semibold text-sibs-navy outline-none transition hover:border-sibs-orange/40 hover:bg-white`}
             aria-expanded={open}
             aria-haspopup="listbox"
           >
             <span
               className={`block min-w-0 flex-1 truncate whitespace-nowrap ${
                 selectedSibsId
-                  ? "font-bold text-[#042C51]"
-                  : "font-medium text-[#98A2B3]"
+                  ? "font-bold text-sibs-navy"
+                  : "font-medium text-sibs-muted"
               }`}
               title={selectedSibsId || "Select employee under your management"}
             >
@@ -1252,7 +1253,7 @@ function EmployeePickerField({
 
             <ChevronDown
               size={16}
-              className="shrink-0 text-[#042C51] transition-transform"
+              className="shrink-0 text-sibs-navy transition-transform"
             />
           </button>
         )}
@@ -1268,12 +1269,12 @@ function EmployeePickerField({
           role="listbox"
         >
           {loading ? (
-            <div className="flex items-center justify-center gap-2 px-4 py-6 text-xs font-bold text-[#042C51]">
-              <Loader2 size={15} className="animate-spin text-[#FF5C28]" />
+            <div className="flex items-center justify-center gap-2 px-4 py-6 text-xs font-bold text-sibs-navy">
+              <Loader2 size={15} className="animate-spin text-sibs-orange" />
               Loading employees...
             </div>
           ) : error ? (
-            <div className="mx-3 my-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-left">
+            <div className="mx-3 my-2 rounded-[10px] border border-red-200 bg-red-50 px-4 py-3 text-left">
               <div className="flex items-start gap-2.5">
                 <AlertCircle size={17} className="mt-0.5 shrink-0 text-red-600" />
                 <div>
@@ -1287,7 +1288,7 @@ function EmployeePickerField({
               </div>
             </div>
           ) : employees.length === 0 ? (
-            <div className="px-4 py-6 text-center text-xs font-bold text-[#98A2B3]">
+            <div className="px-4 py-6 text-center text-xs font-bold text-sibs-muted">
               No employees found under your management.
             </div>
           ) : (
@@ -1300,19 +1301,19 @@ function EmployeePickerField({
                 onClick={() => onSelect?.(employee)}
                 className={`flex w-full items-center gap-3 px-3.5 py-2.5 2xl:py-3 text-left sibs-text-xs font-jakarta transition ${
                   selectedSibsId === employee.sibsId
-                    ? "bg-[#FFF0EB] font-bold text-[#FF5C28]"
-                    : "text-[#042C51] hover:bg-[#F8FAFC]"
+                    ? "bg-sibs-cream-light font-bold text-sibs-orange"
+                    : "text-sibs-navy hover:bg-sibs-surface"
                 }`}
               >
                 <ProfileAvatar item={employee} size="sm" />
 
                 <div className="min-w-0 flex-1">
-                  <span className="block truncate font-bold text-[#042C51]">
+                  <span className="block truncate font-bold text-sibs-navy">
                     {employee.sibsId || "N/A"} -{" "}
                     {employee.fullName || "Unnamed Employee"}
                   </span>
 
-                  <span className="mt-0.5 block truncate text-[11px] font-semibold text-[#667085]">
+                  <span className="mt-0.5 block truncate text-[11px] font-semibold text-sibs-muted">
                     {employee.department || "No department"}
                     {employee.account ? ` · ${employee.account}` : ""}
                   </span>
@@ -1365,20 +1366,20 @@ function ModalSelectField({
         }}
         className={`flex ${FIELD_HEIGHT} w-full items-center justify-between ${EDGE} ${FIELD_BORDER} px-3 2xl:px-3.5 text-left font-jakarta sibs-text-xs font-semibold outline-none transition ${
           disabled
-            ? "cursor-not-allowed bg-[#F8FAFC] text-[#98A2B3] opacity-70"
+            ? "cursor-not-allowed bg-sibs-surface text-sibs-muted opacity-70"
             : open
-              ? "border-[#FF5C28] bg-white ring-4 ring-[#FF5C28]/10"
-              : "bg-[#F8FAFC] text-[#042C51] hover:border-[#FF5C28]/40 hover:bg-white"
+              ? "border-sibs-orange bg-white ring-4 ring-sibs-orange/10"
+              : "bg-sibs-surface text-sibs-navy hover:border-sibs-orange/40 hover:bg-white"
         }`}
       >
-        <span className={value ? "font-bold text-[#042C51]" : "font-medium text-[#98A2B3]"}>
+        <span className={value ? "font-bold text-sibs-navy" : "font-medium text-sibs-muted"}>
           {value || placeholder}
         </span>
 
         <ChevronDown
           size={16}
-          className={`shrink-0 text-[#042C51] transition-transform ${
-            open ? "rotate-180 text-[#FF5C28]" : ""
+          className={`shrink-0 text-sibs-navy transition-transform ${
+            open ? "rotate-180 text-sibs-orange" : ""
           }`}
         />
       </button>
@@ -1400,8 +1401,8 @@ function ModalSelectField({
               onClick={() => handleSelect(option)}
               className={`block w-full px-3.5 py-2.5 2xl:py-3 text-left font-jakarta sibs-text-xs transition ${
                 selected
-                  ? "bg-[#FFF0EB] font-bold text-[#FF5C28]"
-                  : "font-semibold text-[#042C51] hover:bg-[#F8FAFC]"
+                  ? "bg-sibs-cream-light font-bold text-sibs-orange"
+                  : "font-semibold text-sibs-navy hover:bg-sibs-surface"
               }`}
             >
               {option}
@@ -1481,18 +1482,18 @@ function FormDateField({
         }}
         className={`flex ${FIELD_HEIGHT} w-full items-center justify-between ${EDGE} ${FIELD_BORDER} px-3 2xl:px-3.5 text-left font-jakarta sibs-text-xs font-semibold outline-none transition ${
           isLocked
-            ? "pointer-events-none bg-[#F8FAFC] text-[#667085]"
+            ? "pointer-events-none bg-sibs-surface text-sibs-muted"
             : open
-              ? "border-[#FF5C28] bg-white ring-4 ring-[#FF5C28]/10"
-              : "bg-[#F8FAFC] text-[#042C51] hover:border-[#FF5C28]/40 hover:bg-white"
+              ? "border-sibs-orange bg-white ring-4 ring-sibs-orange/10"
+              : "bg-sibs-surface text-sibs-navy hover:border-sibs-orange/40 hover:bg-white"
         }`}
       >
         <span className="flex min-w-0 items-center gap-2">
-          <CalendarDays size={15} className="shrink-0 text-[#042C51]" />
+          <CalendarDays size={15} className="shrink-0 text-sibs-navy" />
 
           <span
             className={`truncate ${
-              value ? "font-bold text-[#042C51]" : "font-medium text-[#98A2B3]"
+              value ? "font-bold text-sibs-navy" : "font-medium text-sibs-muted"
             }`}
           >
             {value ? formatModalDateLabel(value) : placeholder}
@@ -1502,8 +1503,8 @@ function FormDateField({
         {!isLocked && (
           <ChevronDown
             size={16}
-            className={`shrink-0 text-[#042C51] transition-transform ${
-              open ? "rotate-180 text-[#FF5C28]" : ""
+            className={`shrink-0 text-sibs-navy transition-transform ${
+              open ? "rotate-180 text-sibs-orange" : ""
             }`}
           />
         )}
@@ -1561,7 +1562,7 @@ function FormInput({
         placeholder={placeholder}
         className={`${FIELD_HEIGHT} ${FIELD_BASE} ${
           isDisabled
-            ? "cursor-not-allowed bg-[#F8FAFC] text-[#98A2B3] opacity-70"
+            ? "cursor-not-allowed bg-sibs-surface text-sibs-muted opacity-70"
             : ""
         }`}
       />
@@ -1595,9 +1596,9 @@ function FormTextarea({
         rows={rows}
         disabled={disabled}
         placeholder={placeholder}
-        className={`w-full resize-none rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-3.5 py-2.5 font-jakarta sibs-text-xs font-semibold text-[#042C51] outline-none transition placeholder:text-[#98A2B3] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 leading-5 ${
+        className={`w-full resize-none rounded-[10px] border border-sibs-border bg-sibs-surface px-3.5 py-2.5 font-jakarta sibs-text-xs font-semibold text-sibs-navy outline-none transition placeholder:text-sibs-muted hover:border-sibs-orange/40 hover:bg-white focus:border-sibs-orange focus:bg-white focus:ring-4 focus:ring-sibs-orange/10 leading-5 ${
           disabled
-            ? "cursor-not-allowed bg-[#F8FAFC] text-[#98A2B3] opacity-70"
+            ? "cursor-not-allowed bg-sibs-surface text-sibs-muted opacity-70"
             : ""
         }`}
       />
@@ -1607,7 +1608,7 @@ function FormTextarea({
 
 function ChecklistItem({ done = false, title, subtitle }) {
   return (
-    <div className={`${EDGE} border border-[#E6ECF2] bg-[#F8FAFC] p-4`}>
+    <div className={`${EDGE} border border-sibs-border bg-sibs-surface p-4`}>
       <div className="flex items-start gap-3">
         <div
           className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${
@@ -1620,9 +1621,9 @@ function ChecklistItem({ done = false, title, subtitle }) {
         </div>
 
         <div className="min-w-0">
-          <p className="text-sm font-extrabold text-[#101828]">{title}</p>
+          <p className="text-sm font-extrabold text-sibs-navy">{title}</p>
 
-          <p className="mt-1 line-clamp-2 text-xs font-bold text-[#2F6CA5]">
+          <p className="mt-1 line-clamp-2 text-xs font-bold text-sibs-muted">
             {subtitle || "—"}
           </p>
         </div>
@@ -1669,7 +1670,7 @@ function CompletionStatusBadge({ completed = 0, total = 6 }) {
 function FormFieldLabel({ label }) {
   return (
     <div className="mb-1.5 flex min-w-0 items-center justify-between gap-2">
-      <label className="truncate font-jakarta text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+      <label className="truncate font-jakarta text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-sibs-muted">
         {label}
       </label>
     </div>
@@ -1682,7 +1683,7 @@ function FormFieldLabel({ label }) {
 function ViewFieldLabel({ label }) {
   return (
     <div className="mb-1.5 flex min-w-0 items-center justify-between gap-2">
-      <label className="truncate font-jakarta text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+      <label className="truncate font-jakarta text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-sibs-muted">
         {label}
       </label>
     </div>
@@ -1693,14 +1694,14 @@ function FilingInfoInput({ label, value, displayValue }) {
   const finalDisplayValue = displayValue || value || "—";
 
   return (
-    <div className="min-w-0 rounded-lg bg-[#F8FAFC] px-4 py-3 selection:bg-[#FFF3B8] selection:text-[#101828]">
+    <div className="min-w-0 rounded-[10px] bg-sibs-surface px-4 py-3 selection:bg-sibs-cream-light selection:text-sibs-navy">
       <p className="truncate text-[10px] font-extrabold uppercase text-sibs-primary-1/70">
         {label}
       </p>
 
       <p
         title={finalDisplayValue}
-        className="mt-1 max-w-full overflow-x-auto whitespace-nowrap text-sm font-bold leading-5 text-[#344054] selection:bg-[#FFF3B8] selection:text-[#101828] hover:cursor-pointer [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[#CBD5E1] [&::-webkit-scrollbar-track]:bg-transparent"
+        className="mt-1 max-w-full overflow-x-auto whitespace-nowrap text-sm font-bold leading-5 text-sibs-navy selection:bg-sibs-cream-light selection:text-sibs-navy hover:cursor-pointer [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-sibs-border [&::-webkit-scrollbar-track]:bg-transparent"
       >
         {finalDisplayValue}
       </p>
@@ -1752,7 +1753,7 @@ function ViewUploadedFileField({ item }) {
         <ViewFieldLabel label="Uploaded File" completed={false} />
 
         <div
-          className={`flex min-h-[78px] items-center gap-3 ${EDGE} border border-[#D6DEE8] bg-white px-4 py-3 text-sm font-semibold text-sibs-tertiary-5`}
+          className={`flex min-h-[78px] items-center gap-3 ${EDGE} border border-sibs-border bg-white px-4 py-3 text-sm font-semibold text-sibs-tertiary-5`}
         >
           <Paperclip size={18} />
           No uploaded file
@@ -1770,7 +1771,7 @@ function ViewUploadedFileField({ item }) {
           href={fileUrl}
           target="_blank"
           rel="noreferrer"
-          className={`flex min-h-[78px] items-center gap-3 ${EDGE} border border-[#D6DEE8] bg-white px-4 py-3 text-sm font-semibold text-[#2F6CA5] transition hover:bg-[#F8FAFC]`}
+          className={`flex min-h-[78px] items-center gap-3 ${EDGE} border border-sibs-border bg-white px-4 py-3 text-sm font-semibold text-sibs-navy transition hover:bg-sibs-surface`}
           title={fileName}
         >
           <FileTypeIcon filename={fileName} />
@@ -1785,7 +1786,7 @@ function ViewUploadedFileField({ item }) {
       <ViewFieldLabel label="Uploaded File" completed={hasFile} />
 
       <div
-        className={`flex min-h-[78px] items-center gap-3 ${EDGE} border border-[#D6DEE8] bg-white px-4 py-3 text-sm font-semibold text-[#2F6CA5]`}
+        className={`flex min-h-[78px] items-center gap-3 ${EDGE} border border-sibs-border bg-white px-4 py-3 text-sm font-semibold text-sibs-navy`}
         title={fileName}
       >
         <FileTypeIcon filename={fileName} />
@@ -1802,7 +1803,7 @@ function ViewUploadedFileField({ item }) {
 
 function ViewChecklistItem({ done = false, title, subtitle }) {
   return (
-    <div className={`${EDGE} border border-[#E6ECF2] bg-[#F8FAFC] p-4`}>
+    <div className={`${EDGE} border border-sibs-border bg-sibs-surface p-4`}>
       <div className="flex items-start gap-3">
         <div
           className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${
@@ -1815,9 +1816,9 @@ function ViewChecklistItem({ done = false, title, subtitle }) {
         </div>
 
         <div className="min-w-0">
-          <p className="text-sm font-extrabold text-[#101828]">{title}</p>
+          <p className="text-sm font-extrabold text-sibs-navy">{title}</p>
 
-          <p className="mt-1 line-clamp-2 text-xs font-bold text-[#2F6CA5]">
+          <p className="mt-1 line-clamp-2 text-xs font-bold text-sibs-muted">
             {subtitle || "—"}
           </p>
         </div>
@@ -1921,11 +1922,11 @@ export function ResignationManagementModal({
     >
       <form
         onSubmit={onSubmit}
-        className="sibs-modal-pop-in flex max-h-[calc(100dvh-2rem)] w-full max-w-[680px] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl font-jakarta sm:max-h-[92vh]"
+        className="sibs-modal-pop-in flex max-h-[calc(100dvh-2rem)] w-full max-w-[680px] flex-col overflow-hidden rounded-[14px] bg-white shadow-2xl font-jakarta sm:max-h-[92vh]"
       >
-        <header className="flex shrink-0 items-center justify-between gap-4 bg-[#042C51] px-5 py-3 text-white sm:px-6 2xl:py-3.5">
+        <header className="flex shrink-0 items-center justify-between gap-4 rounded-t-[14px] bg-sibs-navy px-5 py-3 text-white sm:px-6 2xl:py-3.5">
           <div className="flex min-w-0 items-center gap-2.5 2xl:gap-3">
-            <span className="flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg bg-[#FF5C28] text-white shadow-sm">
+            <span className="flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-[10px] bg-sibs-orange text-white shadow-sm">
               <UserX size={16} />
             </span>
             <div className="min-w-0">
@@ -1946,7 +1947,7 @@ export function ResignationManagementModal({
             type="button"
             onClick={onClose}
             disabled={submitting}
-            className="inline-flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg text-white/70 transition hover:bg-white/10 hover:text-white active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-60"
+            className="sibs-modal-close-btn"
             aria-label="Close resignation modal"
           >
             <X size={18} />
@@ -1969,19 +1970,19 @@ export function ResignationManagementModal({
             />
 
             {hasSelectedEmployee ? (
-              <section className="flex min-w-0 items-center gap-3 rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-3.5 py-2.5 2xl:px-4 2xl:py-3">
+              <section className="flex min-w-0 items-center gap-3 rounded-[10px] border border-sibs-border bg-sibs-surface px-3.5 py-2.5 2xl:px-4 2xl:py-3">
                 <ProfileAvatar item={selectedEmployee} size="md" />
 
                 <div className="min-w-0 flex-1">
-                  <p className="text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+                  <p className="text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-sibs-muted">
                     Selected Employee
                   </p>
 
-                  <p className="mt-0.5 truncate font-jakarta sibs-text-xs font-extrabold text-[#042C51]">
+                  <p className="mt-0.5 truncate font-jakarta sibs-text-xs font-extrabold text-sibs-navy">
                     {form?.employeeName}
                   </p>
 
-                  <p className="mt-0.5 truncate text-[11px] font-semibold text-[#667085]">
+                  <p className="mt-0.5 truncate text-[11px] font-semibold text-sibs-muted">
                     {form?.employeeSibsId}
                     {form?.department ? ` · ${form.department}` : ""}
                     {form?.account ? ` · ${form.account}` : ""}
@@ -1994,7 +1995,7 @@ export function ResignationManagementModal({
                 </span>
               </section>
             ) : (
-              <div className="rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-2.5 text-xs font-semibold leading-5 text-amber-800">
+              <div className="rounded-[10px] border border-amber-200 bg-amber-50 px-3.5 py-2.5 text-xs font-semibold leading-5 text-amber-800">
                 Select an employee first. The remaining resignation fields will
                 become available after selection.
               </div>
@@ -2034,14 +2035,14 @@ export function ResignationManagementModal({
                 </div>
 
             {isFormal ? (
-              <p className="rounded-lg border border-emerald-100 bg-emerald-50 px-3 py-1.5 text-[11px] font-semibold text-emerald-700">
+              <p className="rounded-[10px] border border-emerald-100 bg-emerald-50 px-3 py-1.5 text-[11px] font-semibold text-emerald-700">
                 Formal resignation automatically sets the last working date to
                 30 days after the resignation date.
               </p>
             ) : null}
 
             {isImmediate ? (
-              <p className="rounded-lg border border-amber-100 bg-amber-50 px-3 py-1.5 text-[11px] font-semibold text-amber-700">
+              <p className="rounded-[10px] border border-amber-100 bg-amber-50 px-3 py-1.5 text-[11px] font-semibold text-amber-700">
                 Immediate resignation allows a last working date from 1 to 29
                 days after the resignation date.
               </p>
@@ -2051,23 +2052,23 @@ export function ResignationManagementModal({
                   <FormFieldLabel label="Email Attachment *" />
 
               <label
-                className={`flex min-h-[46px] 2xl:min-h-[50px] items-center justify-between gap-3 rounded-xl border border-[#D7DEE8] px-3.5 py-2 text-sm transition ${
+                className={`flex min-h-[46px] 2xl:min-h-[50px] items-center justify-between gap-3 rounded-[10px] border border-sibs-border px-3.5 py-2 text-sm transition ${
                   detailsDisabled
-                    ? "cursor-not-allowed bg-[#F8FAFC] opacity-70"
-                    : "cursor-pointer bg-[#F8FAFC] hover:border-[#FF5C28]/40 hover:bg-white"
+                    ? "cursor-not-allowed bg-sibs-surface opacity-70"
+                    : "cursor-pointer bg-sibs-surface hover:border-sibs-orange/40 hover:bg-white"
                 }`}
               >
                 <span className="flex min-w-0 items-center gap-2.5">
                   <Paperclip
                     size={16}
-                    className="shrink-0 text-[#042C51]"
+                    className="shrink-0 text-sibs-navy"
                   />
 
                   <span
                     className={`truncate font-jakarta sibs-text-xs font-semibold ${
                       form?.uploadedFile?.name
-                        ? "text-[#042C51] font-bold"
-                        : "text-[#98A2B3]"
+                        ? "text-sibs-navy font-bold"
+                        : "text-sibs-muted"
                     }`}
                   >
                     {form?.uploadedFile?.name ||
@@ -2077,7 +2078,7 @@ export function ResignationManagementModal({
                   </span>
                 </span>
 
-                <span className="shrink-0 rounded-lg border border-[#D7DEE8] bg-white px-3 py-1 font-jakarta sibs-text-xs font-extrabold text-[#042C51] shadow-xs transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28]">
+                <span className="shrink-0 rounded-[10px] border border-sibs-border bg-white px-3 py-1 font-jakarta sibs-text-xs font-extrabold text-sibs-navy shadow-xs transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange">
                   Browse
                 </span>
 
@@ -2091,7 +2092,7 @@ export function ResignationManagementModal({
                     />
                   </label>
 
-              <p className="mt-1 font-jakarta text-[9.5px] 2xl:text-[10px] font-semibold text-[#98A2B3]">
+              <p className="mt-1 font-jakarta text-[9.5px] 2xl:text-[10px] font-semibold text-sibs-muted">
                 Accepted file types: .pdf, .doc, .docx, .xls, .xlsx, .csv, .jpg, .jpeg, .png, .heic
               </p>
             </div>
@@ -2107,12 +2108,12 @@ export function ResignationManagementModal({
                 />
 
             {showOperationsManagerApprovalFields ? (
-              <section className="rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] p-3.5 2xl:p-4">
+              <section className="rounded-[10px] border border-sibs-border bg-sibs-surface p-3.5 2xl:p-4">
                 <div className="mb-3">
-                  <p className="font-jakarta sibs-text-xs font-extrabold text-[#042C51]">
+                  <p className="font-jakarta sibs-text-xs font-extrabold text-sibs-navy">
                     Operations Manager Approval
                   </p>
-                  <p className="mt-1 font-jakarta text-[10px] font-semibold leading-4 text-[#667085]">
+                  <p className="mt-1 font-jakarta text-[10px] font-semibold leading-4 text-sibs-muted">
                     These details will be saved as your approved Operations Manager stage when you submit the resignation.
                   </p>
                 </div>
@@ -2129,10 +2130,10 @@ export function ResignationManagementModal({
                           onClick={() =>
                             emitChange("omPersonallySpoken", option)
                           }
-                          className={`h-10 rounded-xl border text-xs font-extrabold transition disabled:cursor-not-allowed disabled:opacity-60 ${
+                          className={`h-10 rounded-[10px] border text-xs font-extrabold transition disabled:cursor-not-allowed disabled:opacity-60 ${
                             form?.omPersonallySpoken === option
-                              ? "border-[#042C51] bg-[#EAF2FB] text-[#042C51]"
-                              : "border-[#D7DEE8] bg-white text-[#667085] hover:border-[#042C51]/40"
+                              ? "border-sibs-navy bg-sibs-surface text-sibs-navy font-bold"
+                              : "border-sibs-border bg-white text-sibs-muted hover:border-sibs-navy/40"
                           }`}
                         >
                           {option}
@@ -2152,10 +2153,10 @@ export function ResignationManagementModal({
                           onClick={() =>
                             emitChange("omEmployeeRetained", option)
                           }
-                          className={`h-10 rounded-xl border text-xs font-extrabold transition disabled:cursor-not-allowed disabled:opacity-60 ${
+                          className={`h-10 rounded-[10px] border text-xs font-extrabold transition disabled:cursor-not-allowed disabled:opacity-60 ${
                             form?.omEmployeeRetained === option
-                              ? "border-[#042C51] bg-[#EAF2FB] text-[#042C51]"
-                              : "border-[#D7DEE8] bg-white text-[#667085] hover:border-[#042C51]/40"
+                              ? "border-sibs-navy bg-sibs-surface text-sibs-navy font-bold"
+                              : "border-sibs-border bg-white text-sibs-muted hover:border-sibs-navy/40"
                           }`}
                         >
                           {option}
@@ -2194,12 +2195,12 @@ export function ResignationManagementModal({
           </div>
         </div>
 
-        <footer className="flex shrink-0 items-center justify-end gap-2.5 border-t border-[#DDE5EE] bg-[#F1F5F9] px-5 py-3 2xl:py-3.5 sm:px-6">
+        <footer className="flex shrink-0 items-center justify-end gap-2.5 border-t border-sibs-border bg-sibs-surface px-5 py-3 2xl:py-3.5 sm:px-6">
           <button
             type="button"
             onClick={onClose}
             disabled={submitting}
-            className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg border border-[#D6DEE8] bg-white px-3.5 2xl:px-4 font-jakarta sibs-text-xs font-extrabold text-[#042C51] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-[10px] border border-sibs-border bg-white px-3.5 2xl:px-4 font-jakarta sibs-text-xs font-extrabold text-sibs-navy transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange disabled:cursor-not-allowed disabled:opacity-60"
           >
             Cancel
           </button>
@@ -2207,7 +2208,7 @@ export function ResignationManagementModal({
           <button
             type="submit"
             disabled={submitting || !hasSelectedEmployee}
-            className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-lg bg-[#FF5C28] px-4 2xl:px-5 font-jakarta sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E94F1F] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-[10px] bg-sibs-orange px-4 2xl:px-5 font-jakarta sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-sibs-orange-hover active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
           >
             {submitting ? (
               <>
@@ -2694,10 +2695,10 @@ function ResignationApprovalProgress({
   );
 
   const progressClass = {
-    completed: "bg-[#16C55D]",
-    current: "bg-[#D9E53F]",
+    completed: "bg-emerald-500",
+    current: "bg-amber-400",
     declined: "bg-rose-500",
-    pending: "bg-[#D9E2EC]",
+    pending: "bg-sibs-border",
   };
 
   const hasApprovalRecord = Boolean(
@@ -2705,7 +2706,7 @@ function ResignationApprovalProgress({
   );
 
   return (
-    <div className="mt-2 rounded-xl border border-[#E7ECF2] bg-[#F8FAFC] px-3 py-3 2xl:px-4 2xl:py-3.5">
+    <div className="mt-2 rounded-[10px] border border-sibs-border bg-sibs-surface px-3 py-3 2xl:px-4 2xl:py-3.5">
       <div
         className="grid gap-1.5"
         style={{
@@ -2744,9 +2745,9 @@ function ResignationApprovalProgress({
                     : `View ${stage.label} resignation approval details`
                   : `${stage.label}: ${stage.status}`
               }
-              className={`min-w-0 rounded-lg outline-none transition ${
+              className={`min-w-0 rounded-[10px] outline-none transition ${
                 viewable
-                  ? "cursor-pointer hover:bg-[#FFF0EB] focus:ring-2 focus:ring-[#FF5C28]/25"
+                  ? "cursor-pointer hover:bg-sibs-cream-light focus:ring-2 focus:ring-sibs-orange/25"
                   : ""
               }`}
             >
@@ -2756,19 +2757,19 @@ function ResignationApprovalProgress({
                 }`}
               />
 
-              <p className="mt-1.5 truncate text-center sibs-text-micro font-extrabold text-[#475467]">
+              <p className="mt-1.5 truncate text-center sibs-text-micro font-extrabold text-sibs-navy">
                 {stage.label}
               </p>
 
               <p
                 className={`mt-0.5 truncate text-center text-[9px] font-bold ${
                   stage.progressState === "current"
-                    ? "text-[#788300]"
+                    ? "text-amber-700"
                     : stage.progressState === "declined"
                       ? "text-rose-600"
                       : stage.progressState === "completed"
                         ? "text-emerald-700"
-                        : "text-[#98A2B3]"
+                        : "text-sibs-muted"
                 }`}
               >
                 {stage.status === "Pending" && stage.progressState === "current"
@@ -3056,8 +3057,8 @@ function AttachmentPreviewModal({
         if (event.target === event.currentTarget) onClose?.();
       }}
     >
-      <div className="flex h-[88vh] w-full max-w-6xl flex-col overflow-hidden rounded-2xl border border-white/15 bg-white shadow-2xl">
-        <header className="flex shrink-0 items-center justify-between gap-3 border-b border-[#E7ECF2] bg-[#042C51] px-4 py-3 2xl:px-5 2xl:py-4">
+      <div className="flex h-[88vh] w-full max-w-6xl flex-col overflow-hidden rounded-[14px] border border-white/15 bg-white shadow-2xl">
+        <header className="flex shrink-0 items-center justify-between gap-3 border-b border-sibs-border bg-sibs-navy rounded-t-[14px] px-4 py-3 2xl:px-5 2xl:py-4">
           <div className="min-w-0">
             <p className="sibs-text-xs font-extrabold uppercase tracking-wide text-white/70">
               {previewLabel}
@@ -3071,21 +3072,21 @@ function AttachmentPreviewModal({
             type="button"
             onClick={onClose}
             aria-label="Close attachment preview"
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/10 text-white transition hover:bg-white/20"
+            className="sibs-modal-close-btn"
           >
             <X size={18} />
           </button>
         </header>
 
-        <div className="min-h-0 flex-1 overflow-auto bg-[#F5F7FA] p-3 2xl:p-5">
+        <div className="min-h-0 flex-1 overflow-auto bg-sibs-surface p-3 2xl:p-5">
           {state.loading ? (
-            <div className="flex h-full min-h-[320px] flex-col items-center justify-center gap-3 text-[#042C51]">
+            <div className="flex h-full min-h-[320px] flex-col items-center justify-center gap-3 text-sibs-navy">
               <Loader2 size={32} className="animate-spin" />
               <p className="sibs-text-xs font-bold">Preparing attachment preview...</p>
             </div>
           ) : state.error ? (
             <div className="flex h-full min-h-[320px] items-center justify-center">
-              <div className="max-w-lg rounded-xl border border-red-200 bg-red-50 px-4 py-4 text-center">
+              <div className="max-w-lg rounded-[10px] border border-red-200 bg-red-50 px-4 py-4 text-center">
                 <AlertCircle size={28} className="mx-auto text-red-500" />
                 <p className="mt-2 sibs-text-xs font-extrabold text-red-700">
                   Preview unavailable
@@ -3096,32 +3097,32 @@ function AttachmentPreviewModal({
               </div>
             </div>
           ) : state.kind === "image" && state.objectUrl ? (
-            <div className="flex min-h-full items-center justify-center bg-[#111827] p-3">
+            <div className="flex min-h-full items-center justify-center bg-slate-900 p-3">
               <img
                 src={state.objectUrl}
                 alt={fileName || "Resignation image preview"}
-                className="max-h-[76vh] max-w-full rounded-xl object-contain shadow-2xl"
+                className="max-h-[76vh] max-w-full rounded-[10px] object-contain shadow-2xl"
               />
             </div>
           ) : state.kind === "pdf" && state.objectUrl ? (
             <iframe
               src={state.objectUrl}
               title={fileName || "PDF preview"}
-              className="h-full min-h-[68vh] w-full rounded-xl border border-[#D9E2EC] bg-white"
+              className="h-full min-h-[68vh] w-full rounded-[10px] border border-sibs-border bg-white"
             />
           ) : state.kind === "excel" ? (
             <div className="flex min-h-full flex-col gap-3">
               {state.sheets.length > 1 ? (
-                <div className="flex flex-wrap gap-2 rounded-xl border border-[#D9E2EC] bg-white p-2">
+                <div className="flex flex-wrap gap-2 rounded-[10px] border border-sibs-border bg-white p-2">
                   {state.sheets.map((sheet, index) => (
                     <button
                       key={`${sheet?.name || "Sheet"}-${index}`}
                       type="button"
                       onClick={() => setActiveSheetIndex(index)}
-                      className={`rounded-lg px-3 py-1.5 sibs-text-micro font-extrabold transition ${
+                      className={`rounded-[10px] px-3 py-1.5 sibs-text-micro font-extrabold transition ${
                         activeSheetIndex === index
-                          ? "bg-[#042C51] text-white"
-                          : "bg-[#F2F6FA] text-[#042C51] hover:bg-[#E8EEF5]"
+                          ? "bg-sibs-navy text-white"
+                          : "bg-sibs-surface text-sibs-navy hover:bg-sibs-border/30"
                       }`}
                     >
                       {sheet?.name || `Sheet ${index + 1}`}
@@ -3130,20 +3131,20 @@ function AttachmentPreviewModal({
                 </div>
               ) : null}
 
-              <div className="min-h-0 flex-1 overflow-auto rounded-xl border border-[#D9E2EC] bg-white shadow-sm sibs-scrollbar">
+              <div className="min-h-0 flex-1 overflow-auto rounded-[10px] border border-sibs-border bg-white shadow-sm sibs-scrollbar">
                 {activeSheet && Array.isArray(activeSheet.rows) && activeSheet.rows.length > 0 ? (
                   <table className="min-w-full border-collapse text-left">
                     <tbody>
                       {activeSheet.rows.map((row, rowIndex) => (
                         <tr
                           key={`row-${rowIndex}`}
-                          className={rowIndex === 0 ? "bg-[#F8FAFC]" : "bg-white"}
+                          className={rowIndex === 0 ? "bg-sibs-surface" : "bg-white"}
                         >
                           {(Array.isArray(row) ? row : []).map((cell, cellIndex) => (
                             <td
                               key={`cell-${rowIndex}-${cellIndex}`}
-                              className={`whitespace-nowrap border-b border-r border-[#EEF2F6] px-3 py-2 sibs-text-micro text-[#344054] ${
-                                rowIndex === 0 ? "font-extrabold text-[#042C51]" : "font-semibold"
+                              className={`whitespace-nowrap border-b border-r border-sibs-border px-3 py-2 sibs-text-micro text-sibs-navy ${
+                                rowIndex === 0 ? "font-extrabold text-sibs-navy" : "font-semibold"
                               }`}
                             >
                               {String(cell || "") || " "}
@@ -3154,7 +3155,7 @@ function AttachmentPreviewModal({
                     </tbody>
                   </table>
                 ) : (
-                  <div className="flex min-h-[320px] items-center justify-center p-6 text-center sibs-text-xs font-semibold text-[#98A2B3]">
+                  <div className="flex min-h-[320px] items-center justify-center p-6 text-center sibs-text-xs font-semibold text-sibs-muted">
                     No readable spreadsheet rows were found.
                   </div>
                 )}
@@ -3394,8 +3395,8 @@ function ResignationStageApprovalModal({
         }
       }}
     >
-      <section className="flex max-h-[92dvh] w-full max-w-[640px] flex-col overflow-hidden rounded-2xl border border-white/70 bg-white shadow-2xl">
-        <header className="flex shrink-0 items-center justify-between gap-4 bg-[#042C51] px-5 py-4 text-white sm:px-6">
+      <section className="flex max-h-[92dvh] w-full max-w-[640px] flex-col overflow-hidden rounded-[14px] border border-white/70 bg-white shadow-2xl">
+        <header className="flex shrink-0 items-center justify-between gap-4 rounded-t-[14px] bg-sibs-navy px-5 py-4 text-white sm:px-6">
           <div className="min-w-0">
             <p className="sibs-text-micro font-extrabold uppercase tracking-wide text-white/70">
               Resignation Approval
@@ -3417,7 +3418,7 @@ function ResignationStageApprovalModal({
             type="button"
             onClick={onClose}
             disabled={isBusy}
-            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-white/70 transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+            className="sibs-modal-close-btn"
             aria-label="Close approval modal"
           >
             <X size={18} />
@@ -3426,21 +3427,21 @@ function ResignationStageApprovalModal({
 
         <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5 sibs-scrollbar sm:px-6">
           <div className="space-y-4">
-            <section className="grid grid-cols-1 gap-3 rounded-xl border border-[#D9E2EC] bg-[#F8FAFC] p-4 sm:grid-cols-2">
+            <section className="grid grid-cols-1 gap-3 rounded-[10px] border border-sibs-border bg-sibs-surface p-4 sm:grid-cols-2">
               <div className="min-w-0">
-                <p className="sibs-text-micro font-extrabold uppercase text-[#98A2B3]">
+                <p className="sibs-text-micro font-extrabold uppercase text-sibs-muted">
                   Employee
                 </p>
-                <p className="mt-1 truncate sibs-text-xs font-extrabold text-[#042C51]">
+                <p className="mt-1 truncate sibs-text-xs font-extrabold text-sibs-navy">
                   {getFullName(item)}
                 </p>
               </div>
 
               <div className="min-w-0">
-                <p className="sibs-text-micro font-extrabold uppercase text-[#98A2B3]">
+                <p className="sibs-text-micro font-extrabold uppercase text-sibs-muted">
                   SIBS ID
                 </p>
-                <p className="mt-1 truncate sibs-text-xs font-extrabold text-[#042C51]">
+                <p className="mt-1 truncate sibs-text-xs font-extrabold text-sibs-navy">
                   {getEmployeeSibsId(item)}
                 </p>
               </div>
@@ -3456,10 +3457,10 @@ function ResignationStageApprovalModal({
                       type="button"
                       disabled={isBusy || !canEdit}
                       onClick={() => setPersonallySpoken(option)}
-                      className={`h-10 rounded-xl border text-xs font-extrabold transition ${
+                      className={`h-10 rounded-[10px] border text-xs font-extrabold transition ${
                         personallySpoken === option
-                          ? "border-[#042C51] bg-[#EAF2FB] text-[#042C51]"
-                          : "border-[#D7DEE8] bg-white text-[#667085] hover:border-[#042C51]/40"
+                          ? "border-sibs-navy bg-sibs-surface text-sibs-navy font-bold"
+                          : "border-sibs-border bg-white text-sibs-muted hover:border-sibs-navy/40"
                       }`}
                     >
                       {option}
@@ -3477,10 +3478,10 @@ function ResignationStageApprovalModal({
                       type="button"
                       disabled={isBusy || !canEdit}
                       onClick={() => setEmployeeRetained(option)}
-                      className={`h-10 rounded-xl border text-xs font-extrabold transition ${
+                      className={`h-10 rounded-[10px] border text-xs font-extrabold transition ${
                         employeeRetained === option
-                          ? "border-[#042C51] bg-[#EAF2FB] text-[#042C51]"
-                          : "border-[#D7DEE8] bg-white text-[#667085] hover:border-[#042C51]/40"
+                          ? "border-sibs-navy bg-sibs-surface text-sibs-navy font-bold"
+                          : "border-sibs-border bg-white text-sibs-muted hover:border-sibs-navy/40"
                       }`}
                     >
                       {option}
@@ -3504,7 +3505,7 @@ function ResignationStageApprovalModal({
                     ? "No action taken recorded."
                     : "Enter the action taken after speaking with the employee."
                 }
-                className="w-full resize-none rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-3.5 py-2.5 font-jakarta sibs-text-xs font-semibold text-[#042C51] outline-none transition placeholder:text-[#98A2B3] focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:opacity-60"
+                className="w-full resize-none rounded-[10px] border border-sibs-border bg-sibs-surface px-3.5 py-2.5 font-jakarta sibs-text-xs font-semibold text-sibs-navy outline-none transition placeholder:text-sibs-muted focus:border-sibs-orange focus:bg-white focus:ring-4 focus:ring-sibs-orange/10 disabled:cursor-not-allowed disabled:opacity-60"
               />
             </div>
 
@@ -3520,12 +3521,12 @@ function ResignationStageApprovalModal({
                     ? "No remarks recorded."
                     : "Add approval remarks. Remarks are required when declining."
                 }
-                className="w-full resize-none rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-3.5 py-2.5 font-jakarta sibs-text-xs font-semibold text-[#042C51] outline-none transition placeholder:text-[#98A2B3] focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:opacity-60"
+                className="w-full resize-none rounded-[10px] border border-sibs-border bg-sibs-surface px-3.5 py-2.5 font-jakarta sibs-text-xs font-semibold text-sibs-navy outline-none transition placeholder:text-sibs-muted focus:border-sibs-orange focus:bg-white focus:ring-4 focus:ring-sibs-orange/10 disabled:cursor-not-allowed disabled:opacity-60"
               />
             </div>
 
             {error ? (
-              <div className="flex items-start gap-2.5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-red-700">
+              <div className="flex items-start gap-2.5 rounded-[10px] border border-red-200 bg-red-50 px-4 py-3 text-red-700">
                 <AlertCircle size={17} className="mt-0.5 shrink-0" />
                 <p className="sibs-text-xs font-semibold leading-5">{error}</p>
               </div>
@@ -3533,14 +3534,14 @@ function ResignationStageApprovalModal({
           </div>
         </div>
 
-        <footer className="flex shrink-0 items-center justify-end gap-2.5 border-t border-[#DDE5EE] bg-[#F1F5F9] px-5 py-3 sm:px-6">
+        <footer className="flex shrink-0 items-center justify-end gap-2.5 border-t border-sibs-border bg-sibs-surface px-5 py-3 sm:px-6">
           {canEdit ? (
             <>
               <button
                 type="button"
                 onClick={() => submitDecision("reject")}
                 disabled={isBusy}
-                className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-rose-200 bg-white px-4 sibs-text-xs font-extrabold text-rose-600 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex h-10 items-center justify-center gap-2 rounded-[10px] border border-rose-200 bg-white px-4 sibs-text-xs font-extrabold text-rose-600 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {submittingAction === "reject" ? (
                   <Loader2 size={15} className="animate-spin" />
@@ -3554,7 +3555,7 @@ function ResignationStageApprovalModal({
                 type="button"
                 onClick={() => submitDecision("approve")}
                 disabled={isBusy}
-                className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[#FF5C28] px-4 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E94F1F] disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex h-10 items-center justify-center gap-2 rounded-[10px] bg-sibs-orange px-4 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-sibs-orange-hover disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {submittingAction === "approve" ? (
                   <Loader2 size={15} className="animate-spin" />
@@ -3568,7 +3569,7 @@ function ResignationStageApprovalModal({
             <button
               type="button"
               onClick={onClose}
-              className="inline-flex h-10 items-center justify-center rounded-lg bg-[#E4EAF1] px-4 sibs-text-xs font-extrabold text-[#23364D] transition hover:bg-[#D7E0EA]"
+              className="inline-flex h-10 items-center justify-center rounded-[10px] border border-sibs-border bg-white px-4 sibs-text-xs font-extrabold text-sibs-navy transition hover:bg-sibs-surface"
             >
               Close
             </button>
@@ -3689,14 +3690,15 @@ export function ViewResignationModal({
 
   if (approvalResultStatus.open) {
     return (
-      <StatusModal
-        open
-        type={approvalResultStatus.type}
-        title={approvalResultStatus.title}
-        message={approvalResultStatus.message}
-        variant="center"
+      <ConfirmModal
+        open={Boolean(approvalResultStatus.open)}
+        variant={approvalResultStatus.type === "error" ? "danger" : "primary"}
+        title={approvalResultStatus.title || "Notification"}
+        description={approvalResultStatus.message || ""}
+        confirmLabel="OK"
+        cancelLabel="Close"
+        onConfirm={closeApprovalResultStatus}
         onClose={closeApprovalResultStatus}
-        lockScroll={false}
       />
     );
   }
@@ -3852,11 +3854,11 @@ export function ViewResignationModal({
         aria-modal="true"
         aria-labelledby="view-resignation-title"
         onClick={(event) => event.stopPropagation()}
-        className="flex max-h-[calc(100dvh-1.5rem)] w-full max-w-[720px] 2xl:max-w-[760px] flex-col overflow-hidden rounded-[18px] border border-white/70 bg-white font-jakarta shadow-[0_24px_70px_rgba(4,44,81,0.32)] sm:max-h-[85dvh] 2xl:sm:max-h-[92dvh]"
+        className="flex max-h-[calc(100dvh-1.5rem)] w-full max-w-[720px] 2xl:max-w-[760px] flex-col overflow-hidden rounded-[14px] border border-white/70 bg-white font-jakarta shadow-[0_24px_70px_rgba(4,44,81,0.32)] sm:max-h-[85dvh] 2xl:sm:max-h-[92dvh]"
       >
-        <header className="flex shrink-0 items-center justify-between gap-4 bg-[#042C51] px-5 py-3 text-white sm:px-6 2xl:py-3.5">
+        <header className="flex shrink-0 items-center justify-between gap-4 rounded-t-[14px] bg-sibs-navy px-5 py-3 text-white sm:px-6 2xl:py-3.5">
           <div className="flex min-w-0 items-center gap-2.5 2xl:gap-3">
-            <span className="flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg bg-[#FF5C28] text-white shadow-sm">
+            <span className="flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-[10px] bg-sibs-orange text-white shadow-sm">
               <UserX size={16} />
             </span>
 
@@ -3877,7 +3879,7 @@ export function ViewResignationModal({
           <button
             type="button"
             onClick={onClose}
-            className="inline-flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg text-white/70 transition hover:bg-white/10 hover:text-white active:scale-[0.97]"
+            className="sibs-modal-close-btn"
             aria-label="Close resignation case details"
           >
             <X size={18} />
@@ -3886,16 +3888,16 @@ export function ViewResignationModal({
 
         <div className="min-h-0 flex-1 overflow-y-auto bg-white px-3.5 py-4 sibs-scrollbar sm:px-5 2xl:sm:px-6 sm:py-5 2xl:sm:py-6">
           <div className="space-y-4 2xl:space-y-5">
-            <section className="flex flex-col gap-3 2xl:gap-4 rounded-xl border border-[#D9E2EC] bg-[#F8FAFC] p-3 2xl:p-4 sm:flex-row sm:items-center sm:justify-between">
+            <section className="flex flex-col gap-3 2xl:gap-4 rounded-[10px] border border-sibs-border bg-sibs-surface p-3 2xl:p-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex min-w-0 items-center gap-3">
                 <ProfileAvatar item={item} size="lg" />
 
                 <div className="min-w-0">
-                  <h3 className="truncate sibs-text-sm 2xl:text-base font-extrabold text-[#042C51]">
+                  <h3 className="truncate sibs-text-sm 2xl:text-base font-extrabold text-sibs-navy">
                     {employeeName}
                   </h3>
 
-                  <p className="mt-0.5 2xl:mt-1 line-clamp-2 sibs-text-micro font-semibold text-[#667085]">
+                  <p className="mt-0.5 2xl:mt-1 line-clamp-2 sibs-text-micro font-semibold text-sibs-muted">
                     {employeeMeta.length > 0
                       ? employeeMeta.join("  •  ")
                       : "Employee information unavailable"}
@@ -3904,12 +3906,12 @@ export function ViewResignationModal({
               </div>
 
               <div className="flex shrink-0 flex-col items-start sm:items-end">
-                <span className="sibs-text-micro font-extrabold uppercase text-[#98A2B3]">
+                <span className="sibs-text-micro font-extrabold uppercase text-sibs-muted">
                   Current Status
                 </span>
 
                 <span
-                  className={`mt-1 inline-flex rounded border px-2 py-0.5 2xl:px-2.5 2xl:py-1 sibs-text-micro font-extrabold uppercase leading-none ${getCaseStatusClass(
+                  className={`mt-1 inline-flex rounded-[10px] border px-2 py-0.5 2xl:px-2.5 2xl:py-1 sibs-text-micro font-extrabold uppercase leading-none ${getCaseStatusClass(
                     status,
                   )}`}
                 >
@@ -3918,27 +3920,27 @@ export function ViewResignationModal({
               </div>
             </section>
 
-            <section className="grid grid-cols-2 gap-x-4 gap-y-3 2xl:gap-x-5 2xl:gap-y-4 rounded-xl border border-[#E7ECF2] bg-[#FBFCFE] p-3 2xl:p-4 md:grid-cols-4">
+            <section className="grid grid-cols-2 gap-x-4 gap-y-3 2xl:gap-x-5 2xl:gap-y-4 rounded-[10px] border border-sibs-border bg-sibs-surface p-3 2xl:p-4 md:grid-cols-4">
               <div className="min-w-0">
-                <p className="sibs-text-micro font-extrabold uppercase text-[#98A2B3]">
+                <p className="sibs-text-micro font-extrabold uppercase text-sibs-muted">
                   Case ID
                 </p>
-                <p className="mt-0.5 truncate sibs-text-xs 2xl:sibs-text-sm font-extrabold text-[#042C51]">
+                <p className="mt-0.5 truncate sibs-text-xs 2xl:sibs-text-sm font-extrabold text-sibs-navy">
                   {safeText(getCaseId(item))}
                 </p>
               </div>
 
               <div className="min-w-0">
-                <p className="sibs-text-micro font-extrabold uppercase text-[#98A2B3]">
+                <p className="sibs-text-micro font-extrabold uppercase text-sibs-muted">
                   Filed Date
                 </p>
-                <p className="mt-0.5 truncate sibs-text-xs 2xl:sibs-text-sm font-bold text-[#344054]">
+                <p className="mt-0.5 truncate sibs-text-xs 2xl:sibs-text-sm font-bold text-sibs-navy">
                   {safeText(resignationDate)}
                 </p>
               </div>
 
               <div className="min-w-0">
-                <p className="sibs-text-micro font-extrabold uppercase text-[#98A2B3]">
+                <p className="sibs-text-micro font-extrabold uppercase text-sibs-muted">
                   Last Working Day
                 </p>
                 <p className="mt-0.5 truncate sibs-text-xs 2xl:sibs-text-sm font-extrabold text-rose-600">
@@ -3947,7 +3949,7 @@ export function ViewResignationModal({
               </div>
 
               <div className="min-w-0">
-                <p className="sibs-text-micro font-extrabold uppercase text-[#98A2B3]">
+                <p className="sibs-text-micro font-extrabold uppercase text-sibs-muted">
                   Notice Cycle
                 </p>
                 <p className="mt-0.5 truncate sibs-text-xs 2xl:sibs-text-sm font-extrabold text-indigo-600">
@@ -3957,16 +3959,16 @@ export function ViewResignationModal({
             </section>
 
             <section>
-              <h4 className="sibs-text-micro font-extrabold uppercase text-[#042C51]">
+              <h4 className="sibs-text-micro font-extrabold uppercase text-sibs-navy">
                 Statement / Reason Details
               </h4>
 
-              <div className="mt-1.5 2xl:mt-2 rounded-xl border border-[#CFE0F4] bg-[#F7FAFE] p-3 2xl:p-4">
-                <span className="inline-flex max-w-full rounded border border-[#FFD7C8] bg-[#FFF0EB] px-2 py-0.5 2xl:px-2.5 2xl:py-1 sibs-text-micro font-extrabold text-[#FF5C28]">
+              <div className="mt-1.5 2xl:mt-2 rounded-[10px] border border-sibs-border bg-sibs-surface p-3 2xl:p-4">
+                <span className="inline-flex max-w-full rounded-[10px] border border-sibs-border bg-sibs-cream-light px-2 py-0.5 2xl:px-2.5 2xl:py-1 sibs-text-micro font-extrabold text-sibs-orange">
                   <span className="truncate">Reason: {reason}</span>
                 </span>
 
-                <p className="mt-2 whitespace-pre-wrap break-words sibs-text-xs font-medium italic leading-relaxed text-[#344054]">
+                <p className="mt-2 whitespace-pre-wrap break-words sibs-text-xs font-medium italic leading-relaxed text-sibs-navy">
                   “{safeText(narrative)}”
                 </p>
               </div>
@@ -3974,11 +3976,11 @@ export function ViewResignationModal({
 
             <section>
               <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                <h4 className="sibs-text-micro font-extrabold uppercase text-[#042C51]">
+                <h4 className="sibs-text-micro font-extrabold uppercase text-sibs-navy">
                   Approval Routing Stages
                 </h4>
 
-                <span className="sibs-text-micro font-extrabold uppercase text-[#7E8DA8]">
+                <span className="sibs-text-micro font-extrabold uppercase text-sibs-muted">
                   {approvalRouteLabel
                     ? `SOP Alignment Routing: ${approvalRouteLabel}`
                     : "Approval route pending assignment"}
@@ -3997,21 +3999,21 @@ export function ViewResignationModal({
                 }
               />
 
-              <div className="mt-1.5 2xl:mt-2 overflow-hidden rounded-xl border border-[#D9E2EC]">
+              <div className="mt-1.5 2xl:mt-2 overflow-hidden rounded-[10px] border border-sibs-border">
                 <div className="overflow-x-auto">
                   <table className="w-full min-w-[620px] border-collapse text-left">
                     <thead>
-                      <tr className="border-b border-[#D9E2EC] bg-[#F8FAFC]">
-                        <th className="px-2.5 py-2 2xl:px-3 2xl:py-3 sibs-text-micro font-extrabold text-[#8A98B8]">
+                      <tr className="border-b border-sibs-border bg-sibs-surface">
+                        <th className="px-2.5 py-2 2xl:px-3 2xl:py-3 sibs-text-micro font-extrabold text-sibs-muted">
                           Approval Stage
                         </th>
-                        <th className="px-2.5 py-2 2xl:px-3 2xl:py-3 sibs-text-micro font-extrabold text-[#8A98B8]">
+                        <th className="px-2.5 py-2 2xl:px-3 2xl:py-3 sibs-text-micro font-extrabold text-sibs-muted">
                           Designated Approver
                         </th>
-                        <th className="px-2.5 py-2 2xl:px-3 2xl:py-3 text-center sibs-text-micro font-extrabold text-[#8A98B8]">
+                        <th className="px-2.5 py-2 2xl:px-3 2xl:py-3 text-center sibs-text-micro font-extrabold text-sibs-muted">
                           Status
                         </th>
-                        <th className="px-2.5 py-2 2xl:px-3 2xl:py-3 sibs-text-micro font-extrabold text-[#8A98B8]">
+                        <th className="px-2.5 py-2 2xl:px-3 2xl:py-3 sibs-text-micro font-extrabold text-sibs-muted">
                           Processed Time
                         </th>
                       </tr>
@@ -4046,17 +4048,17 @@ export function ViewResignationModal({
                               openApprovalStage(stage);
                             }
                           }}
-                          className={`border-b border-[#EEF2F6] last:border-b-0 transition ${
+                          className={`border-b border-sibs-border last:border-b-0 transition ${
                             viewable
-                              ? "cursor-pointer hover:bg-[#FFF0EB] focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[#FF5C28]/25"
-                              : "hover:bg-[#FFF8F5]"
+                              ? "cursor-pointer hover:bg-sibs-cream-light focus:outline-none focus:ring-2 focus:ring-inset focus:ring-sibs-orange/25"
+                              : "hover:bg-sibs-surface"
                           }`}
                         >
-                          <td className="px-2.5 py-1.5 2xl:px-3 2xl:py-3 sibs-text-xs font-extrabold text-[#042C51]">
+                          <td className="px-2.5 py-1.5 2xl:px-3 2xl:py-3 sibs-text-xs font-extrabold text-sibs-navy">
                             {stage.stage}
                           </td>
 
-                          <td className="px-2.5 py-1.5 2xl:px-3 2xl:py-3 sibs-text-xs font-semibold text-[#475467]">
+                          <td className="px-2.5 py-1.5 2xl:px-3 2xl:py-3 sibs-text-xs font-semibold text-sibs-navy">
                             {safeText(
                               stage.approver,
                               "Pending assignment",
@@ -4065,7 +4067,7 @@ export function ViewResignationModal({
 
                           <td className="px-2.5 py-1.5 2xl:px-3 2xl:py-3 text-center">
                             <span
-                              className={`inline-flex rounded border px-2 py-0.5 2xl:px-2.5 2xl:py-1 sibs-text-micro font-extrabold uppercase leading-none ${getApprovalStatusClass(
+                              className={`inline-flex rounded-[10px] border px-2 py-0.5 2xl:px-2.5 2xl:py-1 sibs-text-micro font-extrabold uppercase leading-none ${getApprovalStatusClass(
                                 stage.status,
                               )}`}
                             >
@@ -4073,7 +4075,7 @@ export function ViewResignationModal({
                             </span>
                           </td>
 
-                          <td className="px-2.5 py-1.5 2xl:px-3 2xl:py-3 sibs-text-micro font-semibold tabular-nums text-[#8A98B8]">
+                          <td className="px-2.5 py-1.5 2xl:px-3 2xl:py-3 sibs-text-micro font-semibold tabular-nums text-sibs-muted">
                             {stage.processedTime}
                           </td>
                         </tr>
@@ -4086,7 +4088,7 @@ export function ViewResignationModal({
             </section>
 
             <section>
-              <p className="sibs-text-micro font-extrabold uppercase text-[#98A2B3]">
+              <p className="sibs-text-micro font-extrabold uppercase text-sibs-muted">
                 Attached Files ({attachments.length})
               </p>
 
@@ -4098,11 +4100,11 @@ export function ViewResignationModal({
                         <span
                           key={attachment.id}
                           title={attachment.name}
-                          className="inline-flex max-w-full items-center gap-2 rounded-lg border border-[#D9E2EC] bg-[#F2F6FA] px-2.5 py-1.5 2xl:px-3 2xl:py-2 text-left sibs-text-xs font-extrabold text-[#042C51]"
+                          className="inline-flex max-w-full items-center gap-2 rounded-[10px] border border-sibs-border bg-sibs-surface px-2.5 py-1.5 2xl:px-3 2xl:py-2 text-left sibs-text-xs font-extrabold text-sibs-navy"
                         >
                           <FileText
                             size={14}
-                            className="shrink-0 text-[#7E8DA8]"
+                            className="shrink-0 text-sibs-muted"
                           />
                           <span className="max-w-[240px] truncate">
                             {attachment.name}
@@ -4130,11 +4132,11 @@ export function ViewResignationModal({
                             }
                           }}
                           title={`Download ${attachment.name}`}
-                          className="inline-flex max-w-full items-center gap-2 rounded-lg border border-[#D9E2EC] bg-[#F2F6FA] px-2.5 py-1.5 2xl:px-3 2xl:py-2 text-left sibs-text-xs font-extrabold text-[#042C51] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF0EB] hover:text-[#FF5C28]"
+                          className="inline-flex max-w-full items-center gap-2 rounded-[10px] border border-sibs-border bg-sibs-surface px-2.5 py-1.5 2xl:px-3 2xl:py-2 text-left sibs-text-xs font-extrabold text-sibs-navy transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange"
                         >
                           <FileText
                             size={14}
-                            className="shrink-0 text-[#7E8DA8]"
+                            className="shrink-0 text-sibs-muted"
                           />
                           <span className="max-w-[240px] truncate">
                             {attachment.name}
@@ -4159,11 +4161,11 @@ export function ViewResignationModal({
                             })
                           }
                           title={`Preview ${attachment.name}`}
-                          className="inline-flex max-w-full items-center gap-2 rounded-lg border border-[#D9E2EC] bg-[#F2F6FA] px-2.5 py-1.5 2xl:px-3 2xl:py-2 text-left sibs-text-xs font-extrabold text-[#042C51] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF0EB] hover:text-[#FF5C28]"
+                          className="inline-flex max-w-full items-center gap-2 rounded-[10px] border border-sibs-border bg-sibs-surface px-2.5 py-1.5 2xl:px-3 2xl:py-2 text-left sibs-text-xs font-extrabold text-sibs-navy transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange"
                         >
                           <FileText
                             size={14}
-                            className="shrink-0 text-[#7E8DA8]"
+                            className="shrink-0 text-sibs-muted"
                           />
                           <span className="max-w-[240px] truncate">
                             {attachment.name}
@@ -4179,11 +4181,11 @@ export function ViewResignationModal({
                         target="_blank"
                         rel="noopener noreferrer"
                         title={`Open ${attachment.name}`}
-                        className="inline-flex max-w-full items-center gap-2 rounded-lg border border-[#D9E2EC] bg-[#F2F6FA] px-2.5 py-1.5 2xl:px-3 2xl:py-2 text-left sibs-text-xs font-extrabold text-[#042C51] no-underline transition hover:border-[#FF5C28]/40 hover:bg-[#FFF0EB] hover:text-[#FF5C28]"
+                        className="inline-flex max-w-full items-center gap-2 rounded-[10px] border border-sibs-border bg-sibs-surface px-2.5 py-1.5 2xl:px-3 2xl:py-2 text-left sibs-text-xs font-extrabold text-sibs-navy no-underline transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange"
                       >
                         <FileText
                           size={14}
-                          className="shrink-0 text-[#7E8DA8]"
+                          className="shrink-0 text-sibs-muted"
                         />
                         <span className="max-w-[240px] truncate">
                           {attachment.name}
@@ -4193,7 +4195,7 @@ export function ViewResignationModal({
                   })}
                 </div>
               ) : (
-                <p className="mt-1.5 sibs-text-xs font-semibold text-[#98A2B3]">
+                <p className="mt-1.5 sibs-text-xs font-semibold text-sibs-muted">
                   No files were attached to this resignation.
                 </p>
               )}
@@ -4201,9 +4203,9 @@ export function ViewResignationModal({
           </div>
         </div>
 
-        <footer className="flex shrink-0 flex-col gap-2.5 2xl:gap-3 border-t border-[#EEF2F6] bg-[#F8FAFC] px-4 py-2.5 2xl:px-5 2xl:py-4 sm:flex-row sm:items-center sm:justify-between">
-          <p className="min-w-0 truncate sibs-text-micro font-semibold text-[#7E8DA8]">
-            <span className="font-extrabold text-[#667085]">
+        <footer className="flex shrink-0 flex-col gap-2.5 2xl:gap-3 border-t border-sibs-border bg-sibs-surface px-4 py-2.5 2xl:px-5 2xl:py-4 sm:flex-row sm:items-center sm:justify-between">
+          <p className="min-w-0 truncate sibs-text-micro font-semibold text-sibs-muted">
+            <span className="font-extrabold text-sibs-navy">
               Filed By:
             </span>{" "}
             {filedByDisplay}
@@ -4212,7 +4214,7 @@ export function ViewResignationModal({
           <button
             type="button"
             onClick={onClose}
-            className="inline-flex h-8.5 2xl:h-9 shrink-0 items-center justify-center rounded-lg bg-[#E4EAF1] px-3.5 2xl:px-4 sibs-text-micro 2xl:sibs-text-xs font-extrabold text-[#23364D] transition hover:bg-[#D7E0EA] active:scale-[0.98]"
+            className="inline-flex h-8.5 2xl:h-9 shrink-0 items-center justify-center rounded-[10px] border border-sibs-border bg-white px-3.5 2xl:px-4 sibs-text-micro 2xl:sibs-text-xs font-extrabold text-sibs-navy transition hover:bg-sibs-surface active:scale-[0.98]"
           >
             Close profile
           </button>

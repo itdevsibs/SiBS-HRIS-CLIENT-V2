@@ -32,7 +32,7 @@ export default function TalentPoolDetailRow({ candidate }) {
   );
 
   return (
-    <tr className="transition hover:bg-sibs-surface">
+    <tr className="transition-colors hover:bg-sibs-cream-light">
       <td className="border-b border-sibs-border px-4 py-3.5 align-middle">
         <div className="min-w-0">
           <p

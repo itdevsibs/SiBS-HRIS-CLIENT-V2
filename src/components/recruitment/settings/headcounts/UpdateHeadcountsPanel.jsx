@@ -10,7 +10,6 @@ import {
   UsersRound,
 } from "lucide-react";
 
-import StatusModal from "../../../modals/StatusModal";
 import api from "../../../../lib/axios/api-template";
 import { useUser } from "../../../../services/context/UserContext";
 import {
@@ -36,7 +35,13 @@ import {
   RecruitmentHeadcountMobileMetric,
   StatusPill,
 } from "./RecruitmentHeadcountPrimitives";
-import { DataCard, ResponsiveTableShell, TablePagination, TableSkeletonRows } from "@/components/ui";
+import {
+  ConfirmModal,
+  DataCard,
+  ResponsiveTableShell,
+  TablePagination,
+  TableSkeletonRows,
+} from "@/components/ui";
 
 async function saveRequiredHeadcountOverride(item, requiredHeadcount) {
   const cleanRequiredHeadcount = Number(requiredHeadcount);
@@ -1158,12 +1163,13 @@ function UpdateHeadcountsPanel() {
         </div>
       </section>
 
-      <StatusModal
-        open={statusModal.open}
-        type={statusModal.type}
+      <ConfirmModal
+        open={Boolean(statusModal.open)}
+        variant={statusModal.type === "error" ? "danger" : "primary"}
         title={statusModal.title}
-        message={statusModal.message}
-        variant="center"
+        description={statusModal.message}
+        confirmLabel="OK"
+        onConfirm={closeStatusModal}
         onClose={closeStatusModal}
       />
     </>

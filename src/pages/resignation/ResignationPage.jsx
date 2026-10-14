@@ -13,7 +13,7 @@ import { PageHeaderHero, TableEmptyRow, StatusBadge } from "@/components/ui";
 import Header from "../../components/layout/Header";
 import ResignationModal from "../../components/modals/resignation/ResignationModal";
 import { getMyResignations } from "../../lib/axios/getResignation";
-import StatusModal from "../../components/modals/StatusModal";
+import ConfirmModal from "@/components/ui/ConfirmModal";
 import {
   formatDate,
   formatDateTime,
@@ -72,7 +72,7 @@ function UploadedFileCell({ filename, fileUrl }) {
     >
       <FileTypeIcon filename={filename} />
 
-      <span className="truncate text-sm text-gray-700 hover:text-[var(--sibs-primary-1)]">
+      <span className="truncate text-sm text-gray-700 hover:text-sibs-orange">
         {filename}
       </span>
     </a>
@@ -202,11 +202,21 @@ export default function ResignationPage() {
           setStatusModal={setStatusModal}
         />
 
-        <StatusModal
-          open={statusModal.open}
-          type={statusModal.type}
-          title={statusModal.title}
-          message={statusModal.message}
+        <ConfirmModal
+          open={Boolean(statusModal.open)}
+          variant={statusModal.type === "error" ? "danger" : "primary"}
+          title={statusModal.title || "Notification"}
+          description={statusModal.message || ""}
+          confirmLabel="OK"
+          cancelLabel="Close"
+          onConfirm={() =>
+            setStatusModal({
+              open: false,
+              type: "success",
+              title: "",
+              message: "",
+            })
+          }
           onClose={() =>
             setStatusModal({
               open: false,
@@ -217,15 +227,15 @@ export default function ResignationPage() {
           }
         />
 
-        <section className="sibs-profile-tab-panel sibs-page-card-in sibs-card overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white shadow-sm font-jakarta" style={{ animationDelay: "180ms", animationFillMode: "both" }}>
-          <div className="border-b border-[#E6ECF2] p-4 sm:p-5 2xl:p-6">
+        <section className="sibs-page-card-in sibs-card overflow-hidden rounded-[14px] border border-sibs-border bg-white shadow-xs font-jakarta" style={{ animationDelay: "180ms", animationFillMode: "both" }}>
+          <div className="border-b border-sibs-border p-4 sm:p-5 2xl:p-6">
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
               <div>
                 <h2 className="font-heading text-sm 2xl:text-base font-bold text-sibs-navy tracking-tight">
                   My Resignation List
                 </h2>
 
-                <p className="mt-1 sibs-text-xs font-semibold text-[#667085]">
+                <p className="mt-1 sibs-text-xs font-semibold text-sibs-muted">
                   Your submitted personal resignation requests and status tracking.
                 </p>
               </div>
@@ -241,7 +251,7 @@ export default function ResignationPage() {
                   placeholder="Search resignation..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="h-10 w-full rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] pl-10 pr-4 sibs-text-xs font-medium outline-none transition focus:border-[var(--sibs-primary-1)] focus:bg-white"
+                  className="h-10 w-full rounded-[10px] border border-sibs-border bg-sibs-surface pl-10 pr-4 sibs-text-xs font-medium outline-none transition focus:border-sibs-orange focus:bg-white text-sibs-navy placeholder:text-sibs-muted"
                 />
               </div>
             </div>
@@ -249,24 +259,24 @@ export default function ResignationPage() {
 
           <div className="overflow-auto sibs-scrollbar max-h-[580px]">
             <table className="w-full min-w-[1450px] border-collapse bg-white text-left">
-              <thead className="sticky top-0 z-10 bg-[#F8FAFC]">
-                <tr className="border-b border-[#E6ECF2]">
-                  <th className="sibs-data-table-th px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">ID</th>
-                  <th className="sibs-data-table-th px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">Resignation Date</th>
-                  <th className="sibs-data-table-th px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">Last Working Date</th>
-                  <th className="sibs-data-table-th px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">Reason</th>
-                  <th className="sibs-data-table-th px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">Specify Others</th>
-                  <th className="sibs-data-table-th px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">Supervisor</th>
-                  <th className="sibs-data-table-th px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">Uploaded File</th>
-                  <th className="sibs-data-table-th px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">Submitted At</th>
-                  <th className="sibs-data-table-th px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">Status</th>
+              <thead className="sticky top-0 z-10 bg-sibs-surface">
+                <tr className="border-b border-sibs-border">
+                  <th className="sibs-data-table-th px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-micro font-extrabold uppercase tracking-wider text-sibs-muted">ID</th>
+                  <th className="sibs-data-table-th px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-micro font-extrabold uppercase tracking-wider text-sibs-muted">Resignation Date</th>
+                  <th className="sibs-data-table-th px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-micro font-extrabold uppercase tracking-wider text-sibs-muted">Last Working Date</th>
+                  <th className="sibs-data-table-th px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-micro font-extrabold uppercase tracking-wider text-sibs-muted">Reason</th>
+                  <th className="sibs-data-table-th px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-micro font-extrabold uppercase tracking-wider text-sibs-muted">Specify Others</th>
+                  <th className="sibs-data-table-th px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-micro font-extrabold uppercase tracking-wider text-sibs-muted">Supervisor</th>
+                  <th className="sibs-data-table-th px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-micro font-extrabold uppercase tracking-wider text-sibs-muted">Uploaded File</th>
+                  <th className="sibs-data-table-th px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-micro font-extrabold uppercase tracking-wider text-sibs-muted">Submitted At</th>
+                  <th className="sibs-data-table-th px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-micro font-extrabold uppercase tracking-wider text-sibs-muted">Status</th>
                 </tr>
               </thead>
 
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan="9" className="p-6 text-center sibs-text-xs font-semibold text-[#667085]">
+                    <td colSpan="9" className="p-6 text-center sibs-text-xs font-semibold text-sibs-muted">
                       Loading...
                     </td>
                   </tr>
@@ -286,13 +296,13 @@ export default function ResignationPage() {
                     return (
                       <tr
                         key={item.id}
-                        className="sibs-data-table-row border-t border-[#EEF2F6] transition-colors hover:bg-[#FFF8F5]"
+                        className="sibs-data-table-row border-t border-sibs-border/60 transition-colors hover:bg-sibs-cream-light"
                       >
-                        <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-extrabold text-[#FF5C28] tabular-nums">
+                        <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-extrabold text-sibs-orange tabular-nums">
                           {item.id}
                         </td>
 
-                        <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-semibold text-[#344054]">
+                        <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-semibold text-sibs-navy">
                           <div className="flex items-center gap-1.5">
                             <CalendarDays
                               size={14}
@@ -302,19 +312,19 @@ export default function ResignationPage() {
                           </div>
                         </td>
 
-                        <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-semibold text-[#344054]">
+                        <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-semibold text-sibs-navy">
                           {formatDate(item.lastWorkingDate)}
                         </td>
 
-                        <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-semibold text-[#344054]">{item.reason || "N/A"}</td>
+                        <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-semibold text-sibs-navy">{item.reason || "N/A"}</td>
 
-                        <td className="max-w-[240px] px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-semibold text-[#344054]">
+                        <td className="max-w-[240px] px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-semibold text-sibs-navy">
                           <p className="truncate">
                             {item.specifyOthers || "N/A"}
                           </p>
                         </td>
 
-                        <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-semibold text-[#344054]">
+                        <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-semibold text-sibs-navy">
                           <div className="flex min-w-[220px] items-center gap-1.5">
                             <User size={14} className="text-slate-400" />
                             <span className="truncate">
@@ -332,7 +342,7 @@ export default function ResignationPage() {
                           />
                         </td>
 
-                        <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-semibold text-[#52637A]">
+                        <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-semibold text-sibs-muted">
                           <div className="flex items-center gap-1.5">
                             <Clock3
                               size={14}

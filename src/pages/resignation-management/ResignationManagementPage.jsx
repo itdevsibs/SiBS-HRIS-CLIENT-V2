@@ -35,7 +35,7 @@ import {
 } from "lucide-react";
 
 import Header from "../../components/layout/Header";
-import StatusModal from "../../components/modals/StatusModal";
+import ConfirmModal from "@/components/ui/ConfirmModal";
 import {
   DataCard,
   MetricCard,
@@ -71,10 +71,10 @@ import {
   getAttachmentCountLabel,
 } from "../../lib/utils/resignation/attachmentUtils";
 
-const EDGE = "rounded-[10px]";
-const PANEL_BORDER = "border border-[#E1E7EF]";
-const SOFT_PANEL_BORDER = "border border-[#E8EEF5]";
-const FLAT_BG = "bg-[#F6F8FB]";
+const EDGE = "rounded-[14px]";
+const PANEL_BORDER = "border border-sibs-border";
+const SOFT_PANEL_BORDER = "border border-sibs-border/60";
+const FLAT_BG = "bg-sibs-surface";
 const API_URL =
   import.meta.env.VITE_API_URL ||
   import.meta.env.VITE_API_BASE_URL ||
@@ -413,7 +413,7 @@ function ProfileAvatar({ item, size = "md" }) {
     ) : (
       <UserRound
         size={size === "lg" ? 22 : 18}
-        className="text-[#042C51]"
+        className="text-sibs-navy"
       />
     );
 
@@ -425,7 +425,7 @@ function ProfileAvatar({ item, size = "md" }) {
     typeof document !== "undefined"
       ? createPortal(
           <span
-            className="pointer-events-none fixed z-[9999] rounded-2xl border border-[#D9E6F2] bg-white p-2 shadow-[0_18px_45px_rgba(4,44,81,0.22)]"
+            className="pointer-events-none fixed z-[9999] rounded-[14px] border border-sibs-border bg-white p-2 shadow-[0_18px_45px_rgba(4,44,81,0.22)]"
             style={{
               left: previewPosition.left,
               top: previewPosition.top,
@@ -435,7 +435,7 @@ function ProfileAvatar({ item, size = "md" }) {
             }}
             aria-hidden="true"
           >
-            <span className="relative flex h-40 w-40 items-center justify-center overflow-hidden rounded-xl border border-[#D9E2EC] bg-[#F2F6FA]">
+            <span className="relative flex h-40 w-40 items-center justify-center overflow-hidden rounded-[10px] border border-sibs-border bg-sibs-surface">
               <img
                 src={imageUrl}
                 alt=""
@@ -463,7 +463,7 @@ function ProfileAvatar({ item, size = "md" }) {
         onBlur={hidePreview}
         onClick={(event) => event.stopPropagation()}
         onKeyDown={(event) => event.stopPropagation()}
-        className={`relative inline-flex ${sizeClass} shrink-0 items-center justify-center overflow-hidden rounded-full border border-[#D9E2EC] bg-[#F2F6FA] shadow-inner outline-none`}
+        className={`relative inline-flex ${sizeClass} shrink-0 items-center justify-center overflow-hidden rounded-full border border-sibs-border bg-sibs-surface shadow-inner outline-none`}
       >
         {avatarContent}
       </span>
@@ -594,16 +594,16 @@ function ResignationSummaryCards({ stats, loading }) {
 
 function ApprovalStageRow({ stage, approver, role }) {
   return (
-    <tr className="border-b border-[#edf1f5] last:border-b-0">
-      <td className="px-2.5 py-1.5 2xl:px-4 2xl:py-3 sibs-text-xs font-semibold text-[#042C51]">
+    <tr className="border-b border-sibs-border/60 last:border-b-0">
+      <td className="px-2.5 py-1.5 2xl:px-4 2xl:py-3 sibs-text-xs font-semibold text-sibs-navy">
         {stage}
       </td>
 
-      <td className="px-2.5 py-1.5 2xl:px-4 2xl:py-3 sibs-text-xs font-medium text-[#344054]">
+      <td className="px-2.5 py-1.5 2xl:px-4 2xl:py-3 sibs-text-xs font-medium text-sibs-navy">
         {approver}
       </td>
 
-      <td className="px-2.5 py-1.5 2xl:px-4 2xl:py-3 sibs-text-xs font-medium text-[#52637A]">
+      <td className="px-2.5 py-1.5 2xl:px-4 2xl:py-3 sibs-text-xs font-medium text-sibs-muted">
         {role}
       </td>
 
@@ -628,7 +628,7 @@ function ResignationProcessStep({
       {!isLast && (
         <div
           className={`absolute left-4 top-8 -bottom-4 w-0.5 lg:hidden transition-colors ${
-            done ? "bg-[#042C51]" : "bg-slate-200"
+            done ? "bg-sibs-navy" : "bg-slate-200"
           }`}
           aria-hidden="true"
         />
@@ -638,10 +638,10 @@ function ResignationProcessStep({
         <div
           className={`relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 border-white text-xs font-extrabold shadow-sm transition-all duration-300 2xl:h-9.5 2xl:w-9.5 2xl:border-4 ${
             done
-              ? "bg-[#042C51] text-white"
+              ? "bg-sibs-navy text-white"
               : active
-                ? "scale-105 bg-[#FF5C28] text-white shadow-[#FF5C28]/20 ring-4 ring-[#FF5C28]/15"
-                : "bg-[#EEF2F6] text-[#98A2B3]"
+                ? "scale-105 bg-sibs-orange text-white shadow-sibs-orange/20 ring-4 ring-sibs-orange/15"
+                : "bg-sibs-surface text-sibs-muted"
           }`}
         >
           {done ? (
@@ -655,20 +655,20 @@ function ResignationProcessStep({
           <div className="flex flex-wrap items-center gap-1.5 lg:justify-center">
             <p
               className={`sibs-text-micro font-extrabold ${
-                done || active ? "text-[#042C51]" : "text-[#98A2B3]"
+                done || active ? "text-sibs-navy" : "text-sibs-muted"
               }`}
             >
               {number}. {title}
             </p>
 
             {active && (
-              <span className="inline-flex items-center rounded-full border border-orange-200 bg-orange-50 px-1.5 py-0.2 text-[9px] font-extrabold uppercase tracking-wide text-[#FF5C28] lg:hidden">
+              <span className="inline-flex items-center rounded-full border border-orange-200 bg-orange-50 px-1.5 py-0.2 text-[9px] font-extrabold uppercase tracking-wide text-sibs-orange lg:hidden">
                 Current
               </span>
             )}
           </div>
 
-          <p className="mt-0.5 sibs-text-micro font-semibold leading-snug text-[#667085]">
+          <p className="mt-0.5 sibs-text-micro font-semibold leading-snug text-sibs-muted">
             {description}
           </p>
         </div>
@@ -751,21 +751,21 @@ function ResignationAnalytics({ data = [], loading = false }) {
               Resignation Process
             </h2>
 
-            <p className="sibs-text-xs font-semibold text-[#667085]">
+            <p className="sibs-text-xs font-semibold text-sibs-muted">
               From employee email submission to TL/OM filing, approval request,
               notice period, and completion.
             </p>
           </div>
 
           <span
-            className={`mt-2 w-fit shrink-0 whitespace-nowrap ${EDGE} border border-[#E6ECF2] bg-[#F8FAFC] px-3 py-1.5 2xl:px-4 2xl:py-2 sibs-text-xs font-bold text-[#344054] sm:mt-0`}
+            className={`mt-2 w-fit shrink-0 whitespace-nowrap rounded-[10px] border border-sibs-border bg-sibs-surface px-3 py-1.5 2xl:px-4 2xl:py-2 sibs-text-xs font-bold text-sibs-navy sm:mt-0`}
           >
             Sequential Approval
           </span>
         </div>
 
         <div className="relative mt-5 sm:mt-6">
-          <div className="absolute left-[8%] right-[8%] top-4 hidden h-0.5 bg-[#d9e2ec] lg:block 2xl:top-4.5" />
+          <div className="absolute left-[8%] right-[8%] top-4 hidden h-0.5 bg-sibs-border lg:block 2xl:top-4.5" />
 
           <div className="relative flex flex-col gap-4 sm:gap-5 lg:grid lg:grid-cols-5 lg:gap-5">
             <ResignationProcessStep
@@ -813,29 +813,29 @@ function ResignationAnalytics({ data = [], loading = false }) {
           </div>
         </div>
 
-        <div className={`mt-7 overflow-hidden ${EDGE} border border-[#E6ECF2]`}>
-          <div className="border-b border-[#E6ECF2] bg-[#F8FAFC] px-4 py-3">
+        <div className={`mt-7 overflow-hidden ${EDGE} ${PANEL_BORDER}`}>
+          <div className="border-b border-sibs-border bg-sibs-surface px-4 py-3">
             <h3 className="font-heading text-sm 2xl:text-base font-bold text-sibs-navy tracking-tight">
               Approval Stages
             </h3>
-            <p className="mt-0.5 sibs-text-xs font-semibold text-[#667085]">
+            <p className="mt-0.5 sibs-text-xs font-semibold text-sibs-muted">
               Reference approval flow for Corporate and Non-Corporate resignations.
             </p>
           </div>
 
-          <div className="divide-y divide-[#E6ECF2]">
+          <div className="divide-y divide-sibs-border">
             {APPROVAL_PROCESS_ROUTES.map((route) => (
               <div key={route.key}>
-                <div className="flex items-center justify-between gap-3 border-b border-[#E6ECF2] bg-white px-4 py-3">
+                <div className="flex items-center justify-between gap-3 border-b border-sibs-border bg-white px-4 py-3">
                   <div className="min-w-0">
-                    <p className="sibs-text-xs font-extrabold text-[#042C51]">
+                    <p className="sibs-text-xs font-extrabold text-sibs-navy">
                       {route.title}
                     </p>
-                    <p className="mt-0.5 sibs-text-micro font-semibold text-[#667085]">
+                    <p className="mt-0.5 sibs-text-micro font-semibold text-sibs-muted">
                       {route.description}
                     </p>
                   </div>
-                  <span className="shrink-0 rounded-md border border-[#E6ECF2] bg-[#F8FAFC] px-2 py-1 sibs-text-micro font-bold text-[#52637A]">
+                  <span className="shrink-0 rounded-[10px] border border-sibs-border bg-sibs-surface px-2 py-1 sibs-text-micro font-bold text-sibs-muted">
                     {route.routeLabel}
                   </span>
                 </div>
@@ -884,15 +884,15 @@ function ResignationAnalytics({ data = [], loading = false }) {
                     Resignation Trend
                   </h2>
 
-                  <p className="sibs-text-xs font-semibold text-[#667085]">
+                  <p className="sibs-text-xs font-semibold text-sibs-muted">
                     Monthly filed resignations
                   </p>
                 </div>
 
                 <div
-                  className={`flex h-9 w-9 2xl:h-10 2xl:w-10 shrink-0 items-center justify-center rounded-xl ${
+                  className={`flex h-9 w-9 2xl:h-10 2xl:w-10 shrink-0 items-center justify-center rounded-[10px] ${
                     isTrendingUp
-                      ? "bg-orange-50 text-[#FF5C28]"
+                      ? "bg-sibs-cream-light text-sibs-orange"
                       : isTrendingDown
                         ? "bg-emerald-50 text-emerald-600"
                         : "bg-slate-50 text-slate-500"
@@ -919,7 +919,7 @@ function ResignationAnalytics({ data = [], loading = false }) {
 
           {loading ? (
             <div
-              className={`flex h-40 items-center justify-center ${EDGE} border border-dashed border-[#D9E2EC] bg-[#F8FAFC]`}
+              className={`flex h-40 items-center justify-center ${EDGE} border border-dashed border-sibs-border bg-sibs-surface`}
             >
               <Loader2 size={26} className="animate-spin text-sibs-primary-1" />
             </div>
@@ -978,9 +978,9 @@ function ResignationAnalytics({ data = [], loading = false }) {
                         x2="0"
                         y2="1"
                       >
-                        <stop offset="0%" stopColor="#042C51" stopOpacity="0.22" />
-                        <stop offset="85%" stopColor="#042C51" stopOpacity="0.02" />
-                        <stop offset="100%" stopColor="#042C51" stopOpacity="0" />
+                        <stop offset="0%" stopColor="var(--color-sibs-navy, rgb(4,44,81))" stopOpacity="0.22" />
+                        <stop offset="85%" stopColor="var(--color-sibs-navy, rgb(4,44,81))" stopOpacity="0.02" />
+                        <stop offset="100%" stopColor="var(--color-sibs-navy, rgb(4,44,81))" stopOpacity="0" />
                       </linearGradient>
                     </defs>
 
@@ -990,7 +990,7 @@ function ResignationAnalytics({ data = [], loading = false }) {
                       y1={padTop}
                       x2={width - padRight}
                       y2={padTop}
-                      stroke="#F2F4F7"
+                      stroke="var(--tw-colors-slate-100, rgb(242,244,247))"
                       strokeDasharray="3 3"
                       strokeWidth="1"
                     />
@@ -999,7 +999,7 @@ function ResignationAnalytics({ data = [], loading = false }) {
                       y1={padTop + plotHeight / 2}
                       x2={width - padRight}
                       y2={padTop + plotHeight / 2}
-                      stroke="#F2F4F7"
+                      stroke="var(--tw-colors-slate-100, rgb(242,244,247))"
                       strokeDasharray="3 3"
                       strokeWidth="1"
                     />
@@ -1008,7 +1008,7 @@ function ResignationAnalytics({ data = [], loading = false }) {
                       y1={baselineY}
                       x2={width - padRight}
                       y2={baselineY}
-                      stroke="#E4E7EC"
+                      stroke="var(--color-sibs-border, rgb(228,231,236))"
                       strokeWidth="1.2"
                     />
 
@@ -1017,7 +1017,7 @@ function ResignationAnalytics({ data = [], loading = false }) {
                       x={padLeft - 10}
                       y={padTop + 3.5}
                       textAnchor="end"
-                      className="text-[9px] font-bold fill-[#98A2B3]"
+                      className="text-[9px] font-bold fill-sibs-muted"
                     >
                       {yCeiling}
                     </text>
@@ -1025,7 +1025,7 @@ function ResignationAnalytics({ data = [], loading = false }) {
                       x={padLeft - 10}
                       y={padTop + plotHeight / 2 + 3.5}
                       textAnchor="end"
-                      className="text-[9px] font-bold fill-[#98A2B3]"
+                      className="text-[9px] font-bold fill-sibs-muted"
                     >
                       {Math.round(yCeiling / 2)}
                     </text>
@@ -1033,7 +1033,7 @@ function ResignationAnalytics({ data = [], loading = false }) {
                       x={padLeft - 10}
                       y={baselineY + 3.5}
                       textAnchor="end"
-                      className="text-[9px] font-bold fill-[#98A2B3]"
+                      className="text-[9px] font-bold fill-sibs-muted"
                     >
                       0
                     </text>
@@ -1052,7 +1052,7 @@ function ResignationAnalytics({ data = [], loading = false }) {
                       <path
                         d={curvePath}
                         fill="none"
-                        stroke="#042C51"
+                        stroke="var(--color-sibs-navy, rgb(4,44,81))"
                         strokeWidth="2.5"
                         strokeLinecap="round"
                         strokeLinejoin="round"
@@ -1071,7 +1071,7 @@ function ResignationAnalytics({ data = [], loading = false }) {
                             y1={padTop}
                             x2={pt.x}
                             y2={baselineY}
-                            stroke="#042C51"
+                            stroke="var(--color-sibs-navy, rgb(4,44,81))"
                             strokeOpacity="0.1"
                             strokeDasharray="2 2"
                             className="opacity-0 transition-opacity group-hover:opacity-100"
@@ -1083,7 +1083,7 @@ function ResignationAnalytics({ data = [], loading = false }) {
                               cx={pt.x}
                               cy={pt.y}
                               r="8.5"
-                              fill="#FF5C28"
+                              fill="var(--color-sibs-orange, rgb(255,92,40))"
                               fillOpacity="0.16"
                               className="animate-pulse"
                             />
@@ -1094,8 +1094,8 @@ function ResignationAnalytics({ data = [], loading = false }) {
                             cx={pt.x}
                             cy={pt.y}
                             r={isZero ? "3" : "4.5"}
-                            fill={isZero ? "#CBD5E1" : "#FF5C28"}
-                            stroke="#FFFFFF"
+                            fill={isZero ? "var(--color-sibs-border, rgb(203,213,225))" : "var(--color-sibs-orange, rgb(255,92,40))"}
+                            stroke="white"
                             strokeWidth={isZero ? "1.5" : "2"}
                             className="transition-transform duration-200 group-hover:scale-125"
                           />
@@ -1109,7 +1109,7 @@ function ResignationAnalytics({ data = [], loading = false }) {
                                 width="18"
                                 height="14"
                                 rx="4"
-                                fill="#042C51"
+                                fill="var(--color-sibs-navy, rgb(4,44,81))"
                               />
                               <text
                                 x={pt.x}
@@ -1128,7 +1128,7 @@ function ResignationAnalytics({ data = [], loading = false }) {
                             y={baselineY + 16}
                             textAnchor="middle"
                             className={`text-[10px] font-bold uppercase tracking-wider ${
-                              !isZero ? "fill-sibs-navy font-extrabold" : "fill-[#94A3B8]"
+                              !isZero ? "fill-sibs-navy font-extrabold" : "fill-sibs-muted"
                             }`}
                           >
                             {pt.label}
@@ -1142,7 +1142,7 @@ function ResignationAnalytics({ data = [], loading = false }) {
             </div>
           ) : (
             <div
-              className={`flex h-40 flex-col items-center justify-center ${EDGE} border border-dashed border-[#d9e2ec] bg-[#f8fafc] text-center`}
+              className={`flex h-40 flex-col items-center justify-center ${EDGE} border border-dashed border-sibs-border bg-sibs-surface text-center`}
             >
               <UsersRound size={22} className="text-sibs-tertiary-5" />
 
@@ -1162,7 +1162,7 @@ function ResignationAnalytics({ data = [], loading = false }) {
             Approval Routing
           </h3>
 
-          <p className="mt-2 2xl:mt-3 sibs-text-xs font-semibold leading-relaxed text-[#344054]">
+          <p className="mt-2 2xl:mt-3 sibs-text-xs font-semibold leading-relaxed text-sibs-navy">
             All resignation approval decisions are handled in the Approval
             Request module. This page is only for filing, monitoring, process
             tracking, analytics, and full resignation listing.
@@ -1307,7 +1307,7 @@ function ResignationTableCard({
   }
 
   return (
-    <section className="sibs-profile-tab-panel sibs-page-card-in sibs-card min-w-0 overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-sm font-jakarta">
+    <section className="sibs-page-card-in sibs-card min-w-0 overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-xs font-jakarta">
       <div className="border-b border-sibs-border p-4 sm:p-5 2xl:p-6 font-jakarta">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0 space-y-0.5">
@@ -1428,7 +1428,7 @@ function ResignationTableCard({
                       />
                     ) : pageData.length === 0 ? (
                       <tr>
-                        <td colSpan={7} className="px-5 py-16 text-center sibs-text-sm font-bold text-[#667085]">
+                        <td colSpan={7} className="px-5 py-16 text-center sibs-text-sm font-bold text-sibs-muted">
                           No resignation records found.
                         </td>
                       </tr>
@@ -1556,13 +1556,13 @@ function ResignationRow({ item, index = 0, onView }) {
           <div className="min-w-0">
             <p
               title={employeeName}
-              className="m-0 max-w-[300px] truncate sibs-text-xs font-extrabold text-[#042C51]"
+              className="m-0 max-w-[300px] truncate sibs-text-xs font-extrabold text-sibs-navy"
             >
               {employeeName}
             </p>
 
-            <p className="mt-0.5 max-w-[300px] truncate sibs-text-micro font-bold text-[#667085]">
-              <span className="font-extrabold text-[#FF5C28]">
+            <p className="mt-0.5 max-w-[300px] truncate sibs-text-micro font-bold text-sibs-muted">
+              <span className="font-extrabold text-sibs-orange">
                 {getEmployeeSibsId(item)}
               </span>
               {" · "}
@@ -1575,26 +1575,26 @@ function ResignationRow({ item, index = 0, onView }) {
       <td className="whitespace-nowrap px-3 py-2 2xl:px-4 2xl:py-2.5">
         <p
           title={filedBy}
-          className="m-0 max-w-[250px] truncate sibs-text-xs font-extrabold text-[#344054]"
+          className="m-0 max-w-[250px] truncate sibs-text-xs font-extrabold text-sibs-navy"
         >
           {filedBy}
         </p>
-        <p className="mt-0.5 max-w-[250px] truncate sibs-text-micro font-bold text-[#667085]">
+        <p className="mt-0.5 max-w-[250px] truncate sibs-text-micro font-bold text-sibs-muted">
           {filedByRole}
         </p>
       </td>
 
       <td className="whitespace-nowrap px-3 py-2 text-center 2xl:px-4 2xl:py-2.5">
-        <span className="inline-flex items-center justify-center rounded-md border border-[#E6ECF2] bg-[#F8FAFC] px-2.5 py-1 sibs-text-micro font-extrabold text-[#344054]">
+        <span className="inline-flex items-center justify-center rounded-[10px] border border-sibs-border bg-sibs-surface px-2.5 py-1 sibs-text-micro font-extrabold text-sibs-navy">
           {resignationType}
         </span>
       </td>
 
-      <td className="whitespace-nowrap px-3 py-2 text-center sibs-text-xs font-semibold text-[#52637A] 2xl:px-4 2xl:py-2.5">
+      <td className="whitespace-nowrap px-3 py-2 text-center sibs-text-xs font-semibold text-sibs-muted 2xl:px-4 2xl:py-2.5">
         {formatDate(resignationDate)}
       </td>
 
-      <td className="whitespace-nowrap px-3 py-2 text-center sibs-text-xs font-semibold text-[#52637A] 2xl:px-4 2xl:py-2.5">
+      <td className="whitespace-nowrap px-3 py-2 text-center sibs-text-xs font-semibold text-sibs-muted 2xl:px-4 2xl:py-2.5">
         {formatDate(lastWorkingDate)}
       </td>
 
@@ -1609,7 +1609,7 @@ function ResignationRow({ item, index = 0, onView }) {
         </span>
       </td>
 
-      <td className="px-3 py-2 sibs-text-xs font-semibold text-[#344054] 2xl:px-4 2xl:py-2.5">
+      <td className="px-3 py-2 sibs-text-xs font-semibold text-sibs-navy 2xl:px-4 2xl:py-2.5">
         <p
           title={reason}
           className="m-0 max-w-[260px] truncate"
@@ -1637,7 +1637,7 @@ function ResignationMobileCard({ item, index = 0, onView, onOpenAttachments }) {
         title={getFullName(item)}
         subtitle={
           <span className="truncate">
-            <span className="font-extrabold text-[#FF5C28]">{getEmployeeSibsId(item)}</span> · {getEmployeeDepartment(item)}
+            <span className="font-extrabold text-sibs-orange">{getEmployeeSibsId(item)}</span> · {getEmployeeDepartment(item)}
           </span>
         }
         badge={
@@ -1656,9 +1656,9 @@ function ResignationMobileCard({ item, index = 0, onView, onOpenAttachments }) {
       </DataCard.Metrics>
 
       {reason ? (
-        <div className="mt-2.5 rounded-lg border border-slate-100 bg-[#F8FAFC] px-2.5 py-1.5 text-left">
+        <div className="mt-2.5 rounded-[10px] border border-sibs-border bg-sibs-surface px-2.5 py-1.5 text-left">
           <p className="text-[9.5px] font-bold uppercase tracking-wider text-slate-400">Reason</p>
-          <p className="mt-0.5 line-clamp-2 text-xs font-semibold text-[#344054]">
+          <p className="mt-0.5 line-clamp-2 text-xs font-semibold text-sibs-navy">
             {reason}
           </p>
         </div>
@@ -1676,7 +1676,7 @@ function ResignationMobileCard({ item, index = 0, onView, onOpenAttachments }) {
             }
           }}
           disabled={attachmentCount === 0}
-          className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-lg bg-[#042C51] px-4 text-xs font-extrabold text-white transition hover:bg-[#FF5C28] disabled:cursor-not-allowed disabled:bg-[#D0D5DD]"
+          className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-[10px] bg-sibs-navy px-4 text-xs font-extrabold text-white transition hover:bg-sibs-orange disabled:cursor-not-allowed disabled:bg-sibs-border disabled:text-sibs-muted"
         >
           <Paperclip size={14} />
           {getAttachmentCountLabel(item)}
@@ -1688,7 +1688,7 @@ function ResignationMobileCard({ item, index = 0, onView, onOpenAttachments }) {
 
 function MobileMetric({ label, value }) {
   return (
-    <div className={`${EDGE} bg-[#F8FAFC] p-3`}>
+    <div className={`${EDGE} bg-sibs-surface p-3`}>
       <p className="text-[10px] font-bold uppercase text-sibs-tertiary-5">
         {label}
       </p>
@@ -2488,13 +2488,13 @@ export default function ResignationManagementPage() {
           <PageHeaderHero
             kicker={
               <div className="flex flex-wrap items-center gap-2">
-                <span className="inline-flex items-center gap-1.5 rounded border border-blue-100 bg-[#E9F0FC] px-2 py-0.5 2xl:px-2.5 2xl:py-1 sibs-text-micro font-extrabold uppercase tracking-wide text-sibs-navy">
+                <span className="inline-flex items-center gap-1.5 rounded-[10px] border border-sibs-border bg-sibs-surface px-2 py-0.5 2xl:px-2.5 2xl:py-1 sibs-text-micro font-extrabold uppercase tracking-wide text-sibs-navy">
                   <span className="h-1.5 w-1.5 animate-sibs-pulse rounded-full bg-sibs-orange" />
                   Core HR View
                 </span>
 
                 {isViewOnly && (
-                  <span className="inline-flex rounded border border-slate-200 bg-slate-50 px-2 py-0.5 2xl:px-2.5 2xl:py-1 sibs-text-micro font-extrabold uppercase text-[#667085]">
+                  <span className="inline-flex rounded-[10px] border border-sibs-border bg-sibs-surface px-2 py-0.5 2xl:px-2.5 2xl:py-1 sibs-text-micro font-extrabold uppercase text-sibs-muted">
                     Read-Only Access
                   </span>
                 )}
@@ -2536,21 +2536,21 @@ export default function ResignationManagementPage() {
             }
           />
 
-          <div className="relative z-[20] sibs-profile-tab-panel">
+          <div className="relative z-[20]">
             <ResignationSummaryCards
               stats={stats}
               loading={resignationLoading}
             />
           </div>
 
-          <div className="relative z-[0] sibs-profile-tab-panel">
+          <div className="relative z-[0]">
             <ResignationAnalytics
               data={resignations}
               loading={resignationLoading}
             />
           </div>
 
-          <div className="relative z-[10] sibs-profile-tab-panel">
+          <div className="relative z-[10]">
             <ResignationTableCard
               data={filteredResignations}
               loading={resignationLoading}
@@ -2594,11 +2594,14 @@ export default function ResignationManagementPage() {
         onClose={() => setSelectedResignation(null)}
       />
 
-      <StatusModal
-        open={statusModal.open}
-        type={statusModal.type}
-        title={statusModal.title}
-        message={statusModal.message}
+      <ConfirmModal
+        open={Boolean(statusModal.open)}
+        variant={statusModal.type === "error" ? "danger" : "primary"}
+        title={statusModal.title || "Notification"}
+        description={statusModal.message || ""}
+        confirmLabel="OK"
+        cancelLabel="Close"
+        onConfirm={closeStatusModal}
         onClose={closeStatusModal}
       />
     </div>

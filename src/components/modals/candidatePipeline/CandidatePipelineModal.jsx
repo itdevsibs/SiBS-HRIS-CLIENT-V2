@@ -1420,7 +1420,7 @@ function getFinalInterviewResultClass(result = "") {
     return "border-red-100 bg-red-50 text-red-700";
   }
 
-  return "border-blue-100 bg-blue-50 text-sibs-primary-1";
+  return "border-blue-100 bg-blue-50 text-sibs-navy";
 }
 
 function formatAssessmentScoreDisplay(value) {
@@ -2729,7 +2729,7 @@ function FormDropdown({
   return (
     <label className="block">
       {label && (
-        <span className="text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
+        <span className="text-xs font-extrabold uppercase tracking-wide text-sibs-navy">
           {label}
         </span>
       )}
@@ -3138,7 +3138,7 @@ function RequirementCard({
 
             <div className="flex shrink-0 items-center gap-2">
               {isMajorRequirement(requirement) && (
-                <span className="rounded-full border border-blue-100 bg-blue-50 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
+                <span className="rounded-full border border-blue-100 bg-blue-50 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-sibs-navy">
                   Major
                 </span>
               )}
@@ -3243,7 +3243,7 @@ function FilePreviewPanel({ file }) {
   if (!file) {
     return (
       <div className="flex min-h-[320px] flex-col items-center justify-center rounded-[10px] border border-dashed border-sibs-border bg-sibs-surface p-6 text-center">
-        <div className="flex h-14 w-14 items-center justify-center rounded-[10px] border border-sibs-border bg-white text-sibs-primary-1 shadow-sm">
+        <div className="flex h-14 w-14 items-center justify-center rounded-[10px] border border-sibs-border bg-white text-sibs-navy shadow-sm">
           <FileText size={27} />
         </div>
 
@@ -3269,12 +3269,12 @@ function FilePreviewPanel({ file }) {
   return (
     <div className="rounded-[10px] border border-sibs-border bg-sibs-surface p-5">
       <div className="flex items-start gap-3">
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[10px] bg-white text-sibs-primary-1 shadow-sm">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[10px] bg-white text-sibs-navy shadow-sm">
           <FileIcon size={24} />
         </div>
 
         <div className="min-w-0">
-          <p className="text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
+          <p className="text-xs font-extrabold uppercase tracking-wide text-sibs-navy">
             Selected File
           </p>
 
@@ -3297,7 +3297,7 @@ function FilePreviewPanel({ file }) {
             Requirement
           </p>
 
-          <p className="mt-1 text-sm font-bold text-sibs-primary-1">
+          <p className="mt-1 text-sm font-bold text-sibs-navy">
             {file.requirement || "NHO Uploaded File"}
           </p>
         </div>
@@ -3307,7 +3307,7 @@ function FilePreviewPanel({ file }) {
             Uploaded At
           </p>
 
-          <p className="mt-1 text-sm font-bold text-sibs-primary-1">
+          <p className="mt-1 text-sm font-bold text-sibs-navy">
             {file.uploadedAt ? formatDateTime(file.uploadedAt) : "Not saved yet"}
           </p>
         </div>
@@ -3318,7 +3318,7 @@ function FilePreviewPanel({ file }) {
               Uploaded By
             </p>
 
-            <p className="mt-1 break-words text-sm font-bold text-sibs-primary-1">
+            <p className="mt-1 break-words text-sm font-bold text-sibs-navy">
               {file.uploadedBy}
             </p>
           </div>
@@ -3330,7 +3330,7 @@ function FilePreviewPanel({ file }) {
               Server Folder
             </p>
 
-            <p className="mt-1 break-words text-sm font-bold text-sibs-primary-1">
+            <p className="mt-1 break-words text-sm font-bold text-sibs-navy">
               {file.applicantFolderName}
             </p>
           </div>
@@ -3413,7 +3413,7 @@ function PreEmploymentRequirementsPanel({
                   {candidateName || "Candidate"}
                 </h3>
 
-                <p className="mt-1 break-words text-sm font-extrabold uppercase text-sibs-primary-1">
+                <p className="mt-1 break-words text-sm font-extrabold uppercase text-sibs-navy">
                   {candidateEmail || "No email provided"}
                 </p>
               </div>
@@ -3433,14 +3433,14 @@ function PreEmploymentRequirementsPanel({
                   {majorProgress.completed} / {majorProgress.total} Major
                 </span>
 
-                <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-extrabold text-sibs-primary-1">
+                <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-extrabold text-sibs-navy">
                   {totalProgress.completed} / {totalProgress.total} Total
                 </span>
               </div>
             </div>
 
             <div className="mt-5">
-              <div className="mb-2 flex items-center justify-between text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
+              <div className="mb-2 flex items-center justify-between text-xs font-extrabold uppercase tracking-wide text-sibs-navy">
                 <span>Major Completion</span>
                 <span>{majorProgress.percent}%</span>
               </div>
@@ -3450,20 +3450,20 @@ function PreEmploymentRequirementsPanel({
                   className={`h-full rounded-full transition-all duration-300 ${
                     majorProgress.isComplete
                       ? "bg-emerald-600"
-                      : "bg-sibs-primary-1"
+                      : "bg-sibs-navy"
                   }`}
                   style={{ width: `${majorProgress.percent}%` }}
                 />
               </div>
 
-              <div className="mt-4 mb-2 flex items-center justify-between text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
+              <div className="mt-4 mb-2 flex items-center justify-between text-xs font-extrabold uppercase tracking-wide text-sibs-navy">
                 <span>Total Completion</span>
                 <span>{totalProgress.percent}%</span>
               </div>
 
               <div className="h-2 overflow-hidden rounded-full bg-sibs-surface">
                 <div
-                  className="h-full rounded-full bg-sibs-primary-1/70 transition-all duration-300"
+                  className="h-full rounded-full bg-sibs-navy/70 transition-all duration-300"
                   style={{ width: `${totalProgress.percent}%` }}
                 />
               </div>
@@ -3519,11 +3519,11 @@ function PreEmploymentRequirementsPanel({
                   >
                     <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                       <div className="flex min-w-0 items-center gap-3">
-                        <h4 className="text-base font-extrabold text-sibs-primary-1">
+                        <h4 className="text-base font-extrabold text-sibs-navy">
                           {group.title}
                         </h4>
 
-                        <span className="rounded-full bg-sibs-surface px-3 py-1 text-xs font-extrabold text-sibs-primary-1">
+                        <span className="rounded-full bg-sibs-surface px-3 py-1 text-xs font-extrabold text-sibs-navy">
                           {groupProgress.completed} / {groupProgress.total}
                         </span>
                       </div>
@@ -3888,7 +3888,7 @@ function UpdateAssessmentModal({
 
             {assessmentStatus === "Taken" ? (<>
             <label className="block">
-              <span className="text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
+              <span className="text-xs font-extrabold uppercase tracking-wide text-sibs-navy">
                 Assessment Score
               </span>
 
@@ -3946,7 +3946,7 @@ function UpdateAssessmentModal({
             )}
 
             <label className="block">
-              <span className="text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
+              <span className="text-xs font-extrabold uppercase tracking-wide text-sibs-navy">
                 Remarks
               </span>
 
@@ -3961,7 +3961,7 @@ function UpdateAssessmentModal({
             </label>
 
             <label className="block">
-              <span className="text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
+              <span className="text-xs font-extrabold uppercase tracking-wide text-sibs-navy">
                 Assessment Attachment
               </span>
 
@@ -3982,7 +3982,7 @@ function UpdateAssessmentModal({
                 </p>
 
                 {assessmentFile && (
-                  <p className="mt-2 break-words text-xs font-extrabold text-sibs-primary-1">
+                  <p className="mt-2 break-words text-xs font-extrabold text-sibs-navy">
                     Selected: {assessmentFile.name}
                   </p>
                 )}
@@ -5062,7 +5062,7 @@ function NhoTimePicker({
       <div className="mb-3 flex items-center justify-between gap-3">
         <div>
           <p className="sibs-kicker text-sibs-muted">NHO Time</p>
-          <p className="mt-1 sibs-text-xs font-extrabold text-sibs-primary-1">
+          <p className="mt-1 sibs-text-xs font-extrabold text-sibs-navy">
             {formatNhoScheduleTimeDisplay(value)}
           </p>
         </div>
@@ -5505,7 +5505,7 @@ function NhoInternalRescheduleModal({
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="rounded-[10px] border border-sibs-border bg-sibs-surface px-4 py-3">
               <p className="sibs-kicker text-sibs-muted">Current NHO Date</p>
-              <p className="mt-1 sibs-text-sm font-extrabold text-sibs-primary-1">
+              <p className="mt-1 sibs-text-sm font-extrabold text-sibs-navy">
                 {formatNhoScheduleDateDisplay(currentValue)}
               </p>
               <p className="mt-1 sibs-text-xs font-bold text-sibs-muted">
@@ -5637,7 +5637,7 @@ function NhoInternalRescheduleModal({
           </div>
 
           <div className="mt-4 rounded-[10px] border border-blue-100 bg-blue-50 px-4 py-3">
-            <p className="sibs-text-xs font-bold leading-5 text-sibs-primary-1">
+            <p className="sibs-text-xs font-bold leading-5 text-sibs-navy">
               Available dates start today. Saturdays and Sundays are disabled.
               Select an available NHO time from 8:00 AM through 6:00 PM before sending the updated schedule.
             </p>
@@ -5802,7 +5802,7 @@ className="min-w-[132px]"
           subtitle="The suggested NHO is Friday of next week. This week\'s upcoming Friday may still be selected for an earlier NHO."
         >
           <div className="rounded-[10px] border border-blue-100 bg-blue-50 px-4 py-3">
-            <p className="sibs-text-xs font-bold leading-5 text-sibs-primary-1">
+            <p className="sibs-text-xs font-bold leading-5 text-sibs-navy">
               Suggested NHO date:{" "}
               <span className="font-extrabold">
                 {formatNhoScheduleDateDisplay(
@@ -6292,7 +6292,7 @@ function AssessmentEmailFormatModal({
         >
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <label className="block">
-              <span className="sibs-kicker text-sibs-primary-1">
+              <span className="sibs-kicker text-sibs-navy">
                 Recipient Email
               </span>
               <input
@@ -6310,7 +6310,7 @@ function AssessmentEmailFormatModal({
             </label>
 
             <label className="block">
-              <span className="sibs-kicker text-sibs-primary-1">
+              <span className="sibs-kicker text-sibs-navy">
                 Assessment Deadline
               </span>
               <div className="mt-2">
@@ -6329,7 +6329,7 @@ function AssessmentEmailFormatModal({
             </label>
 
             <label className="block md:col-span-2">
-              <span className="sibs-kicker text-sibs-primary-1">Subject</span>
+              <span className="sibs-kicker text-sibs-navy">Subject</span>
               <input
                 value={form.emailSubject}
                 disabled={isSending}
@@ -6344,7 +6344,7 @@ function AssessmentEmailFormatModal({
             </label>
 
             <label className="block md:col-span-2">
-              <span className="sibs-kicker text-sibs-primary-1">Role / Position</span>
+              <span className="sibs-kicker text-sibs-navy">Role / Position</span>
               <input
                 value={form.roleName}
                 disabled={isSending}
@@ -6952,7 +6952,7 @@ function CandidateStageJourney({ currentStage = "" }) {
                           ? "border-sibs-orange bg-sibs-orange text-white shadow-[0_4px_10px_rgba(255,92,40,0.18)]"
                           : isComplete
                             ? "border-sibs-navy bg-sibs-navy text-white"
-                            : "border-sibs-border-subtle bg-white text-sibs-faint"
+                            : "border-sibs-border bg-white text-sibs-muted"
                       }`}
                     >
                       {isComplete ? <Check size={11} /> : index + 1}
@@ -11835,7 +11835,7 @@ const concretePreferredFinalInterviewFormId =
       )}
 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
-          <h3 className="truncate text-sm font-bold text-sibs-primary-1">
+          <h3 className="truncate text-sm font-bold text-sibs-navy">
             NHO Schedule
           </h3>
 
@@ -11887,7 +11887,7 @@ const concretePreferredFinalInterviewFormId =
 
           {nhoScheduleDetails.remarks && (
             <div className="mt-4 rounded-[10px] border border-sibs-border bg-white p-4">
-              <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
+              <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-navy">
                 Remarks
               </p>
               <p className="mt-2 text-sm font-medium leading-6 text-sibs-muted">
@@ -11898,7 +11898,7 @@ const concretePreferredFinalInterviewFormId =
         </>
       ) : (
         <div className="mt-4 rounded-[10px] border border-dashed border-sibs-border bg-white p-5 text-center">
-          <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-[10px] bg-sibs-surface text-sibs-primary-1 shadow-sm">
+          <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-[10px] bg-sibs-surface text-sibs-navy shadow-sm">
             <CalendarDays size={22} />
           </div>
 

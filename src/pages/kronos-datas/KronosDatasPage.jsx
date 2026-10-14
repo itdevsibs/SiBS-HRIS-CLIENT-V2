@@ -207,17 +207,17 @@ function SummaryCard(props) {
       <div className="flex h-full items-start justify-between gap-2.5 2xl:gap-3">
         <div className="min-w-0 flex-1 self-stretch flex flex-col justify-between h-full">
           <div>
-            <p className="m-0 truncate sibs-text-micro font-extrabold uppercase tracking-wide text-[#98A2B3]">
+            <p className="m-0 truncate sibs-text-micro font-extrabold uppercase tracking-wide text-sibs-faint">
               {label}
             </p>
 
-            <p className="font-heading mt-1.5 2xl:mt-2 text-2xl 2xl:text-3xl font-bold leading-none tabular-nums tracking-tight text-[#042C51]">
+            <p className="font-heading mt-1.5 2xl:mt-2 text-2xl 2xl:text-3xl font-bold leading-none tabular-nums tracking-tight text-sibs-navy">
               {value}
             </p>
           </div>
         </div>
 
-        <div className="flex h-8 w-8 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-full bg-[#EBF3FB] text-[#042C51]">
+        <div className="flex h-8 w-8 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-full bg-sibs-surface text-sibs-navy">
           <Icon className="h-4 w-4 2xl:h-4.5 2xl:w-4.5" strokeWidth={2} />
         </div>
       </div>
@@ -572,7 +572,7 @@ export default function KronosDatasPage() {
           <PageHeaderHero
             kicker={
               <div className="flex flex-wrap items-center gap-2">
-                <span className="inline-flex items-center gap-1.5 rounded border border-blue-100 bg-[#E9F0FC] px-2 py-0.5 2xl:px-2.5 2xl:py-1 sibs-text-micro font-extrabold uppercase tracking-wide text-sibs-navy">
+                <span className="inline-flex items-center gap-1.5 rounded border border-sibs-border bg-sibs-cream-light px-2 py-0.5 2xl:px-2.5 2xl:py-1 sibs-text-micro font-extrabold uppercase tracking-wide text-sibs-navy">
                   <span className="h-1.5 w-1.5 animate-sibs-pulse rounded-full bg-sibs-orange" />
                   Core HR View
                 </span>
@@ -604,13 +604,13 @@ export default function KronosDatasPage() {
             className="sibs-profile-tab-panel"
             style={getAnimationStyle(animationTiming.summary)}
           >
-            <div className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
+            <div className="rounded-[14px] border border-sibs-border bg-white p-4 shadow-sm sm:p-5">
               <div>
                 <h2 className="font-heading text-sm 2xl:text-base font-bold text-sibs-navy tracking-tight">
                   Kronos Employee Summary
                 </h2>
 
-                <p className="mt-0.5 sibs-text-xs font-semibold text-[#667085]">
+                <p className="mt-0.5 sibs-text-xs font-semibold text-sibs-muted">
                   Overview of production employee records from Kronos.
                 </p>
               </div>
@@ -659,10 +659,10 @@ export default function KronosDatasPage() {
           </section>
 
           <section
-            className="sibs-profile-tab-panel min-h-[520px] overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white shadow-sm transition-all duration-200 hover:border-sibs-primary-1/20 hover:shadow-md"
+            className="sibs-profile-tab-panel min-h-[520px] overflow-hidden rounded-[14px] border border-sibs-border bg-white shadow-sm transition-all duration-200 hover:border-sibs-navy/20 hover:shadow-md"
             style={getAnimationStyle(animationTiming.table)}
           >
-            <div className="border-b border-[#E6ECF2] bg-white px-4 py-4 sm:px-5">
+            <div className="border-b border-sibs-border bg-white px-4 py-4 sm:px-5">
               <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2 font-jakarta">
@@ -670,13 +670,13 @@ export default function KronosDatasPage() {
                       Employee Records
                     </h2>
 
-                    <span className="inline-flex items-center gap-1 rounded-full border border-[#E6ECF2] bg-[#F8FAFC] px-2.5 py-0.5 sibs-text-micro font-extrabold uppercase tracking-wide text-sibs-primary-1">
+                    <span className="inline-flex items-center gap-1 rounded-full border border-sibs-border bg-sibs-surface px-2.5 py-0.5 sibs-text-micro font-extrabold uppercase tracking-wide text-sibs-navy">
                       <Server size={12} />
                       Kronos Datas
                     </span>
                   </div>
 
-                  <p className="mt-1 sibs-text-xs font-semibold text-[#667085]">
+                  <p className="mt-1 sibs-text-xs font-semibold text-sibs-muted">
                     Showing {pageStart} to {pageEnd} of {pagination.total}{" "}
                     production employee records. Only {PAGE_LIMIT} records are
                     loaded per page.
@@ -698,7 +698,7 @@ export default function KronosDatasPage() {
                       value={searchInput}
                       onChange={(event) => setSearchInput(event.target.value)}
                       placeholder="Search employee..."
-                      className="h-11 w-full rounded-xl border border-[#D9E2EC] bg-[#F8FAFC] pl-10 pr-9 sibs-text-xs font-medium text-slate-700 outline-none transition focus:border-sibs-primary-1 focus:bg-white focus:ring-4 focus:ring-sibs-primary-1/10"
+                      className="h-9 2xl:h-10 w-full rounded-[10px] border border-sibs-border bg-sibs-surface pl-10 pr-9 sibs-text-xs font-medium text-slate-700 outline-none transition focus:border-sibs-navy focus:bg-white focus:ring-4 focus:ring-sibs-navy/10"
                     />
 
                     {searchInput ? (
@@ -719,7 +719,7 @@ export default function KronosDatasPage() {
                         value={department}
                         onChange={handleDepartmentChange}
                         disabled={loading}
-                        className="h-11 rounded-xl border border-[#D9E2EC] bg-white px-3 sibs-text-xs font-bold text-slate-700 outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+                        className="h-9 2xl:h-10 rounded-[10px] border border-sibs-border bg-white px-3 sibs-text-xs font-bold text-slate-700 outline-none transition focus:border-sibs-navy focus:ring-4 focus:ring-sibs-navy/10"
                       >
                         <option value="All">All Departments</option>
                         {departmentOptions.map((item) => (
@@ -736,7 +736,7 @@ export default function KronosDatasPage() {
                         value={account}
                         onChange={handleAccountChange}
                         disabled={loading}
-                        className="h-11 rounded-xl border border-[#D9E2EC] bg-white px-3 sibs-text-xs font-bold text-slate-700 outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+                        className="h-9 2xl:h-10 rounded-[10px] border border-sibs-border bg-white px-3 sibs-text-xs font-bold text-slate-700 outline-none transition focus:border-sibs-navy focus:ring-4 focus:ring-sibs-navy/10"
                       >
                         <option value="All">All Accounts</option>
                         {accountOptions.map((item) => (
@@ -752,7 +752,7 @@ export default function KronosDatasPage() {
                     <button
                       type="submit"
                       disabled={loading}
-                      className="h-11 rounded-xl bg-sibs-primary-1 px-4 sibs-text-xs font-bold text-white transition hover:bg-[#0b3d68] disabled:cursor-not-allowed disabled:opacity-60"
+                      className="h-9 2xl:h-10 rounded-[10px] bg-sibs-navy px-4 sibs-text-xs font-bold text-white transition hover:bg-sibs-tertiary-3 disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       Search
                     </button>
@@ -761,7 +761,7 @@ export default function KronosDatasPage() {
                       type="button"
                       onClick={handleClearFilters}
                       disabled={loading}
-                      className="h-11 rounded-xl border border-[#D9E2EC] bg-white px-4 sibs-text-xs font-bold text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                      className="h-9 2xl:h-10 rounded-[10px] border border-sibs-border bg-white px-4 sibs-text-xs font-bold text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       Reset
                     </button>
@@ -771,7 +771,7 @@ export default function KronosDatasPage() {
             </div>
 
             {loadError ? (
-              <div className="m-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+              <div className="m-5 rounded-[10px] border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
                 {loadError}
               </div>
             ) : null}
@@ -854,9 +854,9 @@ export default function KronosDatasPage() {
                 }
                 desktopContent={
                   <div className="overflow-x-auto sibs-scrollbar">
-                    <table className="min-w-full divide-y divide-[#E6ECF2] bg-white text-left">
-                      <thead className="sticky top-0 z-10 bg-[#F5F7FA]">
-                        <tr className="text-xs font-extrabold uppercase tracking-wider text-[#174A7C]">
+                    <table className="min-w-full divide-y divide-sibs-border bg-white text-left">
+                      <thead className="sticky top-0 z-10 bg-sibs-surface">
+                        <tr className="text-xs font-extrabold uppercase tracking-wider text-sibs-navy">
                           <th className="px-3 2xl:px-4 py-3 text-left">
                             #
                           </th>
@@ -887,7 +887,7 @@ export default function KronosDatasPage() {
                         </tr>
                       </thead>
 
-                      <tbody className="divide-y divide-[#EEF2F6] bg-white">
+                      <tbody className="divide-y divide-sibs-border bg-white">
                         {loading ? (
                           <TableSkeletonRows count={PAGE_LIMIT} columns={9} />
                         ) : records.length > 0 ? (
@@ -900,18 +900,18 @@ export default function KronosDatasPage() {
                             return (
                               <tr
                                 key={`${getEmployeeSibsId(employee)}-${rowNumber}`}
-                                className="transition hover:bg-[#FFF8F5]"
+                                className="transition hover:bg-sibs-cream-light"
                               >
                                 <td className="whitespace-nowrap px-3 2xl:px-4 py-2.5 sibs-text-xs font-medium text-slate-500">
-                                  {rowNumber}
+                                   {rowNumber}
                                 </td>
 
-                                <td className="whitespace-nowrap px-3 2xl:px-4 py-2.5 sibs-text-xs font-extrabold text-[#FF5C28] tabular-nums">
+                                <td className="whitespace-nowrap px-3 2xl:px-4 py-2.5 sibs-text-xs font-extrabold text-sibs-orange tabular-nums">
                                   {getEmployeeSibsId(employee)}
                                 </td>
 
                                 <td className="whitespace-nowrap px-3 2xl:px-4 py-2.5">
-                                  <p className="m-0 max-w-[220px] truncate sibs-text-xs font-extrabold text-[#042C51]">
+                                  <p className="m-0 max-w-[220px] truncate sibs-text-xs font-extrabold text-sibs-navy">
                                     {formatFullName(employee) || "—"}
                                   </p>
                                 </td>
@@ -924,21 +924,21 @@ export default function KronosDatasPage() {
                                   {getEmployeeContact(employee)}
                                 </td>
 
-                                <td className="whitespace-nowrap px-3 2xl:px-4 py-2.5 sibs-text-xs font-semibold text-[#344054]">
+                                <td className="whitespace-nowrap px-3 2xl:px-4 py-2.5 sibs-text-xs font-semibold text-sibs-muted">
                                   {getEmployeeDepartment(employee)}
                                 </td>
 
-                                <td className="whitespace-nowrap px-3 2xl:px-4 py-2.5 sibs-text-xs font-semibold text-[#344054]">
+                                <td className="whitespace-nowrap px-3 2xl:px-4 py-2.5 sibs-text-xs font-semibold text-sibs-muted">
                                   {getEmployeeAccount(employee)}
                                 </td>
 
                                 <td className="whitespace-nowrap px-3 2xl:px-4 py-2.5">
-                                  <span className="inline-flex rounded-md border border-blue-100 bg-blue-50 px-2 py-0.5 sibs-text-micro font-extrabold uppercase text-[#164E7A]">
+                                  <span className="inline-flex rounded-md border border-blue-100 bg-blue-50 px-2 py-0.5 sibs-text-micro font-extrabold uppercase text-sibs-navy">
                                     {getEmployeeSite(employee)}
                                   </span>
                                 </td>
 
-                                <td className="whitespace-nowrap px-3 2xl:px-4 py-2.5 sibs-text-xs font-semibold text-[#52637A]">
+                                <td className="whitespace-nowrap px-3 2xl:px-4 py-2.5 sibs-text-xs font-semibold text-sibs-muted">
                                   {formatDate(getEmployeeHireDate(employee))}
                                 </td>
                               </tr>

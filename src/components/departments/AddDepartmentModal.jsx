@@ -78,9 +78,9 @@ export default function AddDepartmentModal({
       }
     >
       <form id="add-department-form" onSubmit={handleSubmit} className="space-y-4">
-        <div className="rounded-2xl border border-sibs-border bg-sibs-surface/60 p-4">
+        <div className="rounded-[14px] border border-sibs-border bg-sibs-surface/60 p-4">
           <div className="flex items-start gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-sibs-orange shadow-sm ring-1 ring-sibs-border">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] bg-white text-sibs-orange shadow-xs ring-1 ring-sibs-border">
               <Building2 className="h-5 w-5" />
             </div>
             <div>
@@ -115,18 +115,18 @@ export default function AddDepartmentModal({
               maxLength={255}
               autoFocus
               disabled={submitting}
-              className="h-11 w-full rounded-xl border border-sibs-border bg-white pl-10 pr-3.5 text-sm font-semibold text-sibs-navy outline-none transition placeholder:text-sibs-faint focus:border-sibs-orange focus:ring-2 focus:ring-sibs-orange/10"
+              className="h-9 2xl:h-10 w-full rounded-[10px] border border-sibs-border bg-white pl-10 pr-3.5 text-sm font-semibold text-sibs-navy outline-none transition placeholder:text-sibs-faint focus:border-sibs-orange focus:ring-2 focus:ring-sibs-orange/10"
             />
           </div>
         </div>
 
         {error ? (
-          <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3">
+          <div className="rounded-[10px] border border-rose-200 bg-rose-50 px-4 py-3">
             <p className="text-xs font-bold text-rose-700">{error}</p>
           </div>
         ) : null}
 
-        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+        <div className="rounded-[10px] border border-amber-200 bg-amber-50 px-4 py-3">
           <p className="text-xs font-bold leading-relaxed text-amber-800">
             The department will be saved as Pending and will not be available in
             HRIS department dropdowns until an authorized Department approver

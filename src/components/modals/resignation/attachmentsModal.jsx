@@ -92,23 +92,23 @@ function AttachmentCard({ attachment, onOpen, onDownload }) {
   const uploadedLabel = formatUploadedAt(attachment.uploadedAt);
 
   return (
-    <article className="rounded-xl border border-[#E6ECF2] bg-white p-4 transition hover:border-[#FF5C28]/30 hover:shadow-sm sm:p-5">
+    <article className="rounded-[10px] border border-sibs-border bg-white p-4 transition hover:border-sibs-orange/30 hover:shadow-sm sm:p-5">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex min-w-0 items-start gap-3">
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#FFF0EB] text-[#FF5C28]">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] bg-sibs-cream-light text-sibs-orange">
             <AttachmentTypeIcon attachment={attachment} />
           </span>
 
           <div className="min-w-0">
             <p
-              className="break-all text-sm font-extrabold leading-5 text-[#042C51]"
+              className="break-all text-sm font-extrabold leading-5 text-sibs-navy"
               title={attachment.name}
             >
               {attachment.name}
             </p>
 
-            <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] font-bold text-[#667085]">
-              <span className="rounded bg-[#F2F4F7] px-2 py-1 uppercase text-[#344054]">
+            <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] font-bold text-sibs-muted">
+              <span className="rounded bg-sibs-border/60 px-2 py-1 uppercase text-sibs-navy">
                 {getFileTypeLabel(attachment)}
               </span>
 
@@ -129,7 +129,7 @@ function AttachmentCard({ attachment, onOpen, onDownload }) {
             <button
               type="button"
               onClick={() => onOpen(attachment)}
-              className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-lg border border-[#D6DEE8] bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-[#042C51] transition hover:border-[#FF5C28]/50 hover:bg-[#FFF8F5] hover:text-[#FF5C28]"
+              className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-[10px] border border-sibs-border bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-navy transition hover:border-sibs-orange/50 hover:bg-sibs-cream-light hover:text-sibs-orange"
             >
               <ExternalLink size={13} />
               Open
@@ -138,7 +138,7 @@ function AttachmentCard({ attachment, onOpen, onDownload }) {
             <button
               type="button"
               onClick={() => onDownload(attachment)}
-              className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-lg bg-[#042C51] px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white transition hover:bg-[#FF5C28] active:scale-[0.98]"
+              className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-[10px] bg-sibs-navy px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white transition hover:bg-sibs-orange active:scale-[0.98]"
             >
               <Download size={13} />
               Download
@@ -235,14 +235,14 @@ export default function AttachmentsModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="resignation-attachments-title"
-        className={`flex max-h-[calc(100dvh-1rem)] w-full max-w-3xl flex-col overflow-hidden rounded-xl bg-white font-jakarta shadow-2xl sm:max-h-[90vh] sm:rounded-2xl ${
+        className={`flex max-h-[calc(100dvh-1rem)] w-full max-w-3xl flex-col overflow-hidden rounded-[14px] bg-white font-jakarta shadow-2xl sm:max-h-[90vh] ${
           isClosing ? "sibs-modal-pop-out" : "sibs-modal-pop-in"
         }`}
         onClick={(event) => event.stopPropagation()}
       >
-        <header className="flex shrink-0 items-center justify-between gap-4 bg-[#042C51] px-5 py-3 text-white sm:px-6 2xl:py-3.5">
+        <header className="flex shrink-0 items-center justify-between gap-4 rounded-t-[14px] bg-sibs-navy px-5 py-3 text-white sm:px-6 2xl:py-3.5">
           <div className="flex min-w-0 items-center gap-2.5 2xl:gap-3">
-            <span className="flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg bg-[#FF5C28] text-white shadow-sm">
+            <span className="flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg bg-sibs-orange text-white shadow-sm">
               <Paperclip size={16} />
             </span>
 
@@ -270,18 +270,18 @@ export default function AttachmentsModal({
           </button>
         </header>
 
-        <div className="min-h-0 flex-1 overflow-y-auto bg-[#F8FAFC] p-4 sibs-scrollbar sm:p-5">
-          <div className="mb-4 flex flex-col gap-2 rounded-xl border border-[#E6ECF2] bg-white px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-h-0 flex-1 overflow-y-auto bg-sibs-surface p-4 sibs-scrollbar sm:p-5">
+          <div className="mb-4 flex flex-col gap-2 rounded-[10px] border border-sibs-border bg-white px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="text-xs font-extrabold uppercase tracking-wide text-[#667085]">
+              <p className="text-xs font-extrabold uppercase tracking-wide text-sibs-muted">
                 Submitted Files
               </p>
-              <p className="mt-1 text-sm font-extrabold text-[#042C51]">
+              <p className="mt-1 text-sm font-extrabold text-sibs-navy">
                 {attachments.length} {attachments.length === 1 ? "attachment" : "attachments"}
               </p>
             </div>
 
-            <span className="inline-flex w-fit items-center gap-2 rounded-lg bg-[#FFF0EB] px-3 py-2 text-xs font-extrabold text-[#FF5C28]">
+            <span className="inline-flex w-fit items-center gap-2 rounded-[10px] bg-sibs-cream-light px-3 py-2 text-xs font-extrabold text-sibs-orange">
               <Paperclip size={14} />
               View-only file access
             </span>
@@ -299,23 +299,23 @@ export default function AttachmentsModal({
               ))}
             </div>
           ) : (
-            <div className="flex min-h-[260px] flex-col items-center justify-center rounded-xl border border-dashed border-[#D9E2EC] bg-white p-8 text-center">
-              <span className="flex h-12 w-12 items-center justify-center rounded-full bg-[#FFF0EB] text-[#FF5C28]">
+            <div className="flex min-h-[260px] flex-col items-center justify-center rounded-[10px] border border-dashed border-sibs-border bg-white p-8 text-center">
+              <span className="flex h-12 w-12 items-center justify-center rounded-full bg-sibs-cream-light text-sibs-orange">
                 <Paperclip size={22} />
               </span>
 
-              <h3 className="sibs-modal-section-title mt-4 text-[#042C51]">
+              <h3 className="sibs-modal-section-title mt-4 text-sibs-navy">
                 No Attachments
               </h3>
 
-              <p className="sibs-modal-section-subtitle mt-2 max-w-sm leading-6 text-[#667085]">
+              <p className="sibs-modal-section-subtitle mt-2 max-w-sm leading-6 text-sibs-muted">
                 No attachment was submitted for this resignation.
               </p>
             </div>
           )}
         </div>
 
-        <footer className="flex shrink-0 justify-end border-t border-[#DDE5EE] bg-[#F1F5F9] px-5 py-3 2xl:py-3.5 sm:px-6">
+        <footer className="flex shrink-0 justify-end border-t border-sibs-border bg-sibs-surface px-5 py-3 2xl:py-3.5 sm:px-6">
           <button
             type="button"
             onClick={requestClose}

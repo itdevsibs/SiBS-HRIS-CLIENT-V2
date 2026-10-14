@@ -21,6 +21,7 @@ import { getApplicantLeadEditedFields } from "../../../lib/utils/applicantLeads/
 import DropdownField from "../availablePositions/DropdownField";
 import ApplicantLeadMovementHistoryDrawer from "./ApplicantLeadMovementHistoryDrawer";
 import { hearAboutUsOptions } from "../../../lib/utils/talentPool/talentPoolConstants";
+import ModalShell from "@/components/ui/ModalShell";
 
 const INPUT_CLASS =
   "h-8.5 2xl:h-10 w-full rounded-xl border border-sibs-border bg-sibs-surface px-3 sibs-text-xs font-semibold text-sibs-navy outline-none transition placeholder:text-sibs-muted hover:border-sibs-orange/40 hover:bg-white focus:border-sibs-orange focus:bg-white focus:ring-4 focus:ring-sibs-orange/10 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-sibs-muted";
@@ -311,82 +312,78 @@ export default function ApplicantLeadModal() {
 
 
   return (
-    <div className="sibs-modal-backdrop-in sibs-modal-blur fixed inset-0 z-[1000] flex items-center justify-center p-3 sm:p-4 font-jakarta">
-      <div
-        className="flex h-[84vh] 2xl:h-[86vh] max-h-[84vh] 2xl:max-h-[86vh] w-full max-w-2xl 2xl:max-w-3xl"
-      >
-        <div
-          className="sibs-modal-pop-in relative flex h-full min-w-0 max-h-[84vh] 2xl:max-h-[86vh] w-full flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
-        >
-        {/* Modal Header */}
-        <header className="shrink-0 bg-sibs-navy px-4 py-2.5 sm:px-5 2xl:py-3.5 text-white">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex min-w-0 items-start gap-2.5 sm:gap-3">
-              <span className="flex h-8 w-8 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-lg border border-white/20 bg-white/10 text-sibs-orange">
-                <UserPlus className="h-4 w-4 2xl:h-4.5 2xl:w-4.5" />
-              </span>
+    <>
+      <ModalShell
+        open={Boolean(showLeadModal)}
+        onClose={closeLeadModal}
+        variant="navy"
+        maxWidth="max-w-2xl 2xl:max-w-3xl"
+        title={isEditMode ? "Edit Applicant Lead" : "Log New Applicant Lead"}
+        subtitle="Capture preliminary inquiries before moving to Talent Pool."
+        icon={UserPlus}
+        badge="Lead Intake"
+        closeOnBackdrop={!isSaving}
+        closeOnEscape={!isSaving && !movementHistoryOpen}
+        headerActions={
+          isEditMode ? (
+            <button
+              ref={movementHistoryTriggerRef}
+              type="button"
+              onClick={() => setMovementHistoryOpen((current) => !current)}
+              aria-expanded={movementHistoryOpen}
+              aria-label={
+                movementHistoryOpen
+                  ? "Close Movement History"
+                  : `Open Movement History, ${leadHistory.length} records`
+              }
+              className={`inline-flex h-7.5 2xl:h-8 items-center justify-center gap-1.5 rounded-lg border px-2.5 text-[9px] 2xl:text-[10px] font-extrabold text-white shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sibs-orange/40 ${
+                movementHistoryOpen
+                  ? "border-sibs-orange bg-sibs-navy-light shadow-[0_0_12px_rgba(255,92,40,0.2)]"
+                  : "border-white/15 bg-sibs-navy hover:border-sibs-orange/60 hover:bg-sibs-navy-light"
+              }`}
+            >
+              <History size={12} className="text-sibs-orange" />
+              <span className="hidden sm:inline">Movement History</span>
+              <span>({leadHistory.length})</span>
+            </button>
+          ) : null
+        }
+        bodyClassName="p-0 overflow-hidden flex flex-col min-h-0"
+        footer={
+          <footer className="flex items-center justify-end gap-2.5">
+            <button
+              type="button"
+              onClick={closeLeadModal}
+              disabled={isSaving}
+              className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-[10px] border border-sibs-border bg-sibs-surface px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-navy transition hover:bg-white"
+            >
+              Cancel
+            </button>
 
-              <div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-2">
-                  <h2
-                    id="applicant-lead-modal-title"
-                    className="sibs-modal-title truncate text-white"
-                  >
-                    {isEditMode
-                      ? "Edit Applicant Lead"
-                      : "Log New Applicant Lead"}
-                  </h2>
-
-                  <span className="inline-flex rounded-full bg-sibs-orange px-2 py-0.5 text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-white">
-                    Lead Intake
-                  </span>
-                </div>
-
-                <p className="sibs-modal-subtitle mt-0.5 text-white/75 truncate sm:text-clip">
-                  Capture preliminary inquiries before moving to Talent Pool.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
-              {isEditMode ? (
-                <button
-                  ref={movementHistoryTriggerRef}
-                  type="button"
-                  onClick={() => setMovementHistoryOpen((current) => !current)}
-                  aria-expanded={movementHistoryOpen}
-                  aria-label={
-                    movementHistoryOpen
-                      ? "Close Movement History"
-                      : `Open Movement History, ${leadHistory.length} records`
-                  }
-                  className={`inline-flex h-7.5 2xl:h-8 items-center justify-center gap-1.5 rounded-lg border px-2.5 text-[9px] 2xl:text-[10px] font-extrabold text-white shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sibs-orange/40 ${
-                    movementHistoryOpen
-                      ? "border-sibs-orange bg-sibs-navy-light shadow-[0_0_12px_rgba(255,92,40,0.2)]"
-                      : "border-white/15 bg-sibs-navy hover:border-sibs-orange/60 hover:bg-sibs-navy-light"
-                  }`}
-                >
-                  <History size={12} className="text-sibs-orange" />
-                  <span className="hidden sm:inline">Movement History</span>
-                  <span>({leadHistory.length})</span>
-                </button>
-              ) : null}
-
+            {(!isEditMode || isEditFormEdited) && (
               <button
-                type="button"
-                onClick={closeLeadModal}
-                disabled={isSaving}
-                aria-label="Close applicant lead modal"
-                className="inline-flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg bg-white/10 text-white/80 transition hover:bg-white/20 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+                type="submit"
+                form="applicant-lead-form"
+                disabled={isSubmitDisabled}
+                className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 2xl:gap-2 rounded-[10px] bg-sibs-orange px-4 2xl:px-5 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-sibs-button-hover disabled:cursor-not-allowed disabled:border disabled:border-sibs-border disabled:bg-slate-100 disabled:text-sibs-muted disabled:shadow-none"
               >
-                <X size={16} />
+                {isSaving ? (
+                  <Loader2 size={13} className="animate-spin text-white" />
+                ) : (
+                  <Check size={13} className="text-white" />
+                )}
+                {isSaving
+                  ? "Saving..."
+                  : isEditMode
+                    ? "Update Lead"
+                    : "Save Applicant Lead"}
               </button>
-            </div>
-          </div>
-        </header>
-
-        {/* Modal Body */}
+            )}
+          </footer>
+        }
+      >
         <form
+          id="applicant-lead-form"
           onSubmit={handleSaveLead}
           className="flex min-h-0 flex-1 flex-col overflow-hidden"
         >
@@ -395,11 +392,11 @@ export default function ApplicantLeadModal() {
             className="sibs-scrollbar min-h-0 flex-1 space-y-3.5 2xl:space-y-4 overflow-y-auto overscroll-contain bg-sibs-surface p-3 sm:p-4 2xl:p-5"
           >
             {/* Auto Logging Account Info Bar */}
-            <div className="flex flex-col gap-2 rounded-xl border border-blue-200 bg-blue-50 p-3 text-xs sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col gap-2 rounded-xl border border-sibs-border bg-white p-3 text-xs sm:flex-row sm:items-center sm:justify-between shadow-xs">
               <div className="flex items-center gap-2 font-extrabold text-sibs-navy">
                 <UserCheck size={16} className="text-sibs-orange" />
                 <span>Logging Account:</span>
-                <span className="rounded border border-blue-200 bg-white px-2 py-0.5 text-blue-900 font-bold">
+                <span className="rounded border border-sibs-border bg-sibs-surface px-2 py-0.5 text-sibs-navy font-bold">
                   {loggingAccount}
                 </span>
               </div>
@@ -786,44 +783,8 @@ export default function ApplicantLeadModal() {
               ) : null}
             </FormSection>
           </div>
-
-          {/* Footer Actions */}
-          <footer className="shrink-0 border-t border-sibs-border bg-white px-4 py-3 sm:px-5">
-            <div className="flex items-center justify-end gap-2.5">
-              <button
-                type="button"
-                onClick={closeLeadModal}
-                disabled={isSaving}
-                className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-[10px] border border-sibs-border bg-sibs-surface px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-navy transition hover:bg-white"
-              >
-                Cancel
-              </button>
-
-              {(!isEditMode || isEditFormEdited) && (
-                <button
-                  type="submit"
-                  disabled={isSubmitDisabled}
-                  className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 2xl:gap-2 rounded-[10px] bg-sibs-orange px-4 2xl:px-5 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-sibs-button-hover disabled:cursor-not-allowed disabled:border disabled:border-sibs-border disabled:bg-slate-100 disabled:text-sibs-muted disabled:shadow-none"
-                >
-                  {isSaving ? (
-                    <Loader2 size={13} className="animate-spin text-white" />
-                  ) : (
-                    <Check size={13} className="text-white" />
-                  )}
-                  {isSaving
-                    ? "Saving..."
-                    : isEditMode
-                      ? "Update Lead"
-                      : "Save Applicant Lead"}
-                </button>
-              )}
-            </div>
-          </footer>
         </form>
-
-        </div>
-
-      </div>
+      </ModalShell>
 
       {isEditMode && showMovementHistoryPanel && movementHistoryPosition ? (
         <div
@@ -831,11 +792,11 @@ export default function ApplicantLeadModal() {
           className={`fixed z-[1100] flex origin-left transform-gpu h-[min(82vh,680px)] w-[min(400px,36vw)] drop-shadow-[0_24px_55px_rgba(4,24,45,0.32)] transition-[transform,opacity] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${movementHistoryVisible ? "translate-y-0 scale-100 opacity-100" : "translate-y-1.5 scale-90 opacity-0"}`}
           style={movementHistoryPosition}
         >
-            <span
-              aria-hidden="true"
-              className="absolute -left-[10px] z-0 h-0 w-0 border-y-[8px] border-y-transparent border-r-[10px] border-r-white"
-              style={{ top: movementHistoryArrowTop }}
-            />
+          <span
+            aria-hidden="true"
+            className="absolute -left-[10px] z-0 h-0 w-0 border-y-[8px] border-y-transparent border-r-[10px] border-r-white"
+            style={{ top: movementHistoryArrowTop }}
+          />
           <ApplicantLeadMovementHistoryDrawer
             open
             lead={editingLead || {}}
@@ -847,6 +808,6 @@ export default function ApplicantLeadModal() {
           />
         </div>
       ) : null}
-    </div>
+    </>
   );
 }
