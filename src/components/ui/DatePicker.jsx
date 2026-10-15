@@ -145,7 +145,8 @@ export default function DatePicker({
   showToday = true,
   className = "",
   buttonClassName = "",
-  showCalendarIcon = false,
+  portalClassName = "",
+  showCalendarIcon = true,
 }) {
   const anchorRef = useRef(null);
   const yearInputRef = useRef(null);
@@ -351,7 +352,7 @@ export default function DatePicker({
   const defaultRoundedClass = hasCustomRounded ? "" : "rounded-[10px]";
   const defaultPaddingClass = hasCustomPadding ? "" : "px-3";
 
-  const triggerClasses = `flex w-full min-w-0 items-center justify-between gap-2 border bg-sibs-surface text-left font-jakarta sibs-text-xs font-bold text-sibs-navy outline-none transition-all duration-200 ${defaultHeightClass} ${defaultRoundedClass} ${defaultPaddingClass} ${
+  const triggerClasses = `flex w-full min-w-0 items-center justify-between gap-2 border bg-sibs-surface text-left font-jakarta sibs-text-xs 2xl:sibs-text-sm font-bold text-sibs-navy shadow-sm outline-none transition-all duration-200 ${defaultHeightClass} ${defaultRoundedClass} ${defaultPaddingClass} ${
     isLocked
       ? "cursor-not-allowed border-sibs-border bg-sibs-canvas text-sibs-faint opacity-70"
       : open
@@ -406,8 +407,8 @@ export default function DatePicker({
           <span
             className={`truncate ${
               renderedValue
-                ? "font-bold text-sibs-navy"
-                : "font-bold text-sibs-muted"
+                ? "text-sibs-primary-1"
+                : "font-normal text-sibs-faint"
             }`}
           >
             {renderedValue || placeholder}
@@ -416,7 +417,7 @@ export default function DatePicker({
 
         {!isLocked ? (
           <ChevronDown
-            size={17}
+            size={14}
             className={`shrink-0 transition-transform duration-300 ${
               open ? "rotate-180 text-sibs-orange" : "text-sibs-muted"
             }`}
