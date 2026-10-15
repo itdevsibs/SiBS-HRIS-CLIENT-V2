@@ -134,7 +134,7 @@ function EmployeeAvatar({ employee }) {
     previewVisible && previewPosition && typeof document !== "undefined"
       ? createPortal(
           <span
-            className="employee-avatar-preview pointer-events-none fixed z-[9999] rounded-2xl border border-sibs-border bg-white p-2 shadow-[0_18px_45px_rgba(4,44,81,0.22)]"
+            className="employee-avatar-preview pointer-events-none fixed z-[9999] rounded-[14px] border border-sibs-border bg-white p-2 shadow-[0_18px_45px_rgba(4,44,81,0.22)]"
             style={{
               left: previewPosition.left,
               top: previewPosition.top,
@@ -145,7 +145,7 @@ function EmployeeAvatar({ employee }) {
             aria-hidden="true"
           >
             <span
-              className={`relative flex h-40 w-40 items-center justify-center overflow-hidden rounded-xl border text-[24px] font-extrabold ${avatarTone}`}
+              className={`relative flex h-40 w-40 items-center justify-center overflow-hidden rounded-[10px] border text-[24px] font-extrabold ${avatarTone}`}
             >
               <span>{initials}</span>
               {showImage ? (
@@ -199,12 +199,12 @@ function SummaryCard({ label, value, tone = "navy" }) {
     tone === "success"
       ? "text-emerald-700"
       : tone === "warning"
-        ? "text-[#D94816]"
+        ? "text-sibs-orange"
         : "text-sibs-navy";
 
   return (
-    <div className="rounded-xl border border-sibs-border bg-white px-4 py-4 text-center">
-      <p className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-muted">
+    <div className="rounded-[10px] border border-sibs-border bg-white px-4 py-4 text-center">
+      <p className="sibs-text-micro font-extrabold uppercase tracking-wide text-sibs-muted">
         {label}
       </p>
       <p className={`mt-2 text-2xl font-black ${valueClass}`}>{value}</p>
@@ -216,7 +216,7 @@ function TabButton({ active, count, icon: Icon, label, tone, onClick }) {
   const activeClass =
     tone === "complete"
       ? "border-emerald-300 bg-emerald-50 text-emerald-700"
-      : "border-[#FFB49D] bg-[#FFF4EF] text-[#D94816]";
+      : "border-sibs-orange/40 bg-sibs-cream-subtle text-sibs-orange";
 
   return (
     <button
@@ -396,9 +396,9 @@ export default function StatutoryCoverageModal({
       `}</style>
 
       <div className="space-y-5">
-        <div className="flex flex-col gap-3 rounded-xl border border-sibs-border bg-sibs-surface p-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-3 rounded-[14px] border border-sibs-border bg-sibs-surface p-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex min-w-0 items-center gap-3">
-            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#EAF2FF] text-sibs-navy">
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-blue-50 text-sibs-navy">
               <ShieldCheck className="h-6 w-6" />
             </span>
 
@@ -417,7 +417,7 @@ export default function StatutoryCoverageModal({
             className={`inline-flex self-start items-center gap-1.5 rounded-full px-3.5 py-2 text-sm font-extrabold sm:self-auto ${
               coverageRate >= 100
                 ? "bg-emerald-100 text-emerald-700"
-                : "bg-[#FFF1EC] text-[#D94816]"
+                : "bg-sibs-cream-subtle text-sibs-orange"
             }`}
           >
             {coverageRate >= 100 ? (
@@ -454,7 +454,7 @@ export default function StatutoryCoverageModal({
             </span>
           </div>
 
-          <div className="overflow-hidden rounded-xl border border-sibs-border bg-white">
+          <div className="overflow-hidden rounded-[14px] border border-sibs-border bg-white">
             <div className="border-b border-sibs-border bg-sibs-surface px-4 py-3">
               <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                 <div className="flex flex-wrap gap-2">
@@ -496,7 +496,7 @@ export default function StatutoryCoverageModal({
             </div>
 
             {error ? (
-              <div className="m-4 flex min-h-[260px] flex-col items-center justify-center rounded-xl border border-rose-200 bg-rose-50 px-6 text-center">
+              <div className="m-4 flex min-h-[260px] flex-col items-center justify-center rounded-[10px] border border-rose-200 bg-rose-50 px-6 text-center">
                 <AlertCircle className="h-8 w-8 text-rose-500" />
                 <p className="mt-3 text-sm font-extrabold text-rose-700">Unable to load employees</p>
                 <p className="mt-1 max-w-lg text-xs font-medium text-rose-600">{error}</p>
@@ -514,7 +514,7 @@ export default function StatutoryCoverageModal({
 
                 <div className="overflow-x-auto">
                   <table className="min-w-full divide-y divide-sibs-border">
-                    <thead className="bg-[#F8FAFC]">
+                    <thead className="bg-sibs-surface">
                       <tr>
                         <th className="px-4 py-3 text-left text-[10px] font-extrabold uppercase tracking-wide text-sibs-secondary">Employee</th>
                         <th className="px-4 py-3 text-left text-[10px] font-extrabold uppercase tracking-wide text-sibs-secondary">SIBS ID</th>

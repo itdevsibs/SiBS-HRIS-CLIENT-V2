@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { Plus, Search, Sparkles, Star, X } from "lucide-react";
 
 import { useUser } from "@/services/context/UserContext";
-import ThemedDropdown from "@/components/layout/dropdown/ThemedDropdown.jsx";
+import { ModalShell, SelectDropdown } from "@/components/ui";
 import {
   EXPERIENCE_CATEGORIES,
   OUTCOME,
@@ -203,12 +203,12 @@ const labelClass =
   "mb-1 block font-jakarta sibs-text-micro font-extrabold uppercase tracking-wider text-sibs-muted";
 
 const inputClass =
-  "h-8.5 2xl:h-10 w-full rounded-[14px] 2xl:rounded-[10px] border border-sibs-border bg-sibs-surface px-3 font-jakarta sibs-text-xs font-semibold text-sibs-navy outline-none transition placeholder:text-sibs-faint focus:border-[#4B6F95] focus:bg-white focus:ring-2 focus:ring-[#4B6F95]/10";
+  "h-8.5 sm:h-9 2xl:h-10 w-full rounded-[10px] border border-sibs-border bg-sibs-surface px-3 font-jakarta sibs-text-xs font-semibold text-sibs-navy outline-none transition placeholder:text-sibs-faint focus:border-sibs-orange focus:bg-white focus:ring-4 focus:ring-sibs-orange/10";
 
-const readOnlyClass = `${inputClass} cursor-default bg-[#F4F7FA] text-sibs-navy`;
+const readOnlyClass = `${inputClass} cursor-default bg-slate-100/70 text-sibs-navy focus:border-sibs-border focus:ring-0`;
 
 const textareaClass =
-  "w-full resize-none rounded-[10px] 2xl:rounded-[10px] border border-sibs-border bg-sibs-surface px-3 py-2 font-jakarta sibs-text-xs font-semibold leading-5 text-sibs-navy outline-none transition placeholder:text-sibs-faint focus:border-[#4B6F95] focus:bg-white focus:ring-2 focus:ring-[#4B6F95]/10";
+  "w-full resize-none rounded-[10px] border border-sibs-border bg-sibs-surface px-3 py-2 font-jakarta sibs-text-xs font-semibold leading-5 text-sibs-navy outline-none transition placeholder:text-sibs-faint focus:border-sibs-orange focus:bg-white focus:ring-4 focus:ring-sibs-orange/10";
 
 function unique(values) {
   return [...new Set(values.filter(Boolean))];
@@ -429,51 +429,42 @@ export default function AddExperienceModal({
   }
 
   return (
-    <div
-      className="sibs-modal-blur sibs-modal-backdrop-in fixed inset-0 z-[10000] flex h-dvh items-center justify-center p-2 font-jakarta sm:p-4"
-      onClick={onClose}
-    >
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-label="Log Candidate Experience Record"
-        className="sibs-modal-pop-in flex max-h-[90dvh] w-full max-w-4xl 2xl:max-w-5xl flex-col overflow-hidden rounded-[14px] bg-white shadow-2xl font-jakarta"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <header className="flex shrink-0 items-center justify-between gap-4 bg-sibs-navy px-5 py-3 text-white sm:px-6 2xl:py-3.5 font-jakarta">
-          <div className="flex min-w-0 items-center gap-2.5 2xl:gap-3">
-            <span className="flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-[14px] bg-sibs-orange text-white shadow-sm">
-              <Sparkles size={16} />
-            </span>
-            <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <h2 className="sibs-modal-title truncate text-white">
-                  Log Candidate Experience Record
-                </h2>
-                <span className="hidden rounded-[10px] border border-sibs-orange/35 bg-sibs-orange/15 px-2 py-0.5 text-[8.5px] 2xl:text-[9.5px] font-extrabold uppercase tracking-wider text-[#FFB69E] sm:inline-flex">
-                  TA Manual Entry
-                </span>
-              </div>
-              <p className="sibs-modal-subtitle mt-0.5 truncate text-white/75">
-                Capture direct candidate feedback, ratings, and drop-off timeline
-              </p>
-            </div>
-          </div>
-
+    <ModalShell
+      open={open}
+      onClose={onClose}
+      variant="navy"
+      maxWidth="max-w-4xl 2xl:max-w-5xl"
+      icon={Sparkles}
+      title="Log Candidate Experience Record"
+      badge="TA Manual Entry"
+      subtitle="Capture direct candidate feedback, ratings, and drop-off timeline"
+      bodyClassName="bg-white p-0 font-jakarta"
+      footer={
+        <div className="flex w-full items-center justify-end gap-2.5">
           <button
             type="button"
             onClick={onClose}
-            className="inline-flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-[10px] text-white/70 transition hover:bg-white/10 hover:text-white sibs-modal-close-btn"
-            aria-label="Close modal"
+            className="inline-flex h-8.5 sm:h-9 2xl:h-10 items-center justify-center rounded-[10px] border border-sibs-border bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-muted transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange"
           >
-            <X size={18} />
+            Cancel
           </button>
-        </header>
 
-        <form
-          onSubmit={submit}
-          className="flex-1 overflow-y-auto bg-white px-6 py-5 font-jakarta"
-        >
+          <button
+            type="button"
+            disabled={saving}
+            onClick={submit}
+            className="inline-flex h-8.5 sm:h-9 2xl:h-10 min-w-[130px] items-center justify-center gap-1.5 rounded-[10px] bg-sibs-orange px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white shadow-sm transition hover:opacity-95 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <Plus size={14} />
+            {saving ? "Saving..." : "Save Record"}
+          </button>
+        </div>
+      }
+    >
+      <form
+        onSubmit={submit}
+        className="px-6 py-5 font-jakarta"
+      >
           <div className="grid grid-cols-1 gap-x-3 gap-y-3.5 md:grid-cols-2">
             {/* Candidate Search Dropdown */}
             <div className="relative">
@@ -517,14 +508,14 @@ export default function AddExperienceModal({
                         onClick={() => selectCandidate(candidate)}
                         className={`mb-1 w-full rounded-[10px] px-3 py-2 text-left transition last:mb-0 ${
                           form.candidatePipelineId === candidate.candidatePipelineId
-                            ? "bg-[#E9F0FC]"
+                            ? "bg-sibs-cream-light text-sibs-orange"
                             : "hover:bg-sibs-surface"
                         }`}
                       >
                         <p className="truncate text-xs font-black text-sibs-navy">
                           {candidate.candidateName || "Unnamed Candidate"}
                         </p>
-                        <p className="mt-0.5 truncate text-[10px] font-semibold text-[#7D90A9]">
+                        <p className="mt-0.5 truncate text-[10px] font-semibold text-sibs-muted">
                           {candidate.roleTitle || "No role"} / {candidate.account || "No account"}
                           {candidate.currentStage
                             ? ` • ${candidate.currentStage}`
@@ -572,41 +563,37 @@ export default function AddExperienceModal({
             <div className="grid grid-cols-1 gap-3 md:col-span-2 md:grid-cols-3">
               <div>
                 <label className={labelClass}>EVENT CLASSIFICATION</label>
-                <ThemedDropdown
+                <SelectDropdown
                   value={form.eventType}
                   options={eventClassificationDropdownOptions}
                   onChange={(val) => setField("eventType", val)}
                   searchable={false}
-                  showPlaceholderOption={false}
+                  placeholder="Select event"
                   className="w-full"
-                  zIndex="z-[90]"
                 />
               </div>
 
               <div>
                 <label className={labelClass}>FINAL STATUS</label>
-                <ThemedDropdown
+                <SelectDropdown
                   value={form.outcome}
                   options={finalStatusDropdownOptions}
                   onChange={(val) => handleOutcomeChange(val)}
                   searchable={false}
-                  showPlaceholderOption={false}
+                  placeholder="Select status"
                   className="w-full"
-                  zIndex="z-[90]"
                 />
               </div>
 
               <div>
                 <label className={labelClass}>EXIT STAGE</label>
-                <ThemedDropdown
+                <SelectDropdown
                   value={form.finalStage}
                   options={exitStageDropdownOptions}
                   onChange={(val) => setField("finalStage", val)}
                   searchable={true}
-                  showPlaceholderOption={false}
                   placeholder="Select stage"
                   className="w-full"
-                  zIndex="z-[90]"
                 />
               </div>
             </div>
@@ -614,15 +601,13 @@ export default function AddExperienceModal({
             {/* Reason Category Dropdown & Feedback Tag */}
             <div>
               <label className={labelClass}>REASON CATEGORY</label>
-              <ThemedDropdown
+              <SelectDropdown
                 value={form.feedbackCategory}
                 options={reasonCategoryDropdownOptions}
                 onChange={(val) => handleCategoryChange(val)}
                 searchable={false}
-                showPlaceholderOption={false}
                 placeholder="Select category"
                 className="w-full"
-                zIndex="z-[80]"
               />
             </div>
 
@@ -706,29 +691,8 @@ export default function AddExperienceModal({
               {error}
             </div>
           ) : null}
-        </form>
-
-        <footer className="shrink-0 flex items-center justify-end gap-2.5 border-t border-sibs-border bg-sibs-surface px-5 py-3 2xl:py-3.5 sm:px-6 font-jakarta">
-          <button
-            type="button"
-            onClick={onClose}
-            className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-[10px] border border-sibs-border bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-muted transition hover:border-sibs-orange/40 hover:bg-[#FFF8F5] hover:text-sibs-orange sibs-modal-close-btn"
-          >
-            Cancel
-          </button>
-
-          <button
-            type="button"
-            disabled={saving}
-            onClick={submit}
-            className="inline-flex h-8.5 2xl:h-10 min-w-[130px] items-center justify-center gap-1.5 rounded-[10px] bg-sibs-orange px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-sibs-orange active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            <Plus size={14} />
-            {saving ? "Saving..." : "Save Record"}
-          </button>
-        </footer>
-      </div>
-    </div>
+      </form>
+    </ModalShell>
   );
 }
 

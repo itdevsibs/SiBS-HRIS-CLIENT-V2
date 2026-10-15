@@ -20,7 +20,7 @@ import {
   getEmployeePdsPdf,
   getEmployeePdsPreviewUrl,
 } from "@/lib/axios/getEmployee";
-import StatusModal from "@/components/modals/StatusModal";
+import ConfirmModal from "@/components/ui/ConfirmModal";
 import { useUser } from "@/services/context/UserContext";
 import { sanitizeDisplayFullName, sanitizeMiddleName } from "@/lib/utils/employees/employeeNameDisplay.js";
 import { usePagination } from "@/services/context/PaginationContext";
@@ -1528,11 +1528,14 @@ export default function EmployeeTable({
         />
       </div>
 
-      <StatusModal
-        open={statusModal.open}
-        type={statusModal.type}
-        title={statusModal.title}
-        message={statusModal.message}
+      <ConfirmModal
+        open={Boolean(statusModal.open)}
+        variant={statusModal.type === "error" ? "danger" : "primary"}
+        title={statusModal.title || "Notification"}
+        description={statusModal.message || ""}
+        confirmLabel="OK"
+        cancelLabel="Close"
+        onConfirm={() => setStatusModal((prev) => ({ ...prev, open: false }))}
         onClose={() => setStatusModal((prev) => ({ ...prev, open: false }))}
       />
     </div>

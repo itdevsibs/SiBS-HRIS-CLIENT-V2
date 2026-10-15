@@ -218,7 +218,7 @@ function AnimatedCalendarDropdown({ open, children }) {
       }`}
     >
       <div className="sibs-animated-dropdown-inner">
-        <div className="overflow-hidden rounded-2xl border border-[#D7E3F0] bg-white shadow-2xl">
+        <div className="overflow-hidden rounded-[14px] border border-sibs-border bg-white shadow-2xl">
           {children}
         </div>
       </div>
@@ -283,24 +283,24 @@ function MiniCalendar({ value, min, max, onSelect, onClose }) {
 
   return (
     <div>
-      <div className="flex items-center justify-between border-b border-[#E6ECF2] px-4 py-3">
+      <div className="flex items-center justify-between border-b border-sibs-border px-4 py-3">
         <button
           type="button"
           onClick={goPreviousMonth}
-          className="inline-flex h-8 w-8 items-center justify-center rounded-full text-sibs-primary-1 transition hover:bg-[#EAF2FB] active:scale-[0.96]"
+          className="inline-flex h-8 w-8 items-center justify-center rounded-full text-sibs-navy transition hover:bg-sibs-surface hover:text-sibs-orange active:scale-[0.96]"
           aria-label="Previous month"
         >
           <ChevronLeft size={18} />
         </button>
 
-        <div className="text-sm font-extrabold text-sibs-primary-1">
+        <div className="text-sm font-extrabold text-sibs-navy">
           {MONTH_LABELS[viewDate.getMonth()]} {viewDate.getFullYear()}
         </div>
 
         <button
           type="button"
           onClick={goNextMonth}
-          className="inline-flex h-8 w-8 items-center justify-center rounded-full text-sibs-primary-1 transition hover:bg-[#EAF2FB] active:scale-[0.96]"
+          className="inline-flex h-8 w-8 items-center justify-center rounded-full text-sibs-navy transition hover:bg-sibs-surface hover:text-sibs-orange active:scale-[0.96]"
           aria-label="Next month"
         >
           <ChevronRight size={18} />
@@ -312,7 +312,7 @@ function MiniCalendar({ value, min, max, onSelect, onClose }) {
           {WEEKDAY_LABELS.map((day) => (
             <div
               key={day}
-              className="flex h-8 items-center justify-center text-xs font-extrabold text-sibs-tertiary-5"
+              className="flex h-8 items-center justify-center text-xs font-extrabold text-sibs-muted"
             >
               {day}
             </div>
@@ -331,13 +331,13 @@ function MiniCalendar({ value, min, max, onSelect, onClose }) {
                 type="button"
                 disabled={disabled}
                 onClick={() => handleSelect(date)}
-                className={`flex h-9 items-center justify-center rounded-xl text-sm font-bold transition active:scale-[0.96] ${
+                className={`flex h-9 items-center justify-center rounded-[10px] text-sm font-bold transition active:scale-[0.96] ${
                   isSelected
-                    ? "bg-[#FF5C28] text-white shadow-sm hover:bg-[#E94F1F]"
+                    ? "bg-sibs-orange text-white shadow-sm hover:bg-sibs-orange-hover"
                     : isToday
-                      ? "bg-[#FFF0EB] text-[#FF5C28] font-extrabold"
+                      ? "bg-sibs-cream-light text-sibs-orange font-extrabold"
                       : isCurrentMonth
-                        ? "text-[#042C51] hover:bg-[#FFF0EB] hover:text-[#FF5C28]"
+                        ? "text-sibs-navy hover:bg-sibs-cream-light hover:text-sibs-orange"
                         : "text-slate-400 hover:bg-slate-50"
                 } ${
                   disabled
@@ -351,11 +351,11 @@ function MiniCalendar({ value, min, max, onSelect, onClose }) {
           })}
         </div>
 
-        <div className="mt-3 flex items-center justify-between border-t border-[#E6ECF2] pt-3">
+        <div className="mt-3 flex items-center justify-between border-t border-sibs-border pt-3">
           <button
             type="button"
             onClick={handleClear}
-            className="rounded-full px-3 py-2 text-xs font-extrabold text-[#667085] transition hover:bg-[#FFF0EB] hover:text-[#FF5C28]"
+            className="rounded-full px-3 py-2 text-xs font-extrabold text-sibs-muted transition hover:bg-sibs-cream-light hover:text-sibs-orange"
           >
             Clear
           </button>
@@ -364,7 +364,7 @@ function MiniCalendar({ value, min, max, onSelect, onClose }) {
             type="button"
             onClick={handleToday}
             disabled={isDisabled(toDateKey(today))}
-            className="rounded-full px-3 py-2 text-xs font-extrabold text-[#042C51] transition hover:bg-[#FFF0EB] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:text-slate-300 disabled:hover:bg-transparent"
+            className="rounded-full px-3 py-2 text-xs font-extrabold text-sibs-navy transition hover:bg-sibs-cream-light hover:text-sibs-orange disabled:cursor-not-allowed disabled:text-slate-300 disabled:hover:bg-transparent"
           >
             Today
           </button>
@@ -425,23 +425,23 @@ function DatePickerInput({
         }}
         className={`flex h-10 w-full items-center justify-between gap-3 rounded-[10px] border px-3 text-left text-xs font-semibold outline-none transition-all duration-200 ${
           isDisabled
-            ? "cursor-not-allowed border-[#D7DEE8] bg-[#F2F4F7] text-[#667085]"
+            ? "cursor-not-allowed border-sibs-border bg-sibs-surface text-sibs-muted"
             : open
-              ? "border-[#FF5C28] bg-white text-[#042C51] ring-4 ring-[#FF5C28]/10"
-              : "border-[#D7DEE8] bg-[#F8FAFC] text-[#042C51] hover:border-[#FF5C28]/40 hover:bg-white"
+              ? "border-sibs-orange bg-white text-sibs-navy ring-4 ring-sibs-orange/10"
+              : "border-sibs-border bg-sibs-surface text-sibs-navy hover:border-sibs-orange/40 hover:bg-white"
         }`}
       >
         <span className="flex min-w-0 items-center gap-2">
           <CalendarDays
             size={17}
             className={`shrink-0 ${
-              isDisabled ? "text-sibs-tertiary-5" : "text-sibs-primary-1"
+              isDisabled ? "text-sibs-muted" : "text-sibs-orange"
             }`}
           />
 
           <span
             className={`truncate ${
-              value ? "text-sibs-primary-1" : "text-sibs-tertiary-5"
+              value ? "text-sibs-navy" : "text-sibs-muted"
             }`}
           >
             {value ? formatDisplayDate(value) : placeholder}
@@ -451,7 +451,7 @@ function DatePickerInput({
         {!isDisabled && (
           <ChevronDown
             size={16}
-            className={`shrink-0 text-sibs-tertiary-5 transition-transform duration-200 ${
+            className={`shrink-0 text-sibs-muted transition-transform duration-200 ${
               open ? "rotate-180" : ""
             }`}
           />
@@ -473,7 +473,7 @@ function DatePickerInput({
 
 function WorkflowLabel({ children }) {
   return (
-    <p className="mb-2 text-xs font-extrabold uppercase tracking-wide text-[#334155]">
+    <p className="mb-2 text-xs font-extrabold uppercase tracking-wide text-sibs-navy">
       {children}
     </p>
   );
@@ -964,14 +964,14 @@ export default function ResignationModal({
           role="dialog"
           aria-modal="true"
           aria-labelledby="employee-resignation-title"
-          className={`flex max-h-[calc(100dvh-1rem)] w-full max-w-[672px] flex-col overflow-hidden rounded-[18px] border border-white/70 bg-white shadow-[0_30px_90px_rgba(2,18,34,0.42)] sm:max-h-[calc(100dvh-2rem)] ${
+          className={`flex max-h-[calc(100dvh-1rem)] w-full max-w-[672px] flex-col overflow-hidden rounded-[14px] border border-white/70 bg-white shadow-[0_30px_90px_rgba(2,18,34,0.42)] sm:max-h-[calc(100dvh-2rem)] ${
             isClosing ? "sibs-modal-pop-out" : "sibs-modal-pop-in"
           }`}
         >
-          <header className="shrink-0 bg-[#042C51] px-5 py-3 text-white sm:px-6 2xl:py-3.5">
+          <header className="shrink-0 rounded-t-[14px] bg-sibs-navy px-5 py-3 text-white sm:px-6 2xl:py-3.5">
             <div className="flex items-center justify-between gap-4">
               <div className="flex min-w-0 items-center gap-2.5 2xl:gap-3">
-                <span className="flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg bg-[#FF5C28] text-white shadow-sm">
+                <span className="flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg bg-sibs-orange text-white shadow-sm">
                   <FileText size={16} strokeWidth={2.2} />
                 </span>
 
@@ -995,7 +995,7 @@ export default function ResignationModal({
                 type="button"
                 onClick={handleClose}
                 disabled={submitting || isClosing}
-                className="inline-flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg text-white/70 transition hover:bg-white/10 hover:text-white active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50"
+                className="sibs-modal-close-btn"
                 aria-label="Close resignation modal"
               >
                 <X size={18} />
@@ -1003,26 +1003,26 @@ export default function ResignationModal({
             </div>
           </header>
 
-          <div className="shrink-0 border-b border-[#DCE4ED] bg-[#F5F8FC] px-5 py-3 sm:px-6">
+          <div className="shrink-0 border-b border-sibs-border bg-sibs-surface px-5 py-3 sm:px-6">
             <div className="flex flex-col gap-2 text-xs sm:flex-row sm:items-center sm:justify-between">
               <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
-                <span className="rounded bg-[#E2E8F0] px-2 py-1 font-mono text-[10px] font-extrabold text-[#334155]">
+                <span className="rounded bg-sibs-border/60 px-2 py-1 font-mono text-[10px] font-extrabold text-sibs-navy">
                   {employeeSibsId}
                 </span>
 
-                <strong className="truncate text-sm font-extrabold text-[#07355F]">
+                <strong className="truncate text-sm font-extrabold text-sibs-navy">
                   {employeeName}
                 </strong>
 
-                <span className="hidden text-[#94A3B8] sm:inline">|</span>
+                <span className="hidden text-sibs-muted sm:inline">|</span>
 
-                <span className="truncate font-semibold text-[#475569]">
+                <span className="truncate font-semibold text-sibs-navy">
                   {employeePosition}
                 </span>
               </div>
 
               {(employeeDepartment || employeeAccount) && (
-                <p className="truncate font-mono text-[10px] font-bold text-[#64748B]">
+                <p className="truncate font-mono text-[10px] font-bold text-sibs-muted">
                   {[employeeDepartment, employeeAccount].filter(Boolean).join(" • ")}
                 </p>
               )}
@@ -1043,17 +1043,17 @@ export default function ResignationModal({
                       <button
                         type="button"
                         onClick={() => handleTypeSelect("Formal")}
-                        className={`flex min-h-[78px] items-start gap-3 rounded-xl border p-3 text-left transition ${
+                        className={`flex min-h-[78px] items-start gap-3 rounded-[10px] border p-3 text-left transition ${
                           isFormal
                             ? "border-teal-600 bg-teal-50/80 text-teal-900 ring-2 ring-teal-600/15"
-                            : "border-[#D8E0EA] bg-white text-[#334155] hover:border-teal-500/50 hover:bg-teal-50/30"
+                            : "border-sibs-border bg-white text-sibs-navy hover:border-teal-500/50 hover:bg-teal-50/30"
                         }`}
                       >
                         <span
                           className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
                             isFormal
                               ? "bg-teal-600 text-white"
-                              : "bg-[#F1F5F9] text-[#64748B]"
+                              : "bg-sibs-surface text-sibs-muted"
                           }`}
                         >
                           <CalendarDays size={17} />
@@ -1063,7 +1063,7 @@ export default function ResignationModal({
                           <span className="block text-xs font-extrabold">
                             Formal Notice
                           </span>
-                          <span className="mt-1 block text-[11px] font-medium leading-4 text-[#64748B]">
+                          <span className="mt-1 block text-[11px] font-medium leading-4 text-sibs-muted">
                             Standard 30-Day Notice Period (Auto-computed)
                           </span>
                         </span>
@@ -1072,17 +1072,17 @@ export default function ResignationModal({
                       <button
                         type="button"
                         onClick={() => handleTypeSelect("Immediate")}
-                        className={`flex min-h-[78px] items-start gap-3 rounded-xl border p-3 text-left transition ${
+                        className={`flex min-h-[78px] items-start gap-3 rounded-[10px] border p-3 text-left transition ${
                           isImmediate
                             ? "border-amber-500 bg-amber-50/80 text-amber-900 ring-2 ring-amber-500/15"
-                            : "border-[#D8E0EA] bg-white text-[#334155] hover:border-amber-500/50 hover:bg-amber-50/30"
+                            : "border-sibs-border bg-white text-sibs-navy hover:border-amber-500/50 hover:bg-amber-50/30"
                         }`}
                       >
                         <span
                           className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
                             isImmediate
                               ? "bg-amber-500 text-white"
-                              : "bg-[#F1F5F9] text-[#64748B]"
+                              : "bg-sibs-surface text-sibs-muted"
                           }`}
                         >
                           <AlertTriangle size={17} />
@@ -1095,7 +1095,7 @@ export default function ResignationModal({
                               &lt; 30 Days
                             </span>
                           </span>
-                          <span className="mt-1 block text-[11px] font-medium leading-4 text-[#64748B]">
+                          <span className="mt-1 block text-[11px] font-medium leading-4 text-sibs-muted">
                             Requires Policy Acknowledgment & HR Approval
                           </span>
                         </span>
@@ -1104,7 +1104,7 @@ export default function ResignationModal({
                   </div>
 
                   {isImmediate && (
-                    <div className="flex flex-col gap-3 rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-3 text-xs text-amber-900 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex flex-col gap-3 rounded-[10px] border border-amber-200 bg-amber-50 px-3.5 py-3 text-xs text-amber-900 sm:flex-row sm:items-center sm:justify-between">
                       <div className="flex items-start gap-2">
                         <ShieldAlert
                           size={17}
@@ -1124,7 +1124,7 @@ export default function ResignationModal({
                         <button
                           type="button"
                           onClick={() => setPolicyModalOpen(true)}
-                          className="shrink-0 rounded-lg bg-amber-600 px-3 py-2 text-[11px] font-extrabold text-white hover:bg-amber-700"
+                          className="shrink-0 rounded-[10px] bg-amber-600 px-3 py-2 text-[11px] font-extrabold text-white hover:bg-amber-700"
                         >
                           Review & Accept
                         </button>
@@ -1179,11 +1179,11 @@ export default function ResignationModal({
                       <button
                         type="button"
                         onClick={() => setReasonOpen((prev) => !prev)}
-                        className="flex h-10 w-full items-center justify-between rounded-[10px] border border-[#D7DEE8] bg-[#F8FAFC] px-3 text-left text-xs font-semibold text-[#042C51] outline-none transition hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10"
+                        className="flex h-10 w-full items-center justify-between rounded-[10px] border border-sibs-border bg-sibs-surface px-3 text-left text-xs font-semibold text-sibs-navy outline-none transition hover:border-sibs-orange/40 hover:bg-white focus:border-sibs-orange focus:bg-white focus:ring-4 focus:ring-sibs-orange/10"
                       >
                         <span
                           className={
-                            form.reason ? "text-[#042C51]" : "text-[#98A2B3]"
+                            form.reason ? "text-sibs-navy" : "text-sibs-muted"
                           }
                         >
                           {form.reason || "Select reason"}
@@ -1191,8 +1191,8 @@ export default function ResignationModal({
 
                         <ChevronDown
                           size={16}
-                          className={`text-[#667085] transition-transform duration-200 ${
-                            reasonOpen ? "rotate-180 text-[#FF5C28]" : ""
+                          className={`text-sibs-muted transition-transform duration-200 ${
+                            reasonOpen ? "rotate-180 text-sibs-orange" : ""
                           }`}
                         />
                       </button>
@@ -1205,8 +1205,8 @@ export default function ResignationModal({
                             onClick={() => handleReasonSelect(item)}
                             className={`block w-full px-3 py-2 text-left text-xs font-semibold transition ${
                               form.reason === item
-                                ? "bg-sibs-primary-3 font-extrabold text-[#FF5C28]"
-                                : "text-[#042C51] hover:bg-sibs-primary-3/50 hover:text-[#FF5C28]"
+                                ? "bg-sibs-cream-light font-extrabold text-sibs-orange"
+                                : "text-sibs-navy hover:bg-sibs-cream-light hover:text-sibs-orange"
                             }`}
                           >
                             {item}
@@ -1225,7 +1225,7 @@ export default function ResignationModal({
                         onChange={handleChange}
                         placeholder="Provide specific details regarding your reason..."
                         required
-                        className="h-11 w-full rounded-xl border border-[#CBD5E1] bg-white px-4 text-xs font-semibold text-[#334155] outline-none transition placeholder:text-[#94A3B8] focus:border-[#07355F] focus:ring-4 focus:ring-[#07355F]/10"
+                        className="h-11 w-full rounded-[10px] border border-sibs-border bg-white px-4 text-xs font-semibold text-sibs-navy outline-none transition placeholder:text-sibs-muted focus:border-sibs-orange focus:ring-4 focus:ring-sibs-orange/10"
                       />
                     </Field>
                   )}
@@ -1237,12 +1237,12 @@ export default function ResignationModal({
                       onChange={handleChange}
                       rows={3}
                       placeholder="Provide additional context, handover notes, or personal comments for HR..."
-                      className="w-full resize-none rounded-xl border border-[#CBD5E1] bg-white px-4 py-3 text-xs font-medium leading-5 text-[#334155] outline-none transition placeholder:text-[#94A3B8] focus:border-[#07355F] focus:ring-4 focus:ring-[#07355F]/10"
+                      className="w-full resize-none rounded-[10px] border border-sibs-border bg-white px-4 py-3 text-xs font-medium leading-5 text-sibs-navy outline-none transition placeholder:text-sibs-muted focus:border-sibs-orange focus:ring-4 focus:ring-sibs-orange/10"
                     />
                   </Field>
 
                   <Field label="Upload Resignation Letter / Supporting Files *">
-                    <label className="group relative flex min-h-[126px] cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-[#C8D5E5] bg-[#FAFCFF] px-4 py-5 text-center transition hover:border-[#07355F]/60 hover:bg-[#F4F8FC]">
+                    <label className="group relative flex min-h-[126px] cursor-pointer flex-col items-center justify-center rounded-[10px] border-2 border-dashed border-sibs-border bg-sibs-surface px-4 py-5 text-center transition hover:border-sibs-orange/60 hover:bg-sibs-cream-light/30">
                       <input
                         type="file"
                         name="uploadedFile"
@@ -1252,39 +1252,39 @@ export default function ResignationModal({
                         required={!selectedFileName}
                       />
 
-                      <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#EEF3F8] text-[#64748B] transition group-hover:bg-[#E2ECF7] group-hover:text-[#07355F]">
+                      <span className="flex h-10 w-10 items-center justify-center rounded-full bg-sibs-border/40 text-sibs-muted transition group-hover:bg-sibs-cream-light group-hover:text-sibs-orange">
                         <Upload size={19} />
                       </span>
 
-                      <p className="mt-2 text-xs font-extrabold text-[#334155]">
+                      <p className="mt-2 text-xs font-extrabold text-sibs-navy">
                         {selectedFileName
                           ? "Replace selected resignation file"
                           : "Drag & drop formal resignation letter or "}
                         {!selectedFileName && (
-                          <span className="text-blue-600 underline">
+                          <span className="text-sibs-orange underline">
                             browse computer
                           </span>
                         )}
                       </p>
 
-                      <p className="mt-1 font-mono text-[9px] font-semibold text-[#94A3B8]">
+                      <p className="mt-1 font-mono text-[9px] font-semibold text-sibs-muted">
                         Accepted formats: .pdf, .docx, .doc, .jpg, .png, .heic
                         (Max 10MB)
                       </p>
                     </label>
 
                     {selectedFileName && (
-                      <div className="mt-2.5 flex items-center justify-between gap-3 rounded-xl border border-[#DCE4ED] bg-[#F8FAFC] px-3 py-2.5">
+                      <div className="mt-2.5 flex items-center justify-between gap-3 rounded-[10px] border border-sibs-border bg-sibs-surface px-3 py-2.5">
                         <div className="flex min-w-0 items-center gap-2.5">
                           <FileText
                             size={16}
-                            className="shrink-0 text-blue-600"
+                            className="shrink-0 text-sibs-orange"
                           />
-                          <span className="truncate text-xs font-bold text-[#334155]">
+                          <span className="truncate text-xs font-bold text-sibs-navy">
                             {selectedFileName}
                           </span>
                           {form?.uploadedFile?.size ? (
-                            <span className="shrink-0 rounded border bg-white px-1.5 py-0.5 font-mono text-[9px] font-semibold text-[#64748B]">
+                            <span className="shrink-0 rounded border border-sibs-border bg-white px-1.5 py-0.5 font-mono text-[9px] font-semibold text-sibs-muted">
                               {Math.max(
                                 1,
                                 Math.round(form.uploadedFile.size / 1024),
@@ -1297,7 +1297,7 @@ export default function ResignationModal({
                         <button
                           type="button"
                           onClick={removeSelectedFile}
-                          className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-[#94A3B8] transition hover:bg-rose-50 hover:text-rose-600"
+                          className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-sibs-muted transition hover:bg-rose-50 hover:text-rose-600"
                           aria-label="Remove selected resignation file"
                         >
                           <Trash2 size={14} />
@@ -1349,7 +1349,7 @@ export default function ResignationModal({
                           rows={3}
                           placeholder="Enter the reason for extending your last working date"
                           required={extendOpenWorkingDate}
-                          className="w-full resize-none rounded-xl border border-[#CBD5E1] bg-white px-4 py-3 text-xs font-medium outline-none focus:border-[#07355F] focus:ring-4 focus:ring-[#07355F]/10"
+                          className="w-full resize-none rounded-[10px] border border-sibs-border bg-white px-4 py-3 text-xs font-medium text-sibs-navy placeholder:text-sibs-muted outline-none focus:border-sibs-orange focus:ring-4 focus:ring-sibs-orange/10"
                         />
                       </Field>
                     </div>
@@ -1378,7 +1378,7 @@ export default function ResignationModal({
                           rows={3}
                           placeholder="Enter the reason for retracting your resignation"
                           required={extendOpenRetract}
-                          className="w-full resize-none rounded-xl border border-[#CBD5E1] bg-white px-4 py-3 text-xs font-medium outline-none focus:border-[#07355F] focus:ring-4 focus:ring-[#07355F]/10"
+                          className="w-full resize-none rounded-[10px] border border-sibs-border bg-white px-4 py-3 text-xs font-medium text-sibs-navy placeholder:text-sibs-muted outline-none focus:border-sibs-orange focus:ring-4 focus:ring-sibs-orange/10"
                         />
                       </Field>
                     </div>
@@ -1422,7 +1422,7 @@ export default function ResignationModal({
               )}
             </div>
 
-            <footer className="shrink-0 border-t border-[#DDE5EE] bg-[#F1F5F9] px-5 py-3 2xl:py-3.5 sm:px-6">
+            <footer className="shrink-0 border-t border-sibs-border bg-sibs-surface px-5 py-3 2xl:py-3.5 sm:px-6">
               <div className="flex flex-col-reverse items-stretch justify-between gap-2.5 sm:flex-row sm:items-center">
                 <button
                   type="button"
@@ -1457,15 +1457,15 @@ export default function ResignationModal({
 
       {policyModalOpen && (
         <div className="sibs-modal-blur sibs-modal-backdrop-in fixed inset-0 z-[10001] flex items-center justify-center p-4 font-jakarta">
-          <section className="w-full max-w-md overflow-hidden rounded-[18px] border border-amber-200 bg-white shadow-2xl sibs-inner-modal-pop-in">
-            <header className="flex items-start justify-between gap-3 border-b border-[#E6ECF2] px-5 py-4">
+          <section className="w-full max-w-md overflow-hidden rounded-[14px] border border-amber-200 bg-white shadow-2xl sibs-inner-modal-pop-in">
+            <header className="flex items-start justify-between gap-3 border-b border-sibs-border px-5 py-4">
               <div className="flex min-w-0 items-start gap-3">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-600">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] bg-amber-100 text-amber-600">
                   <ShieldAlert size={21} />
                 </span>
 
                 <div>
-                  <h3 className="sibs-modal-title text-[#0F172A]">
+                  <h3 className="sibs-modal-title text-sibs-navy">
                     Immediate Resignation Policy
                   </h3>
                   <p className="sibs-modal-subtitle mt-0.5 text-amber-700">
@@ -1477,7 +1477,7 @@ export default function ResignationModal({
               <button
                 type="button"
                 onClick={() => setPolicyModalOpen(false)}
-                className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-[#94A3B8] hover:bg-[#F8FAFC] hover:text-[#0F172A]"
+                className="sibs-modal-close-btn text-sibs-muted hover:text-sibs-navy"
                 aria-label="Close immediate resignation policy"
               >
                 <X size={17} />
@@ -1485,7 +1485,7 @@ export default function ResignationModal({
             </header>
 
             <div className="px-5 py-5">
-              <div className="rounded-xl border border-amber-200 bg-amber-50 p-3.5 text-xs font-medium leading-5 text-amber-900">
+              <div className="rounded-[10px] border border-amber-200 bg-amber-50 p-3.5 text-xs font-medium leading-5 text-amber-900">
                 <p>
                   A standard notice of <strong>30 calendar days</strong> is
                   required for an orderly transition.
@@ -1505,14 +1505,14 @@ export default function ResignationModal({
                 </ul>
               </div>
 
-              <label className="mt-4 flex items-start gap-2.5 text-xs font-semibold text-[#475569]">
+              <label className="mt-4 flex items-start gap-2.5 text-xs font-semibold text-sibs-navy">
                 <input
                   type="checkbox"
                   checked={policyAccepted}
                   onChange={(event) =>
                     setPolicyAccepted(event.target.checked)
                   }
-                  className="mt-0.5 h-4 w-4 rounded border-[#CBD5E1] text-amber-600 focus:ring-amber-500"
+                  className="mt-0.5 h-4 w-4 rounded border-sibs-border text-amber-600 focus:ring-amber-500"
                 />
                 <span>
                   I understand the consequences and agree to proceed with an
@@ -1521,14 +1521,14 @@ export default function ResignationModal({
               </label>
             </div>
 
-            <footer className="flex flex-col-reverse gap-2.5 border-t border-[#E6ECF2] px-5 py-4 sm:flex-row sm:justify-end">
+            <footer className="flex flex-col-reverse gap-2.5 border-t border-sibs-border px-5 py-4 sm:flex-row sm:justify-end">
               <button
                 type="button"
                 onClick={() => {
                   setPolicyModalOpen(false);
                   handleTypeSelect("Formal");
                 }}
-                className="h-10 rounded-xl border border-[#CBD5E1] bg-white px-4 text-xs font-extrabold text-[#475569] hover:bg-[#F8FAFC]"
+                className="h-10 rounded-[10px] border border-sibs-border bg-white px-4 text-xs font-extrabold text-sibs-navy hover:bg-sibs-surface"
               >
                 Use Formal Notice
               </button>
@@ -1537,7 +1537,7 @@ export default function ResignationModal({
                 type="button"
                 onClick={() => setPolicyModalOpen(false)}
                 disabled={!policyAccepted}
-                className="h-10 rounded-xl bg-amber-600 px-4 text-xs font-extrabold text-white hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-50"
+                className="h-10 rounded-[10px] bg-amber-600 px-4 text-xs font-extrabold text-white hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 I Understand & Accept
               </button>
@@ -1553,7 +1553,7 @@ function Field({ label, children }) {
   return (
     <div>
       {label ? (
-        <label className="mb-1.5 block text-xs font-extrabold text-[#042C51]">
+        <label className="mb-1.5 block text-xs font-extrabold text-sibs-navy">
           {label}
         </label>
       ) : null}
@@ -1575,20 +1575,20 @@ function ActionPanel({ title, description, checked, onToggle, children }) {
           onToggle();
         }
       }}
-      className="rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-4 py-3 transition hover:border-sibs-tertiary-4 hover:bg-white"
+      className="rounded-[10px] border border-sibs-border bg-sibs-surface px-4 py-3 transition hover:border-sibs-orange/40 hover:bg-white"
     >
       <div className="flex items-center justify-between gap-4">
         <div className="min-w-0">
-          <p className="text-sm font-semibold text-sibs-primary-1">{title}</p>
+          <p className="text-sm font-semibold text-sibs-navy">{title}</p>
 
-          <p className="mt-0.5 text-xs text-sibs-tertiary-5">{description}</p>
+          <p className="mt-0.5 text-xs text-sibs-muted">{description}</p>
         </div>
 
         <input
           type="checkbox"
           checked={checked}
           readOnly
-          className="h-4 w-4 shrink-0 rounded border-[#D0D5DD] text-sibs-primary-1 focus:ring-sibs-primary-1"
+          className="h-4 w-4 shrink-0 rounded border-sibs-border text-sibs-orange focus:ring-sibs-orange"
         />
       </div>
 
@@ -1623,42 +1623,42 @@ function ApproverCard({
   remarks,
 }) {
   return (
-    <div className="rounded-xl border border-[#E6ECF2] bg-sibs-tertiary-10 p-4">
+    <div className="rounded-[10px] border border-sibs-border bg-sibs-surface p-4">
       <div className="mb-2 flex items-center gap-2">
-        <UserRound size={16} className="text-sibs-primary-1" />
-        <p className="text-sm font-semibold text-sibs-primary-1">{title}</p>
+        <UserRound size={16} className="text-sibs-navy" />
+        <p className="text-sm font-semibold text-sibs-navy">{title}</p>
       </div>
 
-      <p className="text-sm text-sibs-tertiary-5">
+      <p className="text-sm text-sibs-muted">
         {formatPerson(sibsId, fullName)}
       </p>
 
       <div className="mt-4 flex flex-wrap items-center gap-6">
-        <label className="flex items-center gap-2 text-sm text-sibs-primary-1">
+        <label className="flex items-center gap-2 text-sm text-sibs-navy">
           <input
             type="checkbox"
             checked={Number(isApproved) === 1}
             readOnly
             disabled
-            className="h-4 w-4 rounded border-[#D0D5DD] text-sibs-primary-1"
+            className="h-4 w-4 rounded border-sibs-border text-sibs-orange"
           />
           <span>Approved</span>
         </label>
 
-        <label className="flex items-center gap-2 text-sm text-sibs-primary-1">
+        <label className="flex items-center gap-2 text-sm text-sibs-navy">
           <input
             type="checkbox"
             checked={Number(isDeclined) === 1}
             readOnly
             disabled
-            className="h-4 w-4 rounded border-[#D0D5DD] text-sibs-primary-1"
+            className="h-4 w-4 rounded border-sibs-border text-sibs-orange"
           />
           <span>Declined</span>
         </label>
       </div>
 
       <div className="mt-4">
-        <p className="mb-2 text-xs font-medium uppercase tracking-wide text-sibs-tertiary-5">
+        <p className="mb-2 text-xs font-medium uppercase tracking-wide text-sibs-muted">
           Remarks
         </p>
 
@@ -1666,7 +1666,7 @@ function ApproverCard({
           value={remarks || "N/A"}
           readOnly
           rows={4}
-          className="w-full resize-none rounded-xl border border-[#D7DEE8] bg-white px-3 py-2 text-sm text-sibs-primary-1 outline-none"
+          className="w-full resize-none rounded-[10px] border border-sibs-border bg-white px-3 py-2 text-sm text-sibs-navy outline-none"
         />
       </div>
     </div>

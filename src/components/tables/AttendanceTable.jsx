@@ -1510,7 +1510,6 @@ export default function AttendanceTable() {
         }
       `}</style>
       <section
-        className="sibs-profile-tab-panel"
         style={getAnimationStyle(60)}
       >
         {loading ? (
@@ -1567,7 +1566,7 @@ export default function AttendanceTable() {
       </section>
 
       <section
-        className="sibs-profile-tab-panel sibs-page-card-in sibs-card overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-sm"
+        className="sibs-page-card-in sibs-card overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-xs font-jakarta"
         style={getAnimationStyle(120)}
       >
         <div className="border-b border-sibs-border p-4 sm:p-5 2xl:p-6 font-jakarta">
@@ -1639,7 +1638,6 @@ export default function AttendanceTable() {
                       {
                         key: "dateFrom",
                         label: "From Date",
-                        leadingLabel: "From",
                         value: dateFrom,
                         onChange: handleAttendanceDateFromChange,
                         disabled: loading,
@@ -1647,7 +1645,6 @@ export default function AttendanceTable() {
                       {
                         key: "dateTo",
                         label: "To Date",
-                        leadingLabel: "To",
                         value: dateTo,
                         min: dateFrom || undefined,
                         onChange: handleAttendanceDateToChange,

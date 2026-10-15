@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import StatusModal from "@/components/modals/StatusModal";
+import { AlertTriangle } from "lucide-react";
+import ConfirmModal from "@/components/ui/ConfirmModal";
 
 function AvailablePositionsConfirmationModal({
   open,
@@ -12,24 +13,24 @@ function AvailablePositionsConfirmationModal({
   onConfirm,
 }) {
   return (
-    <StatusModal
-      open={open}
-      type="confirm"
-      subtitle="Position Dictionary"
+    <ConfirmModal
+      open={Boolean(open)}
+      variant="warning"
+      icon={AlertTriangle}
       title={title}
-      message={message || "Confirm this Available Position action."}
-      notice="Status changes affect applicant-facing availability. Review the requested action before continuing."
+      description={
+        message ||
+        "Confirm this Available Position action. Status changes affect applicant-facing availability. Review the requested action before continuing."
+      }
       confirmLabel={confirmLabel}
       cancelLabel={cancelLabel}
-      onCancel={onCancel}
+      loading={isSaving}
       onClose={onCancel}
       onConfirm={onConfirm}
-      loading={isSaving}
     />
   );
 }
 
-// eslint-disable-next-line react-refresh/only-export-components
 export function useConfirmDialog() {
   const [confirmState, setConfirmState] = useState(null);
 

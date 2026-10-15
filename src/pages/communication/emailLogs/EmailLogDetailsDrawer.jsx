@@ -251,7 +251,7 @@ function MetadataPanel({ record }) {
   const attachments = record.attachments || [];
 
   return (
-    <section className="rounded-xl border border-sibs-border bg-white p-4 shadow-xs">
+    <section className="rounded-[14px] border border-sibs-border bg-white p-4 shadow-xs">
       <div className="grid gap-x-6 gap-y-3 sm:grid-cols-2">
         <div>
           <p className="text-[10px] font-bold text-sibs-faint">Sender:</p>
@@ -278,7 +278,7 @@ function MetadataPanel({ record }) {
         {attachments.length ? (
           <div className="mt-2 flex flex-wrap gap-2">
             {attachments.map((attachment) => (
-              <span key={attachment.name} className="inline-flex max-w-full items-center gap-1.5 rounded-lg border border-sibs-border bg-sibs-surface px-2.5 py-1 text-[9px] font-extrabold text-sibs-navy">
+              <span key={attachment.name} className="inline-flex max-w-full items-center gap-1.5 rounded-[10px] border border-sibs-border bg-sibs-surface px-2.5 py-1 text-[9px] font-extrabold text-sibs-navy">
                 <Paperclip className="h-3 w-3 shrink-0 text-sibs-orange" />
                 <span className="truncate">{attachment.name}</span>
                 <span className="shrink-0 font-semibold text-sibs-faint">({attachment.size})</span>
@@ -306,7 +306,7 @@ function RenderedPreview({ record, preview }) {
 
   if (sanitizedHtml) {
     return (
-      <section className="overflow-hidden rounded-xl border border-sibs-border bg-white shadow-xs">
+      <section className="overflow-hidden rounded-[14px] border border-sibs-border bg-white shadow-xs">
         <div className="flex items-center justify-between gap-3 border-b border-sibs-border px-4 py-3">
           <p className="text-[9px] font-extrabold uppercase tracking-wide text-sibs-faint">Rendered Email Content</p>
           <p className="text-[9px] font-extrabold uppercase text-emerald-600">Saved HTML Body</p>
@@ -371,13 +371,13 @@ function RenderedPreview({ record, preview }) {
               text-decoration: line-through;
             }
             .email-log-rendered-html a:not([style]) {
-              color: #0b5cad;
+              color: var(--color-sibs-secondary-2);
               text-decoration: underline;
               overflow-wrap: anywhere;
             }
           `}</style>
           <div
-            className="email-log-rendered-html min-w-0 overflow-hidden rounded-xl border border-sibs-border bg-white"
+            className="email-log-rendered-html min-w-0 overflow-hidden rounded-[14px] border border-sibs-border bg-white"
             dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
           />
         </div>
@@ -387,7 +387,7 @@ function RenderedPreview({ record, preview }) {
 
   if (fullTextBody) {
     return (
-      <section className="overflow-hidden rounded-xl border border-sibs-border bg-white shadow-xs">
+      <section className="overflow-hidden rounded-[14px] border border-sibs-border bg-white shadow-xs">
         <div className="border-b border-sibs-border px-4 py-3">
           <p className="text-[9px] font-extrabold uppercase tracking-wide text-sibs-faint">Rendered Email Content</p>
         </div>
@@ -406,13 +406,13 @@ function RenderedPreview({ record, preview }) {
   }
 
   return (
-    <section className="overflow-hidden rounded-xl border border-sibs-border bg-white shadow-xs">
+    <section className="overflow-hidden rounded-[14px] border border-sibs-border bg-white shadow-xs">
       <div className="flex items-center justify-between gap-3 border-b border-sibs-border px-4 py-3">
         <p className="text-[9px] font-extrabold uppercase tracking-wide text-sibs-faint">Rendered Email Content</p>
         <p className="text-[9px] font-extrabold uppercase text-sibs-faint">Preview Only</p>
       </div>
       <div className="p-3 sm:p-4">
-        <div className="overflow-hidden rounded-xl border border-sibs-border">
+        <div className="overflow-hidden rounded-[10px] border border-sibs-border">
           <div className="border-b border-sibs-border bg-white px-5 py-6 text-center">
             <img
               src={SIBS_EMAIL_LOGO_PREVIEW_URL}
@@ -426,7 +426,7 @@ function RenderedPreview({ record, preview }) {
               <h3 className="text-base font-semibold text-sibs-navy">{preview.heading}</h3>
               <p className="mt-1">{record.preview}</p>
             </div>
-            <div className="space-y-3 rounded-lg border border-sibs-border bg-sibs-surface p-4">
+            <div className="space-y-3 rounded-[10px] border border-sibs-border bg-sibs-surface p-4">
               {preview.facts.map(([label, value]) => (
                 <div key={label} className="flex items-start justify-between gap-4">
                   <span className="text-sibs-muted">{label}:</span>
@@ -447,7 +447,7 @@ function RenderedPreview({ record, preview }) {
 
 function AuditView({ events, record }) {
   return (
-    <section className="rounded-xl border border-sibs-border bg-white p-5 shadow-xs">
+    <section className="rounded-[14px] border border-sibs-border bg-white p-5 shadow-xs">
       <h3 className="text-xs font-extrabold text-sibs-navy">Delivery Journey</h3>
       <div className="mt-5 space-y-0">
         {events.map((event, index) => (
@@ -470,7 +470,7 @@ function AuditView({ events, record }) {
 
 function HeadersView({ headers }) {
   return (
-    <section className="overflow-hidden rounded-xl border border-sibs-border bg-[#071D31] shadow-xs">
+    <section className="overflow-hidden rounded-[14px] border border-sibs-border bg-sibs-navy shadow-xs">
       <div className="border-b border-white/10 px-4 py-3 text-[9px] font-extrabold uppercase tracking-wide text-blue-200">SMTP Message Headers</div>
       <dl className="divide-y divide-white/10 px-4">
         {Object.entries(headers).map(([label, value]) => (
@@ -543,6 +543,7 @@ export default function EmailLogDetailsDrawer({ record, onClose, onResend }) {
     <div className="fixed inset-0 z-[9999] flex justify-end" role="dialog" aria-modal="true" aria-label={`Email details for ${record.recipient}`}>
       <button type="button" className="absolute inset-0 cursor-default bg-sibs-navy/45 backdrop-blur-[2px]" aria-label="Close email details" onClick={onClose} />
       <aside ref={drawerRef} className="sibs-modal-pop-in relative z-10 flex h-dvh w-full max-w-[680px] flex-col overflow-hidden border-l border-sibs-border bg-sibs-surface shadow-2xl">
+        <div className="sibs-top-accent" />
         <header className="bg-sibs-navy px-5 py-5 text-white">
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0">
@@ -550,12 +551,12 @@ export default function EmailLogDetailsDrawer({ record, onClose, onResend }) {
                 <span className="rounded bg-blue-600 px-2 py-0.5 text-[9px] font-extrabold uppercase">{record.category}</span>
                 <span className="rounded-full border border-purple-300 bg-purple-50 px-2.5 py-0.5 text-[9px] font-extrabold uppercase text-purple-700">{STATUS_LABELS[record.status] || record.status}</span>
               </div>
-              <h2 className="mt-2 truncate font-heading text-lg font-bold tracking-tight">{record.subject}</h2>
-              <p className="mt-1 text-[10px] font-medium text-blue-100">
+              <h2 className="sibs-modal-title mt-2 truncate font-heading text-lg font-bold tracking-tight text-white">{record.subject}</h2>
+              <p className="sibs-modal-subtitle mt-1 text-[10px] font-medium text-blue-100">
                 To: <strong className="text-white">{record.recipient}</strong> ({record.email}) <span className="mx-2">•</span> {formatDrawerDate(record.dispatchedAt)}
               </p>
             </div>
-            <button ref={closeButtonRef} type="button" onClick={onClose} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-blue-100 hover:bg-white/10 hover:text-white" aria-label="Close drawer">
+            <button ref={closeButtonRef} type="button" onClick={onClose} className="sibs-modal-close-btn shrink-0" aria-label="Close drawer">
               <X className="h-5 w-5" />
             </button>
           </div>
@@ -579,14 +580,14 @@ export default function EmailLogDetailsDrawer({ record, onClose, onResend }) {
 
         <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-5">
           {resendPrepared ? (
-            <div className="mb-4 flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-[10px] font-bold text-emerald-700">
+            <div className="mb-4 flex items-center gap-2 rounded-[10px] border border-emerald-200 bg-emerald-50 px-3 py-2 text-[10px] font-bold text-emerald-700">
               <CheckCircle2 className="h-4 w-4 shrink-0" /> Re-send prepared locally. No email was transmitted.
             </div>
           ) : null}
           {activeTab === "preview" ? <div className="space-y-4"><MetadataPanel record={record} /><RenderedPreview record={record} preview={renderedEmail} /></div> : null}
           {activeTab === "audit" ? <AuditView events={auditEvents} record={record} /> : null}
           {activeTab === "headers" ? <HeadersView headers={smtpHeaders} /> : null}
-          {activeTab === "plain" ? <pre className="whitespace-pre-wrap rounded-xl border border-sibs-border bg-white p-5 font-mono text-[11px] leading-relaxed text-sibs-secondary shadow-xs">{plainText}</pre> : null}
+          {activeTab === "plain" ? <pre className="whitespace-pre-wrap rounded-[14px] border border-sibs-border bg-white p-5 font-mono text-[11px] leading-relaxed text-sibs-secondary shadow-xs">{plainText}</pre> : null}
         </div>
 
         <footer className="flex flex-wrap items-center justify-between gap-2 border-t border-sibs-border bg-white px-4 py-3 sm:px-5">

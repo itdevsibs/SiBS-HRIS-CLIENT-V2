@@ -33,7 +33,7 @@ export default function CustomSelect({
       <button
         type="button"
         onClick={() => setOpen((previous) => !previous)}
-        className="flex h-8.5 2xl:h-10 w-full items-center justify-between rounded-lg border border-sibs-border bg-white px-3 text-left sibs-text-xs font-extrabold text-sibs-muted outline-none transition hover:border-sibs-orange/30 hover:bg-sibs-surface focus:border-sibs-orange focus:ring-2 focus:ring-sibs-orange/10"
+        className="flex h-8.5 2xl:h-10 w-full items-center justify-between rounded-[10px] border border-sibs-border bg-white px-3 text-left sibs-text-xs font-extrabold text-sibs-muted outline-none transition hover:border-sibs-orange/30 hover:bg-sibs-surface focus:border-sibs-orange focus:ring-2 focus:ring-sibs-orange/10"
       >
         <span className="truncate">{displayValue}</span>
         <ChevronDown

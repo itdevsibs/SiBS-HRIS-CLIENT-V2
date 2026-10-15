@@ -331,7 +331,7 @@ export default function ActionItemsCurrentStatus({ loading: explicitLoading }) {
                 return (
                   <tr
                     key={row.id || row.roleAccountKey}
-                    className="sibs-page-card-in transition hover:bg-sibs-surface"
+                    className="sibs-page-card-in transition-colors hover:bg-sibs-cream-light"
                     style={{ animationDelay: `${index * 35}ms`, animationFillMode: "both" }}
                   >
                     <td className="border-r border-sibs-border px-2.5 py-2 2xl:px-3.5 2xl:py-3">

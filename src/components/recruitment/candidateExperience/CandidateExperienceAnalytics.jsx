@@ -21,11 +21,11 @@ function BarListSkeleton() {
   );
 }
 
-function BarList({ rows, emptyText, accent = "bg-sibs-primary-1" }) {
+function BarList({ rows, emptyText, accent = "bg-sibs-navy" }) {
   const max = Math.max(1, ...rows.map((row) => row.value));
   if (!rows.length) {
     return (
-      <div className="rounded-[10px] border border-dashed border-sibs-subtle-border bg-sibs-surface p-6 text-center text-xs font-bold text-sibs-tertiary-6">
+      <div className="rounded-[10px] border border-dashed border-sibs-border bg-sibs-surface p-6 text-center text-xs font-bold text-sibs-muted">
         {emptyText}
       </div>
     );
@@ -36,8 +36,8 @@ function BarList({ rows, emptyText, accent = "bg-sibs-primary-1" }) {
       {rows.slice(0, 6).map((row) => (
         <div key={row.label}>
           <div className="mb-1 flex items-center justify-between gap-3 text-xs">
-            <span className="truncate font-bold text-sibs-primary-1">{row.label}</span>
-            <span className="font-mono font-extrabold text-sibs-primary-1">{row.value}</span>
+            <span className="truncate font-bold text-sibs-navy">{row.label}</span>
+            <span className="font-mono font-extrabold text-sibs-navy">{row.value}</span>
           </div>
           <div className="h-2 overflow-hidden rounded-full bg-sibs-surface">
             <div
@@ -68,7 +68,7 @@ export default function CandidateExperienceAnalytics({ records = [], metrics = {
         {loading ? (
           <BarListSkeleton />
         ) : (
-          <BarList rows={categoryRows} emptyText="No experience categories yet." accent="bg-sibs-primary-2" />
+          <BarList rows={categoryRows} emptyText="No experience categories yet." accent="bg-sibs-navy" />
         )}
       </Panel>
 

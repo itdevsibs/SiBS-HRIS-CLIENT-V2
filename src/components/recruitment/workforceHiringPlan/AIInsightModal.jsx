@@ -5,8 +5,8 @@ import {
   RefreshCw,
   Send,
   Sparkles,
-  X,
 } from "lucide-react";
+import ModalShell from "@/components/ui/ModalShell";
 import {
   normalizeAiList,
   parseAiDisplayBlocks,
@@ -115,51 +115,69 @@ export default function AIInsightModal({
     "No active capacity deficit risk was detected for the selected filters.";
 
   return (
-    <div
-      data-layout="ai-workforce-intelligence-advisor-v2"
-      className="sibs-modal-blur sibs-modal-backdrop-in fixed inset-0 z-[9999] flex items-center justify-center p-2.5 font-jakarta sm:p-4"
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget) onClose?.();
-      }}
-    >
-      <section className="sibs-modal-pop-in flex max-h-[92dvh] 2xl:max-h-[92dvh] w-full max-w-2xl flex-col overflow-hidden rounded-[14px] border border-slate-200 bg-white shadow-2xl">
-        <header className="shrink-0 border-b border-sibs-navy bg-sibs-navy px-5 py-3 2xl:py-3.5 text-white">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex min-w-0 items-center gap-2.5 2xl:gap-3">
-              <div className="flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-[14px] bg-gradient-to-tr from-sibs-orange to-amber-500 text-white shadow-sm">
-                <Bot size={16} />
-              </div>
+    <ModalShell
+      open={Boolean(open)}
+      onClose={onClose}
+      variant="navy"
+      icon={Bot}
+      title="AI Workforce Intelligence Advisor"
+      subtitle="Automated capacity deficit modeling and batch scheduling recommendations."
+      badge="Live Telemetry"
+      maxWidth="max-w-2xl"
+      bodyClassName="min-h-0 flex-1 overflow-y-auto px-4 py-3.5 2xl:px-5 2xl:py-4 sibs-scrollbar"
+      footer={
+        <form
+          onSubmit={(event) => {
+            event.preventDefault();
+            onAskFollowUp();
+          }}
+          className="w-full space-y-2.5"
+        >
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <input
+              type="text"
+              value={question}
+              onChange={(event) => setQuestion(event.target.value)}
+              disabled={loading}
+              placeholder="Ask AI Advisor a follow-up question..."
+              className="h-8.5 2xl:h-10 min-w-0 flex-1 rounded-[10px] border border-sibs-border bg-white px-3 2xl:px-3.5 sibs-text-xs font-semibold text-sibs-navy outline-none transition placeholder:text-sibs-faint focus:border-sibs-orange focus:ring-4 focus:ring-sibs-orange/10 disabled:cursor-not-allowed disabled:opacity-60"
+            />
 
-              <div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-1.5 2xl:gap-2">
-                  <h2 className="sibs-modal-title truncate text-white">
-                    AI Workforce Intelligence Advisor
-                  </h2>
+            <button
+              type="submit"
+              disabled={loading || !String(question || "").trim()}
+              className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 rounded-[10px] bg-sibs-orange px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white shadow-xs transition hover:bg-sibs-orange active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <Send size={13} />
+              Ask
+            </button>
+          </div>
 
-                  <span className="rounded bg-amber-400 px-1.5 py-0.5 text-[8px] 2xl:text-[9px] font-extrabold uppercase text-sibs-navy">
-                    Live Telemetry
-                  </span>
-                </div>
-
-                <p className="sibs-modal-subtitle mt-0.5 text-white/75 truncate sm:text-clip">
-                  Automated capacity deficit modeling and batch scheduling recommendations.
-                </p>
-              </div>
-            </div>
-
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <button
               type="button"
               onClick={onClose}
-              aria-label="Close AI advisor"
-              title="Close"
-              className="inline-flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-[14px] text-white/70 transition hover:bg-white/10 hover:text-white sibs-modal-close-btn"
+              className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-[10px] border border-sibs-border bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-navy transition hover:border-sibs-orange/40 hover:bg-orange-50 hover:text-sibs-orange sibs-modal-close-btn"
             >
-              <X size={18} />
+              Close
+            </button>
+
+            <button
+              type="button"
+              onClick={onRegenerate}
+              disabled={loading}
+              className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 rounded-[10px] border border-sibs-border bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-navy transition hover:border-sibs-orange/40 hover:bg-orange-50 hover:text-sibs-orange disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <RefreshCw
+                size={13}
+                className={loading ? "animate-spin" : ""}
+              />
+              {loading ? "Analyzing..." : "Regenerate Insight"}
             </button>
           </div>
-        </header>
-
-        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3.5 2xl:px-5 2xl:py-4 sibs-scrollbar">
+        </form>
+      }
+    >
           {loading ? (
             <div className="rounded-[14px] border border-blue-200 bg-blue-50 px-4 py-6 2xl:py-8 text-center">
               <div className="mx-auto mb-3 flex h-9 w-9 2xl:h-10 2xl:w-10 items-center justify-center rounded-full bg-white text-sibs-navy shadow-sm">
@@ -297,61 +315,7 @@ export default function AIInsightModal({
               ) : null}
             </div>
           )}
-        </div>
 
-        <footer className="shrink-0 border-t border-slate-200 bg-slate-50 p-3 2xl:p-3.5">
-          <form
-            onSubmit={(event) => {
-              event.preventDefault();
-              onAskFollowUp();
-            }}
-            className="space-y-2.5"
-          >
-            <div className="flex flex-col gap-2 sm:flex-row">
-              <input
-                type="text"
-                value={question}
-                onChange={(event) => setQuestion(event.target.value)}
-                disabled={loading}
-                placeholder="Ask AI Advisor a follow-up question..."
-                className="h-8.5 2xl:h-10 min-w-0 flex-1 rounded-[14px] border border-sibs-border bg-white px-3 2xl:px-3.5 sibs-text-xs font-semibold text-sibs-navy outline-none transition placeholder:text-sibs-faint focus:border-sibs-orange focus:ring-4 focus:ring-sibs-orange/10 disabled:cursor-not-allowed disabled:opacity-60"
-              />
-
-              <button
-                type="submit"
-                disabled={loading || !String(question || "").trim()}
-                className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 rounded-[14px] bg-sibs-orange px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-sibs-orange active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                <Send size={13} />
-                Ask
-              </button>
-            </div>
-
-            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-              <button
-                type="button"
-                onClick={onClose}
-                className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-[14px] border border-sibs-border bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-navy transition hover:border-sibs-orange/40 hover:bg-orange-50 hover:text-sibs-orange sibs-modal-close-btn"
-              >
-                Minimize
-              </button>
-
-              <button
-                type="button"
-                onClick={onRegenerate}
-                disabled={loading}
-                className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 rounded-[14px] border border-sibs-border bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-navy transition hover:border-sibs-orange/40 hover:bg-orange-50 hover:text-sibs-orange disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                <RefreshCw
-                  size={13}
-                  className={loading ? "animate-spin" : ""}
-                />
-                {loading ? "Analyzing..." : "Regenerate Insight"}
-              </button>
-            </div>
-          </form>
-        </footer>
-      </section>
-    </div>
+    </ModalShell>
   );
 }

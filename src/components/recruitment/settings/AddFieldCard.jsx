@@ -135,24 +135,24 @@ function SelectField({
           appearance-none
           rounded-[10px]
           border
-          border-[#D6E0EA]
-          bg-[#F8FAFC]
+          border-sibs-border
+          bg-sibs-surface
           pl-3.5
           pr-10
           text-xs
           font-bold
-          text-[#183B61]
+          text-sibs-navy
           outline-none
           transition
-          hover:border-[#AFC8E0]
+          hover:border-sibs-navy/30
           hover:bg-white
-          focus:border-[#0B3C68]
+          focus:border-sibs-navy
           focus:bg-white
           focus:ring-4
-          focus:ring-[#0B3C68]/10
+          focus:ring-sibs-navy/10
           disabled:cursor-not-allowed
-          disabled:bg-[#F2F4F7]
-          disabled:text-[#98A2B3]
+          disabled:bg-slate-100
+          disabled:text-sibs-faint
         "
       >
         {options.map((option) => (
@@ -173,7 +173,7 @@ function SelectField({
           right-3.5
           top-1/2
           -translate-y-1/2
-          text-[#0B3C68]
+          text-sibs-navy
         "
       />
     </div>
@@ -243,23 +243,23 @@ function AutoResizeQuestionTextarea({
         overflow-hidden
         rounded-[10px]
         border
-        border-[#D6E0EA]
+        border-sibs-border
         bg-white
         px-3
         py-3
         text-xs
         font-medium
         leading-5
-        text-[#273B53]
+        text-sibs-navy
         outline-none
         transition
-        placeholder:text-[#98A2B3]
-        hover:border-[#AFC8E0]
-        focus:border-[#073B68]
+        placeholder:text-sibs-faint
+        hover:border-sibs-navy/30
+        focus:border-sibs-navy
         focus:ring-4
-        focus:ring-[#073B68]/10
+        focus:ring-sibs-navy/10
         disabled:cursor-not-allowed
-        disabled:bg-[#F2F4F7]
+        disabled:bg-slate-100
       "
     />
   );
@@ -268,7 +268,7 @@ function AutoResizeQuestionTextarea({
 function PreviewRatingControl() {
   return (
     <div>
-      <p className="mb-2 text-[10px] font-extrabold uppercase tracking-wide text-[#9AAAC0]">
+      <p className="mb-2 text-[10px] font-extrabold uppercase tracking-wide text-sibs-faint">
         Rating Scale (1 to 5)
       </p>
 
@@ -281,8 +281,8 @@ function PreviewRatingControl() {
               key={rating}
               className={`flex h-9 w-11 items-center justify-center rounded-lg border text-xs font-extrabold ${
                 active
-                  ? "border-[#073B68] bg-[#073B68] text-white"
-                  : "border-[#D6E0EA] bg-[#F8FAFC] text-[#40536B]"
+                  ? "border-sibs-navy bg-sibs-navy text-white"
+                  : "border-sibs-border bg-sibs-surface text-sibs-muted"
               }`}
             >
               {rating}
@@ -316,15 +316,15 @@ function PreviewAnswerControl({ type }) {
           resize-none
           rounded-[10px]
           border
-          border-[#D6E0EA]
-          bg-[#F8FAFC]
+          border-sibs-border
+          bg-sibs-surface
           px-3
           py-2.5
           text-xs
           font-semibold
-          text-[#40536B]
+          text-sibs-muted
           outline-none
-          placeholder:text-[#98A2B3]
+          placeholder:text-sibs-faint
         "
       />
     );
@@ -348,7 +348,7 @@ function PreviewAnswerControl({ type }) {
 
   if (normalizedType === "checkbox") {
     return (
-      <label className="flex h-10 items-center gap-3 rounded-[10px] border border-[#D6E0EA] bg-[#F8FAFC] px-3 text-xs font-bold text-[#40536B]">
+      <label className="flex h-10 items-center gap-3 rounded-[10px] border border-sibs-border bg-sibs-surface px-3 text-xs font-bold text-sibs-muted">
         <input
           type="checkbox"
           disabled
@@ -364,7 +364,7 @@ function PreviewAnswerControl({ type }) {
       <input
         type="date"
         disabled
-        className="h-10 w-full rounded-[10px] border border-[#D6E0EA] bg-[#F8FAFC] px-3 text-xs font-semibold text-[#40536B] outline-none"
+        className="h-10 w-full rounded-[10px] border border-sibs-border bg-sibs-surface px-3 text-xs font-semibold text-sibs-muted outline-none"
       />
     );
   }
@@ -375,7 +375,7 @@ function PreviewAnswerControl({ type }) {
         type="number"
         disabled
         placeholder="Enter number..."
-        className="h-10 w-full rounded-[10px] border border-[#D6E0EA] bg-[#F8FAFC] px-3 text-xs font-semibold text-[#40536B] outline-none placeholder:text-[#98A2B3]"
+        className="h-10 w-full rounded-[10px] border border-sibs-border bg-sibs-surface px-3 text-xs font-semibold text-sibs-muted outline-none placeholder:text-sibs-faint"
       />
     );
   }
@@ -385,7 +385,7 @@ function PreviewAnswerControl({ type }) {
       type="text"
       disabled
       placeholder="Type answer here..."
-      className="h-10 w-full rounded-[10px] border border-[#D6E0EA] bg-[#F8FAFC] px-3 text-xs font-semibold text-[#40536B] outline-none placeholder:text-[#98A2B3]"
+      className="h-10 w-full rounded-[10px] border border-sibs-border bg-sibs-surface px-3 text-xs font-semibold text-sibs-muted outline-none placeholder:text-sibs-faint"
     />
   );
 }
@@ -400,17 +400,17 @@ function QuestionPreview({
   );
 
   return (
-    <aside className="flex min-h-0 flex-col rounded-2xl border border-[#DCE4ED] bg-white p-5 shadow-[0_8px_22px_rgba(4,44,81,0.05)]">
-      <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#9AAAC0]">
+    <aside className="flex min-h-0 flex-col rounded-2xl border border-sibs-border bg-white p-5 shadow-xs">
+      <p className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-faint">
         Preview
       </p>
 
-      <div className="mt-4 min-h-0 flex-1 overflow-y-auto rounded-xl border border-[#E5EBF2] bg-[#FAFBFC] p-4 sibs-scrollbar">
-        <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#9AAAC0]">
+      <div className="mt-4 min-h-0 flex-1 overflow-y-auto rounded-xl border border-sibs-border-subtle bg-sibs-surface p-4 sibs-scrollbar">
+        <p className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-faint">
           Question Title:
         </p>
 
-        <h3 className="mt-1 break-words text-xs font-extrabold uppercase leading-5 text-[#073B68]">
+        <h3 className="mt-1 break-words text-xs font-extrabold uppercase leading-5 text-sibs-navy">
           {String(sectionTitle || "").trim() ||
             "QUESTION TITLE"}
         </h3>
@@ -421,9 +421,9 @@ function QuestionPreview({
               (question, index) => (
                 <div
                   key={question.rowId}
-                  className="rounded-xl border-2 border-dashed border-[#E0E7EF] bg-white p-4"
+                  className="rounded-xl border-2 border-dashed border-sibs-border bg-white p-4"
                 >
-                  <p className="break-words text-xs font-bold leading-5 text-[#173B61]">
+                  <p className="break-words text-xs font-bold leading-5 text-sibs-navy">
                     {question.label}
                   </p>
 
@@ -436,14 +436,14 @@ function QuestionPreview({
                   {index <
                     completedQuestions.length -
                       1 && (
-                    <div className="mt-4 border-t border-[#E7EDF3]" />
+                    <div className="mt-4 border-t border-sibs-border-subtle" />
                   )}
                 </div>
               ),
             )
           ) : (
-            <div className="rounded-xl border-2 border-dashed border-[#E0E7EF] bg-white px-4 py-8 text-center">
-              <p className="text-xs font-bold leading-5 text-[#7C8EA3]">
+            <div className="rounded-xl border-2 border-dashed border-sibs-border bg-white px-4 py-8 text-center">
+              <p className="text-xs font-bold leading-5 text-sibs-muted">
                 Enter a question title to
                 display its preview.
               </p>
@@ -452,8 +452,8 @@ function QuestionPreview({
         </div>
       </div>
 
-      <div className="mt-4 rounded-xl border border-[#CFE0FF] bg-[#EEF5FF] px-4 py-3 text-center">
-        <p className="text-xs font-bold text-[#244CC8]">
+      <div className="mt-4 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-center">
+        <p className="text-xs font-bold text-blue-700">
           {completedQuestions.length}{" "}
           question
           {completedQuestions.length === 1
@@ -800,9 +800,9 @@ export default function AddFieldCard() {
             HEADER
         ================================================= */}
 
-        <header className="flex shrink-0 items-center justify-between gap-4 bg-[#042C51] px-5 py-3 text-white sm:px-6 2xl:py-3.5 font-jakarta">
+        <header className="flex shrink-0 items-center justify-between gap-4 bg-sibs-navy px-5 py-3 text-white sm:px-6 2xl:py-3.5 font-jakarta">
           <div className="flex min-w-0 items-center gap-2.5 2xl:gap-3">
-            <span className="flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg bg-[#FF5C28] text-white shadow-sm">
+            <span className="flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg bg-sibs-orange text-white shadow-xs">
               <Plus size={16} />
             </span>
             <div className="min-w-0">
@@ -838,7 +838,7 @@ export default function AddFieldCard() {
               CONTENT
           ================================================= */}
 
-          <div className="min-h-0 flex-1 overflow-y-auto bg-[#F6F9FC] p-5 sibs-scrollbar sm:p-6">
+          <div className="min-h-0 flex-1 overflow-y-auto bg-sibs-tertiary-10 p-5 sibs-scrollbar sm:p-6">
             <div className="grid min-h-full grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1.45fr)_minmax(300px,1fr)]">
               {/* =================================================
                   LEFT SIDE
@@ -847,10 +847,10 @@ export default function AddFieldCard() {
               <div className="space-y-5">
                 {/* ================= TITLE ================= */}
 
-                <section className="rounded-2xl border border-[#DCE4ED] bg-white p-5 shadow-[0_6px_18px_rgba(4,44,81,0.04)]">
-                  <label className="block text-xs font-extrabold text-[#173B61]">
+                <section className="rounded-2xl border border-sibs-border bg-white p-5 shadow-xs">
+                  <label className="block text-xs font-extrabold text-sibs-navy">
                     Title{" "}
-                    <span className="text-[#E5484D]">
+                    <span className="text-red-500">
                       *
                     </span>
                   </label>
@@ -879,37 +879,37 @@ export default function AddFieldCard() {
                       w-full
                       rounded-[10px]
                       border
-                      border-[#D6E0EA]
-                      bg-[#F8FAFC]
+                      border-sibs-border
+                      bg-sibs-surface
                       px-3.5
                       text-xs
                       font-bold
-                      text-[#173B61]
+                      text-sibs-navy
                       outline-none
                       transition
-                      placeholder:text-[#98A2B3]
-                      hover:border-[#AFC8E0]
+                      placeholder:text-sibs-faint
+                      hover:border-sibs-navy/30
                       hover:bg-white
-                      focus:border-[#073B68]
+                      focus:border-sibs-navy
                       focus:bg-white
                       focus:ring-4
-                      focus:ring-[#073B68]/10
+                      focus:ring-sibs-navy/10
                       disabled:cursor-not-allowed
-                      disabled:bg-[#F2F4F7]
+                      disabled:bg-slate-100
                     "
                   />
                 </section>
 
                 {/* ================= QUESTIONS ================= */}
 
-                <section className="rounded-2xl border border-[#DCE4ED] bg-white p-5 shadow-[0_6px_18px_rgba(4,44,81,0.04)]">
+                <section className="rounded-2xl border border-sibs-border bg-white p-5 shadow-xs">
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                      <h3 className="sibs-modal-section-title text-[#173B61]">
+                      <h3 className="sibs-modal-section-title text-sibs-navy">
                         Questions
                       </h3>
 
-                      <p className="sibs-modal-section-subtitle mt-0.5 text-[#77899F]">
+                      <p className="sibs-modal-section-subtitle mt-0.5 text-sibs-muted">
                         Add multiple questions under the same title.
                       </p>
                     </div>
@@ -932,22 +932,22 @@ export default function AddFieldCard() {
                           gap-1.5
                           rounded-xl
                           border
-                          border-[#B8D4FF]
-                          bg-[#EFF6FF]
+                          border-blue-200
+                          bg-blue-50
                           px-3
                           text-xs
                           font-extrabold
-                          text-[#173B61]
+                          text-sibs-navy
                           transition
-                          hover:border-[#8EB8F1]
-                          hover:bg-[#E6F1FF]
+                          hover:border-blue-300
+                          hover:bg-blue-100
                           disabled:cursor-not-allowed
                           disabled:opacity-60
                         "
                       >
                         <Plus
                           size={14}
-                          className="text-[#FF5C28]"
+                          className="text-sibs-orange"
                         />
 
                         Add Row
@@ -965,10 +965,10 @@ export default function AddFieldCard() {
                           key={
                             question.rowId
                           }
-                          className="rounded-xl border border-[#073B68] bg-[#FAFCFE] p-4"
+                          className="rounded-xl border border-sibs-border bg-sibs-surface p-4"
                         >
                           <div className="flex items-center justify-between gap-3">
-                            <p className="text-[10px] font-extrabold uppercase tracking-[0.08em] text-[#173B61]">
+                            <p className="text-[10px] font-extrabold uppercase tracking-[0.08em] text-sibs-navy">
                               Question{" "}
                               {questionIndex +
                                 1}
@@ -1018,9 +1018,9 @@ export default function AddFieldCard() {
                               )}
                           </div>
 
-                          <label className="mt-3 block text-[11px] font-extrabold text-[#40536B]">
+                          <label className="mt-3 block text-[11px] font-extrabold text-sibs-muted">
                             Question Title{" "}
-                            <span className="text-[#E5484D]">
+                            <span className="text-red-500">
                               *
                             </span>
                           </label>
@@ -1054,7 +1054,7 @@ export default function AddFieldCard() {
 
                           <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
                             <div>
-                              <label className="mb-1.5 block text-[11px] font-extrabold text-[#40536B]">
+                              <label className="mb-1.5 block text-[11px] font-extrabold text-sibs-muted">
                                 Input Type
                               </label>
 
@@ -1090,7 +1090,7 @@ export default function AddFieldCard() {
                             ).toLowerCase() ===
                               "rating" && (
                               <div>
-                                <label className="mb-1.5 block text-[11px] font-extrabold text-[#40536B]">
+                                <label className="mb-1.5 block text-[11px] font-extrabold text-sibs-muted">
                                   Rating Scale
                                 </label>
 
@@ -1142,12 +1142,12 @@ export default function AddFieldCard() {
               FOOTER
           ================================================= */}
 
-          <footer className="flex shrink-0 items-center justify-end gap-2.5 border-t border-[#DDE5EE] bg-[#F1F5F9] px-5 py-3 2xl:py-3.5 sm:px-6 font-jakarta">
+          <footer className="flex shrink-0 items-center justify-end gap-2.5 border-t border-sibs-border bg-slate-100 px-5 py-3 2xl:py-3.5 sm:px-6 font-jakarta">
             <button
               type="button"
               onClick={closeModal}
               disabled={questionsSaving}
-              className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg border border-[#D6DEE8] bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-[#667085] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg border border-sibs-border bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-muted transition hover:border-sibs-orange/40 hover:bg-orange-50 hover:text-sibs-orange disabled:cursor-not-allowed disabled:opacity-60"
             >
               Cancel
             </button>
@@ -1156,7 +1156,7 @@ export default function AddFieldCard() {
               type="button"
               onClick={handleSave}
               disabled={questionsSaving}
-              className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-lg bg-[#FF5C28] px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E94F1F] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-lg bg-sibs-orange px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white shadow-xs transition hover:bg-sibs-orange/90 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
             >
               {questionsSaving ? (
                 <Loader2

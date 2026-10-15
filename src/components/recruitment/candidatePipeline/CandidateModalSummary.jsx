@@ -87,7 +87,7 @@ function MetadataItem({ label, value }) {
 
   return (
     <span className="inline-flex min-w-0 items-center gap-1.5 text-[9px] font-bold text-sibs-muted 2xl:text-[10px]">
-      <Hash size={10} className="shrink-0 text-sibs-faint" />
+      <Hash size={10} className="shrink-0 text-sibs-muted" />
       <span className="shrink-0 uppercase tracking-[0.08em]">{label}</span>
       <span className="min-w-0 truncate font-mono font-semibold normal-case tracking-normal text-sibs-muted">
         {value}
@@ -158,14 +158,14 @@ export default function CandidateModalSummary({
             </div>
 
             <div className="mt-2 flex min-w-0 items-center gap-1.5 text-[10px] font-semibold text-sibs-muted 2xl:text-[11px]">
-              <Database size={12} className="shrink-0 text-sibs-faint" />
+              <Database size={12} className="shrink-0 text-sibs-muted" />
               <span className="truncate">{source}</span>
             </div>
 
             {!compact ? (
               <>
                 <div className="mt-2 flex min-w-0 items-center gap-1.5 text-[10px] font-semibold text-sibs-muted 2xl:text-[11px]">
-                  <Mail size={11} className="shrink-0 text-sibs-faint" />
+                  <Mail size={11} className="shrink-0 text-sibs-muted" />
                   <span className="truncate">{email}</span>
                 </div>
 

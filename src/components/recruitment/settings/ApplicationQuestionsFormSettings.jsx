@@ -25,10 +25,14 @@ import {
   saveApplicationFormByPosition,
 } from "../../../lib/axios/getRecruitmentSettings";
 import { useRecruitmentSettings } from "../../../services/context/RecruitmentSettingsContext";
-import StatusModal from "../../modals/StatusModal";
 import RichTextEditor from "../../modals/jobDescription/RichTextEditor";
 import RichTextViewer from "../../modals/jobDescription/RichTextViewer";
-import { SelectDropdown, TablePagination, TableSkeletonRows } from "@/components/ui";
+import {
+  ConfirmModal,
+  SelectDropdown,
+  TablePagination,
+  TableSkeletonRows,
+} from "@/components/ui";
 
 const TABLE_STATUS_OPTIONS = ["All", "Active", "Inactive", "Draft"];
 const APPLICATION_FORMS_TABLE_PAGE_SIZE = 15;
@@ -959,12 +963,15 @@ export default function ApplicationQuestionsFormSettings() {
           />
         </div>
 
-        <StatusModal
-          open={statusModal.open}
-          type={statusModal.type}
+        <ConfirmModal
+          open={Boolean(statusModal.open)}
+          variant={statusModal.type === "error" ? "danger" : "primary"}
           title={statusModal.title}
-          message={statusModal.message}
-          variant="center"
+          description={statusModal.message}
+          confirmLabel="OK"
+          onConfirm={() =>
+            setStatusModal((previous) => ({ ...previous, open: false }))
+          }
           onClose={() =>
             setStatusModal((previous) => ({ ...previous, open: false }))
           }
@@ -1592,12 +1599,15 @@ export default function ApplicationQuestionsFormSettings() {
         </section>
       </div>
 
-      <StatusModal
-        open={statusModal.open}
-        type={statusModal.type}
+      <ConfirmModal
+        open={Boolean(statusModal.open)}
+        variant={statusModal.type === "error" ? "danger" : "primary"}
         title={statusModal.title}
-        message={statusModal.message}
-        variant="center"
+        description={statusModal.message}
+        confirmLabel="OK"
+        onConfirm={() =>
+          setStatusModal((previous) => ({ ...previous, open: false }))
+        }
         onClose={() =>
           setStatusModal((previous) => ({ ...previous, open: false }))
         }

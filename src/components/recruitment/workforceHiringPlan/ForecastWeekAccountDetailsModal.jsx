@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { createPortal } from "react-dom";
-import { BarChart2, Search, X } from "lucide-react";
+import { BarChart2, Search } from "lucide-react";
+import ModalShell from "@/components/ui/ModalShell";
 import {
   formatOverviewNumber,
   formatOverviewPercent,
@@ -390,64 +390,40 @@ export default function ForecastWeekAccountDetailsModal({
 
   if (!open) return null;
 
-  return createPortal(
-    <div className="sibs-modal-backdrop-in sibs-modal-blur fixed inset-0 z-[9999] flex items-center justify-center p-2 sm:p-4">
-      <div className="sibs-modal-pop-in flex max-h-[96vh] w-full max-w-[99vw] 2xl:max-w-[1850px] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white font-jakarta shadow-2xl">
-        <div
-          data-layout="forecast-week-details-header-v2"
-          className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-sibs-navy-dark bg-sibs-navy px-5 py-3 2xl:py-3.5 text-white"
-        >
-          <div className="flex min-w-0 items-center gap-2.5 2xl:gap-3">
-            <div className="flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg bg-sibs-orange text-white shadow-xs">
-              <BarChart2 size={16} />
-            </div>
+  return (
+    <ModalShell
+      open={Boolean(open)}
+      onClose={onClose}
+      variant="navy"
+      icon={BarChart2}
+      title="Forecast Week Details"
+      subtitle={
+        <span className="mt-0.5 flex flex-wrap items-center gap-2 text-white/75">
+          <span className="font-bold text-blue-300">
+            {forecastWeek?.label || "Selected forecast week"}
+          </span>
 
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <h2 className="sibs-modal-title !text-white truncate">
-                  Forecast Week Details
-                </h2>
-
-                <span className="font-bold text-white/30">|</span>
-
-                <span className="sibs-text-micro font-bold text-white/70">
-                  Account / Cluster Breakdown
-                </span>
-
-                <span className="rounded-full bg-sibs-orange px-2.5 py-0.5 text-xs font-extrabold text-white shadow-xs">
-                  {filteredRows.length} of {normalizedRows.length} rows
-                </span>
-              </div>
-
-              <div className="mt-0.5 flex flex-wrap items-center gap-2 sibs-modal-subtitle text-white/75 truncate sm:text-clip">
-                <span className="font-bold text-blue-300">
-                  {forecastWeek?.label || "Selected forecast week"}
-                </span>
-
-                {forecastWeek?.forecastBasisStart &&
-                forecastWeek?.forecastBasisEnd ? (
-                  <>
-                    <span className="text-white/40">•</span>
-                    <span className="text-white/75">
-                      Forecast basis: {forecastWeek.forecastBasisStart} to{" "}
-                      {forecastWeek.forecastBasisEnd}
-                    </span>
-                  </>
-                ) : null}
-              </div>
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={onClose}
-            className="sibs-modal-close-btn"
-            aria-label="Close forecast details"
-            title="Close modal (Esc)"
-          >
-            <X size={18} />
-          </button>
-        </div>
+          {forecastWeek?.forecastBasisStart &&
+          forecastWeek?.forecastBasisEnd ? (
+            <>
+              <span className="text-white/40">•</span>
+              <span className="text-white/75">
+                Forecast basis: {forecastWeek.forecastBasisStart} to{" "}
+                {forecastWeek.forecastBasisEnd}
+              </span>
+            </>
+          ) : null}
+        </span>
+      }
+      badge="Account / Cluster Breakdown"
+      headerMeta={
+        <span className="rounded-full bg-sibs-orange px-2.5 py-0.5 text-xs font-extrabold text-white shadow-xs">
+          {filteredRows.length} of {normalizedRows.length} rows
+        </span>
+      }
+      maxWidth="max-w-[99vw] 2xl:max-w-[1850px]"
+      bodyClassName="p-0 overflow-hidden flex flex-col min-h-0 flex-1"
+    >
 
         {/* Tier 2: Controls Toolbar */}
         <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-sibs-border bg-sibs-canvas px-4 py-2 sm:px-5 2xl:px-6">
@@ -697,8 +673,6 @@ export default function ForecastWeekAccountDetailsModal({
             </div>
           </div>
         </div>
-      </div>
-    </div>,
-    document.body,
+    </ModalShell>
   );
 }

@@ -23,6 +23,7 @@ import {
 
 import Header from "../../../components/layout/Header";
 import RoleDashboardSkeleton from "../../../components/Dashboard/shared/RoleDashboardSkeleton";
+import { PageHeaderHero } from "../../../components/ui";
 import { getWfmDashboardBootstrap } from "../../../lib/axios/getWfmDashboard";
 
 const PAGE_SHELL_CLASS = "sibs-dashboard-shell";
@@ -187,22 +188,22 @@ function WfmDashboardErrorState({ message, onRetry }) {
     <div className={PAGE_SHELL_CLASS}>
       <Header />
       <main
-        className={`${MAIN_SHELL_CLASS} flex min-h-[calc(100vh-76px)] items-center justify-center bg-[#e8eef5] px-6 py-10`}
+        className={`${MAIN_SHELL_CLASS} flex min-h-[calc(100vh-76px)] items-center justify-center bg-sibs-surface px-6 py-10`}
       >
-        <div className="w-full max-w-md rounded-2xl border border-rose-200 bg-white px-7 py-8 text-center shadow-sm">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-rose-50 text-rose-600">
+        <div className="w-full max-w-md rounded-[14px] border border-rose-200 bg-white px-7 py-8 text-center shadow-sm">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-[10px] bg-rose-50 text-rose-600">
             <AlertCircle className="h-6 w-6" />
           </div>
-          <h2 className="mt-4 text-lg font-extrabold text-[#042c51]">
+          <h2 className="mt-4 text-lg font-extrabold text-sibs-navy">
             Unable to load WFM Dashboard
           </h2>
-          <p className="mt-2 text-sm font-medium leading-6 text-[#667085]">
+          <p className="mt-2 text-sm font-medium leading-6 text-sibs-muted">
             {message}
           </p>
           <button
             type="button"
             onClick={onRetry}
-            className="mt-5 inline-flex items-center gap-2 rounded-xl bg-[#042c51] px-5 py-2.5 text-sm font-bold text-white transition hover:opacity-90"
+            className="mt-5 inline-flex items-center gap-2 rounded-[10px] bg-sibs-navy px-5 py-2.5 text-sm font-bold text-white transition hover:bg-sibs-tertiary-3"
           >
             <RefreshCw className="h-4 w-4" />
             Retry
@@ -213,12 +214,13 @@ function WfmDashboardErrorState({ message, onRetry }) {
   );
 }
 
-function MetricCard({ label, value, description, icon: Icon, tone = "navy" }) {
+function MetricCard({ label, value, description, icon, tone = "navy" }) {
+  const Icon = icon;
   const tones = {
     navy: {
-      label: "text-[#042C51]",
-      value: "text-[#042C51]",
-      icon: "bg-[#E9F0FC] text-[#042C51]",
+      label: "text-sibs-navy",
+      value: "text-sibs-navy",
+      icon: "bg-sibs-cream-light text-sibs-navy",
     },
     amber: {
       label: "text-amber-800",
@@ -236,9 +238,9 @@ function MetricCard({ label, value, description, icon: Icon, tone = "navy" }) {
       icon: "bg-indigo-50 text-indigo-600",
     },
     orange: {
-      label: "text-[#C2410C]",
-      value: "text-[#FF5C28]",
-      icon: "bg-orange-50 text-[#FF5C28]",
+      label: "text-sibs-orange",
+      value: "text-sibs-orange",
+      icon: "bg-orange-50 text-sibs-orange",
     },
     slate: {
       label: "text-slate-700",
@@ -263,7 +265,7 @@ function MetricCard({ label, value, description, icon: Icon, tone = "navy" }) {
         <p className={`text-3xl font-extrabold leading-none tabular-nums tracking-tight ${classes.value}`}>
           {value}
         </p>
-        <p className="mt-1.5 text-xs font-bold leading-4 text-[#667085]">
+        <p className="mt-1.5 text-xs font-bold leading-4 text-sibs-muted">
           {description}
         </p>
       </div>
@@ -404,43 +406,36 @@ export default function WFMDashboardPage() {
   );
 
   const dashboardHero = (
-    <section className="sibs-page-header-in sibs-card relative overflow-hidden p-5 sm:p-6">
-      <span className="sibs-top-accent" aria-hidden="true" />
-      <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
-        <div>
-          <span className="inline-flex items-center gap-1.5 rounded border border-blue-100 bg-[#E9F0FC] px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-normal text-[#042C51]">
-            <span className="h-1.5 w-1.5 rounded-full bg-[#FF5C28]" />
-            Workforce Management View
-          </span>
-          <h1 className="mt-3 text-xl font-extrabold tracking-tight text-[#042C51] sm:text-2xl">
-            WFM Dashboard
-          </h1>
-          <p className="mt-1 text-xs font-semibold leading-relaxed text-[#667085] sm:text-sm">
-            Company-wide workforce and hiring visibility across all departments and accounts.
-          </p>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2">
+    <PageHeaderHero
+      kicker="Workforce Management View"
+      title="WFM Dashboard"
+      description="Company-wide workforce and hiring visibility across all departments and accounts."
+      actions={
+        <div className="flex shrink-0 items-center gap-2 2xl:gap-2.5 max-sm:w-full">
           <button
             type="button"
             onClick={() => loadDashboard({ forceRefresh: true, background: true })}
             disabled={initialLoading || refreshing}
-            className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-[#DCE5EE] bg-white text-[#042C51] transition hover:border-[#FF5C28]/40 hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-60"
+            className="sibs-btn-icon"
             title="Refresh WFM dashboard"
           >
-            <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
+            <RefreshCw
+              className={`h-3.5 w-3.5 2xl:h-4 2xl:w-4 ${
+                refreshing ? "animate-spin text-sibs-orange" : ""
+              }`}
+            />
           </button>
           <button
             type="button"
             onClick={() => navigate(HIRING_OVERVIEW_ROUTE)}
-            className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[#FF5C28] px-4 text-xs font-extrabold text-white shadow-sm transition hover:bg-[#ea4d1c]"
+            className="sibs-btn-primary max-sm:flex-1"
           >
             Workforce & Hiring
-            <ArrowRight className="h-4 w-4" />
+            <ArrowRight className="h-3 w-3 2xl:h-3.5 2xl:w-3.5" />
           </button>
         </div>
-      </div>
-    </section>
+      }
+    />
   );
 
   if (initialLoading && roles.length === 0) {
@@ -558,7 +553,7 @@ export default function WFMDashboardPage() {
           {dashboardHero}
 
           {error ? (
-            <section className="flex items-center justify-between gap-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-semibold text-amber-900">
+            <section className="flex items-center justify-between gap-4 rounded-[10px] border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-semibold text-amber-900">
               <span>
                 Dashboard refresh warning: {error}. The last successful values remain visible.
               </span>
@@ -588,14 +583,14 @@ export default function WFMDashboardPage() {
                     Largest approved hiring requirements across the company.
                   </p>
                 </div>
-                <span className="rounded border border-blue-200 bg-blue-50 px-2.5 py-1 text-[9px] font-black uppercase text-[#042C51]">
+                <span className="rounded border border-blue-200 bg-blue-50 px-2.5 py-1 text-[9px] font-black uppercase text-sibs-navy">
                   Company-wide
                 </span>
               </div>
 
               <div className="mt-5 space-y-4">
                 {requirementRoles.length === 0 ? (
-                  <p className="py-10 text-center text-sm font-semibold text-[#667085]">
+                  <p className="py-10 text-center text-sm font-semibold text-sibs-muted">
                     No approved hiring requirements are available.
                   </p>
                 ) : (
@@ -607,25 +602,25 @@ export default function WFMDashboardPage() {
                     return (
                       <div key={role.id}>
                         <div className="flex justify-between gap-3 text-xs">
-                          <span className="min-w-0 font-black text-[#042C51]">
+                          <span className="min-w-0 font-black text-sibs-navy">
                             {role.roleTitle}
-                            <span className="ml-1 font-medium text-[#98A2B3]">
+                            <span className="ml-1 font-medium text-sibs-faint">
                               ({role.account})
                             </span>
                           </span>
-                          <span className="shrink-0 font-black text-[#FF5C28]">
+                          <span className="shrink-0 font-black text-sibs-orange">
                             {role.filled} / {role.req}
-                            <span className="ml-1 text-[#98A2B3]">({percent}%)</span>
+                            <span className="ml-1 text-sibs-faint">({percent}%)</span>
                           </span>
                         </div>
-                        <div className="mt-2 h-2 overflow-hidden rounded-full bg-[#EEF2F6]">
+                        <div className="mt-2 h-2 overflow-hidden rounded-full bg-sibs-surface">
                           <div
                             className={`h-full rounded-full ${
                               role.status === "Delayed"
                                 ? "bg-rose-500"
                                 : role.status === "At Risk"
                                   ? "bg-amber-400"
-                                  : "bg-[#FF5C28]"
+                                  : "bg-sibs-orange"
                             }`}
                             style={{ width: `${Math.min(percent, 100)}%` }}
                           />
@@ -647,7 +642,7 @@ export default function WFMDashboardPage() {
                 {funnelStages.map(([label, value, className]) => (
                   <div
                     key={label}
-                    className={`rounded-xl border p-3 text-center ${className}`}
+                    className={`rounded-[10px] border p-3 text-center ${className}`}
                   >
                     <span className="text-[9px] font-black uppercase">{label}</span>
                     <p className="mt-2 text-lg font-black">{formatNumber(value)}</p>
@@ -655,9 +650,9 @@ export default function WFMDashboardPage() {
                 ))}
               </div>
 
-              <div className="mt-4 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4 text-xs leading-6 text-[#667085]">
+              <div className="mt-4 rounded-[10px] border border-sibs-border bg-sibs-surface p-4 text-xs leading-6 text-sibs-muted">
                 Company-wide conversion from Sourced to Hired is{" "}
-                <strong className="text-[#042C51]">
+                <strong className="text-sibs-navy">
                   {metrics.funnel.sourced > 0
                     ? Math.round((metrics.funnel.hired / metrics.funnel.sourced) * 100)
                     : 0}%
@@ -687,16 +682,16 @@ export default function WFMDashboardPage() {
                     key={item.label}
                     type="button"
                     onClick={() => navigate(item.path)}
-                    className="group flex min-h-[92px] items-center gap-3 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4 text-left transition hover:border-[#FF5C28]/35 hover:bg-[#FFF8F5]"
+                    className="group flex min-h-[92px] items-center gap-3 rounded-[10px] border border-sibs-border bg-sibs-surface p-4 text-left transition hover:border-sibs-orange/35 hover:bg-sibs-cream-light"
                   >
-                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-[#042C51] shadow-sm group-hover:text-[#FF5C28]">
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] bg-white text-sibs-navy shadow-sm group-hover:text-sibs-orange">
                       <Icon className="h-5 w-5" />
                     </span>
                     <span className="min-w-0">
-                      <strong className="block text-xs font-extrabold text-[#042C51]">
+                      <strong className="block text-xs font-extrabold text-sibs-navy">
                         {item.label}
                       </strong>
-                      <span className="mt-1 block text-[11px] font-medium leading-4 text-[#667085]">
+                      <span className="mt-1 block text-[11px] font-medium leading-4 text-sibs-muted">
                         {item.description}
                       </span>
                     </span>
@@ -718,16 +713,16 @@ export default function WFMDashboardPage() {
                 <button
                   type="button"
                   onClick={() => navigate(HIRING_OVERVIEW_ROUTE)}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-[#DCE5EE] bg-white px-3 py-2 text-[10px] font-extrabold text-[#042C51] transition hover:border-[#FF5C28]/40 hover:text-[#FF5C28]"
+                  className="inline-flex items-center gap-1.5 rounded-[10px] border border-sibs-border bg-white px-3 py-2 text-[10px] font-extrabold text-sibs-navy transition hover:border-sibs-orange/40 hover:text-sibs-orange"
                 >
                   View all
                   <ArrowRight className="h-3.5 w-3.5" />
                 </button>
               </div>
 
-              <div className="mt-4 overflow-x-auto rounded-xl border border-[#E6ECF2] bg-white">
+              <div className="mt-4 overflow-x-auto rounded-[10px] border border-sibs-border bg-white">
                 <table className="w-full min-w-[880px] border-collapse text-left text-xs">
-                  <thead className="bg-[#F8FAFC] text-[10px] font-extrabold uppercase tracking-normal text-[#667085]">
+                  <thead className="bg-sibs-surface text-[10px] font-extrabold uppercase tracking-normal text-sibs-muted">
                     <tr>
                       <th className="p-3">Role / Account</th>
                       <th className="p-3">Department</th>
@@ -739,28 +734,28 @@ export default function WFMDashboardPage() {
                       <th className="p-3 text-center">Aging</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-[#EEF2F6]">
+                  <tbody className="divide-y divide-sibs-border">
                     {topRoles.length === 0 ? (
                       <tr>
-                        <td colSpan={8} className="p-10 text-center font-semibold text-[#667085]">
+                        <td colSpan={8} className="p-10 text-center font-semibold text-sibs-muted">
                           No company-wide hiring roles are available.
                         </td>
                       </tr>
                     ) : (
                       topRoles.map((role) => (
-                        <tr key={role.id} className="text-[#344054] hover:bg-[#FFF8F5]">
+                        <tr key={role.id} className="text-sibs-muted hover:bg-sibs-cream-light">
                           <td className="p-3">
-                            <strong className="block text-xs font-extrabold text-[#042C51]">
+                            <strong className="block text-xs font-extrabold text-sibs-navy">
                               {role.roleTitle}
                             </strong>
-                            <span className="mt-0.5 block text-[11px] font-semibold text-[#667085]">
+                            <span className="mt-0.5 block text-[11px] font-semibold text-sibs-muted">
                               {role.account}
                             </span>
                           </td>
                           <td className="p-3 font-semibold">{role.department}</td>
-                          <td className="p-3 text-center font-extrabold tabular-nums text-[#042C51]">{role.req}</td>
+                          <td className="p-3 text-center font-extrabold tabular-nums text-sibs-navy">{role.req}</td>
                           <td className="p-3 text-center font-extrabold tabular-nums text-emerald-600">{role.filled}</td>
-                          <td className="p-3 text-center font-extrabold tabular-nums text-[#FF5C28]">{role.open}</td>
+                          <td className="p-3 text-center font-extrabold tabular-nums text-sibs-orange">{role.open}</td>
                           <td className="p-3 font-bold">{formatDate(role.dueDate)}</td>
                           <td className="p-3"><StatusBadge status={role.status} /></td>
                           <td className="p-3 text-center font-extrabold tabular-nums">{role.aging}d</td>
@@ -780,19 +775,19 @@ export default function WFMDashboardPage() {
 
               <div className="mt-4 space-y-3">
                 {topRecruiters.length === 0 ? (
-                  <p className="py-10 text-center text-sm font-semibold text-[#667085]">
+                  <p className="py-10 text-center text-sm font-semibold text-sibs-muted">
                     No recruiter ownership data is available.
                   </p>
                 ) : (
                   topRecruiters.map((row) => (
                     <div
                       key={row.name}
-                      className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4"
+                      className="rounded-[10px] border border-sibs-border bg-sibs-surface p-4"
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div>
-                          <strong className="text-sm text-[#042C51]">{row.name}</strong>
-                          <p className="mt-1 text-[11px] text-[#667085]">
+                          <strong className="text-sm text-sibs-navy">{row.name}</strong>
+                          <p className="mt-1 text-[11px] text-sibs-muted">
                             {row.activeRoles} active roles handled
                           </p>
                         </div>
@@ -808,17 +803,17 @@ export default function WFMDashboardPage() {
                           {row.loadStatus} Load
                         </span>
                       </div>
-                      <div className="mt-3 grid grid-cols-3 border-t border-[#E6ECF2] pt-3 text-center">
+                      <div className="mt-3 grid grid-cols-3 border-t border-sibs-border pt-3 text-center">
                         <div>
-                          <span className="text-[8px] font-black uppercase text-[#98A2B3]">Sourced</span>
-                          <p className="text-sm font-black text-[#042C51]">{row.output.sourced}</p>
+                          <span className="text-[8px] font-black uppercase text-sibs-faint">Sourced</span>
+                          <p className="text-sm font-black text-sibs-navy">{row.output.sourced}</p>
                         </div>
                         <div>
-                          <span className="text-[8px] font-black uppercase text-[#98A2B3]">Interviewed</span>
-                          <p className="text-sm font-black text-[#042C51]">{row.output.interviewed}</p>
+                          <span className="text-[8px] font-black uppercase text-sibs-faint">Interviewed</span>
+                          <p className="text-sm font-black text-sibs-navy">{row.output.interviewed}</p>
                         </div>
                         <div>
-                          <span className="text-[8px] font-black uppercase text-[#98A2B3]">Hired</span>
+                          <span className="text-[8px] font-black uppercase text-sibs-faint">Hired</span>
                           <p className="text-sm font-black text-emerald-600">{row.output.hired}</p>
                         </div>
                       </div>
@@ -829,7 +824,7 @@ export default function WFMDashboardPage() {
             </aside>
           </section>
 
-          <footer className="rounded-xl border border-[#DCE5EE] bg-[#F3F6F9] px-4 py-3 text-center text-[10px] font-black uppercase tracking-wide text-[#667085]">
+          <footer className="rounded-[10px] border border-sibs-border bg-sibs-surface px-4 py-3 text-center text-[10px] font-black uppercase tracking-wide text-sibs-muted">
             WFM Dashboard: company-wide visibility for workforce monitoring and planning.
           </footer>
         </div>

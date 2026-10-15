@@ -991,11 +991,11 @@ export default function UserManagementPage() {
             </section>
 
           <div className="sibs-table-shell">
-            <div className="border-b border-[#E6ECF2] p-3 sm:p-4">
+            <div className="border-b border-sibs-border p-3 sm:p-4">
               <div className="relative w-full sm:max-w-sm">
                 <Search
                   size={16}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8A98B8]"
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-sibs-faint"
                 />
 
                 <input
@@ -1109,7 +1109,7 @@ export default function UserManagementPage() {
         createPortal(
           <div
             ref={actionRef}
-            className="fixed z-[9999] w-44 overflow-hidden rounded-xl border border-sibs-tertiary-9 bg-white shadow-lg"
+            className="fixed z-[9999] w-44 overflow-hidden rounded-[10px] border border-sibs-border bg-white shadow-lg"
             style={{
               top: `${actionDropdown.top}px`,
               left: `${actionDropdown.left}px`,
@@ -1279,7 +1279,7 @@ function UserMobileCard({
             <button
               type="button"
               onClick={(e) => handleToggleActionDropdown(e, item)}
-              className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[#E6ECF2] text-[#042C51] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF9F6]"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-sibs-border text-sibs-navy transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light"
             >
               <MoreHorizontal size={17} />
             </button>
@@ -1291,7 +1291,7 @@ function UserMobileCard({
         <InfoRow label="Role" value={formatRole(item.role)} />
 
         <div className="flex items-center justify-between gap-3">
-          <span className="text-xs font-semibold text-[#667085]">Admin Access</span>
+          <span className="text-xs font-semibold text-sibs-muted">Admin Access</span>
           <span className="max-w-[170px] rounded-full bg-blue-50 px-2.5 py-0.5 text-right text-[11px] font-bold text-blue-700 border border-blue-200/60">
             {formatAdminAccess(item.adminAccess)}
           </span>
@@ -1300,8 +1300,8 @@ function UserMobileCard({
         <InfoRow label="Accounts" value={formatAssignedAccounts(item)} />
         <InfoRow label="Department" value={item.department || "—"} />
 
-        <div className="flex items-center justify-between gap-3 pt-2 border-t border-dashed border-[#E6ECF2]">
-          <span className="text-xs font-semibold text-[#667085]">Status</span>
+        <div className="flex items-center justify-between gap-3 pt-2 border-t border-dashed border-sibs-border">
+          <span className="text-xs font-semibold text-sibs-muted">Status</span>
           <StatusBadge status={item.status} />
         </div>
       </div>
@@ -1325,24 +1325,24 @@ function InfoRow({ label, value }) {
 function SummaryCard({ title, value, icon, tone = "navy", delay = 0 }) {
   const tones = {
     navy: {
-      label: "text-[#042C51]",
-      value: "text-[#042C51]",
-      icon: "bg-[#EAF2FB] text-[#042C51]",
+      label: "text-sibs-navy",
+      value: "text-sibs-navy",
+      icon: "bg-sibs-cream-light text-sibs-navy",
     },
     emerald: {
-      label: "text-[#047857]",
-      value: "text-[#047857]",
-      icon: "bg-[#ECFDF3] text-[#059669]",
+      label: "text-emerald-700",
+      value: "text-emerald-700",
+      icon: "bg-emerald-50 text-emerald-600",
     },
     amber: {
-      label: "text-[#B45309]",
-      value: "text-[#F59E0B]",
-      icon: "bg-[#FFFBEB] text-[#F59E0B]",
+      label: "text-amber-700",
+      value: "text-amber-500",
+      icon: "bg-amber-50 text-amber-500",
     },
     orange: {
-      label: "text-[#C2410C]",
-      value: "text-[#FF5C28]",
-      icon: "bg-[#FFF3ED] text-[#FF5C28]",
+      label: "text-orange-700",
+      value: "text-sibs-orange",
+      icon: "bg-sibs-cream-light text-sibs-orange",
     },
   };
 

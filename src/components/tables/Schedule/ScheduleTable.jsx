@@ -2,12 +2,15 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { CalendarDays, Clock } from "lucide-react";
 
 import { formatDate } from "@/components/layout/FormatDateTime";
-import PaginationTable from "@/services/pagination/PaginationTable";
 import { PaginationDateRangeFilter } from "@/services/context/PaginationContext";
 import {
   DataCard,
+  MetricCard,
+  MetricGrid,
   MetricGridSkeleton,
   ResponsiveTableShell,
+  SearchInput,
+  TablePagination,
   TableSkeletonRows,
 } from "@/components/ui";
 
@@ -69,7 +72,7 @@ function getModeBadgeClass(mode) {
   const normalized = normalizeMode(mode);
 
   if (normalized === "Day Off") {
-    return "border-rose-200 bg-rose-50 text-rose-600";
+    return "border-rose-200 bg-rose-50 text-rose-700";
   }
 
   if (normalized === "Rest Day") {
@@ -86,78 +89,10 @@ function getModeBadgeClass(mode) {
 function Badge({ children, className = "" }) {
   return (
     <span
-      className={`inline-flex items-center justify-center whitespace-nowrap rounded-full border px-2.5 py-1 text-[10px] font-extrabold ${className}`}
+      className={`inline-flex items-center justify-center whitespace-nowrap rounded-full border px-2.5 py-0.5 sibs-text-micro font-extrabold ${className}`}
     >
       {children}
     </span>
-  );
-}
-
-function StatCard({
-  title,
-  value,
-  description,
-  icon,
-  tone = "navy",
-  delay = 0,
-}) {
-  const tones = {
-    navy: {
-      label: "text-[#174A7C]",
-      value: "text-[#042C51]",
-      iconWrap: "bg-[#EAF2FB] text-[#042C51]",
-    },
-    emerald: {
-      label: "text-[#047857]",
-      value: "text-[#047857]",
-      iconWrap: "bg-[#ECFDF3] text-[#059669]",
-    },
-    rose: {
-      label: "text-[#BE123C]",
-      value: "text-[#E11D48]",
-      iconWrap: "bg-[#FFF1F2] text-[#E11D48]",
-    },
-    amber: {
-      label: "text-[#B45309]",
-      value: "text-[#F59E0B]",
-      iconWrap: "bg-[#FFFBEB] text-[#F59E0B]",
-    },
-  };
-
-  const selectedTone = tones[tone] || tones.navy;
-  const IconComponent = icon;
-
-  return (
-    <article
-      className="sibs-metric-card font-jakarta flex h-[104px] 2xl:h-[116px] min-h-[96px] 2xl:min-h-[112px] flex-col justify-between overflow-hidden p-3 2xl:p-3.5"
-      style={getAnimationStyle(delay)}
-    >
-      <div className="flex h-full items-start justify-between gap-2.5 2xl:gap-3">
-        <div className="min-w-0 flex-1 self-stretch">
-          <p
-            className={`m-0 truncate sibs-text-micro font-extrabold uppercase ${selectedTone.label}`}
-          >
-            {title}
-          </p>
-
-          <p
-            className={`font-heading mt-1.5 2xl:mt-2 text-xl sm:text-2xl 2xl:text-3xl font-bold leading-none tabular-nums tracking-tight ${selectedTone.value}`}
-          >
-            {value}
-          </p>
-
-          <p className="mt-1 line-clamp-1 truncate sibs-text-micro font-semibold leading-tight text-[#667085]">
-            {description}
-          </p>
-        </div>
-
-        <div
-          className={`flex h-7.5 w-7.5 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-full ${selectedTone.iconWrap}`}
-        >
-          <IconComponent className="h-4 w-4 2xl:h-4.5 2xl:w-4.5" strokeWidth={2} />
-        </div>
-      </div>
-    </article>
   );
 }
 
@@ -237,18 +172,6 @@ export default function ScheduleTable({
     runSearch();
   }
 
-  function handlePreviousPage() {
-    if (loading || currentPage <= 1) return;
-
-    setPage?.(Math.max(currentPage - 1, 1));
-  }
-
-  function handleNextPage() {
-    if (loading || currentPage >= totalPages) return;
-
-    setPage?.(Math.min(currentPage + 1, totalPages));
-  }
-
   const pageStats = useMemo(() => {
     const totalLoaded = schedule.length;
 
@@ -313,241 +236,246 @@ export default function ScheduleTable({
         >
           {loading ? (
             <MetricGridSkeleton
+              columns={4}
               count={4}
               labels={["Loaded Schedules", "Regular", "Day Off", "Rest Day"]}
-              className="grid grid-cols-2 gap-2.5 sm:grid-cols-2 xl:grid-cols-4 2xl:gap-3"
               ariaLabel="Loading schedule metrics"
             />
           ) : (
-            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-2 xl:grid-cols-4 2xl:gap-3">
-              <StatCard
+            <MetricGrid columns={4}>
+              <MetricCard
                 title="Loaded Schedules"
                 value={pageStats.totalLoaded}
                 description="Records loaded on the current page"
                 icon={CalendarDays}
                 tone="navy"
-                delay={0}
+                index={0}
               />
 
-              <StatCard
+              <MetricCard
                 title="Regular"
                 value={pageStats.regularCount}
                 description="Regular work schedules on this page"
                 icon={Clock}
                 tone="emerald"
-                delay={60}
+                index={1}
               />
 
-              <StatCard
+              <MetricCard
                 title="Day Off"
                 value={pageStats.dayOffCount}
                 description="Scheduled days off on this page"
                 icon={Clock}
-                tone="rose"
-                delay={120}
+                tone="coral"
+                index={2}
               />
 
-              <StatCard
+              <MetricCard
                 title="Rest Day"
                 value={pageStats.restDayCount}
                 description="Rest days scheduled on this page"
                 icon={Clock}
                 tone="amber"
-                delay={180}
+                index={3}
               />
-            </div>
+            </MetricGrid>
           )}
         </section>
 
         <section
-          className="sibs-profile-tab-panel sibs-page-card-in sibs-card overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white shadow-xs"
+          className="sibs-profile-tab-panel sibs-page-card-in sibs-card overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-xs"
           style={getAnimationStyle(120)}
         >
-          <div className="border-b border-[#E6ECF2] p-4 sm:p-5 2xl:p-6 font-jakarta">
-            <h3 className="font-heading text-sm 2xl:text-base font-bold text-sibs-navy tracking-tight">
+          <div className="border-b border-sibs-border p-4 sm:p-5 2xl:p-6 font-jakarta">
+            <h3 className="sibs-card-title text-sm 2xl:text-base font-bold text-sibs-navy tracking-tight">
               Schedule Records
             </h3>
-            <p className="mt-1 sibs-text-xs font-semibold text-[#667085]">
+            <p className="mt-1 sibs-card-subtitle sibs-text-xs font-semibold text-sibs-muted">
               Review your scheduled work days, shift times, breaks, and registered dates.
             </p>
 
-            <PaginationTable
-              filterLayout="ta-inline"
-              showFilterPanel={false}
-              showFilterHeader={false}
-              showPagination={false}
-              loading={loading}
-              searchValue={searchInput}
-              searchPlaceholder="Search schedule records..."
-              onSearchChange={(value) => setSearchInput?.(value)}
-              onSearchKeyDown={handleSearchKeyDown}
-              dropdownFilters={[]}
-              rightContent={<InlineScheduleDateRangeFilter visible />}
-              className="mt-4 border-0 bg-transparent p-0 shadow-none"
-            />
+            <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="w-full sm:max-w-xs 2xl:max-w-sm">
+                <SearchInput
+                  value={searchInput}
+                  onChange={(val) =>
+                    setSearchInput?.(
+                      typeof val === "string" ? val : val?.target?.value ?? "",
+                    )
+                  }
+                  onKeyDown={handleSearchKeyDown}
+                  onClear={() => {
+                    setSearchInput?.("");
+                    setSearchKeyword?.("");
+                    setPage?.(1);
+                  }}
+                  placeholder="Search schedule records..."
+                  ariaLabel="Search schedule records"
+                  disabled={loading}
+                />
+              </div>
+
+              <InlineScheduleDateRangeFilter visible />
+            </div>
           </div>
 
           <div className="p-3 sm:p-5 2xl:p-6">
             <ResponsiveTableShell
               desktopContent={
-                <div className="overflow-hidden rounded-xl border border-[#E6ECF2] bg-white">
+                <div className="sibs-data-table-shell overflow-hidden rounded-xl border border-sibs-border bg-white">
                   <div
                     ref={tableScrollRef}
                     className="max-h-[600px] 2xl:max-h-[650px] overflow-auto sibs-scrollbar"
                   >
-                <table className="w-full min-w-[980px] border-collapse bg-white text-left">
-                  <thead className="sibs-data-table-head sticky top-0 z-10 bg-[#F8FAFC]">
-                    <tr className="sibs-data-table-head-row">
-                      <th className="sibs-data-table-th px-3 2xl:px-4 py-2.5 2xl:py-3">Date</th>
-                      <th className="sibs-data-table-th px-3 2xl:px-4 py-2.5 2xl:py-3">Mode</th>
-                      <th className="sibs-data-table-th px-3 2xl:px-4 py-2.5 2xl:py-3 text-center">Login</th>
-                      <th className="sibs-data-table-th px-3 2xl:px-4 py-2.5 2xl:py-3 text-center">Break Out</th>
-                      <th className="sibs-data-table-th px-3 2xl:px-4 py-2.5 2xl:py-3 text-center">Break In</th>
-                      <th className="sibs-data-table-th px-3 2xl:px-4 py-2.5 2xl:py-3 text-center">Logout</th>
-                      <th className="sibs-data-table-th px-3 2xl:px-4 py-2.5 2xl:py-3 text-center">Registered</th>
-                    </tr>
-                  </thead>
+                    <table className="w-full min-w-[980px] border-collapse bg-white text-left">
+                      <thead className="sibs-data-table-head sticky top-0 z-10 bg-sibs-surface">
+                        <tr className="sibs-data-table-head-row">
+                          <th className="sibs-data-table-th px-3 2xl:px-4 py-2.5 2xl:py-3">Date</th>
+                          <th className="sibs-data-table-th px-3 2xl:px-4 py-2.5 2xl:py-3">Mode</th>
+                          <th className="sibs-data-table-th px-3 2xl:px-4 py-2.5 2xl:py-3 text-center">Login</th>
+                          <th className="sibs-data-table-th px-3 2xl:px-4 py-2.5 2xl:py-3 text-center">Break Out</th>
+                          <th className="sibs-data-table-th px-3 2xl:px-4 py-2.5 2xl:py-3 text-center">Break In</th>
+                          <th className="sibs-data-table-th px-3 2xl:px-4 py-2.5 2xl:py-3 text-center">Logout</th>
+                          <th className="sibs-data-table-th px-3 2xl:px-4 py-2.5 2xl:py-3 text-center">Registered</th>
+                        </tr>
+                      </thead>
 
-                  <tbody
-                    key={`${page}-${searchKeyword}-${searchSubmitVersion}-${dateFrom}-${dateTo}-${loading}`}
-                    className="divide-y divide-[#E6ECF2]"
-                  >
-                    {loading ? (
-                      <TableSkeletonRows count={PAGE_LIMIT} columns={7} />
-                    ) : schedule.length === 0 ? (
-                      <tr>
-                        <td colSpan={7} className="p-8 2xl:p-12 text-center">
-                          <div className="mx-auto flex max-w-sm flex-col items-center gap-2 text-[#667085]">
-                            <CalendarDays size={30} className="text-[#C8D3DF]" />
-                            <p className="text-xs 2xl:text-sm font-extrabold text-[#042C51]">
-                              No schedule records found
-                            </p>
-                            <p className="text-[11px] 2xl:text-xs font-semibold">
-                              Adjust the search or date range filters and try again.
-                            </p>
-                          </div>
-                        </td>
-                      </tr>
-                    ) : (
-                      schedule.map((item, index) => (
-                        <tr
-                          key={item.gy_sched_id || index}
-                          className="sibs-data-table-row sibs-schedule-row-reveal"
-                          style={{
-                            animationDelay: `${Math.min(index, 10) * 35}ms`,
-                            animationFillMode: "both",
-                          }}
-                        >
-                          <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-semibold text-[#536887]">
-                            {formatDate(item.gy_sched_day)}
-                          </td>
+                      <tbody
+                        key={`${page}-${searchKeyword}-${searchSubmitVersion}-${dateFrom}-${dateTo}-${loading}`}
+                        className="divide-y divide-sibs-border"
+                      >
+                        {loading ? (
+                          <TableSkeletonRows count={PAGE_LIMIT} columns={7} />
+                        ) : schedule.length === 0 ? (
+                          <tr>
+                            <td colSpan={7} className="p-8 2xl:p-12 text-center">
+                              <div className="mx-auto flex max-w-sm flex-col items-center gap-2 text-sibs-muted">
+                                <CalendarDays size={30} className="text-sibs-faint" />
+                                <p className="text-xs 2xl:text-sm font-extrabold text-sibs-navy">
+                                  No schedule records found
+                                </p>
+                                <p className="text-[11px] 2xl:text-xs font-semibold">
+                                  Adjust the search or date range filters and try again.
+                                </p>
+                              </div>
+                            </td>
+                          </tr>
+                        ) : (
+                          schedule.map((item, index) => (
+                            <tr
+                              key={item.gy_sched_id || index}
+                              className="sibs-data-table-row sibs-schedule-row-reveal"
+                              style={{
+                                animationDelay: `${Math.min(index, 10) * 35}ms`,
+                                animationFillMode: "both",
+                              }}
+                            >
+                              <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-semibold text-sibs-text-secondary">
+                                {formatDate(item.gy_sched_day)}
+                              </td>
 
-                          <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5">
+                              <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5">
+                                <Badge className={getModeBadgeClass(item.gy_sched_mode)}>
+                                  {formatMode(item.gy_sched_mode)}
+                                </Badge>
+                              </td>
+
+                              <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-xs font-extrabold tabular-nums text-sibs-navy">
+                                {formatTime(item.gy_sched_login)}
+                              </td>
+
+                              <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-xs font-extrabold tabular-nums text-sibs-muted">
+                                {formatTime(item.gy_sched_breakout)}
+                              </td>
+
+                              <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-xs font-extrabold tabular-nums text-sibs-muted">
+                                {formatTime(item.gy_sched_breakin)}
+                              </td>
+
+                              <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-xs font-extrabold tabular-nums text-sibs-navy">
+                                {formatTime(item.gy_sched_logout)}
+                              </td>
+
+                              <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-xs font-semibold text-sibs-muted">
+                                {formatDate(item.gy_sched_reg)}
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              }
+              mobileContent={
+                <div className="space-y-3">
+                  {loading ? (
+                    <DataCard.Skeleton count={4} />
+                  ) : schedule.length === 0 ? (
+                    <DataCard.Empty
+                      icon={<CalendarDays size={22} />}
+                      title="No schedule records found"
+                      description="Adjust the search or date range filters and try again."
+                    />
+                  ) : (
+                    schedule.map((item, index) => (
+                      <DataCard
+                        key={`mobile-sched-${item.gy_sched_id || index}`}
+                        index={index}
+                      >
+                        <DataCard.Header
+                          avatar={
+                            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-sibs-surface text-sibs-navy">
+                              <CalendarDays size={15} />
+                            </span>
+                          }
+                          title={formatDate(item.gy_sched_day)}
+                          subtitle={`Registered: ${formatDate(item.gy_sched_reg)}`}
+                          badge={
                             <Badge className={getModeBadgeClass(item.gy_sched_mode)}>
                               {formatMode(item.gy_sched_mode)}
                             </Badge>
-                          </td>
+                          }
+                        />
 
-                          <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-xs font-extrabold tabular-nums text-[#042C51]">
-                            {formatTime(item.gy_sched_login)}
-                          </td>
-
-                          <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-xs font-extrabold tabular-nums text-[#7B8DB3]">
-                            {formatTime(item.gy_sched_breakout)}
-                          </td>
-
-                          <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-xs font-extrabold tabular-nums text-[#7B8DB3]">
-                            {formatTime(item.gy_sched_breakin)}
-                          </td>
-
-                          <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-xs font-extrabold tabular-nums text-[#042C51]">
-                            {formatTime(item.gy_sched_logout)}
-                          </td>
-
-                          <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-center sibs-text-xs font-semibold text-[#667085]">
-                            {formatDate(item.gy_sched_reg)}
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
+                        <DataCard.Metrics cols={4}>
+                          <DataCard.MetricItem
+                            label="Login"
+                            value={formatTime(item.gy_sched_login)}
+                            tone="default"
+                          />
+                          <DataCard.MetricItem
+                            label="Break Out"
+                            value={formatTime(item.gy_sched_breakout)}
+                            tone="dim"
+                          />
+                          <DataCard.MetricItem
+                            label="Break In"
+                            value={formatTime(item.gy_sched_breakin)}
+                            tone="dim"
+                          />
+                          <DataCard.MetricItem
+                            label="Logout"
+                            value={formatTime(item.gy_sched_logout)}
+                            tone="default"
+                          />
+                        </DataCard.Metrics>
+                      </DataCard>
+                    ))
+                  )}
                 </div>
-              </div>
-            }
-            mobileContent={
-              <div className="space-y-3">
-                {loading ? (
-                  <DataCard.Skeleton count={4} />
-                ) : schedule.length === 0 ? (
-                  <DataCard.Empty
-                    icon={<CalendarDays size={22} />}
-                    title="No schedule records found"
-                    description="Adjust the search or date range filters and try again."
-                  />
-                ) : (
-                  schedule.map((item, index) => (
-                    <DataCard
-                      key={`mobile-sched-${item.gy_sched_id || index}`}
-                      index={index}
-                    >
-                      <DataCard.Header
-                        avatar={
-                          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-[#042C51]">
-                            <CalendarDays size={15} />
-                          </span>
-                        }
-                        title={formatDate(item.gy_sched_day)}
-                        subtitle={`Registered: ${formatDate(item.gy_sched_reg)}`}
-                        badge={
-                          <Badge className={getModeBadgeClass(item.gy_sched_mode)}>
-                            {formatMode(item.gy_sched_mode)}
-                          </Badge>
-                        }
-                      />
-
-                      <DataCard.Metrics cols={4}>
-                        <DataCard.MetricItem
-                          label="Login"
-                          value={formatTime(item.gy_sched_login)}
-                          tone="default"
-                        />
-                        <DataCard.MetricItem
-                          label="Break Out"
-                          value={formatTime(item.gy_sched_breakout)}
-                          tone="dim"
-                        />
-                        <DataCard.MetricItem
-                          label="Break In"
-                          value={formatTime(item.gy_sched_breakin)}
-                          tone="dim"
-                        />
-                        <DataCard.MetricItem
-                          label="Logout"
-                          value={formatTime(item.gy_sched_logout)}
-                          tone="default"
-                        />
-                      </DataCard.Metrics>
-                    </DataCard>
-                  ))
-                )}
-              </div>
-            }
-          />
+              }
+            />
 
             <div className="mt-4 2xl:mt-5">
-              <PaginationTable
+              <TablePagination
                 loading={loading}
-                showSearch={false}
-                showPagination
                 currentPage={currentPage}
                 totalPages={totalPages}
                 loadedCount={schedule.length}
                 totalRecords={totalRecords}
                 recordLabel="schedule records"
-                onPrevious={handlePreviousPage}
-                onNext={handleNextPage}
-                showCount
+                onPageChange={(newPage) => setPage?.(newPage)}
                 className="border-0 bg-transparent p-0 shadow-none"
               />
             </div>

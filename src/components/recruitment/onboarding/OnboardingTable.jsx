@@ -2,7 +2,6 @@ import { formatHrisDateLocalized } from "@/lib/axios/dateFormatter";
 import React, { useEffect, useMemo } from "react";
 import {
   CalendarDays,
-  Eye,
   UserRoundCheck,
 } from "lucide-react";
 import { useOnboarding } from "../../../services/context/OnboardingContext";
@@ -197,7 +196,6 @@ export default function OnboardingTable({ onView, loading: propLoading }) {
                 ["SHOW STATUS", "text-center"],
                 ["FINAL OUTCOME", "text-center"],
                 ["TA OWNER", "text-left"],
-                ["ACTION", "text-right"],
               ].map(([header, align]) => (
                 <th
                   key={header}
@@ -211,10 +209,10 @@ export default function OnboardingTable({ onView, loading: propLoading }) {
 
           <tbody className="divide-y divide-sibs-border">
             {loading ? (
-              <TableSkeletonRows count={6} columns={10} />
+              <TableSkeletonRows count={6} columns={9} />
             ) : paginatedData.length === 0 ? (
               <tr>
-                <td colSpan={10} className="px-5 py-12 text-center sibs-text-xs font-bold text-sibs-muted">
+                <td colSpan={9} className="px-5 py-12 text-center sibs-text-xs font-bold text-sibs-muted">
                   No onboarding records match the current search and filters.
                 </td>
               </tr>
@@ -249,17 +247,22 @@ export default function OnboardingTable({ onView, loading: propLoading }) {
                 return (
                   <tr
                     key={item.id || getOnboardingDisplayId(item)}
-                    className="sibs-data-table-row sibs-page-card-in group transition-colors"
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => onView(item)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        onView(item);
+                      }
+                    }}
+                    className="sibs-data-table-row sibs-page-card-in group cursor-pointer transition-colors"
                     style={{ animationDelay: `${index * 35}ms`, animationFillMode: "both" }}
                   >
                     <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle sibs-text-xs font-extrabold text-sibs-navy">
-                      <button
-                        type="button"
-                        onClick={() => onView(item)}
-                        className="font-extrabold tabular-nums text-sibs-navy transition hover:text-sibs-orange"
-                      >
+                      <span className="font-extrabold tabular-nums text-sibs-navy transition group-hover:text-sibs-orange">
                         {getOnboardingDisplayId(item)}
-                      </button>
+                      </span>
                     </td>
 
                     <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle sibs-text-xs">
@@ -268,7 +271,7 @@ export default function OnboardingTable({ onView, loading: propLoading }) {
                           {getInitials(candidateName)}
                         </span>
                         <div className="min-w-0">
-                          <p className="m-0 max-w-[210px] truncate font-extrabold text-sibs-navy">
+                          <p className="m-0 max-w-[210px] truncate font-extrabold text-sibs-navy transition group-hover:text-sibs-orange">
                             {candidateName}
                           </p>
                           <p className="mt-0.5 max-w-[210px] truncate text-[10px] 2xl:text-[10.5px] font-semibold text-sibs-muted">
@@ -282,7 +285,7 @@ export default function OnboardingTable({ onView, loading: propLoading }) {
                       <p className="max-w-[210px] truncate font-extrabold text-sibs-secondary">
                         {roleTitle}
                       </p>
-                      <span className="mt-0.5 inline-flex max-w-[210px] truncate rounded bg-sibs-canvas px-1.5 py-0.5 text-[10px] 2xl:text-[10.5px] font-bold text-sibs-secondary">
+                      <span className="mt-0.5 inline-flex max-w-[210px] truncate rounded-[10px] bg-sibs-canvas px-1.5 py-0.5 text-[10px] 2xl:text-[10.5px] font-bold text-sibs-secondary">
                         {item.account || "No account"}
                       </span>
                     </td>
@@ -326,17 +329,6 @@ export default function OnboardingTable({ onView, loading: propLoading }) {
 
                     <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle sibs-text-xs font-semibold text-sibs-secondary">
                       <span className="block max-w-[150px] truncate">{item.owner || "—"}</span>
-                    </td>
-
-                    <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle text-right sibs-text-xs">
-                      <button
-                        type="button"
-                        onClick={() => onView(item)}
-                        className="inline-flex h-7.5 2xl:h-8 items-center justify-center gap-1.5 rounded-[10px] border border-sibs-border-subtle bg-white px-2.5 2xl:px-3 text-[10px] 2xl:text-[10.5px] font-extrabold text-sibs-navy transition hover:border-sibs-orange/35 hover:bg-sibs-cream-light hover:text-sibs-orange active:scale-[0.98]"
-                      >
-                        <Eye size={13} />
-                        View Record
-                      </button>
                     </td>
                   </tr>
                 );

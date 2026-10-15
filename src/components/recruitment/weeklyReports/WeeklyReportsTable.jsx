@@ -99,9 +99,9 @@ export default function WeeklyReportsTable({ reports, onView, loading = false })
                       </td>
 
                       <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle text-center sibs-text-xs font-extrabold">
-                        <div className="inline-flex items-center gap-1.5 rounded-lg border border-sibs-border bg-sibs-surface px-2 py-1 text-[10px] 2xl:text-[10.5px] font-extrabold tabular-nums">
+                        <div className="inline-flex items-center gap-1.5 rounded-[10px] border border-sibs-border bg-sibs-surface px-2 py-1 text-[10px] 2xl:text-[10.5px] font-extrabold tabular-nums">
                           <span className="text-emerald-700">{toNumber(report.totalFilled)}</span>
-                          <span className="text-sibs-faint">/</span>
+                          <span className="text-sibs-muted">/</span>
                           <span className="text-sibs-navy">{toNumber(report.totalRequirement)}</span>
                           <span className="ml-1 text-sibs-muted">({fulfillment}%)</span>
                         </div>
@@ -136,7 +136,7 @@ export default function WeeklyReportsTable({ reports, onView, loading = false })
                             event.stopPropagation();
                             onView(report);
                           }}
-                          className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-sibs-border-subtle bg-white px-3 text-[10px] 2xl:text-[10.5px] font-extrabold text-sibs-navy transition hover:border-sibs-orange/35 hover:bg-sibs-cream-light hover:text-sibs-orange active:scale-[0.98]"
+                          className="inline-flex h-8 items-center justify-center gap-1.5 rounded-[10px] border border-sibs-border bg-white px-3 text-[10px] 2xl:text-[10.5px] font-extrabold text-sibs-navy transition hover:border-sibs-orange/35 hover:bg-sibs-cream-light hover:text-sibs-orange active:scale-[0.98]"
                         >
                           <Eye size={13} />
                           View Details
@@ -147,7 +147,7 @@ export default function WeeklyReportsTable({ reports, onView, loading = false })
                 })
               ) : (
                 <tr>
-                  <td colSpan={6} className="px-5 py-12 text-center sibs-text-xs font-bold text-sibs-faint">
+                  <td colSpan={6} className="px-5 py-12 text-center sibs-text-xs font-bold text-sibs-muted">
                     No weekly performance report entries match the selected filters.
                   </td>
                 </tr>

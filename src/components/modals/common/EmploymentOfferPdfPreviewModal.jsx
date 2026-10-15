@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import { Download, FileText, Loader2, X } from "lucide-react";
+import { Download, FileText, Loader2 } from "lucide-react";
 import api from "../../../lib/axios/api-template";
+import ModalShell from "../../ui/ModalShell";
 
 function cleanText(value) {
   return String(value ?? "").trim();
@@ -188,81 +189,37 @@ export default function EmploymentOfferPdfPreviewModal({
   }
 
   return (
-    <div
-      className="sibs-modal-blur sibs-modal-backdrop-in fixed inset-0 z-[13000] flex items-center justify-center p-2 sm:p-4 font-jakarta"
-      onClick={onClose}
-    >
-      <div
-        className="sibs-modal-pop-in flex max-h-[92dvh] w-full max-w-5xl flex-col overflow-hidden rounded-[14px] border border-sibs-border bg-white shadow-2xl font-jakarta"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <div className="flex items-center justify-between bg-sibs-navy px-5 py-3 2xl:py-3.5 text-white">
-          <div className="flex min-w-0 items-center gap-2.5 2xl:gap-3">
-            <span className="flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-[10px] bg-sibs-orange text-white shadow-sm">
-              <FileText size={16} />
-            </span>
-
-            <h3
+    <ModalShell
+      open={open}
+      onClose={onClose}
+      variant="navy"
+      title={displayFilename}
+      icon={FileText}
+      maxWidth="max-w-5xl"
+      className="rounded-[14px]"
+      bodyClassName="min-h-0 flex-1 overflow-auto p-5 font-jakarta"
+      footer={
+        <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
+            <p
               title={displayFilename}
-              className="sibs-modal-title truncate text-white"
+              className="truncate text-xs font-extrabold text-slate-700"
             >
               {displayFilename}
-            </h3>
+            </p>
+            <p className="mt-0.5 text-[10px] font-semibold text-sibs-muted">
+              Employment Offer · Candidate Pipeline
+            </p>
           </div>
 
-          <button
-            type="button"
-            onClick={onClose}
-            className="sibs-modal-close-btn"
-            aria-label="Close Employment Offer preview"
-          >
-            <X size={18} />
-          </button>
-        </div>
-
-        <div className="min-h-0 flex-1 overflow-auto p-5">
-          {loading ? (
-            <div className="flex min-h-[520px] flex-col items-center justify-center rounded-[10px] bg-slate-50 text-center">
-              <Loader2 size={30} className="animate-spin text-sibs-navy" />
-              <p className="mt-4 text-sm font-extrabold text-sibs-navy">
-                Loading Employment Offer PDF...
-              </p>
-            </div>
-          ) : errorMessage ? (
-            <div className="flex min-h-[420px] flex-col items-center justify-center rounded-[10px] border border-red-100 bg-red-50 p-8 text-center">
-              <FileText size={36} className="text-red-600" />
-              <p className="mt-4 text-sm font-extrabold text-red-700">
-                Employment Offer preview unavailable
-              </p>
-              <p className="mt-2 max-w-xl text-xs font-semibold leading-5 text-red-600">
-                {errorMessage}
-              </p>
-            </div>
-          ) : previewUrl ? (
-            <iframe
-              src={previewUrl}
-              title={displayFilename}
-              className="h-[68dvh] min-h-[520px] w-full rounded-[10px] border border-sibs-border"
-            />
-          ) : (
-            <div className="flex min-h-[420px] items-center justify-center rounded-[10px] bg-slate-50 text-sm font-bold text-sibs-muted">
-              No PDF preview is available.
-            </div>
-          )}
-
-          <div className="mt-4 flex flex-col gap-3 rounded-[10px] border border-sibs-border bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="min-w-0">
-              <p
-                title={displayFilename}
-                className="truncate text-xs font-extrabold text-slate-700"
-              >
-                {displayFilename}
-              </p>
-              <p className="mt-1 text-[10px] font-semibold text-sibs-muted">
-                Employment Offer · Candidate Pipeline
-              </p>
-            </div>
-
+          <div className="flex items-center justify-end gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={onClose}
+              className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-[10px] border border-sibs-border bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-slate-600 transition hover:bg-slate-50"
+            >
+              Close
+            </button>
             <button
               type="button"
               disabled={!previewUrl || loading}
@@ -274,7 +231,36 @@ export default function EmploymentOfferPdfPreviewModal({
             </button>
           </div>
         </div>
-      </div>
-    </div>
+      }
+    >
+      {loading ? (
+        <div className="flex min-h-[520px] flex-col items-center justify-center rounded-[10px] bg-slate-50 text-center">
+          <Loader2 size={30} className="animate-spin text-sibs-navy" />
+          <p className="mt-4 text-sm font-extrabold text-sibs-navy">
+            Loading Employment Offer PDF...
+          </p>
+        </div>
+      ) : errorMessage ? (
+        <div className="flex min-h-[420px] flex-col items-center justify-center rounded-[10px] border border-red-100 bg-red-50 p-8 text-center">
+          <FileText size={36} className="text-red-600" />
+          <p className="mt-4 text-sm font-extrabold text-red-700">
+            Employment Offer preview unavailable
+          </p>
+          <p className="mt-2 max-w-xl text-xs font-semibold leading-5 text-red-600">
+            {errorMessage}
+          </p>
+        </div>
+      ) : previewUrl ? (
+        <iframe
+          src={previewUrl}
+          title={displayFilename}
+          className="h-[68dvh] min-h-[520px] w-full rounded-[10px] border border-sibs-border"
+        />
+      ) : (
+        <div className="flex min-h-[420px] items-center justify-center rounded-[10px] bg-slate-50 text-sm font-bold text-sibs-muted">
+          No PDF preview is available.
+        </div>
+      )}
+    </ModalShell>
   );
 }

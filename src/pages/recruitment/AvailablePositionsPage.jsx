@@ -8,8 +8,7 @@ import React, {
 } from "react";
 import Header from "../../components/layout/Header";
 import { useUser } from "../../services/context/UserContext";
-import StatusModal from "../../components/modals/StatusModal";
-import { PageHeaderHero } from "@/components/ui";
+import { ConfirmModal, PageHeaderHero } from "@/components/ui";
 import { Database, Plus, RefreshCw, RotateCcw } from "lucide-react";
 import PaginationTable from "../../services/pagination/PaginationTable";
 import {
@@ -1757,7 +1756,7 @@ export default function AvailablePositionsPage() {
           ) : null}
 
           <section
-            className="sibs-profile-tab-panel sibs-page-card-in rounded-2xl border border-sibs-border bg-white font-jakarta shadow-sm"
+            className="sibs-page-card-in overflow-hidden rounded-2xl border border-sibs-border bg-white font-jakarta shadow-xs"
             style={{ animationDelay: "180ms", animationFillMode: "both" }}
           >
             <div className="rounded-t-2xl border-b border-sibs-border bg-white p-4 sm:p-5 2xl:p-6">
@@ -1892,7 +1891,7 @@ export default function AvailablePositionsPage() {
           </section>
 
           <section
-            className="sibs-profile-tab-panel sibs-process-note"
+            className="sibs-page-card-in sibs-process-note"
             style={{ animationDelay: "240ms", animationFillMode: "both" }}
           >
             <div className="flex items-start gap-2.5 sm:gap-3">
@@ -1956,14 +1955,15 @@ export default function AvailablePositionsPage() {
         }}
       />
 
-      <StatusModal
-        open={statusModal.open}
-        type={statusModal.type}
-        title={statusModal.title}
-        message={statusModal.message}
+      <ConfirmModal
+        open={Boolean(statusModal.open)}
+        variant={statusModal.type === "error" ? "danger" : "primary"}
+        title={statusModal.title || "Notification"}
+        description={statusModal.message || ""}
+        confirmLabel="OK"
+        cancelLabel="Close"
+        onConfirm={closeStatusModal}
         onClose={closeStatusModal}
-        variant="center"
-        lockScroll
       />
     </div>
   );

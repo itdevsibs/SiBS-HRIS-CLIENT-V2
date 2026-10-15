@@ -87,13 +87,13 @@ export default function CandidateExperienceSurveyPage({ tokenParam = "" }) {
   }
 
   return (
-    <div className="min-h-screen bg-[#F4F7FB] font-jakarta text-[#101828]">
+    <div className="min-h-screen bg-sibs-canvas font-jakarta text-sibs-navy">
       <SurveyHeader completed={submitted} progressPercentage={completionPercentage} />
 
       <main className="mx-auto w-full max-w-[1060px] px-4 py-6 sm:px-6 sm:py-8">
         {/* HERO BANNER MATCHING TALENT POOL PUBLIC FORM EXACTLY */}
-        <section className="relative mb-6 overflow-hidden h-auto rounded-2xl border border-[#0A467E] bg-gradient-to-r from-[#042C51] via-[#073A6B] to-[#042C51] p-5 text-white shadow-lg sm:p-6">
-          <div className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-[#FF5C28]/15 blur-3xl" />
+        <section className="relative mb-6 overflow-hidden h-auto rounded-[14px] border border-sibs-navy bg-gradient-to-r from-sibs-navy via-sibs-navy to-sibs-navy p-5 text-white shadow-lg sm:p-6">
+          <div className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-sibs-orange/15 blur-3xl" />
 
           <div className="relative z-10 h-full">
             <div className="min-w-0 h-full text-left">
@@ -107,7 +107,7 @@ export default function CandidateExperienceSurveyPage({ tokenParam = "" }) {
                 }}
               />
 
-              <span className="inline-flex items-center gap-2 rounded-full border border-[#FF5C28]/40 bg-[#FF5C28]/15 px-3 py-1 text-[10px] font-extrabold uppercase tracking-wide text-[#FF8A63]">
+              <span className="inline-flex items-center gap-2 rounded-full border border-sibs-orange/40 bg-sibs-orange/15 px-3 py-1 text-[10px] font-extrabold uppercase tracking-wide text-sibs-orange">
                 <Sparkles size={13} />
                 No Login Required • Confidential Candidate Feedback
               </span>
@@ -121,11 +121,11 @@ export default function CandidateExperienceSurveyPage({ tokenParam = "" }) {
               </p>
             </div>
 
-            <div className="mt-4 w-full shrink-0 rounded-xl border border-white/10 bg-[#021930]/80 px-5 py-4 text-left backdrop-blur-sm sm:absolute sm:bottom-0 sm:right-0 sm:mt-0 sm:w-auto sm:min-w-[160px] sm:text-center">
+            <div className="mt-4 w-full shrink-0 rounded-[10px] border border-white/10 bg-black/40 px-5 py-4 text-left backdrop-blur-sm sm:absolute sm:bottom-0 sm:right-0 sm:mt-0 sm:w-auto sm:min-w-[160px] sm:text-center">
               <p className="text-[9px] font-extrabold uppercase tracking-wide text-slate-300">
                 Survey Completion
               </p>
-              <p className="mt-1 text-2xl font-extrabold text-[#FF5C28]">
+              <p className="mt-1 text-2xl font-extrabold text-sibs-orange">
                 {completionPercentage}%
               </p>
             </div>
@@ -133,7 +133,7 @@ export default function CandidateExperienceSurveyPage({ tokenParam = "" }) {
         </section>
 
         {loading ? (
-          <section className="rounded-2xl border border-[#E6ECF2] bg-white p-12 text-center text-sm font-bold text-slate-400 shadow-sm">
+          <section className="rounded-[14px] border border-sibs-border bg-white p-12 text-center text-sm font-bold text-slate-400 shadow-sm">
             Validating your secure survey link...
           </section>
         ) : error && !survey ? (
@@ -157,7 +157,7 @@ export default function CandidateExperienceSurveyPage({ tokenParam = "" }) {
             )}
 
             <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="space-y-6 rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm sm:p-6">
+              <div className="space-y-6 rounded-[14px] border border-sibs-border bg-white p-5 shadow-sm sm:p-6">
                 <SurveyRating value={rating} onChange={setRating} />
                 <SurveyCategories value={categories} onChange={setCategories} />
                 <SurveyFeedback
@@ -168,7 +168,7 @@ export default function CandidateExperienceSurveyPage({ tokenParam = "" }) {
                 />
 
                 {formError || error ? (
-                  <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-xs font-bold text-rose-700">
+                  <div className="rounded-[10px] border border-rose-200 bg-rose-50 p-4 text-xs font-bold text-rose-700">
                     {formError || error}
                   </div>
                 ) : null}
@@ -176,9 +176,9 @@ export default function CandidateExperienceSurveyPage({ tokenParam = "" }) {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#042C51] text-xs font-black text-white shadow-md transition hover:bg-[#FF5C28] active:scale-[0.99] disabled:opacity-60"
+                  className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-[10px] bg-sibs-navy text-xs font-black text-white shadow-md transition hover:bg-sibs-orange active:scale-[0.99] disabled:opacity-60"
                 >
-                  <Send size={16} className="text-[#FFB69E]" />
+                  <Send size={16} className="text-white" />
                   {submitting ? "Submitting Your Candidate Feedback..." : "Submit Candidate Experience Feedback"}
                 </button>
               </div>
@@ -218,14 +218,14 @@ function CandidateIdentityForm({ value, onChange }) {
   };
 
   return (
-    <section className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm sm:p-6">
+    <section className="rounded-[14px] border border-sibs-border bg-white p-5 shadow-sm sm:p-6">
       <div className="mb-5 flex items-center gap-3">
-        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#042C51] text-white">
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] bg-sibs-navy text-white">
           <UserRound size={18} />
         </span>
         <div>
           <p className="text-[9px] font-black uppercase tracking-wider text-slate-400">Candidate Information</p>
-          <h3 className="text-sm font-black text-[#042C51]">Tell us who you are</h3>
+          <h3 className="text-sm font-black text-sibs-navy">Tell us who you are</h3>
           <p className="mt-0.5 text-[10px] font-medium text-slate-500">Please complete your details before submitting the survey.</p>
         </div>
       </div>
@@ -286,14 +286,14 @@ function CandidateIdentityForm({ value, onChange }) {
 function SurveyInput({ icon: Icon, label, required = false, ...inputProps }) {
   return (
     <label className="block">
-      <span className="mb-2 flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wide text-[#042C51]">
+      <span className="mb-2 flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wide text-sibs-navy">
         {Icon ? <Icon size={12} className="text-slate-400" /> : null}
         {label}
-        {required ? <span className="text-[#FF5C28]">*</span> : null}
+        {required ? <span className="text-sibs-orange">*</span> : null}
       </span>
       <input
         {...inputProps}
-        className="h-11 w-full rounded-xl border border-[#DCE5EE] bg-[#F8FAFC] px-3.5 text-xs font-bold text-[#042C51] outline-none transition placeholder:font-semibold placeholder:text-slate-300 focus:border-[#0A467E] focus:bg-white focus:ring-2 focus:ring-[#0A467E]/10"
+        className="h-11 w-full rounded-[10px] border border-sibs-border bg-sibs-surface px-3.5 text-xs font-bold text-sibs-navy outline-none transition placeholder:font-semibold placeholder:text-sibs-faint focus:border-sibs-orange focus:bg-white focus:ring-2 focus:ring-sibs-orange/10"
       />
     </label>
   );

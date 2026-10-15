@@ -145,7 +145,7 @@ export default function DatePicker({
   showToday = true,
   className = "",
   buttonClassName = "",
-  portalClassName = "",
+  showCalendarIcon = false,
 }) {
   const anchorRef = useRef(null);
   const yearInputRef = useRef(null);
@@ -351,7 +351,7 @@ export default function DatePicker({
   const defaultRoundedClass = hasCustomRounded ? "" : "rounded-[10px]";
   const defaultPaddingClass = hasCustomPadding ? "" : "px-3";
 
-  const triggerClasses = `flex w-full min-w-0 items-center justify-between gap-2 border bg-sibs-surface text-left font-jakarta sibs-text-xs 2xl:sibs-text-sm font-bold text-sibs-navy shadow-sm outline-none transition-all duration-200 ${defaultHeightClass} ${defaultRoundedClass} ${defaultPaddingClass} ${
+  const triggerClasses = `flex w-full min-w-0 items-center justify-between gap-2 border bg-sibs-surface text-left font-jakarta sibs-text-xs font-bold text-sibs-navy outline-none transition-all duration-200 ${defaultHeightClass} ${defaultRoundedClass} ${defaultPaddingClass} ${
     isLocked
       ? "cursor-not-allowed border-sibs-border bg-sibs-canvas text-sibs-faint opacity-70"
       : open
@@ -393,7 +393,9 @@ export default function DatePicker({
         className={triggerClasses}
       >
         <span className="flex min-w-0 flex-1 items-center gap-2">
-          <CalendarDays size={15} className="shrink-0 text-sibs-orange" />
+          {showCalendarIcon ? (
+            <CalendarDays size={15} className="shrink-0 text-sibs-orange" />
+          ) : null}
 
           {leadingLabel ? (
             <span className="shrink-0 font-extrabold text-sibs-navy">
@@ -404,8 +406,8 @@ export default function DatePicker({
           <span
             className={`truncate ${
               renderedValue
-                ? "text-sibs-primary-1"
-                : "font-normal text-sibs-faint"
+                ? "font-bold text-sibs-navy"
+                : "font-bold text-sibs-muted"
             }`}
           >
             {renderedValue || placeholder}
@@ -414,7 +416,7 @@ export default function DatePicker({
 
         {!isLocked ? (
           <ChevronDown
-            size={14}
+            size={17}
             className={`shrink-0 transition-transform duration-300 ${
               open ? "rotate-180 text-sibs-orange" : "text-sibs-muted"
             }`}

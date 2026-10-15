@@ -187,7 +187,7 @@ export default function DepartmentProfileAvatar({
     typeof document !== "undefined"
       ? createPortal(
           <span
-            className="pointer-events-none fixed z-[999999] overflow-hidden rounded-2xl border border-[#D9E6F2] bg-white p-2 shadow-[0_18px_45px_rgba(4,44,81,0.22)]"
+            className="pointer-events-none fixed z-[999999] overflow-hidden rounded-[14px] border border-sibs-border bg-white p-2 shadow-[0_18px_45px_rgba(4,44,81,0.22)]"
             style={{
               left: previewPosition.left,
               top: previewPosition.top,
@@ -204,14 +204,14 @@ export default function DepartmentProfileAvatar({
                 src={profilePictureUrl}
                 alt=""
                 draggable={false}
-                className="h-full w-full rounded-xl object-cover"
+                className="h-full w-full rounded-[10px] object-cover"
                 onError={() => {
                   setFailedImageUrl(profilePictureUrl);
                   setImageReady(false);
                 }}
               />
             ) : (
-              <span className="flex h-full w-full items-center justify-center rounded-xl bg-sibs-navy text-4xl font-extrabold text-white">
+              <span className="flex h-full w-full items-center justify-center rounded-[10px] bg-sibs-navy text-4xl font-extrabold text-white">
                 {initials}
               </span>
             )}

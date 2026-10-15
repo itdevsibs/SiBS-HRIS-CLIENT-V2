@@ -8,14 +8,14 @@ export default function MovementBar({ label, value, max, delay = 0 }) {
           {label}
         </p>
 
-        <p className="shrink-0 text-sm font-bold text-sibs-primary-1">
+        <p className="shrink-0 text-sm font-bold text-sibs-navy">
           {value}
         </p>
       </div>
 
       <div className="h-2.5 overflow-hidden rounded-full bg-sibs-surface-subtle">
         <div
-          className="h-full rounded-full bg-sibs-primary-1 transition-all duration-700 ease-out"
+          className="h-full rounded-full bg-sibs-orange transition-all duration-700 ease-out"
           style={{ width: `${percentage}%` }}
         />
       </div>

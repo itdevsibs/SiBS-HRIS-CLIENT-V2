@@ -75,12 +75,12 @@ function StatusIcon({ status }) {
 
 function DetailItem({ label, value, icon: Icon }) {
   return (
-    <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-3.5 py-3">
-      <div className="flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-wide text-[#667085]">
-        {Icon ? <Icon size={13} className="text-[#FF5C28]" /> : null}
+    <div className="rounded-[10px] border border-sibs-border bg-sibs-surface px-3.5 py-3">
+      <div className="flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-wide text-sibs-muted">
+        {Icon ? <Icon size={13} className="text-sibs-orange" /> : null}
         {label}
       </div>
-      <p className="mt-1.5 break-words text-xs font-extrabold text-[#042C51]">
+      <p className="mt-1.5 break-words text-xs font-extrabold text-sibs-navy">
         {cleanText(value)}
       </p>
     </div>
@@ -105,7 +105,7 @@ export default function EmployeeResignationStatusModal({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[10000] flex items-center justify-center overflow-y-auto bg-[#042C51]/45 p-3 backdrop-blur-[2px] sm:p-5"
+      className="fixed inset-0 z-[10000] flex items-center justify-center overflow-y-auto bg-black/50 p-3 backdrop-blur-[2px] sm:p-5"
       role="dialog"
       aria-modal="true"
       aria-label="My resignation status"
@@ -113,11 +113,11 @@ export default function EmployeeResignationStatusModal({
         if (event.target === event.currentTarget) onClose?.();
       }}
     >
-      <div className="flex max-h-[calc(100dvh-2rem)] w-full max-w-3xl flex-col overflow-hidden rounded-[18px] border border-white/80 bg-white shadow-[0_24px_70px_rgba(4,44,81,0.30)]">
-        <div className="flex shrink-0 items-start justify-between gap-4 border-b border-[#E6ECF2] px-5 py-4 sm:px-6">
+      <div className="flex max-h-[calc(100dvh-2rem)] w-full max-w-3xl flex-col overflow-hidden rounded-[14px] border border-white/80 bg-white shadow-[0_24px_70px_rgba(4,44,81,0.30)]">
+        <header className="flex shrink-0 items-start justify-between gap-4 rounded-t-[14px] bg-sibs-navy px-5 py-4 text-white sm:px-6">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <h2 className="text-lg font-extrabold text-[#042C51] sm:text-xl">
+              <h2 className="text-lg font-extrabold text-white sm:text-xl">
                 My Resignation
               </h2>
               <span
@@ -128,7 +128,7 @@ export default function EmployeeResignationStatusModal({
                 {cleanText(resignation.status, "For Approval")}
               </span>
             </div>
-            <p className="mt-1 text-xs font-semibold text-[#667085]">
+            <p className="mt-1 text-xs font-semibold text-white/75">
               Track your resignation and approval progress.
             </p>
           </div>
@@ -136,12 +136,12 @@ export default function EmployeeResignationStatusModal({
           <button
             type="button"
             onClick={onClose}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-[#98A2B3] transition hover:bg-[#F2F6FA] hover:text-[#042C51]"
+            className="sibs-modal-close-btn"
             aria-label="Close resignation status"
           >
-            <X size={19} />
+            <X size={18} />
           </button>
-        </div>
+        </header>
 
         <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5 sm:px-6">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -168,11 +168,11 @@ export default function EmployeeResignationStatusModal({
           </div>
 
           <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
-            <div className="rounded-xl border border-[#E6ECF2] bg-white p-4">
-              <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#667085]">
+            <div className="rounded-[10px] border border-sibs-border bg-white p-4">
+              <p className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-muted">
                 Reason
               </p>
-              <p className="mt-2 whitespace-pre-wrap text-xs font-semibold leading-5 text-[#344054]">
+              <p className="mt-2 whitespace-pre-wrap text-xs font-semibold leading-5 text-sibs-navy">
                 {cleanText(
                   resignation.specifyOthers || resignation.reason,
                   "No reason provided.",
@@ -180,20 +180,20 @@ export default function EmployeeResignationStatusModal({
               </p>
             </div>
 
-            <div className="rounded-xl border border-[#E6ECF2] bg-white p-4">
-              <div className="flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-wide text-[#667085]">
-                <UserRound size={13} className="text-[#FF5C28]" />
+            <div className="rounded-[10px] border border-sibs-border bg-white p-4">
+              <div className="flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-wide text-sibs-muted">
+                <UserRound size={13} className="text-sibs-orange" />
                 Filed By
               </div>
-              <p className="mt-2 text-xs font-extrabold text-[#042C51]">
+              <p className="mt-2 text-xs font-extrabold text-sibs-navy">
                 {cleanText(filedByText)}
               </p>
             </div>
           </div>
 
-          <section className="mt-5 overflow-hidden rounded-xl border border-[#E6ECF2]">
-            <div className="border-b border-[#E6ECF2] bg-[#F8FAFC] px-4 py-3">
-              <h3 className="text-xs font-extrabold text-[#042C51]">
+          <section className="mt-5 overflow-hidden rounded-[10px] border border-sibs-border">
+            <div className="border-b border-sibs-border bg-sibs-surface px-4 py-3">
+              <h3 className="text-xs font-extrabold text-sibs-navy">
                 Approval Progress
               </h3>
             </div>
@@ -202,17 +202,17 @@ export default function EmployeeResignationStatusModal({
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[620px] border-collapse text-left">
                   <thead>
-                    <tr className="border-b border-[#E6ECF2] bg-white">
-                      <th className="px-4 py-2.5 text-[10px] font-extrabold uppercase text-[#8A98B8]">
+                    <tr className="border-b border-sibs-border bg-white">
+                      <th className="px-4 py-2.5 text-[10px] font-extrabold uppercase text-sibs-muted">
                         Approval Stage
                       </th>
-                      <th className="px-4 py-2.5 text-[10px] font-extrabold uppercase text-[#8A98B8]">
+                      <th className="px-4 py-2.5 text-[10px] font-extrabold uppercase text-sibs-muted">
                         Designated Approver
                       </th>
-                      <th className="px-4 py-2.5 text-[10px] font-extrabold uppercase text-[#8A98B8]">
+                      <th className="px-4 py-2.5 text-[10px] font-extrabold uppercase text-sibs-muted">
                         Status
                       </th>
-                      <th className="px-4 py-2.5 text-[10px] font-extrabold uppercase text-[#8A98B8]">
+                      <th className="px-4 py-2.5 text-[10px] font-extrabold uppercase text-sibs-muted">
                         Processed
                       </th>
                     </tr>
@@ -221,12 +221,12 @@ export default function EmployeeResignationStatusModal({
                     {approvalStages.map((stage) => (
                       <tr
                         key={stage.key || stage.label}
-                        className="border-b border-[#EEF2F6] last:border-b-0"
+                        className="border-b border-sibs-border/60 last:border-b-0"
                       >
-                        <td className="px-4 py-3 text-xs font-extrabold text-[#042C51]">
+                        <td className="px-4 py-3 text-xs font-extrabold text-sibs-navy">
                           {cleanText(stage.label)}
                         </td>
-                        <td className="px-4 py-3 text-xs font-semibold text-[#475467]">
+                        <td className="px-4 py-3 text-xs font-semibold text-sibs-navy">
                           {cleanText(
                             [stage.approverSibsId, stage.approverName]
                               .filter(Boolean)
@@ -234,12 +234,12 @@ export default function EmployeeResignationStatusModal({
                           )}
                         </td>
                         <td className="px-4 py-3">
-                          <span className="inline-flex items-center gap-1.5 text-xs font-extrabold text-[#344054]">
+                          <span className="inline-flex items-center gap-1.5 text-xs font-extrabold text-sibs-navy">
                             <StatusIcon status={stage.status} />
                             {cleanText(stage.status, "Pending")}
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-xs font-semibold text-[#667085]">
+                        <td className="px-4 py-3 text-xs font-semibold text-sibs-muted">
                           {formatDateTime(stage.processedAt)}
                         </td>
                       </tr>
@@ -248,19 +248,19 @@ export default function EmployeeResignationStatusModal({
                 </table>
               </div>
             ) : (
-              <div className="px-4 py-6 text-center text-xs font-semibold text-[#667085]">
+              <div className="px-4 py-6 text-center text-xs font-semibold text-sibs-muted">
                 Approval routing is still being prepared.
               </div>
             )}
           </section>
 
           {resignation.uploadedFile && resignation.uploadedFileUrl ? (
-            <div className="mt-4 flex flex-col gap-3 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="mt-4 flex flex-col gap-3 rounded-[10px] border border-sibs-border bg-sibs-surface p-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="min-w-0">
-                <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#667085]">
+                <p className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-muted">
                   Resignation Attachment
                 </p>
-                <p className="mt-1 truncate text-xs font-extrabold text-[#042C51]">
+                <p className="mt-1 truncate text-xs font-extrabold text-sibs-navy">
                   {resignation.uploadedFile}
                 </p>
               </div>
@@ -268,7 +268,7 @@ export default function EmployeeResignationStatusModal({
                 href={resignation.uploadedFileUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex h-9 shrink-0 items-center justify-center rounded-lg border border-[#D7DEE8] bg-white px-3 text-xs font-extrabold text-[#042C51] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5]"
+                className="inline-flex h-9 shrink-0 items-center justify-center rounded-[10px] border border-sibs-border bg-white px-3 text-xs font-extrabold text-sibs-navy transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange"
               >
                 View Attachment
               </a>
@@ -276,11 +276,11 @@ export default function EmployeeResignationStatusModal({
           ) : null}
         </div>
 
-        <div className="flex shrink-0 justify-end border-t border-[#E6ECF2] bg-[#F8FAFC] px-5 py-3.5 sm:px-6">
+        <div className="flex shrink-0 justify-end border-t border-sibs-border bg-sibs-surface px-5 py-3.5 sm:px-6">
           <button
             type="button"
             onClick={onClose}
-            className="inline-flex h-9 items-center justify-center rounded-lg bg-[#042C51] px-4 text-xs font-extrabold text-white transition hover:bg-[#0A467A]"
+            className="inline-flex h-9 items-center justify-center rounded-[10px] bg-sibs-navy px-4 text-xs font-extrabold text-white transition hover:bg-sibs-navy/90"
           >
             Close
           </button>

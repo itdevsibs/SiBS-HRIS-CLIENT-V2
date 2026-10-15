@@ -162,7 +162,7 @@ export default function ActionItemsTable() {
                   <tr
                     key={`${item.sourceType}-${item.id}-${item.actionId}`}
                     onClick={() => setSelectedItem(item)}
-                    className="sibs-data-table-row sibs-page-card-in cursor-pointer transition hover:bg-sibs-surface"
+                    className="sibs-data-table-row sibs-page-card-in cursor-pointer transition"
                     style={{ animationDelay: `${index * 35}ms`, animationFillMode: "both" }}
                   >
                     <td className="max-w-[360px] border-r border-sibs-border px-2.5 2xl:px-3.5 py-1.5 2xl:py-2.5 align-middle">

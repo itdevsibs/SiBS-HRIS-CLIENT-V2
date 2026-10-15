@@ -144,15 +144,15 @@ function SectionHeader({ title, subtitle, icon: Icon, isEditing, onEdit }) {
       <div className="min-w-0">
         <div className="flex items-center gap-2">
           {Icon && (
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#E9F0FC] text-[#042C51]">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-blue-50 text-sibs-navy">
               <Icon size={16} />
             </span>
           )}
-          <h2 className="break-words text-sm font-black text-[#042C51]">
+          <h2 className="break-words text-sm font-black text-sibs-navy">
             {title}
           </h2>
         </div>
-        <p className="mt-1 text-[10px] font-semibold leading-4 text-slate-400">
+        <p className="mt-1 text-[10px] font-semibold leading-4 text-sibs-muted">
           {subtitle ||
             "Official record values are shown from the existing employee data source."}
         </p>
@@ -162,9 +162,9 @@ function SectionHeader({ title, subtitle, icon: Icon, isEditing, onEdit }) {
         <button
           type="button"
           onClick={onEdit}
-          className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-[#E6ECF2] bg-white px-3 text-[11px] font-black text-[#042C51] transition hover:bg-slate-50"
+          className="inline-flex h-8 items-center justify-center gap-1.5 rounded-[10px] border border-sibs-border bg-white px-3 text-[11px] font-black text-sibs-navy transition hover:bg-slate-50"
         >
-          <Edit3 size={13} className="text-[#FF5C28]" />
+          <Edit3 size={13} className="text-sibs-orange" />
           Edit Section
         </button>
       )}
@@ -173,14 +173,14 @@ function SectionHeader({ title, subtitle, icon: Icon, isEditing, onEdit }) {
 }
 
 function Panel({ title, accent = "orange", children, className = "" }) {
-  const dotClass = accent === "navy" ? "bg-[#042C51]" : "bg-[#FF5C28]";
+  const dotClass = accent === "navy" ? "bg-sibs-navy" : "bg-sibs-orange";
 
   return (
     <section
-      className={`rounded-xl border border-slate-200 bg-[#F8FAFC] p-4 transition hover:border-slate-300 ${className}`}
+      className={`rounded-[10px] border border-slate-200 bg-sibs-surface p-4 transition hover:border-slate-300 ${className}`}
     >
       {title && (
-        <h3 className="mb-4 flex items-center gap-2 border-b border-slate-200 pb-2.5 text-[11px] font-black uppercase tracking-wider text-[#042C51]">
+        <h3 className="mb-4 flex items-center gap-2 border-b border-slate-200 pb-2.5 text-[11px] font-black uppercase tracking-wider text-sibs-navy">
           <span className={`h-1.5 w-1.5 rounded-full ${dotClass}`} />
           {title}
         </h3>
@@ -193,14 +193,14 @@ function Panel({ title, accent = "orange", children, className = "" }) {
 function ReadField({ label, value, mono = false, className = "" }) {
   return (
     <div className={`flex min-w-0 flex-col gap-1.5 text-left ${className}`}>
-      <span className="block text-[10px] font-bold uppercase tracking-wide text-[#8EA3BF]">
+      <span className="block text-[10px] font-bold uppercase tracking-wide text-sibs-muted">
         {label}
       </span>
 
-      <div className="flex min-h-[40px] items-center rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-3 py-2.5 transition-colors duration-150">
+      <div className="flex min-h-[40px] items-center rounded-[10px] border border-sibs-border bg-sibs-surface px-3 py-2.5 transition-colors duration-150">
         <span
           className={`block min-w-0 break-words text-xs font-semibold leading-normal ${
-            hasValue(value) ? "text-[#101828]" : "text-[#98A2B3]"
+            hasValue(value) ? "text-sibs-navy" : "text-sibs-muted"
           } ${mono ? "font-mono" : ""}`}
         >
           {hasValue(value) ? value : "—"}
@@ -221,7 +221,7 @@ function AnimatedEmployeeDropdown({ open, children }) {
     >
       <div className="min-h-0 overflow-hidden">
         <div
-          className={`origin-top overflow-hidden rounded-[10px] border border-[#D7DEE8] bg-white shadow-[0_18px_40px_rgba(15,23,42,0.16)] transition-all duration-200 ease-out ${
+          className={`origin-top overflow-hidden rounded-[10px] border border-sibs-border-subtle bg-white shadow-[0_18px_40px_rgba(15,23,42,0.16)] transition-all duration-200 ease-out ${
             open
               ? "translate-y-0 scale-100 opacity-100"
               : "-translate-y-2 scale-[0.98] opacity-0"
@@ -438,10 +438,10 @@ function EmployeeDataDropdown({
           }}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
-          className={`h-11 w-full rounded-[10px] border bg-white px-4 pr-11 text-sm font-bold text-[#344054] outline-none transition placeholder:text-[#98A2B3] hover:bg-[#FFFDFC] ${
+          className={`h-11 w-full rounded-[10px] border bg-white px-4 pr-11 text-sm font-bold text-sibs-navy outline-none transition placeholder:text-sibs-muted hover:bg-sibs-cream-light ${
             open
-              ? "border-[#FF5C28] ring-4 ring-[#FF5C28]/10"
-              : "border-[#D0D5DD] hover:border-[#FF5C28]/40"
+              ? "border-sibs-orange ring-4 ring-sibs-orange/10"
+              : "border-sibs-border hover:border-sibs-orange/40"
           }`}
         />
 
@@ -450,7 +450,7 @@ function EmployeeDataDropdown({
           tabIndex={-1}
           onMouseDown={(event) => event.preventDefault()}
           onClick={() => (open ? closeDropdown() : openDropdown())}
-          className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md text-[#667085] transition hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
+          className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-[10px] text-sibs-muted transition hover:bg-sibs-cream-light hover:text-sibs-orange"
           aria-label={open ? "Close options" : "Open options"}
         >
           <ChevronDown
@@ -488,10 +488,10 @@ function EmployeeDataDropdown({
                 onClick={() => selectOption(option)}
                 className={`flex min-h-[44px] w-full items-center px-4 text-left text-sm transition-colors duration-150 ${
                   selected
-                    ? "bg-[#FFF0EB] font-extrabold text-[#FF5C28]"
+                    ? "bg-sibs-cream-subtle font-extrabold text-sibs-orange"
                     : active
-                      ? "bg-[#FFF7F3] font-bold text-[#FF5C28]"
-                      : "bg-white font-semibold text-[#475467] hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
+                      ? "bg-sibs-cream-light font-bold text-sibs-orange"
+                      : "bg-white font-semibold text-sibs-muted hover:bg-sibs-cream-light hover:text-sibs-orange"
                 }`}
               >
                 <span className="block min-w-0 flex-1 truncate">
@@ -502,7 +502,7 @@ function EmployeeDataDropdown({
           })}
 
           {!hasMatchingValueOptions && text(search) && (
-            <div className="px-4 py-4 text-sm font-semibold text-[#98A2B3]">
+            <div className="px-4 py-4 text-sm font-semibold text-sibs-muted">
               No options found.
             </div>
           )}
@@ -527,13 +527,13 @@ function FieldControl({
   const controlId = `employee-field-${generatedId.replace(/:/g, "")}`;
 
   const common =
-    "w-full rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-3 text-xs font-semibold text-[#101828] outline-none transition-all duration-150 placeholder:text-[#98A2B3] hover:border-[#C9D6E4] focus:border-[#042C51] focus:bg-white focus:ring-2 focus:ring-[#042C51]/10";
+    "w-full rounded-[10px] border border-sibs-border bg-sibs-surface px-3 text-xs font-semibold text-sibs-navy outline-none transition-all duration-150 placeholder:text-sibs-muted hover:border-sibs-border-subtle focus:border-sibs-navy focus:bg-white focus:ring-2 focus:ring-sibs-navy/10";
 
   return (
     <div className={`block min-w-0 overflow-visible ${className}`}>
       <label
         htmlFor={controlId}
-        className="mb-1.5 block text-[10px] font-bold uppercase tracking-wide text-[#8EA3BF]"
+        className="mb-1.5 block text-[10px] font-bold uppercase tracking-wide text-sibs-muted"
       >
         {label} {required ? "*" : ""}
       </label>
@@ -576,13 +576,13 @@ function FieldControl({
 
 function EmptyState({ message, actionLabel, onAction }) {
   return (
-    <div className="rounded-xl border-2 border-dashed border-slate-200 bg-[#F8FAFC] px-5 py-10 text-center">
+    <div className="rounded-[10px] border-2 border-dashed border-slate-200 bg-sibs-surface px-5 py-10 text-center">
       <p className="text-xs font-semibold text-slate-400">{message}</p>
       {actionLabel && onAction && (
         <button
           type="button"
           onClick={onAction}
-          className="mt-3 text-xs font-black text-[#042C51] hover:text-[#FF5C28]"
+          className="mt-3 text-xs font-black text-sibs-navy hover:text-sibs-orange"
         >
           {actionLabel}
         </button>
@@ -593,10 +593,10 @@ function EmptyState({ message, actionLabel, onAction }) {
 
 function SaveBar({ label, onCancel, onSave, isSaving = false }) {
   return (
-    <div className="sticky bottom-3 z-40 mt-6 flex flex-col gap-3 rounded-xl border border-[#E6ECF2] bg-white/95 px-4 py-3 shadow-xl backdrop-blur sm:flex-row sm:items-center sm:justify-between">
+    <div className="sticky bottom-3 z-40 mt-6 flex flex-col gap-3 rounded-[14px] border border-sibs-border bg-white/95 px-4 py-3 shadow-xl backdrop-blur sm:flex-row sm:items-center sm:justify-between">
       <div className="flex items-center gap-2">
         <span className="h-2 w-2 animate-pulse rounded-full bg-amber-400" />
-        <span className="text-[11px] font-black text-[#042C51]">
+        <span className="text-[11px] font-black text-sibs-navy">
           {isSaving ? `Saving: ${label}` : `Modified draft: ${label}`}
         </span>
       </div>
@@ -605,7 +605,7 @@ function SaveBar({ label, onCancel, onSave, isSaving = false }) {
           type="button"
           onClick={onCancel}
           disabled={isSaving}
-          className="h-8 flex-1 rounded-lg bg-slate-100 px-3 text-[11px] font-black text-[#667085] transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-60 sm:flex-none"
+          className="h-8 flex-1 rounded-[10px] bg-slate-100 px-3 text-[11px] font-black text-sibs-muted transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-60 sm:flex-none"
         >
           Cancel
         </button>
@@ -613,9 +613,9 @@ function SaveBar({ label, onCancel, onSave, isSaving = false }) {
           type="button"
           onClick={onSave}
           disabled={isSaving}
-          className="inline-flex h-8 flex-1 items-center justify-center gap-1.5 rounded-lg bg-[#042C51] px-4 text-[11px] font-black text-white transition hover:bg-[#063560] disabled:cursor-not-allowed disabled:opacity-60 sm:flex-none"
+          className="inline-flex h-8 flex-1 items-center justify-center gap-1.5 rounded-[10px] bg-sibs-navy px-4 text-[11px] font-black text-white transition hover:bg-sibs-navy/90 disabled:cursor-not-allowed disabled:opacity-60 sm:flex-none"
         >
-          <Save size={13} className="text-[#FF5C28]" />
+          <Save size={13} className="text-sibs-orange" />
           {isSaving ? "Saving..." : "Save Changes"}
         </button>
       </div>
@@ -629,7 +629,7 @@ function CopyButton({ value, copyKey, copiedKey, onCopy }) {
     <button
       type="button"
       onClick={() => onCopy(value, copyKey)}
-      className="rounded-lg p-1.5 text-[#667085] hover:bg-white hover:text-[#042C51]"
+      className="rounded-[10px] p-1.5 text-sibs-muted hover:bg-white hover:text-sibs-navy"
       title="Copy value"
     >
       {copiedKey === copyKey ? (
@@ -793,20 +793,20 @@ export function PersonalSection({
             {[
               { label: "Corporate Email", value: employee?.email, icon: Mail, key: "email", tone: "bg-blue-50 text-blue-600" },
               { label: "Mobile Number", value: employee?.contact, icon: Phone, key: "mobile", tone: "bg-emerald-50 text-emerald-600" },
-              { label: "Telephone", value: employee?.telephone, icon: Building2, key: "telephone", tone: "bg-orange-50 text-[#FF5C28]" },
+              { label: "Telephone", value: employee?.telephone, icon: Building2, key: "telephone", tone: "bg-orange-50 text-sibs-orange" },
             ].map((item) => (
               <Panel key={item.key}>
                 <div className="flex items-center gap-3">
-                  <span className={`flex h-10 w-10 items-center justify-center rounded-xl ${item.tone}`}>
+                  <span className={`flex h-10 w-10 items-center justify-center rounded-[10px] ${item.tone}`}>
                     <item.icon size={19} />
                   </span>
                   <div className="min-w-0">
-                    <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#667085]">{item.label}</p>
-                    <p className="text-xs font-semibold text-[#52637A]">Primary contact channel</p>
+                    <p className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-muted">{item.label}</p>
+                    <p className="text-xs font-semibold text-sibs-muted">Primary contact channel</p>
                   </div>
                 </div>
-                <div className="mt-4 flex items-center justify-between rounded-xl bg-[#F3F6FA] px-3 py-3">
-                  <span className={`min-w-0 break-all text-sm font-extrabold ${hasValue(item.value) ? "text-[#344054]" : "italic text-[#98A2B3]"}`}>
+                <div className="mt-4 flex items-center justify-between rounded-[10px] bg-sibs-surface px-3 py-3">
+                  <span className={`min-w-0 break-all text-sm font-extrabold ${hasValue(item.value) ? "text-sibs-navy" : "italic text-sibs-muted"}`}>
                     {hasValue(item.value) ? item.value : "—"}
                   </span>
                   <CopyButton value={item.value} copyKey={item.key} copiedKey={copiedKey} onCopy={copyValue} />
@@ -834,7 +834,7 @@ export function PersonalSection({
                 ["Permanent Address", employee?.permanentAddress, "navy"],
               ].map(([label, value, accent]) => (
                 <Panel key={label} title={label} accent={accent}>
-                  <p className={`min-h-24 rounded-xl bg-[#F8FAFC] p-4 text-sm font-bold leading-6 ${hasValue(value) ? "text-[#344054]" : "italic text-[#98A2B3]"}`}>
+                  <p className={`min-h-24 rounded-[10px] bg-sibs-surface p-4 text-sm font-bold leading-6 ${hasValue(value) ? "text-sibs-navy" : "italic text-sibs-muted"}`}>
                     {hasValue(value) ? value : "—"}
                   </p>
                 </Panel>
@@ -843,16 +843,16 @@ export function PersonalSection({
             <Panel>
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-center gap-3">
-                  <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600">
+                  <span className="flex h-12 w-12 items-center justify-center rounded-[10px] bg-indigo-50 text-indigo-600">
                     <Building2 size={23} />
                   </span>
                   <div>
-                    <h3 className="text-sm font-extrabold text-[#042C51]">Active Work Arrangement</h3>
-                    <p className="mt-0.5 text-xs font-medium text-[#667085]">Current corporate work setup assignment.</p>
+                    <h3 className="text-sm font-extrabold text-sibs-navy">Active Work Arrangement</h3>
+                    <p className="mt-0.5 text-xs font-medium text-sibs-muted">Current corporate work setup assignment.</p>
                   </div>
                 </div>
-                <span className="inline-flex items-center gap-2 rounded-xl border border-blue-100 bg-[#E9F0FC] px-4 py-2 text-xs font-extrabold uppercase tracking-wide text-[#042C51]">
-                  <span className="h-2 w-2 rounded-full bg-[#FF5C28]" />
+                <span className="inline-flex items-center gap-2 rounded-[10px] border border-blue-100 bg-blue-50 px-4 py-2 text-xs font-extrabold uppercase tracking-wide text-sibs-navy">
+                  <span className="h-2 w-2 rounded-full bg-sibs-orange" />
                   {employee?.workSetup || "—"}
                 </span>
               </div>
@@ -874,11 +874,11 @@ export function PersonalSection({
           </Panel>
         ) : (
           <Panel>
-            <div className="mb-4 flex items-start gap-2.5 rounded-xl border border-amber-200 bg-amber-50 p-3 text-[11px] font-semibold leading-5 text-amber-800">
+            <div className="mb-4 flex items-start gap-2.5 rounded-[10px] border border-amber-200 bg-amber-50 p-3 text-[11px] font-semibold leading-5 text-amber-800">
               <Lock size={16} className="mt-0.5 shrink-0 text-amber-600" />
               Regulatory data is masked by default. Reveal or copy only when authorized.
             </div>
-            <div className="divide-y divide-[#E6ECF2]">
+            <div className="divide-y divide-sibs-border">
               {[
                 ["gsis", "GSIS", employee?.gsis],
                 ["sss", "Social Security System (SSS)", employee?.sss],
@@ -888,11 +888,11 @@ export function PersonalSection({
               ].map(([key, label, value]) => (
                 <div key={key} className="flex flex-col gap-3 py-4 first:pt-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between">
                   <div>
-                    <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#667085]">{label}</p>
-                    <p className="mt-1 font-mono text-sm font-extrabold text-[#344054]">{maskedValue(value, masked[key])}</p>
+                    <p className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-muted">{label}</p>
+                    <p className="mt-1 font-mono text-sm font-extrabold text-sibs-navy">{maskedValue(value, masked[key])}</p>
                   </div>
                   <div className="flex items-center gap-1 self-end sm:self-auto">
-                    <button type="button" onClick={() => setMasked((current) => ({ ...current, [key]: !current[key] }))} className="rounded-xl p-2 text-[#667085] hover:bg-[#F3F6FA] hover:text-[#042C51]" title={masked[key] ? "Reveal ID" : "Hide ID"}>
+                    <button type="button" onClick={() => setMasked((current) => ({ ...current, [key]: !current[key] }))} className="rounded-[10px] p-2 text-sibs-muted hover:bg-sibs-surface hover:text-sibs-navy" title={masked[key] ? "Reveal ID" : "Hide ID"}>
                       {masked[key] ? <Eye size={16} /> : <EyeOff size={16} />}
                     </button>
                     <CopyButton value={value} copyKey={key} copiedKey={copiedKey} onCopy={copyValue} />
@@ -952,7 +952,7 @@ export function FamilySection({
   }
 
   return (
-    <div className="rounded-[20px] border border-[#D6E0EA] bg-white p-4 shadow-sm sm:p-6">
+    <div className="rounded-[14px] border border-sibs-border bg-white p-4 shadow-sm sm:p-6">
       <SectionHeader title={title} subtitle={subtitle} icon={Icon} isEditing={isEditing} onEdit={onEdit} />
 
       {selectedSubTab === "spouse" && (
@@ -1025,7 +1025,7 @@ export function FamilySection({
         isEditing ? (
           <Panel title={`Children Dependents (${children.length})`}>
             <div className="mb-4 flex justify-end">
-              <button type="button" onClick={() => onListChange("children", [...children, { id: `child_${Date.now()}`, name: "", birthDate: "" }])} className="inline-flex h-9 items-center gap-2 rounded-xl bg-[#042C51] px-4 text-xs font-extrabold text-white">
+              <button type="button" onClick={() => onListChange("children", [...children, { id: `child_${Date.now()}`, name: "", birthDate: "" }])} className="inline-flex h-9 items-center gap-2 rounded-[10px] bg-sibs-navy px-4 text-xs font-extrabold text-white">
                 <Plus size={14} /> Add Dependent
               </button>
             </div>
@@ -1034,10 +1034,10 @@ export function FamilySection({
             ) : (
               <div className="space-y-4">
                 {children.map((child, index) => (
-                  <div key={child?.id || index} className="grid grid-cols-1 gap-3 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4 md:grid-cols-[minmax(0,1fr)_220px_auto] md:items-end">
+                  <div key={child?.id || index} className="grid grid-cols-1 gap-3 rounded-[10px] border border-sibs-border bg-sibs-surface p-4 md:grid-cols-[minmax(0,1fr)_220px_auto] md:items-end">
                     <FieldControl label="Child's Full Name" value={child?.name} onChange={(v) => updateChild(index, "name", v)} required />
                     <FieldControl label="Birth Date" type="date" value={toInputDate(child?.birthDate)} onChange={(v) => updateChild(index, "birthDate", v)} required />
-                    <button type="button" onClick={() => onListChange("children", children.filter((_, childIndex) => childIndex !== index))} className="flex h-10 items-center justify-center rounded-xl border border-red-100 bg-red-50 px-3 text-red-600 hover:bg-red-100" title="Remove child">
+                    <button type="button" onClick={() => onListChange("children", children.filter((_, childIndex) => childIndex !== index))} className="flex h-10 items-center justify-center rounded-[10px] border border-red-100 bg-red-50 px-3 text-red-600 hover:bg-red-100" title="Remove child">
                       <Trash2 size={16} />
                     </button>
                   </div>
@@ -1053,18 +1053,18 @@ export function FamilySection({
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[560px] text-left text-xs">
                   <thead>
-                    <tr className="border-b border-[#E6ECF2] bg-[#F8FAFC] text-[10px] font-extrabold uppercase tracking-wide text-[#667085]">
-                      <th className="rounded-l-xl px-4 py-3">Child's Complete Name</th>
+                    <tr className="border-b border-sibs-border bg-sibs-surface text-[10px] font-extrabold uppercase tracking-wide text-sibs-muted">
+                      <th className="rounded-l-[10px] px-4 py-3">Child's Complete Name</th>
                       <th className="px-4 py-3">Birth Date</th>
-                      <th className="rounded-r-xl px-4 py-3">Calculated Age</th>
+                      <th className="rounded-r-[10px] px-4 py-3">Calculated Age</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-[#E6ECF2]">
+                  <tbody className="divide-y divide-sibs-border">
                     {children.map((child, index) => (
                       <tr key={child?.id || index}>
-                        <td className="px-4 py-4 font-extrabold text-[#344054]">{child?.name || "—"}</td>
-                        <td className="px-4 py-4 font-semibold text-[#667085]">{formatDate(child?.birthDate)}</td>
-                        <td className="px-4 py-4"><span className="rounded-full bg-[#E9F0FC] px-2.5 py-1 text-[10px] font-extrabold text-[#042C51]">{calculateAge(child?.birthDate)}</span></td>
+                        <td className="px-4 py-4 font-extrabold text-sibs-navy">{child?.name || "—"}</td>
+                        <td className="px-4 py-4 font-semibold text-sibs-muted">{formatDate(child?.birthDate)}</td>
+                        <td className="px-4 py-4"><span className="rounded-full bg-blue-50 px-2.5 py-1 text-[10px] font-extrabold text-sibs-navy">{calculateAge(child?.birthDate)}</span></td>
                       </tr>
                     ))}
                   </tbody>
@@ -1092,11 +1092,11 @@ export function FamilySection({
                 {text(employee?.emergencyName).slice(0, 2).toUpperCase() || "EC"}
               </span>
               <div className="min-w-0 flex-1">
-                <h3 className="text-lg font-extrabold text-[#042C51]">{employee?.emergencyName || "—"}</h3>
+                <h3 className="text-lg font-extrabold text-sibs-navy">{employee?.emergencyName || "—"}</h3>
                 <span className="mt-1 inline-flex rounded-full border border-red-100 bg-red-50 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide text-red-700">{employee?.emergencyRelationship || "Emergency Contact"}</span>
-                <div className="mt-4 grid grid-cols-1 gap-3 border-t border-[#E6ECF2] pt-4 sm:grid-cols-2">
-                  <div className="flex items-center gap-2 text-xs font-bold text-[#344054]"><Phone size={15} className="text-[#667085]" />{employee?.emergencyPhone || "—"}</div>
-                  <div className="flex min-w-0 items-center gap-2 text-xs font-semibold text-[#52637A]"><Mail size={15} className="shrink-0 text-[#667085]" /><span className="truncate">{employee?.emergencyEmail || "—"}</span></div>
+                <div className="mt-4 grid grid-cols-1 gap-3 border-t border-sibs-border pt-4 sm:grid-cols-2">
+                  <div className="flex items-center gap-2 text-xs font-bold text-sibs-navy"><Phone size={15} className="text-sibs-muted" />{employee?.emergencyPhone || "—"}</div>
+                  <div className="flex min-w-0 items-center gap-2 text-xs font-semibold text-sibs-muted"><Mail size={15} className="shrink-0 text-sibs-muted" /><span className="truncate">{employee?.emergencyEmail || "—"}</span></div>
                 </div>
               </div>
             </div>
@@ -1236,7 +1236,7 @@ function GenericRecordEditor({ schema, records, onChange }) {
   return (
     <div className="space-y-4">
       <div className="flex justify-end">
-        <button type="button" onClick={addRecord} className="inline-flex h-9 items-center gap-2 rounded-xl bg-[#042C51] px-4 text-xs font-extrabold text-white">
+        <button type="button" onClick={addRecord} className="inline-flex h-9 items-center gap-2 rounded-[10px] bg-sibs-navy px-4 text-xs font-extrabold text-white">
           <Plus size={14} /> {schema.addLabel}
         </button>
       </div>
@@ -1260,7 +1260,7 @@ function GenericRecordEditor({ schema, records, onChange }) {
               ))}
             </div>
             <div className="mt-4 flex justify-end">
-              <button type="button" onClick={() => removeRecord(index)} className="inline-flex h-9 items-center gap-2 rounded-xl border border-red-100 bg-red-50 px-3 text-xs font-extrabold text-red-600 hover:bg-red-100">
+              <button type="button" onClick={() => removeRecord(index)} className="inline-flex h-9 items-center gap-2 rounded-[10px] border border-red-100 bg-red-50 px-3 text-xs font-extrabold text-red-600 hover:bg-red-100">
                 <Trash2 size={14} /> Remove
               </button>
             </div>
@@ -1286,7 +1286,7 @@ export function TimelineSection({
   const [expanded, setExpanded] = useState({});
 
   return (
-    <div className="rounded-[20px] border border-[#D6E0EA] bg-white p-4 shadow-sm sm:p-6">
+    <div className="rounded-[14px] border border-sibs-border bg-white p-4 shadow-sm sm:p-6">
       <SectionHeader title={schema.title} subtitle={schema.subtitle} icon={schema.icon} isEditing={isEditing} onEdit={onEdit} />
 
       {isEditing ? (
@@ -1305,13 +1305,13 @@ export function TimelineSection({
               "Education Record";
 
             return (
-              <article key={record?.id || index} className="relative rounded-2xl border border-[#D6E0EA] bg-white p-5 shadow-sm">
-                <span className="absolute -left-[33px] top-6 h-4 w-4 rounded-full border-4 border-white bg-[#042C51] shadow" />
+              <article key={record?.id || index} className="relative rounded-[10px] border border-sibs-border bg-white p-5 shadow-sm">
+                <span className="absolute -left-[33px] top-6 h-4 w-4 rounded-full border-4 border-white bg-sibs-navy shadow" />
                 <div>
-                  <span className="rounded-full border border-blue-100 bg-[#E9F0FC] px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide text-[#042C51]">
+                  <span className="rounded-full border border-blue-100 bg-blue-50 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide text-sibs-navy">
                     {level || "Education"}
                   </span>
-                  <h3 className="mt-3 text-sm font-extrabold text-[#042C51]">
+                  <h3 className="mt-3 text-sm font-extrabold text-sibs-navy">
                     {heading}
                   </h3>
                 </div>
@@ -1335,10 +1335,10 @@ export function TimelineSection({
             const [status, statusClass] = licenseStatus(record?.validityDate);
             return (
               <Panel key={record?.id || index}>
-                <div className="flex items-start justify-between gap-3 border-b border-[#E6ECF2] pb-3">
+                <div className="flex items-start justify-between gap-3 border-b border-sibs-border pb-3">
                   <div className="min-w-0">
-                    <h3 className="break-words text-xs font-extrabold uppercase tracking-wide text-[#042C51]">{normalizeRecordValue(record, ["title", "eligibilityLicense"]) || "Eligibility / License"}</h3>
-                    <p className="mt-1 font-mono text-[10px] text-[#667085]">License: {record?.licenseNumber || "—"}</p>
+                    <h3 className="break-words text-xs font-extrabold uppercase tracking-wide text-sibs-navy">{normalizeRecordValue(record, ["title", "eligibilityLicense"]) || "Eligibility / License"}</h3>
+                    <p className="mt-1 font-mono text-[10px] text-sibs-muted">License: {record?.licenseNumber || "—"}</p>
                   </div>
                   <span className={`shrink-0 rounded-full border px-2 py-1 text-[9px] font-extrabold uppercase tracking-wide ${statusClass}`}>{status}</span>
                 </div>
@@ -1359,14 +1359,14 @@ export function TimelineSection({
             const company = normalizeRecordValue(record, ["company", "companyOffice"]);
             const isOpen = expanded[index];
             return (
-              <article key={record?.id || index} className="relative rounded-2xl border border-[#D6E0EA] bg-white p-5 shadow-sm">
+              <article key={record?.id || index} className="relative rounded-[10px] border border-sibs-border bg-white p-5 shadow-sm">
                 <span className="absolute -left-[33px] top-6 h-4 w-4 rounded-full border-4 border-white bg-indigo-600 shadow" />
-                <div className="flex flex-col gap-3 border-b border-[#E6ECF2] pb-4 sm:flex-row sm:items-start sm:justify-between">
+                <div className="flex flex-col gap-3 border-b border-sibs-border pb-4 sm:flex-row sm:items-start sm:justify-between">
                   <div>
-                    <h3 className="text-sm font-extrabold text-[#042C51]">{position || "—"}</h3>
-                    <p className="mt-1 flex items-center gap-1.5 text-xs font-bold text-[#52637A]"><Building2 size={14} />{company || "—"}</p>
+                    <h3 className="text-sm font-extrabold text-sibs-navy">{position || "—"}</h3>
+                    <p className="mt-1 flex items-center gap-1.5 text-xs font-bold text-sibs-muted"><Building2 size={14} />{company || "—"}</p>
                   </div>
-                  <span className="rounded-xl border border-indigo-100 bg-indigo-50 px-3 py-2 text-[10px] font-extrabold text-indigo-700">{record?.from || "—"} — {record?.to || "Present"}</span>
+                  <span className="rounded-[10px] border border-indigo-100 bg-indigo-50 px-3 py-2 text-[10px] font-extrabold text-indigo-700">{record?.from || "—"} — {record?.to || "Present"}</span>
                 </div>
                 <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
                   <ReadField label="Monthly Salary" value={normalizeRecordValue(record, ["salary", "monthlySalary"])} />
@@ -1374,12 +1374,12 @@ export function TimelineSection({
                   <ReadField label="Government Service" value={record?.governmentService} />
                 </div>
                 {record?.duties && (
-                  <div className="mt-4 border-t border-[#E6ECF2] pt-3">
-                    <button type="button" onClick={() => setExpanded((current) => ({ ...current, [index]: !current[index] }))} className="inline-flex items-center gap-2 text-[11px] font-extrabold text-[#042C51] hover:text-[#FF5C28]">
+                  <div className="mt-4 border-t border-sibs-border pt-3">
+                    <button type="button" onClick={() => setExpanded((current) => ({ ...current, [index]: !current[index] }))} className="inline-flex items-center gap-2 text-[11px] font-extrabold text-sibs-navy hover:text-sibs-orange">
                       {isOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                       {isOpen ? "Collapse Duties" : "Expand Duties & Responsibilities"}
                     </button>
-                    {isOpen && <p className="mt-3 rounded-xl bg-[#F8FAFC] p-4 text-xs font-medium leading-6 text-[#52637A]">{record.duties}</p>}
+                    {isOpen && <p className="mt-3 rounded-[10px] bg-sibs-surface p-4 text-xs font-medium leading-6 text-sibs-muted">{record.duties}</p>}
                   </div>
                 )}
               </article>
@@ -1390,18 +1390,18 @@ export function TimelineSection({
         <div className="space-y-5">
           {records.length > 0 && (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-              <Panel><p className="text-[10px] font-extrabold uppercase tracking-wide text-[#667085]">Total Programs</p><p className="mt-1 text-2xl font-extrabold text-[#042C51]">{records.length}</p></Panel>
-              <Panel><p className="text-[10px] font-extrabold uppercase tracking-wide text-[#667085]">Total LD Hours</p><p className="mt-1 text-2xl font-extrabold text-[#FF5C28]">{records.reduce((sum, item) => sum + (Number(item?.hours || item?.hoursNumber) || 0), 0)}</p></Panel>
-              <Panel><p className="text-[10px] font-extrabold uppercase tracking-wide text-[#667085]">Latest Training</p><p className="mt-1 truncate text-sm font-extrabold text-[#344054]">{normalizeRecordValue(records[0], ["title", "trainingTitle"]) || "—"}</p></Panel>
+              <Panel><p className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-muted">Total Programs</p><p className="mt-1 text-2xl font-extrabold text-sibs-navy">{records.length}</p></Panel>
+              <Panel><p className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-muted">Total LD Hours</p><p className="mt-1 text-2xl font-extrabold text-sibs-orange">{records.reduce((sum, item) => sum + (Number(item?.hours || item?.hoursNumber) || 0), 0)}</p></Panel>
+              <Panel><p className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-muted">Latest Training</p><p className="mt-1 truncate text-sm font-extrabold text-sibs-navy">{normalizeRecordValue(records[0], ["title", "trainingTitle"]) || "—"}</p></Panel>
             </div>
           )}
           {records.length === 0 ? <EmptyState message={schema.empty} actionLabel={schema.addLabel} onAction={onEdit} /> : records.map((record, index) => (
             <Panel key={record?.id || index}>
-              <div className="flex flex-col gap-3 border-b border-[#E6ECF2] pb-3 sm:flex-row sm:items-start sm:justify-between">
-                <div><h3 className="text-sm font-extrabold text-[#042C51]">{normalizeRecordValue(record, ["title", "trainingTitle"]) || "—"}</h3><p className="mt-1 text-xs font-semibold text-[#667085]">Conducted by <strong className="text-[#344054]">{record?.conductedBy || "—"}</strong></p></div>
-                <div className="text-right"><span className="rounded-full border border-sky-100 bg-sky-50 px-2.5 py-1 text-[10px] font-extrabold text-sky-700">{normalizeRecordValue(record, ["type", "typeOfLD"]) || "Learning & Development"}</span><p className="mt-2 font-mono text-[10px] font-bold text-[#667085]">{normalizeRecordValue(record, ["hours", "hoursNumber"]) || "0"} hours</p></div>
+              <div className="flex flex-col gap-3 border-b border-sibs-border pb-3 sm:flex-row sm:items-start sm:justify-between">
+                <div><h3 className="text-sm font-extrabold text-sibs-navy">{normalizeRecordValue(record, ["title", "trainingTitle"]) || "—"}</h3><p className="mt-1 text-xs font-semibold text-sibs-muted">Conducted by <strong className="text-sibs-navy">{record?.conductedBy || "—"}</strong></p></div>
+                <div className="text-right"><span className="rounded-full border border-sky-100 bg-sky-50 px-2.5 py-1 text-[10px] font-extrabold text-sky-700">{normalizeRecordValue(record, ["type", "typeOfLD"]) || "Learning & Development"}</span><p className="mt-2 font-mono text-[10px] font-bold text-sibs-muted">{normalizeRecordValue(record, ["hours", "hoursNumber"]) || "0"} hours</p></div>
               </div>
-              <p className="mt-3 inline-flex items-center gap-2 rounded-lg bg-[#F3F6FA] px-3 py-2 text-[11px] font-bold text-[#344054]"><CalendarDays size={14} className="text-[#FF5C28]" />{formatDate(record?.from)} to {formatDate(record?.to)}</p>
+              <p className="mt-3 inline-flex items-center gap-2 rounded-[10px] bg-sibs-surface px-3 py-2 text-[11px] font-bold text-sibs-navy"><CalendarDays size={14} className="text-sibs-orange" />{formatDate(record?.from)} to {formatDate(record?.to)}</p>
             </Panel>
           ))}
         </div>
@@ -1409,8 +1409,8 @@ export function TimelineSection({
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           {records.length === 0 ? <div className="lg:col-span-2"><EmptyState message={schema.empty} actionLabel={schema.addLabel} onAction={onEdit} /></div> : records.map((record, index) => (
             <Panel key={record?.id || index}>
-              <h3 className="border-b border-[#E6ECF2] pb-3 text-sm font-extrabold text-[#042C51]">{record?.name || "—"}</h3>
-              <div className="mt-4 space-y-3 text-xs text-[#52637A]"><p className="flex items-start gap-2"><MapPin size={14} className="mt-0.5 shrink-0" />{record?.address || "—"}</p><p className="flex items-center gap-2"><Phone size={14} />{normalizeRecordValue(record, ["telephone", "telephoneNumber"]) || "—"}</p></div>
+              <h3 className="border-b border-sibs-border pb-3 text-sm font-extrabold text-sibs-navy">{record?.name || "—"}</h3>
+              <div className="mt-4 space-y-3 text-xs text-sibs-muted"><p className="flex items-start gap-2"><MapPin size={14} className="mt-0.5 shrink-0" />{record?.address || "—"}</p><p className="flex items-center gap-2"><Phone size={14} />{normalizeRecordValue(record, ["telephone", "telephoneNumber"]) || "—"}</p></div>
             </Panel>
           ))}
         </div>
@@ -1435,12 +1435,12 @@ function StringListEditor({ items, placeholder, addLabel, onChange }) {
   return (
     <div className="space-y-4">
       <form onSubmit={addItem} className="flex flex-col gap-2 sm:flex-row">
-        <input value={draft} onChange={(event) => setDraft(event.target.value)} placeholder={placeholder} className="h-10 flex-1 rounded-xl border border-[#D0D5DD] bg-[#F8FAFC] px-3 text-xs font-semibold outline-none focus:border-[#042C51] focus:bg-white" />
-        <button type="submit" className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-[#042C51] px-4 text-xs font-extrabold text-white"><Plus size={14} />{addLabel}</button>
+        <input value={draft} onChange={(event) => setDraft(event.target.value)} placeholder={placeholder} className="h-10 flex-1 rounded-[10px] border border-sibs-border bg-sibs-surface px-3 text-xs font-semibold outline-none focus:border-sibs-navy focus:bg-white" />
+        <button type="submit" className="inline-flex h-10 items-center justify-center gap-2 rounded-[10px] bg-sibs-navy px-4 text-xs font-extrabold text-white"><Plus size={14} />{addLabel}</button>
       </form>
-      <div className="flex flex-wrap gap-2 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4">
-        {items.length === 0 ? <p className="text-xs font-semibold text-[#98A2B3]">No entries added.</p> : items.map((item, index) => (
-          <span key={`${item}-${index}`} className="inline-flex max-w-full items-center gap-2 rounded-xl border border-[#D6E0EA] bg-white px-3 py-2 text-xs font-extrabold text-[#042C51]">
+      <div className="flex flex-wrap gap-2 rounded-[10px] border border-sibs-border bg-sibs-surface p-4">
+        {items.length === 0 ? <p className="text-xs font-semibold text-sibs-muted">No entries added.</p> : items.map((item, index) => (
+          <span key={`${item}-${index}`} className="inline-flex max-w-full items-center gap-2 rounded-[10px] border border-sibs-border bg-white px-3 py-2 text-xs font-extrabold text-sibs-navy">
             <span className="break-words">{typeof item === "string" ? item : item?.name || "—"}</span>
             <button type="button" onClick={() => onChange(items.filter((_, itemIndex) => itemIndex !== index))} className="text-red-500"><X size={13} /></button>
           </span>
@@ -1469,7 +1469,7 @@ export function SkillsSection({
   const items = Array.isArray(employee?.[listKey]) ? employee[listKey] : [];
 
   return (
-    <div className="rounded-[20px] border border-[#D6E0EA] bg-white p-4 shadow-sm sm:p-6">
+    <div className="rounded-[14px] border border-sibs-border bg-white p-4 shadow-sm sm:p-6">
       <SectionHeader title={title} subtitle={subtitle} icon={Icon} isEditing={isEditing} onEdit={onEdit} />
 
       {isEditing ? (
@@ -1481,18 +1481,18 @@ export function SkillsSection({
           {items.length === 0 ? <EmptyState message="No skills logged yet." actionLabel="Add skills" onAction={onEdit} /> : (
             <div className="flex flex-wrap gap-2">
               {items.map((item, index) => (
-                <span key={index} className="inline-flex items-center gap-2 rounded-xl border border-blue-100 bg-[#E9F0FC] px-3.5 py-2 text-xs font-extrabold text-[#042C51] transition hover:bg-[#042C51] hover:text-white"><Star size={14} className="fill-[#FF5C28] text-[#FF5C28]" />{typeof item === "string" ? item : item?.name || "—"}</span>
+                <span key={index} className="inline-flex items-center gap-2 rounded-[10px] border border-blue-100 bg-blue-50 px-3.5 py-2 text-xs font-extrabold text-sibs-navy transition hover:bg-sibs-navy hover:text-white"><Star size={14} className="fill-sibs-orange text-sibs-orange" />{typeof item === "string" ? item : item?.name || "—"}</span>
               ))}
             </div>
           )}
         </Panel>
       ) : selectedSubTab === "recognitions" ? (
         <Panel>
-          {items.length === 0 ? <EmptyState message="No recognition records logged." actionLabel="Add recognition" onAction={onEdit} /> : <div className="space-y-3">{items.map((item, index) => <div key={index} className="flex items-start gap-3 rounded-xl bg-[#F8FAFC] p-4"><span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-orange-50 text-[#FF5C28]"><Award size={16} /></span><p className="text-xs font-bold leading-6 text-[#344054]">{typeof item === "string" ? item : item?.name || "—"}</p></div>)}</div>}
+          {items.length === 0 ? <EmptyState message="No recognition records logged." actionLabel="Add recognition" onAction={onEdit} /> : <div className="space-y-3">{items.map((item, index) => <div key={index} className="flex items-start gap-3 rounded-[10px] bg-sibs-surface p-4"><span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-orange-50 text-sibs-orange"><Award size={16} /></span><p className="text-xs font-bold leading-6 text-sibs-navy">{typeof item === "string" ? item : item?.name || "—"}</p></div>)}</div>}
         </Panel>
       ) : (
         <Panel>
-          {items.length === 0 ? <EmptyState message="No organization memberships logged." actionLabel="Add organization" onAction={onEdit} /> : <div className="grid grid-cols-1 gap-3 md:grid-cols-2">{items.map((item, index) => <div key={index} className="flex items-center gap-3 rounded-xl bg-[#F8FAFC] p-4"><span className="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600"><Users size={17} /></span><p className="text-xs font-extrabold text-[#344054]">{typeof item === "string" ? item : item?.name || "—"}</p></div>)}</div>}
+          {items.length === 0 ? <EmptyState message="No organization memberships logged." actionLabel="Add organization" onAction={onEdit} /> : <div className="grid grid-cols-1 gap-3 md:grid-cols-2">{items.map((item, index) => <div key={index} className="flex items-center gap-3 rounded-[10px] bg-sibs-surface p-4"><span className="flex h-9 w-9 items-center justify-center rounded-[10px] bg-indigo-50 text-indigo-600"><Users size={17} /></span><p className="text-xs font-extrabold text-sibs-navy">{typeof item === "string" ? item : item?.name || "—"}</p></div>)}</div>}
         </Panel>
       )}
 
@@ -1535,7 +1535,7 @@ export function ApplicationSection({
   const currentIndex = Math.max(PIPELINE_STAGES.findIndex((stage) => stage === currentStage), 0);
 
   return (
-    <div className="rounded-[20px] border border-[#D6E0EA] bg-white p-4 shadow-sm sm:p-6">
+    <div className="rounded-[14px] border border-sibs-border bg-white p-4 shadow-sm sm:p-6">
       <SectionHeader title={title} subtitle={subtitle} icon={Icon} isEditing={isEditing} onEdit={selectedSubTab === "history" ? null : onEdit} />
 
       {selectedSubTab === "overview" && (
@@ -1563,14 +1563,14 @@ export function ApplicationSection({
                   const state = index < currentIndex ? "completed" : index === currentIndex ? "active" : "pending";
                   return (
                     <div key={stage} className="flex flex-col items-center text-center">
-                      <span className={`z-10 flex h-9 w-9 items-center justify-center rounded-full border-2 text-xs font-extrabold ${state === "completed" ? "border-emerald-500 bg-emerald-500 text-white" : state === "active" ? "border-[#042C51] bg-[#042C51] text-white ring-4 ring-[#E9F0FC]" : "border-slate-200 bg-white text-slate-400"}`}>{state === "completed" ? <CheckCircle2 size={18} /> : index + 1}</span>
-                      <span className={`mt-2 max-w-[110px] text-[10px] font-extrabold ${state === "active" ? "text-[#042C51]" : "text-[#667085]"}`}>{stage}</span>
+                      <span className={`z-10 flex h-9 w-9 items-center justify-center rounded-full border-2 text-xs font-extrabold ${state === "completed" ? "border-emerald-500 bg-emerald-500 text-white" : state === "active" ? "border-sibs-navy bg-sibs-navy text-white ring-4 ring-blue-100" : "border-slate-200 bg-white text-slate-400"}`}>{state === "completed" ? <CheckCircle2 size={18} /> : index + 1}</span>
+                      <span className={`mt-2 max-w-[110px] text-[10px] font-extrabold ${state === "active" ? "text-sibs-navy" : "text-sibs-muted"}`}>{stage}</span>
                     </div>
                   );
                 })}
               </div>
             </div>
-            <div className="grid grid-cols-1 gap-4 rounded-xl bg-[#F8FAFC] p-4 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-4 rounded-[10px] bg-sibs-surface p-4 sm:grid-cols-2">
               <ReadField label="PRF Match Status" value={employee?.prfMatchStatus} />
               <ReadField label="Recruitment Remarks" value={employee?.remarks} />
             </div>
@@ -1584,12 +1584,12 @@ export function ApplicationSection({
         ) : (
           <Panel>
             <div className="grid grid-cols-1 gap-5 md:grid-cols-[220px_minmax(0,1fr)]">
-              <div className="flex min-h-48 flex-col items-center justify-center rounded-xl border border-dashed border-[#D6E0EA] bg-[#F8FAFC] text-center">
-                <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#667085]">Weighted Score</p>
-                <p className="mt-2 text-4xl font-extrabold text-[#042C51]">{employee?.assessmentScore || "—"}</p>
+              <div className="flex min-h-48 flex-col items-center justify-center rounded-[10px] border border-dashed border-sibs-border bg-sibs-surface text-center">
+                <p className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-muted">Weighted Score</p>
+                <p className="mt-2 text-4xl font-extrabold text-sibs-navy">{employee?.assessmentScore || "—"}</p>
                 <span className="mt-2 rounded-full border border-emerald-100 bg-emerald-50 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide text-emerald-700">{employee?.assessmentStatus || "Pending"}</span>
               </div>
-              <div className="rounded-xl border border-blue-100 bg-[#E9F0FC]/60 p-5"><p className="text-[10px] font-extrabold uppercase tracking-wide text-[#042C51]">Evaluation Summary Remarks</p><p className="mt-3 text-sm font-semibold leading-7 text-[#344054]">{employee?.assessmentRemarks || employee?.remarks || "No assessment remarks recorded."}</p><div className="mt-5 flex items-center gap-2 border-t border-blue-100 pt-4 text-xs font-semibold text-[#667085]"><UserCheck size={16} className="text-[#042C51]" />Verified assessment information</div></div>
+              <div className="rounded-[10px] border border-blue-100 bg-blue-50/60 p-5"><p className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-navy">Evaluation Summary Remarks</p><p className="mt-3 text-sm font-semibold leading-7 text-sibs-navy">{employee?.assessmentRemarks || employee?.remarks || "No assessment remarks recorded."}</p><div className="mt-5 flex items-center gap-2 border-t border-blue-100 pt-4 text-xs font-semibold text-sibs-muted"><UserCheck size={16} className="text-sibs-navy" />Verified assessment information</div></div>
             </div>
           </Panel>
         )
@@ -1598,15 +1598,15 @@ export function ApplicationSection({
       {selectedSubTab === "history" && (
         <div className="space-y-4">
           {isEditing && (
-            <div className="flex justify-end"><button type="button" onClick={() => onListChange("statusHistory", [...statusHistory, { id: `history_${Date.now()}`, date: "", status: "", stage: "", remarks: "" }])} className="inline-flex h-9 items-center gap-2 rounded-xl bg-[#042C51] px-4 text-xs font-extrabold text-white"><Plus size={14} />Add History Entry</button></div>
+            <div className="flex justify-end"><button type="button" onClick={() => onListChange("statusHistory", [...statusHistory, { id: `history_${Date.now()}`, date: "", status: "", stage: "", remarks: "" }])} className="inline-flex h-9 items-center gap-2 rounded-[10px] bg-sibs-navy px-4 text-xs font-extrabold text-white"><Plus size={14} />Add History Entry</button></div>
           )}
           {statusHistory.length === 0 ? <EmptyState message="No application status history recorded." actionLabel={isEditing ? "Add history entry" : undefined} onAction={isEditing ? () => onListChange("statusHistory", [{ id: `history_${Date.now()}`, date: "", status: "", stage: "", remarks: "" }]) : undefined} /> : isEditing ? statusHistory.map((entry, index) => (
             <Panel key={entry?.id || index} title={`Status Entry #${index + 1}`}>
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2"><FieldControl label="Date" type="date" value={toInputDate(entry?.date)} onChange={(value) => onListChange("statusHistory", statusHistory.map((item, itemIndex) => itemIndex === index ? { ...item, date: value } : item))} /><FieldControl label="Status" value={entry?.status} onChange={(value) => onListChange("statusHistory", statusHistory.map((item, itemIndex) => itemIndex === index ? { ...item, status: value } : item))} /><FieldControl label="Stage" value={entry?.stage} onChange={(value) => onListChange("statusHistory", statusHistory.map((item, itemIndex) => itemIndex === index ? { ...item, stage: value } : item))} /><FieldControl label="Remarks" type="textarea" value={entry?.remarks} onChange={(value) => onListChange("statusHistory", statusHistory.map((item, itemIndex) => itemIndex === index ? { ...item, remarks: value } : item))} /></div>
-              <div className="mt-3 flex justify-end"><button type="button" onClick={() => onListChange("statusHistory", statusHistory.filter((_, itemIndex) => itemIndex !== index))} className="inline-flex h-9 items-center gap-2 rounded-xl border border-red-100 bg-red-50 px-3 text-xs font-extrabold text-red-600"><Trash2 size={14} />Remove</button></div>
+              <div className="mt-3 flex justify-end"><button type="button" onClick={() => onListChange("statusHistory", statusHistory.filter((_, itemIndex) => itemIndex !== index))} className="inline-flex h-9 items-center gap-2 rounded-[10px] border border-red-100 bg-red-50 px-3 text-xs font-extrabold text-red-600"><Trash2 size={14} />Remove</button></div>
             </Panel>
           )) : (
-            <div className="relative ml-3 space-y-5 border-l-2 border-slate-200 pl-6">{statusHistory.map((entry, index) => <article key={entry?.id || index} className="relative rounded-2xl border border-[#D6E0EA] bg-[#F8FAFC] p-4"><span className="absolute -left-[31px] top-5 h-3.5 w-3.5 rounded-full border-4 border-white bg-slate-300" /><div className="flex flex-col gap-2 border-b border-[#E6ECF2] pb-2 sm:flex-row sm:items-center sm:justify-between"><div className="flex flex-wrap items-center gap-2"><span className="text-xs font-extrabold text-[#042C51]">{entry?.status || "—"}</span><span className="rounded bg-[#E9F0FC] px-2 py-1 text-[9px] font-extrabold text-[#042C51]">Stage: {entry?.stage || "—"}</span></div><span className="inline-flex items-center gap-1 text-[10px] font-mono text-[#667085]"><CalendarDays size={13} />{formatDate(entry?.date)}</span></div><p className="mt-3 text-xs font-medium italic leading-6 text-[#52637A]">{entry?.remarks || "—"}</p></article>)}</div>
+            <div className="relative ml-3 space-y-5 border-l-2 border-slate-200 pl-6">{statusHistory.map((entry, index) => <article key={entry?.id || index} className="relative rounded-[10px] border border-sibs-border bg-sibs-surface p-4"><span className="absolute -left-[31px] top-5 h-3.5 w-3.5 rounded-full border-4 border-white bg-slate-300" /><div className="flex flex-col gap-2 border-b border-sibs-border pb-2 sm:flex-row sm:items-center sm:justify-between"><div className="flex flex-wrap items-center gap-2"><span className="text-xs font-extrabold text-sibs-navy">{entry?.status || "—"}</span><span className="rounded bg-blue-50 px-2 py-1 text-[9px] font-extrabold text-sibs-navy">Stage: {entry?.stage || "—"}</span></div><span className="inline-flex items-center gap-1 text-[10px] font-mono text-sibs-muted"><CalendarDays size={13} />{formatDate(entry?.date)}</span></div><p className="mt-3 text-xs font-medium italic leading-6 text-sibs-muted">{entry?.remarks || "—"}</p></article>)}</div>
           )}
         </div>
       )}
@@ -1750,14 +1750,14 @@ function getEmployeeDocumentSourceClass(document) {
   const source = getEmployeeDocumentSource(document);
 
   if (source === "Talent Pool") {
-    return "border-orange-100 bg-[#FFF3ED] text-[#C2410C]";
+    return "border-orange-100 bg-sibs-cream-light text-sibs-orange";
   }
 
   if (source === "Candidate Pipeline") {
     return "border-emerald-100 bg-emerald-50 text-emerald-700";
   }
 
-  return "border-blue-100 bg-[#E9F0FC] text-[#042C51]";
+  return "border-blue-100 bg-blue-50 text-sibs-navy";
 }
 
 function getEmployeeRequirementGroupTitle(group) {
@@ -2293,7 +2293,7 @@ export function DocumentsSection({ employee, onDocumentsChange, onFeedback, canE
   ).length;
 
   return (
-    <div className="rounded-[20px] border border-sibs-border bg-white p-4 shadow-sm sm:p-6">
+    <div className="rounded-[14px] border border-sibs-border bg-white p-4 shadow-sm sm:p-6">
       {canEditDetails ? (
         <>
           <input
@@ -2908,13 +2908,13 @@ export function NotesSection({ employee, onCommitNote, onFeedback }) {
   }
 
   return (
-    <div className="rounded-[20px] border border-[#D6E0EA] bg-white p-4 shadow-sm sm:p-6">
+    <div className="rounded-[14px] border border-sibs-border bg-white p-4 shadow-sm sm:p-6">
       <SectionHeader title="Private Operational Notes" subtitle="Confidential administrative notes visible only to authorized HR users." icon={FileText} />
-      <div className="mb-5 flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 p-4 text-xs leading-5 text-red-800"><Lock size={18} className="mt-0.5 shrink-0 text-red-600" /><div><p className="font-extrabold uppercase tracking-wide">Restricted HR information</p><p className="mt-1 font-medium">Keep employee notes factual, work-related, and limited to authorized administrative use.</p></div></div>
+      <div className="mb-5 flex items-start gap-3 rounded-[10px] border border-red-200 bg-red-50 p-4 text-xs leading-5 text-red-800"><Lock size={18} className="mt-0.5 shrink-0 text-red-600" /><div><p className="font-extrabold uppercase tracking-wide">Restricted HR information</p><p className="mt-1 font-medium">Keep employee notes factual, work-related, and limited to authorized administrative use.</p></div></div>
       <Panel title="Compose New Administrative Note">
-        <form onSubmit={saveNote} className="space-y-3"><textarea rows={5} value={draft} onChange={(event) => setDraft(event.target.value)} placeholder="Document a private administrative note..." className="w-full resize-y rounded-xl border border-[#D0D5DD] bg-[#F8FAFC] p-3.5 text-xs font-semibold leading-6 outline-none focus:border-[#042C51] focus:bg-white" /><div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"><span className="text-[10px] font-medium text-[#667085]">The entry will be timestamped under the current HR user.</span><button type="submit" className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-[#042C51] px-5 text-xs font-extrabold text-white"><Save size={14} className="text-[#FF5C28]" />Log Internal Note</button></div></form>
+        <form onSubmit={saveNote} className="space-y-3"><textarea rows={5} value={draft} onChange={(event) => setDraft(event.target.value)} placeholder="Document a private administrative note..." className="w-full resize-y rounded-[10px] border border-sibs-border bg-sibs-surface p-3.5 text-xs font-semibold leading-6 outline-none focus:border-sibs-navy focus:bg-white" /><div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"><span className="text-[10px] font-medium text-sibs-muted">The entry will be timestamped under the current HR user.</span><button type="submit" className="inline-flex h-10 items-center justify-center gap-2 rounded-[10px] bg-sibs-navy px-5 text-xs font-extrabold text-white"><Save size={14} className="text-sibs-orange" />Log Internal Note</button></div></form>
       </Panel>
-      <div className="mt-6 space-y-4"><h3 className="text-xs font-extrabold uppercase tracking-wide text-[#042C51]">Confidential History ({history.length})</h3>{history.length === 0 ? <EmptyState message="No private notes logged." /> : history.map((note) => <article key={note.id} className="group relative rounded-2xl border border-[#D6E0EA] bg-white p-5"><div className="flex flex-col gap-1 border-b border-[#E6ECF2] pb-3 sm:flex-row sm:items-center sm:justify-between"><span className="flex items-center gap-2 text-xs font-extrabold text-[#042C51]"><User size={14} className="text-[#667085]" />{note.author || "HR User"}</span><span className="flex items-center gap-1.5 font-mono text-[10px] text-[#667085]"><CalendarDays size={13} />{formatDate(note.date)}</span></div><p className="mt-4 whitespace-pre-wrap text-xs font-semibold leading-6 text-[#52637A]">{note.content}</p><button type="button" onClick={() => removeNote(note.id)} className="absolute bottom-4 right-4 rounded-lg p-1.5 text-red-500 opacity-0 hover:bg-red-50 group-hover:opacity-100" title="Delete note"><Trash2 size={14} /></button></article>)}</div>
+      <div className="mt-6 space-y-4"><h3 className="text-xs font-extrabold uppercase tracking-wide text-sibs-navy">Confidential History ({history.length})</h3>{history.length === 0 ? <EmptyState message="No private notes logged." /> : history.map((note) => <article key={note.id} className="group relative rounded-[10px] border border-sibs-border bg-white p-5"><div className="flex flex-col gap-1 border-b border-sibs-border pb-3 sm:flex-row sm:items-center sm:justify-between"><span className="flex items-center gap-2 text-xs font-extrabold text-sibs-navy"><User size={14} className="text-sibs-muted" />{note.author || "HR User"}</span><span className="flex items-center gap-1.5 font-mono text-[10px] text-sibs-muted"><CalendarDays size={13} />{formatDate(note.date)}</span></div><p className="mt-4 whitespace-pre-wrap text-xs font-semibold leading-6 text-sibs-muted">{note.content}</p><button type="button" onClick={() => removeNote(note.id)} className="absolute bottom-4 right-4 rounded-[10px] p-1.5 text-red-500 opacity-0 hover:bg-red-50 group-hover:opacity-100" title="Delete note"><Trash2 size={14} /></button></article>)}</div>
     </div>
   );
 }

@@ -123,7 +123,7 @@ export default function AttendancePage() {
                 : "Monitor employee clock-in and clock-out activity, breaks, work hours, and attendance approvals."
             }
             actions={
-              <>
+              <div className="flex shrink-0 items-center gap-2 2xl:gap-2.5 max-sm:w-full">
                 <button
                   type="button"
                   onClick={handleRefresh}
@@ -142,7 +142,7 @@ export default function AttendancePage() {
                   <Clock className="h-3.5 w-3.5 2xl:h-4 2xl:w-4 text-white" />
                   Attendance Records
                 </span>
-              </>
+              </div>
             }
           />
 
@@ -167,7 +167,7 @@ export default function AttendancePage() {
                 className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4"
               />
               <section
-                className="sibs-profile-tab-panel sibs-page-card-in sibs-card overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-sm"
+                className="sibs-page-card-in sibs-card overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-xs font-jakarta"
                 style={getAnimationStyle(80)}
               >
                 <div className="border-b border-sibs-border p-4 sm:p-5 2xl:p-6 font-jakarta">

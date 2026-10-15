@@ -1,5 +1,5 @@
 import React from "react";
-import StatusModal from "../../modals/StatusModal";
+import ConfirmModal from "@/components/ui/ConfirmModal";
 import ViewPlanModal from "../../modals/workforceHiringPlan/ViewPlanModal";
 import KPISnapshotModal from "../../modals/workforceHiringPlan/KPISnapshotModal";
 import AIInsightModal from "./AIInsightModal";
@@ -24,12 +24,14 @@ export default function WorkforceHiringPlanModals({
 } = {}) {
   return (
     <>
-      <StatusModal
+      <ConfirmModal
         open={Boolean(statusModal?.open)}
-        type={statusModal?.type}
-        title={statusModal?.title}
-        message={statusModal?.message}
-        variant="center"
+        variant={statusModal?.type === "error" ? "danger" : "primary"}
+        title={statusModal?.title || "Notification"}
+        description={statusModal?.message || ""}
+        confirmLabel="OK"
+        cancelLabel="Close"
+        onConfirm={closeStatusModal}
         onClose={closeStatusModal}
       />
 

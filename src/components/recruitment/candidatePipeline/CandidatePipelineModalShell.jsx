@@ -337,10 +337,10 @@ export default function CandidatePipelineModalShell({
         aria-modal="true"
         aria-labelledby={titleId}
         tabIndex={-1}
-        className={`sibs-modal-pop-in relative flex max-h-[88vh] w-full ${maxWidth} flex-col overflow-hidden rounded-2xl border border-white/70 bg-white shadow-2xl max-sm:max-h-[calc(100dvh-1rem)]`}
+        className={`sibs-modal-pop-in relative flex max-h-[88vh] w-full ${maxWidth} flex-col overflow-hidden rounded-[14px] border border-white/70 bg-white shadow-2xl max-sm:max-h-[calc(100dvh-1rem)]`}
         onMouseDown={(event) => event.stopPropagation()}
       >
-        <header className="relative shrink-0 overflow-hidden bg-sibs-primary-1 px-3.5 py-2.5 text-white sm:px-5 2xl:py-3">
+        <header className="relative shrink-0 overflow-hidden bg-sibs-navy px-3.5 py-2.5 text-white sm:px-5 2xl:py-3">
           <div className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-white/10" />
           <div className="relative flex items-center justify-between gap-3">
             <div className="min-w-0 flex-1">
@@ -426,7 +426,7 @@ export default function CandidatePipelineModalShell({
 
         <div
           data-dropdown-boundary="true"
-          className="min-h-0 flex-1 overflow-y-auto bg-sibs-tertiary-10 p-3 sm:p-4 2xl:p-5 sibs-scrollbar"
+          className="min-h-0 flex-1 overflow-y-auto bg-sibs-surface p-3 sm:p-4 2xl:p-5 sibs-scrollbar"
         >
           {children}
         </div>

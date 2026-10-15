@@ -956,7 +956,7 @@ export default function CandidateMovementHistoryDrawer({
         <div className="sibs-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain bg-white px-5 py-5">
           {timeline.length === 0 ? (
             <div className="rounded-[10px] border border-dashed border-sibs-border bg-sibs-surface px-4 py-8 text-center">
-              <History className="mx-auto text-sibs-faint" size={24} />
+              <History className="mx-auto text-sibs-muted" size={24} />
               <p className="mt-2 text-xs font-extrabold text-sibs-navy">
                 No movement history recorded yet
               </p>
@@ -1012,13 +1012,13 @@ export default function CandidateMovementHistoryDrawer({
 
                             <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[9px] font-semibold text-sibs-muted">
                               <span className="inline-flex items-center gap-1">
-                                <UserRound size={11} className="text-sibs-faint" />
+                                <UserRound size={11} className="text-sibs-muted" />
                                 {updatedBy}
                               </span>
 
                               {rawDate ? (
                                 <span className="inline-flex items-center gap-1">
-                                  <Clock3 size={11} className="text-sibs-faint" />
+                                  <Clock3 size={11} className="text-sibs-muted" />
                                   {formatDateTime(rawDate) || rawDate}
                                 </span>
                               ) : null}
@@ -1188,7 +1188,7 @@ export default function CandidateMovementHistoryDrawer({
           aria-label={getMovementFileName(preview.file)}
         >
           <div
-            className="sibs-modal-pop-in flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
+            className="sibs-modal-pop-in flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-[14px] bg-white shadow-2xl"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="flex items-center justify-between gap-3 bg-sibs-navy px-5 py-4 text-white">

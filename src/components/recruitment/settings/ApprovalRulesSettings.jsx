@@ -15,9 +15,8 @@ import {
   UserRoundCheck,
 } from "lucide-react";
 
-import StatusModal from "../../modals/StatusModal";
 import { useUser } from "../../../services/context/UserContext";
-import { Skeleton } from "@/components/ui";
+import { ConfirmModal, Skeleton } from "@/components/ui";
 
 import {
   addOfferApprovalUser,
@@ -1168,14 +1167,14 @@ export default function ApprovalRulesSettings() {
         />
       </div>
 
-      <StatusModal
-        open={statusModal.open}
-        type={statusModal.type}
+      <ConfirmModal
+        open={Boolean(statusModal.open)}
+        variant={statusModal.type === "error" ? "danger" : "primary"}
         title={statusModal.title}
-        message={statusModal.message}
-        variant="center"
+        description={statusModal.message}
+        confirmLabel="OK"
+        onConfirm={closeStatusModal}
         onClose={closeStatusModal}
-        lockScroll
       />
     </div>
   );

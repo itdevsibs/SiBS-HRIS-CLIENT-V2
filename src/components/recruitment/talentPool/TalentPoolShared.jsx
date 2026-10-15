@@ -355,7 +355,7 @@ export function DetailRow({ label, value, stacked = false }) {
   if (stacked) {
     return (
       <div className="border-b border-sibs-border py-3 last:border-b-0">
-        <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
+        <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-navy">
           {label}
         </p>
 
@@ -368,7 +368,7 @@ export function DetailRow({ label, value, stacked = false }) {
 
   return (
     <div className="grid grid-cols-[130px_minmax(0,1fr)] items-start gap-4 border-b border-sibs-border py-3 last:border-b-0">
-      <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
+      <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-navy">
         {label}
       </p>
 
@@ -383,7 +383,7 @@ export function SectionTitle({ icon: Icon, title, description }) {
   return (
     <div className="mb-4 flex items-start gap-3">
       {Icon && (
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-sibs-primary-1/10 text-sibs-primary-1">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] bg-sibs-navy/10 text-sibs-navy">
           <Icon size={18} />
         </div>
       )}
@@ -392,7 +392,7 @@ export function SectionTitle({ icon: Icon, title, description }) {
         <h3 className="text-base font-extrabold text-sibs-navy">{title}</h3>
 
         {description && (
-          <p className="mt-1 text-sm font-semibold leading-5 text-sibs-primary-1/80">
+          <p className="mt-1 text-sm font-semibold leading-5 text-sibs-muted">
             {description}
           </p>
         )}
@@ -411,15 +411,15 @@ export function InfoTile({
 }) {
   return (
     <div
-      className={`rounded-2xl border border-sibs-border bg-sibs-surface p-4 transition hover:border-sibs-border-strong ${className}`}
+      className={`rounded-[14px] border border-sibs-border bg-sibs-surface p-4 transition hover:border-sibs-border-strong ${className}`}
     >
       <div className="flex items-start gap-3">
         {Icon && (
           <div
-            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
+            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] ${
               accent
-                ? "bg-sibs-primary-1 text-white"
-                : "bg-white text-sibs-primary-1"
+                ? "bg-sibs-navy text-white"
+                : "bg-white text-sibs-navy"
             }`}
           >
             <Icon size={16} />
@@ -427,7 +427,7 @@ export function InfoTile({
         )}
 
         <div className="min-w-0 flex-1">
-          <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
+          <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-navy">
             {label}
           </p>
 
@@ -451,8 +451,8 @@ export function StatusTile({ label, value }) {
   const isYes = normalizedValue.toLowerCase() === "yes";
 
   return (
-    <div className="rounded-2xl border border-sibs-border bg-sibs-surface p-4">
-      <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
+    <div className="rounded-[14px] border border-sibs-border bg-sibs-surface p-4">
+      <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-navy">
         {label}
       </p>
 
@@ -479,8 +479,8 @@ export function StatusTile({ label, value }) {
 
 export function ReferenceCard({ reference, index }) {
   return (
-    <div className="rounded-2xl border border-sibs-border bg-sibs-surface p-4">
-      <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
+    <div className="rounded-[14px] border border-sibs-border bg-sibs-surface p-4">
+      <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-navy">
         Reference {index + 1}
       </p>
 
@@ -488,7 +488,7 @@ export function ReferenceCard({ reference, index }) {
         {reference?.name || "—"}
       </p>
 
-      <p className="mt-1 truncate text-sm font-semibold text-sibs-primary-1">
+      <p className="mt-1 truncate text-sm font-semibold text-sibs-navy">
         {reference?.phone || "No phone provided"}
       </p>
     </div>
@@ -500,10 +500,10 @@ export function ExperienceCard({ experience, index, formatCurrency }) {
     experience?.role || experience?.industry || `Experience ${index + 1}`;
 
   return (
-    <div className="rounded-2xl border border-sibs-border bg-sibs-surface p-4">
+    <div className="rounded-[14px] border border-sibs-border bg-sibs-surface p-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
-          <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
+          <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-navy">
             Experience {index + 1}
           </p>
 
@@ -566,13 +566,13 @@ export function TimelineSectionHeader({
 }) {
   return (
     <div className="mb-4 flex items-start gap-3">
-      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-sibs-primary-1 text-sm font-extrabold text-white">
+      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-sibs-navy text-sm font-extrabold text-white">
         {step}
       </div>
 
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
-          {Icon && <Icon size={17} className="shrink-0 text-sibs-primary-1" />}
+          {Icon && <Icon size={17} className="shrink-0 text-sibs-navy" />}
 
           <h3 className="text-sm font-extrabold text-sibs-navy">{title}</h3>
         </div>
@@ -619,10 +619,10 @@ export function ViewableFileRow({
   }
 
   return (
-    <div className="rounded-2xl border border-sibs-border bg-sibs-surface p-4">
+    <div className="rounded-[14px] border border-sibs-border bg-sibs-surface p-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
-          <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
+          <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-navy">
             {label}
           </p>
 
@@ -642,7 +642,7 @@ export function ViewableFileRow({
           <button
             type="button"
             onClick={handleOpenFile}
-            className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl border border-sibs-border bg-white px-4 text-sm font-bold text-sibs-primary-1 transition hover:border-sibs-primary-1 hover:bg-sibs-primary-1/5 hover:shadow-sm"
+            className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-[10px] border border-sibs-border bg-white px-4 text-sm font-bold text-sibs-navy transition hover:border-sibs-orange hover:bg-sibs-cream-light hover:text-sibs-orange hover:shadow-sm"
           >
             <Eye size={16} />
             {canPreview ? "View" : "Open"}
@@ -682,7 +682,7 @@ export function MultiCheckGroup({
       {options.map((option) => (
         <label
           key={option}
-          className="flex items-center gap-3 rounded-xl border border-sibs-border bg-sibs-surface px-4 py-3 text-sm font-semibold text-sibs-navy transition hover:border-sibs-border-strong hover:bg-white"
+          className="flex items-center gap-3 rounded-[10px] border border-sibs-border bg-sibs-surface px-4 py-3 text-sm font-semibold text-sibs-navy transition hover:border-sibs-border-strong hover:bg-white"
         >
           <input
             type="checkbox"

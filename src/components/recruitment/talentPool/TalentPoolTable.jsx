@@ -63,7 +63,7 @@ function TableState({ icon, title, message, tone = "neutral", spin = false }) {
 
   return (
     <div
-      className={`flex min-h-[150px] flex-col items-center justify-center rounded-xl border border-dashed px-5 py-8 text-center ${
+      className={`flex min-h-[150px] flex-col items-center justify-center rounded-[14px] border border-dashed px-5 py-8 text-center ${
         toneClasses[tone] || toneClasses.neutral
       }`}
       role={tone === "error" ? "alert" : "status"}
@@ -331,7 +331,7 @@ export default function TalentPoolTable({
                           onKeyDown={(event) =>
                             handleRowKeyDown(event, candidate)
                           }
-                          className="sibs-page-card-in cursor-pointer transition hover:bg-sibs-surface focus-visible:bg-sibs-cream-light/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sibs-orange/25"
+                          className="sibs-page-card-in cursor-pointer transition hover:bg-sibs-cream-light focus-visible:bg-sibs-cream-light/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sibs-orange/25"
                           style={{
                             animationDelay: `${index * 35}ms`,
                             animationFillMode: "both",

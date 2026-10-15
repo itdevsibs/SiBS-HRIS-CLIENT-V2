@@ -92,7 +92,8 @@ function DateFilterField({ filter, isTaInlineLayout }) {
         min={filter.min}
         max={filter.max}
         disabled={filter.disabled}
-        leadingLabel={filter.leadingLabel}
+        leadingLabel={filter.label ? undefined : filter.leadingLabel}
+        showCalendarIcon={filter.showCalendarIcon ?? false}
         placeholder={filter.placeholder || "Select date"}
         hideLabel
         clearable={filter.clearable ?? true}
@@ -520,7 +521,8 @@ export default function PaginationTable({
                     aria-label={`Toggle ${label || filter.key} dropdown`}
                   >
                     <ChevronDown
-                      className={`h-3.5 w-3.5 2xl:h-4 2xl:w-4 transition-transform duration-300 ${
+                      size={17}
+                      className={`transition-transform duration-300 ${
                         isOpen ? "rotate-180" : ""
                       }`}
                     />

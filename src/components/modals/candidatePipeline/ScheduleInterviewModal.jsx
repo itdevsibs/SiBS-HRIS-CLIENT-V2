@@ -83,11 +83,11 @@ const HOUR_OPTIONS = Array.from({ length: 12 }, (_, index) => {
 });
 
 const SCHEDULE_FIELD_LABEL_CLASS =
-  "mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-sibs-faint";
+  "mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-sibs-muted";
 const SCHEDULE_INPUT_CLASS =
-  "h-8.5 2xl:h-10 w-full rounded-[10px] border border-sibs-border bg-sibs-surface px-3 sibs-text-xs font-semibold text-sibs-navy outline-none transition placeholder:text-sibs-faint hover:border-sibs-orange/40 hover:bg-white focus:border-sibs-orange focus:bg-white focus:ring-4 focus:ring-sibs-orange/10 disabled:cursor-not-allowed disabled:border-sibs-border disabled:bg-slate-100 disabled:text-sibs-faint disabled:hover:border-sibs-border disabled:hover:bg-slate-100 disabled:focus:ring-0";
+  "h-8.5 2xl:h-10 w-full rounded-[10px] border border-sibs-border bg-sibs-surface px-3 sibs-text-xs font-semibold text-sibs-navy outline-none transition placeholder:text-sibs-muted hover:border-sibs-orange/40 hover:bg-white focus:border-sibs-orange focus:bg-white focus:ring-4 focus:ring-sibs-orange/10 disabled:cursor-not-allowed disabled:border-sibs-border disabled:bg-slate-100 disabled:text-sibs-muted disabled:hover:border-sibs-border disabled:hover:bg-slate-100 disabled:focus:ring-0";
 const SCHEDULE_TEXTAREA_CLASS =
-  "min-h-18 2xl:min-h-24 w-full resize-none rounded-[10px] border border-sibs-border bg-sibs-surface px-3 py-2 sibs-text-xs font-semibold leading-5 text-sibs-navy outline-none transition placeholder:text-sibs-faint hover:border-sibs-orange/40 hover:bg-white focus:border-sibs-orange focus:bg-white focus:ring-4 focus:ring-sibs-orange/10";
+  "min-h-18 2xl:min-h-24 w-full resize-none rounded-[10px] border border-sibs-border bg-sibs-surface px-3 py-2 sibs-text-xs font-semibold leading-5 text-sibs-navy outline-none transition placeholder:text-sibs-muted hover:border-sibs-orange/40 hover:bg-white focus:border-sibs-orange focus:bg-white focus:ring-4 focus:ring-sibs-orange/10";
 
 function cleanText(value) {
   return String(value ?? "").trim();
@@ -384,13 +384,13 @@ function PickerDropdown({
             : "border-sibs-border hover:border-sibs-orange/40 hover:bg-white"
         } ${
           disabled
-            ? "cursor-not-allowed bg-slate-100 text-sibs-faint opacity-70"
+            ? "cursor-not-allowed bg-slate-100 text-sibs-muted opacity-70"
             : "text-sibs-navy"
         } ${buttonClassName}`}
       >
         <span
           className={`min-w-0 flex-1 truncate ${
-            selectedOption ? "text-sibs-navy" : "text-sibs-faint"
+            selectedOption ? "text-sibs-navy" : "text-sibs-muted"
           }`}
         >
           {selectedOption?.label || placeholder}
@@ -719,7 +719,7 @@ function DateTimePicker({ value, onChange }) {
       >
         <span
           className={`min-w-0 flex-1 truncate ${
-            displayValue ? "text-sibs-navy" : "text-sibs-faint"
+            displayValue ? "text-sibs-navy" : "text-sibs-muted"
           }`}
         >
           {formatDateTimeDisplay(displayValue)}
@@ -824,7 +824,7 @@ function DateTimePicker({ value, onChange }) {
                               ? "border border-sibs-orange/30 bg-sibs-cream-light text-sibs-orange"
                               : item.currentMonth
                                 ? "text-sibs-navy hover:bg-sibs-cream-light hover:text-sibs-orange"
-                                : "text-sibs-faint hover:bg-sibs-cream-light hover:text-sibs-orange"
+                                : "text-sibs-muted hover:bg-sibs-cream-light hover:text-sibs-orange"
                       }`}
                     >
                       {item.date.getDate()}

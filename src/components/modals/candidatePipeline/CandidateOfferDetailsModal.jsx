@@ -378,7 +378,7 @@ function HrisDropdown({
   return (
     <div ref={wrapperRef} className="relative min-w-0">
       {label && (
-        <label className="mb-1 block text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
+        <label className="mb-1 block text-[11px] font-extrabold uppercase tracking-wide text-sibs-navy">
           {label} {required && <span className="text-red-500">*</span>}
         </label>
       )}
@@ -528,7 +528,7 @@ function HrisDropdown({
 }
 
 function inputClass(hasError = false) {
-  return `h-8.5 2xl:h-10 w-full rounded-[10px] border bg-sibs-surface px-3 2xl:px-3.5 sibs-text-xs font-semibold text-sibs-navy shadow-sm outline-none transition placeholder:text-sibs-faint hover:border-sibs-orange/40 hover:bg-white focus:border-sibs-orange focus:bg-white focus:ring-4 focus:ring-sibs-orange/10 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-sibs-muted disabled:opacity-80 ${
+  return `h-8.5 2xl:h-10 w-full rounded-[10px] border bg-sibs-surface px-3 2xl:px-3.5 sibs-text-xs font-semibold text-sibs-navy shadow-sm outline-none transition placeholder:text-sibs-muted hover:border-sibs-orange/40 hover:bg-white focus:border-sibs-orange focus:bg-white focus:ring-4 focus:ring-sibs-orange/10 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-sibs-muted disabled:opacity-80 ${
     hasError
       ? "border-red-400 ring-4 ring-red-100 focus:border-red-500 focus:ring-red-100"
       : "border-sibs-border"
@@ -540,7 +540,7 @@ function handleNumberInputWheel(event) {
 }
 
 function textareaClass() {
-  return "min-h-18 2xl:min-h-24 w-full resize-none rounded-[10px] border border-sibs-border bg-sibs-surface px-3 py-2 sibs-text-xs font-semibold leading-5 text-sibs-navy shadow-sm outline-none transition placeholder:text-sibs-faint hover:border-sibs-orange/40 hover:bg-white focus:border-sibs-orange focus:bg-white focus:ring-4 focus:ring-sibs-orange/10";
+  return "min-h-18 2xl:min-h-24 w-full resize-none rounded-[10px] border border-sibs-border bg-sibs-surface px-3 py-2 sibs-text-xs font-semibold leading-5 text-sibs-navy shadow-sm outline-none transition placeholder:text-sibs-muted hover:border-sibs-orange/40 hover:bg-white focus:border-sibs-orange focus:bg-white focus:ring-4 focus:ring-sibs-orange/10";
 }
 
 function padDatePart(value) {
@@ -632,7 +632,7 @@ function StartDatePicker({ value, onChange, hasError = false, inputRef = null })
         onClick={() => setOpen((previous) => !previous)}
         className={`${inputClass(hasError)} flex items-center justify-between text-left`}
       >
-        <span className={value ? "text-sibs-primary-1" : "text-sibs-tertiary-5"}>
+        <span className={value ? "text-sibs-navy" : "text-sibs-muted"}>
           {selectedDate
             ? formatHrisDateLocalized(selectedDate, "en-PH", { year: "numeric", month: "long", day: "numeric" })
             : "Select start date"}
@@ -1241,7 +1241,7 @@ export default function CandidateOfferDetailsModal({
 
           <CandidateModalSection title="Start Date & Remarks">
             <div className="space-y-4 pb-2">
-              <div className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-[10px] border border-blue-100 bg-blue-50 px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-primary-1">
+              <div className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-[10px] border border-blue-100 bg-blue-50 px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-navy">
                 <CalendarDays size={14} />
                 Suggested Start Date Based on NHO
               </div>

@@ -30,9 +30,9 @@ import {
 } from "lucide-react";
 
 import Header from "../../components/layout/Header";
-import StatusModal from "../../components/modals/StatusModal";
 import { useUser } from "../../services/context/UserContext";
 import {
+  ConfirmModal,
   DataCard,
   MetricGridSkeleton,
   ModalShell,
@@ -144,7 +144,7 @@ function ProfileAvatar({ employee, size = "md" }) {
 
   return (
     <div
-      className={`flex ${sizeClass} shrink-0 items-center justify-center overflow-hidden rounded-full border border-sibs-border-subtle bg-sibs-surface shadow-sm`}
+      className={`flex ${sizeClass} shrink-0 items-center justify-center overflow-hidden rounded-full border border-sibs-border-subtle bg-sibs-surface shadow-xs`}
     >
       {imageUrl ? (
         <img
@@ -1311,7 +1311,7 @@ export function AccessModal({
       }
     >
       <div className="space-y-4">
-        <section className="relative overflow-hidden rounded-2xl border border-sibs-border bg-white p-4 shadow-sm sm:p-5">
+        <section className="relative overflow-hidden rounded-2xl border border-sibs-border bg-white p-4 shadow-xs sm:p-5">
           <div className="mb-4 flex items-center justify-between gap-3 border-b border-sibs-border pb-3">
             <div>
               <p className="text-[10px] font-extrabold uppercase tracking-normal text-sibs-navy">
@@ -1361,7 +1361,7 @@ export function AccessModal({
           )}
         </section>
 
-        <section className="relative overflow-hidden rounded-2xl border border-sibs-border bg-white p-4 shadow-sm sm:p-5">
+        <section className="relative overflow-hidden rounded-2xl border border-sibs-border bg-white p-4 shadow-xs sm:p-5">
           <div className="mb-4 border-b border-sibs-border pb-3">
             <p className="text-[10px] font-extrabold uppercase tracking-normal text-sibs-navy">
               Access Configuration
@@ -1437,7 +1437,7 @@ function DeleteAccessModal({ target, onClose, onDeleted, openStatus }) {
   return (
     <ModalShell
       open={Boolean(target)}
-      variant="navy"
+      variant="danger"
       maxWidth="max-w-md"
       icon={Trash2}
       title="Remove User Account Access"
@@ -1460,7 +1460,7 @@ function DeleteAccessModal({ target, onClose, onDeleted, openStatus }) {
             type="button"
             onClick={handleDelete}
             disabled={deleting}
-            className="inline-flex h-10 items-center justify-center gap-2 rounded-[10px] bg-red-600 px-5 text-sm font-extrabold text-white shadow-sm transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-[10px] bg-red-600 px-5 text-sm font-extrabold text-white shadow-xs transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {deleting ? (
               <Loader2 size={17} className="animate-spin" />
@@ -1529,7 +1529,7 @@ function AccessDetailsModal({ target, onClose, onEdit, onDelete }) {
       }
     >
       <div className="space-y-4">
-        <section className="overflow-hidden rounded-2xl border border-sibs-border bg-white p-4 shadow-sm sm:p-5">
+        <section className="overflow-hidden rounded-2xl border border-sibs-border bg-white p-4 shadow-xs sm:p-5">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div className="flex min-w-0 items-start gap-3">
               <ProfileAvatar employee={target || {}} size="lg" />
@@ -1554,7 +1554,7 @@ function AccessDetailsModal({ target, onClose, onEdit, onDelete }) {
           </div>
         </section>
 
-        <section className="overflow-hidden rounded-2xl border border-sibs-border bg-white p-4 shadow-sm sm:p-5">
+        <section className="overflow-hidden rounded-2xl border border-sibs-border bg-white p-4 shadow-xs sm:p-5">
           <div className="mb-4 border-b border-sibs-border pb-3">
             <p className="text-[10px] font-extrabold uppercase tracking-normal text-sibs-navy">
               Access Assignment
@@ -1603,7 +1603,7 @@ function AccessDetailsModal({ target, onClose, onEdit, onDelete }) {
           </div>
         </section>
 
-        <section className="overflow-hidden rounded-2xl border border-sibs-border bg-white p-4 shadow-sm sm:p-5">
+        <section className="overflow-hidden rounded-2xl border border-sibs-border bg-white p-4 shadow-xs sm:p-5">
           <div className="mb-4 border-b border-sibs-border pb-3">
             <p className="text-[10px] font-extrabold uppercase tracking-normal text-sibs-navy">
               Audit Information
@@ -2324,7 +2324,13 @@ export default function UserSettingsPage() {
             </section>
           )}
 
-          <section className="sibs-card overflow-hidden rounded-2xl">
+          <section
+            className="sibs-page-card-in sibs-card overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-xs font-jakarta"
+            style={{
+              animationDelay: "240ms",
+              animationFillMode: "both",
+            }}
+          >
             <div className="border-b border-sibs-border bg-white p-4 sm:p-5 font-jakarta">
               <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
                 <div className="min-w-0">
@@ -2697,14 +2703,14 @@ export default function UserSettingsPage() {
         openStatus={openStatus}
       />
 
-      <StatusModal
-        open={statusModal.open}
-        type={statusModal.type}
+      <ConfirmModal
+        open={Boolean(statusModal.open)}
+        variant={statusModal.type === "error" ? "danger" : "primary"}
         title={statusModal.title}
-        message={statusModal.message}
-        variant="center"
+        description={statusModal.message}
+        confirmLabel="OK"
+        onConfirm={closeStatus}
         onClose={closeStatus}
-        lockScroll
       />
     </div>
   );

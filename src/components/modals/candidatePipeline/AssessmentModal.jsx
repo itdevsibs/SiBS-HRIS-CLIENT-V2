@@ -19,10 +19,10 @@ const ASSESSMENT_RESULT_OPTIONS = [
 ];
 
 const INPUT_CLASS =
-  "h-8.5 2xl:h-10 w-full rounded-[10px] border border-sibs-border bg-sibs-surface px-3 font-jakarta sibs-text-xs font-semibold text-sibs-navy outline-none transition placeholder:text-sibs-faint hover:border-sibs-orange/40 hover:bg-white focus:border-sibs-orange focus:bg-white focus:ring-4 focus:ring-sibs-orange/10 disabled:cursor-not-allowed disabled:border-sibs-border disabled:bg-slate-100 disabled:text-sibs-faint disabled:hover:border-sibs-border disabled:hover:bg-slate-100 disabled:focus:ring-0";
+  "h-8.5 2xl:h-10 w-full rounded-[10px] border border-sibs-border bg-sibs-surface px-3 font-jakarta sibs-text-xs font-semibold text-sibs-navy outline-none transition placeholder:text-sibs-muted hover:border-sibs-orange/40 hover:bg-white focus:border-sibs-orange focus:bg-white focus:ring-4 focus:ring-sibs-orange/10 disabled:cursor-not-allowed disabled:border-sibs-border disabled:bg-slate-100 disabled:text-sibs-muted disabled:hover:border-sibs-border disabled:hover:bg-slate-100 disabled:focus:ring-0";
 
 const TEXTAREA_CLASS =
-  "min-h-18 2xl:min-h-24 w-full resize-none rounded-[10px] border border-sibs-border bg-sibs-surface px-3 py-2 font-jakarta sibs-text-xs font-semibold leading-5 text-sibs-navy outline-none transition placeholder:text-sibs-faint hover:border-sibs-orange/40 hover:bg-white focus:border-sibs-orange focus:bg-white focus:ring-4 focus:ring-sibs-orange/10 disabled:cursor-not-allowed disabled:border-sibs-border disabled:bg-slate-100 disabled:text-sibs-faint";
+  "min-h-18 2xl:min-h-24 w-full resize-none rounded-[10px] border border-sibs-border bg-sibs-surface px-3 py-2 font-jakarta sibs-text-xs font-semibold leading-5 text-sibs-navy outline-none transition placeholder:text-sibs-muted hover:border-sibs-orange/40 hover:bg-white focus:border-sibs-orange focus:bg-white focus:ring-4 focus:ring-sibs-orange/10 disabled:cursor-not-allowed disabled:border-sibs-border disabled:bg-slate-100 disabled:text-sibs-muted";
 
 function cleanText(value) {
   return String(value ?? "").trim();
@@ -52,7 +52,7 @@ function getExistingAttachmentName(candidate = {}) {
 
 function ModalFieldLabel({ children, required = false }) {
   return (
-    <label className="mb-1.5 block font-jakarta text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-sibs-faint">
+    <label className="mb-1.5 block font-jakarta text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-sibs-muted">
       {children}
       {required ? <span className="text-sibs-orange"> *</span> : null}
     </label>
@@ -332,7 +332,7 @@ export default function AssessmentModal({
                   disabled={saving || !isTaken}
                   className={`${INPUT_CLASS} pr-16 tabular-nums`}
                 />
-                <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center sibs-text-xs font-extrabold text-sibs-faint">
+                <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center sibs-text-xs font-extrabold text-sibs-muted">
                   / 100
                 </span>
               </div>

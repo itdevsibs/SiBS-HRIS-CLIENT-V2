@@ -151,7 +151,7 @@ export default function SelectDropdown({
   const defaultRoundedClass = hasCustomRounded ? "" : "rounded-[10px]";
   const defaultPaddingClass = hasCustomPadding ? "" : "px-3";
 
-  const triggerClasses = `flex w-full min-w-0 items-center justify-between gap-2 border bg-sibs-surface text-left font-jakarta sibs-text-xs 2xl:sibs-text-sm font-bold text-sibs-navy shadow-sm outline-none transition-all duration-200 ${defaultHeightClass} ${defaultRoundedClass} ${defaultPaddingClass} ${
+  const triggerClasses = `flex w-full min-w-0 items-center justify-between gap-2 border bg-sibs-surface text-left font-jakarta sibs-text-xs font-bold text-sibs-navy outline-none transition-all duration-200 ${defaultHeightClass} ${defaultRoundedClass} ${defaultPaddingClass} ${
     disabled
       ? "cursor-not-allowed border-sibs-border bg-sibs-canvas text-sibs-faint opacity-70"
       : open
@@ -224,7 +224,7 @@ export default function SelectDropdown({
             className="inline-flex shrink-0 items-center justify-center rounded-md"
           >
             <ChevronDown
-              size={14}
+              size={17}
               aria-hidden="true"
               className={`transition-transform duration-300 ${
                 disabled
@@ -252,15 +252,15 @@ export default function SelectDropdown({
           <span
             className={`block min-w-0 flex-1 truncate ${
               displayLabel
-                ? "font-semibold text-sibs-navy"
-                : "font-normal text-sibs-faint"
+                ? "font-bold text-sibs-navy"
+                : "font-bold text-sibs-muted"
             }`}
           >
             {displayLabel || placeholder}
           </span>
 
           <ChevronDown
-            size={14}
+            size={17}
             aria-hidden="true"
             className={`shrink-0 transition-transform duration-300 ${
               disabled

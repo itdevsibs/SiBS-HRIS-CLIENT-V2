@@ -361,8 +361,8 @@ function ResumeStageDropdown({
         aria-expanded={open}
         className={`flex h-8.5 2xl:h-10 w-full items-center justify-between gap-3 rounded-[10px] border bg-white px-3 text-left sibs-text-xs font-semibold shadow-xs outline-none transition ${
           open
-            ? "border-sibs-primary-1 ring-4 ring-blue-100"
-            : "border-sibs-border hover:border-sibs-primary-1"
+            ? "border-sibs-orange ring-4 ring-sibs-orange/10"
+            : "border-sibs-border hover:border-sibs-orange/40"
         } ${
           disabled
             ? "cursor-not-allowed bg-slate-100 text-slate-400 opacity-70"
@@ -379,8 +379,8 @@ function ResumeStageDropdown({
 
         <ChevronDown
           size={18}
-          className={`shrink-0 text-sibs-primary-1 transition-transform duration-200 ${
-            open ? "rotate-180" : ""
+          className={`shrink-0 text-sibs-muted transition-transform duration-200 ${
+            open ? "rotate-180 text-sibs-orange" : ""
           }`}
         />
       </button>
@@ -401,8 +401,8 @@ function ResumeStageDropdown({
                     onClick={() => handleSelect(option)}
                     className={`block w-full px-3 py-1.5 2xl:py-2 text-left sibs-text-xs font-semibold transition ${
                       active
-                        ? "bg-blue-50 text-sibs-primary-1"
-                        : "bg-white text-sibs-navy hover:bg-sibs-surface hover:text-sibs-orange"
+                        ? "bg-sibs-cream-subtle font-extrabold text-sibs-orange"
+                        : "bg-white text-sibs-navy hover:bg-sibs-cream-light hover:text-sibs-orange"
                     }`}
                   >
                     <span className="block truncate">{option}</span>

@@ -60,7 +60,7 @@ export default function OfferApprovalSkeletonModal({
           </div>
 
           <div className="pt-1 text-center">
-            <p className="font-heading text-sm sm:text-base font-bold text-sibs-primary-1">
+            <p className="font-heading text-sm sm:text-base font-bold text-sibs-navy">
               Approving offer
             </p>
 

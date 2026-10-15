@@ -176,19 +176,19 @@ export default function CandidateProfileAttachments({ data }) {
 
                   <div className="mt-2 space-y-1 border-t border-sibs-border pt-2 text-[10px] font-semibold text-sibs-muted">
                     <p className="truncate">
-                      <span className="text-sibs-faint">Phone:</span>{" "}
+                      <span className="text-sibs-muted">Phone:</span>{" "}
                       <span className="text-sibs-navy font-bold">
                         {ref.phone || "N/A"}
                       </span>
                     </p>
                     <p className="truncate">
-                      <span className="text-sibs-faint">Relationship:</span>{" "}
+                      <span className="text-sibs-muted">Relationship:</span>{" "}
                       <span className="text-sibs-navy">
                         {ref.relationship || "N/A"}
                       </span>
                     </p>
                     <p className="truncate">
-                      <span className="text-sibs-faint">Company:</span>{" "}
+                      <span className="text-sibs-muted">Company:</span>{" "}
                       <span className="text-sibs-navy">
                         {ref.company || "N/A"}
                       </span>
