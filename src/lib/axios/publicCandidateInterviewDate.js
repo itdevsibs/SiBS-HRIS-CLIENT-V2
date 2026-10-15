@@ -91,3 +91,13 @@ export async function submitPublicCandidateInterviewDate(
 }
 
 export default publicInterviewDateApi;
+
+export async function getPublicCandidateInterviewAvailability(token, { from, to }) {
+  const resolvedToken = cleanToken(token);
+  if (!resolvedToken) throw new Error('Interview response token is missing.');
+  const response = await publicInterviewDateApi.get(
+    `/api/candidate-pipeline/public/interview-date/${encodeURIComponent(resolvedToken)}/availability`,
+    { params: { from, to } },
+  );
+  return response.data;
+}

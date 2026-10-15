@@ -7,10 +7,12 @@ import React, {
   useRef,
   useState,
 } from "react";
+import { createPortal } from "react-dom";
 import {
   ArrowRight,
   Briefcase,
   CalendarDays,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   Clock,
@@ -25,7 +27,6 @@ import {
   Plus,
   RefreshCw,
   RotateCcw,
-  Search,
   Tags,
   Trash2,
   Users,
@@ -36,6 +37,7 @@ import {
   getGoogleCalendarConnectUrl,
   getGoogleCalendarStatus,
   getGoogleCalendarEvents,
+  getGoogleCalendarBusyTimes,
   createGoogleCalendarEvent,
   updateGoogleCalendarEvent,
   deleteGoogleCalendarEvent,
@@ -43,6 +45,8 @@ import {
 } from "@/lib/axios/googleCalendarApi";
 import useHeaderCalendarPortal from "../../hooks/useHeaderCalendarPortal";
 import HeaderCalendarModalShell from "./HeaderCalendarModalShell";
+import { buildCalendarDisplayEvents, sourceCalendarEvent } from "./calendarAvailabilityVisibility";
+import DatePicker from "@/components/ui/DatePicker.jsx";
 
 const MONTH_NAMES = [
   "January",
@@ -141,9 +145,553 @@ const EVENT_COLOR_BY_GOOGLE_COLOR_ID = COLOR_OPTIONS.reduce(
   {},
 );
 
+// Fixed SiBS HRIS branch/site options shared by all Calendar schedule types.
+const SITE_OPTIONS = [
+  { value: "", label: "Select site" },
+  { value: "Davao Branch", label: "Davao Branch" },
+  { value: "Tagum Branch", label: "Tagum Branch" },
+  { value: "Mabini Branch", label: "Mabini Branch" },
+];
+
+// Read previously saved site values without changing existing schedule records.
+function normalizeCalendarSite(value) {
+  const site = String(value || "").trim();
+  if (/^davao(?:\s+(?:site|branch))?$/i.test(site)) return "Davao Branch";
+  if (/^tagum(?:\s+(?:site|branch))?$/i.test(site)) return "Tagum Branch";
+  if (/^mabini(?:\s+(?:site|branch))?$/i.test(site)) return "Mabini Branch";
+  return site;
+}
 const AVAILABILITY_OPTIONS = ["Busy", "Free"];
 const VISIBILITY_OPTIONS = ["Default visibility", "Public", "Private"];
 const GOOGLE_CALENDAR_UI_SYNC_TIMEOUT_MS = 20000;
+
+// Use one consistent SIBS prefix in new and edited HRIS calendar schedules.
+const SIBS_HRIS_CALENDAR_TITLE_PREFIX = "SiBS HRIS - ";
+
+function calendarTitleSuffix(value) {
+  return String(value || "")
+    .trim()
+    .replace(/^(?:SiBS\s+HRIS\s*-\s*)+/i, "")
+    .trim();
+}
+
+function withSibsHrisCalendarTitle(value, fallback = "Untitled Schedule") {
+  return `${SIBS_HRIS_CALENDAR_TITLE_PREFIX}${calendarTitleSuffix(value) || fallback}`;
+}
+
+
+// Offer suggested times and an editable 12-hour time with an explicit AM/PM choice.
+// Interview availability stays within 10:00 AM–5:30 PM; custom minutes are allowed.
+// Regular Google Calendar events have 15-minute suggested times.
+const INTERVIEW_AVAILABILITY_START_MINUTES = 10 * 60;
+const INTERVIEW_AVAILABILITY_END_MINUTES = 17 * 60 + 30;
+
+function timeLabelToMinutes(value) {
+  const match = String(value || "").trim().match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+  if (!match) return null;
+  const hour = Number(match[1]);
+  const minutes = Number(match[2]);
+  if (hour < 1 || hour > 12 || minutes > 59) return null;
+  return (hour % 12) * 60 + minutes + (match[3].toUpperCase() === "PM" ? 720 : 0);
+}
+
+function minutesToTimeLabel(totalMinutes) {
+  const hour = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  return `${String(hour % 12 || 12).padStart(2, "0")}:${String(minutes).padStart(2, "0")} ${hour < 12 ? "AM" : "PM"}`;
+}
+
+/** Turn hand-typed times into the existing API's HH:MM AM/PM format. */
+function normalizeTypedTime(input, fallbackMeridiem = "AM") {
+  const value = String(input || "").trim().toUpperCase().replace(/\./g, "");
+  const match = value.match(/^(\d{1,2})(?::(\d{1,2}))?\s*(AM|PM|A|P)?$/);
+  if (!match) return null;
+  const hour = Number(match[1]);
+  const minute = Number(match[2] || 0);
+  if (minute > 59 || hour > 23 || hour < 0) return null;
+  const typedMeridiem = match[3]?.startsWith("P") ? "PM" : match[3]?.startsWith("A") ? "AM" : null;
+  if (hour > 12 || hour === 0) {
+    if (typedMeridiem) return null;
+    return minutesToTimeLabel(hour * 60 + minute);
+  }
+  return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")} ${typedMeridiem || fallbackMeridiem}`;
+}
+
+function getTimeSelectionError(value, { isInterviewAvailability, isEndTime, startTime }) {
+  const minutes = timeLabelToMinutes(value);
+  if (minutes === null) return "Enter a valid time, such as 02:15 PM.";
+  if (isInterviewAvailability) {
+    const earliest = INTERVIEW_AVAILABILITY_START_MINUTES + (isEndTime ? 30 : 0);
+    const latest = INTERVIEW_AVAILABILITY_END_MINUTES - (isEndTime ? 0 : 30);
+    if (minutes < earliest || minutes > latest) {
+      return `Choose a time from ${minutesToTimeLabel(earliest)} to ${minutesToTimeLabel(latest)}.`;
+    }
+  }
+  if (!isEndTime && minutes >= 23 * 60 + 59) {
+    return "Start time must be before 11:59 PM.";
+  }
+  if (isEndTime) {
+    const start = timeLabelToMinutes(startTime);
+    const minGap = isInterviewAvailability ? 30 : 1;
+    if (start !== null && minutes < start + minGap) {
+      return `End time must be at least ${minGap} minute${minGap > 1 ? "s" : ""} after the start.`;
+    }
+  }
+  return "";
+}
+
+// Conflict checks use the authoritative Asia/Manila wall-clock date, not the browser timezone.
+function calendarLocalTimeMs(date, time) {
+  const sqlTime = parseTimeLabel(date, time);
+  return Date.parse(`${sqlTime}+08:00`);
+}
+
+function calendarTimeOverlaps(busy, start, end) {
+  return Array.isArray(busy) && busy.some((entry) => start < Number(entry.end) && Number(entry.start) < end);
+}
+
+function isTimeOptionTaken({ time, isEndTime, startTime, date, busy, isInterviewAvailability }) {
+  const minutes = timeLabelToMinutes(time);
+  if (minutes === null || !date) return false;
+  if (isEndTime) {
+    const start = calendarLocalTimeMs(date, startTime);
+    const end = calendarLocalTimeMs(date, time);
+    return Number.isFinite(start) && Number.isFinite(end) && calendarTimeOverlaps(busy, start, end);
+  }
+  const duration = isInterviewAvailability ? 30 : 15;
+  const start = calendarLocalTimeMs(date, time);
+  return Number.isFinite(start) && calendarTimeOverlaps(busy, start, start + duration * 60000);
+}
+
+/** Editable, searchable select: type in the time field, not inside the dropdown. */
+function CalendarTimePicker({
+  label,
+  value,
+  options,
+  isInterviewAvailability,
+  isEndTime = false,
+  startTime,
+  date,
+  busy = [],
+  busyLoading = false,
+  isOpen,
+  onToggle,
+  onChange,
+  onClose,
+}) {
+  const triggerRef = useRef(null);
+  const inputRef = useRef(null);
+  const panelRef = useRef(null);
+  const optionsRef = useRef(null);
+  const listId = React.useId();
+  const [search, setSearch] = useState("");
+  const [isFiltering, setIsFiltering] = useState(false);
+  const [manualTime, setManualTime] = useState("");
+  const [meridiem, setMeridiem] = useState("AM");
+  const [error, setError] = useState("");
+  const [placement, setPlacement] = useState({ top: 0, left: 0 });
+
+  useEffect(() => {
+    if (!isOpen) return;
+    // Mirror the Employee Directory dropdown: show a blank, searchable field when open.
+    setSearch("");
+    setIsFiltering(false);
+    setError("");
+    const matching = String(value || "").match(/^(\d{1,2}:\d{2})\s*(AM|PM)$/i);
+    setManualTime(matching?.[1] || "");
+    setMeridiem(matching?.[2]?.toUpperCase() || "AM");
+    // Focus without selecting/highlighting text or drawing a second inner outline.
+    const frame = requestAnimationFrame(() => inputRef.current?.focus());
+    return () => cancelAnimationFrame(frame);
+  }, [isOpen]);
+
+  const updatePlacement = useCallback(() => {
+    const rect = triggerRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const panelWidth = Math.min(282, window.innerWidth - 16);
+    const panelHeight = Math.min(285, window.innerHeight - 16);
+    const availableBelow = window.innerHeight - rect.bottom;
+    const showAbove = availableBelow < panelHeight + 8 && rect.top >= panelHeight + 8;
+    const top = showAbove ? rect.top - panelHeight - 6 : rect.bottom + 6;
+    const left = Math.max(8, Math.min(rect.left, window.innerWidth - panelWidth - 8));
+    setPlacement({ top: Math.max(8, Math.min(top, window.innerHeight - panelHeight - 8)), left });
+  }, []);
+
+  useLayoutEffect(() => {
+    if (!isOpen) return;
+    updatePlacement();
+    const onOutsidePointer = (event) => {
+      if (!triggerRef.current?.contains(event.target) && !panelRef.current?.contains(event.target)) {
+        onClose();
+      }
+    };
+    document.addEventListener("pointerdown", onOutsidePointer);
+    window.addEventListener("resize", updatePlacement);
+    window.addEventListener("scroll", updatePlacement, true);
+    return () => {
+      document.removeEventListener("pointerdown", onOutsidePointer);
+      window.removeEventListener("resize", updatePlacement);
+      window.removeEventListener("scroll", updatePlacement, true);
+    };
+  }, [isOpen, onClose, updatePlacement]);
+
+  const filteredOptions = useMemo(() => {
+    if (!isFiltering) return options;
+    const needle = search.toLowerCase().replace(/\s+/g, "");
+    return options.filter((time) => time.toLowerCase().replace(/\s+/g, "").includes(needle));
+  }, [options, search, isFiltering]);
+
+  useEffect(() => {
+    if (!isOpen || isFiltering) return;
+    const list = optionsRef.current;
+    const selected = list?.querySelector('[data-current="true"]');
+    if (list && selected) {
+      const offset = selected.getBoundingClientRect().top - list.getBoundingClientRect().top;
+      list.scrollTop = Math.max(0, list.scrollTop + offset - list.clientHeight / 2);
+    }
+  }, [isOpen, isFiltering]);
+
+  function selectTime(candidate) {
+    const normalized = normalizeTypedTime(candidate, meridiem);
+    const nextError = getTimeSelectionError(normalized, {
+      isInterviewAvailability, isEndTime, startTime,
+    });
+    if (nextError) {
+      setError(nextError);
+      return;
+    }
+    if (busyLoading) {
+      setError("Checking your calendar availability. Please wait.");
+      return;
+    }
+    if (isTimeOptionTaken({
+      time: normalized, isEndTime, startTime, date, busy, isInterviewAvailability,
+    })) {
+      setError("This time overlaps another schedule on your calendar.");
+      return;
+    }
+    onChange(normalized);
+    onClose();
+  }
+
+  function applyManualTime() {
+    selectTime(manualTime);
+  }
+
+  function handleInputKeyDown(event) {
+    if (event.key === "Escape") {
+      if (isOpen) {
+        event.preventDefault();
+        onClose();
+        inputRef.current?.blur();
+      }
+    } else if (event.key === "ArrowDown" && !isOpen) {
+      event.preventDefault();
+      onToggle();
+    } else if (event.key === "Enter") {
+      event.preventDefault(); // Do not submit the enclosing event form.
+      if (!isOpen) { onToggle(); return; }
+      if (!search.trim()) return;
+      // A complete typed HH:MM (with optional AM/PM) is a custom selection.
+      // A partial query selects its first matching suggestion.
+      const typedTime = normalizeTypedTime(search, meridiem);
+      const exactMatch = filteredOptions.find((time) => time.toUpperCase() === search.trim().toUpperCase());
+      if (isFiltering && typedTime && (search.includes(":") || /(?:AM|PM|A|P)$/i.test(search.trim()))) {
+        selectTime(typedTime);
+      } else if (exactMatch) {
+        selectTime(exactMatch);
+      } else if (filteredOptions.length) {
+        const firstAvailable = filteredOptions.find((time) => !isTimeOptionTaken({
+          time, isEndTime, startTime, date, busy, isInterviewAvailability,
+        }));
+        if (firstAvailable) selectTime(firstAvailable);
+        else setError("All matching times are already scheduled.");
+      } else if (typedTime) {
+        selectTime(typedTime);
+      } else {
+        setError("Enter a valid time, such as 02:15 PM, or choose a suggestion.");
+      }
+    }
+  }
+
+  return (
+    <>
+      <div
+        ref={triggerRef}
+        className={`sibs-calendar-dropdown-trigger flex h-9 w-[132px] min-w-0 items-center justify-between gap-1 rounded-[10px] border px-3 font-jakarta text-[12px] font-bold text-sibs-navy shadow-sm transition-all duration-200 ${isOpen ? "border-sibs-orange bg-white ring-4 ring-sibs-orange/10" : "border-sibs-border bg-sibs-surface hover:border-sibs-orange/40 hover:bg-white"}`}
+      >
+        <input
+          ref={inputRef}
+          type="text"
+          inputMode="text"
+          autoComplete="off"
+          spellCheck={false}
+          role="combobox"
+          aria-label={`${label}: search or type a time`}
+          aria-autocomplete="list"
+          aria-haspopup="listbox"
+          aria-expanded={isOpen}
+          aria-controls={isOpen ? listId : undefined}
+          value={isOpen ? search : (value || "")}
+          placeholder={isOpen ? "Search time..." : "Select time"}
+          onClick={() => { if (!isOpen) onToggle(); }}
+          onChange={(event) => {
+            setSearch(event.target.value);
+            setIsFiltering(true);
+            setError("");
+            if (!isOpen) onToggle();
+          }}
+          onKeyDown={handleInputKeyDown}
+          className="sibs-calendar-dropdown-input h-full min-w-0 flex-1 appearance-none border-0 bg-transparent p-0 font-jakarta text-[12px] font-bold text-sibs-navy outline-none ring-0 shadow-none placeholder:text-sibs-muted"
+        />
+        <button
+          type="button"
+          aria-label={`${isOpen ? "Close" : "Open"} ${label.toLowerCase()} suggestions`}
+          aria-expanded={isOpen}
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={onToggle}
+          className="sibs-calendar-dropdown-arrow flex h-6 w-4 shrink-0 items-center justify-center rounded text-sibs-muted hover:cursor-pointer hover:text-sibs-orange"
+        >
+          <ChevronDown aria-hidden="true" className={`h-3.5 w-3.5 transition-transform ${isOpen ? "rotate-180" : ""}`} />
+        </button>
+      </div>
+      {isOpen && typeof document !== "undefined" && createPortal(
+        <div
+          ref={panelRef}
+          className="sibs-dropdown-pop-in fixed z-[2147483600] w-[282px] overflow-hidden rounded-xl border border-[#D7E3F0] bg-white font-jakarta text-sibs-navy shadow-[0_16px_36px_rgba(4,44,81,0.16)]"
+          style={{ top: placement.top, left: placement.left, width: Math.min(282, typeof window !== "undefined" ? window.innerWidth - 16 : 282) }}
+        >
+          <div id={listId} ref={optionsRef} className="sibs-scrollbar max-h-[155px] overflow-y-auto overscroll-contain py-1" role="listbox" aria-label={`${label} suggested times`}>
+            {busyLoading ? (
+              <p className="px-3 py-3 text-xs font-semibold text-sibs-muted">Checking booked times...</p>
+            ) : filteredOptions.length ? filteredOptions.map((time) => {
+              const taken = isTimeOptionTaken({
+                time, isEndTime, startTime, date, busy, isInterviewAvailability,
+              });
+              return (
+              <button
+                key={time}
+                disabled={taken}
+                title={taken ? "Already scheduled for your account" : "Select time"}
+                type="button"
+                role="option"
+                aria-selected={time === value}
+                data-current={time === value}
+                onClick={() => selectTime(time)}
+                className={`flex w-full items-center justify-between px-3 py-2 text-left font-jakarta text-[12px] transition ${taken ? "cursor-not-allowed bg-slate-50 text-slate-400 opacity-70" : "hover:cursor-pointer hover:bg-sibs-cream-subtle hover:text-sibs-orange"} ${!taken && time === value ? "bg-sibs-cream-light font-extrabold text-sibs-orange" : "font-semibold"}`}
+              >
+                <span>{time}</span>
+                {taken && <span className="text-[10px] font-bold text-rose-500">Booked</span>}
+              </button>
+            );}) : <div className="px-3 py-3 text-xs text-[#667085]">No preset match. Press Enter for a custom time or use the editor below.</div>}
+          </div>
+          <div className="border-t border-[#E6EDF5] bg-[#F8FAFC] p-2.5">
+            <label htmlFor={`${label.replace(/\s+/g, "-")}-custom-time`} className="mb-1.5 block text-[10px] font-black uppercase tracking-wide text-[#667085]">Custom time</label>
+            <div className="flex items-center gap-1.5">
+              <input
+                id={`${label.replace(/\s+/g, "-")}-custom-time`}
+                type="text"
+                inputMode="numeric"
+                aria-label={`${label} custom hours and minutes`}
+                placeholder="HH:MM"
+                value={manualTime}
+                onChange={(event) => { setManualTime(event.target.value); setError(""); }}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") { event.preventDefault(); applyManualTime(); }
+                  if (event.key === "Escape") { event.preventDefault(); onClose(); }
+                }}
+                className="h-9 min-w-0 flex-1 rounded-[8px] border border-[#DDE7F2] bg-white px-2.5 text-xs font-bold outline-none focus:border-[#FF5C28]"
+              />
+              <div className="flex h-9 overflow-hidden rounded-[8px] border border-[#DDE7F2] bg-white" role="group" aria-label={`${label} AM or PM`}>
+                {["AM", "PM"].map((option) => (
+                  <button
+                    key={option}
+                    type="button"
+                    aria-pressed={meridiem === option}
+                    onClick={() => { setMeridiem(option); setError(""); }}
+                    className={`px-1.5 text-[10px] font-black transition hover:cursor-pointer ${meridiem === option ? "bg-[#06325E] text-white" : "text-[#667085] hover:bg-[#EEF4FA]"}`}
+                  >
+                    {option}
+                  </button>
+                ))}
+              </div>
+              <button
+                type="button"
+                onClick={applyManualTime}
+                className="h-9 rounded-[8px] bg-[#06325E] px-3 text-[11px] font-black text-white transition hover:cursor-pointer hover:bg-[#0D4E82]"
+              >
+                Apply
+              </button>
+            </div>
+            {error && <p role="alert" className="mt-2 text-[11px] font-semibold leading-snug text-red-600">{error}</p>}
+            <p className="mt-1.5 text-[10px] font-medium text-[#667085]">Search above or enter HH:MM and choose AM/PM.</p>
+          </div>
+        </div>,
+        document.body,
+      )}
+    </>
+  );
+}
+
+/** Same single-border searchable dropdown design used for Department in Employee Directory. */
+function CalendarOptionDropdown({ label, value, options, onChange, widthClass = "w-[160px]" }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const [placement, setPlacement] = useState({ top: 0, left: 0, width: 160, maxHeight: 250 });
+  const triggerRef = useRef(null);
+  const inputRef = useRef(null);
+  const panelRef = useRef(null);
+  const listId = React.useId();
+
+  const normalized = useMemo(() => options.map((option) =>
+    typeof option === "string" ? { value: option, label: option } : option
+  ), [options]);
+  const displayValue = normalized.find((option) => option.value === value)?.label || String(value || "");
+  const filtered = useMemo(() => normalized.filter((option) =>
+    option.label.toLowerCase().includes(query.trim().toLowerCase())
+  ), [normalized, query]);
+
+  const close = useCallback(() => { setIsOpen(false); setQuery(""); }, []);
+  const toggle = () => { if (isOpen) close(); else setIsOpen(true); };
+  const choose = (nextValue) => { onChange(nextValue); close(); };
+
+  const updatePosition = useCallback(() => {
+    const rect = triggerRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const width = Math.min(rect.width, window.innerWidth - 20);
+    const maxHeight = Math.min(250, Math.max(130, window.innerHeight - 20));
+    const below = window.innerHeight - rect.bottom - 10;
+    const above = rect.top - 10;
+    const flip = below < Math.min(maxHeight, 180) && above > below;
+    const availableHeight = Math.max(95, Math.min(maxHeight, (flip ? above : below) - 6));
+    const panelHeight = Math.min(panelRef.current?.offsetHeight || maxHeight, availableHeight);
+    setPlacement({
+      top: Math.max(8, flip ? rect.top - panelHeight - 6 : rect.bottom + 6),
+      left: Math.max(8, Math.min(rect.left, window.innerWidth - width - 8)),
+      width,
+      maxHeight: availableHeight,
+    });
+  }, []);
+
+  useLayoutEffect(() => {
+    if (!isOpen) return;
+    setQuery("");
+    updatePosition();
+    const frame = window.requestAnimationFrame(() => inputRef.current?.focus());
+    const onOutside = (event) => {
+      if (!triggerRef.current?.contains(event.target) && !panelRef.current?.contains(event.target)) close();
+    };
+    const onEscape = (event) => {
+      if (event.key === "Escape") { event.preventDefault(); close(); inputRef.current?.blur(); }
+    };
+    document.addEventListener("pointerdown", onOutside);
+    document.addEventListener("keydown", onEscape);
+    window.addEventListener("scroll", updatePosition, true);
+    window.addEventListener("resize", updatePosition);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      document.removeEventListener("pointerdown", onOutside);
+      document.removeEventListener("keydown", onEscape);
+      window.removeEventListener("scroll", updatePosition, true);
+      window.removeEventListener("resize", updatePosition);
+    };
+  }, [isOpen, close, updatePosition]);
+
+  return (
+    <>
+      <div
+        ref={triggerRef}
+        className={`sibs-calendar-dropdown-trigger flex h-9 min-w-0 items-center gap-2 rounded-[10px] border px-3 font-jakarta text-[12px] font-bold text-sibs-navy shadow-sm transition-all duration-200 ${widthClass} ${isOpen ? "border-sibs-orange bg-white ring-4 ring-sibs-orange/10" : "border-sibs-border bg-sibs-surface hover:border-sibs-orange/40 hover:bg-white"}`}
+      >
+        <input
+          ref={inputRef}
+          type="text"
+          className="sibs-calendar-dropdown-input h-full min-w-0 flex-1 appearance-none border-0 bg-transparent p-0 font-jakarta text-[12px] font-bold text-sibs-navy outline-none ring-0 shadow-none placeholder:text-sibs-muted"
+          autoComplete="off"
+          spellCheck={false}
+          value={isOpen ? query : displayValue}
+          placeholder={isOpen ? `Search ${label.toLowerCase()}...` : label}
+          aria-label={`${label} selection`}
+          role="combobox"
+          aria-autocomplete="list"
+          aria-expanded={isOpen}
+          aria-controls={isOpen ? listId : undefined}
+          onFocus={() => { if (!isOpen) setIsOpen(true); }}
+          onClick={() => { if (!isOpen) setIsOpen(true); }}
+          onChange={(event) => { setQuery(event.target.value); if (!isOpen) setIsOpen(true); }}
+          onKeyDown={(event) => {
+            if (event.key === "ArrowDown" && !isOpen) { event.preventDefault(); setIsOpen(true); }
+            if (event.key === "Enter" && isOpen) {
+              event.preventDefault();
+              if (filtered.length) choose(filtered[0].value);
+            }
+          }}
+        />
+        <button
+          type="button"
+          tabIndex={-1}
+          className="sibs-calendar-dropdown-arrow flex h-6 w-4 shrink-0 items-center justify-center rounded text-sibs-muted hover:text-sibs-orange"
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={toggle}
+          aria-label={`${isOpen ? "Close" : "Open"} ${label.toLowerCase()} dropdown`}
+        >
+          <ChevronDown className={`h-3.5 w-3.5 transition-transform ${isOpen ? "rotate-180" : ""}`} />
+        </button>
+      </div>
+      {isOpen && typeof document !== "undefined" && createPortal(
+        <div
+          ref={panelRef}
+          className="sibs-dropdown-pop-in fixed z-[2147483600] overflow-hidden rounded-xl border border-[#D7E3F0] bg-white font-jakarta shadow-[0_16px_36px_rgba(4,44,81,0.16)]"
+          style={{ top: placement.top, left: placement.left, width: placement.width, maxHeight: placement.maxHeight }}
+        >
+          <div id={listId} className="sibs-scrollbar max-h-[250px] overflow-y-auto overscroll-contain py-1" role="listbox" aria-label={`${label} options`}>
+            {filtered.length ? filtered.map((option) => (
+              <button
+                type="button"
+                key={option.value}
+                role="option"
+                aria-selected={option.value === value}
+                onClick={() => choose(option.value)}
+                className={`block w-full truncate px-3 py-2 text-left font-jakarta text-[12px] transition hover:bg-sibs-cream-subtle hover:text-sibs-orange ${option.value === value ? "bg-sibs-cream-light font-extrabold text-sibs-orange" : "font-semibold text-sibs-text-secondary"}`}
+              >
+                {option.label}
+              </button>
+            )) : (
+              <p className="px-3 py-3 text-center text-[11px] font-semibold text-sibs-muted">No matching options</p>
+            )}
+          </div>
+        </div>,
+        document.body,
+      )}
+    </>
+  );
+}
+
+function buildTimeSelectOptions({ isInterviewAvailability, isEndTime, startTime, selectedTime }) {
+  const increment = isInterviewAvailability ? 30 : 15;
+  const start = isInterviewAvailability
+    ? INTERVIEW_AVAILABILITY_START_MINUTES + (isEndTime ? increment : 0)
+    : 0;
+  const end = isInterviewAvailability
+    ? INTERVIEW_AVAILABILITY_END_MINUTES - (isEndTime ? 0 : increment)
+    : 23 * 60 + 45 - (isEndTime ? 0 : increment);
+  const minimumEnd = isEndTime ? timeLabelToMinutes(startTime) : null;
+  const values = [];
+
+  for (let minute = start; minute <= end; minute += increment) {
+    if (minimumEnd !== null && minute <= minimumEnd) continue;
+    values.push(minutesToTimeLabel(minute));
+  }
+
+  // Keep existing Google events (which may use non-standard minutes) editable.
+  // Once changed, new selections follow the configured time increments.
+  if (selectedTime && !values.includes(selectedTime)) {
+    values.push(selectedTime);
+    values.sort((a, b) => (timeLabelToMinutes(a) ?? -1) - (timeLabelToMinutes(b) ?? -1));
+  }
+
+  return values;
+}
 
 function getEventColorOption(value) {
   return (
@@ -247,6 +795,7 @@ function normalizeGoogleCalendarEvent(event = {}) {
   return {
     id: event.id || `google-${Date.now()}`,
     googleEventId: event.id || "",
+    googleHtmlLink: /^https:\/\/calendar\.google\.com\//.test(event.htmlLink || "") ? event.htmlLink : "",
     meetLink,
     title: event.summary || "Untitled Schedule",
     category: privateProperties.category || "Talent Acquisition",
@@ -257,6 +806,7 @@ function normalizeGoogleCalendarEvent(event = {}) {
     startTime: event?.start?.date ? "All Day" : formatTimeLabel(startValue),
     endTime: event?.end?.date ? "All Day" : formatTimeLabel(endValue),
     account: privateProperties.account || "",
+    site: normalizeCalendarSite(privateProperties.site),
     organizer:
       event?.organizer?.displayName ||
       event?.organizer?.email ||
@@ -276,6 +826,7 @@ function normalizeGoogleCalendarEvent(event = {}) {
           EVENT_COLOR_BY_GOOGLE_COLOR_ID[event.colorId] ||
           "blue",
       ).googleColorId,
+    recruitmentEventType: privateProperties.eventType || "",
     scheduleType: privateProperties.scheduleType || "Event",
     deadline: privateProperties.deadline || "",
     taskList: privateProperties.taskList || "My Tasks",
@@ -299,7 +850,7 @@ function normalizeGoogleCalendarEvent(event = {}) {
 
 function buildGoogleCalendarPayload(form = {}) {
   return {
-    summary: form.title?.trim() || "Untitled Schedule",
+    summary: withSibsHrisCalendarTitle(form.title),
     description: form.notes || "",
     location: form.location || "",
     startDateTime: parseTimeLabel(form.date, form.startTime),
@@ -319,6 +870,7 @@ function buildGoogleCalendarPayload(form = {}) {
         category: form.category || "Talent Acquisition",
         status: form.status || "Scheduled",
         account: form.account || "",
+        site: normalizeCalendarSite(form.site),
         organizer: form.organizer || "",
         color: form.color || "blue",
         colorId: getEventColorOption(form.color || "blue").googleColorId,
@@ -337,6 +889,11 @@ function buildGoogleCalendarPayload(form = {}) {
       },
     },
   };
+}
+
+function formatCalendarShortDate(value) {
+  const match = String(value || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  return match ? `${match[2]}/${match[3]}/${match[1]}` : "";
 }
 
 function formatDateKey(date) {
@@ -496,13 +1053,14 @@ function formatGoogleEmailDisplayName(email) {
 function createBlankEvent(baseDate, organizer = "") {
   return {
     id: "",
-    title: "",
+    title: SIBS_HRIS_CALENDAR_TITLE_PREFIX,
     category: "Talent Acquisition",
     status: "Scheduled",
     date: baseDate,
     startTime: "09:00 AM",
     endTime: "10:00 AM",
     account: "",
+    site: "",
     organizer,
     location: "",
     notes: "",
@@ -540,18 +1098,170 @@ function EventEditorModal({
   );
   const [form, setForm] = useState(initialForm);
   const [copySuccess, setCopySuccess] = useState(false);
+  const [showMoreOptions, setShowMoreOptions] = useState(false);
+  const [moreOptionsFeedback, setMoreOptionsFeedback] = useState("");
+  const moreOptionsRef = useRef(null);
+  const [openTimePicker, setOpenTimePicker] = useState(null);
+  const closeTimePicker = useCallback(() => setOpenTimePicker(null), []);
+
+  useEffect(() => {
+    if (!showMoreOptions) return undefined;
+    const frame = requestAnimationFrame(() => {
+      moreOptionsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [showMoreOptions]);
+
+  const [busyState, setBusyState] = useState({ date: "", intervals: [], loading: true, error: "" });
+  const [validationError, setValidationError] = useState("");
+
+  useEffect(() => {
+    const date = form.date;
+    if (!date) return;
+    let cancelled = false;
+    setBusyState({ date, intervals: [], loading: true, error: "" });
+    setValidationError("");
+    getGoogleCalendarBusyTimes({ date, excludeEventId: form.googleEventId || "" })
+      .then((result) => {
+        if (cancelled) return;
+        if (result?.success !== true) {
+          setBusyState({ date, intervals: [], loading: false, error: result?.message || result?.error || "Cannot check calendar availability." });
+        } else {
+          setBusyState({ date, intervals: result.busy || [], loading: false, error: "" });
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setBusyState({ date, intervals: [], loading: false, error: "Cannot check calendar availability." });
+      });
+    return () => { cancelled = true; };
+  }, [form.date, form.googleEventId]);
+
+  const busyReady = busyState.date === form.date && !busyState.loading && !busyState.error;
+  const busyIntervals = busyReady ? busyState.intervals : [];
+
 
   const activeType = form.scheduleType || "Event";
   const selectedColorOption = getEventColorOption(form.color || "peacock");
+  const moreOptionsTimedEvent = activeType === "Event" || activeType === "Interview availability";
+  const selectedStartMinutes = timeLabelToMinutes(form.startTime);
+  const selectedEndMinutes = timeLabelToMinutes(form.endTime);
+  const currentDurationMinutes =
+    selectedStartMinutes !== null && selectedEndMinutes !== null
+      ? selectedEndMinutes - selectedStartMinutes
+      : null;
+
+  const durationPresets = [30, 45, 60, 90, 120];
+
+  function canUseDuration(durationMinutes) {
+    if (!moreOptionsTimedEvent || !busyReady || selectedStartMinutes === null) return false;
+    const proposedEnd = selectedStartMinutes + durationMinutes;
+    if (proposedEnd > 23 * 60 + 59) return false;
+    if (activeType === "Interview availability" &&
+        (durationMinutes < 30 || proposedEnd > INTERVIEW_AVAILABILITY_END_MINUTES)) return false;
+    const start = calendarLocalTimeMs(form.date, form.startTime);
+    const end = start + durationMinutes * 60000;
+    return Number.isFinite(start) && !calendarTimeOverlaps(busyIntervals, start, end);
+  }
+
+  function selectDuration(durationMinutes) {
+    if (!canUseDuration(durationMinutes)) return;
+    updateField("endTime", minutesToTimeLabel(selectedStartMinutes + durationMinutes));
+    setValidationError("");
+    setMoreOptionsFeedback("");
+  }
+
+  async function copyScheduleSummary() {
+    const lines = [
+      withSibsHrisCalendarTitle(form.title),
+      `Date: ${formatDayLabel(form.date, { year: true })}`,
+      activeType === "Out of office"
+        ? `Until: ${formatDayLabel(form.outOfOfficeEndDate || form.date, { year: true })}`
+        : moreOptionsTimedEvent && form.startTime !== "All Day"
+          ? `Time: ${form.startTime} – ${form.endTime} (Asia/Manila)`
+          : "All day",
+      form.site ? `Site: ${form.site}` : "",
+      form.account ? `Account: ${form.account}` : "",
+      form.location ? `Location: ${form.location}` : "",
+      form.notes ? `Details: ${form.notes}` : "",
+    ].filter(Boolean);
+    const text = lines.join("\n");
+    try {
+      if (!navigator.clipboard?.writeText) throw new Error("Clipboard API unavailable");
+      await navigator.clipboard.writeText(text);
+      setMoreOptionsFeedback("Schedule details copied.");
+    } catch {
+      // Support non-HTTPS local development where the Clipboard API may be unavailable.
+      try {
+        const textArea = document.createElement("textarea");
+        textArea.value = text;
+        textArea.style.position = "fixed";
+        textArea.style.opacity = "0";
+        document.body.appendChild(textArea);
+        textArea.select();
+        const copied = document.execCommand("copy");
+        document.body.removeChild(textArea);
+        setMoreOptionsFeedback(copied ? "Schedule details copied." : "Unable to copy schedule details.");
+      } catch {
+        setMoreOptionsFeedback("Unable to copy schedule details.");
+      }
+    }
+  }
+
+  function restoreUnsavedChanges() {
+    setForm({ ...initialForm });
+    setOpenTimePicker(null);
+    setValidationError("");
+    setMoreOptionsFeedback("Unsaved changes restored to the original values.");
+  }
 
   function updateField(field, value) {
     setForm((current) => ({ ...current, [field]: value }));
   }
 
+  function updateStartTime(value) {
+    setForm((current) => {
+      const newStart = timeLabelToMinutes(value);
+      const previousEnd = timeLabelToMinutes(current.endTime);
+      if (newStart === null || (previousEnd !== null && previousEnd > newStart)) {
+        return { ...current, startTime: value };
+      }
+      const isInterviewAvailability = current.scheduleType === "Interview availability";
+      const increment = isInterviewAvailability ? 30 : 15;
+      const maxEnd = isInterviewAvailability ? INTERVIEW_AVAILABILITY_END_MINUTES : 23 * 60 + 45;
+      return {
+        ...current,
+        startTime: value,
+        endTime: minutesToTimeLabel(Math.min(newStart + increment, maxEnd)),
+      };
+    });
+  }
+
+  const isInterviewAvailability = activeType === "Interview availability";
+  const startTimeOptions = buildTimeSelectOptions({
+    isInterviewAvailability,
+    isEndTime: false,
+    selectedTime: form.startTime,
+  });
+  const endTimeOptions = buildTimeSelectOptions({
+    isInterviewAvailability,
+    isEndTime: true,
+    startTime: form.startTime,
+    selectedTime: form.endTime,
+  });
+
   function updateScheduleType(nextType) {
     setForm((current) => ({
       ...current,
       scheduleType: nextType,
+      ...(nextType === "Interview availability" ? {
+        title: withSibsHrisCalendarTitle(
+          current.title,
+          "Available for Candidate Interviews",
+        ),
+        startTime: current.scheduleType === "Event" && current.startTime !== "09:00 AM" ? current.startTime : "10:00 AM",
+        endTime: current.scheduleType === "Event" && current.endTime !== "10:00 AM" ? current.endTime : "11:00 AM",
+        availability: "Free", color: "emerald", category: "Talent Acquisition",
+      } : {}),
       status:
         nextType === "Task"
           ? "Scheduled"
@@ -594,18 +1304,51 @@ function EventEditorModal({
     }
   }
 
-  function handleSubmit(submitEvent) {
+  async function handleSubmit(submitEvent) {
     submitEvent.preventDefault();
-
-    onSave({
+    setValidationError("");
+    if (!busyReady) {
+      setValidationError(busyState.error || "Please wait while your calendar availability is checked.");
+      return;
+    }
+    if (activeType === "Event" || activeType === "Interview availability") {
+      const start = calendarLocalTimeMs(form.date, form.startTime);
+      const end = calendarLocalTimeMs(form.date, form.endTime);
+      if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) {
+        setValidationError("Select a valid start and end time.");
+        return;
+      }
+      if (calendarTimeOverlaps(busyIntervals, start, end)) {
+        setValidationError("This time is already scheduled on your calendar. Choose another time.");
+        return;
+      }
+    }
+    if (activeType === "Interview availability") {
+      const startMinutes = timeLabelToMinutes(form.startTime);
+      const endMinutes = timeLabelToMinutes(form.endTime);
+      const day = new Date(`${form.date}T12:00:00Z`).getUTCDay();
+      if ([0, 6].includes(day) || startMinutes === null || endMinutes === null ||
+          endMinutes - startMinutes < 30) {
+        window.alert("Choose a weekday with an availability window of at least 30 minutes.");
+        return;
+      }
+      if (startMinutes < 600 || endMinutes > 1050) {
+        window.alert("Interview availability must be between 10:00 AM and 5:30 PM.");
+        return;
+      }
+    }
+    const result = await onSave({
       ...form,
       id: form.id || `schedule-${Date.now()}`,
-      title: form.title?.trim() || "Untitled Schedule",
+      title: withSibsHrisCalendarTitle(form.title),
       outOfOfficeEndDate: form.outOfOfficeEndDate || form.date,
     });
+    if (result?.success === false) {
+      setValidationError(result.message || "Unable to save the calendar schedule.");
+    }
   }
 
-  const tabItems = ["Event", "Task", "Out of office"];
+  const tabItems = ["Event", "Interview availability", "Task", "Out of office"];
 
   return (
     <div
@@ -620,7 +1363,7 @@ function EventEditorModal({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-wide text-[#06325E]">
             <span className="h-1 w-5 rounded-full bg-[#FF5C28]" />
-            Google Calendar Event
+            {activeType === "Interview availability" ? "Interview Availability" : "Google Calendar Event"}
           </div>
 
           <button
@@ -664,42 +1407,65 @@ function EventEditorModal({
           })}
         </div>
 
+        {activeType === "Interview availability" && (
+          <p className="mt-3 rounded-[9px] border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-800">
+            This block will offer 30-minute interview slots to you in Candidate Pipeline and in candidate reschedule links.
+            Only open, unbooked slots can be selected.
+          </p>
+        )}
         <div className="mt-5 space-y-4">
-          {activeType === "Event" ? (
+          {activeType === "Event" || activeType === "Interview availability" ? (
             <>
               <div className="grid grid-cols-[24px_minmax(0,1fr)] items-start gap-3 lg:grid-cols-[24px_minmax(0,1fr)_auto]">
                 <Clock className="mt-1.5 h-5 w-5 text-[#FF5C28]" />
 
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
-                    <input
-                      type="date"
-                      value={form.date || ""}
-                      onChange={(inputEvent) =>
-                        updateField("date", inputEvent.target.value)
-                      }
-                      className="h-9 w-[166px] rounded-[9px] border border-[#DDE7F2] bg-[#EEF4FA] px-3 text-sm font-black text-[#06325E] outline-none transition hover:cursor-pointer focus:border-[#FF5C28]"
-                    />
+                    <div className="w-[188px] shrink-0">
+                      <DatePicker
+                        value={form.date || ""}
+                        displayValue={formatCalendarShortDate(form.date)}
+                        onChange={(date) => updateField("date", date)}
+                        label="Schedule date"
+                        hideLabel
+                        placeholder="Select date"
+                        buttonClassName="sibs-calendar-date-trigger !h-9 !rounded-[9px] !px-2.5 !text-[12px]"
+                        portalClassName="sibs-calendar-date-panel"
+                      />
+                    </div>
 
                     <span className="text-xs font-bold text-[#98A2B3]">-</span>
 
-                    <div className="flex h-9 w-fit items-center justify-center gap-2 rounded-[9px] border border-[#DDE7F2] bg-[#EEF4FA] px-3">
-                      <input
-                        value={form.startTime || ""}
-                        onChange={(inputEvent) =>
-                          updateField("startTime", inputEvent.target.value)
-                        }
-                        className="w-[82px] bg-transparent text-center text-sm font-black text-[#06325E] outline-none"
+                    <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+                      <CalendarTimePicker
+                        label="Start time"
+                        value={form.startTime}
+                        options={startTimeOptions}
+                        isInterviewAvailability={isInterviewAvailability}
+                        date={form.date}
+                        busy={busyIntervals}
+                        busyLoading={!busyReady}
+                        isEndTime={false}
+                        isOpen={openTimePicker === "start"}
+                        onToggle={() => setOpenTimePicker((current) => current === "start" ? null : "start")}
+                        onChange={updateStartTime}
+                        onClose={closeTimePicker}
                       />
-                      <span className="text-xs font-black text-[#667085]">
-                        -
-                      </span>
-                      <input
-                        value={form.endTime || ""}
-                        onChange={(inputEvent) =>
-                          updateField("endTime", inputEvent.target.value)
-                        }
-                        className="w-[82px] bg-transparent text-center text-sm font-black text-[#06325E] outline-none"
+                      <span className="text-xs font-black text-[#667085]">–</span>
+                      <CalendarTimePicker
+                        label="End time"
+                        value={form.endTime}
+                        options={endTimeOptions}
+                        isInterviewAvailability={isInterviewAvailability}
+                        date={form.date}
+                        busy={busyIntervals}
+                        busyLoading={!busyReady}
+                        isEndTime
+                        startTime={form.startTime}
+                        isOpen={openTimePicker === "end"}
+                        onToggle={() => setOpenTimePicker((current) => current === "end" ? null : "end")}
+                        onChange={(value) => updateField("endTime", value)}
+                        onClose={closeTimePicker}
                       />
                     </div>
                   </div>
@@ -727,7 +1493,7 @@ function EventEditorModal({
                 </div>
               </div>
 
-              <div className="grid grid-cols-[24px_1fr] items-start gap-3">
+              {activeType === "Event" && <div className="grid grid-cols-[24px_1fr] items-start gap-3">
                 <svg
                   className="mt-1 h-5 w-5 text-[#FF8A00]"
                   viewBox="0 0 24 24"
@@ -802,7 +1568,7 @@ function EventEditorModal({
                     Add Google Meet link
                   </button>
                 )}
-              </div>
+              </div>}
 
               <div className="grid gap-4 lg:grid-cols-[minmax(220px,1fr)_minmax(260px,1.15fr)]">
                 <div className="grid grid-cols-[24px_1fr] items-center gap-3">
@@ -847,26 +1613,16 @@ function EventEditorModal({
                       </p>
                     </div>
 
-                    <select
+                    <CalendarOptionDropdown
+                      label="Color"
+                      widthClass="w-[158px]"
                       value={form.color || "peacock"}
-                      onChange={(inputEvent) => {
-                        const nextColor = inputEvent.target.value;
+                      options={COLOR_OPTIONS}
+                      onChange={(nextColor) => {
                         const nextColorOption = getEventColorOption(nextColor);
-
-                        setForm((current) => ({
-                          ...current,
-                          color: nextColor,
-                          colorId: nextColorOption.googleColorId,
-                        }));
+                        setForm((current) => ({ ...current, color: nextColor, colorId: nextColorOption.googleColorId }));
                       }}
-                      className="h-9 w-fit rounded-[9px] border border-[#DDE7F2] bg-[#EEF4FA] px-3 pr-9 text-[11px] font-black text-[#06325E] outline-none transition hover:cursor-pointer"
-                    >
-                      {COLOR_OPTIONS.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
+                    />
 
                     <span
                       className={[
@@ -881,50 +1637,45 @@ function EventEditorModal({
                   <Tags className="h-5 w-5 text-[#06325E]" />
 
                   <div className="flex w-fit flex-wrap items-center gap-2">
-                    <select
+                    <CalendarOptionDropdown
+                      label="Category"
+                      widthClass="w-[196px]"
                       value={form.category || "Talent Acquisition"}
-                      onChange={(inputEvent) =>
-                        updateField("category", inputEvent.target.value)
-                      }
-                      className="h-9 w-fit rounded-[9px] border border-[#DDE7F2] bg-[#EEF4FA] px-3 pr-9 text-[11px] font-black text-[#06325E] outline-none transition hover:cursor-pointer"
-                    >
-                      {CATEGORY_OPTIONS.filter(
-                        (item) => item !== "All Categories",
-                      ).map((item) => (
-                        <option key={item}>{item}</option>
-                      ))}
-                    </select>
+                      options={CATEGORY_OPTIONS.filter((item) => item !== "All Categories")}
+                      onChange={(value) => updateField("category", value)}
+                    />
 
-                    <select
+                    <CalendarOptionDropdown
+                      label="Status"
+                      widthClass="w-[146px]"
                       value={form.status || "Scheduled"}
-                      onChange={(inputEvent) =>
-                        updateField("status", inputEvent.target.value)
-                      }
-                      className="h-9 w-fit rounded-[9px] border border-[#DDE7F2] bg-[#EEF4FA] px-3 pr-9 text-[11px] font-black text-[#06325E] outline-none transition hover:cursor-pointer"
-                    >
-                      {STATUS_OPTIONS.filter(
-                        (item) => item !== "All Statuses",
-                      ).map((item) => (
-                        <option key={item}>{item}</option>
-                      ))}
-                    </select>
+                      options={STATUS_OPTIONS.filter((item) => item !== "All Statuses")}
+                      onChange={(value) => updateField("status", value)}
+                    />
                   </div>
+                </div>
+
+                <div className="grid grid-cols-[24px_minmax(0,1fr)] items-center gap-3">
+                  <MapPin className="h-5 w-5 text-[#06325E]" aria-hidden="true" />
+                  <CalendarOptionDropdown
+                    label="Site"
+                    widthClass="w-[196px]"
+                    value={form.site || ""}
+                    options={SITE_OPTIONS}
+                    onChange={(site) => updateField("site", site)}
+                  />
                 </div>
 
                 <div className="grid grid-cols-[24px_minmax(0,1fr)] items-center gap-3">
                   <Briefcase className="h-5 w-5 text-[#06325E]" />
 
-                  <select
+                  <CalendarOptionDropdown
+                    label="Availability"
+                    widthClass="w-[125px]"
                     value={form.availability || "Busy"}
-                    onChange={(inputEvent) =>
-                      updateField("availability", inputEvent.target.value)
-                    }
-                    className="h-9 w-fit rounded-[9px] border border-[#DDE7F2] bg-[#EEF4FA] px-3 pr-9 text-[11px] font-black text-[#06325E] outline-none transition hover:cursor-pointer"
-                  >
-                    {AVAILABILITY_OPTIONS.map((item) => (
-                      <option key={item}>{item}</option>
-                    ))}
-                  </select>
+                    options={AVAILABILITY_OPTIONS}
+                    onChange={(value) => updateField("availability", value)}
+                  />
                 </div>
 
                 <div className="grid grid-cols-[24px_minmax(0,1fr)] items-center gap-3">
@@ -948,17 +1699,13 @@ function EventEditorModal({
                   </svg>
 
                   <div className="flex w-fit flex-wrap items-center gap-2">
-                    <select
+                    <CalendarOptionDropdown
+                      label="Visibility"
+                      widthClass="w-[180px]"
                       value={form.visibility || "Default visibility"}
-                      onChange={(inputEvent) =>
-                        updateField("visibility", inputEvent.target.value)
-                      }
-                      className="h-9 w-fit rounded-[9px] border border-[#DDE7F2] bg-[#EEF4FA] px-3 pr-9 text-[11px] font-black text-[#06325E] outline-none transition hover:cursor-pointer"
-                    >
-                      {VISIBILITY_OPTIONS.map((item) => (
-                        <option key={item}>{item}</option>
-                      ))}
-                    </select>
+                      options={VISIBILITY_OPTIONS}
+                      onChange={(value) => updateField("visibility", value)}
+                    />
 
                     <span className="flex h-5 w-5 items-center justify-center rounded-full border border-[#98A2B3] text-[11px] font-black text-[#667085]">
                       ?
@@ -1009,14 +1756,18 @@ function EventEditorModal({
               <div className="grid grid-cols-[24px_1fr_auto] items-start gap-3">
                 <Clock className="mt-1.5 h-5 w-5 text-[#FF5C28]" />
                 <div>
-                  <input
-                    type="date"
-                    value={form.date || ""}
-                    onChange={(inputEvent) =>
-                      updateField("date", inputEvent.target.value)
-                    }
-                    className="h-8 rounded-[9px] border border-[#DDE7F2] bg-[#EEF4FA] px-3 text-sm font-black text-[#06325E] outline-none transition hover:cursor-pointer focus:border-[#FF5C28]"
-                  />
+                  <div className="w-[188px]">
+                    <DatePicker
+                      value={form.date || ""}
+                      displayValue={formatCalendarShortDate(form.date)}
+                      onChange={(date) => updateField("date", date)}
+                      label="Task date"
+                      hideLabel
+                      placeholder="Select date"
+                      buttonClassName="sibs-calendar-date-trigger !h-9 !rounded-[9px] !px-2.5 !text-[12px]"
+                      portalClassName="sibs-calendar-date-panel"
+                    />
+                  </div>
                   <p className="mt-1 text-[11px] font-semibold text-[#667085]">
                     Does not repeat
                   </p>
@@ -1107,18 +1858,13 @@ function EventEditorModal({
                   />
                 </svg>
 
-                <select
+                <CalendarOptionDropdown
+                  label="Task list"
+                  widthClass="w-[220px]"
                   value={form.taskList || "My Tasks"}
-                  onChange={(inputEvent) =>
-                    updateField("taskList", inputEvent.target.value)
-                  }
-                  className="h-9 w-full max-w-[220px] rounded-[10px] border border-[#DDE7F2] bg-[#EEF4FA] px-4 text-sm font-black text-[#06325E] outline-none transition hover:cursor-pointer"
-                >
-                  <option>My Tasks</option>
-                  <option>Talent Acquisition</option>
-                  <option>HR Tasks</option>
-                  <option>Operations</option>
-                </select>
+                  options={["My Tasks", "Talent Acquisition", "HR Tasks", "Operations"]}
+                  onChange={(value) => updateField("taskList", value)}
+                />
               </div>
             </>
           ) : null}
@@ -1129,26 +1875,40 @@ function EventEditorModal({
                 <Clock className="mt-1.5 h-5 w-5 text-[#FF5C28]" />
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
-                    <input
-                      type="date"
-                      value={form.date || ""}
-                      onChange={(inputEvent) =>
-                        updateField("date", inputEvent.target.value)
-                      }
-                      className="h-8 rounded-[9px] border border-[#DDE7F2] bg-[#EEF4FA] px-3 text-sm font-black text-[#06325E] outline-none transition hover:cursor-pointer focus:border-[#FF5C28]"
-                    />
+                    <div className="w-[188px] shrink-0">
+                      <DatePicker
+                        value={form.date || ""}
+                        displayValue={formatCalendarShortDate(form.date)}
+                        onChange={(date) => {
+                          setForm((current) => ({
+                            ...current,
+                            date,
+                            outOfOfficeEndDate:
+                              current.outOfOfficeEndDate && date && current.outOfOfficeEndDate >= date
+                                ? current.outOfOfficeEndDate : date,
+                          }));
+                        }}
+                        label="Out of office from date"
+                        hideLabel
+                        placeholder="From date"
+                        buttonClassName="sibs-calendar-date-trigger !h-9 !rounded-[9px] !px-2.5 !text-[12px]"
+                        portalClassName="sibs-calendar-date-panel"
+                      />
+                    </div>
                     <span className="text-xs font-bold text-[#98A2B3]">-</span>
-                    <input
-                      type="date"
-                      value={form.outOfOfficeEndDate || form.date || ""}
-                      onChange={(inputEvent) =>
-                        updateField(
-                          "outOfOfficeEndDate",
-                          inputEvent.target.value,
-                        )
-                      }
-                      className="h-8 rounded-[9px] border border-[#DDE7F2] bg-[#EEF4FA] px-3 text-sm font-black text-[#06325E] outline-none transition hover:cursor-pointer focus:border-[#FF5C28]"
-                    />
+                    <div className="w-[188px] shrink-0">
+                      <DatePicker
+                        value={form.outOfOfficeEndDate || form.date || ""}
+                        displayValue={formatCalendarShortDate(form.outOfOfficeEndDate || form.date)}
+                        min={form.date || ""}
+                        onChange={(date) => updateField("outOfOfficeEndDate", date)}
+                        label="Out of office to date"
+                        hideLabel
+                        placeholder="To date"
+                        buttonClassName="sibs-calendar-date-trigger !h-9 !rounded-[9px] !px-2.5 !text-[12px]"
+                        portalClassName="sibs-calendar-date-panel"
+                      />
+                    </div>
                   </div>
                   <p className="mt-1 text-[11px] font-semibold text-[#667085]">
                     Does not repeat
@@ -1236,17 +1996,13 @@ function EventEditorModal({
 
                 <div>
                   <div className="flex items-center gap-2">
-                    <select
+                    <CalendarOptionDropdown
+                      label="Visibility"
+                      widthClass="w-[180px]"
                       value={form.visibility || "Public"}
-                      onChange={(inputEvent) =>
-                        updateField("visibility", inputEvent.target.value)
-                      }
-                      className="h-9 rounded-[10px] border border-[#DDE7F2] bg-[#EEF4FA] px-4 text-sm font-black text-[#06325E] outline-none transition hover:cursor-pointer"
-                    >
-                      <option>Public</option>
-                      <option>Private</option>
-                      <option>Default visibility</option>
-                    </select>
+                      options={["Public", "Private", "Default visibility"]}
+                      onChange={(value) => updateField("visibility", value)}
+                    />
                     <span className="flex h-5 w-5 items-center justify-center rounded-full border border-[#98A2B3] text-[11px] font-black text-[#667085]">
                       ?
                     </span>
@@ -1258,7 +2014,128 @@ function EventEditorModal({
               </div>
             </>
           ) : null}
+          {(activeType === "Task" || activeType === "Out of office") && (
+            <div className="grid grid-cols-[24px_minmax(0,1fr)] items-center gap-3">
+              <MapPin className="h-5 w-5 text-[#06325E]" aria-hidden="true" />
+              <CalendarOptionDropdown
+                label="Site"
+                widthClass="w-[196px]"
+                value={form.site || ""}
+                options={SITE_OPTIONS}
+                onChange={(site) => updateField("site", site)}
+              />
+            </div>
+          )}
         </div>
+
+        {(validationError || busyState.error) && (
+          <p role="alert" className="mt-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700">
+            {validationError || busyState.error}
+          </p>
+        )}
+        {showMoreOptions && (
+          <section
+            ref={moreOptionsRef}
+            id="sibs-calendar-more-options"
+            aria-label="Additional calendar options"
+            className="mt-4 space-y-3 rounded-[12px] border border-[#DDE7F2] bg-[#F8FAFC] px-4 py-4"
+          >
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <h3 className="text-sm font-black text-[#06325E]">Additional schedule options</h3>
+                <p className="mt-0.5 text-[11px] font-semibold text-[#667085]">
+                  Update optional details here, then click Save to apply them.
+                </p>
+              </div>
+              <span className="rounded-md bg-white px-2.5 py-1 text-[10px] font-bold text-[#667085]">
+                Asia/Manila (GMT+8)
+              </span>
+            </div>
+
+            {moreOptionsTimedEvent && form.startTime !== "All Day" && (
+              <div>
+                <label className="mb-2 block text-[11px] font-black text-[#06325E]">Quick duration</label>
+                <div className="flex flex-wrap gap-2" role="group" aria-label="Choose event duration">
+                  {durationPresets.map((duration) => {
+                    const permitted = canUseDuration(duration);
+                    const active = currentDurationMinutes === duration;
+                    const label = duration < 60 ? `${duration} min` : `${duration / 60} ${duration === 60 ? "hour" : "hours"}`;
+                    return (
+                      <button
+                        key={duration}
+                        type="button"
+                        disabled={!permitted}
+                        onClick={() => selectDuration(duration)}
+                        aria-pressed={active}
+                        className={`h-8 rounded-[8px] border px-3 text-[11px] font-extrabold transition ${active ? "border-[#06325E] bg-[#06325E] text-white" : "border-[#DDE7F2] bg-white text-[#06325E] hover:border-[#FF5C28]"} disabled:cursor-not-allowed disabled:opacity-40`}
+                      >
+                        {label}
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="mt-1.5 text-[10px] font-medium text-[#667085]">
+                  Conflicting durations are disabled. Interview availability must end by 5:30 PM.
+                </p>
+              </div>
+            )}
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label className="block text-[11px] font-black text-[#06325E]">
+                Account / Reference (optional)
+                <input
+                  value={form.account || ""}
+                  onChange={(event) => updateField("account", event.target.value)}
+                  placeholder="Enter account or reference"
+                  className="mt-1.5 h-9 w-full rounded-[9px] border border-[#DDE7F2] bg-white px-3 text-xs font-semibold text-[#06325E] outline-none focus:border-[#FF5C28]"
+                />
+              </label>
+              <div className="flex flex-col justify-end gap-1.5 text-[11px] font-semibold text-[#667085]">
+                <span className="font-black text-[#06325E]">Saved event details</span>
+                <span>{form.googleEventId ? "Editing existing Google Calendar event" : "New calendar schedule (not saved yet)"}</span>
+              </div>
+            </div>
+
+            <label className="block text-[11px] font-black text-[#06325E]">
+              Full description / agenda
+              <textarea
+                value={form.notes || ""}
+                onChange={(event) => updateField("notes", event.target.value)}
+                rows={3}
+                placeholder="Add additional event details"
+                className="mt-1.5 w-full resize-y rounded-[9px] border border-[#DDE7F2] bg-white px-3 py-2 text-xs font-semibold text-[#06325E] outline-none focus:border-[#FF5C28]"
+              />
+            </label>
+
+            <div className="flex flex-wrap items-center gap-2 border-t border-[#DDE7F2] pt-3">
+              <button
+                type="button"
+                onClick={copyScheduleSummary}
+                className="inline-flex h-8 items-center gap-1.5 rounded-[8px] border border-[#DDE7F2] bg-white px-3 text-[11px] font-extrabold text-[#06325E] transition hover:border-[#FF5C28]"
+              >
+                <Copy className="h-3.5 w-3.5" /> Copy details
+              </button>
+              <button
+                type="button"
+                onClick={restoreUnsavedChanges}
+                className="inline-flex h-8 items-center gap-1.5 rounded-[8px] border border-[#DDE7F2] bg-white px-3 text-[11px] font-extrabold text-[#06325E] transition hover:border-[#FF5C28]"
+              >
+                <RotateCcw className="h-3.5 w-3.5" /> Reset changes
+              </button>
+              {form.googleHtmlLink && (
+                <a
+                  href={form.googleHtmlLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex h-8 items-center rounded-[8px] border border-[#DDE7F2] bg-white px-3 text-[11px] font-extrabold text-[#06325E] transition hover:border-[#FF5C28]"
+                >
+                  Open in Google Calendar
+                </a>
+              )}
+              {moreOptionsFeedback && <span role="status" className="text-[11px] font-semibold text-emerald-700">{moreOptionsFeedback}</span>}
+            </div>
+          </section>
+        )}
 
         <div className="mt-4 flex items-center justify-between gap-4">
           <button
@@ -1274,14 +2151,21 @@ function EventEditorModal({
           <div className="flex items-center gap-3">
             <button
               type="button"
-              className="h-9 rounded-[10px] px-4 text-xs font-black text-[#06325E] transition hover:cursor-pointer hover:bg-[#F1F5F9]"
+              aria-expanded={showMoreOptions}
+              aria-controls="sibs-calendar-more-options"
+              onClick={() => {
+                setShowMoreOptions((previous) => !previous);
+                setMoreOptionsFeedback("");
+              }}
+              className={`h-9 rounded-[10px] px-4 text-xs font-black transition hover:cursor-pointer hover:bg-[#F1F5F9] ${showMoreOptions ? "bg-[#EEF4FA] text-[#FF5C28]" : "text-[#06325E]"}`}
             >
-              More options
+              {showMoreOptions ? "Fewer options" : "More options"}
             </button>
 
             <button
               type="submit"
-              className="h-10 rounded-[14px] bg-[#FF5C28] px-8 text-xs font-black text-white shadow-[0_8px_20px_rgba(255,92,40,0.28)] transition hover:cursor-pointer hover:bg-[#E84F1F]"
+              disabled={!busyReady}
+              className="h-10 rounded-[14px] disabled:cursor-not-allowed disabled:opacity-50 bg-[#FF5C28] px-8 text-xs font-black text-white shadow-[0_8px_20px_rgba(255,92,40,0.28)] transition hover:cursor-pointer hover:bg-[#E84F1F]"
             >
               Save
             </button>
@@ -1297,6 +2181,7 @@ function CompactScheduleCard({ event, onEdit }) {
     <button
       type="button"
       onClick={onEdit}
+      title={`${event.startTime} - ${event.title}${event.account ? ` • ${event.account}` : ""}`}
       className={[
         "block w-full rounded-[8px] border px-2 py-1 text-left text-[10px] font-bold leading-4 shadow-sm transition hover:cursor-pointer hover:-translate-y-0.5 hover:border-[#FF5C28] hover:shadow-md",
         EVENT_COLORS[event.color] || EVENT_COLORS.blue,
@@ -1425,7 +2310,7 @@ function MonthCalendarView({
 
       <div className="grid min-w-[720px] grid-cols-7">
         {monthCells.map((cell) => {
-          const dayEvents = eventsByDate[cell.key] || [];
+          const dayEvents = sortEventsByDateTime(eventsByDate[cell.key] || []);
           const isToday = cell.key === todayKey;
 
           return (
@@ -1433,7 +2318,7 @@ function MonthCalendarView({
               key={cell.key}
               onClick={() => onCreateEvent(cell.key)}
               className={[
-                "group flex h-[118px] flex-col border-r border-b border-[#DDE7F2] p-3 text-left transition last:border-r-0 hover:cursor-pointer hover:bg-[#F8FAFC]",
+                "group flex min-h-[118px] flex-col border-r border-b border-[#DDE7F2] p-3 text-left transition last:border-r-0 hover:cursor-pointer hover:bg-[#F8FAFC]",
                 cell.inMonth ? "bg-white" : "bg-[#EEF2F6]",
                 isToday ? "ring-2 ring-inset ring-[#FF5C28]" : "",
               ].join(" ")}
@@ -1452,22 +2337,17 @@ function MonthCalendarView({
               </span>
 
               <div className="mt-2 space-y-1.5">
-                {dayEvents.slice(0, 3).map((event) => (
+                {dayEvents.map((event) => (
                   <CompactScheduleCard
                     key={event.id}
                     event={event}
                     onEdit={(clickEvent) => {
                       clickEvent.stopPropagation();
-                      onEditEvent(event);
+                      onEditEvent(sourceCalendarEvent(event));
                     }}
                   />
                 ))}
 
-                {dayEvents.length > 3 ? (
-                  <span className="text-[10px] font-black text-[#06325E]">
-                    +{dayEvents.length - 3} more
-                  </span>
-                ) : null}
               </div>
             </div>
           );
@@ -1545,7 +2425,7 @@ function WeekCalendarView({
                     <WeekScheduleCard
                       key={event.id}
                       event={event}
-                      onEdit={() => onEditEvent(event)}
+                      onEdit={() => onEditEvent(sourceCalendarEvent(event))}
                     />
                   ))}
                 </div>
@@ -1655,7 +2535,7 @@ function AgendaCalendarView({
               <div className="flex shrink-0 flex-wrap items-center justify-end gap-2 self-center">
                 <button
                   type="button"
-                  onClick={() => onRescheduleEvent(event, 1)}
+                  onClick={() => onRescheduleEvent(sourceCalendarEvent(event), 1)}
                   className="inline-flex h-8 items-center gap-1 rounded-[8px] bg-[#F1F5F9] px-3 text-xs font-black text-[#06325E] transition hover:cursor-pointer hover:bg-[#E6ECF2]"
                 >
                   <RotateCcw className="h-3.5 w-3.5 text-[#FF5C28]" />
@@ -1663,7 +2543,7 @@ function AgendaCalendarView({
                 </button>
                 <button
                   type="button"
-                  onClick={() => onRescheduleEvent(event, 7)}
+                  onClick={() => onRescheduleEvent(sourceCalendarEvent(event), 7)}
                   className="inline-flex h-8 items-center gap-1 rounded-[8px] bg-[#F1F5F9] px-3 text-xs font-black text-[#06325E] transition hover:cursor-pointer hover:bg-[#E6ECF2]"
                 >
                   <ArrowRight className="h-3.5 w-3.5 text-[#FF5C28]" />
@@ -1671,7 +2551,7 @@ function AgendaCalendarView({
                 </button>
                 <button
                   type="button"
-                  onClick={() => onEditEvent(event)}
+                  onClick={() => onEditEvent(sourceCalendarEvent(event))}
                   className="inline-flex h-8 items-center gap-1 rounded-[8px] bg-[#06325E] px-3 text-xs font-black text-white transition hover:cursor-pointer hover:bg-[#0A3A63]"
                 >
                   <Edit3 className="h-3.5 w-3.5" />
@@ -1679,7 +2559,7 @@ function AgendaCalendarView({
                 </button>
                 <button
                   type="button"
-                  onClick={() => onDeleteEvent(event.id)}
+                  onClick={() => onDeleteEvent(sourceCalendarEvent(event).id)}
                   className="flex h-8 w-8 items-center justify-center rounded-[8px] text-[#98A2B3] transition hover:cursor-pointer hover:bg-rose-50 hover:text-rose-600"
                   aria-label={`Delete ${event.title}`}
                 >
@@ -2240,7 +3120,7 @@ export default function HeaderCalendarModal({ open, user, onClose }) {
   const periodLabel =
     viewMode === "Week" ? buildRangeLabel(weekCells) : monthLabel;
 
-  const filteredEvents = useMemo(() => events, [events]);
+  const filteredEvents = useMemo(() => buildCalendarDisplayEvents(events), [events]);
 
   const eventsByDate = useMemo(() => {
     return filteredEvents.reduce((grouped, event) => {
@@ -2338,10 +3218,11 @@ export default function HeaderCalendarModal({ open, user, onClose }) {
       calendarConnectedRef.current = true;
       setCalendarConnected(true);
       setEditingEvent(null);
+      return { success: true };
     } catch (error) {
-      setCalendarError(
-        error?.message || "Unable to save Google Calendar event.",
-      );
+      const message = error?.message || "Unable to save Google Calendar event.";
+      setCalendarError(message);
+      return { success: false, message };
     } finally {
       setCalendarLoading(false);
     }
@@ -2661,7 +3542,7 @@ export default function HeaderCalendarModal({ open, user, onClose }) {
 
             <div className="flex flex-wrap items-center gap-4 border-t border-[#DDE7F2] bg-[#F8FAFC] px-6 py-3 text-xs text-[#667085]">
               <strong className="text-[#111827]">
-                Google Calendar Events: {filteredEvents.length}
+                Google Calendar Events: {events.length}
               </strong>
               <span className="h-4 w-px bg-[#DDE7F2]" />
               <span>TA Drives: {taDrives}</span>

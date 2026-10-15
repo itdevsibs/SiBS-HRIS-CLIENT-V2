@@ -74,6 +74,23 @@ export async function getGoogleCalendarEvents(params = {}) {
   }
 }
 
+export async function getGoogleCalendarBusyTimes(params = {}) {
+  try {
+    const res = await api.get("/api/google/calendar/busy-times", {
+      params,
+      skipAuthRedirect: true,
+      timeout: GOOGLE_CALENDAR_TIMEOUT_MS,
+    });
+    return res.data;
+  } catch (err) {
+    return {
+      success: false,
+      status: err?.response?.status || 500,
+      message: err?.response?.data?.error || err?.message || "Unable to check booked times.",
+    };
+  }
+}
+
 export async function createGoogleCalendarEvent(payload) {
   try {
     const res = await api.post("/api/google/calendar/events", payload, {
@@ -187,4 +204,12 @@ export async function disconnectGoogleCalendar() {
         "Unable to disconnect Google Calendar.",
     };
   }
+}
+
+/** Available interview slots are resolved server-side for the logged-in user. */
+export async function getGoogleInterviewAvailability(params = {}) {
+  const response = await api.get('/api/google/calendar/interview-availability', {
+    params, skipAuthRedirect: true, timeout: GOOGLE_CALENDAR_TIMEOUT_MS,
+  });
+  return response.data;
 }
