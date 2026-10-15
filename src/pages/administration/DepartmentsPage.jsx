@@ -401,21 +401,21 @@ function DepartmentsPageContent() {
         <DepartmentSummaryCards summary={departments.summary} />
 
         {approvalAccessError ? (
-          <div role="alert" className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-semibold text-amber-800">
+          <div role="alert" className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-[10px] border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-semibold text-amber-800">
             <span>Department permissions could not be verified: {approvalAccessError}</span>
             <button type="button" className="underline underline-offset-2" onClick={loadApprovalData}>Retry</button>
           </div>
         ) : null}
 
         {canManageDepartments && approvalRequestsError ? (
-          <div role="alert" className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-semibold text-amber-800">
+          <div role="alert" className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-[10px] border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-semibold text-amber-800">
             <span>Pending Department approvals could not be loaded: {approvalRequestsError}</span>
             <button type="button" className="underline underline-offset-2" onClick={loadApprovalData}>Retry</button>
           </div>
         ) : null}
 
         {canManageDepartments && accountApprovalRequestsError ? (
-          <div role="alert" className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-semibold text-amber-800">
+          <div role="alert" className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-[10px] border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-semibold text-amber-800">
             <span>Pending Account approvals could not be loaded: {accountApprovalRequestsError}</span>
             <button type="button" className="underline underline-offset-2" onClick={loadApprovalData}>Retry</button>
           </div>

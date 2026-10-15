@@ -54,7 +54,7 @@ function PendingBadge() {
 
 function DetailItem({ label, children }) {
   return (
-    <div className="min-w-0 rounded-xl border border-sibs-border bg-white px-3.5 py-3">
+    <div className="min-w-0 rounded-[10px] border border-sibs-border bg-white px-3.5 py-3">
       <p className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-muted">
         {label}
       </p>
@@ -136,7 +136,10 @@ export default function AccountApprovalRequests({
 
   return (
     <>
-      <section className="mt-5 overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-sm">
+      <section
+        className="sibs-page-card-in sibs-card mt-5 overflow-hidden rounded-[14px] border border-sibs-border bg-white font-jakarta shadow-xs"
+        style={{ animationDelay: "180ms", animationFillMode: "both" }}
+      >
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-sibs-border px-4 py-4 sm:px-5">
           <div>
             <h2 className="sibs-card-title">Pending Account Approvals</h2>
@@ -144,7 +147,7 @@ export default function AccountApprovalRequests({
               Select an account request to view its details and approve or reject it.
             </p>
           </div>
-          <span className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-[10px] font-extrabold text-amber-700">
+          <span className="rounded-[10px] border border-amber-200 bg-amber-50 px-3 py-1.5 text-[10px] font-extrabold text-amber-700">
             {safeRequests.length} pending
           </span>
         </div>
@@ -173,7 +176,7 @@ export default function AccountApprovalRequests({
                     <tr
                       key={request.id}
                       onClick={() => setSelectedRequestId(request.id)}
-                      className="group cursor-pointer transition-colors hover:bg-sibs-surface/70"
+                      className="group cursor-pointer transition-colors hover:bg-sibs-cream-light"
                     >
                       <td className="max-w-[240px] px-4 py-3 font-extrabold text-sibs-navy sm:pl-5">
                         <button
@@ -257,7 +260,7 @@ export default function AccountApprovalRequests({
             <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-end">
               <button
                 type="button"
-                className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3.5 2xl:px-4 text-xs font-extrabold text-red-600 transition hover:bg-red-100 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-[10px] border border-red-200 bg-red-50 px-3.5 2xl:px-4 text-xs font-extrabold text-red-600 transition hover:bg-red-100 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
                 onClick={() => onReject?.(selectedRequest)}
                 disabled={!selectedRequest || processingSelected}
               >
@@ -279,7 +282,7 @@ export default function AccountApprovalRequests({
       >
         {selectedRequest ? (
           <div className="space-y-4">
-            <div className="flex flex-wrap items-start justify-between gap-3 rounded-xl border border-sibs-border bg-sibs-surface/60 p-4">
+            <div className="flex flex-wrap items-start justify-between gap-3 rounded-[10px] border border-sibs-border bg-sibs-surface/60 p-4">
               <div className="min-w-0">
                 <p className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-muted">Requested Account</p>
                 <h3 className="mt-1 break-words text-base font-extrabold text-sibs-navy">
@@ -295,7 +298,7 @@ export default function AccountApprovalRequests({
               <DetailItem label="Date Requested">{requestDate(selectedRequest)}</DetailItem>
             </div>
             {!canApprove ? (
-              <p className="rounded-xl border border-sibs-border bg-sibs-surface px-4 py-3 text-xs font-semibold text-sibs-muted">
+              <p className="rounded-[10px] border border-sibs-border bg-sibs-surface px-4 py-3 text-xs font-semibold text-sibs-muted">
                 Only authorized Account approvers can approve or reject this request.
               </p>
             ) : null}
