@@ -828,6 +828,27 @@ function getMonthRange(viewDate) {
   };
 }
 
+// Google events are not editable simply because they appear on the HRIS calendar.
+// New SiBS HRIS events carry an explicit source marker. Older events created by
+// this editor carry the full HRIS-only private metadata set; a matching title
+// by itself is never enough to grant edit/delete access.
+function isHrisOwnedGoogleEvent(event = {}) {
+  const properties = event?.extendedProperties?.private || {};
+  if (properties.source === "sibs-hris-calendar") return true;
+  if (properties.source === "sibs-hris-recruitment") return true;
+  const own = (key) => Object.prototype.hasOwnProperty.call(properties, key);
+  return /^SiBS\s+HRIS\s*[-–—]/i.test(String(event.summary || "")) &&
+    own("scheduleType") && own("category") && own("organizer") &&
+    own("addNotification") && own("colorId");
+}
+
+// HRIS recruitment sync events remain view-only: edit them in Candidate Pipeline.
+// Missing identifiers or outside calendar events cannot be updated from this UI.
+function isEditableHrisCalendarEvent(event = {}) {
+  if (!event.id && !event.googleEventId) return true; // New HRIS event draft.
+  return event.hrisManaged === true && !event.recruitmentEventType;
+}
+
 function normalizeGoogleCalendarEvent(event = {}) {
   const privateProperties = event?.extendedProperties?.private || {};
   const startValue = event?.start?.dateTime || event?.start?.date;
@@ -843,6 +864,7 @@ function normalizeGoogleCalendarEvent(event = {}) {
   return {
     id: event.id || `google-${Date.now()}`,
     googleEventId: event.id || "",
+    hrisManaged: isHrisOwnedGoogleEvent(event),
     googleHtmlLink: /^https:\/\/calendar\.google\.com\//.test(event.htmlLink || "") ? event.htmlLink : "",
     meetLink,
     title: event.summary || "Untitled Schedule",
@@ -921,6 +943,7 @@ function buildGoogleCalendarPayload(form = {}) {
     addGoogleMeet: form.scheduleType === "Event" && Boolean(form.addGoogleMeet),
     extendedProperties: {
       private: {
+        source: "sibs-hris-calendar",
         category: form.category || "Talent Acquisition",
         status: form.status || "Scheduled",
         account: form.account || "",
@@ -1425,24 +1448,35 @@ function EventEditorModal({
       <form
         onSubmit={handleSubmit}
         onClick={(clickEvent) => clickEvent.stopPropagation()}
-        className="sibs-modal-pop-in thin-scroll max-h-[82vh] w-full max-w-[660px] overflow-y-auto rounded-[18px] bg-white px-6 py-5 shadow-[0_24px_80px_rgba(2,30,56,0.38)]"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Google Calendar schedule editor"
+        className="sibs-modal-pop-in flex max-h-[86vh] w-full max-w-[660px] min-h-0 flex-col overflow-hidden rounded-[18px] bg-white shadow-[0_24px_80px_rgba(2,30,56,0.38)]"
       >
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-wide text-sibs-navy">
-            <span className="h-1 w-5 rounded-full bg-sibs-orange" />
-            {activeType === "Interview availability" ? "Interview Availability" : "Google Calendar Event"}
+        <header className="flex shrink-0 items-center justify-between gap-3 border-b border-white/10 bg-sibs-navy px-5 py-3.5 text-white sm:px-6">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[11px] bg-sibs-orange text-white shadow-sm">
+              <CalendarDays className="h-[19px] w-[19px]" aria-hidden="true" />
+            </div>
+            <div className="min-w-0">
+              <p className="truncate text-[10px] font-bold text-white/75">SiBS HRIS Operational Workspace</p>
+              <h2 className="truncate text-[17px] font-black leading-tight text-white">
+                {activeType === "Interview availability" ? "Interview Availability" : "Google Calendar Event"}
+              </h2>
+              <p className="truncate text-[10px] font-medium text-white/75">HR &amp; Talent Acquisition · Asia/Manila</p>
+            </div>
           </div>
-
           <button
             type="button"
             onClick={onClose}
-            className="flex h-8 w-8 items-center justify-center rounded-full text-sibs-text-secondary transition hover:cursor-pointer hover:bg-sibs-canvas hover:text-sibs-navy"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-white/10 text-white/85 transition hover:bg-white/20 hover:text-white"
             aria-label="Close schedule editor"
           >
-            <X className="h-5 w-5" />
+            <X className="h-[18px] w-[18px]" />
           </button>
-        </div>
+        </header>
 
+        <div className="thin-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain bg-white px-5 py-5 sm:px-6">
         <input
           value={form.title || ""}
           onChange={(inputEvent) =>
@@ -2208,7 +2242,8 @@ function EventEditorModal({
           </section>
         )}
 
-        <div className="mt-4 flex items-center justify-between gap-4">
+        </div>
+        <footer className="flex shrink-0 items-center justify-between gap-3 border-t border-sibs-border bg-white px-5 py-3 sm:px-6">
           <button
             type="button"
             onClick={() => form.id && onDelete(form.id)}
@@ -2241,7 +2276,7 @@ function EventEditorModal({
               Save
             </button>
           </div>
-        </div>
+        </footer>
       </form>
     </div>
   );
@@ -2361,6 +2396,103 @@ function GoogleCalendarDayDetails({ date, events, onClose, onCreateEvent, onEdit
   );
 }
 
+function ExternalGoogleCalendarReadOnlyDetails({ event, onClose }) {
+  const meetLink = /^https:\/\/meet\.google\.com\/[^\s]+$/i.test(String(event.meetLink || ""))
+    ? event.meetLink : "";
+  const description = String(event.notes || "").trim();
+
+  return (
+    <div
+      className="sibs-action-backdrop-in absolute inset-0 z-[2] flex items-center justify-center bg-black/55 px-3 py-4 backdrop-blur-[3px] font-jakarta"
+      onMouseDown={(clickEvent) => { if (clickEvent.target === clickEvent.currentTarget) onClose(); }}
+    >
+      <section
+        role="dialog"
+        aria-modal="true"
+        aria-label="External Google Calendar event (read-only)"
+        className="sibs-modal-pop-in flex max-h-[86vh] w-full max-w-[660px] min-h-0 flex-col overflow-hidden rounded-[18px] bg-white shadow-[0_24px_80px_rgba(2,30,56,0.38)]"
+      >
+        <header className="flex shrink-0 items-center justify-between gap-3 border-b border-white/10 bg-sibs-navy px-5 py-3.5 text-white sm:px-6">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[11px] bg-sibs-orange text-white shadow-sm">
+              <CalendarDays className="h-[19px] w-[19px]" aria-hidden="true" />
+            </div>
+            <div className="min-w-0">
+              <p className="truncate text-[10px] font-bold text-white/75">GOOGLE CALENDAR · READ-ONLY</p>
+              <h2 className="truncate text-[17px] font-black leading-tight text-white">Google Calendar Event</h2>
+              <p className="truncate text-[10px] font-medium text-white/75">Not managed by SiBS HRIS · Asia/Manila</p>
+            </div>
+          </div>
+          <button type="button" onClick={onClose} aria-label="Close event details"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-white/10 text-white/85 transition hover:bg-white/20 hover:text-white">
+            <X className="h-[18px] w-[18px]" />
+          </button>
+        </header>
+
+        <div className="thin-scroll min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain bg-white px-5 py-5 sm:px-6">
+          <div>
+            <h3 className="break-words border-b border-sibs-border pb-3 text-[22px] font-black leading-tight text-sibs-navy">{event.title}</h3>
+            <p className="mt-3 inline-flex rounded-[9px] bg-sibs-canvas px-3 py-2 text-[11px] font-bold text-sibs-text-secondary">
+              External Google Calendar event · View only
+            </p>
+          </div>
+          <div className="space-y-4 text-sm font-semibold text-sibs-navy">
+            <div className="flex items-start gap-3">
+              <Clock className="mt-0.5 h-5 w-5 shrink-0 text-sibs-orange" />
+              <div>
+                <p>{formatDayLabel(event.date, { weekday: "long", year: true })}</p>
+                <p className="mt-1 text-xs text-sibs-text-secondary">{event.startTime === "All Day" ? "All day" : `${event.startTime} – ${event.endTime}`} · Asia/Manila</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <MapPin className="mt-0.5 h-5 w-5 shrink-0 text-sibs-navy" />
+              <p className="min-w-0 break-all">{event.location || "No location specified"}</p>
+            </div>
+            {event.organizer ? (
+              <div className="flex items-start gap-3">
+                <Users className="mt-0.5 h-5 w-5 shrink-0 text-sibs-navy" />
+                <p className="min-w-0 break-all">{event.organizer}</p>
+              </div>
+            ) : null}
+            {meetLink ? (
+              <div className="flex items-start gap-3">
+                <Link2 className="mt-0.5 h-5 w-5 shrink-0 text-sibs-orange" />
+                <a href={meetLink} target="_blank" rel="noopener noreferrer" className="min-w-0 break-all text-[#1A73E8] underline hover:text-[#174EA6]">Join Google Meet</a>
+              </div>
+            ) : null}
+          </div>
+          {description ? (
+            <div className="rounded-[12px] border border-sibs-border bg-sibs-canvas px-4 py-3 text-xs text-sibs-navy">
+              <h4 className="font-black">Description / agenda</h4>
+              {description.length > 350 ? (
+                <details className="mt-2">
+                  <summary className="cursor-pointer text-[11px] font-bold text-sibs-primary-1">View original description</summary>
+                  <p className="thin-scroll mt-2 max-h-44 overflow-auto whitespace-pre-wrap break-words font-medium text-sibs-text-secondary">{description}</p>
+                </details>
+              ) : (
+                <p className="mt-2 whitespace-pre-wrap break-words font-medium text-sibs-text-secondary">{description}</p>
+              )}
+            </div>
+          ) : null}
+          <p className="rounded-[10px] border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-800">
+            This event is not registered as a SiBS HRIS-managed schedule. It can be viewed here but cannot be edited, rescheduled, or deleted from SiBS HRIS.
+          </p>
+        </div>
+
+        <footer className="flex shrink-0 items-center justify-end gap-3 border-t border-sibs-border bg-white px-5 py-3 sm:px-6">
+          {event.googleHtmlLink ? (
+            <a href={event.googleHtmlLink} target="_blank" rel="noopener noreferrer"
+              className="inline-flex h-9 items-center rounded-[10px] border border-sibs-border px-4 text-xs font-black text-sibs-navy hover:bg-sibs-canvas">
+              View in Google Calendar
+            </a>
+          ) : null}
+          <button type="button" onClick={onClose} className="h-10 rounded-[12px] bg-sibs-orange px-6 text-xs font-black text-white shadow-sm transition hover:bg-sibs-button-hover">Close</button>
+        </footer>
+      </section>
+    </div>
+  );
+}
+
 function ManagedRecruitmentCalendarDetails({ event, onClose, onOpenCandidate }) {
   // Numeric candidate_pipeline.id is the canonical link. Older managed events
   // may carry only the public PUB-... ID in metadata or their description.
@@ -2373,42 +2505,112 @@ function ManagedRecruitmentCalendarDetails({ event, onClose, onOpenCandidate }) 
     : candidateId
       ? `/recruitment/candidate-pipeline?candidateId=${encodeURIComponent(candidateId)}`
       : "";
+
   return (
-    <div className="sibs-action-backdrop-in absolute inset-0 z-[2] flex items-center justify-center bg-black/55 p-3 backdrop-blur-[3px]" onClick={onClose}>
-      <section role="dialog" aria-modal="true" aria-label="Recruitment schedule details"
-        onClick={(e) => e.stopPropagation()}
-        className="sibs-modal-pop-in w-full max-w-[490px] rounded-[18px] bg-white p-6 font-jakarta shadow-2xl">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#1A73E8]">Google Calendar · SiBS HRIS managed</span>
-            <h3 className="mt-2 text-lg font-black text-[#06325E]">{event.title}</h3>
+    <div
+      className="sibs-action-backdrop-in absolute inset-0 z-[2] flex items-center justify-center bg-black/55 px-3 py-4 backdrop-blur-[3px] font-jakarta"
+      onMouseDown={(clickEvent) => {
+        if (clickEvent.target === clickEvent.currentTarget) onClose();
+      }}
+    >
+      <section
+        role="dialog"
+        aria-modal="true"
+        aria-label="SiBS HRIS recruitment schedule details (read-only)"
+        className="sibs-modal-pop-in flex max-h-[86vh] w-full max-w-[660px] min-h-0 flex-col overflow-hidden rounded-[18px] bg-white shadow-[0_24px_80px_rgba(2,30,56,0.38)]"
+      >
+        <header className="flex shrink-0 items-center justify-between gap-3 border-b border-white/10 bg-sibs-navy px-5 py-3.5 text-white sm:px-6">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[11px] bg-sibs-orange text-white shadow-sm">
+              <CalendarDays className="h-[19px] w-[19px]" aria-hidden="true" />
+            </div>
+            <div className="min-w-0">
+              <p className="truncate text-[10px] font-bold text-white/75">SiBS HRIS Operational Workspace</p>
+              <h2 className="truncate text-[17px] font-black leading-tight text-white">Recruitment Schedule Details</h2>
+              <p className="truncate text-[10px] font-medium text-white/75">HR &amp; Talent Acquisition · Asia/Manila</p>
+            </div>
           </div>
-          <button type="button" onClick={onClose} aria-label="Close event details" className="rounded-lg p-2 hover:bg-slate-100"><X size={18} /></button>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close recruitment schedule details"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-white/10 text-white/85 transition hover:bg-white/20 hover:text-white"
+          >
+            <X className="h-[18px] w-[18px]" />
+          </button>
+        </header>
+
+        <div className="thin-scroll min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain bg-white px-5 py-5 sm:px-6">
+          <div>
+            <h3 className="break-words border-b border-sibs-border pb-3 text-[22px] font-black leading-tight text-sibs-navy">
+              {event.title}
+            </h3>
+            <p className="mt-3 inline-flex rounded-[9px] border border-sibs-border bg-sibs-canvas px-3 py-2 text-[11px] font-bold text-sibs-text-secondary">
+              SiBS HRIS managed · View only
+            </p>
+          </div>
+
+          <div className="space-y-4 text-sm font-semibold text-sibs-navy">
+            <div className="flex items-start gap-3">
+              <CalendarDays className="mt-0.5 h-5 w-5 shrink-0 text-sibs-orange" aria-hidden="true" />
+              <div>
+                <p className="text-sibs-navy">{formatDayLabel(event.date, { year: true })}</p>
+                <p className="mt-1 text-xs text-sibs-text-secondary">
+                  {event.startTime === "All Day" ? "All day" : `${event.startTime} – ${event.endTime}`} · Asia/Manila
+                </p>
+              </div>
+            </div>
+            {event.site ? (
+              <div className="flex items-start gap-3">
+                <MapPin className="mt-0.5 h-5 w-5 shrink-0 text-sibs-navy" aria-hidden="true" />
+                <div><span className="text-xs text-sibs-text-secondary">Site</span><p className="break-words">{event.site}</p></div>
+              </div>
+            ) : null}
+            {event.location ? (
+              <div className="flex items-start gap-3">
+                <MapPin className="mt-0.5 h-5 w-5 shrink-0 text-sibs-navy" aria-hidden="true" />
+                <div><span className="text-xs text-sibs-text-secondary">Location</span><p className="break-words">{event.location}</p></div>
+              </div>
+            ) : null}
+            <div className="flex items-start gap-3">
+              <Check className="mt-0.5 h-5 w-5 shrink-0 text-sibs-orange" aria-hidden="true" />
+              <div><span className="text-xs text-sibs-text-secondary">Status</span><p>{event.status}</p></div>
+            </div>
+          </div>
+
+          <p className="rounded-[10px] border border-blue-200 bg-blue-50 px-3 py-3 text-xs font-semibold text-blue-800">
+            This is a confirmed SiBS HRIS recruitment schedule. Changes and candidate reschedule requests must be managed through the Candidate Pipeline, not directly through Google Calendar.
+          </p>
         </div>
-        <div className="mt-5 space-y-3 text-sm text-[#475467]">
-          <p><strong>Date:</strong> {formatDayLabel(event.date, { year: true })}</p>
-          <p><strong>Time:</strong> {event.startTime} – {event.endTime} (Asia/Manila)</p>
-          {event.site && <p><strong>Site:</strong> {event.site}</p>}
-          {event.location && <p><strong>Location:</strong> {event.location}</p>}
-          <p><strong>Status:</strong> {event.status}</p>
-        </div>
-        <p className="mt-5 rounded-xl border border-[#D2E3FC] bg-[#E8F0FE] p-3 text-xs font-semibold text-[#174EA6]">
-          This is a confirmed recruitment schedule. Interview changes and candidate reschedule requests must go through the SiBS Candidate Pipeline, not this Google Calendar event.
-        </p>
-        <div className="mt-5 flex flex-wrap justify-end gap-2">
-          {event.googleHtmlLink && <a href={event.googleHtmlLink} target="_blank" rel="noopener noreferrer" className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-[#06325E] hover:bg-slate-50">View in Google Calendar</a>}
+
+        <footer className="flex shrink-0 flex-wrap items-center justify-end gap-2 border-t border-sibs-border bg-white px-5 py-3 sm:px-6">
+          {event.googleHtmlLink ? (
+            <a
+              href={event.googleHtmlLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex h-10 items-center rounded-[10px] border border-sibs-border px-4 text-xs font-black text-sibs-navy transition hover:bg-sibs-canvas"
+            >
+              View in Google Calendar
+            </a>
+          ) : null}
           {candidateRoute ? (
-            <Link to={candidateRoute} onClick={onOpenCandidate}
-              className="rounded-lg bg-[#06325E] px-3 py-2 text-xs font-bold text-white hover:bg-[#0A426F]">
+            <Link
+              to={candidateRoute}
+              onClick={onOpenCandidate}
+              className="inline-flex h-10 items-center justify-center rounded-[10px] bg-sibs-orange px-5 text-xs font-black text-white shadow-sm transition hover:bg-sibs-button-hover"
+            >
               Open Candidate Pipeline
             </Link>
           ) : (
-            <span title="This older Google Calendar event has no linked HRIS candidate ID"
-              className="cursor-not-allowed rounded-lg bg-slate-200 px-3 py-2 text-xs font-bold text-slate-500">
+            <span
+              title="This older Google Calendar event has no linked HRIS candidate ID"
+              className="inline-flex h-10 cursor-not-allowed items-center rounded-[10px] bg-slate-200 px-4 text-xs font-bold text-slate-500"
+            >
               Candidate record not linked
             </span>
           )}
-        </div>
+        </footer>
       </section>
     </div>
   );
@@ -2670,7 +2872,7 @@ function AgendaCalendarView({
               </div>
 
               <div className="flex shrink-0 flex-wrap items-center justify-end gap-2 self-center">
-                {!sourceCalendarEvent(event).recruitmentEventType && <>
+                {isEditableHrisCalendarEvent(sourceCalendarEvent(event)) && <>
                 <button
                   type="button"
                   onClick={() => onRescheduleEvent(sourceCalendarEvent(event), 1)}
@@ -2694,9 +2896,9 @@ function AgendaCalendarView({
                   className="inline-flex h-8 items-center gap-1 rounded-[8px] bg-sibs-navy px-3 text-xs font-black text-white transition hover:cursor-pointer hover:brightness-95"
                 >
                   <Edit3 className="h-3.5 w-3.5" />
-                  {sourceCalendarEvent(event).recruitmentEventType ? "View details" : "Edit / Resched"}
+                  {isEditableHrisCalendarEvent(sourceCalendarEvent(event)) ? "Edit / Resched" : "View details"}
                 </button>
-                {!sourceCalendarEvent(event).recruitmentEventType && <button
+                {isEditableHrisCalendarEvent(sourceCalendarEvent(event)) && <button
                   type="button"
                   onClick={() => onDeleteEvent(sourceCalendarEvent(event).id)}
                   className="flex h-8 w-8 items-center justify-center rounded-[8px] text-sibs-muted transition hover:cursor-pointer hover:bg-rose-50 hover:text-rose-600"
@@ -3358,6 +3560,16 @@ export default function HeaderCalendarModal({ open, user, onClose }) {
   }
 
   async function handleSaveEvent(nextEvent) {
+    // Do not permit updates to third-party events even if the editor is opened
+    // programmatically. Newly created HRIS events are not present in `events`.
+    if (nextEvent?.googleEventId || (nextEvent?.id && events.some((item) => item.id === nextEvent.id))) {
+      const existing = events.find((item) => item.id === (nextEvent.googleEventId || nextEvent.id));
+      if (!existing || !isEditableHrisCalendarEvent(existing)) {
+        const message = "This Google Calendar event is read-only in SiBS HRIS.";
+        setCalendarError(message);
+        return { success: false, message };
+      }
+    }
     setCalendarLoading(true);
     setCalendarError("");
 
@@ -3437,8 +3649,9 @@ export default function HeaderCalendarModal({ open, user, onClose }) {
 
   async function handleDeleteEvent(eventId) {
     const sourceEvent = events.find((event) => event.id === eventId);
-    if (sourceEvent?.recruitmentEventType) {
-      setEditingEvent(sourceEvent);
+    if (!sourceEvent || !isEditableHrisCalendarEvent(sourceEvent)) {
+      if (sourceEvent) setEditingEvent(sourceEvent);
+      else setCalendarError("The selected event cannot be changed from SiBS HRIS.");
       return;
     }
     setCalendarLoading(true);
@@ -3467,7 +3680,7 @@ export default function HeaderCalendarModal({ open, user, onClose }) {
   }
 
   function handleRescheduleEvent(event, days) {
-    if (event?.recruitmentEventType) {
+    if (!isEditableHrisCalendarEvent(event)) {
       setEditingEvent(event);
       return;
     }
@@ -3809,6 +4022,11 @@ export default function HeaderCalendarModal({ open, user, onClose }) {
           <ManagedRecruitmentCalendarDetails event={editingEvent}
             onClose={() => setEditingEvent(null)}
             onOpenCandidate={() => { setEditingEvent(null); onClose?.(); }} />
+        ) : editingEvent?.googleEventId && !isEditableHrisCalendarEvent(editingEvent) ? (
+          <ExternalGoogleCalendarReadOnlyDetails
+            event={editingEvent}
+            onClose={() => setEditingEvent(null)}
+          />
         ) : editingEvent ? (
           <EventEditorModal
             key={`${editingEvent.id || "new"}-${editingEvent.date || ""}`}
