@@ -1,6 +1,6 @@
 const TIME_PATTERN = /^(\d{2}):(\d{2})$/;
-const MIN_TIME_MINUTES = 10 * 60;
-const MAX_TIME_MINUTES = 17 * 60;
+const MIN_TIME_MINUTES = 8 * 60;
+const MAX_TIME_MINUTES = 16 * 60 + 30;
 
 function cleanText(value) {
   return String(value ?? "").trim();
@@ -105,7 +105,7 @@ export function validateCandidateInterviewTime(value) {
   if (totalMinutes < MIN_TIME_MINUTES || totalMinutes > MAX_TIME_MINUTES) {
     return {
       valid: false,
-      message: "Interview time must be between 10:00 AM and 5:00 PM.",
+      message: "Interview start time must be between 8:00 AM and 4:30 PM (ending by 5:00 PM).",
     };
   }
 
@@ -136,11 +136,13 @@ export function buildCandidateInterviewCalendarDays(displayDate) {
 }
 
 export function formatCandidateInterviewTime(value) {
-  const validation = validateCandidateInterviewTime(value);
+  // Formatting historical booked interview times must not be restricted by
+  // the new 8:00 AM–4:30 PM scheduling window.
+  const rawTime = cleanText(value);
+  const match = rawTime.match(/^(\d{2}):(\d{2})$/);
+  if (!match || Number(match[1]) > 23 || Number(match[2]) > 59) return rawTime || "—";
 
-  if (!validation.valid) return cleanText(value) || "—";
-
-  const [hourText, minute] = validation.time.split(":");
+  const [hourText, minute] = [match[1], match[2]];
   const hour = Number(hourText);
   const period = hour >= 12 ? "PM" : "AM";
   const hour12 = hour % 12 || 12;
@@ -148,5 +150,5 @@ export function formatCandidateInterviewTime(value) {
   return `${hour12}:${minute} ${period}`;
 }
 
-export const CANDIDATE_INTERVIEW_MIN_TIME = "10:00";
-export const CANDIDATE_INTERVIEW_MAX_TIME = "17:00";
+export const CANDIDATE_INTERVIEW_MIN_TIME = "08:00";
+export const CANDIDATE_INTERVIEW_MAX_TIME = "16:30";

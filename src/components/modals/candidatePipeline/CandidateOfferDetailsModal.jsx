@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 
 import { getApprovedHiringNeeds } from "../../../lib/axios/getCandidatePipeline";
-import { buildApprovedReprofileOptions } from "../../../lib/utils/candidatePipeline/offerReprofile";
+import { buildApprovedReprofileOptions, matchesApprovedPrfAssignment } from "../../../lib/utils/candidatePipeline/offerReprofile";
 import StatusModal from "../StatusModal";
 
 import CandidatePipelineModalShell, {
@@ -174,32 +174,6 @@ function isInvalidMoney(value) {
   return !Number.isFinite(numericValue) || numericValue <= 0;
 }
 
-function optionMatchesAssignment(
-  option = {},
-  { roleTitle = "", account = "", accountId = "" } = {},
-) {
-  const roleKey = normalizeKey(roleTitle);
-  const accountKey = normalizeKey(account);
-  const optionAccountKey = normalizeKey(option.account);
-  const optionRoleKey = normalizeKey(option.roleTitle);
-  const requestedAccountId = cleanText(accountId);
-  const optionAccountId = cleanText(
-    option.accountId ||
-      option.account_id ||
-      option.raw?.accountId ||
-      option.raw?.account_id ||
-      "",
-  );
-
-  if (requestedAccountId && optionAccountId) {
-    if (requestedAccountId !== optionAccountId) return false;
-  } else if (!accountKey || optionAccountKey !== accountKey) {
-    return false;
-  }
-
-  return !roleKey || !optionRoleKey || optionRoleKey === roleKey;
-}
-
 function getSuggestedReprofileOption(
   options = [],
   {
@@ -207,31 +181,28 @@ function getSuggestedReprofileOption(
     roleTitle = "",
     account = "",
     accountId = "",
+    site = "",
   } = {},
 ) {
   const requirementId = cleanText(hiringRequirementId);
 
   if (requirementId) {
     /*
-     * An existing Hiring Requirement ID is authoritative here. The options
-     * list already contains approved Hiring Needs only, so do not reject an
-     * approved PRF just because its saved role/account label differs slightly
-     * from the candidate display value.
+     * Prefer a previously linked approved PRF when its canonical role,
+     * account, and site still match. Do not link unrelated approved PRFs.
      */
     const exactRequirement = options.find(
       (option) => String(option.value) === String(requirementId),
     );
 
-    if (exactRequirement) {
+    if (exactRequirement && matchesApprovedPrfAssignment(exactRequirement, { roleTitle, account, accountId, site })) {
       return exactRequirement;
     }
   }
 
-  return (
-    options.find((option) =>
-      optionMatchesAssignment(option, { roleTitle, account, accountId }),
-    ) || null
-  );
+  return options.find((option) =>
+    matchesApprovedPrfAssignment(option, { roleTitle, account, accountId, site }),
+  ) || null;
 }
 
 function HrisDropdown({
@@ -832,6 +803,10 @@ export default function CandidateOfferDetailsModal({
 
         if (!active) return;
 
+        if (response?.success === false) {
+          throw new Error(response?.message || "Failed to load approved hiring needs.");
+        }
+
         const rows = Array.isArray(response?.data)
           ? response.data
           : Array.isArray(response?.hiringNeeds)
@@ -892,6 +867,11 @@ export default function CandidateOfferDetailsModal({
       "",
   );
 
+  const candidateSite = cleanText(
+    candidate?.applyingLocation || candidate?.applying_location ||
+    candidate?.applicationLocation || candidate?.locationSite || candidate?.site || "",
+  );
+
   const reprofileOptions = useMemo(() => {
     return buildApprovedReprofileOptions({
       hiringNeeds: approvedHiringNeeds,
@@ -905,6 +885,7 @@ export default function CandidateOfferDetailsModal({
         roleTitle: candidateRoleTitle,
         account: form?.account,
         accountId: candidateAccountId,
+        site: candidateSite,
       }),
     [
       reprofileOptions,
@@ -912,6 +893,7 @@ export default function CandidateOfferDetailsModal({
       form?.account,
       candidateRoleTitle,
       candidateAccountId,
+      candidateSite,
     ],
   );
 
@@ -927,19 +909,24 @@ export default function CandidateOfferDetailsModal({
     );
 
     /*
-     * Keep a currently linked PRF when it is still present in the approved
-     * Hiring Needs list. This prevents a valid approved requirement from being
-     * cleared solely because of a role/account display-label mismatch.
+     * Retain a linked approved PRF when its canonical role/account/site match,
+     * including FST versus Foundation Skills Training display aliases.
      */
-    if (currentRequirement) {
+    if (currentRequirement && matchesApprovedPrfAssignment(currentRequirement, {
+      roleTitle: candidateRoleTitle,
+      account: currentAccount,
+      accountId: candidateAccountId,
+      site: candidateSite,
+    })) {
       return;
     }
 
     const matchingRequirement = reprofileOptions.find((option) =>
-      optionMatchesAssignment(option, {
+      matchesApprovedPrfAssignment(option, {
         roleTitle: candidateRoleTitle,
         account: currentAccount,
         accountId: candidateAccountId,
+        site: candidateSite,
       }),
     );
 
@@ -967,6 +954,7 @@ export default function CandidateOfferDetailsModal({
     form?.hiringRequirementId,
     candidateRoleTitle,
     candidateAccountId,
+    candidateSite,
     setForm,
   ]);
 
@@ -1034,6 +1022,19 @@ export default function CandidateOfferDetailsModal({
   async function handleProceedClick(event) {
     event.preventDefault();
     event.stopPropagation();
+
+    if (isLoadingHiringNeeds) return;
+    if (loadError) {
+      showStatusModal({ type: "error", title: "Hiring Needs Not Loaded", message: loadError });
+      return;
+    }
+    if (!cleanText(form?.hiringRequirementId)) {
+      showStatusModal({
+        type: "error", title: "Approved PRF Required",
+        message: "No approved, available PRF matches this role, account, and site. Use Reprofile if a different approved assignment is needed.",
+      });
+      return;
+    }
 
     const nextValidationErrors = {
       roleTitle: !cleanText(form?.roleTitle),

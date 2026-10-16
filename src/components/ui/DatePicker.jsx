@@ -135,6 +135,7 @@ export default function DatePicker({
   displayValue,
   min = "",
   max = "",
+  disabledDate: isDateBlocked,
   onChange,
   placeholder = "Select date",
   disabled = false,
@@ -211,7 +212,7 @@ export default function DatePicker({
     const minKey = minDate ? toDateKey(minDate) : "";
     const maxKey = maxDate ? toDateKey(maxDate) : "";
 
-    return Boolean((minKey && dateKey < minKey) || (maxKey && dateKey > maxKey));
+    return Boolean((minKey && dateKey < minKey) || (maxKey && dateKey > maxKey) || isDateBlocked?.(date));
   }
 
   function closePicker() {

@@ -213,3 +213,20 @@ export async function getGoogleInterviewAvailability(params = {}) {
   });
   return response.data;
 }
+
+/** Preview only: does not modify Google Calendar. */
+export async function previewHrisCalendarOrphans() {
+  const response = await api.get("/api/google/calendar/orphan-hris-events", {
+    timeout: 120000, skipAuthRedirect: true,
+  });
+  return response.data;
+}
+
+/** Explicitly confirmed deletion of unmatched, HRIS-owned events. */
+export async function cleanupHrisCalendarOrphans({ legacyEventIds = [] } = {}) {
+  const response = await api.post("/api/google/calendar/orphan-hris-events/cleanup", {
+    confirm: "DELETE_ORPHAN_HRIS_EVENTS",
+    legacyEventIds,
+  }, { timeout: 180000, skipAuthRedirect: true });
+  return response.data;
+}
