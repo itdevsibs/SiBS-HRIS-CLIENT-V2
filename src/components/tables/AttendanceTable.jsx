@@ -18,15 +18,16 @@ import {
   usePagination,
   PaginationDateRangeFilter,
 } from "@/services/context/PaginationContext";
-import PaginationTable from "@/services/pagination/PaginationTable";
 import { formatDate } from "@/components/layout/FormatDateTime";
 import {
   DataCard,
+  DatePicker,
   MetricCard,
   MetricGrid,
   MetricGridSkeleton,
   ResponsiveTableShell,
   SearchInput,
+  SelectDropdown,
   TablePagination,
   TableSkeletonRows,
 } from "@/components/ui";
@@ -1522,7 +1523,7 @@ export default function AttendanceTable() {
               "Computed Work Hours",
             ]}
             ariaLabel="Loading attendance metrics"
-            className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4"
+            className="grid grid-cols-2 gap-2.5 2xl:gap-3 sm:grid-cols-2 lg:grid-cols-4"
           />
         ) : (
           <MetricGrid columns={4}>
@@ -1579,94 +1580,112 @@ export default function AttendanceTable() {
               : "Review your time entries, work hours, breaks, and approval status."}
           </p>
 
-          <div className="relative z-[90] mt-3.5 2xl:mt-4 overflow-visible">
-            <PaginationTable
-              filterLayout="ta-inline"
-              showFilterPanel={false}
-              showFilterHeader={false}
-              showPagination={false}
-              loading={loading}
-              searchValue={searchInput}
-              searchPlaceholder={
-                adminView
-                  ? "Search by employee, SIBS ID, department, or account..."
-                  : "Search attendance records..."
-              }
-              onSearchChange={(val) => setSearchInput?.(typeof val === "string" ? val : val?.target?.value ?? "")}
-              onSearchKeyDown={handleAttendanceSearchKeyDown}
-              className="border-0 bg-transparent p-0 shadow-none"
-              filters={[
-                ...(attendanceFiltersView
-                  ? [
-                      {
-                        key: "department",
-                        value: departmentFilter || "All",
-                        options: [
-                          { value: "All", label: "All Departments" },
-                          ...departmentDropdownOptions,
-                        ],
-                        onChange: handleDepartmentSelect,
-                        includeAll: false,
-                        allLabel: "All Departments",
-                        label: "Department",
-                        placeholder: "All Departments",
-                        searchable: true,
-                        disabled: loading,
-                      },
-                      {
-                        key: "account",
-                        multiple: true,
-                        value: accountFilters,
-                        options: [
-                          { value: "All", label: "All Accounts" },
-                          ...accountDropdownOptions,
-                        ],
-                        onChange: handleAccountSelect,
-                        includeAll: false,
-                        allLabel: "All Accounts",
-                        label: "Account",
-                        placeholder: "All Accounts",
-                        searchable: true,
-                        disabled: loading,
-                      },
-                    ]
-                  : []),
-              ]}
-              dateFilters={
-                attendanceDateRangeView
-                  ? [
-                      {
-                        key: "dateFrom",
-                        label: "From Date",
-                        value: dateFrom,
-                        onChange: handleAttendanceDateFromChange,
-                        disabled: loading,
-                      },
-                      {
-                        key: "dateTo",
-                        label: "To Date",
-                        value: dateTo,
-                        min: dateFrom || undefined,
-                        onChange: handleAttendanceDateToChange,
-                        disabled: loading,
-                      },
-                    ]
-                  : []
-              }
-              rightContent={
-                hasActiveFilters ? (
-                  <button
-                    type="button"
-                    onClick={handleClearAttendanceFilters}
+          <div className="mt-3.5 2xl:mt-4 flex flex-col gap-3 overflow-visible xl:flex-row xl:items-end">
+            <div className="relative w-full min-w-0 xl:min-w-[180px] xl:flex-[1_1_220px] 2xl:min-w-[280px] 2xl:flex-[1_1_360px]">
+              <SearchInput
+                label="Search"
+                labelClassName="sibs-text-micro font-extrabold tracking-normal text-sibs-navy"
+                value={searchInput}
+                placeholder={
+                  adminView
+                    ? "Search by employee, SIBS ID, department, or account..."
+                    : "Search attendance records..."
+                }
+                onChange={(val) =>
+                  setSearchInput?.(typeof val === "string" ? val : val?.target?.value ?? "")
+                }
+                onKeyDown={handleAttendanceSearchKeyDown}
+                disabled={loading}
+              />
+            </div>
+
+            {attendanceFiltersView ? (
+              <>
+                <div className="w-full xl:w-[150px] 2xl:w-[210px] xl:flex-none">
+                  <SelectDropdown
+                    label="Department"
+                    labelClassName="sibs-text-micro font-extrabold tracking-normal text-sibs-navy"
+                    value={departmentFilter || "All"}
+                    options={[
+                      { value: "All", label: "All Departments" },
+                      ...departmentDropdownOptions,
+                    ]}
+                    onChange={handleDepartmentSelect}
+                    searchable
+                    placeholder="All Departments"
+                    clearable={false}
                     disabled={loading}
-                    className="inline-flex h-8.5 2xl:h-10 w-full items-center justify-center gap-1.5 rounded-[10px] border border-sibs-border bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-muted transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange disabled:cursor-not-allowed disabled:opacity-50 xl:w-auto"
-                  >
-                    <RotateCcw size={14} />
-                    Clear
-                  </button>
-                ) : null
-              }
-            />
+                  />
+                </div>
+
+                <div className="w-full xl:w-[150px] 2xl:w-[210px] xl:flex-none">
+                  <SelectDropdown
+                    label="Account"
+                    labelClassName="sibs-text-micro font-extrabold tracking-normal text-sibs-navy"
+                    multiple
+                    value={accountFilters}
+                    options={[
+                      { value: "All", label: "All Accounts" },
+                      ...accountDropdownOptions,
+                    ]}
+                    onChange={handleAccountSelect}
+                    searchable
+                    placeholder="All Accounts"
+                    clearable={false}
+                    disabled={loading}
+                  />
+                </div>
+              </>
+            ) : null}
+
+            {attendanceDateRangeView ? (
+              <>
+                <div className="w-full xl:w-[165px] 2xl:w-[195px] xl:flex-none">
+                  <label className="mb-1 block font-jakarta sibs-text-micro font-extrabold tracking-normal text-sibs-navy">
+                    From Date
+                  </label>
+                  <DatePicker
+                    value={dateFrom || ""}
+                    onChange={(val) => handleAttendanceDateFromChange(val)}
+                    disabled={loading}
+                    hideLabel
+                    placeholder="Select date"
+                    clearable
+                    showToday
+                  />
+                </div>
+
+                <div className="w-full xl:w-[165px] 2xl:w-[195px] xl:flex-none">
+                  <label className="mb-1 block font-jakarta sibs-text-micro font-extrabold tracking-normal text-sibs-navy">
+                    To Date
+                  </label>
+                  <DatePicker
+                    value={dateTo || ""}
+                    min={dateFrom || undefined}
+                    onChange={(val) => handleAttendanceDateToChange(val)}
+                    disabled={loading}
+                    hideLabel
+                    placeholder="Select date"
+                    clearable
+                    showToday
+                  />
+                </div>
+              </>
+            ) : null}
+
+            {hasActiveFilters ? (
+              <div className="flex w-full min-w-0 items-end xl:w-auto xl:flex-none">
+                <button
+                  type="button"
+                  onClick={handleClearAttendanceFilters}
+                  disabled={loading}
+                  className="inline-flex h-8.5 2xl:h-10 w-full items-center justify-center gap-1.5 rounded-[10px] border border-sibs-border bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-muted transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange disabled:cursor-not-allowed disabled:opacity-50 xl:w-auto"
+                >
+                  <RotateCcw size={14} />
+                  Clear
+                </button>
+              </div>
+            ) : null}
           </div>
 
           <button

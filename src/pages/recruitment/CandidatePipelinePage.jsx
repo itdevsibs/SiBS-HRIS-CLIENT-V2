@@ -34,7 +34,14 @@ import {
   filterDropOffCandidates,
   isDropOffCandidate,
 } from "../../lib/utils/recruitment/dropOffCandidates";
-import { PageHeaderHero, MetricGridSkeleton, SearchInput } from "@/components/ui";
+import {
+  PageHeaderHero,
+  MetricGrid,
+  MetricCard,
+  MetricGridSkeleton,
+  SearchInput,
+  SelectDropdown,
+} from "@/components/ui";
 
 function cleanText(value) {
   return String(value ?? "").trim();
@@ -146,179 +153,7 @@ function buildSafeStageCounts(stageCounts = {}, candidates = []) {
   return nextCounts;
 }
 
-function normalizeDropdownOptions(options = []) {
-  return options
-    .map((option) => {
-      if (typeof option === "string" || typeof option === "number") {
-        return {
-          id: option,
-          value: option,
-          label: String(option),
-        };
-      }
 
-      const value = option?.value ?? option?.id ?? "";
-      const label = option?.label ?? option?.name ?? option?.value ?? "";
-
-      if (!cleanText(value) && !cleanText(label)) return null;
-
-      return {
-        id: option?.id ?? value ?? label,
-        value: value || label,
-        label: label || String(value),
-      };
-    })
-    .filter(Boolean);
-}
-
-function FilterDropdown({
-  label,
-  value,
-  options = [],
-  onChange,
-  placeholder = "Select",
-  disabled = false,
-  zIndex = "z-[100]",
-}) {
-  const dropdownRef = useRef(null);
-  const [open, setOpen] = useState(false);
-  const [filterSearch, setFilterSearch] = useState("");
-
-  const normalizedOptions = normalizeDropdownOptions(options);
-
-  const selectedOption = normalizedOptions.find(
-    (option) => String(option.value) === String(value ?? ""),
-  );
-
-  const displayLabel = selectedOption?.label || placeholder;
-
-  const filteredOptions = useMemo(() => {
-    if (!cleanText(filterSearch)) return normalizedOptions;
-    const query = filterSearch.toLowerCase().trim();
-    return normalizedOptions.filter((option) =>
-      String(option.label || "").toLowerCase().includes(query)
-    );
-  }, [normalizedOptions, filterSearch]);
-
-  useEffect(() => {
-    function handleClickOutside(event) {
-      if (!dropdownRef.current) return;
-      if (!dropdownRef.current.contains(event.target)) {
-        setOpen(false);
-        setFilterSearch("");
-      }
-    }
-
-    function handleEscape(event) {
-      if (event.key === "Escape") {
-        setOpen(false);
-        setFilterSearch("");
-      }
-    }
-
-    document.addEventListener("mousedown", handleClickOutside);
-    document.addEventListener("keydown", handleEscape);
-
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-      document.removeEventListener("keydown", handleEscape);
-    };
-  }, []);
-
-  function handleSelect(nextValue) {
-    onChange?.(nextValue);
-    setOpen(false);
-    setFilterSearch("");
-  }
-
-  return (
-    <div
-      ref={dropdownRef}
-      className={`relative min-w-0 ${open ? zIndex : "z-[1]"}`}
-    >
-      {label ? (
-        <label className="mb-1 block text-xs font-bold text-sibs-navy">
-          {label}
-        </label>
-      ) : null}
-
-      <div className="group relative">
-        <input
-          type="text"
-          value={open ? filterSearch : displayLabel}
-          onChange={(e) => {
-            setFilterSearch(e.target.value);
-            if (!open) setOpen(true);
-          }}
-          onFocus={() => {
-            setOpen(true);
-            setFilterSearch("");
-          }}
-          placeholder={`Search ${label ? label.toLowerCase() : "options"}...`}
-          autoComplete="off"
-          disabled={disabled}
-          className={`h-8.5 w-full rounded-[10px] border px-3 pr-8 font-jakarta sibs-text-xs font-bold outline-none transition placeholder:text-sibs-muted disabled:cursor-not-allowed disabled:opacity-50 2xl:h-10 ${
-            open
-              ? "border-sibs-orange bg-white ring-4 ring-sibs-orange/10 text-sibs-navy"
-              : "border-sibs-border bg-sibs-surface text-sibs-navy hover:border-sibs-orange/40 hover:bg-white"
-          }`}
-        />
-
-        <button
-          type="button"
-          disabled={disabled}
-          onClick={() => {
-            setOpen((prev) => !prev);
-            setFilterSearch("");
-          }}
-          className="absolute right-1 top-1/2 flex h-6.5 w-6.5 -translate-y-1/2 items-center justify-center rounded-[10px] text-sibs-muted transition hover:bg-sibs-cream-light hover:text-sibs-orange"
-          aria-label={`Toggle ${label || "dropdown"}`}
-        >
-          <ChevronDown
-            size={15}
-            className={`transition-transform duration-300 ${
-              open ? "rotate-180 text-sibs-orange" : ""
-            }`}
-          />
-        </button>
-      </div>
-
-      {open && !disabled && (
-        <div className="sibs-dropdown-pop-in absolute left-0 right-0 top-[calc(100%+6px)] z-[99999] min-w-[200px] overflow-hidden rounded-[10px] border border-sibs-border bg-white shadow-[0_20px_25px_-5px_rgba(15,23,42,0.15),0_8px_10px_-6px_rgba(15,23,42,0.1)]">
-          <div role="listbox" className="sibs-scrollbar max-h-60 overflow-y-auto py-1">
-            {filteredOptions.length > 0 ? (
-              filteredOptions.map((option) => {
-                const active = String(option.value) === String(value ?? "");
-
-                return (
-                  <button
-                    key={option.id || option.value}
-                    type="button"
-                    role="option"
-                    aria-selected={active}
-                    onClick={() => handleSelect(option.value)}
-                    className={`flex min-h-9 w-full items-center justify-between gap-2 px-3.5 py-2 text-left sibs-text-xs transition ${
-                      active
-                        ? "bg-sibs-cream-light font-extrabold text-sibs-orange"
-                        : "font-semibold text-slate-700 hover:bg-sibs-cream-light hover:text-sibs-orange"
-                    }`}
-                  >
-                    <span className="min-w-0 flex-1 truncate">{option.label}</span>
-                    {active && <Check size={14} className="shrink-0 text-sibs-orange" />}
-                  </button>
-                );
-              })
-            ) : (
-              <div className="px-3.5 py-3 sibs-text-xs font-semibold text-sibs-muted">
-                No matching options found.
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
 
 function getCandidateDepartment(candidate = {}) {
   return cleanText(
@@ -389,68 +224,7 @@ function matchesReferenceFilters(
   return true;
 }
 
-const METRIC_TONES = {
-  navy: {
-    label: "text-sibs-navy",
-    icon: "border-blue-100 bg-blue-50 text-sibs-navy",
-    value: "text-sibs-navy",
-  },
-  indigo: {
-    label: "text-indigo-700",
-    icon: "border-indigo-100 bg-indigo-50 text-indigo-600",
-    value: "text-sibs-navy",
-  },
-  blue: {
-    label: "text-blue-700",
-    icon: "border-blue-100 bg-blue-50 text-blue-600",
-    value: "text-sibs-navy",
-  },
-  green: {
-    label: "text-emerald-700",
-    icon: "border-emerald-100 bg-emerald-50 text-emerald-600",
-    value: "text-sibs-navy",
-  },
-  amber: {
-    label: "text-amber-700",
-    icon: "border-amber-100 bg-amber-50 text-amber-600",
-    value: "text-sibs-navy",
-  },
-  orange: {
-    label: "text-sibs-orange",
-    icon: "border-orange-100 bg-orange-50 text-sibs-orange",
-    value: "text-emerald-600",
-  },
-};
 
-function PipelineMetricCard({ label, value, description, icon: Icon, tone = "navy", delay = 0 }) {
-  return (
-    <article
-      className="sibs-page-card-in sibs-metric-card flex h-[104px] 2xl:h-[116px] min-h-[96px] 2xl:min-h-[112px] flex-col justify-between overflow-hidden p-3 2xl:p-3.5 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md group"
-      style={{ animationDelay: `${delay}ms`, animationFillMode: "both" }}
-    >
-      <div className="flex h-full items-start justify-between gap-2.5 2xl:gap-3">
-        <div className="min-w-0 flex-1 flex flex-col justify-between h-full">
-          <div>
-            <p className={`m-0 truncate sibs-kpi-kicker sibs-tone-${tone}-label`}>
-              {label}
-            </p>
-            <p className={`mt-0.5 font-heading text-2xl 2xl:text-3xl font-bold leading-none tabular-nums tracking-tight sibs-tone-${tone}-label`}>
-              {Number(value || 0).toLocaleString("en-US")}
-            </p>
-          </div>
-
-          <p className="line-clamp-1 truncate sibs-kpi-desc text-sibs-muted">
-            {description}
-          </p>
-        </div>
-
-        <span className={`flex h-7.5 w-7.5 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-full transition-transform duration-200 group-hover:scale-105 sibs-tone-${tone}-icon`}>
-          <Icon className="h-4 w-4 2xl:h-4.5 2xl:w-4.5" strokeWidth={2} />
-        </span>
-      </div>
-    </article>
-  );
-}
 
 
 export default function CandidatePipelinePage() {
@@ -828,12 +602,11 @@ export default function CandidatePipelinePage() {
                 "Offered",
                 "Accepted",
               ]}
-              className="grid grid-cols-2 gap-2.5 2xl:gap-3 md:grid-cols-3 xl:grid-cols-6"
               ariaLabel="Loading pipeline metrics"
             />
           ) : (
-            <section aria-label="Pipeline Summary" className="grid grid-cols-2 gap-2.5 2xl:gap-3 md:grid-cols-3 xl:grid-cols-6">
-              <PipelineMetricCard
+            <MetricGrid columns={6} ariaLabel="Pipeline Summary">
+              <MetricCard
                 label="Initial Screening"
                 value={safeMetrics.initialScreening}
                 icon={UserCheck}
@@ -841,7 +614,7 @@ export default function CandidatePipelinePage() {
                 tone="navy"
                 delay={0}
               />
-              <PipelineMetricCard
+              <MetricCard
                 label="Online Assessment"
                 value={safeMetrics.onlineAssessment}
                 icon={ClipboardCheck}
@@ -849,7 +622,7 @@ export default function CandidatePipelinePage() {
                 tone="indigo"
                 delay={60}
               />
-              <PipelineMetricCard
+              <MetricCard
                 label="Interview Scheduled"
                 value={safeMetrics.interviewScheduled}
                 icon={CalendarDays}
@@ -857,7 +630,7 @@ export default function CandidatePipelinePage() {
                 tone="blue"
                 delay={120}
               />
-              <PipelineMetricCard
+              <MetricCard
                 label="Interviewed"
                 value={safeMetrics.interviewed}
                 icon={ShieldCheck}
@@ -865,7 +638,7 @@ export default function CandidatePipelinePage() {
                 tone="green"
                 delay={180}
               />
-              <PipelineMetricCard
+              <MetricCard
                 label="Offered"
                 value={safeMetrics.offered}
                 icon={BriefcaseBusiness}
@@ -873,7 +646,7 @@ export default function CandidatePipelinePage() {
                 tone="amber"
                 delay={240}
               />
-              <PipelineMetricCard
+              <MetricCard
                 label="Accepted"
                 value={safeMetrics.accepted}
                 icon={UserCheck}
@@ -881,7 +654,7 @@ export default function CandidatePipelinePage() {
                 tone="orange"
                 delay={300}
               />
-            </section>
+            </MetricGrid>
           )}
 
           <section
@@ -977,36 +750,44 @@ export default function CandidatePipelinePage() {
                 className="min-w-0"
               />
 
-              <FilterDropdown
+              <SelectDropdown
                 value={departmentFilter}
-                onChange={setDepartmentFilter}
+                onChange={(val) => setDepartmentFilter(val || "All Departments")}
                 options={departmentOptions}
                 placeholder="All Departments"
-                zIndex="z-[140]"
+                searchable
+                clearable={false}
+                className="min-w-0"
               />
 
-              <FilterDropdown
+              <SelectDropdown
                 value={accountFilter}
-                onChange={setAccountFilter}
+                onChange={(val) => setAccountFilter(val || "All Accounts")}
                 options={accountOptions}
                 placeholder="All Accounts"
-                zIndex="z-[130]"
+                searchable
+                clearable={false}
+                className="min-w-0"
               />
 
-              <FilterDropdown
+              <SelectDropdown
                 value={prfStatusFilter}
-                onChange={setPrfStatusFilter}
+                onChange={(val) => setPrfStatusFilter(val || "All PRF Status")}
                 options={prfStatusOptions}
                 placeholder="All PRF Status"
-                zIndex="z-[120]"
+                searchable
+                clearable={false}
+                className="min-w-0"
               />
 
-              <FilterDropdown
+              <SelectDropdown
                 value={sourceFilter}
-                onChange={setSourceFilter}
+                onChange={(val) => setSourceFilter(val || "All Sources")}
                 options={sourceOptions}
                 placeholder="All Sources"
-                zIndex="z-[110]"
+                searchable
+                clearable={false}
+                className="min-w-0"
               />
             </div>
           </section>

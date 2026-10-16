@@ -217,11 +217,11 @@ const ResignationList = ({ maxHeight }) => {
 
   return (
     <div
-      className="flex w-full min-w-0 flex-col overflow-hidden rounded-[22px] border border-[#D9E2EC] bg-white shadow-sm"
+      className="flex w-full min-w-0 flex-col overflow-hidden rounded-[22px] border border-sibs-border-subtle bg-white shadow-sm"
       style={containerStyle}
     >
       {/* HEADER */}
-      <div className="shrink-0 border-b border-[#E6ECF2] bg-white px-5 py-5 sm:px-6">
+      <div className="shrink-0 border-b border-sibs-border bg-white px-5 py-5 sm:px-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="min-w-0">
             <h2 className="text-2xl font-bold leading-tight text-sibs-primary-1 sm:text-[28px]">
@@ -246,14 +246,14 @@ const ResignationList = ({ maxHeight }) => {
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
                 onKeyDown={handleSearchKeyDown}
-                className="h-10 w-full rounded-xl border border-[#D7DEE8] bg-white pl-9 pr-3 text-sm text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-[var(--sibs-primary-1)] sm:w-[220px]"
+                className="h-10 w-full rounded-xl border border-sibs-border-subtle bg-white pl-9 pr-3 text-sm text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-[var(--sibs-primary-1)] sm:w-[220px]"
               />
             </div>
 
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="h-10 rounded-xl border border-[#D7DEE8] bg-white px-3 text-sm text-sibs-primary-1 outline-none transition focus:border-[var(--sibs-primary-1)]"
+              className="h-10 rounded-xl border border-sibs-border-subtle bg-white px-3 text-sm text-sibs-primary-1 outline-none transition focus:border-[var(--sibs-primary-1)]"
             >
               <option value="">Filter Status</option>
               <option value="Pending">Pending</option>
@@ -266,7 +266,7 @@ const ResignationList = ({ maxHeight }) => {
       </div>
 
       {/* LIST */}
-      <div className="min-h-0 flex-1 overflow-y-auto bg-[#F8FAFC] p-4 sm:p-5">
+      <div className="min-h-0 flex-1 overflow-y-auto bg-sibs-canvas p-4 sm:p-5">
         {loading ? (
           <EmptyState text="Loading resignation records..." />
         ) : data.length === 0 ? (
@@ -283,7 +283,7 @@ const ResignationList = ({ maxHeight }) => {
                     handleOpenView(item);
                   }
                 }}
-                className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm transition hover:shadow-md"
+                className="rounded-2xl border border-sibs-border bg-white p-5 shadow-sm transition hover:shadow-md"
               >
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                   <div className="min-w-0">
@@ -403,7 +403,7 @@ const ResignationList = ({ maxHeight }) => {
         formatDateTime={formatDateTime}
       />
 
-      <div className="shrink-0 border-t border-[#E6ECF2] bg-white">
+      <div className="shrink-0 border-t border-sibs-border bg-white">
         <TableFooter tableEntity={ENTITY} totalLabel="Total Resignations" />
       </div>
     </div>
@@ -412,7 +412,7 @@ const ResignationList = ({ maxHeight }) => {
 
 function EmptyState({ text }) {
   return (
-    <div className="rounded-2xl border border-dashed border-[#D7DEE8] bg-white p-8 text-center text-sm text-sibs-tertiary-5">
+    <div className="rounded-2xl border border-dashed border-sibs-border-subtle bg-white p-8 text-center text-sm text-sibs-tertiary-5">
       {text}
     </div>
   );
@@ -424,7 +424,7 @@ function ActionButton({ icon: Icon, label, onClick, disabled = false }) {
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className="inline-flex h-10 items-center gap-1 rounded-lg border border-[#D7DEE8] bg-white px-3 text-sm font-medium text-sibs-primary-1 transition hover:bg-[var(--sibs-tertiary-10)] disabled:cursor-not-allowed disabled:opacity-50"
+      className="inline-flex h-10 items-center gap-1 rounded-lg border border-sibs-border-subtle bg-white px-3 text-sm font-medium text-sibs-primary-1 transition hover:bg-[var(--sibs-tertiary-10)] disabled:cursor-not-allowed disabled:opacity-50"
     >
       <Icon size={14} />
       {label}
@@ -434,7 +434,7 @@ function ActionButton({ icon: Icon, label, onClick, disabled = false }) {
 
 function DateCard({ title, value }) {
   return (
-    <div className="rounded-2xl border border-[#E6ECF2] bg-[#F8FAFC] p-4">
+    <div className="rounded-2xl border border-sibs-border bg-sibs-canvas p-4">
       <div className="flex items-center gap-2 text-sibs-primary-1">
         <CalendarDays size={15} />
         <p className="text-xs font-semibold uppercase tracking-wide">
@@ -451,7 +451,7 @@ function DateCard({ title, value }) {
 
 function StatusCard({ icon: Icon, title, value, className }) {
   return (
-    <div className="flex items-center justify-between gap-3 rounded-2xl border border-[#E6ECF2] bg-white px-4 py-3">
+    <div className="flex items-center justify-between gap-3 rounded-2xl border border-sibs-border bg-white px-4 py-3">
       <div className="flex items-center gap-2 text-sibs-primary-1">
         <Icon size={18} />
         <p className="text-xs font-semibold uppercase tracking-wide">{title}</p>

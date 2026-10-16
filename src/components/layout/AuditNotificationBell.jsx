@@ -73,7 +73,7 @@ function SidebarNotificationItem({ notification, onOpen }) {
     <button
       type="button"
       onClick={() => onOpen(notification)}
-      className="flex w-full items-start gap-3 border-b border-[#EEF2F6] px-4 py-3.5 text-left transition last:border-b-0 hover:bg-[#F8FAFC]"
+      className="flex w-full items-start gap-3 border-b border-sibs-border px-4 py-3.5 text-left transition last:border-b-0 hover:bg-sibs-canvas"
     >
       <span
         className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
@@ -81,7 +81,7 @@ function SidebarNotificationItem({ notification, onOpen }) {
             ? "bg-red-50 text-red-600"
             : notification.tone === "warning"
               ? "bg-amber-50 text-amber-600"
-              : "bg-[#EEF4FA] text-sibs-primary-1"
+              : "bg-sibs-canvas text-sibs-primary-1"
         }`}
       >
         <Bell className="h-4 w-4" />
@@ -89,27 +89,27 @@ function SidebarNotificationItem({ notification, onOpen }) {
 
       <span className="min-w-0 flex-1">
         <span className="flex items-start justify-between gap-2">
-          <span className="truncate text-xs font-extrabold text-[#101828]">
+          <span className="truncate text-xs font-extrabold text-sibs-navy">
             {notification.name || notification.key}
           </span>
 
           {notification.count > 0 ? (
-            <span className="shrink-0 rounded-full bg-[#FFF0E9] px-2 py-0.5 text-[9px] font-extrabold text-[#FF5C28]">
+            <span className="shrink-0 rounded-full bg-sibs-cream-light px-2 py-0.5 text-[9px] font-extrabold text-sibs-orange">
               {notification.count > 99 ? "99+" : notification.count}
             </span>
           ) : notification.label ? (
-            <span className="shrink-0 rounded-full bg-[#EEF4FA] px-2 py-0.5 text-[9px] font-extrabold text-sibs-primary-1">
+            <span className="shrink-0 rounded-full bg-sibs-canvas px-2 py-0.5 text-[9px] font-extrabold text-sibs-primary-1">
               {notification.label}
             </span>
           ) : null}
         </span>
 
-        <span className="mt-1 block text-[10px] font-semibold leading-4 text-[#667085]">
+        <span className="mt-1 block text-[10px] font-semibold leading-4 text-sibs-text-muted">
           {notification.title || "New activity requires your attention."}
         </span>
 
         {notification.updatedAt ? (
-          <span className="mt-1.5 block text-[9px] font-bold text-[#98A2B3]">
+          <span className="mt-1.5 block text-[9px] font-bold text-slate-400">
             {formatSidebarNotificationTime(notification.updatedAt)}
           </span>
         ) : null}
@@ -126,8 +126,8 @@ function AuditNotificationItem({ notification, onOpen }) {
       type="button"
       onClick={() => onOpen(notification)}
       disabled={!clickable}
-      className={`flex w-full items-start gap-3 border-b border-[#EEF2F6] px-4 py-3.5 text-left transition last:border-b-0 ${
-        clickable ? "hover:bg-[#F8FAFC]" : "cursor-default bg-white"
+      className={`flex w-full items-start gap-3 border-b border-sibs-border px-4 py-3.5 text-left transition last:border-b-0 ${
+        clickable ? "hover:bg-sibs-canvas" : "cursor-default bg-white"
       }`}
     >
       <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 ring-1 ring-emerald-100">
@@ -139,17 +139,17 @@ function AuditNotificationItem({ notification, onOpen }) {
       </span>
 
       <span className="min-w-0 flex-1">
-        <span className="block truncate text-[11px] font-extrabold text-[#101828]">
+        <span className="block truncate text-[11px] font-extrabold text-sibs-navy">
           {notification.title}
         </span>
 
-        <span className="mt-1 block text-[10px] font-medium leading-4 text-[#667085]">
+        <span className="mt-1 block text-[10px] font-medium leading-4 text-sibs-text-muted">
           {notification.message}
         </span>
 
         {notification.targetSibsId ? (
-          <span className="mt-1.5 flex flex-wrap items-center gap-1.5 text-[9px] font-extrabold uppercase tracking-wide text-[#667085]">
-            <span className="text-[#98A2B3]">Employee SIBS ID</span>
+          <span className="mt-1.5 flex flex-wrap items-center gap-1.5 text-[9px] font-extrabold uppercase tracking-wide text-sibs-text-muted">
+            <span className="text-slate-400">Employee SIBS ID</span>
             <span aria-hidden="true">•</span>
             <span className="text-sibs-primary-2">
               {notification.targetSibsId}
@@ -157,7 +157,7 @@ function AuditNotificationItem({ notification, onOpen }) {
             {notification.targetEmployeeName ? (
               <>
                 <span aria-hidden="true">•</span>
-                <span className="text-[#344054]">
+                <span className="text-sibs-text-secondary">
                   {notification.targetEmployeeName}
                 </span>
               </>
@@ -165,7 +165,7 @@ function AuditNotificationItem({ notification, onOpen }) {
           </span>
         ) : null}
 
-        <span className="mt-1.5 flex items-center gap-2 text-[9px] font-bold uppercase tracking-wide text-[#98A2B3]">
+        <span className="mt-1.5 flex items-center gap-2 text-[9px] font-bold uppercase tracking-wide text-slate-400">
           <span>{notification.module || "HRIS"}</span>
           <span aria-hidden="true">•</span>
           <span>{formatAuditNotificationTime(notification.occurredAt)}</span>
@@ -372,8 +372,8 @@ export default function AuditNotificationBell({ user }) {
         onClick={handleBellClick}
         className={`relative flex h-8.5 w-8.5 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-lg transition ${
           open
-            ? "bg-[#EEF4FA] text-sibs-primary-1"
-            : "text-[#667085] hover:bg-[#F1F5F9] hover:text-sibs-primary-1"
+            ? "bg-sibs-canvas text-sibs-primary-1"
+            : "text-sibs-text-muted hover:bg-slate-100 hover:text-sibs-primary-1"
         }`}
         aria-label={
           notificationCount
@@ -399,14 +399,14 @@ export default function AuditNotificationBell({ user }) {
         <section
           role="dialog"
           aria-label="Notifications"
-          className="fixed left-3 right-3 top-[68px] z-[10030] overflow-hidden rounded-2xl border border-[#D7E0E9] bg-white shadow-[0_18px_50px_rgba(4,44,81,0.2)] sm:absolute sm:left-auto sm:right-0 sm:top-[calc(100%+10px)] sm:w-[380px]"
+          className="fixed left-3 right-3 top-[68px] z-[10030] overflow-hidden rounded-2xl border border-sibs-border-subtle bg-white shadow-[0_18px_50px_rgba(4,44,81,0.2)] sm:absolute sm:left-auto sm:right-0 sm:top-[calc(100%+10px)] sm:w-[380px]"
         >
-          <div className="flex items-center justify-between gap-3 border-b border-[#E6ECF2] px-4 py-3.5">
+          <div className="flex items-center justify-between gap-3 border-b border-sibs-border px-4 py-3.5">
             <div className="min-w-0">
-              <h3 className="text-sm font-extrabold text-[#042C51]">
+              <h3 className="text-sm font-extrabold text-sibs-navy">
                 Notifications
               </h3>
-              <p className="mt-0.5 text-[10px] font-semibold text-[#667085]">
+              <p className="mt-0.5 text-[10px] font-semibold text-sibs-text-muted">
                 {notificationCount
                   ? `${notificationCount} recent notification${
                       notificationCount === 1 ? "" : "s"
@@ -420,7 +420,7 @@ export default function AuditNotificationBell({ user }) {
                 <button
                   type="button"
                   onClick={handleMarkAllRead}
-                  className="inline-flex h-8 items-center gap-1.5 rounded-lg px-2 text-[10px] font-extrabold text-sibs-primary-1 transition hover:bg-[#EEF4FA]"
+                  className="inline-flex h-8 items-center gap-1.5 rounded-lg px-2 text-[10px] font-extrabold text-sibs-primary-1 transition hover:bg-sibs-canvas"
                 >
                   <CheckCheck className="h-3.5 w-3.5" />
                   Mark read
@@ -432,7 +432,7 @@ export default function AuditNotificationBell({ user }) {
                   type="button"
                   onClick={() => void loadAuditNotifications()}
                   disabled={loading}
-                  className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#E4E7EC] text-[#667085] transition hover:bg-[#F8FAFC] hover:text-sibs-primary-1 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="flex h-8 w-8 items-center justify-center rounded-lg border border-sibs-border text-sibs-text-muted transition hover:bg-sibs-canvas hover:text-sibs-primary-1 disabled:cursor-not-allowed disabled:opacity-60"
                   aria-label="Refresh system activity"
                 >
                   {loading ? (
@@ -448,7 +448,7 @@ export default function AuditNotificationBell({ user }) {
           <div className="max-h-[440px] overflow-y-auto sibs-scrollbar">
             {hasHrNotifications ? (
               <section>
-                <div className="border-b border-[#EEF2F6] bg-[#F8FAFC] px-4 py-2 text-[9px] font-black uppercase tracking-[0.14em] text-[#98A2B3]">
+                <div className="border-b border-sibs-border bg-sibs-canvas px-4 py-2 text-[9px] font-black uppercase tracking-[0.14em] text-slate-400">
                   HRIS Notifications
                 </div>
 
@@ -464,23 +464,23 @@ export default function AuditNotificationBell({ user }) {
 
             {eligibleForAudit ? (
               <section>
-                <div className="border-b border-[#EEF2F6] bg-[#F8FAFC] px-4 py-2 text-[9px] font-black uppercase tracking-[0.14em] text-[#98A2B3]">
+                <div className="border-b border-sibs-border bg-sibs-canvas px-4 py-2 text-[9px] font-black uppercase tracking-[0.14em] text-slate-400">
                   Successful System Activity
                 </div>
 
                 {loading && auditNotifications.length === 0 ? (
                   <div className="flex flex-col items-center justify-center px-5 py-7 text-center">
                     <Loader2 className="h-5 w-5 animate-spin text-sibs-primary-2" />
-                    <p className="mt-2 text-[10px] font-bold text-[#667085]">
+                    <p className="mt-2 text-[10px] font-bold text-sibs-text-muted">
                       Loading system activity...
                     </p>
                   </div>
                 ) : error && auditNotifications.length === 0 ? (
                   <div className="px-5 py-6 text-center">
-                    <p className="text-xs font-extrabold text-[#344054]">
+                    <p className="text-xs font-extrabold text-sibs-text-secondary">
                       System activity unavailable
                     </p>
-                    <p className="mt-1 text-[10px] leading-4 text-[#667085]">
+                    <p className="mt-1 text-[10px] leading-4 text-sibs-text-muted">
                       {error}
                     </p>
                   </div>
@@ -495,10 +495,10 @@ export default function AuditNotificationBell({ user }) {
                 ) : (
                   <div className="px-5 py-6 text-center">
                     <CheckCircle2 className="mx-auto h-6 w-6 text-emerald-500" />
-                    <p className="mt-2 text-xs font-extrabold text-[#344054]">
+                    <p className="mt-2 text-xs font-extrabold text-sibs-text-secondary">
                       No successful system activity
                     </p>
-                    <p className="mt-1 text-[10px] leading-4 text-[#667085]">
+                    <p className="mt-1 text-[10px] leading-4 text-sibs-text-muted">
                       New successful audit activity will appear here automatically.
                     </p>
                   </div>
@@ -508,13 +508,13 @@ export default function AuditNotificationBell({ user }) {
 
             {!hasAnyNotification && !eligibleForAudit ? (
               <div className="px-6 py-10 text-center">
-                <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[#F1F5F9] text-[#98A2B3]">
+                <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
                   <Bell className="h-5 w-5" />
                 </span>
-                <p className="mt-3 text-xs font-extrabold text-[#344054]">
+                <p className="mt-3 text-xs font-extrabold text-sibs-text-secondary">
                   No new notifications
                 </p>
-                <p className="mt-1 text-[10px] font-semibold text-[#98A2B3]">
+                <p className="mt-1 text-[10px] font-semibold text-slate-400">
                   New HRIS activity will appear here.
                 </p>
               </div>

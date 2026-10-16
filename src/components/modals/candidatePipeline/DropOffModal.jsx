@@ -212,7 +212,7 @@ const DropOffModal = ({
   }
 
   const footer = (
-    <div className="flex flex-col-reverse justify-end gap-2 sm:flex-row">
+    <div className="flex flex-col-reverse justify-end gap-2.5 sm:gap-3 sm:flex-row">
       <CandidateModalSecondaryButton
         type="button"
         onClick={onClose}
@@ -249,7 +249,7 @@ const DropOffModal = ({
       zIndex="z-[10003]"
       footer={footer}
     >
-      <div className="space-y-4">
+      <div className="space-y-4 font-jakarta">
         <CandidateModalSummary
           candidate={candidate}
           stage={candidate.currentStage || "Drop-off"}

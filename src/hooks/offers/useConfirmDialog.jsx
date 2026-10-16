@@ -55,7 +55,7 @@ export function useConfirmDialog() {
             onChange={(event) => setNotes(event.target.value)}
             placeholder="Add notes for this action..."
             rows={3}
-            className="sibs-input min-h-20 w-full resize-none py-2.5"
+            className="sibs-input min-h-20 w-full resize-none rounded-[10px] py-2.5"
           />
         </label>
       ) : null}

@@ -199,7 +199,7 @@ export default function NotificationDropdown() {
         className={`relative flex h-8.5 w-8.5 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-xl border transition-all duration-150 outline-none cursor-pointer ${
           open
             ? "border-sibs-orange/40 bg-sibs-cream text-sibs-orange shadow-sm ring-2 ring-sibs-orange/15"
-            : "border-transparent bg-transparent text-[#667085] hover:border-sibs-orange/30 hover:bg-sibs-cream-subtle hover:text-sibs-orange hover:shadow-xs"
+            : "border-transparent bg-transparent text-sibs-text-muted hover:border-sibs-orange/30 hover:bg-sibs-cream-subtle hover:text-sibs-orange hover:shadow-xs"
         }`}
       >
         <Bell className="h-4 w-4 2xl:h-[18px] 2xl:w-[18px]" strokeWidth={1.8} />
@@ -225,7 +225,7 @@ export default function NotificationDropdown() {
             className="sibs-animated-dropdown-box w-[360px] sm:w-[400px] max-w-[calc(100vw-24px)] rounded-2xl border border-sibs-border bg-white shadow-xl overflow-hidden font-jakarta"
           >
             {/* Header */}
-            <div className="flex items-center justify-between border-b border-sibs-border bg-[#F8FAFC] px-4 py-3">
+            <div className="flex items-center justify-between border-b border-sibs-border bg-sibs-canvas px-4 py-3">
               <div className="flex items-center gap-2">
                 <h3 className="font-heading text-base font-bold text-sibs-navy tracking-tight">
                   Notifications
@@ -265,7 +265,7 @@ export default function NotificationDropdown() {
                     className={`flex items-center gap-1.5 border-b-2 px-3 py-1.5 sibs-text-micro font-extrabold transition-all ${
                       active
                         ? "border-sibs-orange text-sibs-orange"
-                        : "border-transparent text-[#667085] hover:text-sibs-navy"
+                        : "border-transparent text-sibs-text-muted hover:text-sibs-navy"
                     }`}
                   >
                     <span>{tab.label}</span>
@@ -287,7 +287,7 @@ export default function NotificationDropdown() {
             <div
               ref={notificationListRef}
               onScroll={handleNotificationListScroll}
-              className="max-h-[380px] overflow-y-auto divide-y divide-[#F1F5F9] sibs-scrollbar"
+              className="max-h-[380px] overflow-y-auto divide-y divide-sibs-border/60 sibs-scrollbar"
             >
               {filteredNotifications.length === 0 ? (
                 <div className="py-12 px-4 text-center">
@@ -295,7 +295,7 @@ export default function NotificationDropdown() {
                   <p className="sibs-text-xs font-extrabold text-sibs-navy">
                     All caught up!
                   </p>
-                  <p className="mt-0.5 sibs-text-micro text-[#667085]">
+                  <p className="mt-0.5 sibs-text-micro text-sibs-text-muted">
                     No notifications in this category
                   </p>
                 </div>
@@ -337,8 +337,8 @@ export default function NotificationDropdown() {
                       }
                       onClick={handleNotificationCardClick}
                       onKeyDown={handleNotificationCardKeyDown}
-                      className={`group relative flex items-start gap-3 p-3.5 transition-colors hover:bg-[#FFF8F5] cursor-pointer ${
-                        notif.isRead ? "bg-white opacity-85" : "bg-[#F4F7FA]/60"
+                      className={`group relative flex items-start gap-3 p-3.5 transition-colors hover:bg-sibs-cream-light cursor-pointer ${
+                        notif.isRead ? "bg-white opacity-85" : "bg-sibs-canvas/60"
                       } ${
                         isWholeCardAction
                           ? "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sibs-orange/30"
@@ -429,7 +429,7 @@ export default function NotificationDropdown() {
             </div>
 
             {/* Footer */}
-            <div className="border-t border-sibs-border bg-[#F8FAFC] px-4 py-2.5 flex items-center justify-between">
+            <div className="border-t border-sibs-border bg-sibs-canvas px-4 py-2.5 flex items-center justify-between">
               <span className="sibs-text-micro font-semibold text-sibs-text-muted">
                 Auto-syncs with live HRIS feed
               </span>

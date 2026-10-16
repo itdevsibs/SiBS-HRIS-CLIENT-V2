@@ -103,7 +103,7 @@ const ProfileDropdown = ({ openModal, openDropdown, onViewResignation }) => {
 
   return (
     <div
-        className="w-[260px] max-w-[calc(100vw-32px)] overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white p-2 shadow-xl"
+        className="w-[260px] max-w-[calc(100vw-32px)] overflow-hidden rounded-2xl border border-sibs-border bg-white p-2 shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
       <div className="px-3 pb-2 pt-1">

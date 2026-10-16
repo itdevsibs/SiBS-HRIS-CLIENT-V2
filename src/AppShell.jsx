@@ -60,7 +60,7 @@ export default function AppShell({ children }) {
   return (
     <Providers>
       {isFinalInterviewForm ? (
-        <main className="h-dvh min-h-0 w-full overflow-y-auto overflow-x-hidden bg-[#E9EEF5]">
+        <main className="h-dvh min-h-0 w-full overflow-y-auto overflow-x-hidden bg-sibs-canvas">
           {children}
         </main>
       ) : hideSidebar ? (

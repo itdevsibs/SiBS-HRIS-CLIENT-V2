@@ -148,10 +148,10 @@ export default function AdminLoginModal() {
           onClick={(e) => e.stopPropagation()}
           className="sibs-modal-pop-in flex max-h-[92dvh] w-full max-w-[448px] flex-col overflow-hidden rounded-2xl border border-white/70 bg-white font-jakarta shadow-2xl"
         >
-          <header className="bg-[#042C51] px-5 py-3 text-white sm:px-6 2xl:py-3.5">
+          <header className="bg-sibs-navy px-5 py-3 text-white sm:px-6 2xl:py-3.5">
             <div className="flex items-start justify-between gap-4">
               <div className="flex min-w-0 items-start gap-2.5 2xl:gap-3">
-                <div className="flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg bg-[#FF5C28] text-white shadow-sm">
+                <div className="flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg bg-sibs-orange text-white shadow-sm">
                   <Activity size={16} />
                 </div>
 
@@ -181,18 +181,18 @@ export default function AdminLoginModal() {
             </div>
           </header>
 
-          <main className="bg-[#F8FAFC] p-4 sm:p-5 2xl:p-6">
-            <div className="flex min-h-[40px] 2xl:min-h-[44px] items-center rounded-xl border border-blue-100 bg-blue-50 px-3.5 sibs-text-xs font-semibold text-[#042C51]">
+          <main className="bg-sibs-canvas p-4 sm:p-5 2xl:p-6">
+            <div className="flex min-h-[40px] 2xl:min-h-[44px] items-center rounded-xl border border-blue-100 bg-blue-50 px-3.5 sibs-text-xs font-semibold text-sibs-navy">
               <span>Target Access:</span>
-              <span className="ml-1.5 font-extrabold text-[#042C51]">
+              <span className="ml-1.5 font-extrabold text-sibs-navy">
                 {targetAccessLabel}
               </span>
             </div>
 
             <form onSubmit={handleSubmit} className="mt-4 space-y-4">
               <div>
-                <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
-                  Password <span className="text-[#FF5C28]">*</span>
+                <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-slate-400">
+                  Password <span className="text-sibs-orange">*</span>
                 </label>
 
                 <div className="relative">
@@ -203,14 +203,14 @@ export default function AdminLoginModal() {
                     placeholder={`Enter ${targetAccessLabel} password`}
                     disabled={loading}
                     autoComplete="current-password"
-                    className="h-8.5 2xl:h-10 w-full rounded-xl border border-[#D7DEE8] bg-white px-3 pr-10 2xl:px-3.5 2xl:pr-11 sibs-text-xs font-semibold text-[#042C51] outline-none transition placeholder:text-[#98A2B3] focus:border-[#FF5C28] focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+                    className="h-8.5 2xl:h-10 w-full rounded-xl border border-sibs-border-subtle bg-white px-3 pr-10 2xl:px-3.5 2xl:pr-11 sibs-text-xs font-semibold text-sibs-navy outline-none transition placeholder:text-slate-400 focus:border-sibs-orange focus:ring-4 focus:ring-sibs-orange/10 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
                   />
 
                   <button
                     type="button"
                     onClick={() => setShowPassword((current) => !current)}
                     disabled={loading}
-                    className="absolute right-2.5 top-1/2 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-[#98A2B3] transition hover:bg-[#F2F4F7] hover:text-[#042C51] disabled:cursor-not-allowed disabled:opacity-50"
+                    className="absolute right-2.5 top-1/2 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-slate-400 transition hover:bg-slate-100 hover:text-sibs-navy disabled:cursor-not-allowed disabled:opacity-50"
                     aria-label={showPassword ? "Hide password" : "Show password"}
                     title={showPassword ? "Hide password" : "Show password"}
                   >
@@ -224,7 +224,7 @@ export default function AdminLoginModal() {
                   type="button"
                   onClick={onClose}
                   disabled={loading}
-                  className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg border border-[#D6DEE8] bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-[#667085] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-50"
+                  className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg border border-sibs-border-subtle bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-text-muted transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   Cancel
                 </button>
@@ -232,7 +232,7 @@ export default function AdminLoginModal() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg bg-[#FF5C28] px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E94F1F] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg bg-sibs-orange px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-sibs-button-hover active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {loading ? "Logging in..." : `Login as ${targetAccessLabel}`}
                 </button>

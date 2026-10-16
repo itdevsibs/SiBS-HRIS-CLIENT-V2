@@ -104,7 +104,7 @@ export default function DropdownPortal({
   return createPortal(
     <div
       ref={panelRef}
-      className={`sibs-dropdown-pop-in fixed z-[999999] overflow-hidden rounded-xl border border-[#D7E3F0] bg-white font-jakarta shadow-[0_16px_36px_rgba(4,44,81,0.16)] ${className}`}
+      className={`sibs-dropdown-pop-in fixed z-[999999] overflow-hidden rounded-xl border border-sibs-border-subtle bg-white font-jakarta shadow-[0_16px_36px_rgba(4,44,81,0.16)] ${className}`}
       style={{
         top: `${style.top}px`,
         left: `${style.left}px`,

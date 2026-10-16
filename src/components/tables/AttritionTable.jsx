@@ -4,11 +4,23 @@ import { Clock3, Eye, Pencil } from "lucide-react";
 import { getMyAttritions } from "../../lib/axios/getAttrition";
 import { usePagination } from "@/services/context/PaginationContext";
 import { useUser } from "../../services/context/UserContext";
-import PaginationTable from "@/services/pagination/PaginationTable";
+import {
+  SearchInput,
+  SelectDropdown,
+  TablePagination,
+} from "@/components/ui";
 import { formatDate, formatDateTime } from "@/components/layout/FormatDateTime";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 const PAGE_LIMIT = 15;
+
+const ATTRITION_STATUS_OPTIONS = [
+  { label: "All Status", value: "All" },
+  { label: "Pending", value: "Pending" },
+  { label: "Approved", value: "Approved" },
+  { label: "Rejected", value: "Rejected" },
+  { label: "Declined", value: "Declined" },
+];
 
 function normalizeSibsId(value) {
   const cleanValue = String(value || "").trim();
@@ -113,7 +125,7 @@ function UploadedFileCell({ filename, fileUrl, className = "" }) {
       rel="noopener noreferrer"
       draggable={false}
       data-no-table-drag="true"
-      className={`flex min-w-0 items-center gap-3 rounded-lg p-1 text-left text-sm font-semibold text-[#344054] no-underline transition hover:bg-slate-50 hover:text-sibs-primary-1 ${className}`}
+      className={`flex min-w-0 items-center gap-3 rounded-lg p-1 text-left text-sm font-semibold text-sibs-text-secondary no-underline transition hover:bg-slate-50 hover:text-sibs-primary-1 ${className}`}
       title={`Open ${filename}`}
       onMouseDown={(e) => e.stopPropagation()}
       onPointerDown={(e) => e.stopPropagation()}
@@ -172,7 +184,7 @@ function ActionButton({ type = "view", children, onClick }) {
       className={`inline-flex h-9 items-center justify-center gap-1.5 rounded-xl px-3 text-xs font-bold transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm active:scale-[0.98] ${
         isEdit
           ? "border border-sibs-primary-1 bg-sibs-primary-1 text-white hover:opacity-90"
-          : "border border-[#E6ECF2] bg-white text-sibs-primary-1 hover:border-sibs-primary-1 hover:bg-sibs-primary-1/5"
+          : "border border-sibs-border bg-white text-sibs-primary-1 hover:border-sibs-primary-1 hover:bg-sibs-primary-1/5"
       }`}
     >
       {children}
@@ -183,7 +195,7 @@ function ActionButton({ type = "view", children, onClick }) {
 function MobileInfo({ label, value, full = false }) {
   return (
     <div
-      className={`rounded-xl border border-[#E6ECF2] bg-slate-50 p-3 transition-all duration-200 hover:-translate-y-0.5 hover:bg-white hover:shadow-sm ${
+      className={`rounded-xl border border-sibs-border bg-slate-50 p-3 transition-all duration-200 hover:-translate-y-0.5 hover:bg-white hover:shadow-sm ${
         full ? "col-span-2 max-sm:col-span-1" : ""
       }`}
     >
@@ -250,7 +262,7 @@ function MobileAttritionCard({ item, user, loggedInSibsId, onView, onEdit }) {
           onView?.(item);
         }
       }}
-      className="sibs-page-card-in cursor-pointer rounded-xl border border-[#E6ECF2] bg-white p-4 text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-slate-50 hover:shadow-md active:scale-[0.99]"
+      className="sibs-page-card-in cursor-pointer rounded-xl border border-sibs-border bg-white p-4 text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-slate-50 hover:shadow-md active:scale-[0.99]"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
@@ -290,7 +302,7 @@ function MobileAttritionCard({ item, user, loggedInSibsId, onView, onEdit }) {
           full
         />
 
-        <div className="col-span-2 rounded-xl border border-[#E6ECF2] bg-slate-50 p-3 transition-all duration-200 hover:-translate-y-0.5 hover:bg-white hover:shadow-sm max-sm:col-span-1">
+        <div className="col-span-2 rounded-xl border border-sibs-border bg-slate-50 p-3 transition-all duration-200 hover:-translate-y-0.5 hover:bg-white hover:shadow-sm max-sm:col-span-1">
           <p className="m-0 text-xs font-bold uppercase tracking-wide text-sibs-tertiary-5">
             Uploaded File
           </p>
@@ -304,7 +316,7 @@ function MobileAttritionCard({ item, user, loggedInSibsId, onView, onEdit }) {
           </div>
         </div>
 
-        <div className="col-span-2 rounded-xl border border-[#E6ECF2] bg-slate-50 p-3 transition-all duration-200 hover:-translate-y-0.5 hover:bg-white hover:shadow-sm max-sm:col-span-1">
+        <div className="col-span-2 rounded-xl border border-sibs-border bg-slate-50 p-3 transition-all duration-200 hover:-translate-y-0.5 hover:bg-white hover:shadow-sm max-sm:col-span-1">
           <p className="m-0 text-xs font-bold uppercase tracking-wide text-sibs-tertiary-5">
             Submitted At
           </p>
@@ -604,33 +616,49 @@ export default function AttritionTable({ reloadKey = 0, onView, onEdit }) {
   return (
     <div className="min-w-0 overflow-hidden rounded-xl bg-white">
       <div className="p-4 sm:p-5">
-        <PaginationTable
-          title="Attrition Records"
-          subtitle="Only 15 attrition records are loaded from the backend per page."
-          loading={loading}
-          searchValue={searchInput}
-          searchPlaceholder="Search then press Enter"
-          onSearchChange={(value) => setSearchInput?.(value)}
-          onSearchKeyDown={handleAttritionSearchKeyDown}
-          filters={[
-            {
-              key: "status",
-              value: statusFilter,
-              onChange: handleStatusChange,
-              options: [
-                { label: "All Status", value: "All" },
-                { label: "Pending", value: "Pending" },
-                { label: "Approved", value: "Approved" },
-                { label: "Rejected", value: "Rejected" },
-                { label: "Declined", value: "Declined" },
-              ],
-            },
-          ]}
-          showPagination={false}
-          className="mb-5"
-        />
+        <div className="mb-5">
+          <h3 className="font-heading text-sm 2xl:text-base font-bold text-sibs-navy tracking-tight">
+            Attrition Records
+          </h3>
+          <p className="mt-1 sibs-text-xs font-semibold text-sibs-muted">
+            Only 15 attrition records are loaded from the backend per page.
+          </p>
 
-        <div className="hidden overflow-hidden rounded-xl border border-[#E6ECF2] lg:block">
+          <div className="mt-4 flex flex-col gap-3 overflow-visible xl:flex-row xl:items-end">
+            <div className="relative w-full min-w-0 xl:min-w-[180px] xl:flex-[1_1_220px] 2xl:min-w-[280px] 2xl:flex-[1_1_360px]">
+              <SearchInput
+                label="Search"
+                labelClassName="sibs-text-micro font-extrabold tracking-normal text-sibs-navy"
+                value={searchInput}
+                placeholder="Search then press Enter"
+                onChange={(value) => {
+                  setSearchInput?.(value);
+                  if (!value) {
+                    setSearch?.("");
+                    goToPage(1);
+                  }
+                }}
+                onKeyDown={handleAttritionSearchKeyDown}
+                disabled={loading}
+              />
+            </div>
+
+            <div className="w-full xl:w-[200px] 2xl:w-[240px] xl:flex-none">
+              <SelectDropdown
+                label="Status"
+                labelClassName="sibs-text-micro font-extrabold tracking-normal text-sibs-navy"
+                value={statusFilter}
+                options={ATTRITION_STATUS_OPTIONS}
+                onChange={handleStatusChange}
+                placeholder="All Status"
+                clearable={false}
+                disabled={loading}
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="hidden overflow-hidden rounded-xl border border-sibs-border lg:block">
           <div
             ref={tableScrollRef}
             onMouseDown={handleDragStart}
@@ -707,7 +735,7 @@ export default function AttritionTable({ reloadKey = 0, onView, onEdit }) {
                     <tr key={index}>
                       <td
                         colSpan={colSpan}
-                        className="border-t border-[#f3f4f6] px-5 py-4"
+                        className="border-t border-sibs-border px-5 py-4"
                       >
                         <div className="h-5 w-full animate-sibs-pulse rounded bg-gray-200" />
                       </td>
@@ -717,7 +745,7 @@ export default function AttritionTable({ reloadKey = 0, onView, onEdit }) {
                   <tr>
                     <td
                       colSpan={colSpan}
-                      className="border-t border-[#f3f4f6] p-10 text-center text-sm font-bold text-gray-500"
+                      className="border-t border-sibs-border p-10 text-center text-sm font-bold text-gray-500"
                     >
                       No attrition records found.
                     </td>
@@ -733,44 +761,44 @@ export default function AttritionTable({ reloadKey = 0, onView, onEdit }) {
                         onClick={() => handleRowView(item)}
                         className="cursor-pointer transition-all duration-200 hover:bg-slate-50"
                       >
-                        <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-sm font-semibold text-sibs-primary-1">
+                        <td className="whitespace-nowrap border-t border-sibs-border px-5 py-4 text-sm font-semibold text-sibs-primary-1">
                           {item.id || "N/A"}
                         </td>
 
                         {adminView && (
-                          <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-sm font-semibold text-sibs-primary-1">
+                          <td className="whitespace-nowrap border-t border-sibs-border px-5 py-4 text-sm font-semibold text-sibs-primary-1">
                             {item.sibsId || "N/A"}
                           </td>
                         )}
 
-                        <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-sm font-semibold text-[#344054]">
+                        <td className="whitespace-nowrap border-t border-sibs-border px-5 py-4 text-sm font-semibold text-sibs-text-secondary">
                           {formatDate(item.attritionDate)}
                         </td>
 
-                        <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-sm font-semibold text-[#344054]">
+                        <td className="whitespace-nowrap border-t border-sibs-border px-5 py-4 text-sm font-semibold text-sibs-text-secondary">
                           {formatDate(item.lastWorkingDate)}
                         </td>
 
-                        <td className="border-t border-[#f3f4f6] px-5 py-4 text-sm font-semibold text-[#344054]">
+                        <td className="border-t border-sibs-border px-5 py-4 text-sm font-semibold text-sibs-text-secondary">
                           <p className="m-0 overflow-hidden text-ellipsis whitespace-nowrap">
                             {item.reason || "N/A"}
                           </p>
                         </td>
 
-                        <td className="border-t border-[#f3f4f6] px-5 py-4 text-sm font-semibold text-[#344054]">
+                        <td className="border-t border-sibs-border px-5 py-4 text-sm font-semibold text-sibs-text-secondary">
                           <p className="m-0 overflow-hidden text-ellipsis whitespace-nowrap">
                             {item.specifyOthers || "N/A"}
                           </p>
                         </td>
 
-                        <td className="border-t border-[#f3f4f6] px-5 py-4 text-sm font-semibold text-[#344054]">
+                        <td className="border-t border-sibs-border px-5 py-4 text-sm font-semibold text-sibs-text-secondary">
                           <UploadedFileCell
                             filename={item.uploadedFile}
                             fileUrl={fileUrl}
                           />
                         </td>
 
-                        <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-sm font-semibold text-[#344054]">
+                        <td className="whitespace-nowrap border-t border-sibs-border px-5 py-4 text-sm font-semibold text-sibs-text-secondary">
                           <div className="inline-flex items-center gap-2">
                             <Clock3
                               size={16}
@@ -781,11 +809,11 @@ export default function AttritionTable({ reloadKey = 0, onView, onEdit }) {
                           </div>
                         </td>
 
-                        <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-center">
+                        <td className="whitespace-nowrap border-t border-sibs-border px-5 py-4 text-center">
                           <StatusBadge status={item.status} />
                         </td>
 
-                        <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-center">
+                        <td className="whitespace-nowrap border-t border-sibs-border px-5 py-4 text-center">
                           <div className="flex items-center justify-center gap-2">
                             {isEditable ? (
                               <ActionButton
@@ -828,11 +856,11 @@ export default function AttritionTable({ reloadKey = 0, onView, onEdit }) {
         <div className="block lg:hidden">
           <div ref={mobileScrollRef} className="max-h-[620px] overflow-y-auto">
             {loading ? (
-              <div className="rounded-xl border border-[#E6ECF2] bg-white p-6 text-center text-sm font-bold text-gray-500">
+              <div className="rounded-xl border border-sibs-border bg-white p-6 text-center text-sm font-bold text-gray-500">
                 Loading...
               </div>
             ) : displayedAttritions.length === 0 ? (
-              <div className="rounded-xl border border-[#E6ECF2] bg-white p-6 text-center text-sm font-bold text-gray-500">
+              <div className="rounded-xl border border-sibs-border bg-white p-6 text-center text-sm font-bold text-gray-500">
                 No attrition records found.
               </div>
             ) : (
@@ -855,18 +883,19 @@ export default function AttritionTable({ reloadKey = 0, onView, onEdit }) {
           </div>
         </div>
 
-        <PaginationTable
-          loading={loading}
-          showSearch={false}
-          showPagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          loadedCount={displayedAttritions.length}
-          totalRecords={totalRecords}
-          recordLabel="attrition records"
-          onPrevious={handlePreviousPage}
-          onNext={handleNextPage}
-        />
+        <div className="mt-5">
+          <TablePagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalRecords={totalRecords}
+            hasNextPage={hasNextPage}
+            pageSize={PAGE_LIMIT}
+            loadedCount={displayedAttritions.length}
+            onPageChange={goToPage}
+            recordLabel="attrition records"
+            loading={loading}
+          />
+        </div>
       </div>
     </div>
   );

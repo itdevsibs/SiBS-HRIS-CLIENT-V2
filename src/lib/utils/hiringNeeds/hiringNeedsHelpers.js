@@ -97,10 +97,10 @@ export function getHiringNeedsRequestTypeClass(type) {
   }
 
   if (value.includes("replacement")) {
-    return "border-blue-200 bg-blue-50 text-[#042C51]";
+    return "border-blue-200 bg-blue-50 text-sibs-navy";
   }
 
-  return "border-[#D7E8FF] bg-[#EFF6FF] text-[#1D4ED8]";
+  return "border-blue-200 bg-blue-50 text-blue-700";
 }
 
 export function getHiringNeedsStatusClass(status) {

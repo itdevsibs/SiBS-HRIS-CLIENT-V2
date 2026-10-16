@@ -432,7 +432,7 @@ export default function FinanceDashboardPage() {
           }
         />
 
-        <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
+        <section className="grid grid-cols-2 gap-2.5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
           <MetricCard
             label="Active Employees"
             value={formatNumber(metrics.activeEmployees)}

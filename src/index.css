@@ -1395,11 +1395,11 @@
      GLOBAL MODAL BUTTONS
   ========================= */
   .sibs-modal-btn-primary {
-    @apply inline-flex h-9 2xl:h-10 items-center justify-center gap-2 rounded-xl bg-sibs-orange px-4 2xl:px-5 text-[11.5px] 2xl:text-[12px] font-extrabold text-white shadow-xs transition hover:bg-sibs-button-hover active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60;
+    @apply inline-flex h-9 2xl:h-10 items-center justify-center gap-2 rounded-[10px] bg-sibs-orange px-4 2xl:px-5 text-[11.5px] 2xl:text-[12px] font-extrabold text-white shadow-xs transition hover:bg-sibs-button-hover active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60;
   }
 
   .sibs-modal-btn-secondary {
-    @apply inline-flex h-9 2xl:h-10 items-center justify-center gap-2 rounded-xl border border-sibs-border-subtle bg-white px-4 2xl:px-5 text-[11.5px] 2xl:text-[12px] font-extrabold text-sibs-navy shadow-xs transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60;
+    @apply inline-flex h-9 2xl:h-10 items-center justify-center gap-2 rounded-[10px] border border-sibs-border-subtle bg-white px-4 2xl:px-5 text-[11.5px] 2xl:text-[12px] font-extrabold text-sibs-navy shadow-xs transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60;
   }
 
   /* =========================

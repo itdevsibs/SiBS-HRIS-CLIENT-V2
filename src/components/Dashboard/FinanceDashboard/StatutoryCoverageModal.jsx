@@ -222,7 +222,7 @@ function TabButton({ active, count, icon: Icon, label, tone, onClick }) {
     <button
       type="button"
       onClick={onClick}
-      className={`inline-flex min-w-[145px] items-center justify-center gap-2 rounded-lg border px-4 py-2.5 text-xs font-extrabold transition ${
+      className={`inline-flex min-w-[145px] items-center justify-center gap-2 rounded-[10px] border px-4 py-2.5 text-xs font-extrabold transition ${
         active
           ? activeClass
           : "border-sibs-border bg-white text-sibs-muted hover:border-sibs-orange/40 hover:text-sibs-navy"
@@ -365,36 +365,6 @@ export default function StatutoryCoverageModal({
         </div>
       }
     >
-      <style>{`
-        .sibs-finance-statutory-modal .sibs-modal-title {
-          font-size: 1.25rem !important;
-          line-height: 1.75rem !important;
-        }
-
-        .sibs-finance-statutory-modal .sibs-modal-subtitle {
-          font-size: 0.875rem !important;
-          line-height: 1.25rem !important;
-        }
-
-        .sibs-finance-statutory-modal-header span.rounded-full {
-          font-size: 0.625rem !important;
-          line-height: 0.875rem !important;
-        }
-
-        .sibs-finance-statutory-search {
-          width: 100% !important;
-          max-width: 340px !important;
-          flex: 0 1 340px !important;
-        }
-
-        @media (max-width: 767px) {
-          .sibs-finance-statutory-search {
-            max-width: none !important;
-            flex-basis: 100% !important;
-          }
-        }
-      `}</style>
-
       <div className="space-y-5">
         <div className="flex flex-col gap-3 rounded-[14px] border border-sibs-border bg-sibs-surface p-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex min-w-0 items-center gap-3">
@@ -489,7 +459,7 @@ export default function StatutoryCoverageModal({
                   placeholder="Search employee, SIBS ID, account..."
                   ariaLabel={`Search ${label || "statutory"} employee coverage`}
                   disabled={loading}
-                  className="sibs-finance-statutory-search md:ml-auto"
+                  className="w-full md:w-[340px] md:max-w-[340px] md:flex-[0_1_340px] md:ml-auto"
                   inputClassName="!h-10 !w-full !rounded-[10px]"
                 />
               </div>
@@ -582,11 +552,11 @@ export default function StatutoryCoverageModal({
                     type="button"
                     onClick={() => setPage((value) => Math.max(1, value - 1))}
                     disabled={loading || safePage <= 1}
-                    className="rounded-lg border border-sibs-border bg-white px-3 py-2 text-xs font-bold text-sibs-navy transition hover:border-sibs-orange/40 disabled:cursor-not-allowed disabled:opacity-40"
+                    className="rounded-[10px] border border-sibs-border bg-white px-3 py-2 text-xs font-bold text-sibs-navy transition hover:border-sibs-orange/40 disabled:cursor-not-allowed disabled:opacity-40"
                   >
                     Previous
                   </button>
-                  <span className="rounded-lg bg-sibs-orange px-3 py-2 text-xs font-black text-white">
+                  <span className="rounded-[10px] bg-sibs-orange px-3 py-2 text-xs font-black text-white">
                     {safePage}
                   </span>
                   <span className="text-xs font-semibold text-sibs-muted">
@@ -598,7 +568,7 @@ export default function StatutoryCoverageModal({
                       setPage((value) => Math.min(pagination.totalPages, value + 1))
                     }
                     disabled={loading || safePage >= pagination.totalPages}
-                    className="rounded-lg border border-sibs-border bg-white px-3 py-2 text-xs font-bold text-sibs-navy transition hover:border-sibs-orange/40 disabled:cursor-not-allowed disabled:opacity-40"
+                    className="rounded-[10px] border border-sibs-border bg-white px-3 py-2 text-xs font-bold text-sibs-navy transition hover:border-sibs-orange/40 disabled:cursor-not-allowed disabled:opacity-40"
                   >
                     Next
                   </button>

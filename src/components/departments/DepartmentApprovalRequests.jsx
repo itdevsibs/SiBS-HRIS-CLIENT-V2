@@ -11,7 +11,7 @@ import {
   XCircle,
 } from "lucide-react";
 
-import { ModalShell } from "@/components/ui";
+import { ModalShell, TableSkeletonRows } from "@/components/ui";
 
 import { formatSystemDateTime } from "@/lib/axios/dateFormatter";
 
@@ -40,7 +40,7 @@ function PendingBadge() {
 
 function DetailItem({ label, children }) {
   return (
-    <div className="min-w-0 rounded-xl border border-sibs-border bg-white px-3.5 py-3">
+    <div className="min-w-0 rounded-[10px] border border-sibs-border bg-white px-3.5 py-3">
       <p className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-muted">
         {label}
       </p>
@@ -146,7 +146,10 @@ export default function DepartmentApprovalRequests({
 
   return (
     <>
-      <section className="mt-5 overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-sm">
+      <section
+        className="sibs-page-card-in sibs-card mt-5 overflow-hidden rounded-[14px] border border-sibs-border bg-white font-jakarta shadow-xs"
+        style={{ animationDelay: "180ms", animationFillMode: "both" }}
+      >
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-sibs-border px-4 py-4 sm:px-5">
           <div>
             <h2 className="sibs-card-title">Pending Department Approvals</h2>
@@ -157,88 +160,86 @@ export default function DepartmentApprovalRequests({
             </p>
           </div>
 
-          <span className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-[10px] font-extrabold text-amber-700">
-            {safeRequests.length} pending
+          <span className="rounded-[10px] border border-amber-200 bg-amber-50 px-3 py-1.5 text-[10px] font-extrabold text-amber-700">
+            {loading ? "Loading..." : `${safeRequests.length} pending`}
           </span>
         </div>
 
-        {loading ? (
-          <div className="flex min-h-28 items-center justify-center">
-            <Loader2 className="h-6 w-6 animate-spin text-sibs-orange" />
-          </div>
-        ) : (
-          <>
-            <div className="w-full overflow-x-auto sibs-scrollbar">
-              <table className="w-full min-w-[700px] border-collapse text-left">
-                <thead className="bg-sibs-surface text-[10px] font-extrabold uppercase tracking-wide text-sibs-muted">
-                  <tr className="border-b border-sibs-border">
-                    <th scope="col" className="px-4 py-3 sm:pl-5">
-                      Department Name
-                    </th>
+        <div className="w-full overflow-x-auto sibs-scrollbar">
+          <table className="w-full min-w-[700px] border-collapse text-left">
+            <thead className="bg-sibs-surface text-[10px] font-extrabold uppercase tracking-wide text-sibs-muted">
+              <tr className="border-b border-sibs-border">
+                <th scope="col" className="px-4 py-3 sm:pl-5">
+                  Department Name
+                </th>
 
-                    <th scope="col" className="px-3 py-3">
-                      Requested By
-                    </th>
+                <th scope="col" className="px-3 py-3">
+                  Requested By
+                </th>
 
-                    <th scope="col" className="px-3 py-3">
-                      Date Requested
-                    </th>
+                <th scope="col" className="px-3 py-3">
+                  Date Requested
+                </th>
 
-                    <th scope="col" className="px-3 py-3">
-                      Status
-                    </th>
+                <th scope="col" className="px-3 py-3">
+                  Status
+                </th>
 
-                    <th scope="col" className="px-4 py-3 text-right sm:pr-5">
-                      Details
-                    </th>
+                <th scope="col" className="px-4 py-3 text-right sm:pr-5">
+                  Details
+                </th>
+              </tr>
+            </thead>
+
+            <tbody className="divide-y divide-sibs-border text-xs">
+              {loading ? (
+                <TableSkeletonRows count={3} columns={5} />
+              ) : (
+                visibleRequests.map((request) => (
+                  <tr
+                    key={request.id}
+                    onClick={() => setSelectedRequestId(request.id)}
+                    className="group cursor-pointer transition-colors hover:bg-sibs-cream-light"
+                  >
+                    <td className="max-w-[260px] px-4 py-3 font-extrabold text-sibs-navy sm:pl-5">
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          setSelectedRequestId(request.id);
+                        }}
+                        className="break-words text-left outline-none hover:text-sibs-orange focus-visible:rounded focus-visible:ring-2 focus-visible:ring-sibs-orange"
+                        aria-label={`View department approval request for ${departmentName(request)}`}
+                      >
+                        {departmentName(request)}
+                      </button>
+                    </td>
+
+                    <td className="max-w-[250px] break-words px-3 py-3 font-semibold text-sibs-secondary">
+                      {requestedBy(request)}
+                    </td>
+
+                    <td className="whitespace-nowrap px-3 py-3 font-semibold text-sibs-muted">
+                      {requestedAt(request)}
+                    </td>
+
+                    <td className="px-3 py-3">
+                      <PendingBadge />
+                    </td>
+
+                    <td className="px-4 py-3 text-right sm:pr-5">
+                      <span className="inline-flex items-center gap-1 text-[11px] font-extrabold text-sibs-navy group-hover:text-sibs-orange">
+                        <Eye className="h-3.5 w-3.5" /> View
+                      </span>
+                    </td>
                   </tr>
-                </thead>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
 
-                <tbody className="divide-y divide-sibs-border text-xs">
-                  {visibleRequests.map((request) => (
-                    <tr
-                      key={request.id}
-                      onClick={() => setSelectedRequestId(request.id)}
-                      className="group cursor-pointer transition-colors hover:bg-sibs-surface/70"
-                    >
-                      <td className="max-w-[260px] px-4 py-3 font-extrabold text-sibs-navy sm:pl-5">
-                        <button
-                          type="button"
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            setSelectedRequestId(request.id);
-                          }}
-                          className="break-words text-left outline-none hover:text-sibs-orange focus-visible:rounded focus-visible:ring-2 focus-visible:ring-sibs-orange"
-                          aria-label={`View department approval request for ${departmentName(request)}`}
-                        >
-                          {departmentName(request)}
-                        </button>
-                      </td>
-
-                      <td className="max-w-[250px] break-words px-3 py-3 font-semibold text-sibs-secondary">
-                        {requestedBy(request)}
-                      </td>
-
-                      <td className="whitespace-nowrap px-3 py-3 font-semibold text-sibs-muted">
-                        {requestedAt(request)}
-                      </td>
-
-                      <td className="px-3 py-3">
-                        <PendingBadge />
-                      </td>
-
-                      <td className="px-4 py-3 text-right sm:pr-5">
-                        <span className="inline-flex items-center gap-1 text-[11px] font-extrabold text-sibs-navy group-hover:text-sibs-orange">
-                          <Eye className="h-3.5 w-3.5" /> View
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {safeRequests.length > ROWS_PER_PAGE ? (
+        {!loading && safeRequests.length > ROWS_PER_PAGE ? (
               <div className="flex flex-wrap items-center justify-between gap-3 border-t border-sibs-border px-4 py-3 text-xs font-semibold text-sibs-muted sm:px-5">
                 <span>
                   Showing {firstRowIndex + 1}–
@@ -272,8 +273,6 @@ export default function DepartmentApprovalRequests({
                 </div>
               </div>
             ) : null}
-          </>
-        )}
       </section>
 
       <ModalShell
@@ -293,7 +292,7 @@ export default function DepartmentApprovalRequests({
             <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-end">
               <button
                 type="button"
-                className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3.5 2xl:px-4 text-xs font-extrabold text-red-600 transition hover:bg-red-100 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-[10px] border border-red-200 bg-red-50 px-3.5 2xl:px-4 text-xs font-extrabold text-red-600 transition hover:bg-red-100 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
                 onClick={() => onReject?.(selectedRequest)}
                 disabled={!selectedRequest || processingSelected}
               >
@@ -323,7 +322,7 @@ export default function DepartmentApprovalRequests({
       >
         {selectedRequest ? (
           <div className="space-y-4">
-            <div className="flex flex-wrap items-start justify-between gap-3 rounded-xl border border-sibs-border bg-sibs-surface/60 p-4">
+            <div className="flex flex-wrap items-start justify-between gap-3 rounded-[10px] border border-sibs-border bg-sibs-surface/60 p-4">
               <div className="min-w-0">
                 <p className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-muted">
                   Requested Department
@@ -343,7 +342,7 @@ export default function DepartmentApprovalRequests({
               </DetailItem>
             </div>
             {!canApprove ? (
-              <p className="rounded-xl border border-sibs-border bg-sibs-surface px-4 py-3 text-xs font-semibold text-sibs-muted">
+              <p className="rounded-[10px] border border-sibs-border bg-sibs-surface px-4 py-3 text-xs font-semibold text-sibs-muted">
                 Only authorized Department approvers can approve or reject this
                 request.
               </p>

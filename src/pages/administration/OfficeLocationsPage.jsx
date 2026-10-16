@@ -8,6 +8,7 @@ import {
   MetricGrid,
   MetricGridSkeleton,
   PageHeaderHero,
+  Skeleton,
 } from "@/components/ui";
 import { getOfficeLocations } from "../../lib/axios/officeLocations";
 
@@ -52,6 +53,8 @@ function getAnimationStyle(delay = 0) {
 function LocationCardSkeleton({ index = 0 }) {
   return (
     <article
+      data-testid="location-card-skeleton"
+      aria-busy="true"
       className="sibs-card relative overflow-hidden rounded-[14px] border border-sibs-border bg-white p-5 sm:p-6"
       style={getAnimationStyle(120 + index * 60)}
     >
@@ -59,11 +62,11 @@ function LocationCardSkeleton({ index = 0 }) {
 
       <div className="flex items-start justify-between gap-4">
         <div className="flex min-w-0 items-center gap-3">
-          <div className="h-11 w-11 shrink-0 animate-pulse rounded-[10px] bg-slate-100" />
+          <Skeleton className="h-11 w-11 shrink-0 rounded-[10px]" />
           <div className="min-w-0 space-y-2">
-            <div className="h-2.5 w-20 animate-pulse rounded bg-slate-100" />
-            <div className="h-5 w-32 animate-pulse rounded bg-slate-200" />
-            <div className="h-3 w-48 animate-pulse rounded bg-slate-100" />
+            <Skeleton className="h-2.5 w-20" />
+            <Skeleton className="h-5 w-32" />
+            <Skeleton className="h-3 w-48" />
           </div>
         </div>
       </div>
@@ -71,10 +74,10 @@ function LocationCardSkeleton({ index = 0 }) {
       <div className="mt-6 border-t border-sibs-border pt-5">
         <div className="flex items-end justify-between gap-4">
           <div className="space-y-2">
-            <div className="h-3 w-24 animate-pulse rounded bg-slate-100" />
-            <div className="h-8 w-16 animate-pulse rounded bg-slate-200" />
+            <Skeleton className="h-3 w-24" />
+            <Skeleton className="h-8 w-16" />
           </div>
-          <div className="h-10 w-10 animate-pulse rounded-[10px] bg-slate-100" />
+          <Skeleton className="h-10 w-10 rounded-[10px]" />
         </div>
       </div>
     </article>

@@ -397,7 +397,7 @@ function HrisDropdown({
               disabled={disabled}
               onMouseDown={(event) => event.preventDefault()}
               onClick={toggleDropdown}
-              className="shrink-0 rounded-[8px] p-1 text-sibs-navy transition hover:bg-sky-50 disabled:cursor-not-allowed disabled:text-sibs-muted disabled:hover:bg-transparent"
+              className="shrink-0 rounded-[10px] p-1 text-sibs-navy transition hover:bg-sky-50 disabled:cursor-not-allowed disabled:text-sibs-muted disabled:hover:bg-transparent"
             >
               <ChevronDown
                 size={18}
@@ -614,9 +614,9 @@ function StartDatePicker({ value, onChange, hasError = false, inputRef = null })
       {open && (
         <div className="sibs-dropdown-pop-in absolute left-0 top-[calc(100%+8px)] z-[10150] w-full min-w-[310px] rounded-[10px] border border-sibs-border bg-white p-3.5 shadow-[0_18px_45px_rgba(15,23,42,0.18)]">
           <div className="mb-3 flex items-center justify-between">
-            <button type="button" onClick={() => setViewDate(new Date(year, month - 1, 1))} className="rounded-[8px] p-2 hover:bg-gray-100"><ChevronLeft size={18} /></button>
+            <button type="button" onClick={() => setViewDate(new Date(year, month - 1, 1))} className="rounded-[10px] p-2 hover:bg-gray-100"><ChevronLeft size={18} /></button>
             <span className="text-sm font-extrabold text-sibs-navy">{formatHrisDateLocalized(viewDate, "en-PH", { month: "long", year: "numeric" })}</span>
-            <button type="button" onClick={() => setViewDate(new Date(year, month + 1, 1))} className="rounded-[8px] p-2 hover:bg-gray-100"><ChevronRight size={18} /></button>
+            <button type="button" onClick={() => setViewDate(new Date(year, month + 1, 1))} className="rounded-[10px] p-2 hover:bg-gray-100"><ChevronRight size={18} /></button>
           </div>
           <div className="grid grid-cols-7 gap-1 text-center text-[11px] font-extrabold text-sibs-muted">
             {['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map((day) => <span key={day} className="py-1">{day}</span>)}
@@ -634,7 +634,7 @@ function StartDatePicker({ value, onChange, hasError = false, inputRef = null })
                   type="button"
                   disabled={disabled}
                   onClick={() => { onChange(dateValue); setOpen(false); }}
-                  className={`h-9 rounded-[8px] text-sm font-bold transition ${active ? "bg-sibs-navy text-white" : disabled ? "cursor-not-allowed bg-gray-50 text-gray-300" : "text-sibs-navy hover:bg-sky-50"}`}
+                  className={`h-9 rounded-[10px] text-sm font-bold transition ${active ? "bg-sibs-navy text-white" : disabled ? "cursor-not-allowed bg-gray-50 text-gray-300" : "text-sibs-navy hover:bg-sky-50"}`}
                   title={
                     disabled
                       ? "Start date cannot be earlier than the suggested date after NHO."
@@ -1075,7 +1075,7 @@ export default function CandidateOfferDetailsModal({
   const busy = submitting || isSavingReprofile;
 
   const footer = (
-    <div className="flex flex-col-reverse justify-end gap-2 sm:flex-row">
+    <div className="flex flex-col-reverse justify-end gap-2.5 sm:gap-3 sm:flex-row">
       <CandidateModalSecondaryButton type="button" onClick={onClose} disabled={busy}>
         Cancel
       </CandidateModalSecondaryButton>
@@ -1108,7 +1108,7 @@ export default function CandidateOfferDetailsModal({
           <div className="fixed inset-0 z-[24000] cursor-wait bg-transparent" aria-hidden="true" />
         )}
 
-        <form id="candidate-offer-details-form" onSubmit={handleProceedClick} className="space-y-4 pb-8 sm:pb-10">
+        <form id="candidate-offer-details-form" onSubmit={handleProceedClick} className="space-y-4 pb-8 sm:pb-10 font-jakarta">
           <CandidateModalSummary candidate={candidate} stage={candidate?.currentStage || "Offered"} />
 
           <div ref={finalAssignmentRef}>
@@ -1140,7 +1140,7 @@ export default function CandidateOfferDetailsModal({
                         );
                         setReprofileOpen(true);
                       }}
-                      className="absolute right-1.5 top-1/2 inline-flex h-7.5 2xl:h-8 -translate-y-1/2 items-center justify-center gap-1.5 rounded-[8px] border border-sibs-border bg-white px-2.5 2xl:px-3 text-[10px] font-extrabold text-sibs-navy transition hover:border-sibs-orange/35 hover:bg-sibs-cream-light hover:text-sibs-orange focus:border-red-400 focus:outline-none focus:ring-4 focus:ring-red-100"
+                      className="absolute right-1.5 top-1/2 inline-flex h-7.5 2xl:h-8 -translate-y-1/2 items-center justify-center gap-1.5 rounded-[10px] border border-sibs-border bg-white px-2.5 2xl:px-3 text-[10px] font-extrabold text-sibs-navy transition hover:border-sibs-orange/35 hover:bg-sibs-cream-light hover:text-sibs-orange focus:border-red-400 focus:outline-none focus:ring-4 focus:ring-red-100"
                     >
                       <RefreshCw size={13} /> Reprofile
                     </button>
@@ -1298,7 +1298,7 @@ export default function CandidateOfferDetailsModal({
           maxWidth="max-w-lg"
           zIndex="z-[10100]"
           footer={
-            <div className="flex justify-end gap-2">
+            <div className="flex justify-end gap-2.5 sm:gap-3">
               <CandidateModalSecondaryButton type="button" disabled={isSavingReprofile} onClick={() => setReprofileOpen(false)}>
                 Cancel
               </CandidateModalSecondaryButton>

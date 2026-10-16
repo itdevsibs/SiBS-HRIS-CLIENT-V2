@@ -97,7 +97,7 @@ export default function OutcomeModal({
       subtitle="Resolve the candidate’s onboarding start outcome and required notes."
       bodyClassName="bg-sibs-surface p-4 sm:p-5 font-jakarta"
       footer={
-        <div className="flex w-full flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+        <div className="flex w-full flex-col-reverse gap-2.5 sm:gap-3 sm:flex-row sm:justify-end">
           <button
             type="button"
             onClick={onClose}

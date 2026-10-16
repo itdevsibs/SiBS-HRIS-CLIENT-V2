@@ -3,10 +3,10 @@ import {
   AlertTriangle,
   ChevronDown,
   ChevronUp,
-  Loader2,
   Search,
   X,
 } from "lucide-react";
+import { DataCard, TableSkeletonRows } from "@/components/ui";
 
 import {
   formatDropOffDate,
@@ -286,15 +286,43 @@ export default function DropOffListSection({
             </div>
           )}
 
-          {isLoading && candidates.length === 0 ? (
-            <div className="flex min-h-[180px] items-center justify-center rounded-xl border border-dashed border-sibs-border bg-sibs-surface px-5 py-10">
-              <div className="flex flex-col items-center text-center">
-                <Loader2 size={22} className="animate-spin text-sibs-primary-1" />
-                <p className="mt-3 text-xs font-extrabold text-sibs-navy">
-                  Loading drop-off candidates...
-                </p>
+          {isLoading ? (
+            <>
+              <div className="hidden lg:block">
+                <div className="overflow-x-auto overscroll-x-contain rounded-xl border border-sibs-border bg-white sibs-scrollbar">
+                  <table className="w-full min-w-[1320px] table-fixed border-separate border-spacing-0 text-left">
+                    <thead className="sibs-data-table-head">
+                      <tr className="sibs-data-table-head-row">
+                        <th className="sibs-data-table-th w-[18%] text-left">
+                          Candidate
+                        </th>
+                        <th className="sibs-data-table-th w-[19%] text-left">
+                          Applied Position
+                        </th>
+                        <th className="sibs-data-table-th w-[21%] text-left">
+                          Preferred Location / Final Account
+                        </th>
+                        <th className="sibs-data-table-th w-[12%] text-center">
+                          Status
+                        </th>
+                        <th className="sibs-data-table-th w-[20%] text-left">
+                          Drop-off Reason
+                        </th>
+                        <th className="sibs-data-table-th w-[10%] text-left">
+                          Date
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <TableSkeletonRows count={6} columns={6} />
+                    </tbody>
+                  </table>
+                </div>
               </div>
-            </div>
+              <div className="space-y-3 lg:hidden">
+                <DataCard.Skeleton count={4} lines={3} className="space-y-3 font-jakarta" />
+              </div>
+            </>
           ) : candidates.length === 0 ? (
             <div className="rounded-xl border border-dashed border-sibs-border bg-sibs-surface px-5 py-10 text-center">
               <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full border border-sibs-border bg-white text-sibs-tertiary-5">

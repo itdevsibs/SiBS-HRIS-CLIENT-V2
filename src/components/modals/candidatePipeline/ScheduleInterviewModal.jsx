@@ -948,6 +948,114 @@ function DateTimePicker({ value, onChange }) {
   );
 }
 
+/** Uses only slots explicitly made available in the signed-in user's HRIS calendar. */
+function AvailableInterviewPicker({ value, onChange, candidateId }) {
+  const [open, setOpen] = useState(false);
+  const [viewDate, setViewDate] = useState(() => getMonthStart(new Date()));
+  const [slots, setSlots] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const selectedDate = String(value || "").slice(0, 10);
+  const availableDates = useMemo(() => new Set(slots.map((slot) => slot.date)), [slots]);
+  const activeDate = selectedDate && availableDates.has(selectedDate) ? selectedDate : "";
+  const [pickerDate, setPickerDate] = useState("");
+  const visibleDate = pickerDate && availableDates.has(pickerDate) ? pickerDate : activeDate;
+
+  useEffect(() => {
+    let active = true;
+    const year = viewDate.getFullYear();
+    const month = pad(viewDate.getMonth() + 1);
+    const from = `${year}-${month}-01`;
+    const to = `${year}-${month}-${pad(new Date(year, viewDate.getMonth() + 1, 0).getDate())}`;
+    setLoading(true);
+    setError("");
+    getGoogleInterviewAvailability({ from, to, excludeCandidateId: candidateId })
+      .then((response) => {
+        if (!active) return;
+        setSlots(Array.isArray(response?.slots) ? response.slots : []);
+      })
+      .catch((caught) => {
+        if (!active) return;
+        setSlots([]);
+        setError(caught?.response?.data?.message || "Unable to load interview availability.");
+      })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [viewDate, candidateId]);
+
+  const selectDate = (date) => {
+    setPickerDate(date);
+    if (selectedDate !== date) onChange("");
+  };
+
+  return (
+    <div className="relative font-jakarta">
+      <button type="button" onClick={() => setOpen((previous) => !previous)}
+        className={`${SCHEDULE_INPUT_CLASS} flex items-center justify-between text-left`}>
+        <span className={value ? "text-sibs-navy" : "text-sibs-muted"}>
+          {value ? formatDateTimeDisplay(value) : "Select an available interview slot"}
+        </span>
+        <CalendarDays size={17} className="shrink-0" />
+      </button>
+      {open && (
+        <div className="mt-2 rounded-[12px] border border-sibs-border bg-white p-3 shadow-lg">
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <button type="button" onClick={() => { setPickerDate(""); setViewDate(new Date(viewDate.getFullYear(), viewDate.getMonth() - 1, 1)); }}
+              disabled={getMonthStart(viewDate) <= getMonthStart(new Date())}
+              className="rounded-[10px] border border-sibs-border p-2 text-sibs-navy disabled:opacity-30"><ChevronLeft size={16} /></button>
+            <strong className="text-xs text-sibs-navy">{MONTH_OPTIONS[viewDate.getMonth()].label} {viewDate.getFullYear()}</strong>
+            <button type="button" onClick={() => { setPickerDate(""); setViewDate(new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 1)); }}
+              className="rounded-[10px] border border-sibs-border p-2 text-sibs-navy"><ChevronRight size={16} /></button>
+          </div>
+          {loading && <p className="pb-2 text-xs text-sibs-muted">Loading available slots...</p>}
+          {error && <p className="pb-2 text-xs text-red-600">{error}</p>}
+          {!loading && !error && slots.length === 0 && <p className="pb-2 text-xs text-sibs-muted">No interview availability was created for this month. Use HR & Talent Acquisition Calendar to create one.</p>}
+          <div className="grid grid-cols-7 gap-1">
+            {['Su','Mo','Tu','We','Th','Fr','Sa'].map((label) => <span key={label} className="text-center text-[10px] font-bold text-sibs-muted">{label}</span>)}
+            {buildCalendarDays(viewDate).map(({date, currentMonth}) => {
+              const key = `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+              const available = currentMonth && availableDates.has(key);
+              return <button key={key} type="button" disabled={!available || loading}
+                onClick={() => selectDate(key)} title={available ? 'Available interview slots' : 'No interview availability'}
+                className={`h-9 rounded-[10px] text-xs font-bold ${visibleDate === key ? 'bg-sibs-orange text-white' : available ? 'bg-sky-50 text-sibs-navy hover:bg-sky-100' : 'text-slate-300'}`}>{date.getDate()}</button>;
+            })}
+          </div>
+          {visibleDate && <>
+            <p className="mt-4 text-xs font-extrabold text-sibs-navy">Available times • {formatHrisDateLocalized(visibleDate, "en-US", { month: "long", day: "numeric", year: "numeric" })}</p>
+            <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
+              {slots.filter((slot) => slot.date === visibleDate).map((slot) => <button
+                key={slot.dateTime} type="button" onClick={() => { onChange(`${slot.date}T${slot.time}`); setOpen(false); }}
+                className={`rounded-[10px] border px-2 py-2 text-[11px] font-bold ${String(value || '').replace('T', ' ').slice(0,16) === slot.dateTime.slice(0,16) ? 'border-sibs-orange bg-sibs-orange text-white' : 'border-sibs-border text-sibs-navy hover:border-sibs-orange'}`}>
+                {new Date(`${slot.date}T${slot.time}:00`).toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit'})}
+              </button>)}
+            </div>
+          </>}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function InterviewTypeDropdown({ value, onChange }) {
+  const selectedValue = cleanText(value);
+
+  const options = interviewTypeOptions.map((type) => ({
+    value: type,
+    label: type,
+  }));
+
+  return (
+    <PickerDropdown
+      value={selectedValue}
+      options={options}
+      onChange={onChange}
+      placeholder="Select interview type"
+      buttonClassName="h-10 px-3"
+      menuClassName="z-[10050]"
+    />
+  );
+}
+
 const ScheduleInterviewModal = ({
   open,
   candidate,
@@ -993,7 +1101,7 @@ const ScheduleInterviewModal = ({
   }
 
   const footer = (
-    <div className="flex flex-col-reverse justify-end gap-2 sm:flex-row">
+    <div className="flex flex-col-reverse justify-end gap-2.5 sm:gap-3 sm:flex-row">
       <CandidateModalSecondaryButton type="button" disabled={busy} onClick={onClose}>
         Cancel
       </CandidateModalSecondaryButton>
@@ -1082,6 +1190,61 @@ const ScheduleInterviewModal = ({
               onProposalSaved={() => setSubmitAfterEditorSave(true)}
             />
           </div>
+        </CandidateModalSection>
+
+        <CandidateModalSection title="Interview Details">
+          {getCandidateInterviewSite(candidate) && (
+            <div className="mb-3 flex items-center gap-2 rounded-[10px] border border-sibs-border bg-sibs-surface px-3 py-2 text-xs font-semibold text-sibs-navy">
+              <MapPin size={15} className="shrink-0 text-sibs-orange" />
+              <span>Site: <strong>{getCandidateInterviewSite(candidate)}</strong></span>
+              <span className="ml-auto text-[10px] text-sibs-muted">From Talent Pool application</span>
+            </div>
+          )}
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div>
+              <label className={SCHEDULE_FIELD_LABEL_CLASS}>
+                Interview Type <span className="text-sibs-orange"> *</span>
+              </label>
+              <InterviewTypeDropdown
+                value={form.interviewType}
+                onChange={(nextValue) =>
+                  setForm({
+                    ...form,
+                    interviewType: nextValue,
+                    onlineInterviewLink: nextValue === "Online" ? form.onlineInterviewLink : "",
+                  })
+                }
+              />
+            </div>
+
+            <div>
+              <label className={SCHEDULE_FIELD_LABEL_CLASS}>
+                Online Interview Link {form.interviewType === "Online" && <span className="text-sibs-orange"> *</span>}
+              </label>
+              <input
+                type="text"
+                disabled={form.interviewType !== "Online"}
+                placeholder="Paste online interview link"
+                value={form.onlineInterviewLink}
+                onChange={(event) => setForm({ ...form, onlineInterviewLink: event.target.value })}
+                className={SCHEDULE_INPUT_CLASS}
+              />
+            </div>
+          </div>
+        </CandidateModalSection>
+
+        <CandidateModalSection title="Internal Remarks">
+          <textarea
+            rows={3}
+            value={form.remarks}
+            onChange={(event) => setForm({ ...form, remarks: event.target.value })}
+            className={SCHEDULE_TEXTAREA_CLASS}
+            placeholder={
+              isUpdatingSchedule
+                ? "Example: Candidate requested to reschedule."
+                : "Example: Initial interview schedule created."
+            }
+          />
         </CandidateModalSection>
       </form>
     </CandidatePipelineModalShell>

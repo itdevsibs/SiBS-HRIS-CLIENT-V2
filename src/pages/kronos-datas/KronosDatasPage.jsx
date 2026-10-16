@@ -619,11 +619,11 @@ export default function KronosDatasPage() {
                 <MetricGridSkeleton
                   count={3}
                   labels={["Total Employees", "Displayed", "Departments"]}
-                  className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3"
+                  className="mt-4 grid grid-cols-2 gap-2.5 2xl:gap-3 sm:grid-cols-2 xl:grid-cols-3"
                   ariaLabel="Loading Kronos employee metrics"
                 />
               ) : (
-                <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                <div className="mt-4 grid grid-cols-2 gap-2.5 2xl:gap-3 sm:grid-cols-2 xl:grid-cols-3">
                   <SummaryCard
                     label="Total Employees"
                     value={pagination.total}

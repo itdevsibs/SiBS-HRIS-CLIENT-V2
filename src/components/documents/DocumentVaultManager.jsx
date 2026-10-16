@@ -39,15 +39,15 @@ export default function DocumentVaultManager({
   ];
 
   return (
-    <section className="rounded-2xl border border-[#D9E2EC] bg-white p-4 shadow-sm sm:p-5">
-      <div className="mb-6 flex items-start gap-3 border-b border-[#E6ECF2] pb-5">
-        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#E9F0FC] text-sibs-primary-1">
+    <section className="rounded-2xl border border-sibs-border bg-white p-4 shadow-sm sm:p-5">
+      <div className="mb-6 flex items-start gap-3 border-b border-sibs-border pb-5">
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-sibs-canvas text-sibs-primary-1">
           <FolderLock size={20} />
         </span>
 
         <div className="min-w-0">
-          <h2 className="text-base font-extrabold text-[#101828]">{title}</h2>
-          <p className="mt-1 text-xs font-semibold leading-5 text-[#667085]">
+          <h2 className="text-base font-extrabold text-sibs-primary-1">{title}</h2>
+          <p className="mt-1 text-xs font-semibold leading-5 text-sibs-text-secondary">
             {description}
           </p>
         </div>
@@ -67,15 +67,15 @@ export default function DocumentVaultManager({
                 className={`h-full w-full min-w-0 rounded-2xl border p-5 text-left transition ${
                   active
                     ? "border-sibs-primary-1 bg-sibs-primary-1 text-white shadow-md"
-                    : "border-[#D9E2EC] bg-white text-sibs-primary-1 hover:border-sibs-primary-1/40 hover:shadow-sm"
+                    : "border-sibs-border bg-white text-sibs-primary-1 hover:border-sibs-primary-1/40 hover:shadow-sm"
                 }`}
               >
                 <div className="flex items-start justify-between gap-4">
                   <span
                     className={`flex h-11 w-11 items-center justify-center rounded-xl ${
                       active
-                        ? "bg-white/10 text-[#FF9C73]"
-                        : "bg-[#E9F0FC] text-sibs-primary-1"
+                        ? "bg-white/10 text-sibs-orange"
+                        : "bg-sibs-canvas text-sibs-primary-1"
                     }`}
                   >
                     <Icon size={19} />
@@ -85,7 +85,7 @@ export default function DocumentVaultManager({
                     className={`rounded-full px-3 py-1 text-[10px] font-extrabold ${
                       active
                         ? "bg-white/10 text-white"
-                        : "bg-[#F2F4F7] text-[#52637A]"
+                        : "bg-sibs-canvas text-sibs-text-secondary"
                     }`}
                   >
                     {card.count} uploaded
@@ -95,7 +95,7 @@ export default function DocumentVaultManager({
                 <h3 className="mt-4 text-sm font-extrabold">{card.title}</h3>
                 <p
                   className={`mt-1 text-[10px] font-semibold leading-4 ${
-                    active ? "text-white/70" : "text-[#667085]"
+                    active ? "text-white/70" : "text-sibs-text-secondary"
                   }`}
                 >
                   {card.description}

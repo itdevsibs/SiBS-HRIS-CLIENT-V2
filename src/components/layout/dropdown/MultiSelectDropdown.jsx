@@ -114,8 +114,8 @@ const MultiSelectDropdown = ({
                   onClick={() => handleToggleOption(option.value)}
                   className={`flex w-full items-center justify-between gap-3 px-4 py-3 text-left text-sm transition ${
                     isSelected
-                      ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
-                      : "text-sibs-primary-1 hover:bg-[#F8FAFC]"
+                      ? "bg-sibs-canvas font-bold text-sibs-primary-1"
+                      : "text-sibs-primary-1 hover:bg-sibs-canvas"
                   }`}
                 >
                   <span>{option.label}</span>

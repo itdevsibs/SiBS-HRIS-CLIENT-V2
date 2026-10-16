@@ -9,7 +9,7 @@ const labelClass =
   "mb-1.5 flex items-center justify-between gap-3 text-xs font-extrabold text-sibs-primary-1";
 
 const inputClass =
-  "h-10 w-full rounded-[10px] border border-sibs-tertiary-8 bg-[#F8FAFC] px-3 text-xs font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:bg-[#EEF2F6] disabled:text-sibs-primary-1";
+  "h-10 w-full rounded-[10px] border border-sibs-tertiary-8 bg-sibs-canvas px-3 text-xs font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 hover:border-sibs-orange/40 hover:bg-white focus:border-sibs-orange focus:bg-white focus:ring-4 focus:ring-sibs-orange/10 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-sibs-primary-1";
 
 function AnimatedDropdown({ open, children }) {
   return (
@@ -22,7 +22,7 @@ function AnimatedDropdown({ open, children }) {
     >
       <div className="min-h-0 overflow-hidden">
         <div
-          className={`overflow-hidden rounded-[10px] border border-[#D7DEE8] bg-white shadow-[0_18px_40px_rgba(15,23,42,0.16)] transition-all duration-200 ease-out ${
+          className={`overflow-hidden rounded-[10px] border border-sibs-border-subtle bg-white shadow-[0_18px_40px_rgba(15,23,42,0.16)] transition-all duration-200 ease-out ${
             open ? "translate-y-0 scale-100" : "-translate-y-1 scale-[0.99]"
           }`}
         >
@@ -160,7 +160,7 @@ export default function ThemedDropdown({
           type="button"
           disabled={disabled}
           onClick={toggleDropdown}
-          className="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-[#667085] transition hover:bg-[#FFF0EB] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-50"
+          className="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-sibs-text-muted transition hover:bg-sibs-cream-light hover:text-sibs-orange disabled:cursor-not-allowed disabled:opacity-50"
           aria-label={`Toggle ${label || "dropdown"}`}
         >
           <ChevronDown
@@ -179,8 +179,8 @@ export default function ThemedDropdown({
                 onClick={() => selectValue("", null)}
                 className={`block w-full px-4 py-2.5 text-left text-xs transition ${
                   !value
-                    ? "bg-[#FFF0EB] font-extrabold text-[#FF5C28]"
-                    : "font-semibold text-[#344054] hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
+                    ? "bg-sibs-cream-light font-extrabold text-sibs-orange"
+                    : "font-semibold text-sibs-text-secondary hover:bg-sibs-cream-light hover:text-sibs-orange"
                 }`}
               >
                 <span className="block truncate">{placeholder}</span>
@@ -202,8 +202,8 @@ export default function ThemedDropdown({
                     onClick={() => selectValue(optionValue, option)}
                     className={`block w-full px-4 py-2.5 text-left text-xs transition ${
                       checked
-                        ? "bg-[#FFF0EB] font-extrabold text-[#FF5C28]"
-                        : "font-semibold text-[#344054] hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
+                        ? "bg-sibs-cream-light font-extrabold text-sibs-orange"
+                        : "font-semibold text-sibs-text-secondary hover:bg-sibs-cream-light hover:text-sibs-orange"
                     }`}
                   >
                     <span className="block truncate">{optionLabel}</span>
@@ -211,7 +211,7 @@ export default function ThemedDropdown({
                 );
               })
             ) : (
-              <div className="px-4 py-4 text-xs font-semibold text-[#667085]">
+              <div className="px-4 py-4 text-xs font-semibold text-sibs-text-muted">
                 {emptyText}
               </div>
             )}

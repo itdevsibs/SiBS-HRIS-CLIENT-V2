@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 
 import DepartmentProfileAvatar from "./DepartmentProfileAvatar";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function DepartmentCard({ department, onView, index = 0 }) {
   const active = department.status === "active";
@@ -170,3 +171,65 @@ export default function DepartmentCard({ department, onView, index = 0 }) {
     </article>
   );
 }
+
+export function DepartmentCardSkeleton({ index = 0 }) {
+  return (
+    <article
+      data-testid="department-card-skeleton"
+      aria-busy="true"
+      className="flex min-h-[440px] flex-col overflow-hidden rounded-[14px] border border-sibs-border bg-white font-jakarta shadow-xs"
+      style={{
+        animationDelay: `${Math.min(index, 12) * 50}ms`,
+        animationFillMode: "both",
+      }}
+    >
+      <div className="flex flex-1 flex-col p-5">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 space-y-2">
+            <Skeleton className="h-3 w-20" />
+            <Skeleton className="h-6 w-36" />
+          </div>
+          <Skeleton className="h-6 w-16 rounded-full" />
+        </div>
+
+        <div className="mt-3 min-h-10 space-y-2">
+          <Skeleton className="h-3.5 w-full" />
+          <Skeleton className="h-3.5 w-4/5" />
+        </div>
+
+        <div className="mt-4 flex min-h-[74px] items-center gap-3 rounded-[10px] border border-sibs-border bg-sibs-surface p-3">
+          <Skeleton className="h-10 w-10 shrink-0 rounded-full" />
+          <div className="min-w-0 flex-1 space-y-2">
+            <Skeleton className="h-2.5 w-16" />
+            <Skeleton className="h-3.5 w-28" />
+            <Skeleton className="h-2.5 w-36" />
+          </div>
+        </div>
+
+        <div className="mt-4 flex items-center justify-between gap-3">
+          <Skeleton className="h-3.5 w-24" />
+          <Skeleton className="h-4 w-12" />
+        </div>
+
+        <div className="mt-4 space-y-2">
+          <div className="flex items-center justify-between">
+            <Skeleton className="h-3.5 w-20" />
+            <Skeleton className="h-3.5 w-16" />
+          </div>
+          <Skeleton className="h-2 w-full rounded-full" />
+        </div>
+
+        <div className="mt-4 flex min-h-12 flex-wrap content-start gap-1.5">
+          <Skeleton className="h-6 w-24 rounded-md" />
+          <Skeleton className="h-6 w-28 rounded-md" />
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between border-t border-sibs-border bg-sibs-surface px-5 py-3">
+        <Skeleton className="h-4 w-28" />
+        <Skeleton className="h-4 w-20" />
+      </div>
+    </article>
+  );
+}
+

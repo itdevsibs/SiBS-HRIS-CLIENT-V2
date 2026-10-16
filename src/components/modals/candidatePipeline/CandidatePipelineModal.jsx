@@ -9,6 +9,7 @@ import React, {
 import { createPortal } from "react-dom";
 import {
   ArrowRight,
+  Award,
   BarChart3,
   BriefcaseBusiness,
   Building2,
@@ -53,7 +54,6 @@ import CandidatePipelineModalShell, {
 import CandidateModalSummary from "../../recruitment/candidatePipeline/CandidateModalSummary";
 import CandidateTalentPoolDetailsPanel from "../../recruitment/candidatePipeline/CandidateTalentPoolDetailsPanel";
 import ExpandableCandidateRemark from "../../recruitment/candidatePipeline/ExpandableCandidateRemark";
-import DropdownField from "../../recruitment/availablePositions/DropdownField";
 import NhoUploadModal from "./NhoUploadModal";
 import NhoGoogleCalendarMonth from "./NhoGoogleCalendarMonth";
 
@@ -6678,7 +6678,7 @@ function CandidateDetailItem({
   const displayValue = displayValueOrNA(value);
 
   return (
-    <div className={`flex min-w-0 items-start gap-3 py-2.5 ${className}`}>
+    <div className={`flex min-w-0 items-center gap-3 py-2.5 ${className}`}>
       <span
         className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] border ${
           DETAIL_ICON_TONES[tone] || DETAIL_ICON_TONES.navy
@@ -6686,7 +6686,7 @@ function CandidateDetailItem({
       >
         <Icon size={17} />
       </span>
-      <div className="min-w-0 flex-1 pt-0.5">
+      <div className="min-w-0 flex-1">
         <p className="text-[9.5px] font-semibold leading-tight text-sibs-muted 2xl:text-[10px]">
           {label}
         </p>
@@ -6758,69 +6758,71 @@ function CandidateStageJourney({ currentStage = "" }) {
           Candidate is currently outside the active recruitment pipeline.
         </div>
       ) : (
-        <div className="relative w-full pt-0.5">
-          {stageCount > 1 ? (
-            <div
-              className="pointer-events-none absolute top-[12px] h-px bg-sibs-border"
-              style={{
-                left: `${edgeInsetPercent}%`,
-                right: `${edgeInsetPercent}%`,
-              }}
-              aria-hidden="true"
-            >
+        <div className="relative w-full overflow-x-auto sibs-scrollbar pb-2 pt-0.5 sm:overflow-visible">
+          <div className="relative min-w-[720px] sm:min-w-0">
+            {stageCount > 1 ? (
               <div
-                className="h-full bg-sibs-navy transition-[width] duration-300"
-                style={{ width: `${progressPercent}%` }}
-              />
-            </div>
-          ) : null}
-
-          <div
-            className="relative grid w-full items-start"
-            style={{
-              gridTemplateColumns: `repeat(${stageCount}, minmax(0, 1fr))`,
-            }}
-          >
-            {stages.map((stage, index) => {
-              const normalizedStage =
-                normalizePipelineStageForVisibility(stage) || stage;
-              const isActive = normalizedStage === normalizedCurrent;
-              const isComplete = currentIndex >= 0 && index < currentIndex;
-
-              return (
+                className="pointer-events-none absolute top-[12px] h-px bg-sibs-border"
+                style={{
+                  left: `${edgeInsetPercent}%`,
+                  right: `${edgeInsetPercent}%`,
+                }}
+                aria-hidden="true"
+              >
                 <div
-                  key={`${normalizedStage}-${index}`}
-                  className="min-w-0 px-0.5 text-center sm:px-1"
-                >
-                  <div className="flex justify-center">
-                    <span
-                      className={`relative z-[1] inline-flex h-6 w-6 items-center justify-center rounded-full border text-[8.5px] font-extrabold shadow-xs transition 2xl:h-7 2xl:w-7 2xl:text-[9px] ${
+                  className="h-full bg-sibs-navy transition-[width] duration-300"
+                  style={{ width: `${progressPercent}%` }}
+                />
+              </div>
+            ) : null}
+
+            <div
+              className="relative grid w-full items-start"
+              style={{
+                gridTemplateColumns: `repeat(${stageCount}, minmax(0, 1fr))`,
+              }}
+            >
+              {stages.map((stage, index) => {
+                const normalizedStage =
+                  normalizePipelineStageForVisibility(stage) || stage;
+                const isActive = normalizedStage === normalizedCurrent;
+                const isComplete = currentIndex >= 0 && index < currentIndex;
+
+                return (
+                  <div
+                    key={`${normalizedStage}-${index}`}
+                    className="min-w-0 px-0.5 text-center sm:px-1"
+                  >
+                    <div className="flex justify-center">
+                      <span
+                        className={`relative z-[1] inline-flex h-6 w-6 items-center justify-center rounded-full border text-[8.5px] font-extrabold shadow-xs transition 2xl:h-7 2xl:w-7 2xl:text-[9px] ${
+                          isActive
+                            ? "border-sibs-orange bg-sibs-orange text-white shadow-[0_4px_10px_rgba(255,92,40,0.18)]"
+                            : isComplete
+                              ? "border-sibs-navy bg-sibs-navy text-white"
+                              : "border-sibs-border bg-white text-sibs-muted"
+                        }`}
+                      >
+                        {isComplete ? <Check size={11} /> : index + 1}
+                      </span>
+                    </div>
+
+                    <p
+                      title={stage}
+                      className={`mt-1.5 px-0.5 font-jakarta text-[8px] sm:text-[7.5px] 2xl:text-[9px] font-extrabold leading-[1.2] ${
                         isActive
-                          ? "border-sibs-orange bg-sibs-orange text-white shadow-[0_4px_10px_rgba(255,92,40,0.18)]"
+                          ? "text-sibs-navy"
                           : isComplete
-                            ? "border-sibs-navy bg-sibs-navy text-white"
-                            : "border-sibs-border bg-white text-sibs-muted"
+                            ? "text-sibs-navy"
+                            : "text-sibs-muted"
                       }`}
                     >
-                      {isComplete ? <Check size={11} /> : index + 1}
-                    </span>
+                      {stage}
+                    </p>
                   </div>
-
-                  <p
-                    title={stage}
-                    className={`mt-1.5 break-words px-0.5 font-jakarta text-[7.5px] font-extrabold leading-[1.2] 2xl:text-[9px] ${
-                      isActive
-                        ? "text-sibs-navy"
-                        : isComplete
-                          ? "text-sibs-navy"
-                          : "text-sibs-muted"
-                    }`}
-                  >
-                    {stage}
-                  </p>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
         </div>
       )}
@@ -11767,6 +11769,7 @@ const concretePreferredFinalInterviewFormId =
       activeCandidate.assessmentScore || activeCandidate.assessment_score,
     ) || EMPTY_DISPLAY_VALUE;
   const assessmentSummaryOutcome = getAssessmentSummaryOutcome(activeCandidate);
+  const assessmentTone = getStatusTone(assessmentSummaryOutcome);
   const interviewSummaryScore =
     activeCandidate.finalInterviewScore !== null &&
     activeCandidate.finalInterviewScore !== undefined &&
@@ -11798,12 +11801,12 @@ const concretePreferredFinalInterviewFormId =
     getJobEvaluationRemarksDisplay(latestInterviewSubmission) || EMPTY_DISPLAY_VALUE;
 
   const recordFooter = (
-    <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-end">
+    <div className="flex w-full flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-end">
       {!isInitialScreening && currentStage !== "Drop-off" && (
         <button
           type="button"
           onClick={() => onOpenDropOffModal?.(activeCandidate)}
-          className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3.5 2xl:px-4 text-xs font-extrabold text-red-600 transition hover:bg-red-100 active:scale-[0.98]"
+          className="w-full sm:w-auto inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3.5 2xl:px-4 text-xs font-extrabold text-red-600 transition hover:bg-red-100 active:scale-[0.98]"
         >
           <UserX size={15} />
           Mark Drop-off
@@ -12001,30 +12004,27 @@ const concretePreferredFinalInterviewFormId =
       {ConfirmationDialog}
       <CandidatePipelineModalShell
         open={open}
+        icon={BriefcaseBusiness}
         title="Candidate Pipeline Record"
-        headerContent={
-          <div className="flex min-w-0 items-center gap-2.5 2xl:gap-3">
-            <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] border border-white/10 bg-sibs-orange text-white shadow-[0_6px_16px_rgba(255,92,40,0.28)] 2xl:h-9 2xl:w-9">
-              <BriefcaseBusiness size={16} aria-hidden="true" />
+        badge={currentStage}
+        subtitle={
+          <nav
+            aria-label="Breadcrumb"
+            className="flex min-w-0 items-center gap-1.5"
+          >
+            <span className="hidden sm:inline truncate">
+              Candidate Pipeline
             </span>
-            <nav
-              aria-label="Breadcrumb"
-              className="flex min-w-0 items-center gap-2"
+            <span aria-hidden="true" className="hidden sm:inline shrink-0 text-white/40">
+              /
+            </span>
+            <span
+              aria-current="page"
+              className="truncate font-semibold text-white/90"
             >
-              <span className="truncate text-[11px] font-semibold text-white/75 sm:text-xs 2xl:text-sm">
-                Candidate Pipeline
-              </span>
-              <span aria-hidden="true" className="shrink-0 text-white/40">
-                /
-              </span>
-              <span
-                aria-current="page"
-                className="truncate text-[11px] font-extrabold text-white sm:text-xs 2xl:text-sm"
-              >
-                Candidate Record
-              </span>
-            </nav>
-          </div>
+              Candidate Record
+            </span>
+          </nav>
         }
         onClose={onClose}
         closeDisabled={isCandidateProcessRunning}
@@ -12045,7 +12045,7 @@ const concretePreferredFinalInterviewFormId =
               showAssignment={false}
             />
 
-            <section className="relative overflow-hidden rounded-[10px] border border-orange-200/60 bg-[linear-gradient(135deg,#FFF8F5_0%,#FFF1EB_100%)] p-4 shadow-[0_9px_24px_rgba(255,92,40,0.07)] sm:p-4.5">
+            <section className="relative overflow-hidden rounded-[10px] border border-orange-200/60 bg-gradient-to-br from-sibs-cream-light to-sibs-cream-subtle p-4 shadow-[0_9px_24px_rgba(255,92,40,0.07)] sm:p-4.5">
               <div className="pointer-events-none absolute -right-8 -bottom-10 h-28 w-28 rounded-full bg-sibs-orange/[0.07]" />
               <div className="relative flex h-full items-center gap-3.5">
                 <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] border border-orange-200/80 bg-white text-sibs-orange shadow-sm">
@@ -12216,68 +12216,144 @@ const concretePreferredFinalInterviewFormId =
               title="Assessment Summary"
               subtitle="Online assessment result and attached files."
               headerAction={
-                <div className="flex flex-wrap items-center justify-end gap-2">
-                  <span className="text-[9.5px] font-bold text-sibs-muted 2xl:text-[10px]">
-                    {getAssessmentSummaryTestType(activeCandidate)}
-                  </span>
+                assessmentSummaryOutcome ? (
                   <span
-                    className={`rounded-lg border px-3 py-1 text-xs font-black tabular-nums ${getOutcomePillClass(
-                      assessmentSummaryOutcome,
-                    )}`}
+                    className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[9.5px] font-extrabold tracking-wide uppercase ${
+                      assessmentTone === "red"
+                        ? "border-red-200 bg-red-50 text-red-700"
+                        : assessmentTone === "emerald"
+                          ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                          : "border-orange-200 bg-orange-50 text-sibs-orange"
+                    }`}
                   >
-                    {assessmentSummaryScore}
+                    <span className="h-1.5 w-1.5 rounded-full bg-current" />
+                    {assessmentSummaryOutcome}
                   </span>
-                  <span className={getSummaryOutcomeTextClass(assessmentSummaryOutcome)}>
-                    <span className="inline-flex items-center gap-1.5 text-[10px] font-extrabold sm:text-xs">
-                      <span className="h-2 w-2 rounded-full bg-current" />
-                      {assessmentSummaryOutcome}
-                    </span>
-                  </span>
-                </div>
+                ) : null
               }
             >
-              <div className="grid grid-cols-1 rounded-[10px] border border-sibs-border bg-[linear-gradient(90deg,#FBFFFD_0%,#F7FBFF_100%)] px-2 sm:grid-cols-3 sm:px-3">
-                <CandidateDetailItem
-                  icon={CheckCircle2}
-                  label="Status"
-                  value={
-                    activeCandidate.assessmentStatus ||
-                    activeCandidate.assessment_status ||
-                    (getAssessmentResult(activeCandidate) ? "Taken" : "Pending")
-                  }
-                  tone={getStatusTone(
-                    activeCandidate.assessmentStatus ||
-                      activeCandidate.assessment_status ||
-                      (getAssessmentResult(activeCandidate) ? "Taken" : "Pending"),
-                  )}
-                  className="border-b border-sibs-border sm:border-b-0 sm:border-r sm:border-sibs-border sm:pr-4"
-                />
-
-                <CandidateDetailItem
-                  icon={FileText}
-                  label="Attachment"
-                  value={
-                    activeCandidate.assessmentFileName ||
-                    activeCandidate.assessment_file_name ||
-                    activeCandidate.assessmentAttachmentName ||
-                    activeCandidate.assessment_attachment_name ||
-                    EMPTY_DISPLAY_VALUE
-                  }
-                  className="border-b border-sibs-border sm:border-b-0 sm:border-r sm:border-sibs-border sm:px-4"
-                />
-
-                <CandidateDetailItem
-                  icon={MessageSquareText}
-                  label="Remarks"
-                  className="sm:pl-4"
+              <div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(250px,0.85fr)_minmax(0,1.4fr)]">
+                {/* Score Card — Emphasized just like the Matched card */}
+                <div
+                  className={`relative overflow-hidden rounded-[10px] border p-4 shadow-[0_9px_24px_rgba(0,0,0,0.035)] sm:p-4.5 ${
+                    assessmentTone === "red"
+                      ? "border-red-200/70 bg-gradient-to-br from-red-50/80 via-rose-50/40 to-orange-50/30"
+                      : assessmentTone === "emerald"
+                        ? "border-emerald-200/70 bg-gradient-to-br from-emerald-50/80 via-emerald-50/40 to-teal-50/30"
+                        : "border-orange-200/60 bg-gradient-to-br from-sibs-cream-light to-sibs-cream-subtle"
+                  }`}
                 >
-                  <ExpandableCandidateRemark
-                    value={displayValueOrNA(
-                      activeCandidate.assessmentRemarks ||
-                        activeCandidate.assessment_remarks,
-                    )}
+                  <div
+                    className={`pointer-events-none absolute -right-8 -bottom-10 h-28 w-28 rounded-full ${
+                      assessmentTone === "red"
+                        ? "bg-red-500/[0.08]"
+                        : assessmentTone === "emerald"
+                          ? "bg-emerald-500/[0.08]"
+                          : "bg-sibs-orange/[0.07]"
+                    }`}
                   />
-                </CandidateDetailItem>
+                  <div className="relative flex h-full items-center gap-3.5">
+                    <span
+                      className={`inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] border bg-white shadow-sm ${
+                        assessmentTone === "red"
+                          ? "border-red-200/80 text-red-600"
+                          : assessmentTone === "emerald"
+                            ? "border-emerald-200/80 text-emerald-600"
+                            : "border-orange-200/80 text-sibs-orange"
+                      }`}
+                    >
+                      <Award size={21} />
+                    </span>
+
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="text-[9.5px] font-semibold text-sibs-muted 2xl:text-[10px]">
+                          Assessment Score
+                        </p>
+                        {assessmentSummaryOutcome ? (
+                          <span
+                            className={`rounded-full border px-2 py-0.5 text-[7.5px] font-extrabold uppercase tracking-wide ${
+                              assessmentTone === "red"
+                                ? "border-red-100 bg-red-50 text-red-700"
+                                : assessmentTone === "emerald"
+                                  ? "border-emerald-100 bg-emerald-50 text-emerald-700"
+                                  : "border-orange-100 bg-orange-50 text-sibs-orange"
+                            }`}
+                          >
+                            {assessmentSummaryOutcome}
+                          </span>
+                        ) : null}
+                      </div>
+
+                      <p
+                        className={`mt-1 truncate text-xl font-black tracking-[-0.02em] 2xl:text-2xl ${
+                          assessmentTone === "red"
+                            ? "text-red-600"
+                            : assessmentTone === "emerald"
+                              ? "text-emerald-700"
+                              : "text-sibs-orange"
+                        }`}
+                      >
+                        {assessmentSummaryScore}
+                      </p>
+
+                      <p className="mt-1 text-[9.5px] font-semibold text-sibs-muted 2xl:text-[10px]">
+                        {getAssessmentSummaryTestType(activeCandidate)}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Candidate Detail Items: Status, Attachment, Remarks */}
+                <div className="grid h-full grid-cols-1 items-center rounded-[10px] border border-sibs-border bg-gradient-to-r from-emerald-50/20 to-sky-50/20 px-3 py-2 sm:grid-cols-3 sm:px-4 sm:py-0">
+                  <div className="flex h-full min-w-0 items-center justify-start border-b border-sibs-border py-2 sm:border-b-0 sm:border-r sm:border-sibs-border sm:py-3 sm:pr-4 sm:justify-center">
+                    <CandidateDetailItem
+                      icon={CheckCircle2}
+                      label="Status"
+                      value={
+                        activeCandidate.assessmentStatus ||
+                        activeCandidate.assessment_status ||
+                        (getAssessmentResult(activeCandidate) ? "Taken" : "Pending")
+                      }
+                      tone={getStatusTone(
+                        activeCandidate.assessmentStatus ||
+                          activeCandidate.assessment_status ||
+                          (getAssessmentResult(activeCandidate) ? "Taken" : "Pending"),
+                      )}
+                      className="!py-0"
+                    />
+                  </div>
+
+                  <div className="flex h-full min-w-0 items-center justify-start border-b border-sibs-border py-2 sm:border-b-0 sm:border-r sm:border-sibs-border sm:py-3 sm:px-4 sm:justify-center">
+                    <CandidateDetailItem
+                      icon={FileText}
+                      label="Attachment"
+                      value={
+                        activeCandidate.assessmentFileName ||
+                        activeCandidate.assessment_file_name ||
+                        activeCandidate.assessmentAttachmentName ||
+                        activeCandidate.assessment_attachment_name ||
+                        EMPTY_DISPLAY_VALUE
+                      }
+                      className="!py-0"
+                    />
+                  </div>
+
+                  <div className="flex h-full min-w-0 items-center justify-start py-2 sm:py-3 sm:pl-4 sm:justify-center">
+                    <CandidateDetailItem
+                      icon={MessageSquareText}
+                      label="Remarks"
+                      className="!py-0"
+                    >
+                      <ExpandableCandidateRemark
+                        value={displayValueOrNA(
+                          activeCandidate.assessmentRemarks ||
+                            activeCandidate.assessment_remarks,
+                        )}
+                      />
+                    </CandidateDetailItem>
+                  </div>
+                </div>
               </div>
             </CandidateModalSection>
           )}
@@ -12287,37 +12363,71 @@ const concretePreferredFinalInterviewFormId =
               icon={<Users size={17} />}
               title="Interview Summary"
               subtitle="Details of the final interview and evaluation."
-              headerAction={
-                <div className="flex flex-col items-end gap-1.5">
-                  <div className="flex flex-wrap items-center justify-end gap-2">
-                    <span className="text-[9.5px] font-bold text-sibs-muted 2xl:text-[10px]">
-                      Final Interview
+            >
+              {/* Full-width Metric Strip */}
+              <div className="mb-3.5 flex flex-wrap items-center justify-between gap-3 rounded-[10px] border border-sibs-border/80 bg-sibs-surface p-2.5 sm:px-3.5 sm:py-2.5">
+                <div className="flex flex-wrap items-center gap-3.5 sm:gap-6">
+                  {/* Final Interview Metric */}
+                  <div className="flex items-center gap-2">
+                    <span className="text-[9.5px] font-bold uppercase tracking-wider text-sibs-muted 2xl:text-[10px]">
+                      Final Interview:
                     </span>
                     <span
-                      className={`rounded-lg border px-2.5 py-1 text-[10px] font-black tabular-nums sm:text-xs ${getOutcomePillClass(
+                      className={`rounded-lg border px-2.5 py-0.5 text-[10px] font-black tabular-nums sm:text-xs ${getOutcomePillClass(
                         interviewSummaryResult,
                       )}`}
                     >
                       {interviewSummaryScore}
                     </span>
-                    <span className={getSummaryOutcomeTextClass(interviewSummaryResult)}>
-                      <span className="inline-flex items-center gap-1.5 text-[10px] font-extrabold sm:text-xs">
-                        <span className="h-2 w-2 rounded-full bg-current" />
-                        {interviewSummaryResult}
+                    {interviewSummaryResult && (
+                      <span className={getSummaryOutcomeTextClass(interviewSummaryResult)}>
+                        <span className="inline-flex items-center gap-1.5 text-[10px] font-extrabold sm:text-xs">
+                          <span className="h-1.5 w-1.5 rounded-full bg-current" />
+                          {interviewSummaryResult}
+                        </span>
                       </span>
-                    </span>
+                    )}
                   </div>
-                  <div className="flex flex-wrap items-center justify-end gap-2">
-                    <span className="text-[9.5px] font-bold text-sibs-muted 2xl:text-[10px]">
-                      Job Evaluation
+
+                  <span className="hidden h-3.5 w-px bg-sibs-border sm:block" />
+
+                  {/* Job Evaluation Metric */}
+                  <div className="flex items-center gap-2">
+                    <span className="text-[9.5px] font-bold uppercase tracking-wider text-sibs-muted 2xl:text-[10px]">
+                      Job Evaluation:
                     </span>
-                    <span className="text-[10px] font-extrabold text-sibs-navy sm:text-xs">
+                    <span
+                      className={`rounded-lg border px-2.5 py-0.5 text-[10px] font-black tabular-nums sm:text-xs ${
+                        jobEvaluationSummaryScore !== EMPTY_DISPLAY_VALUE
+                          ? "border-emerald-100 bg-emerald-50 text-emerald-700"
+                          : "border-blue-100 bg-sky-50 text-sibs-navy"
+                      }`}
+                    >
                       {jobEvaluationSummaryScore}
                     </span>
                   </div>
                 </div>
-              }
-            >
+
+                {/* Status Indicator */}
+                {getDisplayInterviewStatus(activeCandidate) !== EMPTY_DISPLAY_VALUE && (
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[9px] font-bold uppercase tracking-wider text-sibs-muted">
+                      Status:
+                    </span>
+                    <span
+                      className={`rounded-full border px-2 py-0.5 text-[8.5px] font-extrabold tracking-wide uppercase ${
+                        getStatusTone(getDisplayInterviewStatus(activeCandidate)) === "emerald"
+                          ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                          : getStatusTone(getDisplayInterviewStatus(activeCandidate)) === "amber"
+                            ? "border-amber-200 bg-amber-50 text-amber-700"
+                            : "border-blue-200 bg-sky-50 text-sibs-navy"
+                      }`}
+                    >
+                      {getDisplayInterviewStatus(activeCandidate)}
+                    </span>
+                  </div>
+                )}
+              </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
                 <CandidateDetailItem
                   icon={CalendarDays}
@@ -12691,7 +12801,7 @@ const concretePreferredFinalInterviewFormId =
               </div>
 
               {candidateNhoRescheduleAwaitingApproval && (
-                <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3 sm:p-4">
+                <div className="mt-3 rounded-[10px] border border-amber-200 bg-amber-50 p-3 sm:p-4">
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div className="min-w-0">
                       <p className="text-xs font-extrabold text-amber-900">

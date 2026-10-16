@@ -211,6 +211,7 @@ function TalentPoolPageContent() {
   const {
     archivedLeads,
     refreshApplicantLeads,
+    isLoading: leadsLoading,
   } = useApplicantLeadsPage();
 
   const [searchParams] = useSearchParams();
@@ -461,6 +462,7 @@ function TalentPoolPageContent() {
                     emptyTitle={activeTabCopy.title}
                     emptyMessage={activeTabCopy.message}
                     recordLabel="converted leads"
+                    loading={leadsLoading}
                   />
                 ) : (
                   <TalentPoolTable

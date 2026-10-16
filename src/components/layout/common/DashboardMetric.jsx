@@ -19,7 +19,7 @@ function DashboardMetric({
       className={`h-[126px] w-full rounded-2xl border bg-white p-5 text-left shadow-sm transition ${
         active
           ? "border-sibs-primary-1 ring-4 ring-sibs-primary-1/10"
-          : "border-[#E6ECF2]"
+          : "border-sibs-border"
       } ${
         isClickable
           ? "cursor-pointer hover:-translate-y-0.5 hover:border-sibs-primary-1/30 hover:shadow-md"
@@ -46,7 +46,7 @@ function DashboardMetric({
         </div>
 
         {Icon && (
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#F2F6FA] text-sibs-primary-1">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-sibs-canvas text-sibs-primary-1">
             <Icon size={22} />
           </div>
         )}
