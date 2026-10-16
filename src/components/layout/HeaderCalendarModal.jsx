@@ -440,14 +440,11 @@ function CalendarTimePicker({
 
   return (
     <>
-      <button
+      <div
         ref={triggerRef}
-        type="button"
+        role="group"
         aria-label={`${label}: ${value || "Select time"}`}
-        aria-haspopup="dialog"
-        aria-expanded={isOpen}
-        aria-controls={isOpen ? listId : undefined}
-        onClick={onToggle}
+        onClick={(event) => { if (event.target === event.currentTarget) onToggle(); }}
         className={`sibs-calendar-dropdown-trigger flex h-9 w-[132px] min-w-0 items-center justify-between gap-1 rounded-[10px] border px-3 text-left font-jakarta text-[12px] font-bold text-sibs-navy shadow-sm outline-none transition-all duration-200 ${isOpen ? "border-sibs-orange bg-white ring-4 ring-sibs-orange/10" : "border-sibs-border bg-sibs-surface hover:border-sibs-orange/40 hover:bg-white"}`}
       >
         <input
@@ -2322,6 +2319,98 @@ function DisconnectCalendarConfirmModal({
       onClose={onCancel}
       onConfirm={onConfirm}
     />
+  );
+}
+
+function GoogleCalendarDayDetails({ date, events, onClose, onCreateEvent, onEditEvent }) {
+  return (
+    <div className="sibs-action-backdrop-in absolute inset-0 z-[2] flex items-center justify-center bg-black/55 p-3 backdrop-blur-[3px]" onClick={onClose}>
+      <section role="dialog" aria-modal="true" aria-label="Google Calendar day details"
+        onClick={(e) => e.stopPropagation()}
+        className="sibs-modal-pop-in flex max-h-[80vh] w-full max-w-[460px] flex-col overflow-hidden rounded-[18px] bg-white font-jakarta shadow-2xl">
+        <div className="flex items-center justify-between gap-3 border-b border-[#E8EAED] px-5 py-4">
+          <div>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-[#1A73E8]">Google Calendar</span>
+            <h3 className="mt-1 text-base font-black text-[#202124]">{formatDayLabel(date, { weekday: "long", year: true })}</h3>
+            <p className="text-[11px] text-[#5F6368]">{events.length} schedule{events.length === 1 ? "" : "s"} · Asia/Manila</p>
+          </div>
+          <button type="button" onClick={onClose} className="rounded-lg p-2 hover:bg-slate-100" aria-label="Close day details"><X size={18} /></button>
+        </div>
+        <div className="thin-scroll min-h-0 space-y-2 overflow-y-auto p-4">
+          {sortEventsByDateTime(events).map((event) => (
+            <button key={event.id} type="button"
+              onClick={() => { onClose(); onEditEvent(sourceCalendarEvent(event)); }}
+              className="flex w-full items-center gap-3 rounded-xl border border-[#E8EAED] bg-white p-3 text-left hover:border-[#A8C7FA] hover:bg-[#F8FBFF]">
+              <span className="h-9 w-1.5 shrink-0 rounded-full bg-[#1A73E8]" />
+              <span className="min-w-0 flex-1">
+                <span className="block text-[12px] font-bold text-[#202124]">{event.title}</span>
+                <span className="mt-0.5 block text-[11px] text-[#5F6368]">{event.startTime} – {event.endTime}{event.site ? ` · ${event.site}` : ""}</span>
+              </span>
+              {event.recruitmentEventType ? <span className="rounded bg-blue-50 px-2 py-1 text-[9px] font-semibold text-blue-700">HRIS</span> : null}
+            </button>
+          ))}
+        </div>
+        <div className="border-t border-[#E8EAED] px-5 py-4">
+          <button type="button" onClick={() => { onClose(); onCreateEvent(date); }}
+            className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#1A73E8] px-4 py-2.5 text-xs font-bold text-white hover:bg-[#1558B0]">
+            <Plus size={16} /> Create event on this date
+          </button>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function ManagedRecruitmentCalendarDetails({ event, onClose, onOpenCandidate }) {
+  // Numeric candidate_pipeline.id is the canonical link. Older managed events
+  // may carry only the public PUB-... ID in metadata or their description.
+  const pipelineId = String(event.candidatePipelineId || "").trim();
+  const storedCandidateId = String(event.candidateId || "").trim();
+  const descriptionCandidateId = String(event.notes || "").match(/^Candidate ID:\s*(\S+)/im)?.[1] || "";
+  const candidateId = storedCandidateId || descriptionCandidateId;
+  const candidateRoute = /^\d+$/.test(pipelineId)
+    ? `/recruitment/candidate-pipeline?pipelineId=${encodeURIComponent(pipelineId)}`
+    : candidateId
+      ? `/recruitment/candidate-pipeline?candidateId=${encodeURIComponent(candidateId)}`
+      : "";
+  return (
+    <div className="sibs-action-backdrop-in absolute inset-0 z-[2] flex items-center justify-center bg-black/55 p-3 backdrop-blur-[3px]" onClick={onClose}>
+      <section role="dialog" aria-modal="true" aria-label="Recruitment schedule details"
+        onClick={(e) => e.stopPropagation()}
+        className="sibs-modal-pop-in w-full max-w-[490px] rounded-[18px] bg-white p-6 font-jakarta shadow-2xl">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#1A73E8]">Google Calendar · SiBS HRIS managed</span>
+            <h3 className="mt-2 text-lg font-black text-[#06325E]">{event.title}</h3>
+          </div>
+          <button type="button" onClick={onClose} aria-label="Close event details" className="rounded-lg p-2 hover:bg-slate-100"><X size={18} /></button>
+        </div>
+        <div className="mt-5 space-y-3 text-sm text-[#475467]">
+          <p><strong>Date:</strong> {formatDayLabel(event.date, { year: true })}</p>
+          <p><strong>Time:</strong> {event.startTime} – {event.endTime} (Asia/Manila)</p>
+          {event.site && <p><strong>Site:</strong> {event.site}</p>}
+          {event.location && <p><strong>Location:</strong> {event.location}</p>}
+          <p><strong>Status:</strong> {event.status}</p>
+        </div>
+        <p className="mt-5 rounded-xl border border-[#D2E3FC] bg-[#E8F0FE] p-3 text-xs font-semibold text-[#174EA6]">
+          This is a confirmed recruitment schedule. Interview changes and candidate reschedule requests must go through the SiBS Candidate Pipeline, not this Google Calendar event.
+        </p>
+        <div className="mt-5 flex flex-wrap justify-end gap-2">
+          {event.googleHtmlLink && <a href={event.googleHtmlLink} target="_blank" rel="noopener noreferrer" className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-[#06325E] hover:bg-slate-50">View in Google Calendar</a>}
+          {candidateRoute ? (
+            <Link to={candidateRoute} onClick={onOpenCandidate}
+              className="rounded-lg bg-[#06325E] px-3 py-2 text-xs font-bold text-white hover:bg-[#0A426F]">
+              Open Candidate Pipeline
+            </Link>
+          ) : (
+            <span title="This older Google Calendar event has no linked HRIS candidate ID"
+              className="cursor-not-allowed rounded-lg bg-slate-200 px-3 py-2 text-xs font-bold text-slate-500">
+              Candidate record not linked
+            </span>
+          )}
+        </div>
+      </section>
+    </div>
   );
 }
 
