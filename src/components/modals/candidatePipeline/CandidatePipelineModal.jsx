@@ -55,6 +55,7 @@ import CandidateModalSummary from "../../recruitment/candidatePipeline/Candidate
 import CandidateTalentPoolDetailsPanel from "../../recruitment/candidatePipeline/CandidateTalentPoolDetailsPanel";
 import ExpandableCandidateRemark from "../../recruitment/candidatePipeline/ExpandableCandidateRemark";
 import NhoUploadModal from "./NhoUploadModal";
+import NhoGoogleCalendarMonth from "./NhoGoogleCalendarMonth";
 
 import {
   offerApprovers,
@@ -5665,80 +5666,11 @@ function NhoScheduleModal({
   const suggestedFriday =
     getSuggestedNhoFriday();
 
-  const [
-    displayDate,
-    setDisplayDate,
-  ] = useState(() => {
-    const source =
-      selectedDate || suggestedFriday;
-
-    return new Date(
-      source.getFullYear(),
-      source.getMonth(),
-      1,
-    );
-  });
-
-  useEffect(() => {
-    if (!open) return;
-
-    const source =
-      parseDateInputValue(value) ||
-      suggestedFriday;
-
-    setDisplayDate(
-      new Date(
-        source.getFullYear(),
-        source.getMonth(),
-        1,
-      ),
-    );
-  }, [open, value]);
-
-  const calendarDays = useMemo(
-    () =>
-      buildAssessmentCalendarDays(
-        displayDate,
-      ),
-    [displayDate],
-  );
-
-  const today =
-    getManilaCalendarDate();
-
-  const currentMonth = new Date(
-    today.getFullYear(),
-    today.getMonth(),
-    1,
-  );
-
-  const displayedMonth = new Date(
-    displayDate.getFullYear(),
-    displayDate.getMonth(),
-    1,
-  );
-
-  const disablePreviousMonth =
-    displayedMonth.getTime() <=
-    currentMonth.getTime();
-
   if (!open) return null;
 
   function handleClose() {
     if (isSaving) return;
     onClose?.();
-  }
-
-  function handleSelectDate(date) {
-    if (
-      !isSelectableNhoFriday(date)
-    ) {
-      return;
-    }
-
-    onChange?.(
-      toDateInputValue(date),
-    );
   }
 
   const footer = (
@@ -5777,11 +5709,11 @@ className="min-w-[132px]"
       open={open}
       icon={CalendarDays}
       title="Schedule NHO"
-      subtitle="Choose the candidate's NHO date and time. Only upcoming Fridays are available."
+      subtitle="Select an upcoming Friday in the Google-style calendar, then choose the NHO time."
       badge="NHO"
       onClose={handleClose}
       closeDisabled={isSaving}
-      maxWidth="max-w-xl"
+      maxWidth="max-w-3xl"
       zIndex="z-[11500]"
       footer={footer}
     >
@@ -5812,100 +5744,15 @@ className="min-w-[132px]"
             </p>
           </div>
 
-          <div className="mt-4 overflow-hidden rounded-[10px] border border-sibs-border bg-white shadow-sm">
-            <div className="flex items-center justify-between border-b border-sibs-border px-4 py-3">
-              <button
-                type="button"
-                disabled={disablePreviousMonth || isSaving}
-                onClick={() =>
-                  setDisplayDate(
-                    (previous) =>
-                      new Date(
-                        previous.getFullYear(),
-                        previous.getMonth() - 1,
-                        1,
-                      ),
-                  )
-                }
-                className="flex h-9 w-9 items-center justify-center rounded-full text-sibs-navy transition hover:bg-sibs-faint disabled:cursor-not-allowed disabled:opacity-30"
-                aria-label="Previous month"
-              >
-                <ChevronLeft size={18} />
-              </button>
-
-              <p className="sibs-text-xs font-extrabold text-sibs-navy">
-                {assessmentEmailMonthNames[displayDate.getMonth()]}{" "}
-                {displayDate.getFullYear()}
-              </p>
-
-              <button
-                type="button"
-                disabled={isSaving}
-                onClick={() =>
-                  setDisplayDate(
-                    (previous) =>
-                      new Date(
-                        previous.getFullYear(),
-                        previous.getMonth() + 1,
-                        1,
-                      ),
-                  )
-                }
-                className="flex h-9 w-9 items-center justify-center rounded-full text-sibs-navy transition hover:bg-sibs-faint disabled:cursor-not-allowed disabled:opacity-60"
-                aria-label="Next month"
-              >
-                <ChevronRight size={18} />
-              </button>
-            </div>
-
-            <div className="p-4">
-              <div className="grid grid-cols-7 gap-1">
-                {assessmentEmailWeekdayLabels.map((dayLabel) => (
-                  <div
-                    key={dayLabel}
-                    className="flex h-8 items-center justify-center sibs-text-micro font-extrabold text-sibs-navy"
-                  >
-                    {dayLabel}
-                  </div>
-                ))}
-
-                {calendarDays.map((day) => {
-                  const isFriday = day.date.getDay() === 5;
-                  const selectable = isSelectableNhoFriday(day.date);
-                  const active =
-                    selectedDate &&
-                    isSameAssessmentDate(day.date, selectedDate);
-
-                  return (
-                    <button
-                      key={day.dateValue}
-                      type="button"
-                      disabled={!selectable || isSaving}
-                      onClick={() => handleSelectDate(day.date)}
-                      className={`flex h-10 w-10 items-center justify-center rounded-full sibs-text-xs font-extrabold transition ${
-                        active
-                          ? "bg-sibs-orange text-white shadow-sm"
-                          : selectable
-                            ? "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
-                            : isFriday
-                              ? "cursor-not-allowed bg-amber-50 text-amber-300"
-                              : day.isCurrentMonth
-                                ? "cursor-not-allowed text-slate-300"
-                                : "cursor-not-allowed text-slate-200"
-                      }`}
-                      title={
-                        selectable
-                          ? "Select this Friday"
-                          : "Only upcoming Fridays can be selected"
-                      }
-                    >
-                      {day.dayNumber}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
+          <NhoGoogleCalendarMonth
+            value={value}
+            disabled={isSaving}
+            onSelectDate={(nextDate) => {
+              const parsed = parseDateInputValue(nextDate);
+              if (parsed && isSelectableNhoFriday(parsed)) onChange?.(nextDate);
+            }}
+            isBookableFriday={(date) => isSelectableNhoFriday(date)}
+          />
 
           <div className="mt-4 rounded-[10px] border border-emerald-100 bg-emerald-50 p-4">
             <p className="sibs-kicker text-emerald-700">

@@ -46,8 +46,8 @@ const MONTH_NAMES = [
   "December",
 ];
 
-const PUBLIC_INTERVIEW_MIN_HOUR = 10;
-const PUBLIC_INTERVIEW_MAX_HOUR = 17;
+const PUBLIC_INTERVIEW_MIN_HOUR = 8;
+const PUBLIC_INTERVIEW_MAX_MINUTES = 16 * 60 + 30;
 
 const PUBLIC_INTERVIEW_MINUTE_OPTIONS = [
   "00",
@@ -96,7 +96,7 @@ function isPublicInterviewTimeWithinWindow(hour12, minute, period) {
   return (
     Number.isFinite(totalMinutes) &&
     totalMinutes >= PUBLIC_INTERVIEW_MIN_HOUR * 60 &&
-    totalMinutes <= PUBLIC_INTERVIEW_MAX_HOUR * 60
+    totalMinutes <= PUBLIC_INTERVIEW_MAX_MINUTES
   );
 }
 
@@ -144,18 +144,18 @@ function normalizePublicInterviewPickerTime(value = "") {
 
   if (!isPublicInterviewTimeWithinWindow(nextHour, nextMinute, nextPeriod)) {
     if (toPublicInterviewHour24(nextHour, nextPeriod) < PUBLIC_INTERVIEW_MIN_HOUR) {
-      nextHour = 10;
+      nextHour = 8;
       nextPeriod = "AM";
       nextMinute = "00";
     } else {
-      nextHour = 5;
+      nextHour = 4;
       nextPeriod = "PM";
-      nextMinute = "00";
+      nextMinute = "30";
     }
   }
 
-  if (nextPeriod === "PM" && nextHour === 5) {
-    nextMinute = "00";
+  if (nextPeriod === "PM" && nextHour === 4 && Number(nextMinute) > 30) {
+    nextMinute = "30";
   }
 
   return buildPublicInterviewTimeValue(nextHour, nextMinute, nextPeriod);
@@ -1005,7 +1005,7 @@ export default function PublicInterviewDateSelectionPage() {
                 </div>
 
                 {availabilityError && <p className="mt-3 text-xs font-bold text-red-600">{availabilityError}</p>}
-                {!availabilityLoading && availableSlots.length === 0 && !availabilityError && <p className="mt-3 text-xs font-semibold text-sibs-muted">No open interview slots this month. Please check another month or contact Talent Acquisition.</p>}
+                {!availabilityLoading && availableSlots.length === 0 && !availabilityError && <p className="mt-3 text-xs font-semibold text-sibs-muted">No available HRIS interview times this month. Please check another month or contact Talent Acquisition.</p>}
 
                 <div className="mt-4 grid grid-cols-7 gap-1">
                   {WEEKDAY_LABELS.map((label) => (

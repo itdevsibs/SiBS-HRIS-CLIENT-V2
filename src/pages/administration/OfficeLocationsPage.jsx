@@ -29,7 +29,13 @@ const DEFAULT_LOCATIONS = [
     employeeCount: 0,
     comingSoon: false,
   },
-  { id: 4, name: "Mabini Site", employeeCount: null, comingSoon: true },
+  {
+    id: 4,
+    name: "Mabini Site",
+    address: "Lagulos Building, Poblacion, Mabini, Davao de Oro, Philippines",
+    employeeCount: null,
+    comingSoon: true,
+  },
 ];
 
 function safeCount(value) {

@@ -8,10 +8,12 @@ import React, {
   useState,
 } from "react";
 import { createPortal } from "react-dom";
+import { Link } from "react-router-dom";
 import {
   ArrowRight,
   Briefcase,
   CalendarDays,
+  Check,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
@@ -37,6 +39,8 @@ import {
   getGoogleCalendarConnectUrl,
   getGoogleCalendarStatus,
   getGoogleCalendarEvents,
+  previewHrisCalendarOrphans,
+  cleanupHrisCalendarOrphans,
   getGoogleCalendarBusyTimes,
   createGoogleCalendarEvent,
   updateGoogleCalendarEvent,
@@ -183,7 +187,11 @@ function withSibsHrisCalendarTitle(value, fallback = "Untitled Schedule") {
 
 // Offer suggested times and an editable 12-hour time with an explicit AM/PM choice.
 // Interview availability stays within 10:00 AM–5:30 PM; custom minutes are allowed.
-// Regular Google Calendar events have 15-minute suggested times.
+// Standard event proposals use 30-minute defaults with 8 AM–5 PM boundaries.
+// Interview availability can span hours and is intentionally not forced to 30 minutes.
+const EVENT_FIRST_MINUTE = 8 * 60;
+const EVENT_LAST_MINUTE = 17 * 60;
+const EVENT_DEFAULT_DURATION = 30;
 const INTERVIEW_AVAILABILITY_START_MINUTES = 10 * 60;
 const INTERVIEW_AVAILABILITY_END_MINUTES = 17 * 60 + 30;
 
@@ -218,7 +226,7 @@ function normalizeTypedTime(input, fallbackMeridiem = "AM") {
   return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")} ${typedMeridiem || fallbackMeridiem}`;
 }
 
-function getTimeSelectionError(value, { isInterviewAvailability, isEndTime, startTime }) {
+function getTimeSelectionError(value, { isInterviewAvailability, isEventTime, isEndTime, startTime }) {
   const minutes = timeLabelToMinutes(value);
   if (minutes === null) return "Enter a valid time, such as 02:15 PM.";
   if (isInterviewAvailability) {
@@ -228,12 +236,19 @@ function getTimeSelectionError(value, { isInterviewAvailability, isEndTime, star
       return `Choose a time from ${minutesToTimeLabel(earliest)} to ${minutesToTimeLabel(latest)}.`;
     }
   }
+  if (isEventTime) {
+    const earliest = EVENT_FIRST_MINUTE + (isEndTime ? EVENT_DEFAULT_DURATION : 0);
+    const latest = EVENT_LAST_MINUTE - (isEndTime ? 0 : EVENT_DEFAULT_DURATION);
+    if (minutes < earliest || minutes > latest) {
+      return `Choose a time from ${minutesToTimeLabel(earliest)} to ${minutesToTimeLabel(latest)}.`;
+    }
+  }
   if (!isEndTime && minutes >= 23 * 60 + 59) {
     return "Start time must be before 11:59 PM.";
   }
   if (isEndTime) {
     const start = timeLabelToMinutes(startTime);
-    const minGap = isInterviewAvailability ? 30 : 1;
+    const minGap = isInterviewAvailability || isEventTime ? 30 : 1;
     if (start !== null && minutes < start + minGap) {
       return `End time must be at least ${minGap} minute${minGap > 1 ? "s" : ""} after the start.`;
     }
@@ -251,7 +266,7 @@ function calendarTimeOverlaps(busy, start, end) {
   return Array.isArray(busy) && busy.some((entry) => start < Number(entry.end) && Number(entry.start) < end);
 }
 
-function isTimeOptionTaken({ time, isEndTime, startTime, date, busy, isInterviewAvailability }) {
+function isTimeOptionTaken({ time, isEndTime, startTime, date, busy, isInterviewAvailability, isEventTime = false }) {
   const minutes = timeLabelToMinutes(time);
   if (minutes === null || !date) return false;
   if (isEndTime) {
@@ -259,7 +274,7 @@ function isTimeOptionTaken({ time, isEndTime, startTime, date, busy, isInterview
     const end = calendarLocalTimeMs(date, time);
     return Number.isFinite(start) && Number.isFinite(end) && calendarTimeOverlaps(busy, start, end);
   }
-  const duration = isInterviewAvailability ? 30 : 15;
+  const duration = isInterviewAvailability || isEventTime ? 30 : 15;
   const start = calendarLocalTimeMs(date, time);
   return Number.isFinite(start) && calendarTimeOverlaps(busy, start, start + duration * 60000);
 }
@@ -270,6 +285,7 @@ function CalendarTimePicker({
   value,
   options,
   isInterviewAvailability,
+  isEventTime = false,
   isEndTime = false,
   startTime,
   date,
@@ -294,25 +310,27 @@ function CalendarTimePicker({
 
   useEffect(() => {
     if (!isOpen) return;
-    // Mirror the Employee Directory dropdown: show a blank, searchable field when open.
+    // Keep the selected time visible in the trigger and search in the popover,
+    // just like the shared calendar date picker.
     setSearch("");
     setIsFiltering(false);
     setError("");
     const matching = String(value || "").match(/^(\d{1,2}:\d{2})\s*(AM|PM)$/i);
     setManualTime(matching?.[1] || "");
     setMeridiem(matching?.[2]?.toUpperCase() || "AM");
-    // Focus without selecting/highlighting text or drawing a second inner outline.
-    const frame = requestAnimationFrame(() => inputRef.current?.focus());
+    // Search receives focus after opening; the trigger continues to show its value.
+    const frame = requestAnimationFrame(() => inputRef.current?.focus({ preventScroll: true }));
     return () => cancelAnimationFrame(frame);
   }, [isOpen]);
 
   const updatePlacement = useCallback(() => {
     const rect = triggerRef.current?.getBoundingClientRect();
     if (!rect) return;
-    const panelWidth = Math.min(282, window.innerWidth - 16);
-    const panelHeight = Math.min(285, window.innerHeight - 16);
-    const availableBelow = window.innerHeight - rect.bottom;
-    const showAbove = availableBelow < panelHeight + 8 && rect.top >= panelHeight + 8;
+    const panelWidth = Math.min(300, window.innerWidth - 16);
+    const panelHeight = Math.min(panelRef.current?.offsetHeight || 410, window.innerHeight - 16);
+    const availableBelow = window.innerHeight - rect.bottom - 8;
+    const availableAbove = rect.top - 8;
+    const showAbove = availableBelow < panelHeight + 6 && availableAbove > availableBelow;
     const top = showAbove ? rect.top - panelHeight - 6 : rect.bottom + 6;
     const left = Math.max(8, Math.min(rect.left, window.innerWidth - panelWidth - 8));
     setPlacement({ top: Math.max(8, Math.min(top, window.innerHeight - panelHeight - 8)), left });
@@ -328,11 +346,15 @@ function CalendarTimePicker({
     };
     document.addEventListener("pointerdown", onOutsidePointer);
     window.addEventListener("resize", updatePlacement);
-    window.addEventListener("scroll", updatePlacement, true);
+    const onPageScroll = (event) => {
+      if (panelRef.current?.contains(event.target)) return;
+      updatePlacement();
+    };
+    window.addEventListener("scroll", onPageScroll, true);
     return () => {
       document.removeEventListener("pointerdown", onOutsidePointer);
       window.removeEventListener("resize", updatePlacement);
-      window.removeEventListener("scroll", updatePlacement, true);
+      window.removeEventListener("scroll", onPageScroll, true);
     };
   }, [isOpen, onClose, updatePlacement]);
 
@@ -355,7 +377,7 @@ function CalendarTimePicker({
   function selectTime(candidate) {
     const normalized = normalizeTypedTime(candidate, meridiem);
     const nextError = getTimeSelectionError(normalized, {
-      isInterviewAvailability, isEndTime, startTime,
+      isInterviewAvailability, isEventTime, isEndTime, startTime,
     });
     if (nextError) {
       setError(nextError);
@@ -366,7 +388,7 @@ function CalendarTimePicker({
       return;
     }
     if (isTimeOptionTaken({
-      time: normalized, isEndTime, startTime, date, busy, isInterviewAvailability,
+      time: normalized, isEndTime, startTime, date, busy, isInterviewAvailability, isEventTime,
     })) {
       setError("This time overlaps another schedule on your calendar.");
       return;
@@ -385,6 +407,7 @@ function CalendarTimePicker({
         event.preventDefault();
         onClose();
         inputRef.current?.blur();
+        event.stopPropagation();
       }
     } else if (event.key === "ArrowDown" && !isOpen) {
       event.preventDefault();
@@ -403,7 +426,7 @@ function CalendarTimePicker({
         selectTime(exactMatch);
       } else if (filteredOptions.length) {
         const firstAvailable = filteredOptions.find((time) => !isTimeOptionTaken({
-          time, isEndTime, startTime, date, busy, isInterviewAvailability,
+          time, isEndTime, startTime, date, busy, isInterviewAvailability, isEventTime,
         }));
         if (firstAvailable) selectTime(firstAvailable);
         else setError("All matching times are already scheduled.");
@@ -419,7 +442,10 @@ function CalendarTimePicker({
     <>
       <div
         ref={triggerRef}
-        className={`sibs-calendar-dropdown-trigger flex h-9 w-[132px] min-w-0 items-center justify-between gap-1 rounded-[10px] border px-3 font-jakarta text-[12px] font-bold text-sibs-navy shadow-sm transition-all duration-200 ${isOpen ? "border-sibs-orange bg-white ring-4 ring-sibs-orange/10" : "border-sibs-border bg-sibs-surface hover:border-sibs-orange/40 hover:bg-white"}`}
+        role="group"
+        aria-label={`${label}: ${value || "Select time"}`}
+        onClick={(event) => { if (event.target === event.currentTarget) onToggle(); }}
+        className={`sibs-calendar-dropdown-trigger flex h-9 w-[132px] min-w-0 items-center justify-between gap-1 rounded-[10px] border px-3 text-left font-jakarta text-[12px] font-bold text-sibs-navy shadow-sm outline-none transition-all duration-200 ${isOpen ? "border-sibs-orange bg-white ring-4 ring-sibs-orange/10" : "border-sibs-border bg-sibs-surface hover:border-sibs-orange/40 hover:bg-white"}`}
       >
         <input
           ref={inputRef}
@@ -467,7 +493,7 @@ function CalendarTimePicker({
               <p className="px-3 py-3 text-xs font-semibold text-sibs-muted">Checking booked times...</p>
             ) : filteredOptions.length ? filteredOptions.map((time) => {
               const taken = isTimeOptionTaken({
-                time, isEndTime, startTime, date, busy, isInterviewAvailability,
+                time, isEndTime, startTime, date, busy, isInterviewAvailability, isEventTime,
               });
               return (
               <button
@@ -499,7 +525,6 @@ function CalendarTimePicker({
                 onChange={(event) => { setManualTime(event.target.value); setError(""); }}
                 onKeyDown={(event) => {
                   if (event.key === "Enter") { event.preventDefault(); applyManualTime(); }
-                  if (event.key === "Escape") { event.preventDefault(); onClose(); }
                 }}
                 className="h-9 min-w-0 flex-1 rounded-[8px] border border-sibs-border-subtle bg-white px-2.5 text-xs font-bold outline-none focus:border-sibs-orange"
               />
@@ -535,7 +560,7 @@ function CalendarTimePicker({
 }
 
 /** Same single-border searchable dropdown design used for Department in Employee Directory. */
-function CalendarOptionDropdown({ label, value, options, onChange, widthClass = "w-[160px]" }) {
+function CalendarOptionDropdown({ label, value, options, onChange, widthClass = "w-[160px]", searchable = true }) {
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [placement, setPlacement] = useState({ top: 0, left: 0, width: 160, maxHeight: 250 });
@@ -559,8 +584,8 @@ function CalendarOptionDropdown({ label, value, options, onChange, widthClass = 
   const updatePosition = useCallback(() => {
     const rect = triggerRef.current?.getBoundingClientRect();
     if (!rect) return;
-    const width = Math.min(rect.width, window.innerWidth - 20);
-    const maxHeight = Math.min(250, Math.max(130, window.innerHeight - 20));
+    const width = Math.min(Math.max(rect.width, 260), window.innerWidth - 20);
+    const maxHeight = Math.min(295, Math.max(130, window.innerHeight - 20));
     const below = window.innerHeight - rect.bottom - 10;
     const above = rect.top - 10;
     const flip = below < Math.min(maxHeight, 180) && above > below;
@@ -578,7 +603,7 @@ function CalendarOptionDropdown({ label, value, options, onChange, widthClass = 
     if (!isOpen) return;
     setQuery("");
     updatePosition();
-    const frame = window.requestAnimationFrame(() => inputRef.current?.focus());
+    const frame = window.requestAnimationFrame(() => inputRef.current?.focus({ preventScroll: true }));
     const onOutside = (event) => {
       if (!triggerRef.current?.contains(event.target) && !panelRef.current?.contains(event.target)) close();
     };
@@ -604,30 +629,48 @@ function CalendarOptionDropdown({ label, value, options, onChange, widthClass = 
         ref={triggerRef}
         className={`sibs-calendar-dropdown-trigger flex h-9 min-w-0 items-center gap-2 rounded-[10px] border px-3 font-jakarta text-[12px] font-bold text-sibs-navy shadow-sm transition-all duration-200 ${widthClass} ${isOpen ? "border-sibs-orange bg-white ring-4 ring-sibs-orange/10" : "border-sibs-border bg-sibs-surface hover:border-sibs-orange/40 hover:bg-white"}`}
       >
-        <input
-          ref={inputRef}
-          type="text"
-          className="sibs-calendar-dropdown-input h-full min-w-0 flex-1 appearance-none border-0 bg-transparent p-0 font-jakarta text-[12px] font-bold text-sibs-navy outline-none ring-0 shadow-none placeholder:text-sibs-muted"
-          autoComplete="off"
-          spellCheck={false}
-          value={isOpen ? query : displayValue}
-          placeholder={isOpen ? `Search ${label.toLowerCase()}...` : label}
-          aria-label={`${label} selection`}
-          role="combobox"
-          aria-autocomplete="list"
-          aria-expanded={isOpen}
-          aria-controls={isOpen ? listId : undefined}
-          onFocus={() => { if (!isOpen) setIsOpen(true); }}
-          onClick={() => { if (!isOpen) setIsOpen(true); }}
-          onChange={(event) => { setQuery(event.target.value); if (!isOpen) setIsOpen(true); }}
-          onKeyDown={(event) => {
-            if (event.key === "ArrowDown" && !isOpen) { event.preventDefault(); setIsOpen(true); }
-            if (event.key === "Enter" && isOpen) {
-              event.preventDefault();
-              if (filtered.length) choose(filtered[0].value);
-            }
-          }}
-        />
+        {searchable ? (
+          <input
+            ref={inputRef}
+            type="text"
+            className="sibs-calendar-dropdown-input h-full min-w-0 flex-1 appearance-none border-0 bg-transparent p-0 font-jakarta text-[12px] font-bold text-sibs-navy outline-none ring-0 shadow-none placeholder:text-sibs-muted"
+            autoComplete="off"
+            spellCheck={false}
+            value={isOpen ? query : displayValue}
+            placeholder={isOpen ? `Search ${label.toLowerCase()}...` : label}
+            aria-label={`${label} selection`}
+            role="combobox"
+            aria-autocomplete="list"
+            aria-expanded={isOpen}
+            aria-controls={isOpen ? listId : undefined}
+            onFocus={() => { if (!isOpen) setIsOpen(true); }}
+            onClick={() => { if (!isOpen) setIsOpen(true); }}
+            onChange={(event) => { setQuery(event.target.value); if (!isOpen) setIsOpen(true); }}
+            onKeyDown={(event) => {
+              if (event.key === "ArrowDown" && !isOpen) { event.preventDefault(); setIsOpen(true); }
+              if (event.key === "Enter" && isOpen) {
+                event.preventDefault();
+                if (filtered.length) choose(filtered[0].value);
+              }
+            }}
+          />
+        ) : (
+          <button
+            ref={inputRef}
+            type="button"
+            aria-label={`${label}: ${displayValue}`}
+            aria-haspopup="listbox"
+            aria-expanded={isOpen}
+            aria-controls={isOpen ? listId : undefined}
+            onClick={toggle}
+            onKeyDown={(event) => {
+              if (event.key === "ArrowDown" && !isOpen) { event.preventDefault(); setIsOpen(true); }
+            }}
+            className="flex h-full min-w-0 flex-1 items-center truncate text-left font-jakarta text-[12px] font-bold text-sibs-navy outline-none"
+          >
+            {displayValue}
+          </button>
+        )}
         <button
           type="button"
           tabIndex={-1}
@@ -645,7 +688,8 @@ function CalendarOptionDropdown({ label, value, options, onChange, widthClass = 
           className="sibs-dropdown-pop-in fixed z-[2147483600] overflow-hidden rounded-xl border border-sibs-border-subtle bg-white font-jakarta shadow-[0_16px_36px_rgba(4,44,81,0.16)]"
           style={{ top: placement.top, left: placement.left, width: placement.width, maxHeight: placement.maxHeight }}
         >
-          <div id={listId} className="sibs-scrollbar max-h-[250px] overflow-y-auto overscroll-contain py-1" role="listbox" aria-label={`${label} options`}>
+          <div className="border-b border-[#E6ECF2] px-4 py-2.5 text-xs font-extrabold text-[#06325E]">Select {label.toLowerCase()}</div>
+          <div id={listId} className="sibs-scrollbar max-h-[250px] overflow-y-auto overscroll-contain p-1.5" role="listbox" aria-label={`${label} options`}>
             {filtered.length ? filtered.map((option) => (
               <button
                 type="button"
@@ -653,9 +697,10 @@ function CalendarOptionDropdown({ label, value, options, onChange, widthClass = 
                 role="option"
                 aria-selected={option.value === value}
                 onClick={() => choose(option.value)}
-                className={`block w-full truncate px-3 py-2 text-left font-jakarta text-[12px] transition hover:bg-sibs-cream-subtle hover:text-sibs-orange ${option.value === value ? "bg-sibs-cream-light font-extrabold text-sibs-orange" : "font-semibold text-sibs-text-secondary"}`}
+                className={`mb-0.5 flex w-full items-center justify-between rounded-lg px-3 py-2 text-left font-jakarta text-[12px] transition hover:bg-[#F3F7FC] hover:text-sibs-orange ${option.value === value ? "bg-[#FFF1E9] font-extrabold text-[#E75522]" : "font-semibold text-sibs-text-secondary"}`}
               >
-                {option.label}
+                <span className="truncate">{option.label}</span>
+                {option.value === value && <Check size={14} className="ml-2 shrink-0 text-sibs-orange" />}
               </button>
             )) : (
               <p className="px-3 py-3 text-center text-[11px] font-semibold text-sibs-muted">No matching options</p>
@@ -668,19 +713,21 @@ function CalendarOptionDropdown({ label, value, options, onChange, widthClass = 
   );
 }
 
-function buildTimeSelectOptions({ isInterviewAvailability, isEndTime, startTime, selectedTime }) {
+function buildTimeSelectOptions({ isInterviewAvailability, isEventTime = false, isEndTime, startTime, selectedTime }) {
   const increment = isInterviewAvailability ? 30 : 15;
   const start = isInterviewAvailability
     ? INTERVIEW_AVAILABILITY_START_MINUTES + (isEndTime ? increment : 0)
-    : 0;
+    : isEventTime ? EVENT_FIRST_MINUTE + (isEndTime ? EVENT_DEFAULT_DURATION : 0) : 0;
   const end = isInterviewAvailability
     ? INTERVIEW_AVAILABILITY_END_MINUTES - (isEndTime ? 0 : increment)
+    : isEventTime ? EVENT_LAST_MINUTE - (isEndTime ? 0 : EVENT_DEFAULT_DURATION)
     : 23 * 60 + 45 - (isEndTime ? 0 : increment);
   const minimumEnd = isEndTime ? timeLabelToMinutes(startTime) : null;
+  const gap = isInterviewAvailability || isEventTime ? 30 : 1;
   const values = [];
 
   for (let minute = start; minute <= end; minute += increment) {
-    if (minimumEnd !== null && minute <= minimumEnd) continue;
+    if (minimumEnd !== null && minute < minimumEnd + gap) continue;
     values.push(minutesToTimeLabel(minute));
   }
 
@@ -827,7 +874,13 @@ function normalizeGoogleCalendarEvent(event = {}) {
           EVENT_COLOR_BY_GOOGLE_COLOR_ID[event.colorId] ||
           "blue",
       ).googleColorId,
-    recruitmentEventType: privateProperties.eventType || "",
+    recruitmentEventType: privateProperties.source === "sibs-hris-recruitment" ? (privateProperties.eventType || "MANAGED") : "",
+    // HRIS writes these identifiers into the Google event. Retain them so the
+    // event details link can open the correct Candidate Pipeline record.
+    candidatePipelineId: privateProperties.source === "sibs-hris-recruitment"
+      ? String(privateProperties.candidatePipelineId || "").trim() : "",
+    candidateId: privateProperties.source === "sibs-hris-recruitment"
+      ? String(privateProperties.candidateId || "").trim() : "",
     scheduleType: privateProperties.scheduleType || "Event",
     deadline: privateProperties.deadline || "",
     taskList: privateProperties.taskList || "My Tasks",
@@ -1157,6 +1210,7 @@ function EventEditorModal({
     if (!moreOptionsTimedEvent || !busyReady || selectedStartMinutes === null) return false;
     const proposedEnd = selectedStartMinutes + durationMinutes;
     if (proposedEnd > 23 * 60 + 59) return false;
+    if (activeType === "Event" && (durationMinutes < EVENT_DEFAULT_DURATION || proposedEnd > EVENT_LAST_MINUTE)) return false;
     if (activeType === "Interview availability" &&
         (durationMinutes < 30 || proposedEnd > INTERVIEW_AVAILABILITY_END_MINUTES)) return false;
     const start = calendarLocalTimeMs(form.date, form.startTime);
@@ -1223,6 +1277,15 @@ function EventEditorModal({
     setForm((current) => {
       const newStart = timeLabelToMinutes(value);
       const previousEnd = timeLabelToMinutes(current.endTime);
+      if (current.scheduleType === "Event" && newStart !== null) {
+        // Changing a regular event start always resets the end to +30 minutes.
+        // This prevents stale 15-minute (or previous-day) end times.
+        return {
+          ...current,
+          startTime: value,
+          endTime: minutesToTimeLabel(newStart + EVENT_DEFAULT_DURATION),
+        };
+      }
       if (newStart === null || (previousEnd !== null && previousEnd > newStart)) {
         return { ...current, startTime: value };
       }
@@ -1238,13 +1301,16 @@ function EventEditorModal({
   }
 
   const isInterviewAvailability = activeType === "Interview availability";
+  const isEventTime = activeType === "Event";
   const startTimeOptions = buildTimeSelectOptions({
     isInterviewAvailability,
+    isEventTime,
     isEndTime: false,
     selectedTime: form.startTime,
   });
   const endTimeOptions = buildTimeSelectOptions({
     isInterviewAvailability,
+    isEventTime,
     isEndTime: true,
     startTime: form.startTime,
     selectedTime: form.endTime,
@@ -1443,6 +1509,7 @@ function EventEditorModal({
                         value={form.startTime}
                         options={startTimeOptions}
                         isInterviewAvailability={isInterviewAvailability}
+                        isEventTime={isEventTime}
                         date={form.date}
                         busy={busyIntervals}
                         busyLoading={!busyReady}
@@ -1458,6 +1525,7 @@ function EventEditorModal({
                         value={form.endTime}
                         options={endTimeOptions}
                         isInterviewAvailability={isInterviewAvailability}
+                        isEventTime={isEventTime}
                         date={form.date}
                         busy={busyIntervals}
                         busyLoading={!busyReady}
@@ -1616,6 +1684,7 @@ function EventEditorModal({
 
                     <CalendarOptionDropdown
                       label="Color"
+                      searchable={false}
                       widthClass="w-[158px]"
                       value={form.color || "peacock"}
                       options={COLOR_OPTIONS}
@@ -1673,6 +1742,7 @@ function EventEditorModal({
                   <CalendarOptionDropdown
                     label="Availability"
                     widthClass="w-[125px]"
+                    searchable={false}
                     value={form.availability || "Busy"}
                     options={AVAILABILITY_OPTIONS}
                     onChange={(value) => updateField("availability", value)}
@@ -2252,12 +2322,105 @@ function DisconnectCalendarConfirmModal({
   );
 }
 
+function GoogleCalendarDayDetails({ date, events, onClose, onCreateEvent, onEditEvent }) {
+  return (
+    <div className="sibs-action-backdrop-in absolute inset-0 z-[2] flex items-center justify-center bg-black/55 p-3 backdrop-blur-[3px]" onClick={onClose}>
+      <section role="dialog" aria-modal="true" aria-label="Google Calendar day details"
+        onClick={(e) => e.stopPropagation()}
+        className="sibs-modal-pop-in flex max-h-[80vh] w-full max-w-[460px] flex-col overflow-hidden rounded-[18px] bg-white font-jakarta shadow-2xl">
+        <div className="flex items-center justify-between gap-3 border-b border-[#E8EAED] px-5 py-4">
+          <div>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-[#1A73E8]">Google Calendar</span>
+            <h3 className="mt-1 text-base font-black text-[#202124]">{formatDayLabel(date, { weekday: "long", year: true })}</h3>
+            <p className="text-[11px] text-[#5F6368]">{events.length} schedule{events.length === 1 ? "" : "s"} · Asia/Manila</p>
+          </div>
+          <button type="button" onClick={onClose} className="rounded-lg p-2 hover:bg-slate-100" aria-label="Close day details"><X size={18} /></button>
+        </div>
+        <div className="thin-scroll min-h-0 space-y-2 overflow-y-auto p-4">
+          {sortEventsByDateTime(events).map((event) => (
+            <button key={event.id} type="button"
+              onClick={() => { onClose(); onEditEvent(sourceCalendarEvent(event)); }}
+              className="flex w-full items-center gap-3 rounded-xl border border-[#E8EAED] bg-white p-3 text-left hover:border-[#A8C7FA] hover:bg-[#F8FBFF]">
+              <span className="h-9 w-1.5 shrink-0 rounded-full bg-[#1A73E8]" />
+              <span className="min-w-0 flex-1">
+                <span className="block text-[12px] font-bold text-[#202124]">{event.title}</span>
+                <span className="mt-0.5 block text-[11px] text-[#5F6368]">{event.startTime} – {event.endTime}{event.site ? ` · ${event.site}` : ""}</span>
+              </span>
+              {event.recruitmentEventType ? <span className="rounded bg-blue-50 px-2 py-1 text-[9px] font-semibold text-blue-700">HRIS</span> : null}
+            </button>
+          ))}
+        </div>
+        <div className="border-t border-[#E8EAED] px-5 py-4">
+          <button type="button" onClick={() => { onClose(); onCreateEvent(date); }}
+            className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#1A73E8] px-4 py-2.5 text-xs font-bold text-white hover:bg-[#1558B0]">
+            <Plus size={16} /> Create event on this date
+          </button>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function ManagedRecruitmentCalendarDetails({ event, onClose, onOpenCandidate }) {
+  // Numeric candidate_pipeline.id is the canonical link. Older managed events
+  // may carry only the public PUB-... ID in metadata or their description.
+  const pipelineId = String(event.candidatePipelineId || "").trim();
+  const storedCandidateId = String(event.candidateId || "").trim();
+  const descriptionCandidateId = String(event.notes || "").match(/^Candidate ID:\s*(\S+)/im)?.[1] || "";
+  const candidateId = storedCandidateId || descriptionCandidateId;
+  const candidateRoute = /^\d+$/.test(pipelineId)
+    ? `/recruitment/candidate-pipeline?pipelineId=${encodeURIComponent(pipelineId)}`
+    : candidateId
+      ? `/recruitment/candidate-pipeline?candidateId=${encodeURIComponent(candidateId)}`
+      : "";
+  return (
+    <div className="sibs-action-backdrop-in absolute inset-0 z-[2] flex items-center justify-center bg-black/55 p-3 backdrop-blur-[3px]" onClick={onClose}>
+      <section role="dialog" aria-modal="true" aria-label="Recruitment schedule details"
+        onClick={(e) => e.stopPropagation()}
+        className="sibs-modal-pop-in w-full max-w-[490px] rounded-[18px] bg-white p-6 font-jakarta shadow-2xl">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#1A73E8]">Google Calendar · SiBS HRIS managed</span>
+            <h3 className="mt-2 text-lg font-black text-[#06325E]">{event.title}</h3>
+          </div>
+          <button type="button" onClick={onClose} aria-label="Close event details" className="rounded-lg p-2 hover:bg-slate-100"><X size={18} /></button>
+        </div>
+        <div className="mt-5 space-y-3 text-sm text-[#475467]">
+          <p><strong>Date:</strong> {formatDayLabel(event.date, { year: true })}</p>
+          <p><strong>Time:</strong> {event.startTime} – {event.endTime} (Asia/Manila)</p>
+          {event.site && <p><strong>Site:</strong> {event.site}</p>}
+          {event.location && <p><strong>Location:</strong> {event.location}</p>}
+          <p><strong>Status:</strong> {event.status}</p>
+        </div>
+        <p className="mt-5 rounded-xl border border-[#D2E3FC] bg-[#E8F0FE] p-3 text-xs font-semibold text-[#174EA6]">
+          This is a confirmed recruitment schedule. Interview changes and candidate reschedule requests must go through the SiBS Candidate Pipeline, not this Google Calendar event.
+        </p>
+        <div className="mt-5 flex flex-wrap justify-end gap-2">
+          {event.googleHtmlLink && <a href={event.googleHtmlLink} target="_blank" rel="noopener noreferrer" className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-[#06325E] hover:bg-slate-50">View in Google Calendar</a>}
+          {candidateRoute ? (
+            <Link to={candidateRoute} onClick={onOpenCandidate}
+              className="rounded-lg bg-[#06325E] px-3 py-2 text-xs font-bold text-white hover:bg-[#0A426F]">
+              Open Candidate Pipeline
+            </Link>
+          ) : (
+            <span title="This older Google Calendar event has no linked HRIS candidate ID"
+              className="cursor-not-allowed rounded-lg bg-slate-200 px-3 py-2 text-xs font-bold text-slate-500">
+              Candidate record not linked
+            </span>
+          )}
+        </div>
+      </section>
+    </div>
+  );
+}
+
 function MonthCalendarView({
   monthCells,
   eventsByDate,
   todayKey,
   onCreateEvent,
   onEditEvent,
+  onViewDay,
 }) {
   return (
     <div className="thin-scroll min-h-0 flex-1 overflow-y-auto bg-white">
@@ -2300,8 +2463,8 @@ function MonthCalendarView({
                 {cell.date.getDate()}
               </span>
 
-              <div className="mt-2 space-y-1.5">
-                {dayEvents.map((event) => (
+              <div className="mt-1.5 space-y-1">
+                {dayEvents.slice(0, 3).map((event) => (
                   <CompactScheduleCard
                     key={event.id}
                     event={event}
@@ -2311,8 +2474,18 @@ function MonthCalendarView({
                     }}
                   />
                 ))}
-
+                {dayEvents.length > 3 && (
+                  <button
+                    type="button"
+                    className="block w-full rounded px-1 text-left text-[11px] font-semibold text-[#1A73E8] hover:bg-[#E8F0FE]"
+                    onClick={(clickEvent) => { clickEvent.stopPropagation(); onViewDay(cell.key); }}
+                    title={`View all Google Calendar events on ${cell.key}`}
+                  >
+                    +{dayEvents.length - 3} more
+                  </button>
+                )}
               </div>
+              <span className="mt-auto hidden pt-1 text-[10px] text-[#5F6368] group-hover:block">+ Create event</span>
             </div>
           );
         })}
@@ -2497,6 +2670,7 @@ function AgendaCalendarView({
               </div>
 
               <div className="flex shrink-0 flex-wrap items-center justify-end gap-2 self-center">
+                {!sourceCalendarEvent(event).recruitmentEventType && <>
                 <button
                   type="button"
                   onClick={() => onRescheduleEvent(sourceCalendarEvent(event), 1)}
@@ -2513,22 +2687,23 @@ function AgendaCalendarView({
                   <ArrowRight className="h-3.5 w-3.5 text-sibs-orange" />
                   +1 Wk
                 </button>
+                </>}
                 <button
                   type="button"
                   onClick={() => onEditEvent(sourceCalendarEvent(event))}
                   className="inline-flex h-8 items-center gap-1 rounded-[8px] bg-sibs-navy px-3 text-xs font-black text-white transition hover:cursor-pointer hover:brightness-95"
                 >
                   <Edit3 className="h-3.5 w-3.5" />
-                  Edit / Resched
+                  {sourceCalendarEvent(event).recruitmentEventType ? "View details" : "Edit / Resched"}
                 </button>
-                <button
+                {!sourceCalendarEvent(event).recruitmentEventType && <button
                   type="button"
                   onClick={() => onDeleteEvent(sourceCalendarEvent(event).id)}
                   className="flex h-8 w-8 items-center justify-center rounded-[8px] text-sibs-muted transition hover:cursor-pointer hover:bg-rose-50 hover:text-rose-600"
                   aria-label={`Delete ${event.title}`}
                 >
                   <Trash2 className="h-4 w-4" />
-                </button>
+                </button>}
               </div>
             </article>
           ))}
@@ -2729,7 +2904,12 @@ export default function HeaderCalendarModal({ open, user, onClose }) {
   });
   const [viewMode, setViewMode] = useState("Month");
   const [editingEvent, setEditingEvent] = useState(null);
+  const [selectedDay, setSelectedDay] = useState("");
   const [disconnectConfirmOpen, setDisconnectConfirmOpen] = useState(false);
+  const [orphanPreview, setOrphanPreview] = useState(null);
+  const [orphanBusy, setOrphanBusy] = useState(false);
+  const [orphanMessage, setOrphanMessage] = useState("");
+  const [selectedLegacyIds, setSelectedLegacyIds] = useState([]);
   const calendarLoadRequestRef = useRef(0);
   const googleConnectPopupTimerRef = useRef(null);
   const wasOpenRef = useRef(false);
@@ -2801,7 +2981,10 @@ export default function HeaderCalendarModal({ open, user, onClose }) {
       lastLoadedRangeRef.current = "";
       setViewDate(new Date());
       setEditingEvent(null);
+      setSelectedDay("");
       setDisconnectConfirmOpen(false);
+      setOrphanPreview(null);
+      setOrphanMessage("");
       setCalendarError("");
       window.setTimeout(() => {
         loadGoogleCalendarEvents({
@@ -2930,7 +3113,7 @@ export default function HeaderCalendarModal({ open, user, onClose }) {
       const payload = await getGoogleCalendarEvents({
         timeMin,
         timeMax,
-        maxResults: 100,
+        maxResults: 250,
       });
 
       if (payload?.success === false) {
@@ -3036,7 +3219,7 @@ export default function HeaderCalendarModal({ open, user, onClose }) {
       const payload = await getGoogleCalendarEvents({
         timeMin,
         timeMax,
-        maxResults: 100,
+        maxResults: 250,
       });
 
       if (payload?.success === false) {
@@ -3057,6 +3240,18 @@ export default function HeaderCalendarModal({ open, user, onClose }) {
       calendarConnectedRef.current = true;
       setEvents(googleEvents.map(normalizeGoogleCalendarEvent));
       setCalendarConnected(true);
+      const recruitment = payload?.recruitmentSync;
+      const firstSyncError = recruitment?.results?.flatMap((candidate) => [
+        ...(candidate?.results || []),
+        ...(candidate?.error ? [{ error: candidate.error, status: "FAILED" }] : []),
+      ])?.find((entry) => entry?.error && ["FAILED", "PENDING"].includes(entry.status))?.error;
+      if (recruitment?.error || Number(recruitment?.failedCandidates || 0) > 0) {
+        setCalendarError(`SiBS HRIS Google sync needs attention: ${Number(recruitment?.failedCandidates || 0)} failed candidate schedule(s). ${recruitment?.error || firstSyncError || "Review recruitment_calendar_sync.last_sync_error and retry after fixing the Google connection."}`);
+      } else if (Number(recruitment?.pendingCandidates || 0) > 0) {
+        setCalendarError(`${Number(recruitment.pendingCandidates)} approved HRIS schedule(s) are still pending Google synchronization. Use Sync to retry.`);
+      } else if (Number(recruitment?.publishedInOtherAccountCandidates || 0) > 0) {
+        setCalendarError(`${Number(recruitment.publishedInOtherAccountCandidates)} HRIS interview schedule(s) belong to a different connected Google account. Switch to the schedule owner's account or use a shared calendar; this view will not duplicate events.`);
+      }
     } catch (error) {
       if (calendarLoadRequestRef.current !== requestId) return;
 
@@ -3076,6 +3271,24 @@ export default function HeaderCalendarModal({ open, user, onClose }) {
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [viewDate]);
+
+  // A candidate may confirm a reschedule in another browser tab while the
+  // Google view remains open. Refresh when staff returns to this tab.
+  useEffect(() => {
+    if (!open) return undefined;
+    const refreshOnReturn = () => {
+      if (document.visibilityState === "visible" && calendarConnectedRef.current) {
+        void loadGoogleCalendarEvents({ force: true });
+      }
+    };
+    window.addEventListener("focus", refreshOnReturn);
+    document.addEventListener("visibilitychange", refreshOnReturn);
+    return () => {
+      window.removeEventListener("focus", refreshOnReturn);
+      document.removeEventListener("visibilitychange", refreshOnReturn);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, viewDate]);
 
   const monthCells = useMemo(() => buildMonthCells(viewDate), [viewDate]);
   const weekCells = useMemo(() => buildWeekCells(viewDate), [viewDate]);
@@ -3192,7 +3405,42 @@ export default function HeaderCalendarModal({ open, user, onClose }) {
     }
   }
 
+  async function handlePreviewOrphanCleanup() {
+    setOrphanBusy(true);
+    setOrphanMessage("");
+    setOrphanPreview(null);
+    setSelectedLegacyIds([]);
+    try {
+      const result = await previewHrisCalendarOrphans();
+      setOrphanPreview(result);
+    } catch (error) {
+      setCalendarError(error?.response?.data?.error || error?.message || "Unable to verify HRIS events.");
+    } finally {
+      setOrphanBusy(false);
+    }
+  }
+
+  async function handleConfirmOrphanCleanup() {
+    setOrphanBusy(true);
+    setOrphanMessage("");
+    try {
+      const result = await cleanupHrisCalendarOrphans({ legacyEventIds: selectedLegacyIds });
+      setOrphanMessage(`${result.deleted || 0} selected/verified orphan Google Calendar event(s) removed. ${result.retained || 0} verified database-backed events preserved.${result.failed?.length ? ` ${result.failed.length} failed or need ledger reconciliation; review details and retry.` : ""}`);
+      setOrphanPreview(null);
+      await loadGoogleCalendarEvents({ force: true });
+    } catch (error) {
+      setOrphanMessage(error?.response?.data?.error || error?.message || "Cleanup failed; no other Google events were targeted.");
+    } finally {
+      setOrphanBusy(false);
+    }
+  }
+
   async function handleDeleteEvent(eventId) {
+    const sourceEvent = events.find((event) => event.id === eventId);
+    if (sourceEvent?.recruitmentEventType) {
+      setEditingEvent(sourceEvent);
+      return;
+    }
     setCalendarLoading(true);
     setCalendarError("");
 
@@ -3219,6 +3467,10 @@ export default function HeaderCalendarModal({ open, user, onClose }) {
   }
 
   function handleRescheduleEvent(event, days) {
+    if (event?.recruitmentEventType) {
+      setEditingEvent(event);
+      return;
+    }
     void handleSaveEvent({
       ...event,
       date: addDays(event.date, days),
@@ -3276,7 +3528,7 @@ export default function HeaderCalendarModal({ open, user, onClose }) {
             <div className="min-w-0 flex-1">
               <div className="flex min-w-0 flex-wrap items-center gap-1.5 2xl:gap-2">
                 <span className="truncate text-[9px] 2xl:text-[11px] font-extrabold text-white/75">
-                  HRIS Operational Workspace
+                  SiBS HRIS Operational Workspace
                 </span>
 
                 <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-white/35" />
@@ -3302,12 +3554,19 @@ export default function HeaderCalendarModal({ open, user, onClose }) {
               </div>
 
               <h2 className="sibs-modal-title mt-0.5 truncate text-white">
-                HR &amp; Talent Acquisition Calendar
+                Google Calendar · HR &amp; Talent Acquisition
               </h2>
             </div>
           </div>
 
           <div className="flex shrink-0 flex-wrap items-center justify-end gap-2 sm:gap-2.5">
+            {calendarConnected && (
+              <a href="https://calendar.google.com/calendar/u/0/r/month" target="_blank" rel="noopener noreferrer"
+                className="hidden h-8 items-center gap-1.5 rounded-lg border border-white/30 bg-white/10 px-3 text-xs font-bold text-white hover:bg-white/15 lg:inline-flex"
+                title="Open Google Calendar in a new tab (choose your connected Google account if asked)">
+                <Link2 size={14} /> Open Google Calendar
+              </a>
+            )}
             <button
               type="button"
               onClick={() =>
@@ -3327,6 +3586,18 @@ export default function HeaderCalendarModal({ open, user, onClose }) {
               />
               Sync
             </button>
+
+            {calendarConnected ? (
+              <button
+                type="button"
+                disabled={calendarLoading || orphanBusy}
+                onClick={handlePreviewOrphanCleanup}
+                className="hidden h-8 2xl:h-9 items-center rounded-lg border border-white/30 bg-white/10 px-3 text-xs font-bold text-white transition hover:bg-white/20 disabled:opacity-50 sm:inline-flex"
+                title="Preview SiBS HRIS Google events not linked to the HRIS database"
+              >
+                Clean Old HRIS Events
+              </button>
+            ) : null}
 
             {!calendarConnected ? (
               <button
@@ -3429,6 +3700,9 @@ export default function HeaderCalendarModal({ open, user, onClose }) {
                 <span className="min-w-[100px] shrink-0 px-1 text-sm font-black text-sibs-navy">
                   {periodLabel}
                 </span>
+                <span className="hidden items-center gap-1.5 rounded-lg border border-[#DADCE0] bg-white px-2.5 py-1.5 text-[10px] font-semibold text-[#5F6368] md:inline-flex">
+                  <span className="h-2 w-2 rounded-full bg-[#34A853]" /> Google-synced · Asia/Manila
+                </span>
               </div>
 
               <div className="flex h-8 shrink-0 overflow-hidden rounded-[10px] border border-sibs-border bg-sibs-canvas">
@@ -3479,6 +3753,7 @@ export default function HeaderCalendarModal({ open, user, onClose }) {
                   setEditingEvent(createBlankEvent(dateKey, organizerLabel))
                 }
                 onEditEvent={setEditingEvent}
+                onViewDay={setSelectedDay}
               />
             ) : null}
 
@@ -3514,13 +3789,27 @@ export default function HeaderCalendarModal({ open, user, onClose }) {
               <span>HR Syncs: {hrSyncs}</span>
               <span className="ml-auto hidden items-center gap-1 italic md:flex">
                 <Clock className="h-3.5 w-3.5" />
-                Click any schedule block to edit or reschedule timelines.
+                Click a date to create a Google event. Candidate reschedules use the SiBS interview calendar.
               </span>
             </div>
           </>
         )}
 
-        {editingEvent ? (
+        {selectedDay && !editingEvent ? (
+          <GoogleCalendarDayDetails
+            date={selectedDay}
+            events={eventsByDate[selectedDay] || []}
+            onClose={() => setSelectedDay("")}
+            onCreateEvent={(dateKey) => setEditingEvent(createBlankEvent(dateKey, organizerLabel))}
+            onEditEvent={setEditingEvent}
+          />
+        ) : null}
+
+        {editingEvent?.recruitmentEventType ? (
+          <ManagedRecruitmentCalendarDetails event={editingEvent}
+            onClose={() => setEditingEvent(null)}
+            onOpenCandidate={() => { setEditingEvent(null); onClose?.(); }} />
+        ) : editingEvent ? (
           <EventEditorModal
             key={`${editingEvent.id || "new"}-${editingEvent.date || ""}`}
             event={editingEvent}
@@ -3529,6 +3818,61 @@ export default function HeaderCalendarModal({ open, user, onClose }) {
             onDelete={handleDeleteEvent}
             onSave={handleSaveEvent}
           />
+        ) : null}
+
+        {(orphanPreview || orphanMessage || orphanBusy) ? (
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-[#031C33]/65 p-4 backdrop-blur-sm"
+            onMouseDown={(event) => { if (event.target === event.currentTarget && !orphanBusy) { setOrphanPreview(null); setOrphanMessage(""); } }}>
+            <section role="dialog" aria-modal="true" aria-label="Clean unmatched HRIS Google Calendar events"
+              className="w-full max-w-xl rounded-2xl border border-[#DDE7F2] bg-white p-6 text-[#06325E] shadow-2xl">
+              <div className="flex items-center justify-between gap-4">
+                <h3 className="text-lg font-black">Reconcile SiBS HRIS Google events</h3>
+                <button type="button" disabled={orphanBusy} onClick={() => { setOrphanPreview(null); setOrphanMessage(""); }}
+                  aria-label="Close cleanup preview"><X className="h-5 w-5" /></button>
+              </div>
+              {orphanBusy ? <p className="mt-4 text-sm">Checking HRIS database and Google Calendar…</p> : null}
+              {orphanPreview ? (
+                <>
+                  <p className="mt-3 text-sm">Scanned {orphanPreview.scanned} Google events. <strong>{orphanPreview.count} confirmed orphaned HRIS events</strong> and <strong>{orphanPreview.legacyCount || 0} older HRIS-titled or generic Interview events needing manual review</strong>. {orphanPreview.retained || 0} events remain linked to active HRIS schedules.</p>
+                  <p className="mt-2 text-xs text-slate-600">The HRIS database is authoritative. Confirmed orphans can be deleted. Older SiBS HRIS-titled events and events simply named “Interview” are unverified: they are never removed automatically. Select each one only if you know it belongs to an obsolete HRIS schedule. Other Google events are excluded.</p>
+                  <div className="mt-3 max-h-40 overflow-y-auto rounded-lg border border-[#DDE7F2] bg-[#F8FAFC] p-3 text-xs">
+                    <p className="mb-2 font-bold">Confirmed database orphans (will be deleted)</p>
+                    {orphanPreview.orphans?.length ? orphanPreview.orphans.map((item) => (
+                      <p key={item.id} className="border-b border-slate-200 py-1 last:border-0">{item.start ? `${item.start} — ` : ""}{item.title}</p>
+                    )) : "No confirmed orphans."}
+                    {orphanPreview.truncatedPreview ? <p>Showing first 100 of {orphanPreview.count}.</p> : null}
+                  </div>
+                  {orphanPreview.legacyCount > 0 ? (
+                    <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs">
+                      <div className="flex items-center justify-between gap-2">
+                        <strong>Legacy HRIS / generic Interview events (manual review)</strong>
+                      </div>
+                      <p className="mt-1 text-amber-900">These may include unrelated Google meetings. Review the date and title carefully, then check each obsolete event individually. Generic “Interview” events are never selected or deleted automatically.</p>
+                      <div className="mt-2 max-h-44 overflow-y-auto">
+                        {orphanPreview.legacy?.map((item) => (
+                          <label key={item.id} className="flex cursor-pointer items-start gap-2 border-b border-amber-200 py-2 last:border-0">
+                            <input type="checkbox" className="mt-0.5 accent-[#FF5C28]" checked={selectedLegacyIds.includes(item.id)}
+                              onChange={(e) => setSelectedLegacyIds((ids) => e.target.checked ? [...ids, item.id] : ids.filter((id) => id !== item.id))} />
+                            <span>{item.start ? `${item.start} — ` : ""}{item.title}</span>
+                          </label>
+                        ))}
+                      </div>
+                      {orphanPreview.truncatedLegacy ? <p>Showing first 100; rerun after cleanup to review remaining events.</p> : null}
+                    </div>
+                  ) : null}
+                </>
+              ) : null}
+              {orphanMessage ? <p className="mt-4 text-sm">{orphanMessage}</p> : null}
+              <div className="mt-5 flex justify-end gap-3">
+                <button type="button" disabled={orphanBusy} onClick={() => { setOrphanPreview(null); setOrphanMessage(""); }}
+                  className="rounded-lg border px-4 py-2 text-xs font-bold">Close</button>
+                {(orphanPreview?.count > 0 || selectedLegacyIds.length > 0) ? <button type="button" disabled={orphanBusy} onClick={handleConfirmOrphanCleanup}
+                  className="rounded-lg bg-[#FF5C28] px-4 py-2 text-xs font-bold text-white disabled:opacity-50">
+                  Delete selected ({(orphanPreview?.count || 0) + selectedLegacyIds.length})
+                </button> : null}
+              </div>
+            </section>
+          </div>
         ) : null}
 
         {disconnectConfirmOpen ? (

@@ -15,10 +15,7 @@ import { socket } from "../../lib/axios/socket";
 
 import { pipelineStages } from "../../lib/utils/candidatePipeline/candidatePipelineConstants";
 
-import {
-  toDateInputValue,
-  formatCurrency,
-} from "../../lib/utils/candidatePipeline/candidatePipelineFormatters";
+import { formatCurrency } from "../../lib/utils/candidatePipeline/candidatePipelineFormatters";
 
 import StatusModal from "../../components/modals/StatusModal";
 
@@ -1026,13 +1023,31 @@ function applyStageAliases(candidate = {}, stage) {
 function normalizeDateTimeInput(value) {
   if (!value) return "";
 
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return String(value).slice(0, 16);
+  // Candidate interview dates must be passed to the scheduling calendar as
+  // YYYY-MM-DDTHH:mm, not String(Date) (e.g. "Tue Oct 20 2026").
+  // MySQL DATETIME values without a timezone already represent Manila wall time.
+  const raw = typeof value === "string" ? value.trim() : "";
+  const localMatch = /^(\d{4}-\d{2}-\d{2})[T ](\d{2}):(\d{2})(?::\d{2}(?:\.\d+)?)?$/.exec(raw);
+  if (localMatch) {
+    const [, day, hour, minute] = localMatch;
+    const test = new Date(`${day}T12:00:00`);
+    if (!Number.isNaN(test.getTime()) &&
+        `${test.getFullYear()}-${String(test.getMonth() + 1).padStart(2, "0")}-${String(test.getDate()).padStart(2, "0")}` === day &&
+        Number(hour) < 24 && Number(minute) < 60) {
+      return `${day}T${hour}:${minute}`;
+    }
+    return "";
   }
 
-  return toDateInputValue(date);
+  // ISO timestamps with Z/UTC offsets (and Date instances) are instants.
+  // Convert them to the same Asia/Manila clock displayed throughout HRIS.
+  const date = value instanceof Date ? value : new Date(raw || value);
+  if (Number.isNaN(date.getTime())) return "";
+  const parts = Object.fromEntries(new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Asia/Manila", year: "numeric", month: "2-digit",
+    day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23",
+  }).formatToParts(date).map(({ type, value: part }) => [type, part]));
+  return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}`;
 }
 
 export function CandidatePipelineProvider({ children }) {
@@ -2275,13 +2290,9 @@ export function CandidatePipelineProvider({ children }) {
       return null;
     }
 
-    if (
-      scheduleForm.interviewType === "Online" &&
-      !String(scheduleForm.onlineInterviewLink || "").trim()
-    ) {
-      showError("Online interview link is required for online interviews.");
-      return null;
-    }
+    // Online interviews are saved as HRIS proposals. Google Meet is generated
+    // only after the candidate accepts or an approved reschedule is synced.
+    // Do not require a meeting URL while saving a pending proposal.
 
     if (
       !(await confirmAction(
