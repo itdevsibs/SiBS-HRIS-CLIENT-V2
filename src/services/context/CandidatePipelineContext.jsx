@@ -15,7 +15,10 @@ import { socket } from "../../lib/axios/socket";
 
 import { pipelineStages } from "../../lib/utils/candidatePipeline/candidatePipelineConstants";
 
-import { formatCurrency } from "../../lib/utils/candidatePipeline/candidatePipelineFormatters";
+import {
+  toDateInputValue,
+  formatCurrency,
+} from "../../lib/utils/candidatePipeline/candidatePipelineFormatters";
 
 import StatusModal from "../../components/modals/StatusModal";
 
@@ -253,6 +256,30 @@ function getLoggedInUserIdentifier(user) {
       user?.fullName ||
       user?.name,
   );
+}
+
+function getTalentPoolApplicationIdForOffer(candidate = {}) {
+  const metadata = candidate.metadata || {};
+  const candidateSnapshot =
+    metadata.candidateSnapshot ||
+    metadata.candidate ||
+    candidate.candidateSnapshot ||
+    {};
+
+  const value = cleanText(
+    candidate.sourceTalentPoolId ||
+      candidate.source_talent_pool_id ||
+      metadata.sourceTalentPoolId ||
+      metadata.source_talent_pool_id ||
+      candidateSnapshot.sourceTalentPoolId ||
+      candidateSnapshot.source_talent_pool_id ||
+      candidate.candidateApplicationId ||
+      candidate.candidate_application_id ||
+      candidate.applicationId ||
+      candidate.application_id,
+  );
+
+  return /^\d+$/.test(value) ? value : "";
 }
 
 /* ================================
@@ -1023,31 +1050,13 @@ function applyStageAliases(candidate = {}, stage) {
 function normalizeDateTimeInput(value) {
   if (!value) return "";
 
-  // Candidate interview dates must be passed to the scheduling calendar as
-  // YYYY-MM-DDTHH:mm, not String(Date) (e.g. "Tue Oct 20 2026").
-  // MySQL DATETIME values without a timezone already represent Manila wall time.
-  const raw = typeof value === "string" ? value.trim() : "";
-  const localMatch = /^(\d{4}-\d{2}-\d{2})[T ](\d{2}):(\d{2})(?::\d{2}(?:\.\d+)?)?$/.exec(raw);
-  if (localMatch) {
-    const [, day, hour, minute] = localMatch;
-    const test = new Date(`${day}T12:00:00`);
-    if (!Number.isNaN(test.getTime()) &&
-        `${test.getFullYear()}-${String(test.getMonth() + 1).padStart(2, "0")}-${String(test.getDate()).padStart(2, "0")}` === day &&
-        Number(hour) < 24 && Number(minute) < 60) {
-      return `${day}T${hour}:${minute}`;
-    }
-    return "";
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return String(value).slice(0, 16);
   }
 
-  // ISO timestamps with Z/UTC offsets (and Date instances) are instants.
-  // Convert them to the same Asia/Manila clock displayed throughout HRIS.
-  const date = value instanceof Date ? value : new Date(raw || value);
-  if (Number.isNaN(date.getTime())) return "";
-  const parts = Object.fromEntries(new Intl.DateTimeFormat("en-GB", {
-    timeZone: "Asia/Manila", year: "numeric", month: "2-digit",
-    day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23",
-  }).formatToParts(date).map(({ type, value: part }) => [type, part]));
-  return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}`;
+  return toDateInputValue(date);
 }
 
 export function CandidatePipelineProvider({ children }) {
@@ -1087,6 +1096,8 @@ export function CandidatePipelineProvider({ children }) {
 
   const [candidateList, setCandidateList] = useState([]);
   const backgroundRefreshInFlightRef = useRef(false);
+  // An older GET must never overwrite a stage committed by a newer write.
+  const candidateMutationRevisionRef = useRef(0);
   const [hasLoadedStorage, setHasLoadedStorage] = useState(true);
 
   const [isLoading, setIsLoading] = useState(false);
@@ -1230,6 +1241,7 @@ export function CandidatePipelineProvider({ children }) {
       setLoadError("");
     }
 
+    const revisionAtRequestStart = candidateMutationRevisionRef.current;
     try {
       const response = await getCandidatePipelineCandidates({ limit: 500 });
       if (!response?.success) {
@@ -1244,6 +1256,12 @@ export function CandidatePipelineProvider({ children }) {
       // Empty API responses are valid: never populate the board with sample candidates.
       const rows = apiRows;
       const normalizedRows = rows.map(normalizePipelineCandidateForBoard);
+
+      // Socket and GET responses may arrive after a local save. A fetch that
+      // started before that save contains potentially obsolete stage values.
+      if (revisionAtRequestStart !== candidateMutationRevisionRef.current) {
+        return { success: true, stale: true, data: normalizedRows };
+      }
 
       if (silent) {
         // Avoid unnecessary re-renders and the deep-link navigation effect
@@ -1338,6 +1356,7 @@ export function CandidatePipelineProvider({ children }) {
           normalizedCandidate.candidateApplicationId ||
           normalizedCandidate.email
         ) {
+          candidateMutationRevisionRef.current += 1;
           setCandidateList((prev) =>
             mergeUpdatedCandidateList(prev, normalizedCandidate),
           );
@@ -1622,6 +1641,7 @@ export function CandidatePipelineProvider({ children }) {
   function updateCandidateRecord(updatedCandidate) {
     if (!updatedCandidate) return null;
 
+    candidateMutationRevisionRef.current += 1;
     const normalizedCandidate =
       normalizePipelineCandidateForBoard(updatedCandidate);
 
@@ -1682,6 +1702,7 @@ export function CandidatePipelineProvider({ children }) {
         : {}),
     });
 
+    candidateMutationRevisionRef.current += 1;
     setCandidateList((prev) =>
       mergeUpdatedCandidateList(prev, normalizedCandidate),
     );
@@ -1733,7 +1754,9 @@ export function CandidatePipelineProvider({ children }) {
     const {
       activeStageAfter,
       setSelected = true,
-      refresh = true,
+      // Save responses already carry the committed candidate. Do not block
+      // the UI waiting on another 500-row GET before moving its Kanban card.
+      refresh = false,
       successEvent = true,
       showSuccessModal = true,
       mergeResponseCandidate = true,
@@ -1780,6 +1803,8 @@ export function CandidatePipelineProvider({ children }) {
         const normalizedCandidate =
           normalizePipelineCandidateForBoard(updatedCandidate);
 
+        // Update the persisted stage in this render, immediately after Save.
+        candidateMutationRevisionRef.current += 1;
         setCandidateList((previous) =>
           mergeUpdatedCandidateList(
             previous,
@@ -1806,9 +1831,12 @@ export function CandidatePipelineProvider({ children }) {
       }
 
       if (activeStageAfter) {
-        setActiveStage(
-          normalizePipelineStageName(activeStageAfter),
-        );
+        // Backend stage is authoritative: e.g. scheduling NHO can retain
+        // Accepted until the candidate responds, and assessments may route
+        // to Assessment Fit or Drop-off rather than Online Assessment.
+        setActiveStage(normalizePipelineStageName(
+          updatedCandidate ? getCandidateStage(updatedCandidate) : activeStageAfter,
+        ));
       }
 
       if (successEvent) {
@@ -1822,8 +1850,10 @@ export function CandidatePipelineProvider({ children }) {
         );
       }
 
-      if (refresh) {
-        await refreshCandidatePipeline();
+      if (refresh || !updatedCandidate) {
+        // Use a non-blocking, non-skeleton reconciliation only if the API did
+        // not return the updated row (or a caller explicitly asks for one).
+        void refreshCandidatePipeline({ silent: true });
       }
 
       if (showSuccessModal) {
@@ -2794,17 +2824,8 @@ export function CandidatePipelineProvider({ children }) {
         interview_status: "For Assessment",
       });
 
-      setCandidateList((prev) =>
-        mergeUpdatedCandidateList(prev, optimisticCandidate),
-      );
-
-      syncSelectedCandidate(optimisticCandidate);
-      setSelectedCandidate(optimisticCandidate);
-
-      setMoveCandidate(null);
-      setMoveForm(emptyMoveForm);
-      setActiveStage("Online Assessment");
-
+      // Keep the current stage visible while the API writes and sends email.
+      // Only the success response may move a candidate to the next column.
       const response = await runCandidateAction(
         () =>
           moveCandidatePipelineStage(id, {
@@ -2837,12 +2858,16 @@ export function CandidatePipelineProvider({ children }) {
           pipelineStage: "Online Assessment",
         });
 
+        candidateMutationRevisionRef.current += 1;
         setCandidateList((prev) =>
           mergeUpdatedCandidateList(prev, updatedCandidate),
         );
 
         syncSelectedCandidate(updatedCandidate);
         setSelectedCandidate(updatedCandidate);
+        setActiveStage("Online Assessment");
+        setMoveCandidate(null);
+        setMoveForm(emptyMoveForm);
 
         triggerAssessmentEmail(updatedCandidate);
 
@@ -2987,20 +3012,7 @@ export function CandidatePipelineProvider({ children }) {
         : normalizedMoveCandidate.interview_status,
     });
 
-    setCandidateList((prev) =>
-      mergeUpdatedCandidateList(prev, optimisticCandidate),
-    );
-
-    syncSelectedCandidate(optimisticCandidate);
-
-    if (movingToOnlineAssessment) {
-      setSelectedCandidate(optimisticCandidate);
-    } else {
-      setSelectedCandidate(null);
-    }
-
-    setActiveStage(nextStage);
-
+    // Preserve the saved stage until this move succeeds on the server.
     const response = await runCandidateAction(
       () =>
         moveCandidatePipelineStage(id, {
@@ -3033,15 +3045,19 @@ export function CandidatePipelineProvider({ children }) {
         pipelineStage: nextStage,
       });
 
+      candidateMutationRevisionRef.current += 1;
       setCandidateList((prev) =>
         mergeUpdatedCandidateList(prev, updatedCandidate),
       );
 
       syncSelectedCandidate(updatedCandidate);
+      setActiveStage(nextStage);
 
       if (movingToOnlineAssessment) {
         setSelectedCandidate(updatedCandidate);
         triggerAssessmentEmail(updatedCandidate);
+      } else {
+        setSelectedCandidate(null);
       }
 
       showSuccess(
@@ -3623,6 +3639,7 @@ export function CandidatePipelineProvider({ children }) {
   function updateCandidateFromOffer(updatedCandidatePayload) {
     if (!updatedCandidatePayload) return;
 
+    candidateMutationRevisionRef.current += 1;
     const normalizedCandidate =
       normalizePipelineCandidateForBoard(updatedCandidatePayload);
 
