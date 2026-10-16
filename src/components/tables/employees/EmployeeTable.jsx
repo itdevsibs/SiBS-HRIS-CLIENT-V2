@@ -24,10 +24,11 @@ import ConfirmModal from "@/components/ui/ConfirmModal";
 import { useUser } from "@/services/context/UserContext";
 import { sanitizeDisplayFullName, sanitizeMiddleName } from "@/lib/utils/employees/employeeNameDisplay.js";
 import { usePagination } from "@/services/context/PaginationContext";
-import PaginationTable from "@/services/pagination/PaginationTable";
 import {
   DataCard,
   ResponsiveTableShell,
+  SearchInput,
+  SelectDropdown,
   StatusFilterTabs,
   TablePagination,
   TableSkeletonRows,
@@ -967,6 +968,16 @@ export default function EmployeeTable({
       .sort((a, b) => String(a.label).localeCompare(String(b.label)));
   }, [accountOptions]);
 
+  const departmentFilterOptions = useMemo(
+    () => [{ value: "All", label: "All Departments" }, ...departmentDropdownOptions],
+    [departmentDropdownOptions],
+  );
+
+  const accountFilterOptions = useMemo(
+    () => [{ value: "All", label: "All Accounts" }, ...accountDropdownOptions],
+    [accountDropdownOptions],
+  );
+
   useEffect(() => {
     if (canRequestFilters) return;
 
@@ -1234,47 +1245,54 @@ export default function EmployeeTable({
           {activeTabDescription}
         </p>
 
-        <PaginationTable
-          filterLayout="ta-inline"
-          showFilterPanel={false}
-          showFilterHeader={false}
-          showPagination={false}
-          loading={loading}
-          searchValue={searchInput}
-          searchPlaceholder="Search by employee, SIBS ID, department, or account..."
-          onSearchChange={(value) => setSearchInput?.(value)}
-          onSearchKeyDown={handleEmployeeSearchKeyDown}
-          dropdownFilters={
-            showEmployeeFilterControls
-              ? [
-                  {
-                    key: "department",
-                    value: departmentFilter,
-                    options: departmentDropdownOptions,
-                    onChange: handleDepartmentChange,
-                    includeAll: true,
-                    allLabel: "All Departments",
-                    label: "Department",
-                    placeholder: "Search departments...",
-                    searchable: true,
-                  },
-                  {
-                    key: "account",
-                    value: accountFilters,
-                    options: accountDropdownOptions,
-                    onChange: handleAccountChange,
-                    multiple: true,
-                    includeAll: true,
-                    allLabel: "All Accounts",
-                    label: "Account",
-                    placeholder: "Search accounts...",
-                    searchable: true,
-                  },
-                ]
-              : []
-          }
-          className="mt-4 border-0 bg-transparent p-0 shadow-none"
-        />
+        <div className="mt-4 flex flex-col gap-3 overflow-visible xl:flex-row xl:items-end">
+          <div className="relative w-full min-w-0 xl:min-w-[180px] xl:flex-[1_1_220px] 2xl:min-w-[280px] 2xl:flex-[1_1_360px]">
+            <SearchInput
+              label="Search"
+              labelClassName="sibs-text-micro font-extrabold tracking-normal text-sibs-navy"
+              value={searchInput}
+              placeholder="Search by employee, SIBS ID, department, or account..."
+              onChange={(value) => setSearchInput?.(value)}
+              onKeyDown={handleEmployeeSearchKeyDown}
+              disabled={loading}
+            />
+          </div>
+
+          {showEmployeeFilterControls ? (
+            <>
+              <div className="w-full xl:w-[150px] 2xl:w-[210px] xl:flex-none">
+                <SelectDropdown
+                  label="Department"
+                  labelClassName="sibs-text-micro font-extrabold tracking-normal text-sibs-navy"
+                  value={departmentFilter || "All"}
+                  options={departmentFilterOptions}
+                  onChange={handleDepartmentChange}
+                  searchable
+                  searchPlaceholder="Search departments..."
+                  placeholder="All Departments"
+                  clearable={false}
+                  disabled={loading}
+                />
+              </div>
+
+              <div className="w-full xl:w-[150px] 2xl:w-[210px] xl:flex-none">
+                <SelectDropdown
+                  label="Account"
+                  labelClassName="sibs-text-micro font-extrabold tracking-normal text-sibs-navy"
+                  multiple
+                  value={accountFilters}
+                  options={accountFilterOptions}
+                  onChange={handleAccountChange}
+                  searchable
+                  searchPlaceholder="Search accounts..."
+                  placeholder="All Accounts"
+                  clearable={false}
+                  disabled={loading}
+                />
+              </div>
+            </>
+          ) : null}
+        </div>
 
         <button
           type="button"

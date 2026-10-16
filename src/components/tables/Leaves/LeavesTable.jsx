@@ -13,9 +13,9 @@ import {
 } from "lucide-react";
 
 import { usePagination, PaginationDateRangeFilter } from "@/services/context/PaginationContext";
-import PaginationTable from "@/services/pagination/PaginationTable";
 import {
   DataCard,
+  DatePicker,
   ModalShell,
   ResponsiveTableShell,
   SearchInput,
@@ -1002,106 +1002,119 @@ export default function LeavesTable({
               : "Review employee leave requests, approval statuses, justifications, and attachment records."}
           </p>
 
-          <div className="relative z-[90] mt-3.5 2xl:mt-4 overflow-visible">
-            <PaginationTable
-              filterLayout="ta-inline"
-              showFilterPanel={false}
-              showFilterHeader={false}
-              showPagination={false}
-              loading={loading}
-              searchValue={searchInput}
-              searchPlaceholder="Search by employee, SiBS ID, leave type, or status..."
-              onSearchChange={(e) => setSearchInput(typeof e === "string" ? e : e?.target?.value ?? "")}
-              onSearchKeyDown={handleSearchKeyDown}
-              className="border-0 bg-transparent p-0 shadow-none"
-              filters={[
-                {
-                  key: "status",
-                  value: statusFilter || "All",
-                  options: [
-                    { label: "All Statuses", value: "All" },
-                    { label: "Approved", value: "Approved" },
-                    { label: "Pending", value: "Pending" },
-                    { label: "Rejected", value: "Rejected" },
-                  ],
-                  onChange: onStatusChange,
-                  includeAll: false,
-                  allLabel: "All Statuses",
-                  label: "Status",
-                  placeholder: "All Statuses",
-                  searchable: false,
-                  disabled: loading,
-                },
-                ...(showDepartmentFilter
-                  ? [
-                      {
-                        key: "department",
-                        value: departmentFilter || "All",
-                        options: [
-                          { label: "All Departments", value: "All" },
-                          ...departmentDropdownOptions,
-                        ],
-                        onChange: onDepartmentSelect,
-                        includeAll: false,
-                        allLabel: "All Departments",
-                        label: "Department",
-                        placeholder: "All Departments",
-                        searchable: true,
-                        disabled: loading,
-                      },
-                    ]
-                  : []),
-                ...(showAccountFilter
-                  ? [
-                      {
-                        key: "account",
-                        value: accountFilter || "All",
-                        options: [
-                          { label: "All Accounts", value: "All" },
-                          ...accountDropdownOptions,
-                        ],
-                        onChange: onAccountSelect,
-                        includeAll: false,
-                        allLabel: "All Accounts",
-                        label: "Account",
-                        placeholder: "All Accounts",
-                        searchable: true,
-                        disabled: loading,
-                      },
-                    ]
-                  : []),
-              ]}
-              dateFilters={[
-                {
-                  key: "dateFrom",
-                  label: "From Date",
-                  value: dateFrom,
-                  onChange: handleLeavesDateFromChange,
-                  disabled: loading,
-                },
-                {
-                  key: "dateTo",
-                  label: "To Date",
-                  value: dateTo,
-                  min: dateFrom || undefined,
-                  onChange: handleLeavesDateToChange,
-                  disabled: loading,
-                },
-              ]}
-              rightContent={
-                hasActiveFilters ? (
-                  <button
-                    type="button"
-                    onClick={handleClearLeavesFilters}
-                    disabled={loading}
-                    className="inline-flex h-8.5 2xl:h-10 w-full items-center justify-center gap-1.5 rounded-[10px] border border-sibs-border bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-muted transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange disabled:cursor-not-allowed disabled:opacity-50 xl:w-auto"
-                  >
-                    <RotateCcw size={14} />
-                    Clear
-                  </button>
-                ) : null
-              }
-            />
+          <div className="mt-3.5 2xl:mt-4 flex flex-col gap-3 overflow-visible xl:flex-row xl:items-end">
+            <div className="relative w-full min-w-0 xl:min-w-[180px] xl:flex-[1_1_220px] 2xl:min-w-[280px] 2xl:flex-[1_1_360px]">
+              <SearchInput
+                label="Search"
+                labelClassName="sibs-text-micro font-extrabold tracking-normal text-sibs-navy"
+                value={searchInput}
+                placeholder="Search by employee, SiBS ID, leave type, or status..."
+                onChange={(e) => setSearchInput(typeof e === "string" ? e : e?.target?.value ?? "")}
+                onKeyDown={handleSearchKeyDown}
+                disabled={loading}
+              />
+            </div>
+
+            <div className="w-full xl:w-[135px] 2xl:w-[180px] xl:flex-none">
+              <SelectDropdown
+                label="Status"
+                labelClassName="sibs-text-micro font-extrabold tracking-normal text-sibs-navy"
+                value={statusFilter || "All"}
+                options={[
+                  { label: "All Statuses", value: "All" },
+                  { label: "Approved", value: "Approved" },
+                  { label: "Pending", value: "Pending" },
+                  { label: "Rejected", value: "Rejected" },
+                ]}
+                onChange={onStatusChange}
+                placeholder="All Statuses"
+                clearable={false}
+                disabled={loading}
+              />
+            </div>
+
+            {showDepartmentFilter ? (
+              <div className="w-full xl:w-[150px] 2xl:w-[210px] xl:flex-none">
+                <SelectDropdown
+                  label="Department"
+                  labelClassName="sibs-text-micro font-extrabold tracking-normal text-sibs-navy"
+                  value={departmentFilter || "All"}
+                  options={[
+                    { label: "All Departments", value: "All" },
+                    ...departmentDropdownOptions,
+                  ]}
+                  onChange={onDepartmentSelect}
+                  searchable
+                  placeholder="All Departments"
+                  clearable={false}
+                  disabled={loading}
+                />
+              </div>
+            ) : null}
+
+            {showAccountFilter ? (
+              <div className="w-full xl:w-[150px] 2xl:w-[210px] xl:flex-none">
+                <SelectDropdown
+                  label="Account"
+                  labelClassName="sibs-text-micro font-extrabold tracking-normal text-sibs-navy"
+                  value={accountFilter || "All"}
+                  options={[
+                    { label: "All Accounts", value: "All" },
+                    ...accountDropdownOptions,
+                  ]}
+                  onChange={onAccountSelect}
+                  searchable
+                  placeholder="All Accounts"
+                  clearable={false}
+                  disabled={loading}
+                />
+              </div>
+            ) : null}
+
+            <div className="w-full xl:w-[165px] 2xl:w-[195px] xl:flex-none">
+              <label className="mb-1 block font-jakarta sibs-text-micro font-extrabold tracking-normal text-sibs-navy">
+                From Date
+              </label>
+              <DatePicker
+                value={dateFrom || ""}
+                onChange={(val) => handleLeavesDateFromChange(val)}
+                disabled={loading}
+                hideLabel
+                placeholder="Select date"
+                clearable
+                showToday
+              />
+            </div>
+
+            <div className="w-full xl:w-[165px] 2xl:w-[195px] xl:flex-none">
+              <label className="mb-1 block font-jakarta sibs-text-micro font-extrabold tracking-normal text-sibs-navy">
+                To Date
+              </label>
+              <DatePicker
+                value={dateTo || ""}
+                min={dateFrom || undefined}
+                onChange={(val) => handleLeavesDateToChange(val)}
+                disabled={loading}
+                hideLabel
+                placeholder="Select date"
+                clearable
+                showToday
+              />
+            </div>
+
+            {hasActiveFilters ? (
+              <div className="flex w-full min-w-0 items-end xl:w-auto xl:flex-none">
+                <button
+                  type="button"
+                  onClick={handleClearLeavesFilters}
+                  disabled={loading}
+                  className="inline-flex h-8.5 2xl:h-10 w-full items-center justify-center gap-1.5 rounded-[10px] border border-sibs-border bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-muted transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange disabled:cursor-not-allowed disabled:opacity-50 xl:w-auto"
+                >
+                  <RotateCcw size={14} />
+                  Clear
+                </button>
+              </div>
+            ) : null}
           </div>
 
           <button

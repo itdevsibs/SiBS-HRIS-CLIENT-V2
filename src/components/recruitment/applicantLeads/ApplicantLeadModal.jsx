@@ -336,7 +336,7 @@ export default function ApplicantLeadModal() {
                   ? "Close Movement History"
                   : `Open Movement History, ${leadHistory.length} records`
               }
-              className={`inline-flex h-7.5 2xl:h-8 items-center justify-center gap-1.5 rounded-lg border px-2.5 text-[9px] 2xl:text-[10px] font-extrabold text-white shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sibs-orange/40 ${
+              className={`inline-flex h-7.5 2xl:h-8 items-center justify-center gap-1.5 rounded-[10px] border px-2.5 text-[9px] 2xl:text-[10px] font-extrabold text-white shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sibs-orange/40 ${
                 movementHistoryOpen
                   ? "border-sibs-orange bg-sibs-navy-light shadow-[0_0_12px_rgba(255,92,40,0.2)]"
                   : "border-white/15 bg-sibs-navy hover:border-sibs-orange/60 hover:bg-sibs-navy-light"
@@ -638,7 +638,7 @@ export default function ApplicantLeadModal() {
                     }
                     aria-expanded={isCommentComposerOpen}
                     aria-controls="applicant-lead-inquiry-comment-composer"
-                    className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-sibs-border bg-white px-3.5 text-[11px] font-extrabold text-sibs-navy transition hover:border-sibs-orange/50 hover:bg-sibs-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sibs-orange/40"
+                    className="inline-flex h-8 items-center justify-center gap-1.5 rounded-[10px] border border-sibs-border bg-white px-3.5 text-[11px] font-extrabold text-sibs-navy transition hover:border-sibs-orange/50 hover:bg-sibs-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sibs-orange/40"
                   >
                     <MessageSquareText size={13} className="text-sibs-orange" />
                     {isCommentComposerOpen ? "Hide Comment Form" : "Add Comment"}
@@ -708,7 +708,7 @@ export default function ApplicantLeadModal() {
                             setLeadComment("");
                             setIsCommentComposerOpen(false);
                           }}
-                          className="inline-flex h-8 items-center justify-center rounded-lg border border-sibs-border bg-white px-3 text-[11px] font-extrabold text-sibs-navy transition hover:bg-sibs-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sibs-orange/40"
+                          className="inline-flex h-8 items-center justify-center rounded-[10px] border border-sibs-border bg-white px-3 text-[11px] font-extrabold text-sibs-navy transition hover:bg-sibs-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sibs-orange/40"
                         >
                           Cancel
                         </button>
@@ -719,7 +719,7 @@ export default function ApplicantLeadModal() {
                             isAddingLeadComment ||
                             !String(leadComment || "").trim()
                           }
-                          className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg bg-sibs-navy px-3.5 text-[11px] font-extrabold text-white transition hover:bg-sibs-navy-light focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sibs-orange/40 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-sibs-muted"
+                          className="inline-flex h-8 items-center justify-center gap-1.5 rounded-[10px] bg-sibs-navy px-3.5 text-[11px] font-extrabold text-white transition hover:bg-sibs-navy-light focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sibs-orange/40 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-sibs-muted"
                         >
                           {isAddingLeadComment ? (
                             <Loader2 size={12} className="animate-spin" />

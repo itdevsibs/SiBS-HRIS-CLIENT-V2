@@ -2634,7 +2634,7 @@ export default function AddHiringNeedsModal({ open, onClose, onStatus }) {
         </button>
       }
       footer={
-        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center">
+        <div className="flex flex-col-reverse gap-2.5 sm:gap-3 sm:flex-row sm:items-center">
           <button
             type="button"
             onClick={onClose}
@@ -2684,7 +2684,7 @@ export default function AddHiringNeedsModal({ open, onClose, onStatus }) {
 
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="text-xs font-extrabold text-sibs-navy">
+                      <h3 className="font-heading text-xs font-extrabold text-sibs-navy">
                         Personnel Request Guide
                       </h3>
 

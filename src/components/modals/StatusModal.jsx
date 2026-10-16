@@ -8,6 +8,7 @@ import {
   X,
   XCircle,
 } from "lucide-react";
+import { lockBodyScroll, unlockBodyScroll } from "../../lib/utils/modalScrollLock";
 
 const FOCUSABLE_SELECTOR =
   'button:not([disabled]), a[href], input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
@@ -84,17 +85,12 @@ export default function StatusModal({
             ? XCircle
             : Info);
 
-  // The form/detail modals may already lock body scrolling; restore precisely
-  // the previously active state so closing this dialog never unlocks a parent.
+  // Reference-counted scroll locking harmonized with ModalShell to prevent premature unlocks or freeze leaks.
   useEffect(() => {
     if (!open || !lockScroll || typeof document === "undefined") return undefined;
-    const previousBody = document.body.style.overflow;
-    const previousHtml = document.documentElement.style.overflow;
-    document.body.style.overflow = "hidden";
-    document.documentElement.style.overflow = "hidden";
+    lockBodyScroll();
     return () => {
-      document.body.style.overflow = previousBody;
-      document.documentElement.style.overflow = previousHtml;
+      unlockBodyScroll();
     };
   }, [open, lockScroll]);
 

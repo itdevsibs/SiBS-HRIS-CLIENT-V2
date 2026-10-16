@@ -67,6 +67,21 @@ tests/
 !src/pages/recruitment/HiringNeedsPage.test.jsx
 !src/pages/recruitment/AvailablePositionsPage.test.jsx
 !src/components/tables/FilterBarsModernization.test.jsx
+!src/components/layout/HeaderCalendarModal.test.jsx
+!src/components/recruitment/candidatePipeline/CandidatePipelineHarmonization.test.jsx
+!src/components/recruitment/candidatePipeline/CandidatePipelineModalMobile.test.jsx
+!src/components/recruitment/candidatePipeline/CandidatePipelineScoreHero.test.jsx
+!src/components/recruitment/candidatePipeline/CandidatePipelineHeaderAndDetailCenter.test.jsx
+!src/components/recruitment/candidatePipeline/CandidatePipelineInterviewSummaryAlign.test.jsx
+!src/components/ui/MobileMetricsHarmonization.test.jsx
+!src/components/ui/MetricGrid.test.jsx
+!src/components/ui/SkeletonLoadingHarmonization.test.jsx
+!src/pages/communication/ApprovalRequestHarmonization.test.jsx
+!src/components/layout/CalendarAndPublicRoutesHarmonization.test.jsx
+!src/components/recruitment/availablePositions/DropdownFieldHarmonization.test.jsx
+!src/components/tables/PatternBTableDecoupling.test.jsx
+!src/components/ui/ModalButtonRadiusHarmonization.test.jsx
+!src/components/ui/ModalFooterAndFontHarmonization.test.jsx
 
 # Temporary migration & scratch scripts
 *.cjs

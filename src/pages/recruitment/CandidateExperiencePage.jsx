@@ -225,7 +225,7 @@ const emptyExperienceForm = {
 };
 
 function inputClass(extra = "") {
-  return `h-12 w-full rounded-xl border border-[#D0D5DD] bg-white px-4 text-sm font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${extra}`;
+  return `h-12 w-full rounded-xl border border-sibs-border-subtle bg-white px-4 text-sm font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${extra}`;
 }
 
 function AnimatedDropdown({ open, children, className = "" }) {
@@ -239,7 +239,7 @@ function AnimatedDropdown({ open, children, className = "" }) {
     >
       <div className="min-h-0 overflow-hidden">
         <div
-          className={`overflow-hidden rounded-xl border border-[#D7DEE8] bg-white shadow-2xl transition-all duration-300 ease-out ${
+          className={`overflow-hidden rounded-xl border border-sibs-border-subtle bg-white shadow-2xl transition-all duration-300 ease-out ${
             open ? "translate-y-0 scale-100" : "-translate-y-2 scale-[0.98]"
           }`}
         >
@@ -280,14 +280,14 @@ function CustomSelect({
 
   return (
     <div ref={dropdownRef} className={`relative ${zIndex}`}>
-      <label className="mb-1 block text-sm font-bold text-[#101828]">
+      <label className="mb-1 block text-sm font-bold text-sibs-primary-1">
         {label}
       </label>
 
       <button
         type="button"
         onClick={() => setOpen((prev) => !prev)}
-        className="flex h-12 w-full items-center justify-between rounded-xl border border-[#D0D5DD] bg-white px-4 text-left text-sm font-bold text-[#344054] outline-none transition-all duration-200 hover:border-sibs-primary-1/40 hover:bg-[#F8FAFC] focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+        className="flex h-12 w-full items-center justify-between rounded-xl border border-sibs-border-subtle bg-white px-4 text-left text-sm font-bold text-sibs-text-secondary outline-none transition-all duration-200 hover:border-sibs-primary-1/40 hover:bg-sibs-canvas focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
       >
         <span className="truncate">
           {formatOption ? formatOption(displayValue) : displayValue}
@@ -316,8 +316,8 @@ function CustomSelect({
                 }}
                 className={`block w-full px-4 py-3 text-left text-sm transition ${
                   selected
-                    ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
-                    : "text-[#344054] hover:bg-[#F8FAFC]"
+                    ? "bg-sibs-canvas font-bold text-sibs-primary-1"
+                    : "text-sibs-text-secondary hover:bg-sibs-canvas"
                 }`}
               >
                 <span className="block truncate">
@@ -446,27 +446,27 @@ function SummaryCard({
     navy: {
       label: "text-sibs-navy",
       value: "text-sibs-navy",
-      icon: "bg-[#EAF2FB] text-sibs-navy",
+      icon: "bg-sibs-canvas text-sibs-navy",
     },
     emerald: {
-      label: "text-[#047857]",
-      value: "text-[#047857]",
-      icon: "bg-[#ECFDF3] text-[#059669]",
+      label: "text-emerald-700",
+      value: "text-emerald-700",
+      icon: "bg-emerald-50 text-emerald-600",
     },
     amber: {
-      label: "text-[#B45309]",
-      value: "text-[#F59E0B]",
-      icon: "bg-[#FFFBEB] text-[#F59E0B]",
+      label: "text-amber-700",
+      value: "text-amber-500",
+      icon: "bg-amber-50 text-amber-500",
     },
     red: {
-      label: "text-[#BE123C]",
-      value: "text-[#E11D48]",
-      icon: "bg-[#FFF1F2] text-[#E11D48]",
+      label: "text-rose-700",
+      value: "text-rose-600",
+      icon: "bg-rose-50 text-rose-600",
     },
     orange: {
-      label: "text-[#C2410C]",
+      label: "text-sibs-orange",
       value: "text-sibs-orange",
-      icon: "bg-[#FFF3ED] text-sibs-orange",
+      icon: "bg-orange-50 text-sibs-orange",
     },
   };
 
@@ -511,7 +511,7 @@ function BarRow({ label, value, max, delay = 0 }) {
   return (
     <div className="sibs-page-card-in" style={{ animationDelay: `${delay}ms` }}>
       <div className="mb-2 flex items-center justify-between gap-4">
-        <p className="min-w-0 truncate text-sm font-bold text-[#344054]">
+        <p className="min-w-0 truncate text-sm font-bold text-sibs-text-secondary">
           {label}
         </p>
 
@@ -520,7 +520,7 @@ function BarRow({ label, value, max, delay = 0 }) {
         </p>
       </div>
 
-      <div className="h-2.5 overflow-hidden rounded-full bg-[#EEF2F6]">
+      <div className="h-2.5 overflow-hidden rounded-full bg-slate-200">
         <div
           className="h-full rounded-full bg-sibs-primary-1 transition-all duration-700 ease-out"
           style={{ width: `${percentage}%` }}
@@ -537,7 +537,7 @@ function DetailRow({ label, value }) {
         {label}
       </p>
 
-      <div className="max-w-[60%] break-words text-right text-sm font-bold text-[#344054]">
+      <div className="max-w-[60%] break-words text-right text-sm font-bold text-sibs-text-secondary">
         {value || "—"}
       </div>
     </div>
@@ -549,7 +549,7 @@ function ExperienceMobileCard({ record, onView, delay = 0 }) {
     <button
       type="button"
       onClick={onView}
-      className="sibs-page-card-in w-full rounded-2xl border border-[#E6ECF2] bg-white p-4 text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-sibs-primary-1/40 hover:bg-[#F8FAFC] hover:shadow-md active:scale-[0.98]"
+      className="sibs-page-card-in w-full rounded-2xl border border-sibs-border bg-white p-4 text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-sibs-primary-1/40 hover:bg-sibs-canvas hover:shadow-md active:scale-[0.98]"
       style={{ animationDelay: `${delay}ms` }}
     >
       <div className="flex items-start justify-between gap-3">
@@ -558,7 +558,7 @@ function ExperienceMobileCard({ record, onView, delay = 0 }) {
             {record.candidateId}
           </p>
 
-          <h3 className="mt-1 text-sm font-bold text-[#101828]">
+          <h3 className="mt-1 text-sm font-bold text-sibs-primary-1">
             {record.candidateName}
           </h3>
 
@@ -577,22 +577,22 @@ function ExperienceMobileCard({ record, onView, delay = 0 }) {
       </div>
 
       <div className="mt-4 grid grid-cols-2 gap-2">
-        <div className="rounded-xl bg-[#F8FAFC] p-3">
+        <div className="rounded-xl bg-sibs-canvas p-3">
           <p className="text-[10px] font-bold uppercase text-sibs-tertiary-5">
             Event
           </p>
 
-          <p className="mt-1 text-xs font-bold text-[#344054]">
+          <p className="mt-1 text-xs font-bold text-sibs-text-secondary">
             {record.eventType || "—"}
           </p>
         </div>
 
-        <div className="rounded-xl bg-[#F8FAFC] p-3">
+        <div className="rounded-xl bg-sibs-canvas p-3">
           <p className="text-[10px] font-bold uppercase text-sibs-tertiary-5">
             Exit Stage
           </p>
 
-          <p className="mt-1 text-xs font-bold text-[#344054]">
+          <p className="mt-1 text-xs font-bold text-sibs-text-secondary">
             {record.dropOffStage || record.currentStage || "—"}
           </p>
         </div>
@@ -609,12 +609,12 @@ function ExperienceMobileCard({ record, onView, delay = 0 }) {
           </span>
         )}
 
-        <span className="inline-flex rounded-full border border-[#E6ECF2] bg-[#F8FAFC] px-2.5 py-1 text-[10px] font-bold text-[#344054]">
+        <span className="inline-flex rounded-full border border-sibs-border bg-sibs-canvas px-2.5 py-1 text-[10px] font-bold text-sibs-text-secondary">
           {formatDate(record.dateRecorded)}
         </span>
       </div>
 
-      <div className="mt-3 flex items-center justify-between rounded-xl bg-[#F8FAFC] p-3">
+      <div className="mt-3 flex items-center justify-between rounded-xl bg-sibs-canvas p-3">
         <p className="text-[10px] font-bold uppercase text-sibs-tertiary-5">
           Rating
         </p>
@@ -623,7 +623,7 @@ function ExperienceMobileCard({ record, onView, delay = 0 }) {
       </div>
 
       <div className="mt-4">
-        <span className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-3 py-2 text-xs font-bold text-sibs-primary-1">
+        <span className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-sibs-border-subtle bg-white px-3 py-2 text-xs font-bold text-sibs-primary-1">
           <Eye size={15} />
           View Details
         </span>
@@ -672,10 +672,10 @@ function CandidateExperienceModal({ open, record, onClose }) {
         <div className="flex-1 overflow-y-auto p-4 sm:p-6">
           <div className="grid grid-cols-1 gap-5 xl:grid-cols-[1fr_360px]">
             <div className="space-y-5">
-              <div className="sibs-page-card-in rounded-xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
+              <div className="sibs-page-card-in rounded-xl border border-sibs-border bg-white p-5 shadow-sm">
                 <div className="flex flex-col justify-between gap-4 md:flex-row md:items-start">
                   <div className="min-w-0">
-                    <h3 className="text-lg font-bold text-[#101828] sm:text-xl">
+                    <h3 className="text-lg font-bold text-sibs-primary-1 sm:text-xl">
                       {record.candidateName}
                     </h3>
 
@@ -702,7 +702,7 @@ function CandidateExperienceModal({ open, record, onClose }) {
                         </span>
                       )}
 
-                      <span className="inline-flex rounded-full border border-[#E6ECF2] bg-[#F8FAFC] px-3 py-1 text-xs font-bold text-[#344054]">
+                      <span className="inline-flex rounded-full border border-sibs-border bg-sibs-canvas px-3 py-1 text-xs font-bold text-sibs-text-secondary">
                         {record.source || "—"}
                       </span>
                     </div>
@@ -725,13 +725,13 @@ function CandidateExperienceModal({ open, record, onClose }) {
               </div>
 
               <div
-                className="sibs-page-card-in rounded-xl border border-[#E6ECF2] bg-white p-5 shadow-sm"
+                className="sibs-page-card-in rounded-xl border border-sibs-border bg-white p-5 shadow-sm"
                 style={{ animationDelay: "60ms" }}
               >
                 <div className="mb-5 flex items-center gap-2">
                   <ListChecks size={18} className="text-sibs-primary-1" />
 
-                  <h3 className="text-sm font-bold text-[#101828]">
+                  <h3 className="text-sm font-bold text-sibs-primary-1">
                     Candidate Stage Timeline
                   </h3>
                 </div>
@@ -757,10 +757,10 @@ function CandidateExperienceModal({ open, record, onClose }) {
                           )}
                         </div>
 
-                        <div className="flex-1 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm">
+                        <div className="flex-1 rounded-xl border border-sibs-border bg-sibs-canvas p-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm">
                           <div className="flex flex-col justify-between gap-2 md:flex-row md:items-center">
                             <div>
-                              <p className="text-sm font-bold text-[#101828]">
+                              <p className="text-sm font-bold text-sibs-primary-1">
                                 {item.stage}
                               </p>
 
@@ -781,7 +781,7 @@ function CandidateExperienceModal({ open, record, onClose }) {
                       </div>
                     ))
                   ) : (
-                    <div className="rounded-xl border border-dashed border-[#E6ECF2] bg-[#F8FAFC] p-5 text-center text-sm font-bold text-sibs-tertiary-5">
+                    <div className="rounded-xl border border-dashed border-sibs-border bg-sibs-canvas p-5 text-center text-sm font-bold text-sibs-tertiary-5">
                       No timeline recorded.
                     </div>
                   )}
@@ -826,22 +826,22 @@ function CandidateExperienceModal({ open, record, onClose }) {
               )}
 
               <div
-                className="sibs-page-card-in rounded-xl border border-[#E6ECF2] bg-white p-5 shadow-sm"
+                className="sibs-page-card-in rounded-xl border border-sibs-border bg-white p-5 shadow-sm"
                 style={{ animationDelay: "180ms" }}
               >
-                <h3 className="text-sm font-bold text-[#101828]">
+                <h3 className="text-sm font-bold text-sibs-primary-1">
                   Candidate Feedback
                 </h3>
 
-                <p className="mt-3 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4 text-sm leading-6 text-[#344054]">
+                <p className="mt-3 rounded-xl border border-sibs-border bg-sibs-canvas p-4 text-sm leading-6 text-sibs-text-secondary">
                   {record.feedback || "No candidate feedback recorded."}
                 </p>
               </div>
             </div>
 
             <div className="space-y-5">
-              <div className="sibs-profile-tab-panel rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-5">
-                <h3 className="text-sm font-bold text-[#101828]">
+              <div className="sibs-profile-tab-panel rounded-xl border border-sibs-border bg-sibs-canvas p-5">
+                <h3 className="text-sm font-bold text-sibs-primary-1">
                   Candidate Summary
                 </h3>
 
@@ -862,15 +862,15 @@ function CandidateExperienceModal({ open, record, onClose }) {
               </div>
 
               <div
-                className="sibs-page-card-in rounded-xl border border-[#E6ECF2] bg-white p-5 shadow-sm"
+                className="sibs-page-card-in rounded-xl border border-sibs-border bg-white p-5 shadow-sm"
                 style={{ animationDelay: "80ms" }}
               >
-                <h3 className="text-sm font-bold text-[#101828]">
+                <h3 className="text-sm font-bold text-sibs-primary-1">
                   Candidate Perception
                 </h3>
 
                 <div className="mt-4 space-y-4">
-                  <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4">
+                  <div className="rounded-xl border border-sibs-border bg-sibs-canvas p-4">
                     <p className="text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
                       Rating
                     </p>
@@ -884,12 +884,12 @@ function CandidateExperienceModal({ open, record, onClose }) {
                     </div>
                   </div>
 
-                  <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4">
+                  <div className="rounded-xl border border-sibs-border bg-sibs-canvas p-4">
                     <p className="text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
                       Feedback Tag
                     </p>
 
-                    <p className="mt-1 text-sm font-bold text-[#344054]">
+                    <p className="mt-1 text-sm font-bold text-sibs-text-secondary">
                       {record.feedbackTag || "—"}
                     </p>
                   </div>
@@ -1449,7 +1449,7 @@ export default function CandidateExperiencePage() {
                   </p>
                 </div>
 
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#F2F6FA] text-sibs-primary-1">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-sibs-canvas text-sibs-primary-1">
                   <BarChart3 size={22} />
                 </div>
               </div>
@@ -1613,7 +1613,7 @@ export default function CandidateExperiencePage() {
                 <button
                   type="button"
                   onClick={handleClearFilters}
-                  className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#F8FAFC] hover:shadow-sm active:scale-[0.98]"
+                  className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-sibs-border-subtle bg-white px-5 text-sm font-bold text-sibs-primary-1 transition-all duration-200 hover:-translate-y-0.5 hover:bg-sibs-canvas hover:shadow-sm active:scale-[0.98]"
                 >
                   <Filter size={17} />
                   Clear
@@ -1633,7 +1633,7 @@ export default function CandidateExperiencePage() {
                     />
                   ))
                 ) : (
-                  <div className="rounded-xl border border-[#E6ECF2] bg-white px-5 py-10 text-center text-sm font-bold text-gray-500">
+                  <div className="rounded-xl border border-sibs-border bg-white px-5 py-10 text-center text-sm font-bold text-gray-500">
                     No candidate experience records found.
                   </div>
                 )}
@@ -1641,9 +1641,9 @@ export default function CandidateExperiencePage() {
 
               <div className="hidden lg:block">
                 <div className="overflow-x-auto p-0">
-                  <table className="w-full min-w-[1220px] border-separate border-spacing-0 overflow-hidden rounded-2xl border border-[#D9E2EC] text-left">
+                  <table className="w-full min-w-[1220px] border-separate border-spacing-0 overflow-hidden rounded-2xl border border-sibs-border text-left">
                     <thead>
-                      <tr className="bg-[#F5F7FA] text-xs font-bold uppercase tracking-wide text-[#174A7C]">
+                      <tr className="bg-sibs-canvas text-xs font-bold uppercase tracking-wide text-sibs-navy">
                         <th className="px-5 py-4 first:rounded-tl-2xl">
                           Candidate
                         </th>
@@ -1666,10 +1666,10 @@ export default function CandidateExperiencePage() {
                         paginatedRecords.map((record) => (
                           <tr
                             key={record.id}
-                            className="transition-all duration-200 hover:bg-[#FAFBFC]"
+                            className="transition-all duration-200 hover:bg-sibs-canvas"
                           >
-                            <td className="border-b border-[#E6ECF2] px-5 py-5">
-                              <p className="text-sm font-bold text-[#101828]">
+                            <td className="border-b border-sibs-border-subtle px-5 py-5">
+                              <p className="text-sm font-bold text-sibs-primary-1">
                                 {record.candidateName}
                               </p>
 
@@ -1678,8 +1678,8 @@ export default function CandidateExperiencePage() {
                               </p>
                             </td>
 
-                            <td className="border-b border-[#E6ECF2] px-5 py-5">
-                              <p className="text-sm font-bold text-[#344054]">
+                            <td className="border-b border-sibs-border-subtle px-5 py-5">
+                              <p className="text-sm font-bold text-sibs-text-secondary">
                                 {record.roleTitle}
                               </p>
 
@@ -1688,11 +1688,11 @@ export default function CandidateExperiencePage() {
                               </p>
                             </td>
 
-                            <td className="border-b border-[#E6ECF2] px-5 py-5 text-sm font-semibold text-[#344054]">
+                            <td className="border-b border-sibs-border-subtle px-5 py-5 text-sm font-semibold text-sibs-text-secondary">
                               {record.eventType}
                             </td>
 
-                            <td className="border-b border-[#E6ECF2] px-5 py-5">
+                            <td className="border-b border-sibs-border-subtle px-5 py-5">
                               <span
                                 className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getStatusClass(
                                   record.finalStatus,
@@ -1702,11 +1702,11 @@ export default function CandidateExperiencePage() {
                               </span>
                             </td>
 
-                            <td className="border-b border-[#E6ECF2] px-5 py-5 text-sm font-semibold text-[#344054]">
+                            <td className="border-b border-sibs-border-subtle px-5 py-5 text-sm font-semibold text-sibs-text-secondary">
                               {record.dropOffStage || "—"}
                             </td>
 
-                            <td className="border-b border-[#E6ECF2] px-5 py-5">
+                            <td className="border-b border-sibs-border-subtle px-5 py-5">
                               {record.dropOffCategory ? (
                                 <span
                                   className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getDropOffClass(
@@ -1722,15 +1722,15 @@ export default function CandidateExperiencePage() {
                               )}
                             </td>
 
-                            <td className="border-b border-[#E6ECF2] px-5 py-5">
+                            <td className="border-b border-sibs-border-subtle px-5 py-5">
                               <RatingStars rating={record.experienceRating} />
                             </td>
 
-                            <td className="border-b border-[#E6ECF2] px-5 py-5 text-sm font-semibold text-[#344054]">
+                            <td className="border-b border-sibs-border-subtle px-5 py-5 text-sm font-semibold text-sibs-text-secondary">
                               {record.feedbackTag || "—"}
                             </td>
 
-                            <td className="border-b border-[#E6ECF2] px-5 py-5 text-sm font-semibold text-[#344054]">
+                            <td className="border-b border-sibs-border-subtle px-5 py-5 text-sm font-semibold text-sibs-text-secondary">
                               <div className="flex items-center gap-2">
                                 <CalendarDays
                                   size={15}
@@ -1740,11 +1740,11 @@ export default function CandidateExperiencePage() {
                               </div>
                             </td>
 
-                            <td className="border-b border-[#E6ECF2] px-5 py-5 text-right">
+                            <td className="border-b border-sibs-border-subtle px-5 py-5 text-right">
                               <button
                                 type="button"
                                 onClick={() => setSelectedRecord(record)}
-                                className="inline-flex h-9 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-4 text-xs font-bold text-sibs-primary-1 transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#F8FAFC] hover:shadow-sm active:scale-[0.98]"
+                                className="inline-flex h-9 items-center justify-center gap-2 rounded-xl border border-sibs-border-subtle bg-white px-4 text-xs font-bold text-sibs-primary-1 transition-all duration-200 hover:-translate-y-0.5 hover:bg-sibs-canvas hover:shadow-sm active:scale-[0.98]"
                               >
                                 <Eye size={15} />
                                 View

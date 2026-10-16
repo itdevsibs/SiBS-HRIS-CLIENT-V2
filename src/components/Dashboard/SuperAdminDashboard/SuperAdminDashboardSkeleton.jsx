@@ -23,7 +23,7 @@ export function SuperAdminDashboardStatsSkeleton() {
       count={6}
       labels={SUPER_ADMIN_METRIC_LABELS}
       ariaLabel="Loading super admin metrics"
-      className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-6 2xl:gap-3"
+      className="grid grid-cols-2 gap-2.5 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-6 2xl:gap-3"
     />
   );
 }
@@ -31,7 +31,7 @@ export function SuperAdminDashboardStatsSkeleton() {
 function OverviewSkeleton() {
   return (
     <div className="space-y-4 2xl:space-y-5">
-      <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 xl:grid-cols-4 2xl:gap-3.5">
+      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-2 xl:grid-cols-4 2xl:gap-3.5">
         {Array.from({ length: 4 }, (_, index) => (
           <article
             key={`super-admin-overview-skeleton-${index}`}

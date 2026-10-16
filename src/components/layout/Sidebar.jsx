@@ -78,7 +78,7 @@ const APPROVAL_NOTIFICATION_TYPES_BY_MODULE = {
 };
 
 const sidebarBadgeToneClass = {
-  info: "bg-[#063560] text-slate-200",
+  info: "bg-sibs-tertiary-2 text-slate-200",
   action: "bg-sibs-primary-2 text-white",
   urgent: "bg-red-500 text-white",
   warning: "bg-amber-500 text-white",
@@ -386,7 +386,7 @@ function SibsLogo({ collapsed = false, isMobile = false }) {
         <MotionDiv
           className="absolute -right-1 -top-1 h-3 w-3 2xl:h-3.5 2xl:w-3.5 rounded-full border-2 border-sibs-primary-1"
           animate={{
-            backgroundColor: ["#FFFFFF", "#FFB29A", "#FFFFFF"],
+            backgroundColor: ["rgb(255, 255, 255)", "var(--color-sibs-cream)", "rgb(255, 255, 255)"],
             boxShadow: [
               "0 0 0px rgba(255,255,255,0)",
               "0 0 14px rgba(255,255,255,0.45)",
@@ -430,7 +430,7 @@ function SibsLogo({ collapsed = false, isMobile = false }) {
           <MotionSpan
             className="text-[18px] 2xl:text-[20px] font-bold tracking-[-0.035em]"
             animate={{
-              color: ["#FFFFFF", "#FF5C28", "#FFFFFF"],
+              color: ["rgb(255, 255, 255)", "var(--color-sibs-orange)", "rgb(255, 255, 255)"],
             }}
             transition={{
               duration: 6,
@@ -445,7 +445,7 @@ function SibsLogo({ collapsed = false, isMobile = false }) {
           <MotionSpan
             className="text-[18px] 2xl:text-[20px] font-bold tracking-[-0.035em]"
             animate={{
-              color: ["#FF5C28", "#FFFFFF", "#FF5C28"],
+              color: ["var(--color-sibs-orange)", "rgb(255, 255, 255)", "var(--color-sibs-orange)"],
             }}
             transition={{
               duration: 6,
@@ -1371,7 +1371,7 @@ export default function Sidebar() {
                 : "w-full justify-between gap-2.5 px-3 py-2 2xl:py-2.5 text-left sibs-text-xs overflow-hidden",
             isActive
               ? "bg-sibs-primary-2 text-white font-bold shadow-md shadow-sibs-primary-2/20 cursor-default hover:bg-sibs-primary-2 hover:text-white"
-              : "text-slate-300 hover:bg-[#063560] hover:text-white",
+              : "text-slate-300 hover:bg-sibs-tertiary-2 hover:text-white",
           ].join(" ")}
         >
           <div
@@ -1390,7 +1390,7 @@ export default function Sidebar() {
                   "pointer-events-none h-4.5 w-4.5 2xl:h-5 2xl:w-5 shrink-0 transition",
                   isActive
                     ? "text-white"
-                    : "text-slate-400 group-hover:text-[#FF5C28]",
+                    : "text-slate-400 group-hover:text-sibs-orange",
                 ].join(" ")}
               />
 
@@ -1406,7 +1406,7 @@ export default function Sidebar() {
               )}
 
               {alertBadgeText && isCollapsedMode && (
-                <span className="absolute -bottom-2 -right-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#FF5C28] px-1 text-[7.5px] font-black leading-none text-white ring-2 ring-sibs-primary-1 shadow-sm">
+                <span className="absolute -bottom-2 -right-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-sibs-orange px-1 text-[7.5px] font-black leading-none text-white ring-2 ring-sibs-primary-1 shadow-sm">
                   {alertBadgeText}
                 </span>
               )}
@@ -1440,8 +1440,8 @@ export default function Sidebar() {
                 <span
                   className={`inline-flex h-5 max-w-[70px] items-center justify-center gap-1 rounded px-1.5 sibs-text-micro font-bold uppercase leading-none tracking-wide transition-all duration-300 ${
                     isActive
-                      ? "bg-[#7A2713] text-white"
-                      : "bg-[#FF5C28] text-white"
+                      ? "bg-rose-950 text-white"
+                      : "bg-sibs-orange text-white"
                   }`}
                   title={alertBadgeTitle}
                 >
@@ -1454,7 +1454,7 @@ export default function Sidebar() {
 
           {/* Floating Tooltip in Folded Mode */}
           {isCollapsedMode && (
-            <div className="pointer-events-none absolute left-full ml-3.5 hidden items-center gap-2 rounded-lg border border-[#083A69] bg-[#042C51] px-3 py-1.5 text-xs font-bold text-white shadow-2xl z-[99999] whitespace-nowrap group-hover:flex">
+            <div className="pointer-events-none absolute left-full ml-3.5 hidden items-center gap-2 rounded-lg border border-sibs-tertiary-2 bg-sibs-navy px-3 py-1.5 text-xs font-bold text-white shadow-2xl z-[99999] whitespace-nowrap group-hover:flex">
               <span>{item.name}</span>
               {badgeText && (
                 <span
@@ -1464,12 +1464,12 @@ export default function Sidebar() {
                 </span>
               )}
               {alertBadgeText && (
-                <span className="inline-flex items-center gap-1 rounded-full bg-[#FF5C28] px-1.5 py-0.5 text-[9px] font-black leading-none text-white">
+                <span className="inline-flex items-center gap-1 rounded-full bg-sibs-orange px-1.5 py-0.5 text-[9px] font-black leading-none text-white">
                   <AlertTriangle size={9} strokeWidth={2.5} />
                   {alertBadgeText}
                 </span>
               )}
-              <span className="absolute -left-1 top-1/2 -translate-y-1/2 border-y-4 border-r-4 border-y-transparent border-r-[#083A69]" />
+              <span className="absolute -left-1 top-1/2 -translate-y-1/2 border-y-4 border-r-4 border-y-transparent border-r-sibs-tertiary-2" />
             </div>
           )}
         </Link>
@@ -1563,17 +1563,17 @@ export default function Sidebar() {
               ? "mx-auto h-10 w-10 2xl:h-11 2xl:w-11 justify-center"
               : "justify-between gap-2.5 px-3 py-2 2xl:py-2.5 text-left sibs-text-xs",
             isActive || (isCollapsedMode && flyoutGroupId === group.id)
-              ? "bg-[#063560] text-white"
-              : "text-slate-300 hover:bg-[#063560] hover:text-white",
+              ? "bg-sibs-tertiary-2 text-white"
+              : "text-slate-300 hover:bg-sibs-tertiary-2 hover:text-white",
           ].join(" ")}
         >
           <span className="relative flex min-w-0 items-center">
             <GroupIcon
               strokeWidth={1.9}
-              className="h-4.5 w-4.5 2xl:h-5 2xl:w-5 shrink-0 text-slate-400 transition group-hover:text-[#FF5C28]"
+              className="h-4.5 w-4.5 2xl:h-5 2xl:w-5 shrink-0 text-slate-400 transition group-hover:text-sibs-orange"
             />
             {hasAttention && (
-              <span className="absolute -right-1.5 -top-1.5 h-2.5 w-2.5 rounded-full bg-[#FF5C28] ring-2 ring-sibs-primary-1" />
+              <span className="absolute -right-1.5 -top-1.5 h-2.5 w-2.5 rounded-full bg-sibs-orange ring-2 ring-sibs-primary-1" />
             )}
             {!isCollapsedMode && <span className="ml-3 truncate">{group.name}</span>}
           </span>
@@ -1606,7 +1606,7 @@ export default function Sidebar() {
           <div
             ref={flyoutRef}
             id={groupContentId}
-            className="fixed left-[96px] top-24 z-[2000] w-[245px] rounded-xl border border-[#083A69] bg-sibs-primary-1 p-2 shadow-2xl 2xl:left-[102px]"
+            className="fixed left-[96px] top-24 z-[2000] w-[245px] rounded-xl border border-sibs-tertiary-2 bg-sibs-primary-1 p-2 shadow-2xl 2xl:left-[102px]"
             onKeyDown={(event) => {
               if (event.key === "Escape") {
                 event.preventDefault();
@@ -1643,7 +1643,7 @@ export default function Sidebar() {
         draggable={false}
         onDragStart={(event) => event.preventDefault()}
         className={[
-          "fixed left-0 top-0 z-[100005] flex h-dvh shrink-0 select-none flex-col border-r border-[#083A69] bg-sibs-primary-1 font-jakarta text-white shadow-xl transition-transform duration-300 ease-in-out",
+          "fixed left-0 top-0 z-[100005] flex h-dvh shrink-0 select-none flex-col border-r border-sibs-tertiary-2 bg-sibs-primary-1 font-jakarta text-white shadow-xl transition-transform duration-300 ease-in-out",
           collapsed ? "lg:w-[84px] 2xl:lg:w-[90px]" : "lg:w-[245px] 2xl:lg:w-[260px]",
           "w-[245px] 2xl:w-[260px]",
           mobileOpen
@@ -1654,7 +1654,7 @@ export default function Sidebar() {
       >
         <div
           className={[
-            "relative flex h-[74px] 2xl:h-[86px] min-h-[74px] 2xl:min-h-[86px] shrink-0 items-center border-b border-[#083A69] transition-all duration-300",
+            "relative flex h-[74px] 2xl:h-[86px] min-h-[74px] 2xl:min-h-[86px] shrink-0 items-center border-b border-sibs-tertiary-2 transition-all duration-300",
             !isMobile && collapsed
               ? "justify-center px-0"
               : "justify-between px-3.5 2xl:px-4 py-3",
@@ -1671,7 +1671,7 @@ export default function Sidebar() {
           {isMobile && (
             <button
               onClick={() => setMobileOpen(false)}
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-300 transition hover:bg-[#063560] hover:text-white active:scale-[0.98]"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-300 transition hover:bg-sibs-tertiary-2 hover:text-white active:scale-[0.98]"
               type="button"
               aria-label="Close sidebar"
             >
@@ -1682,7 +1682,7 @@ export default function Sidebar() {
           {!isMobile && !collapsed && (
             <button
               onClick={() => setCollapsed(true)}
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-300 transition hover:bg-[#063560] hover:text-white active:scale-[0.98]"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-300 transition hover:bg-sibs-tertiary-2 hover:text-white active:scale-[0.98]"
               type="button"
               aria-label="Collapse sidebar"
               title="Collapse sidebar"
@@ -1694,10 +1694,10 @@ export default function Sidebar() {
 
         {!showMenu ? (
           <div className="space-y-3 px-4 pt-4">
-            <div className="h-8 animate-pulse rounded-lg bg-[#063560]" />
-            <div className="h-8 animate-pulse rounded-lg bg-[#063560]" />
-            <div className="h-8 animate-pulse rounded-lg bg-[#063560]" />
-            <div className="h-8 animate-pulse rounded-lg bg-[#063560]" />
+            <div className="h-8 animate-pulse rounded-lg bg-sibs-tertiary-2" />
+            <div className="h-8 animate-pulse rounded-lg bg-sibs-tertiary-2" />
+            <div className="h-8 animate-pulse rounded-lg bg-sibs-tertiary-2" />
+            <div className="h-8 animate-pulse rounded-lg bg-sibs-tertiary-2" />
           </div>
         ) : (
           <div
@@ -1737,7 +1737,7 @@ function Section({ title, collapsed, children }) {
       <div className="overflow-hidden whitespace-nowrap transition-all duration-300">
         {collapsed ? (
           <div className="my-2 flex items-center justify-center" aria-hidden="true">
-            <div className="h-[1px] w-6 rounded-full bg-[#083A69]/80" />
+            <div className="h-[1px] w-6 rounded-full bg-sibs-tertiary-2/80" />
           </div>
         ) : (
           <p className="mb-1.5 2xl:mb-2 px-2.5 2xl:px-3 font-heading font-bold text-xs uppercase leading-none tracking-wider text-slate-400 truncate">

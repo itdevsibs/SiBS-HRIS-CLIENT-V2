@@ -46,6 +46,7 @@ import {
   TableSkeletonRows,
   MetricGridSkeleton,
   Skeleton,
+  SelectDropdown,
 } from "@/components/ui";
 
 import {
@@ -1162,95 +1163,6 @@ function getActiveApprovalStepKey(request) {
   return activeStep?.key || "";
 }
 
-function DropdownPortal({
-  open,
-  anchorRef,
-  children,
-  onClose,
-  maxHeight = 256,
-}) {
-  const dropdownRef = useRef(null);
-  const [style, setStyle] = useState({
-    top: 0,
-    left: 0,
-    width: 0,
-  });
-
-  useLayoutEffect(() => {
-    if (!open || !anchorRef.current) return undefined;
-
-    function updatePosition() {
-      const rect = anchorRef.current.getBoundingClientRect();
-
-      setStyle({
-        top: rect.bottom + 8,
-        left: rect.left,
-        width: rect.width,
-      });
-    }
-
-    updatePosition();
-
-    window.addEventListener("resize", updatePosition);
-    window.addEventListener("scroll", updatePosition, true);
-
-    return () => {
-      window.removeEventListener("resize", updatePosition);
-      window.removeEventListener("scroll", updatePosition, true);
-    };
-  }, [open, anchorRef]);
-
-  useEffect(() => {
-    if (!open) return undefined;
-
-    function handleClickOutside(e) {
-      const clickedAnchor = anchorRef.current?.contains(e.target);
-      const clickedDropdown = dropdownRef.current?.contains(e.target);
-
-      if (!clickedAnchor && !clickedDropdown) {
-        onClose?.();
-      }
-    }
-
-    function handleEscape(e) {
-      if (e.key === "Escape") {
-        onClose?.();
-      }
-    }
-
-    document.addEventListener("mousedown", handleClickOutside);
-    document.addEventListener("touchstart", handleClickOutside);
-    document.addEventListener("keydown", handleEscape);
-
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-      document.removeEventListener("touchstart", handleClickOutside);
-      document.removeEventListener("keydown", handleEscape);
-    };
-  }, [open, anchorRef, onClose]);
-
-  if (!open || typeof document === "undefined") return null;
-
-  return createPortal(
-    <div
-      ref={dropdownRef}
-      className="fixed z-[999999] overflow-hidden rounded-[10px] border border-sibs-border bg-white shadow-lg"
-      style={{
-        top: `${style.top}px`,
-        left: `${style.left}px`,
-        width: `${style.width}px`,
-      }}
-    >
-      <div
-        className="overflow-y-auto py-2 sibs-scrollbar"
-        style={{ maxHeight }}
-      >
-        {children}
-      </div>
-    </div>,
-    document.body,
-  );
-}
 
 function normalizeSibsId(value = "") {
   return String(value ?? "")
@@ -1331,66 +1243,24 @@ function getApprovalSettingsSibsId(row = {}) {
 }
 
 function CustomSelect({ label, value, options = [], onChange, allLabel = "" }) {
-  const [open, setOpen] = useState(false);
-  const anchorRef = useRef(null);
-
-  const displayValue =
-    value === "All" && allLabel ? allLabel : value || allLabel || "Select";
+  const selectOptions = useMemo(() => {
+    return options.map((option) => ({
+      value: option,
+      label: option === "All" && allLabel ? allLabel : option,
+    }));
+  }, [options, allLabel]);
 
   return (
     <div className="relative">
-      <label className="mb-1 block text-sm font-bold text-sibs-navy">
-        {label}
-      </label>
-
-      <button
-        ref={anchorRef}
-        type="button"
-        onClick={() => setOpen((prev) => !prev)}
-        className={`flex h-11 w-full items-center justify-between rounded-[10px] border bg-white px-4 text-left text-sm font-bold text-sibs-navy outline-none transition-all duration-200 hover:border-sibs-orange/40 hover:bg-sibs-surface focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${
-          open
-            ? "border-sibs-primary-1 ring-4 ring-sibs-primary-1/10"
-            : "border-sibs-border"
-        }`}
-      >
-        <span className="truncate">{displayValue}</span>
-
-        <ChevronDown
-          size={18}
-          className={`shrink-0 text-sibs-tertiary-5 transition-transform duration-300 ${
-            open ? "rotate-180" : ""
-          }`}
-        />
-      </button>
-
-      <DropdownPortal
-        open={open}
-        anchorRef={anchorRef}
-        onClose={() => setOpen(false)}
-      >
-        {options.map((option) => {
-          const optionLabel = option === "All" && allLabel ? allLabel : option;
-          const selected = value === option;
-
-          return (
-            <button
-              key={option}
-              type="button"
-              onClick={() => {
-                onChange(option);
-                setOpen(false);
-              }}
-              className={`block w-full px-4 py-3 text-left text-sm transition ${
-                selected
-                  ? "bg-sibs-cream-light font-bold text-sibs-orange"
-                  : "text-sibs-navy hover:bg-sibs-surface"
-              }`}
-            >
-              <span className="block truncate">{optionLabel}</span>
-            </button>
-          );
-        })}
-      </DropdownPortal>
+      <SelectDropdown
+        label={label}
+        value={value}
+        options={selectOptions}
+        onChange={onChange}
+        placeholder={allLabel || "Select"}
+        clearable={false}
+        className="w-full"
+      />
     </div>
   );
 }
@@ -4141,7 +4011,7 @@ function ViewApprovalRequestModal({
               </div>
 
               <div className="min-w-0">
-                <h2 className="truncate text-xl font-extrabold text-white">
+                <h2 className="truncate font-heading text-xl font-extrabold text-white">
                   {isAvailablePosition
                     ? "Available Position Request"
                     : isHiringNeeds
@@ -5560,7 +5430,7 @@ function DecisionModal({
         <div className="shrink-0 rounded-t-[14px] bg-sibs-navy px-6 py-5 text-white">
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0">
-              <h2 className="truncate text-2xl font-extrabold uppercase tracking-tight text-white">
+              <h2 className="truncate font-heading text-2xl font-extrabold uppercase tracking-tight text-white">
                 {isAvailablePosition
                   ? isApprove
                     ? "Approve Available Position"
@@ -5799,18 +5669,18 @@ function DecisionModal({
                         <span className="text-red-500">*</span>
                       </label>
 
-                      <select
+                      <SelectDropdown
                         value={personallySpoken}
-                        onChange={(e) =>
-                          onChangePersonallySpoken(e.target.value)
-                        }
-                        className="h-11 w-full rounded-[10px] border border-sibs-border bg-white px-4 text-sm font-bold text-sibs-primary-1 outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+                        onChange={onChangePersonallySpoken}
+                        options={[
+                          { value: "Yes", label: "Yes" },
+                          { value: "No", label: "No" },
+                        ]}
+                        placeholder="Select answer"
+                        clearable={false}
                         required
-                      >
-                        <option value="">Select answer</option>
-                        <option value="Yes">Yes</option>
-                        <option value="No">No</option>
-                      </select>
+                        className="w-full"
+                      />
                     </div>
 
                     <div className="flex h-full flex-col">
@@ -5819,18 +5689,18 @@ function DecisionModal({
                         <span className="text-red-500">*</span>
                       </label>
 
-                      <select
+                      <SelectDropdown
                         value={employeeRetained}
-                        onChange={(e) =>
-                          onChangeEmployeeRetained(e.target.value)
-                        }
-                        className="h-11 w-full rounded-[10px] border border-sibs-border bg-white px-4 text-sm font-bold text-sibs-primary-1 outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+                        onChange={onChangeEmployeeRetained}
+                        options={[
+                          { value: "Yes", label: "Yes" },
+                          { value: "No", label: "No" },
+                        ]}
+                        placeholder="Select answer"
+                        clearable={false}
                         required
-                      >
-                        <option value="">Select answer</option>
-                        <option value="Yes">Yes</option>
-                        <option value="No">No</option>
-                      </select>
+                        className="w-full"
+                      />
                     </div>
                   </div>
 

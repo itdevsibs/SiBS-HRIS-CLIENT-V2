@@ -78,7 +78,7 @@ export default function ApplicantLeadsSummary({ loading }) {
         <MetricGridSkeleton
           count={5}
           labels={STAT_LABELS}
-          className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5"
+          className="grid grid-cols-2 gap-2.5 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5"
           ariaLabel="Loading applicant lead metrics"
         />
       </section>
@@ -87,7 +87,7 @@ export default function ApplicantLeadsSummary({ loading }) {
 
   return (
     <section aria-labelledby="applicant-leads-summary-title">
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5">
+      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5">
         <StatCard
           title="Total Leads"
           value={metrics.total}

@@ -4859,7 +4859,7 @@ export default function SiBSChat({
               >
                 <div className="px-5 pb-4 pt-5">
                   <div className="flex items-start gap-3">
-                    <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#FFF0EA] text-sibs-orange">
+                    <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-50 text-sibs-orange">
                       <Pencil size={18} />
                     </span>
                     <div className="min-w-0 flex-1">
@@ -4904,7 +4904,7 @@ export default function SiBSChat({
                   </div>
                 </div>
 
-                <div className="flex items-center justify-end gap-2 border-t border-sibs-border bg-[#F8FAFC] px-4 py-3">
+                <div className="flex items-center justify-end gap-2 border-t border-sibs-border bg-sibs-canvas px-4 py-3">
                   <button
                     type="button"
                     onClick={() => {
@@ -4978,7 +4978,7 @@ export default function SiBSChat({
                   </div>
                 </div>
 
-                <div className="flex items-center justify-end gap-2 border-t border-sibs-border bg-[#F8FAFC] px-4 py-3">
+                <div className="flex items-center justify-end gap-2 border-t border-sibs-border bg-sibs-canvas px-4 py-3">
                   <button
                     type="button"
                     onClick={() => setDeleteConversationConfirm(null)}

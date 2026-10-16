@@ -171,7 +171,7 @@ function ApproverSection({
   const isDeclined = Number(declinedValue) === 1 || declinedValue === true;
 
   return (
-    <div className="rounded-xl border border-[#E6ECF2] bg-sibs-tertiary-10 p-4">
+    <div className="rounded-xl border border-sibs-border bg-sibs-tertiary-10 p-4">
       <div className="mb-2 flex items-center gap-2">
         <UserRound size={16} className="text-sibs-primary-1" />
         <p className="text-sm font-semibold text-sibs-primary-1">{title}</p>
@@ -189,7 +189,7 @@ function ApproverSection({
           className={`inline-flex h-10 items-center justify-center rounded-xl border px-4 text-sm font-semibold transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70 ${
             isApproved
               ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-              : "border-[#D7DEE8] bg-white text-sibs-primary-1 hover:bg-[#F8FAFC]"
+              : "border-sibs-border-subtle bg-white text-sibs-primary-1 hover:bg-sibs-canvas"
           }`}
         >
           Approve
@@ -202,7 +202,7 @@ function ApproverSection({
           className={`inline-flex h-10 items-center justify-center rounded-xl border px-4 text-sm font-semibold transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70 ${
             isDeclined
               ? "border-red-200 bg-red-50 text-red-700"
-              : "border-[#D7DEE8] bg-white text-sibs-primary-1 hover:bg-[#F8FAFC]"
+              : "border-sibs-border-subtle bg-white text-sibs-primary-1 hover:bg-sibs-canvas"
           }`}
         >
           Decline
@@ -223,7 +223,7 @@ function ApproverSection({
           placeholder="Enter remarks"
           className={`w-full resize-none rounded-xl border px-4 py-3 text-sm outline-none transition ${
             !readOnly && editable
-              ? "border-[#D7DEE8] bg-white focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+              ? "border-sibs-border-subtle bg-white focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
               : "border-gray-200 bg-gray-50 text-sibs-primary-1"
           }`}
         />
@@ -717,9 +717,9 @@ export default function AttritionModal({
           isView ? "max-w-2xl" : "max-w-3xl 2xl:max-w-4xl"
         }`}
       >
-        <div className="flex shrink-0 items-center justify-between gap-4 bg-[#042C51] px-5 py-3 text-white sm:px-6 2xl:py-3.5">
+        <div className="flex shrink-0 items-center justify-between gap-4 bg-sibs-navy px-5 py-3 text-white sm:px-6 2xl:py-3.5">
           <div className="flex items-center gap-2.5 2xl:gap-3 min-w-0">
-            <span className="flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg bg-[#FF5C28] text-white shadow-sm">
+            <span className="flex h-8 w-8 2xl:h-8.5 2xl:w-8.5 shrink-0 items-center justify-center rounded-lg bg-sibs-orange text-white shadow-sm">
               <FileText size={16} />
             </span>
 
@@ -775,7 +775,7 @@ export default function AttritionModal({
                       }}
                       placeholder="Search SiBS ID or employee name"
                       autoComplete="off"
-                      className="w-full rounded-xl border border-[#D7DEE8] bg-white px-4 py-3 pr-10 text-sm text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+                      className="w-full rounded-xl border border-sibs-border-subtle bg-white px-4 py-3 pr-10 text-sm text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
                     />
 
                     <ChevronDown
@@ -806,7 +806,7 @@ export default function AttritionModal({
                               onClick={() => handleEmployeeSelect(employee)}
                               className={`block w-full border-b border-sibs-tertiary-9 px-4 py-3 text-left transition last:border-b-0 ${
                                 isSelected
-                                  ? "bg-[#EAF2FB] font-medium text-sibs-primary-1"
+                                  ? "bg-sibs-canvas font-medium text-sibs-primary-1"
                                   : "text-sibs-primary-1 hover:bg-sibs-tertiary-10"
                               }`}
                             >
@@ -842,7 +842,7 @@ export default function AttritionModal({
                 </label>
 
                 {isView ? (
-                  <div className="w-full rounded-xl border border-[#D7DEE8] px-4 py-2.5 text-sm text-sibs-primary-1">
+                  <div className="w-full rounded-xl border border-sibs-border-subtle px-4 py-2.5 text-sm text-sibs-primary-1">
                     {formatDate
                       ? formatDate(data?.attritionDate)
                       : data?.attritionDate || "N/A"}
@@ -857,7 +857,7 @@ export default function AttritionModal({
                     className={`w-full rounded-xl border px-4 py-2.5 text-sm outline-none transition ${
                       isEdit
                         ? "border-gray-200 bg-gray-50"
-                        : "border-[#D7DEE8] focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+                        : "border-sibs-border-subtle focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
                     }`}
                     required
                   />
@@ -870,7 +870,7 @@ export default function AttritionModal({
                 </label>
 
                 {isView ? (
-                  <div className="w-full rounded-xl border border-[#D7DEE8] px-4 py-2.5 text-sm text-sibs-primary-1">
+                  <div className="w-full rounded-xl border border-sibs-border-subtle px-4 py-2.5 text-sm text-sibs-primary-1">
                     {formatDate
                       ? formatDate(data?.lastWorkingDate)
                       : data?.lastWorkingDate || "N/A"}
@@ -881,7 +881,7 @@ export default function AttritionModal({
                     className={`w-full rounded-xl border px-4 py-2.5 transition ${
                       isEdit
                         ? "cursor-not-allowed border-gray-200 bg-gray-50"
-                        : "cursor-pointer border-[#D7DEE8] bg-white focus-within:border-sibs-primary-1 hover:border-sibs-primary-1"
+                        : "cursor-pointer border-sibs-border-subtle bg-white focus-within:border-sibs-primary-1 hover:border-sibs-primary-1"
                     }`}
                   >
                     <input
@@ -902,7 +902,7 @@ export default function AttritionModal({
             </div>
 
             {loadingHierarchy && isAdd && (
-              <div className="rounded-xl border border-[#E6ECF2] bg-sibs-tertiary-10 px-4 py-3 text-sm text-sibs-tertiary-5">
+              <div className="rounded-xl border border-sibs-border bg-sibs-tertiary-10 px-4 py-3 text-sm text-sibs-tertiary-5">
                 Loading approval hierarchy...
               </div>
             )}
@@ -984,7 +984,7 @@ export default function AttritionModal({
                     className={`relative flex w-full items-center justify-between rounded-xl border bg-white px-4 py-3 text-left text-sm transition ${
                       reasonOpen
                         ? "border-sibs-primary-1 ring-4 ring-sibs-primary-1/10"
-                        : "border-[#D7DEE8]"
+                        : "border-sibs-border-subtle"
                     }`}
                   >
                     <span
@@ -1006,7 +1006,7 @@ export default function AttritionModal({
                   </button>
 
                   {reasonOpen && (
-                    <div className="absolute left-0 right-0 top-full z-40 mt-2 overflow-hidden rounded-2xl border border-[#D7DEE8] bg-white shadow-2xl">
+                    <div className="absolute left-0 right-0 top-full z-40 mt-2 overflow-hidden rounded-2xl border border-sibs-border-subtle bg-white shadow-2xl">
                       <div className="max-h-64 overflow-y-auto">
                         {REASONS.map((reason) => {
                           const isSelected = safeForm?.reason === reason;
@@ -1036,7 +1036,7 @@ export default function AttritionModal({
 
                                 setReasonOpen(false);
                               }}
-                              className={`block w-full border-b border-[#E6ECF2] px-4 py-3 text-left transition last:border-b-0 ${
+                              className={`block w-full border-b border-sibs-border px-4 py-3 text-left transition last:border-b-0 ${
                                 isSelected
                                   ? "bg-sibs-tertiary-10 font-medium text-sibs-primary-1"
                                   : "text-sibs-primary-1 hover:bg-sibs-tertiary-10"
@@ -1073,7 +1073,7 @@ export default function AttritionModal({
                   className={`w-full resize-none rounded-xl border px-4 py-3 text-sm outline-none transition ${
                     isEdit || isView
                       ? "border-gray-200 bg-gray-50"
-                      : "border-[#D7DEE8] focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+                      : "border-sibs-border-subtle focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
                   }`}
                   required={!isView}
                 />
@@ -1086,7 +1086,7 @@ export default function AttritionModal({
               </label>
 
               <div className="space-y-2">
-                <div className="rounded-xl border border-[#D7DEE8] bg-white px-4 py-3">
+                <div className="rounded-xl border border-sibs-border-subtle bg-white px-4 py-3">
                   {displayedFileName ? (
                     <a
                       href={existingFileUrl}
@@ -1127,11 +1127,11 @@ export default function AttritionModal({
               </div>
             </div>
 
-            <div className="flex justify-end gap-2.5 border-t border-[#DDE5EE] bg-[#F1F5F9] px-5 py-3 2xl:py-3.5 -mx-4 sm:-mx-5 2xl:-mx-6 -mb-4 sm:-mb-5 2xl:-mb-6 mt-6">
+            <div className="flex justify-end gap-2.5 border-t border-sibs-border bg-sibs-canvas px-5 py-3 2xl:py-3.5 -mx-4 sm:-mx-5 2xl:-mx-6 -mb-4 sm:-mb-5 2xl:-mb-6 mt-6">
               <button
                 type="button"
                 onClick={onClose}
-                className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg border border-[#D6DEE8] bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-[#667085] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28]"
+                className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg border border-sibs-border-subtle bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-text-secondary transition hover:border-sibs-orange/40 hover:bg-sibs-orange-light hover:text-sibs-orange"
                 disabled={submitting}
               >
                 {isView ? "Close" : "Cancel"}
@@ -1141,7 +1141,7 @@ export default function AttritionModal({
                 <button
                   type="submit"
                   disabled={submitting || (isEdit && !isApproverEditMode)}
-                  className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg bg-[#FF5C28] px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E94F1F] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg bg-sibs-orange px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-sibs-button-hover active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {submitting
                     ? isEdit

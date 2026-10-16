@@ -518,7 +518,7 @@ export default function SiBSAIAssistant({
                 {/* Welcome Card */}
                 <section className="rounded-2xl border border-sibs-border bg-white p-4 shadow-xs">
                   <div className="flex items-start gap-3">
-                    <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#FFF0EB] text-sibs-orange">
+                    <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-orange-50 text-sibs-orange">
                       <MessageCircleMore size={18} />
                     </span>
                     <div>

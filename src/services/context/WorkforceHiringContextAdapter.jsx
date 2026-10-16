@@ -568,56 +568,6 @@ function buildSummary(totals) {
   };
 }
 
-function isAllSelected(values = []) {
-  const cleanValues = Array.isArray(values) ? values : [values];
-
-  return (
-    cleanValues.includes("All") ||
-    cleanValues.includes("All Clusters") ||
-    cleanValues.includes("All Accounts")
-  );
-}
-
-function filterPlansBySelectedFilters(plans = [], weeklyVersion = {}) {
-  const selectedClusters = Array.isArray(weeklyVersion.selectedClusters)
-    ? weeklyVersion.selectedClusters
-    : [];
-
-  const selectedAccounts = Array.isArray(weeklyVersion.selectedAccounts)
-    ? weeklyVersion.selectedAccounts
-    : [];
-
-  return (plans || []).filter((row) => {
-    const rowCluster = String(row.cluster || row.clusterName || "")
-      .trim()
-      .toLowerCase();
-
-    const rowAccount = String(row.account || row.accountName || "")
-      .trim()
-      .toLowerCase();
-
-    const clusterAllowed =
-      isAllSelected(selectedClusters) ||
-      selectedClusters.some(
-        (cluster) =>
-          String(cluster || "")
-            .trim()
-            .toLowerCase() === rowCluster,
-      );
-
-    const accountAllowed =
-      isAllSelected(selectedAccounts) ||
-      selectedAccounts.some(
-        (account) =>
-          String(account || "")
-            .trim()
-            .toLowerCase() === rowAccount,
-      );
-
-    return clusterAllowed && accountAllowed;
-  });
-}
-
 export function useWorkforceHiringView(optional = false) {
   const plan = useWorkforceHiring(optional);
 

@@ -169,7 +169,7 @@ export default function RequisitionModal({ open, onClose, onSuccess }) {
         onClick={(e) => e.stopPropagation()}
         className="sibs-modal-pop-in flex max-h-[90dvh] w-full max-w-5xl 2xl:max-w-6xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl font-jakarta"
       >
-        <div className="flex shrink-0 items-center justify-between gap-4 bg-[#042C51] px-5 py-3 text-white sm:px-6 2xl:py-3.5">
+        <div className="flex shrink-0 items-center justify-between gap-4 bg-sibs-navy px-5 py-3 text-white sm:px-6 2xl:py-3.5">
           <div className="min-w-0">
             <h2 className="sibs-modal-title truncate text-white">
               Create Job Requisition
@@ -368,11 +368,11 @@ export default function RequisitionModal({ open, onClose, onSuccess }) {
             </div>
           </div>
 
-          <div className="flex shrink-0 items-center justify-end gap-2.5 border-t border-[#DDE5EE] bg-[#F1F5F9] px-5 py-3 2xl:py-3.5 sm:px-6">
+          <div className="flex shrink-0 items-center justify-end gap-2.5 border-t border-sibs-border bg-sibs-canvas px-5 py-3 2xl:py-3.5 sm:px-6">
             <button
               type="button"
               onClick={() => !submitLoading && onClose?.()}
-              className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg border border-[#D6DEE8] bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-[#667085] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28]"
+              className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg border border-sibs-border-subtle bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-text-secondary transition hover:border-sibs-orange/40 hover:bg-sibs-orange-light hover:text-sibs-orange"
             >
               Cancel
             </button>
@@ -380,7 +380,7 @@ export default function RequisitionModal({ open, onClose, onSuccess }) {
             <button
               type="submit"
               disabled={submitLoading}
-              className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg bg-[#FF5C28] px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E94F1F] active:scale-[0.98] disabled:opacity-50"
+              className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-lg bg-sibs-orange px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-sibs-button-hover active:scale-[0.98] disabled:opacity-50"
             >
               {submitLoading ? "Submitting..." : "Submit for Approval"}
             </button>
@@ -394,7 +394,7 @@ export default function RequisitionModal({ open, onClose, onSuccess }) {
 function Section({ title, children }) {
   return (
     <div>
-      <h3 className="sibs-modal-section-title mb-3 text-[#042C51]">{title}</h3>
+      <h3 className="sibs-modal-section-title mb-3 text-sibs-navy">{title}</h3>
       {children}
     </div>
   );
@@ -403,13 +403,13 @@ function Section({ title, children }) {
 function Input({ label, name, onChange, type = "text", full, value }) {
   return (
     <div className={full ? "md:col-span-2" : ""}>
-      <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">{label}</label>
+      <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-sibs-muted">{label}</label>
       <input
         type={type}
         name={name}
         value={value}
         onChange={onChange}
-        className="h-8.5 2xl:h-10 w-full rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-3 2xl:px-3.5 sibs-text-xs font-semibold text-[#042C51] outline-none transition focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10"
+        className="h-8.5 2xl:h-10 w-full rounded-xl border border-sibs-border-subtle bg-sibs-canvas px-3 2xl:px-3.5 sibs-text-xs font-semibold text-sibs-navy outline-none transition focus:border-sibs-orange focus:bg-white focus:ring-4 focus:ring-sibs-orange/10"
       />
     </div>
   );
@@ -426,13 +426,13 @@ function Select({
 }) {
   return (
     <div>
-      <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">{label}</label>
+      <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-sibs-muted">{label}</label>
       <select
         name={name}
         value={value}
         onChange={onChange}
         disabled={disabled}
-        className="h-8.5 2xl:h-10 w-full rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-3 2xl:px-3.5 sibs-text-xs font-semibold text-[#042C51] outline-none transition focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 disabled:bg-[#EEF2F6] disabled:text-[#98A2B3]"
+        className="h-8.5 2xl:h-10 w-full rounded-xl border border-sibs-border-subtle bg-sibs-canvas px-3 2xl:px-3.5 sibs-text-xs font-semibold text-sibs-navy outline-none transition focus:border-sibs-orange focus:bg-white focus:ring-4 focus:ring-sibs-orange/10 disabled:bg-sibs-canvas disabled:text-sibs-muted"
       >
         <option value="">{placeholder}</option>
 
@@ -511,7 +511,7 @@ function SearchableSelect({
 
   return (
     <div className="relative" ref={wrapperRef}>
-      <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">{label}</label>
+      <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-sibs-muted">{label}</label>
 
       <input
         type="text"
@@ -532,24 +532,24 @@ function SearchableSelect({
         placeholder={placeholder}
         disabled={disabled}
         autoComplete="off"
-        className="h-8.5 2xl:h-10 w-full rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-3 2xl:px-3.5 sibs-text-xs font-semibold text-[#042C51] outline-none transition placeholder:text-[#98A2B3] focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 disabled:bg-[#EEF2F6] disabled:text-[#98A2B3]"
+        className="h-8.5 2xl:h-10 w-full rounded-xl border border-sibs-border-subtle bg-sibs-canvas px-3 2xl:px-3.5 sibs-text-xs font-semibold text-sibs-navy outline-none transition placeholder:text-sibs-muted focus:border-sibs-orange focus:bg-white focus:ring-4 focus:ring-sibs-orange/10 disabled:bg-sibs-canvas disabled:text-sibs-muted"
       />
 
       {open && !disabled && (
-        <div className="sibs-dropdown-pop-in absolute z-20 mt-1 max-h-60 w-full overflow-y-auto rounded-xl border border-[#D7DEE8] bg-white p-1 shadow-lg sibs-scrollbar">
+        <div className="sibs-dropdown-pop-in absolute z-20 mt-1 max-h-60 w-full overflow-y-auto rounded-xl border border-sibs-border-subtle bg-white p-1 shadow-lg sibs-scrollbar">
           {filteredOptions.length > 0 ? (
             filteredOptions.map((option) => (
               <button
                 key={option.value}
                 type="button"
                 onClick={() => handleSelect(option.value)}
-                className="block w-full rounded-lg px-3 py-2 text-left sibs-text-xs font-semibold text-[#042C51] hover:bg-[#F8FAFC]"
+                className="block w-full rounded-lg px-3 py-2 text-left sibs-text-xs font-semibold text-sibs-navy hover:bg-sibs-canvas"
               >
                 {option.label}
               </button>
             ))
           ) : (
-            <div className="px-3 py-2 sibs-text-xs font-semibold text-[#98A2B3]">
+            <div className="px-3 py-2 sibs-text-xs font-semibold text-sibs-muted">
               NO RESULTS FOUND
             </div>
           )}
@@ -562,15 +562,15 @@ function SearchableSelect({
 function Textarea({ label, name, onChange, helper, value }) {
   return (
     <div>
-      <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">{label}</label>
+      <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-sibs-muted">{label}</label>
       <textarea
         name={name}
         value={value}
         onChange={onChange}
         rows={4}
-        className="w-full rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] p-3 sibs-text-xs font-semibold text-[#042C51] outline-none transition focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10"
+        className="w-full rounded-xl border border-sibs-border-subtle bg-sibs-canvas p-3 sibs-text-xs font-semibold text-sibs-navy outline-none transition focus:border-sibs-orange focus:bg-white focus:ring-4 focus:ring-sibs-orange/10"
       />
-      {helper && <p className="mt-1 text-[10px] font-medium text-[#98A2B3]">{helper}</p>}
+      {helper && <p className="mt-1 text-[10px] font-medium text-sibs-muted">{helper}</p>}
     </div>
   );
 }

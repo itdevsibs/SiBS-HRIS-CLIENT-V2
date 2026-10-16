@@ -110,7 +110,7 @@ export default function RevisedOfferModal({
   }
 
   const footer = (
-    <div className="flex flex-col-reverse justify-end gap-2 sm:flex-row">
+    <div className="flex flex-col-reverse justify-end gap-2.5 sm:gap-3 sm:flex-row">
       <CandidateModalSecondaryButton type="button" onClick={handleClose} disabled={isSubmitting}>
         Cancel
       </CandidateModalSecondaryButton>
@@ -143,7 +143,7 @@ export default function RevisedOfferModal({
         <div className="fixed inset-0 z-[24000] cursor-wait bg-transparent" aria-hidden="true" />
       )}
 
-      <form id="candidate-revised-offer-form" onSubmit={handleSubmit} className="space-y-2.5 2xl:space-y-3.5">
+      <form id="candidate-revised-offer-form" onSubmit={handleSubmit} className="space-y-2.5 2xl:space-y-3.5 font-jakarta">
         <CandidateModalSummary candidate={candidate} stage={candidate?.currentStage || "Offered"} />
 
         <div className="grid grid-cols-1 gap-2.5 2xl:gap-3.5 lg:grid-cols-2">

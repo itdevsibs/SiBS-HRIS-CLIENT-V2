@@ -7,8 +7,12 @@ import {
   formatDateTime,
 } from "@/components/layout/FormatDateTime";
 import { useUser } from "../../../services/context/UserContext";
-import PaginationTable from "@/services/pagination/PaginationTable";
-import StatusModal from "../../modals/StatusModal";
+import {
+  ConfirmModal,
+  SearchInput,
+  SelectDropdown,
+  TablePagination,
+} from "@/components/ui";
 import {
   getAttachmentCount,
   getAttachmentCountLabel,
@@ -35,6 +39,49 @@ function mapAssignedLocation(value) {
   if (lower === "hybrid") return "Hybrid";
 
   return raw;
+}
+
+function FieldLabel({ children, required = false }) {
+  return (
+    <label className="mb-1 block sibs-text-micro font-extrabold uppercase tracking-wide text-sibs-navy">
+      {children}
+      {required && <span className="text-sibs-orange"> *</span>}
+    </label>
+  );
+}
+
+function ReadOnlyInput({ value, className = "" }) {
+  return (
+    <input
+      type="text"
+      value={value || ""}
+      readOnly
+      disabled
+      className={`h-11 w-full rounded-xl border border-sibs-border bg-slate-100/70 px-4 sibs-text-xs font-semibold text-sibs-navy outline-none disabled:cursor-not-allowed disabled:border-sibs-border disabled:bg-slate-100/70 disabled:text-sibs-muted ${className}`}
+    />
+  );
+}
+
+function SelectButton({ value, placeholder, open, onClick }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex h-11 w-full items-center justify-between rounded-xl border bg-white px-4 text-left sibs-text-xs font-semibold transition ${
+        open
+          ? "border-sibs-orange ring-2 ring-sibs-orange/10"
+          : "border-sibs-border"
+      } ${value ? "text-sibs-navy" : "text-sibs-muted"}`}
+    >
+      <span>{value || placeholder}</span>
+      <ChevronDown
+        size={16}
+        className={`text-sibs-muted transition-transform duration-200 ${
+          open ? "rotate-180" : ""
+        }`}
+      />
+    </button>
+  );
 }
 
 function EditResignationModal({
@@ -108,7 +155,7 @@ function EditResignationModal({
         onClick={(e) => e.stopPropagation()}
         className="sibs-modal-pop-in flex max-h-[92dvh] w-full max-w-5xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl font-jakarta"
       >
-        <div className="border-b border-[#E6ECF2] bg-gradient-to-r from-[#F8FAFC] via-white to-white px-6 py-5">
+        <div className="border-b border-sibs-border bg-gradient-to-r from-sibs-canvas via-white to-white px-6 py-5">
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0">
               <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
@@ -140,10 +187,10 @@ function EditResignationModal({
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto bg-[#F8FAFC] p-5 sm:p-6">
-          <div className="rounded-3xl border border-[#E6ECF2] bg-white p-5 shadow-sm sm:p-6">
+        <div className="flex-1 overflow-y-auto bg-sibs-canvas p-5 sm:p-6">
+          <div className="rounded-3xl border border-sibs-border bg-white p-5 shadow-sm sm:p-6">
             <div className="mb-6 flex flex-col gap-1">
-              <h3 className="text-base font-extrabold text-[#101828]">
+              <h3 className="text-base font-extrabold text-sibs-primary-1">
                 Request Details
               </h3>
 
@@ -242,7 +289,7 @@ function EditResignationModal({
                     />
 
                     {commentSpokenOpen && (
-                      <div className="absolute top-[calc(100%+8px)] z-30 w-full overflow-hidden rounded-xl border border-[#D7DEE8] bg-white shadow-xl">
+                      <div className="absolute top-[calc(100%+8px)] z-30 w-full overflow-hidden rounded-xl border border-sibs-border-subtle bg-white shadow-xl">
                         {["Yes", "No"].map((item) => (
                           <button
                             key={item}
@@ -256,9 +303,9 @@ function EditResignationModal({
                               }));
                               setCommentSpokenOpen(false);
                             }}
-                            className={`block w-full bg-white px-4 py-3 text-left text-sm font-semibold text-sibs-primary-1 transition hover:bg-[#F8FAFC] ${
+                            className={`block w-full bg-white px-4 py-3 text-left text-sm font-semibold text-sibs-primary-1 transition hover:bg-sibs-canvas ${
                               form.commentSpoken === item
-                                ? "bg-[#EAF2FB] font-extrabold"
+                                ? "bg-sibs-canvas font-extrabold"
                                 : ""
                             }`}
                           >
@@ -305,7 +352,7 @@ function EditResignationModal({
                     />
 
                     {employeeRetainedOpen && (
-                      <div className="absolute top-[calc(100%+8px)] z-30 w-full overflow-hidden rounded-xl border border-[#D7DEE8] bg-white shadow-xl">
+                      <div className="absolute top-[calc(100%+8px)] z-30 w-full overflow-hidden rounded-xl border border-sibs-border-subtle bg-white shadow-xl">
                         {[
                           { label: "Yes", value: "1" },
                           { label: "No", value: "0" },
@@ -320,9 +367,9 @@ function EditResignationModal({
                               }));
                               setEmployeeRetainedOpen(false);
                             }}
-                            className={`block w-full bg-white px-4 py-3 text-left text-sm font-semibold text-sibs-primary-1 transition hover:bg-[#F8FAFC] ${
+                            className={`block w-full bg-white px-4 py-3 text-left text-sm font-semibold text-sibs-primary-1 transition hover:bg-sibs-canvas ${
                               form.employeeRetained === item.value
-                                ? "bg-[#EAF2FB] font-extrabold"
+                                ? "bg-sibs-canvas font-extrabold"
                                 : ""
                             }`}
                           >
@@ -353,7 +400,7 @@ function EditResignationModal({
                     rows={5}
                     readOnly={readOnly}
                     placeholder="Enter your comments here"
-                    className="w-full resize-none rounded-xl border border-[#D0D5DD] bg-white px-4 py-3 text-sm font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 disabled:cursor-not-allowed disabled:bg-[#F2F4F7]"
+                    className="w-full resize-none rounded-xl border border-sibs-border-subtle bg-white px-4 py-3 text-sm font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 disabled:cursor-not-allowed disabled:bg-sibs-canvas"
                   />
                 </div>
               )}
@@ -361,19 +408,19 @@ function EditResignationModal({
               <div className="lg:col-span-2">
                 <FieldLabel>Attachments</FieldLabel>
 
-                <div className="rounded-xl border border-[#D0D5DD] bg-white p-4">
+                <div className="rounded-xl border border-sibs-border-subtle bg-white p-4">
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex min-w-0 items-center gap-3">
-                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#FFF0EB] text-[#FF5C28]">
+                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-sibs-orange-light text-sibs-orange">
                         <Paperclip size={18} />
                       </span>
 
                       <div className="min-w-0">
-                        <p className="text-sm font-extrabold text-[#042C51]">
+                        <p className="text-sm font-extrabold text-sibs-navy">
                           {getAttachmentCountLabel(selectedItem)}
                         </p>
 
-                        <p className="mt-1 truncate text-xs font-semibold text-[#667085]">
+                        <p className="mt-1 truncate text-xs font-semibold text-sibs-text-secondary">
                           {getFirstAttachmentName(selectedItem) ||
                             "No attachment submitted for this resignation."}
                         </p>
@@ -384,7 +431,7 @@ function EditResignationModal({
                       type="button"
                       onClick={() => onOpenAttachments?.(selectedItem)}
                       disabled={getAttachmentCount(selectedItem) === 0}
-                      className="inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-[#042C51] px-4 text-xs font-extrabold text-white transition hover:bg-[#FF5C28] disabled:cursor-not-allowed disabled:bg-[#D0D5DD]"
+                      className="inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-sibs-navy px-4 text-xs font-extrabold text-white transition hover:bg-sibs-orange disabled:cursor-not-allowed disabled:bg-slate-200"
                     >
                       <Paperclip size={14} />
                       Open Attachments
@@ -396,12 +443,12 @@ function EditResignationModal({
           </div>
         </div>
 
-        <div className="border-t border-[#E6ECF2] bg-white px-5 py-4 sm:px-6">
+        <div className="border-t border-sibs-border bg-white px-5 py-4 sm:px-6">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
             <button
               type="button"
               onClick={onClose}
-              className="inline-flex h-11 items-center justify-center rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC]"
+              className="inline-flex h-11 items-center justify-center rounded-xl border border-sibs-border-subtle bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:bg-sibs-canvas"
             >
               {readOnly ? "Close" : "Cancel"}
             </button>
@@ -426,7 +473,7 @@ function EditResignationModal({
 function MobileField({ label, value, full = false }) {
   return (
     <div
-      className={`rounded-xl border border-[#E6ECF2] bg-slate-50 p-3 transition-all duration-200 hover:-translate-y-0.5 hover:bg-white hover:shadow-sm ${
+      className={`rounded-xl border border-sibs-border bg-slate-50 p-3 transition-all duration-200 hover:-translate-y-0.5 hover:bg-white hover:shadow-sm ${
         full ? "sm:col-span-2" : ""
       }`}
     >
@@ -450,17 +497,17 @@ function MobileResignationCard({
   const attachmentCount = getAttachmentCount(item);
 
   return (
-    <article className="sibs-page-card-in rounded-xl border border-[#E6ECF2] bg-white p-4 text-left shadow-sm transition-all duration-200 hover:border-[#FF5C28]/20 hover:shadow-md">
+    <article className="sibs-page-card-in rounded-xl border border-sibs-border bg-white p-4 text-left shadow-sm transition-all duration-200 hover:border-sibs-orange/20 hover:shadow-md">
       <div className="min-w-0">
-        <p className="m-0 text-xs font-semibold text-[#667085]">
+        <p className="m-0 text-xs font-semibold text-sibs-text-secondary">
           {item.sibsId || "N/A"}
         </p>
 
-        <h3 className="mt-1 text-sm font-extrabold leading-tight text-[#042C51]">
+        <h3 className="mt-1 text-sm font-extrabold leading-tight text-sibs-navy">
           {(item.fullName || "N/A").toUpperCase()}
         </h3>
 
-        <span className="mt-1 block text-xs font-semibold text-[#667085]">
+        <span className="mt-1 block text-xs font-semibold text-sibs-text-secondary">
           {item.resignationType || "N/A"}
         </span>
       </div>
@@ -478,7 +525,7 @@ function MobileResignationCard({
           type="button"
           onClick={() => canOpen && onOpen(item)}
           disabled={!canOpen}
-          className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-[#D6DEE8] bg-white px-4 text-xs font-extrabold text-[#042C51] transition hover:border-[#FF5C28]/50 hover:bg-[#FFF8F5] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-60"
+          className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-sibs-border-subtle bg-white px-4 text-xs font-extrabold text-sibs-navy transition hover:border-sibs-orange/50 hover:bg-sibs-orange-light hover:text-sibs-orange disabled:cursor-not-allowed disabled:opacity-60"
         >
           <Eye size={15} />
           {canOpen ? "View / Update" : "View Restricted"}
@@ -488,7 +535,7 @@ function MobileResignationCard({
           type="button"
           onClick={() => onOpenAttachments?.(item)}
           disabled={attachmentCount === 0}
-          className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[#042C51] px-4 text-xs font-extrabold text-white transition hover:bg-[#FF5C28] disabled:cursor-not-allowed disabled:bg-[#D0D5DD]"
+          className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-sibs-navy px-4 text-xs font-extrabold text-white transition hover:bg-sibs-orange disabled:cursor-not-allowed disabled:bg-slate-200"
         >
           <Paperclip size={15} />
           {getAttachmentCountLabel(item)}
@@ -671,6 +718,14 @@ export default function ResignationTable({
   function handleNextPage() {
     if (loading || !hasNextPage) return;
     setCurrentPage((prev) => Math.min(prev + 1, totalPages));
+  }
+
+  function handleSearchChange(value) {
+    setSearchInput(value);
+    if (!value) {
+      setSearch("");
+      setCurrentPage(1);
+    }
   }
 
   function handleSearchKeyDown(e) {
@@ -871,36 +926,56 @@ export default function ResignationTable({
     <>
       <div className="min-w-0 overflow-hidden rounded-xl bg-white">
         <div className="p-4 sm:p-5">
-          <PaginationTable
-            filterLayout="ta-inline"
-            showFilterPanel={false}
-            showFilterHeader={false}
-            title="Resignation Records"
-            subtitle="Search and filter resignation requests loaded in this table."
-            loading={loading}
-            searchValue={searchInput}
-            searchPlaceholder="Search resignation then press Enter"
-            onSearchChange={(value) => setSearchInput(value)}
-            onSearchKeyDown={handleSearchKeyDown}
-            filters={[
-              {
-                key: "type",
-                value: typeFilter,
-                onChange: handleTypeFilter,
-                options: resignationTypeOptions,
-              },
-              {
-                key: "location",
-                value: locationFilter,
-                onChange: handleLocationFilter,
-                options: locationOptions,
-              },
-            ]}
-            showPagination={false}
-            className="mb-5 border-0 bg-transparent p-0 shadow-none"
-          />
+          <div className="mb-5">
+            <h3 className="font-heading text-sm 2xl:text-base font-bold text-sibs-navy tracking-tight">
+              Resignation Records
+            </h3>
+            <p className="mt-1 sibs-text-xs font-semibold text-sibs-muted">
+              Search and filter resignation requests loaded in this table.
+            </p>
 
-          <div className="hidden overflow-hidden rounded-xl border border-[#E6ECF2] lg:block">
+            <div className="mt-4 flex flex-col gap-3 overflow-visible xl:flex-row xl:items-end">
+              <div className="relative w-full min-w-0 xl:min-w-[180px] xl:flex-[1_1_220px] 2xl:min-w-[280px] 2xl:flex-[1_1_360px]">
+                <SearchInput
+                  label="Search"
+                  labelClassName="sibs-text-micro font-extrabold tracking-normal text-sibs-navy"
+                  value={searchInput}
+                  placeholder="Search resignation then press Enter"
+                  onChange={handleSearchChange}
+                  onKeyDown={handleSearchKeyDown}
+                  disabled={loading}
+                />
+              </div>
+
+              <div className="w-full xl:w-[200px] 2xl:w-[240px] xl:flex-none">
+                <SelectDropdown
+                  label="Resignation Type"
+                  labelClassName="sibs-text-micro font-extrabold tracking-normal text-sibs-navy"
+                  value={typeFilter}
+                  options={resignationTypeOptions}
+                  onChange={handleTypeFilter}
+                  placeholder="All Types"
+                  clearable={false}
+                  disabled={loading}
+                />
+              </div>
+
+              <div className="w-full xl:w-[200px] 2xl:w-[240px] xl:flex-none">
+                <SelectDropdown
+                  label="Assigned Location"
+                  labelClassName="sibs-text-micro font-extrabold tracking-normal text-sibs-navy"
+                  value={locationFilter}
+                  options={locationOptions}
+                  onChange={handleLocationFilter}
+                  placeholder="All Locations"
+                  clearable={false}
+                  disabled={loading}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="hidden overflow-hidden rounded-xl border border-sibs-border lg:block">
             <div
               ref={tableScrollRef}
               onMouseDown={handleDragStart}
@@ -923,37 +998,37 @@ export default function ResignationTable({
                   <col className="w-[180px]" />
                 </colgroup>
 
-                <thead className="sticky top-0 z-10 bg-[#F8FAFC]">
+                <thead className="sticky top-0 z-10 bg-sibs-canvas">
                   <tr>
-                    <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-left sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">
+                    <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-left sibs-text-micro font-extrabold uppercase tracking-wider text-sibs-muted">
                       SIBS ID
                     </th>
 
-                    <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-left sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">
+                    <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-left sibs-text-micro font-extrabold uppercase tracking-wider text-sibs-muted">
                       Resignation Type
                     </th>
 
-                    <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-left sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">
+                    <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-left sibs-text-micro font-extrabold uppercase tracking-wider text-sibs-muted">
                       Employee Name
                     </th>
 
-                    <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-left sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">
+                    <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-left sibs-text-micro font-extrabold uppercase tracking-wider text-sibs-muted">
                       Assigned Location
                     </th>
 
-                    <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-left sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">
+                    <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-left sibs-text-micro font-extrabold uppercase tracking-wider text-sibs-muted">
                       Attachments
                     </th>
 
-                    <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-left sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">
+                    <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-left sibs-text-micro font-extrabold uppercase tracking-wider text-sibs-muted">
                       Resignation Date
                     </th>
 
-                    <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-left sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">
+                    <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-left sibs-text-micro font-extrabold uppercase tracking-wider text-sibs-muted">
                       Last Working Date
                     </th>
 
-                    <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-left sibs-text-micro font-extrabold uppercase tracking-wider text-[#8A98B8]">
+                    <th className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-left sibs-text-micro font-extrabold uppercase tracking-wider text-sibs-muted">
                       Submitted At
                     </th>
                   </tr>
@@ -965,7 +1040,7 @@ export default function ResignationTable({
                       <tr key={index}>
                         <td
                           colSpan={8}
-                          className="border-t border-[#EEF2F6] px-3 2xl:px-4 py-2 2xl:py-2.5"
+                          className="border-t border-sibs-border px-3 2xl:px-4 py-2 2xl:py-2.5"
                         >
                           <div className="h-5 w-full animate-sibs-pulse rounded bg-gray-200" />
                         </td>
@@ -975,7 +1050,7 @@ export default function ResignationTable({
                     <tr>
                       <td
                         colSpan={8}
-                        className="border-t border-[#f3f4f6] p-10 text-center sibs-text-sm font-bold text-[#667085]"
+                        className="border-t border-sibs-border p-10 text-center sibs-text-sm font-bold text-sibs-text-secondary"
                       >
                         No resignation records found.
                       </td>
@@ -990,31 +1065,31 @@ export default function ResignationTable({
                         <tr
                           key={item.id}
                           onClick={() => handleOpenEdit(item)}
-                          className={`transition-all duration-200 hover:bg-[#FFF8F5] ${
+                          className={`transition-all duration-200 hover:bg-sibs-orange-light ${
                             isAssignedSupervisor
                               ? "cursor-pointer"
                               : "cursor-not-allowed opacity-80"
                           }`}
                         >
-                          <td className="whitespace-nowrap border-t border-[#EEF2F6] px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-extrabold text-[#FF5C28] tabular-nums">
+                          <td className="whitespace-nowrap border-t border-sibs-border px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-extrabold text-sibs-orange tabular-nums">
                             {item.sibsId || "N/A"}
                           </td>
 
-                          <td className="whitespace-nowrap border-t border-[#EEF2F6] px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-semibold text-[#344054]">
+                          <td className="whitespace-nowrap border-t border-sibs-border px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-semibold text-sibs-text-secondary">
                             {item.resignationType || "N/A"}
                           </td>
 
-                          <td className="border-t border-[#EEF2F6] px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-extrabold text-[#042C51]">
+                          <td className="border-t border-sibs-border px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-extrabold text-sibs-navy">
                             <p className="m-0 overflow-hidden text-ellipsis whitespace-nowrap uppercase">
                               {item.fullName || "N/A"}
                             </p>
                           </td>
 
-                          <td className="whitespace-nowrap border-t border-[#EEF2F6] px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-semibold text-[#344054]">
+                          <td className="whitespace-nowrap border-t border-sibs-border px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-semibold text-sibs-text-secondary">
                             {mapAssignedLocation(item.location)}
                           </td>
 
-                          <td className="border-t border-[#EEF2F6] px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-semibold text-[#344054]">
+                          <td className="border-t border-sibs-border px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-semibold text-sibs-text-secondary">
                             <button
                               type="button"
                               data-no-table-drag="true"
@@ -1023,7 +1098,7 @@ export default function ResignationTable({
                                 onOpenAttachments?.(item);
                               }}
                               disabled={getAttachmentCount(item) === 0}
-                              className="inline-flex h-8 max-w-[240px] items-center justify-center gap-1.5 rounded-lg border border-[#FFD9CC] bg-[#FFF8F5] px-2.5 2xl:px-3 sibs-text-micro font-extrabold text-[#FF5C28] transition hover:border-[#FF5C28] hover:bg-[#FFF0EB] disabled:cursor-not-allowed disabled:border-[#E6ECF2] disabled:bg-[#F8FAFC] disabled:text-[#98A2B3]"
+                              className="inline-flex h-8 max-w-[240px] items-center justify-center gap-1.5 rounded-lg border border-sibs-orange/30 bg-sibs-orange-light px-2.5 2xl:px-3 sibs-text-micro font-extrabold text-sibs-orange transition hover:border-sibs-orange hover:bg-sibs-orange-light disabled:cursor-not-allowed disabled:border-sibs-border disabled:bg-sibs-canvas disabled:text-sibs-muted"
                               title={getFirstAttachmentName(item) || getAttachmentCountLabel(item)}
                             >
                               <Paperclip size={13} />
@@ -1031,15 +1106,15 @@ export default function ResignationTable({
                             </button>
                           </td>
 
-                          <td className="whitespace-nowrap border-t border-[#EEF2F6] px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-semibold text-[#344054]">
+                          <td className="whitespace-nowrap border-t border-sibs-border px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-semibold text-sibs-text-secondary">
                             {formatDate(item.resignationDate)}
                           </td>
 
-                          <td className="whitespace-nowrap border-t border-[#EEF2F6] px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-semibold text-[#344054]">
+                          <td className="whitespace-nowrap border-t border-sibs-border px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-semibold text-sibs-text-secondary">
                             {formatDate(item.lastWorkingDate)}
                           </td>
 
-                          <td className="whitespace-nowrap border-t border-[#EEF2F6] px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-semibold text-[#344054]">
+                          <td className="whitespace-nowrap border-t border-sibs-border px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-semibold text-sibs-text-secondary">
                             {formatDateTime(item.createdAt)}
                           </td>
                         </tr>
@@ -1050,7 +1125,7 @@ export default function ResignationTable({
               </table>
             </div>
 
-            <p className="mt-2 sibs-text-xs font-semibold text-[#667085]">
+            <p className="mt-2 sibs-text-xs font-semibold text-sibs-text-secondary">
               Hold left click and drag left or right to scroll the table.
             </p>
           </div>
@@ -1058,11 +1133,11 @@ export default function ResignationTable({
           <div className="block lg:hidden">
             <div ref={mobileScrollRef} className="max-h-[620px] overflow-y-auto">
               {loading ? (
-                <div className="rounded-xl border border-[#E6ECF2] bg-white p-6 text-center text-sm font-bold text-gray-500">
+                <div className="rounded-xl border border-sibs-border bg-white p-6 text-center text-sm font-bold text-gray-500">
                   Loading...
                 </div>
               ) : paginatedData.length === 0 ? (
-                <div className="rounded-xl border border-[#E6ECF2] bg-white p-6 text-center text-sm font-bold text-gray-500">
+                <div className="rounded-xl border border-sibs-border bg-white p-6 text-center text-sm font-bold text-gray-500">
                   No resignation records found.
                 </div>
               ) : (
@@ -1090,18 +1165,19 @@ export default function ResignationTable({
             </div>
           </div>
 
-          <PaginationTable
-            loading={loading}
-            showSearch={false}
-            showPagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            loadedCount={paginatedData.length}
-            totalRecords={totalRecords}
-            recordLabel="resignation records"
-            onPrevious={handlePreviousPage}
-            onNext={handleNextPage}
-          />
+          <div className="mt-5">
+            <TablePagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalRecords={totalRecords}
+              hasNextPage={hasNextPage}
+              pageSize={PAGE_LIMIT}
+              loadedCount={paginatedData.length}
+              onPageChange={(page) => setCurrentPage(page)}
+              recordLabel="resignation records"
+              loading={loading}
+            />
+          </div>
         </div>
       </div>
 
@@ -1117,12 +1193,21 @@ export default function ResignationTable({
         onOpenAttachments={onOpenAttachments}
       />
 
-      <StatusModal
+      <ConfirmModal
         open={statusModal.open}
-        type={statusModal.type}
+        variant={statusModal.type === "error" ? "danger" : "info"}
         title={statusModal.title}
         message={statusModal.message}
-        onClose={() =>
+        confirmText="OK"
+        onConfirm={() =>
+          setStatusModal({
+            open: false,
+            type: "success",
+            title: "",
+            message: "",
+          })
+        }
+        onCancel={() =>
           setStatusModal({
             open: false,
             type: "success",

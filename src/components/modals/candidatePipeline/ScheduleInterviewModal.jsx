@@ -1010,7 +1010,7 @@ function AvailableInterviewPicker({ value, onChange, candidateId }) {
     <div className="relative font-jakarta">
       <button type="button" onClick={() => setOpen((previous) => !previous)}
         className={`${SCHEDULE_INPUT_CLASS} flex items-center justify-between text-left`}>
-        <span className={value ? "text-sibs-navy" : "text-sibs-faint"}>
+        <span className={value ? "text-sibs-navy" : "text-sibs-muted"}>
           {value ? formatDateTimeDisplay(value) : "Select an available interview slot"}
         </span>
         <CalendarDays size={17} className="shrink-0" />
@@ -1020,10 +1020,10 @@ function AvailableInterviewPicker({ value, onChange, candidateId }) {
           <div className="mb-3 flex items-center justify-between gap-2">
             <button type="button" onClick={() => { setPickerDate(""); setViewDate(new Date(viewDate.getFullYear(), viewDate.getMonth() - 1, 1)); }}
               disabled={getMonthStart(viewDate) <= getMonthStart(new Date())}
-              className="rounded-lg border border-sibs-border p-2 text-sibs-navy disabled:opacity-30"><ChevronLeft size={16} /></button>
+              className="rounded-[10px] border border-sibs-border p-2 text-sibs-navy disabled:opacity-30"><ChevronLeft size={16} /></button>
             <strong className="text-xs text-sibs-navy">{MONTH_OPTIONS[viewDate.getMonth()].label} {viewDate.getFullYear()}</strong>
             <button type="button" onClick={() => { setPickerDate(""); setViewDate(new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 1)); }}
-              className="rounded-lg border border-sibs-border p-2 text-sibs-navy"><ChevronRight size={16} /></button>
+              className="rounded-[10px] border border-sibs-border p-2 text-sibs-navy"><ChevronRight size={16} /></button>
           </div>
           {loading && <p className="pb-2 text-xs text-sibs-muted">Loading available slots...</p>}
           {error && <p className="pb-2 text-xs text-red-600">{error}</p>}
@@ -1035,7 +1035,7 @@ function AvailableInterviewPicker({ value, onChange, candidateId }) {
               const available = currentMonth && availableDates.has(key);
               return <button key={key} type="button" disabled={!available || loading}
                 onClick={() => selectDate(key)} title={available ? 'Available interview slots' : 'No interview availability'}
-                className={`h-9 rounded-[8px] text-xs font-bold ${visibleDate === key ? 'bg-sibs-orange text-white' : available ? 'bg-sky-50 text-sibs-navy hover:bg-sky-100' : 'text-slate-300'}`}>{date.getDate()}</button>;
+                className={`h-9 rounded-[10px] text-xs font-bold ${visibleDate === key ? 'bg-sibs-orange text-white' : available ? 'bg-sky-50 text-sibs-navy hover:bg-sky-100' : 'text-slate-300'}`}>{date.getDate()}</button>;
             })}
           </div>
           {visibleDate && <>
@@ -1043,7 +1043,7 @@ function AvailableInterviewPicker({ value, onChange, candidateId }) {
             <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
               {slots.filter((slot) => slot.date === visibleDate).map((slot) => <button
                 key={slot.dateTime} type="button" onClick={() => { onChange(`${slot.date}T${slot.time}`); setOpen(false); }}
-                className={`rounded-lg border px-2 py-2 text-[11px] font-bold ${String(value || '').replace('T', ' ').slice(0,16) === slot.dateTime.slice(0,16) ? 'border-sibs-orange bg-sibs-orange text-white' : 'border-sibs-border text-sibs-navy hover:border-sibs-orange'}`}>
+                className={`rounded-[10px] border px-2 py-2 text-[11px] font-bold ${String(value || '').replace('T', ' ').slice(0,16) === slot.dateTime.slice(0,16) ? 'border-sibs-orange bg-sibs-orange text-white' : 'border-sibs-border text-sibs-navy hover:border-sibs-orange'}`}>
                 {new Date(`${slot.date}T${slot.time}:00`).toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit'})}
               </button>)}
             </div>
@@ -1104,7 +1104,7 @@ const ScheduleInterviewModal = ({
   }
 
   const footer = (
-    <div className="flex flex-col-reverse justify-end gap-2 sm:flex-row">
+    <div className="flex flex-col-reverse justify-end gap-2.5 sm:gap-3 sm:flex-row">
       <CandidateModalSecondaryButton type="button" disabled={busy} onClick={onClose}>
         Cancel
       </CandidateModalSecondaryButton>
@@ -1175,7 +1175,7 @@ const ScheduleInterviewModal = ({
             <div className="mb-3 flex items-center gap-2 rounded-[10px] border border-sibs-border bg-sibs-surface px-3 py-2 text-xs font-semibold text-sibs-navy">
               <MapPin size={15} className="shrink-0 text-sibs-orange" />
               <span>Site: <strong>{getCandidateInterviewSite(candidate)}</strong></span>
-              <span className="ml-auto text-[10px] text-sibs-faint">From Talent Pool application</span>
+              <span className="ml-auto text-[10px] text-sibs-muted">From Talent Pool application</span>
             </div>
           )}
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">

@@ -15,6 +15,7 @@ export default function ConfirmModal({
   onClose,
   onConfirm,
   title = "Are you sure?",
+  subtitle = "SiBS HRIS",
   description = "This action cannot be undone.",
   confirmLabel = "Confirm",
   cancelLabel = "Cancel",
@@ -34,7 +35,7 @@ export default function ConfirmModal({
     <StatusModal
       open={open}
       type="confirm"
-      subtitle="SiBS HRIS"
+      subtitle={subtitle}
       title={title}
       message={description}
       confirmLabel={confirmLabel}

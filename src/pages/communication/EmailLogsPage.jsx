@@ -117,7 +117,7 @@ function formatDispatchDate(value) {
   }).format(date);
 }
 
-function DesktopTable({ candidates, onView }) {
+function DesktopTable({ candidates, onView, loading = false }) {
   return (
     <div className="sibs-data-table-shell overflow-x-auto max-h-[480px] 2xl:max-h-[640px] overflow-y-auto sibs-scrollbar">
       <table className="w-full min-w-[1080px] 2xl:min-w-[1160px] table-fixed border-separate border-spacing-0 text-left font-jakarta">
@@ -144,7 +144,10 @@ function DesktopTable({ candidates, onView }) {
           </tr>
         </thead>
         <tbody className="divide-y divide-sibs-border">
-          {candidates.map((candidate, index) => {
+          {loading ? (
+            <TableSkeletonRows count={8} columns={6} />
+          ) : (
+            candidates.map((candidate, index) => {
             const latestRecord = candidate.latestRecord;
 
             return (
@@ -217,14 +220,22 @@ function DesktopTable({ candidates, onView }) {
                 </td>
               </tr>
             );
-          })}
+          }))}
         </tbody>
       </table>
     </div>
   );
 }
 
-function MobileCards({ candidates, onView }) {
+function MobileCards({ candidates, onView, loading = false }) {
+  if (loading) {
+    return (
+      <div className="space-y-3 p-3">
+        <DataCard.Skeleton count={4} lines={3} />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-3 p-3">
       {candidates.map((candidate, index) => (
@@ -530,7 +541,12 @@ export default function EmailLogsPage() {
                 layoutId="emailLogsStatusTabIndicator"
               />
 
-              {logs.visibleCandidates.length ? (
+              {logs.loading ? (
+                <ResponsiveTableShell
+                  desktopContent={<DesktopTable loading candidates={[]} onView={setSelectedCandidate} />}
+                  mobileContent={<MobileCards loading candidates={[]} onView={setSelectedCandidate} />}
+                />
+              ) : logs.visibleCandidates.length ? (
                 <ResponsiveTableShell
                   desktopContent={<DesktopTable candidates={logs.visibleCandidates} onView={setSelectedCandidate} />}
                   mobileContent={<MobileCards candidates={logs.visibleCandidates} onView={setSelectedCandidate} />}

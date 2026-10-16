@@ -11,7 +11,6 @@ import {
 import { useNavigate } from "react-router-dom";
 
 import { usePagination } from "../../../services/context/PaginationContext";
-import PaginationTable from "../../../services/pagination/PaginationTable";
 import {
   DataCard,
   ResponsiveTableShell,
@@ -782,77 +781,85 @@ export default function JobDescriptionTable({
           supervisory level.
         </p>
 
-        <div className="relative z-[90] mt-3.5 2xl:mt-4 overflow-visible">
-          <PaginationTable
-            filterLayout="ta-inline"
-            showFilterPanel={false}
-            showFilterHeader={false}
-            showPagination={false}
-            loading={loading}
-            searchValue={searchTerm}
-            searchPlaceholder="Search role title, document, department, account, or hiring need..."
-            onSearchChange={(val) =>
-              updateFilter(
-                setSearchTerm,
-                typeof val === "string" ? val : val?.target?.value || "",
-              )
-            }
-            className="border-0 bg-transparent p-0 shadow-none"
-            filters={[
-              {
-                key: "department",
-                value: departmentFilter,
-                options: departmentDropdownOptions,
-                onChange: (val) =>
-                  updateFilter(setDepartmentFilter, val || "All Departments"),
-                includeAll: false,
-                allLabel: "All Departments",
-                label: "Department",
-                placeholder: "All Departments",
-                searchable: true,
-                disabled: loading,
-              },
-              {
-                key: "account",
-                value: accountFilter,
-                options: accountDropdownOptions,
-                onChange: (val) =>
-                  updateFilter(setAccountFilter, val || "All Accounts"),
-                includeAll: false,
-                allLabel: "All Accounts",
-                label: "Account",
-                placeholder: "All Accounts",
-                searchable: true,
-                disabled: loading,
-              },
-              {
-                key: "supervisoryLevel",
-                value: supervisoryFilter,
-                options: supervisoryDropdownOptions,
-                onChange: (val) =>
-                  updateFilter(setSupervisoryFilter, val || "All Levels"),
-                includeAll: false,
-                allLabel: "All Levels",
-                label: "Supervisory Level",
-                placeholder: "All Levels",
-                searchable: false,
-                disabled: loading,
-              },
-            ]}
-            rightContent={
-              hasActiveFilters ? (
-                <button
-                  type="button"
-                  onClick={handleResetFilters}
-                  disabled={loading}
-                  className="inline-flex h-8.5 2xl:h-10 w-full items-center justify-center gap-1.5 rounded-[10px] border border-sibs-border bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-muted transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange disabled:cursor-not-allowed disabled:opacity-50 xl:w-auto"
-                >
-                  <RotateCcw size={14} />
-                  Clear
-                </button>
-              ) : null
-            }
-          />
+        <div className="relative z-[90] mt-3.5 2xl:mt-4 flex flex-col gap-3 overflow-visible xl:flex-row xl:items-end">
+          <div className="relative w-full min-w-0 xl:min-w-[180px] xl:flex-[1_1_220px] 2xl:min-w-[280px] 2xl:flex-[1_1_360px]">
+            <SearchInput
+              label="Search"
+              labelClassName="sibs-text-micro font-extrabold tracking-normal text-sibs-navy"
+              value={searchTerm}
+              placeholder="Search role title, document, department, account, or hiring need..."
+              onChange={(val) =>
+                updateFilter(
+                  setSearchTerm,
+                  typeof val === "string" ? val : val?.target?.value || "",
+                )
+              }
+              disabled={loading}
+            />
+          </div>
+
+          <div className="w-full xl:w-[160px] 2xl:w-[200px] xl:flex-none">
+            <SelectDropdown
+              label="Department"
+              labelClassName="sibs-text-micro font-extrabold tracking-normal text-sibs-navy"
+              value={departmentFilter}
+              options={departmentDropdownOptions}
+              onChange={(val) =>
+                updateFilter(setDepartmentFilter, val || "All Departments")
+              }
+              searchable
+              searchPlaceholder="Search departments..."
+              placeholder="All Departments"
+              clearable={false}
+              disabled={loading}
+            />
+          </div>
+
+          <div className="w-full xl:w-[160px] 2xl:w-[200px] xl:flex-none">
+            <SelectDropdown
+              label="Account"
+              labelClassName="sibs-text-micro font-extrabold tracking-normal text-sibs-navy"
+              value={accountFilter}
+              options={accountDropdownOptions}
+              onChange={(val) =>
+                updateFilter(setAccountFilter, val || "All Accounts")
+              }
+              searchable
+              searchPlaceholder="Search accounts..."
+              placeholder="All Accounts"
+              clearable={false}
+              disabled={loading}
+            />
+          </div>
+
+          <div className="w-full xl:w-[160px] 2xl:w-[200px] xl:flex-none">
+            <SelectDropdown
+              label="Supervisory Level"
+              labelClassName="sibs-text-micro font-extrabold tracking-normal text-sibs-navy"
+              value={supervisoryFilter}
+              options={supervisoryDropdownOptions}
+              onChange={(val) =>
+                updateFilter(setSupervisoryFilter, val || "All Levels")
+              }
+              placeholder="All Levels"
+              clearable={false}
+              disabled={loading}
+            />
+          </div>
+
+          {hasActiveFilters ? (
+            <div className="w-full xl:w-auto xl:flex-none">
+              <button
+                type="button"
+                onClick={handleResetFilters}
+                disabled={loading}
+                className="inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-[10px] border border-sibs-border bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-muted transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange disabled:cursor-not-allowed disabled:opacity-50 xl:w-auto"
+              >
+                <RotateCcw size={14} />
+                Clear
+              </button>
+            </div>
+          ) : null}
         </div>
       </div>
 

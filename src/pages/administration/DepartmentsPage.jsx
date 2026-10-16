@@ -14,7 +14,9 @@ import AddDepartmentModal from "@/components/departments/AddDepartmentModal";
 import AddAccountModal from "@/components/departments/AddAccountModal";
 import DepartmentApprovalRequests from "@/components/departments/DepartmentApprovalRequests";
 import AccountApprovalRequests from "@/components/departments/AccountApprovalRequests";
-import DepartmentCard from "@/components/departments/DepartmentCard";
+import DepartmentCard, {
+  DepartmentCardSkeleton,
+} from "@/components/departments/DepartmentCard";
 import DepartmentDetailsModal from "@/components/departments/DepartmentDetailsModal";
 import DepartmentFilters from "@/components/departments/DepartmentFilters";
 import DepartmentSummaryCards from "@/components/departments/DepartmentSummaryCards";
@@ -398,24 +400,27 @@ function DepartmentsPageContent() {
           }
         />
 
-        <DepartmentSummaryCards summary={departments.summary} />
+        <DepartmentSummaryCards
+          summary={departments.summary}
+          loading={departments.loading}
+        />
 
         {approvalAccessError ? (
-          <div role="alert" className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-semibold text-amber-800">
+          <div role="alert" className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-[10px] border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-semibold text-amber-800">
             <span>Department permissions could not be verified: {approvalAccessError}</span>
             <button type="button" className="underline underline-offset-2" onClick={loadApprovalData}>Retry</button>
           </div>
         ) : null}
 
         {canManageDepartments && approvalRequestsError ? (
-          <div role="alert" className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-semibold text-amber-800">
+          <div role="alert" className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-[10px] border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-semibold text-amber-800">
             <span>Pending Department approvals could not be loaded: {approvalRequestsError}</span>
             <button type="button" className="underline underline-offset-2" onClick={loadApprovalData}>Retry</button>
           </div>
         ) : null}
 
         {canManageDepartments && accountApprovalRequestsError ? (
-          <div role="alert" className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-semibold text-amber-800">
+          <div role="alert" className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-[10px] border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-semibold text-amber-800">
             <span>Pending Account approvals could not be loaded: {accountApprovalRequestsError}</span>
             <button type="button" className="underline underline-offset-2" onClick={loadApprovalData}>Retry</button>
           </div>
@@ -480,8 +485,10 @@ function DepartmentsPageContent() {
           />
 
           {departments.loading ? (
-            <div className="flex min-h-80 items-center justify-center">
-              <Loader2 className="h-8 w-8 animate-spin text-sibs-orange" />
+            <div className="grid gap-4 p-4 md:grid-cols-2 xl:grid-cols-3 sm:p-5">
+              {Array.from({ length: 6 }).map((_, idx) => (
+                <DepartmentCardSkeleton key={idx} index={idx} />
+              ))}
             </div>
           ) : departments.error ? (
             <div className="m-5 rounded-[10px] border border-rose-200 bg-rose-50 p-8 text-center text-rose-700">

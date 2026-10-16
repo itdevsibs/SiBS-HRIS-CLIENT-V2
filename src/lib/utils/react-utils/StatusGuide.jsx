@@ -2,7 +2,7 @@ import React from "react";
 
 const StatusGuide = () => {
   return (
-    <div className="mt-3 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4">
+    <div className="mt-3 rounded-xl border border-sibs-border bg-sibs-canvas p-4">
       <p className="mb-3 text-xs font-extrabold uppercase tracking-wide text-sibs-tertiary-5">
         Status Guide
       </p>

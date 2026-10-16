@@ -1,5 +1,4 @@
-import { formatHrisDateLocalized } from "@/lib/axios/dateFormatter";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useMemo } from "react";
 import {
   AlertTriangle,
   BriefcaseBusiness,
@@ -80,7 +79,7 @@ export default function AddActionItemModal() {
   const linkedRoleOptions = useMemo(() => {
     return [
       { value: "", label: "Select role with hiring gap" },
-      ...linkedActionOptions.map((option) => {
+      ...(linkedActionOptions || []).map((option) => {
         const gap = Math.max(
           Number(option.requirement || 0) - Number(option.filled || 0),
           0,
@@ -96,7 +95,7 @@ export default function AddActionItemModal() {
   const ownerSelectOptions = useMemo(() => {
     return [
       { value: "", label: "Select owner" },
-      ...ownerOptions
+      ...(ownerOptions || [])
         .filter((option) => option !== "All Owners")
         .map((owner) => ({ value: owner, label: owner })),
     ];
@@ -173,7 +172,7 @@ export default function AddActionItemModal() {
       onClose={closeAddModal}
       variant="navy"
       maxWidth="max-w-5xl 2xl:max-w-6xl"
-      className="rounded-[14px] text-slate-900"
+      className="rounded-[14px] text-sibs-navy"
       headerClassName="rounded-t-[14px]"
       icon={ClipboardList}
       title="Add Recruitment Action Item"
@@ -227,7 +226,7 @@ export default function AddActionItemModal() {
         className="font-jakarta"
       >
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:items-stretch">
-          <section className="flex min-w-0 flex-col rounded-[14px] border border-sibs-border bg-sibs-surface p-4 shadow-sm sm:p-5">
+          <section className="flex min-w-0 flex-col rounded-[14px] border border-sibs-border bg-sibs-surface p-4 shadow-xs sm:p-5">
             <div className="mb-3 flex items-center justify-between border-b border-sibs-border pb-2.5">
               <h3 className="flex items-center gap-1.5 sibs-modal-section-title text-sibs-navy">
                 <BriefcaseBusiness size={14} className="shrink-0 text-sibs-orange" />
@@ -354,7 +353,7 @@ export default function AddActionItemModal() {
             </div>
           </section>
 
-          <section className="flex min-w-0 flex-col rounded-[14px] border border-sibs-border bg-white p-4 shadow-sm sm:p-5">
+          <section className="flex min-w-0 flex-col rounded-[14px] border border-sibs-border bg-white p-4 shadow-xs sm:p-5">
             <div className="mb-4 flex items-center justify-between gap-3 border-b border-sibs-border pb-3">
               <h3 className="flex min-w-0 items-center gap-2 sibs-modal-section-title text-sibs-navy">
                 <CheckCircle2

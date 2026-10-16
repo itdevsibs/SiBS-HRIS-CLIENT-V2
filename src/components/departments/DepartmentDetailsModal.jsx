@@ -14,7 +14,7 @@ import {
   XCircle,
 } from "lucide-react";
 
-import { ModalShell, SelectDropdown } from "@/components/ui";
+import { ModalShell, SelectDropdown, Skeleton } from "@/components/ui";
 import AccountLobManagementModal from "./AccountLobManagementModal";
 import DepartmentProfileAvatar from "./DepartmentProfileAvatar";
 import {
@@ -270,8 +270,23 @@ function AccountEmployeesModal({
       ) : null}
 
       {loading ? (
-        <div className="flex min-h-52 items-center justify-center">
-          <Loader2 className="h-7 w-7 animate-spin text-sibs-orange" />
+        <div className="grid gap-2 sm:grid-cols-2" data-testid="account-employees-skeleton">
+          {Array.from({ length: 6 }).map((_, index) => (
+            <div
+              key={`employee-card-skeleton-${index}`}
+              className="flex min-w-0 items-start gap-3 rounded-[10px] border border-sibs-border bg-white p-3"
+            >
+              <Skeleton className="h-10 w-10 shrink-0 rounded-full" />
+              <div className="min-w-0 flex-1 space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <Skeleton className="h-4 w-28" />
+                  <Skeleton className="h-4 w-14 rounded-full" />
+                </div>
+                <Skeleton className="h-3 w-20" />
+                <Skeleton className="h-3 w-36" />
+              </div>
+            </div>
+          ))}
         </div>
       ) : error ? (
         <div className="rounded-[10px] border border-rose-200 bg-rose-50 p-6 text-center text-sm font-semibold text-rose-700">
@@ -1295,31 +1310,6 @@ export default function DepartmentDetailsModal({
         </div>
       }
     >
-      <style>{`
-        .sibs-department-details-modal .sibs-modal-title,
-        .sibs-account-employees-modal .sibs-modal-title {
-          font-size: 1.25rem !important;
-          line-height: 1.75rem !important;
-        }
-
-        .sibs-department-details-modal .sibs-modal-subtitle,
-        .sibs-account-employees-modal .sibs-modal-subtitle {
-          font-size: 0.875rem !important;
-          line-height: 1.25rem !important;
-        }
-
-        .sibs-department-details-modal-header span.rounded-full,
-        .sibs-account-employees-modal-header span.rounded-full {
-          font-size: 0.625rem !important;
-          line-height: 0.875rem !important;
-        }
-
-        .sibs-employee-lob-dropdown [role="option"] span.block.truncate {
-          font-size: 0.875rem !important;
-          line-height: 1.25rem !important;
-        }
-      `}</style>
-
       <div className="space-y-5">
         <div className="flex flex-col gap-3 rounded-[10px] border border-sibs-border bg-sibs-surface p-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex min-w-0 items-center gap-3">

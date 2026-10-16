@@ -23,8 +23,8 @@ function ActionItemsContent() {
   return (
     <>
       <ActionItemsHeader />
-      <ActionItemsReportingScope />
       <ActionItemsStats />
+      <ActionItemsReportingScope />
       <ActionItemsWeeklyPerformance />
       <ActionItemsCurrentStatus />
 

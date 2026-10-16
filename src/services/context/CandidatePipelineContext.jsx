@@ -258,30 +258,6 @@ function getLoggedInUserIdentifier(user) {
   );
 }
 
-function getTalentPoolApplicationIdForOffer(candidate = {}) {
-  const metadata = candidate.metadata || {};
-  const candidateSnapshot =
-    metadata.candidateSnapshot ||
-    metadata.candidate ||
-    candidate.candidateSnapshot ||
-    {};
-
-  const value = cleanText(
-    candidate.sourceTalentPoolId ||
-      candidate.source_talent_pool_id ||
-      metadata.sourceTalentPoolId ||
-      metadata.source_talent_pool_id ||
-      candidateSnapshot.sourceTalentPoolId ||
-      candidateSnapshot.source_talent_pool_id ||
-      candidate.candidateApplicationId ||
-      candidate.candidate_application_id ||
-      candidate.applicationId ||
-      candidate.application_id,
-  );
-
-  return /^\d+$/.test(value) ? value : "";
-}
-
 /* ================================
    LOCAL API FUNCTIONS
 ================================ */

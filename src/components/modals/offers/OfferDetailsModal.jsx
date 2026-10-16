@@ -801,7 +801,7 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
               <div className="space-y-4 2xl:space-y-5">
                 <section className="rounded-[14px] border border-sibs-border bg-white p-4 shadow-sm sm:p-5">
                   <div className="mb-3 border-b border-sibs-border pb-2.5">
-                    <h3 className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-navy">
+                    <h3 className="font-heading text-[11px] 2xl:text-xs font-extrabold uppercase tracking-wide text-sibs-navy">
                       Candidate & Requisition Profile
                     </h3>
                   </div>
@@ -841,7 +841,7 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
                 </section>
                 <section className="rounded-[14px] border border-sibs-border bg-white p-4 shadow-sm sm:p-5">
                   <div className="mb-3 flex flex-col gap-2 border-b border-sibs-border pb-2.5 sm:flex-row sm:items-center sm:justify-between">
-                    <h3 className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-navy">
+                    <h3 className="font-heading text-[11px] 2xl:text-xs font-extrabold uppercase tracking-wide text-sibs-navy">
                       Compensation & Benefits Breakdown
                     </h3>
                     <span className="w-fit rounded-[10px] border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-extrabold text-sibs-navy tabular-nums">
@@ -887,7 +887,7 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
                 </section>
                 <section className="rounded-[14px] border border-sibs-border bg-white p-4 shadow-sm sm:p-5">
                   <div className="mb-3 flex flex-col gap-2 border-b border-sibs-border pb-2.5 sm:flex-row sm:items-center sm:justify-between">
-                    <h3 className="flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-wide text-sibs-navy">
+                    <h3 className="flex items-center gap-1.5 font-heading text-[11px] 2xl:text-xs font-extrabold uppercase tracking-wide text-sibs-navy">
                       <ShieldCheck size={14} className="text-sibs-orange" />
                       Multi-User Approval Workflow Matrix
                     </h3>
@@ -902,7 +902,7 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
                         className="flex flex-col gap-3 rounded-[10px] border border-sibs-border bg-slate-50 px-3.5 py-3 sm:flex-row sm:items-center sm:justify-between"
                       >
                         <div className="min-w-0">
-                          <div className="flex flex-wrap items-center gap-2">
+                           <div className="flex flex-wrap items-center gap-2">
                             <p className="text-xs font-extrabold text-sibs-navy">{approver.name}</p>
                             <span className="rounded-[10px] bg-slate-200/60 px-2 py-0.5 text-[9px] font-extrabold text-sibs-navy">
                               {approver.role}
@@ -935,7 +935,7 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
                 </section>
                 {canSubmitRevision ? (
                   <section className="rounded-[14px] border border-amber-200 bg-amber-50 p-4 shadow-sm sm:p-5">
-                    <h3 className="text-sm font-extrabold text-amber-900">
+                    <h3 className="font-heading text-sm font-extrabold text-amber-900">
                       Candidate Requested Negotiation
                     </h3>
                     <p className="mt-2 rounded-[10px] border border-amber-200 bg-white p-3 text-xs font-semibold leading-5 text-amber-900">
@@ -998,7 +998,7 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
                 ) : null}
                 <section className="rounded-[14px] border border-sibs-border bg-white p-4 shadow-sm sm:p-5">
                   <div className="mb-3 border-b border-sibs-border pb-2.5">
-                    <h3 className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-navy">
+                    <h3 className="font-heading text-[11px] 2xl:text-xs font-extrabold uppercase tracking-wide text-sibs-navy">
                       Evaluation Results
                     </h3>
                   </div>
@@ -1038,7 +1038,7 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
                   <div className="flex flex-col gap-3 border-b border-sibs-border pb-2.5 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex items-center gap-2">
                       <History size={15} className="text-sibs-orange" />
-                      <h3 className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-navy">
+                      <h3 className="font-heading text-[11px] 2xl:text-xs font-extrabold uppercase tracking-wide text-sibs-navy">
                         Negotiation History
                       </h3>
                     </div>
@@ -1132,7 +1132,7 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
                 <section className="rounded-[14px] border border-sibs-border bg-white p-5 shadow-sm">
                   <div className="flex flex-col gap-3 border-b border-sibs-border pb-4 sm:flex-row sm:items-start sm:justify-between">
                     <div>
-                      <h3 className="text-sm font-extrabold text-sibs-navy">
+                      <h3 className="font-heading text-sm font-extrabold text-sibs-navy">
                         Generated Contract Document
                       </h3>
                       <p className="mt-1 text-xs font-semibold leading-5 text-sibs-muted">
@@ -1186,7 +1186,7 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
                 ).length > 1 ? (
                   <section className="rounded-[14px] border border-sibs-border bg-white p-5 shadow-sm">
                     <div className="mb-3 border-b border-sibs-border pb-2.5">
-                      <h3 className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-navy">
+                      <h3 className="font-heading text-[11px] 2xl:text-xs font-extrabold uppercase tracking-wide text-sibs-navy">
                         Previous Generated Documents
                       </h3>
                     </div>

@@ -8,17 +8,7 @@ const PersonalTab = () => {
   const { user } = useUser();
 
   return (
-    <div
-      style={{
-        width: "100%",
-        backgroundColor: "#ffffff",
-        border: "1px solid #D9E2EC",
-        borderRadius: "22px",
-        padding: "24px",
-        boxShadow: "0 1px 2px rgba(15, 23, 42, 0.04)",
-        boxSizing: "border-box",
-      }}
-    >
+    <div className="w-full rounded-[22px] border border-sibs-border-subtle bg-white p-6 shadow-xs">
       <div
         style={{
           display: "flex",

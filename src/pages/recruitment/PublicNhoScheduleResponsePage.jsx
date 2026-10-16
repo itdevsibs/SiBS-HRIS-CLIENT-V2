@@ -243,14 +243,14 @@ function PublicNhoTimeDropdown({
         type="button"
         disabled={disabled}
         onClick={() => setOpenDropdown?.(open ? "" : dropdownId)}
-        className={`flex h-10 w-full min-w-0 items-center justify-between gap-2 rounded-xl border bg-[#F8FAFC] px-3 text-left text-xs font-bold outline-none transition ${
+        className={`flex h-10 w-full min-w-0 items-center justify-between gap-2 rounded-[10px] border bg-sibs-surface px-3 text-left text-xs font-bold outline-none transition ${
           open
-            ? "border-[#FF5C28] bg-white ring-4 ring-[#FF5C28]/10"
-            : "border-[#D7DEE8] hover:border-[#FF5C28]/40 hover:bg-white"
+            ? "border-sibs-orange bg-white ring-4 ring-sibs-orange/10"
+            : "border-sibs-border hover:border-sibs-orange/40 hover:bg-white"
         } ${
           disabled
-            ? "cursor-not-allowed bg-[#F2F4F7] text-[#98A2B3] opacity-70"
-            : "text-[#042C51]"
+            ? "cursor-not-allowed bg-slate-100 text-sibs-faint opacity-70"
+            : "text-sibs-navy"
         }`}
       >
         <span className="truncate">
@@ -259,14 +259,14 @@ function PublicNhoTimeDropdown({
 
         <ChevronDown
           size={15}
-          className={`shrink-0 text-[#315B7E] transition-transform ${
+          className={`shrink-0 text-sibs-muted transition-transform ${
             open ? "rotate-180" : ""
           }`}
         />
       </button>
 
       {open && !disabled && (
-        <div className="absolute left-0 top-[calc(100%+8px)] z-[130] max-h-[220px] w-full overflow-hidden rounded-[10px] border border-[#D9E2EC] bg-white shadow-[0_20px_25px_-5px_rgba(4,44,81,0.16),0_8px_10px_-6px_rgba(4,44,81,0.14)]">
+        <div className="absolute left-0 top-[calc(100%+8px)] z-[130] max-h-[220px] w-full overflow-hidden rounded-[10px] border border-sibs-border bg-white shadow-lg">
           <div className="max-h-[220px] overflow-y-auto py-1">
             {options.map((option) => {
               const active =
@@ -280,10 +280,10 @@ function PublicNhoTimeDropdown({
                   onClick={() => handleSelect(option)}
                   className={`flex min-h-[38px] w-full items-center justify-between gap-2 px-3 text-left text-xs font-semibold transition ${
                     option.disabled
-                      ? "cursor-not-allowed bg-white text-[#C8D2DE]"
+                      ? "cursor-not-allowed bg-white text-slate-300"
                       : active
-                        ? "bg-[#FFF4EF] text-[#FF5C28]"
-                        : "bg-white text-[#31465B] hover:bg-[#FFF8F5] hover:text-[#FF5C28]"
+                        ? "bg-sibs-cream-light text-sibs-orange font-bold"
+                        : "bg-white text-sibs-navy hover:bg-sibs-cream-light hover:text-sibs-orange"
                   }`}
                 >
                   <span>{option.label}</span>
@@ -341,13 +341,13 @@ function PublicNhoTimePicker({
   }
 
   return (
-    <div className="rounded-xl border border-[#D9E2EC] bg-[#F8FAFC] p-4">
+    <div className="rounded-[10px] border border-sibs-border bg-sibs-surface p-4">
       <div className="mb-3 flex items-center justify-between gap-3">
         <div>
-          <p className="text-[11px] font-extrabold uppercase tracking-wide text-[#667085]">
+          <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-muted">
             NHO Time
           </p>
-          <p className="mt-1 text-xs font-extrabold text-[#042C51]">
+          <p className="mt-1 text-xs font-extrabold text-sibs-navy">
             {formatNhoTime(value)}
           </p>
         </div>
@@ -356,7 +356,7 @@ function PublicNhoTimePicker({
 
       <div className="grid grid-cols-[1fr_1fr_auto] gap-2">
         <div>
-          <label className="mb-1 block text-[10px] font-extrabold uppercase tracking-wide text-[#7D8FA5]">
+          <label className="mb-1 block text-[10px] font-extrabold uppercase tracking-wide text-sibs-muted">
             Hour
           </label>
 
@@ -382,7 +382,7 @@ function PublicNhoTimePicker({
         </div>
 
         <div>
-          <label className="mb-1 block text-[10px] font-extrabold uppercase tracking-wide text-[#7D8FA5]">
+          <label className="mb-1 block text-[10px] font-extrabold uppercase tracking-wide text-sibs-muted">
             Minute
           </label>
 
@@ -408,11 +408,11 @@ function PublicNhoTimePicker({
         </div>
 
         <div>
-          <label className="mb-1 block text-[10px] font-extrabold uppercase tracking-wide text-[#7D8FA5]">
+          <label className="mb-1 block text-[10px] font-extrabold uppercase tracking-wide text-sibs-muted">
             AM/PM
           </label>
 
-          <div className="flex h-10 overflow-hidden rounded-xl border border-[#D7DEE8] bg-white">
+          <div className="flex h-10 overflow-hidden rounded-[10px] border border-sibs-border bg-white">
             {["AM", "PM"].map((item) => (
               <button
                 key={item}
@@ -424,8 +424,8 @@ function PublicNhoTimePicker({
                 }}
                 className={`w-12 text-[10px] font-bold transition ${
                   period === item
-                    ? "bg-[#FF5C28] text-white"
-                    : "bg-white text-[#315B7E] hover:bg-[#FFF8F5] hover:text-[#FF5C28]"
+                    ? "bg-sibs-orange text-white"
+                    : "bg-white text-sibs-navy hover:bg-sibs-cream-light hover:text-sibs-orange"
                 } disabled:cursor-not-allowed disabled:opacity-60`}
               >
                 {item}
@@ -435,7 +435,7 @@ function PublicNhoTimePicker({
         </div>
       </div>
 
-      <p className="mt-3 text-xs font-semibold text-[#667085]">
+      <p className="mt-3 text-xs font-semibold text-sibs-muted">
         Available NHO time is from 8:00 AM through 6:00 PM.
       </p>
     </div>
@@ -631,36 +631,36 @@ function NhoFridayDatePicker({
         aria-haspopup="dialog"
         aria-expanded={open}
         onClick={() => setOpen((current) => !current)}
-        className={`flex h-12 w-full items-center justify-between gap-3 rounded-xl border bg-white px-4 text-left text-sm font-bold text-[#0D4676] outline-none transition duration-200 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400 ${
+        className={`flex h-12 w-full items-center justify-between gap-3 rounded-[10px] border bg-white px-4 text-left text-sm font-bold text-sibs-navy outline-none transition duration-200 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400 ${
           open
-            ? "border-[#FF5A2A] ring-4 ring-[#FF5A2A]/10"
-            : "border-[#D0D5DD] hover:border-[#0D4676]/30 hover:bg-[#F8FAFC]"
+            ? "border-sibs-orange ring-4 ring-sibs-orange/10"
+            : "border-sibs-border hover:border-sibs-orange/40 hover:bg-sibs-surface"
         }`}
       >
-        <span className={value ? "text-[#0D4676]" : "text-slate-400"}>
+        <span className={value ? "text-sibs-navy" : "text-slate-400"}>
           {formatDatePickerValue(value)}
         </span>
-        <CalendarDays size={18} className="shrink-0 text-[#FF5A2A]" />
+        <CalendarDays size={18} className="shrink-0 text-sibs-orange" />
       </button>
 
       {open && !disabled && (
         <div
           role="dialog"
           aria-label="Select another Friday"
-          className="absolute left-0 top-[calc(100%+8px)] z-[100] w-[320px] max-w-[calc(100vw-3rem)] overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white shadow-[0_18px_40px_rgba(15,23,42,0.14)]"
+          className="absolute left-0 top-[calc(100%+8px)] z-[100] w-[320px] max-w-[calc(100vw-3rem)] overflow-hidden rounded-[14px] border border-sibs-border bg-white shadow-xl"
         >
-          <div className="flex items-center justify-between border-b border-[#E6ECF2] px-4 py-3">
+          <div className="flex items-center justify-between border-b border-sibs-border px-4 py-3">
             <button
               type="button"
               disabled={previousMonthDisabled}
               onClick={goPreviousMonth}
-              className="flex h-9 w-9 items-center justify-center rounded-full text-[#0D4676] transition hover:bg-[#EAF2FB] disabled:cursor-not-allowed disabled:opacity-30"
+              className="flex h-9 w-9 items-center justify-center rounded-full text-sibs-navy transition hover:bg-sibs-cream-light hover:text-sibs-orange disabled:cursor-not-allowed disabled:opacity-30"
               aria-label="Previous month"
             >
               <ChevronLeft size={18} />
             </button>
 
-            <p className="text-sm font-extrabold text-[#0D4676]">
+            <p className="text-sm font-extrabold text-sibs-navy">
               {formatHrisDateLocalized(displayDate, "en-PH", {
                 month: "long",
                 year: "numeric",
@@ -670,7 +670,7 @@ function NhoFridayDatePicker({
             <button
               type="button"
               onClick={goNextMonth}
-              className="flex h-9 w-9 items-center justify-center rounded-full text-[#0D4676] transition hover:bg-[#EAF2FB]"
+              className="flex h-9 w-9 items-center justify-center rounded-full text-sibs-navy transition hover:bg-sibs-cream-light hover:text-sibs-orange"
               aria-label="Next month"
             >
               <ChevronRight size={18} />
@@ -683,7 +683,7 @@ function NhoFridayDatePicker({
                 (weekday) => (
                   <span
                     key={weekday}
-                    className="pb-2 text-[11px] font-extrabold text-[#174A7C]"
+                    className="pb-2 text-[11px] font-extrabold text-sibs-navy"
                   >
                     {weekday}
                   </span>
@@ -711,15 +711,15 @@ function NhoFridayDatePicker({
                     aria-selected={isSelected}
                     className={`flex h-9 w-9 items-center justify-center rounded-full text-sm font-extrabold transition ${
                       !day.isCurrentMonth
-                        ? "cursor-default text-[#C5CED8]"
+                        ? "cursor-default text-slate-300"
                         : isSelected
-                          ? "bg-[#FFF0EA] text-[#FF5A2A]"
+                          ? "bg-sibs-cream-light text-sibs-orange"
                           : selectable
-                            ? "text-[#0D4676] hover:bg-[#EAF2FB]"
-                            : "cursor-not-allowed text-[#B5C0CC]"
+                            ? "text-sibs-navy hover:bg-sibs-cream-light hover:text-sibs-orange"
+                            : "cursor-not-allowed text-sibs-faint"
                     } ${
                       isToday && !isSelected
-                        ? "ring-1 ring-inset ring-[#D0D5DD]"
+                        ? "ring-1 ring-inset ring-sibs-border"
                         : ""
                     }`}
                   >
@@ -730,11 +730,11 @@ function NhoFridayDatePicker({
             </div>
           </div>
 
-          <div className="flex items-center justify-between border-t border-[#E6ECF2] px-4 py-3">
+          <div className="flex items-center justify-between border-t border-sibs-border px-4 py-3">
             <button
               type="button"
               onClick={clearDate}
-              className="rounded-lg px-2 py-1.5 text-xs font-extrabold text-[#0D4676] transition hover:bg-[#F2F6FA]"
+              className="rounded-lg px-2 py-1.5 text-xs font-extrabold text-sibs-navy transition hover:bg-sibs-cream-light hover:text-sibs-orange"
             >
               Clear
             </button>
@@ -743,7 +743,7 @@ function NhoFridayDatePicker({
               type="button"
               disabled={!todaySelectable}
               onClick={selectToday}
-              className="rounded-lg px-2 py-1.5 text-xs font-extrabold text-[#0D4676] transition hover:bg-[#F2F6FA] disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:bg-transparent"
+              className="rounded-lg px-2 py-1.5 text-xs font-extrabold text-sibs-navy transition hover:bg-sibs-cream-light hover:text-sibs-orange disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:bg-transparent"
             >
               Today
             </button>
@@ -902,35 +902,35 @@ export default function PublicNhoScheduleResponsePage() {
     getEmploymentStartDateForNho(displayedNhoDate);
 
   return (
-    <main className="min-h-screen bg-slate-100 px-4 py-10 font-jakarta">
-      <section className="mx-auto max-w-3xl overflow-visible rounded-2xl border border-slate-200 bg-white shadow-xl">
-        <header className="rounded-t-2xl bg-[#042C51] px-6 py-6 text-white">
+    <main className="min-h-screen bg-sibs-canvas px-4 py-10 font-jakarta">
+      <section className="mx-auto max-w-3xl overflow-visible rounded-[14px] border border-sibs-border bg-white shadow-xl">
+        <header className="relative overflow-hidden rounded-t-[14px] border-t-4 border-sibs-orange bg-sibs-navy px-6 py-6 text-white">
           <img
             src="/SiBSLogoWhite.png"
             alt="SiBS"
             className="mx-auto h-24 w-auto max-w-[360px] sm:h-28"
           />
-          <h1 className="mt-4 text-center text-2xl font-extrabold">
+          <h1 className="mt-4 text-center text-2xl font-extrabold text-white">
             NHO Schedule Response
           </h1>
         </header>
 
         <div className="p-6 sm:p-8">
           {state.loading && (
-            <div className="flex items-center justify-center gap-2 py-12 font-bold text-slate-500">
+            <div className="flex items-center justify-center gap-2 py-12 font-bold text-sibs-muted">
               <Loader2 size={18} className="animate-spin" />
               Loading NHO schedule...
             </div>
           )}
 
           {state.error && (
-            <div className="mb-5 rounded-xl border border-red-200 bg-red-50 p-4 font-semibold text-red-700">
+            <div className="mb-5 rounded-[10px] border border-red-200 bg-red-50 p-4 font-semibold text-red-700">
               {state.error}
             </div>
           )}
 
           {result && (
-            <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-6 text-center">
+            <div className="rounded-[14px] border border-emerald-200 bg-emerald-50 p-6 text-center">
               <CheckCircle2 className="mx-auto text-emerald-600" size={38} />
               <p className="mt-3 font-extrabold text-emerald-800">{result}</p>
             </div>
@@ -939,37 +939,37 @@ export default function PublicNhoScheduleResponsePage() {
           {!state.loading && !result && state.data && (
             <div className="space-y-6">
               <div>
-                <p className="text-lg font-extrabold text-[#042C51]">
+                <p className="text-lg font-extrabold text-sibs-navy">
                   Hi {state.data.candidateName},
                 </p>
-                <p className="mt-2 text-sm font-semibold leading-6 text-slate-600">
+                <p className="mt-2 text-sm font-semibold leading-6 text-sibs-muted">
                   Your New Hire Orientation has been scheduled. You may accept
                   the proposed schedule or choose another available Friday.
                 </p>
               </div>
 
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
-                <p className="text-xs font-extrabold uppercase tracking-wide text-slate-500">
+              <div className="rounded-[10px] border border-sibs-border bg-sibs-surface p-5">
+                <p className="text-xs font-extrabold uppercase tracking-wide text-sibs-muted">
                   {action === "reschedule" ? "Requested NHO Schedule" : "Proposed NHO Schedule"}
                 </p>
-                <p className="mt-2 text-xl font-extrabold text-[#042C51]">
+                <p className="mt-2 text-xl font-extrabold text-sibs-navy">
                   {formatFriday(displayedNhoDate)}
                 </p>
-                <p className="mt-1 text-sm font-extrabold text-[#344054]">
+                <p className="mt-1 text-sm font-extrabold text-sibs-text-secondary">
                   {formatNhoTime(displayedNhoTime)}
                 </p>
-                <div className="mt-4 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3">
-                  <p className="text-[11px] font-extrabold uppercase tracking-wide text-[#53708D]">
+                <div className="mt-4 rounded-[10px] border border-sky-100 bg-sky-50/70 px-4 py-3">
+                  <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-muted">
                     Employment Start Date
                   </p>
-                  <p className="mt-1 text-base font-extrabold text-[#042C51]">
+                  <p className="mt-1 text-base font-extrabold text-sibs-navy">
                     {formatFriday(displayedEmploymentStartDate)}
                   </p>
-                  <p className="mt-1 text-xs font-semibold text-slate-500">
+                  <p className="mt-1 text-xs font-semibold text-sibs-muted">
                     Automatically set to the Monday immediately after NHO.
                   </p>
                 </div>
-                <p className="mt-3 text-sm font-semibold text-slate-600">
+                <p className="mt-3 text-sm font-semibold text-sibs-muted">
                   {state.data.roleTitle || "Position"}
                   {state.data.account ? ` · ${state.data.account}` : ""}
                 </p>
@@ -980,17 +980,17 @@ export default function PublicNhoScheduleResponsePage() {
                   type="button"
                   disabled={submitting}
                   onClick={() => setAction("accept")}
-                  className={`rounded-2xl border p-5 text-left transition ${
+                  className={`rounded-[10px] border-2 p-5 text-left transition ${
                     action === "accept"
-                      ? "border-[#042C51] bg-blue-50"
-                      : "border-slate-200 bg-white hover:bg-slate-50"
+                      ? "border-sibs-orange bg-sibs-cream-subtle text-sibs-navy"
+                      : "border-sibs-border bg-white text-sibs-navy hover:bg-sibs-surface"
                   }`}
                 >
-                  <CheckCircle2 size={22} className="text-[#042C51]" />
-                  <p className="mt-3 font-extrabold text-[#042C51]">
+                  <CheckCircle2 size={22} className={action === "accept" ? "text-sibs-orange" : "text-sibs-navy"} />
+                  <p className="mt-3 font-extrabold text-sibs-navy">
                     Accept Schedule
                   </p>
-                  <p className="mt-1 text-sm text-slate-500">
+                  <p className="mt-1 text-sm text-sibs-muted">
                     Confirm the proposed Friday.
                   </p>
                 </button>
@@ -999,17 +999,17 @@ export default function PublicNhoScheduleResponsePage() {
                   type="button"
                   disabled={submitting}
                   onClick={() => setAction("reschedule")}
-                  className={`rounded-2xl border p-5 text-left transition ${
+                  className={`rounded-[10px] border-2 p-5 text-left transition ${
                     action === "reschedule"
-                      ? "border-[#042C51] bg-blue-50"
-                      : "border-slate-200 bg-white hover:bg-slate-50"
+                      ? "border-sibs-orange bg-sibs-cream-subtle text-sibs-navy"
+                      : "border-sibs-border bg-white text-sibs-navy hover:bg-sibs-surface"
                   }`}
                 >
-                  <RotateCcw size={22} className="text-[#042C51]" />
-                  <p className="mt-3 font-extrabold text-[#042C51]">
+                  <RotateCcw size={22} className={action === "reschedule" ? "text-sibs-orange" : "text-sibs-navy"} />
+                  <p className="mt-3 font-extrabold text-sibs-navy">
                     Reschedule
                   </p>
-                  <p className="mt-1 text-sm text-slate-500">
+                  <p className="mt-1 text-sm text-sibs-muted">
                     Choose another Friday and available time.
                   </p>
                 </button>
@@ -1017,7 +1017,7 @@ export default function PublicNhoScheduleResponsePage() {
 
               {action === "reschedule" && (
                 <div className="block">
-                  <span className="text-xs font-extrabold uppercase tracking-wide text-[#042C51]">
+                  <span className="text-xs font-extrabold uppercase tracking-wide text-sibs-navy">
                     Select another Friday
                   </span>
 
@@ -1045,7 +1045,7 @@ export default function PublicNhoScheduleResponsePage() {
                     />
                   </div>
 
-                  <p className="mt-2 text-xs font-semibold text-slate-500">
+                  <p className="mt-2 text-xs font-semibold text-sibs-muted">
                     NHO scheduling is available on Fridays only, from 8:00 AM through 6:00 PM. If the approved NHO date changes, your employment start date automatically moves to the following Monday.
                   </p>
                 </div>
@@ -1055,7 +1055,7 @@ export default function PublicNhoScheduleResponsePage() {
                 type="button"
                 disabled={submitting}
                 onClick={submitResponse}
-                className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#042C51] px-5 text-sm font-extrabold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-[10px] bg-sibs-navy px-5 text-sm font-extrabold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {submitting ? (
                   <Loader2 size={17} className="animate-spin" />

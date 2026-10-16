@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { createPortal } from "react-dom";
-import { ChevronDown } from "lucide-react";
+import React, { useMemo, useRef, useState } from "react";
+import { ChevronDown, Search } from "lucide-react";
+import DropdownPortal from "@/components/ui/DropdownPortal";
 
 import {
   cleanText,
@@ -31,18 +31,8 @@ export default function DropdownField({
   className = "",
 }) {
   const dropdownRef = useRef(null);
-  const menuRef = useRef(null);
-  const inputRef = useRef(null);
-
   const [open, setOpen] = useState(false);
   const [dropdownSearch, setDropdownSearch] = useState("");
-
-  const [menuStyle, setMenuStyle] = useState({
-    left: 0,
-    top: 0,
-    width: 0,
-    maxHeight: 224,
-  });
 
   const normalizedOptions = useMemo(
     () => normalizeDropdownOptions(options),
@@ -81,7 +71,6 @@ export default function DropdownField({
 
     return matchesSearch.filter((option) => {
       const isSelectedValue = String(option.value) === String(value ?? "");
-
       const isExcludedId =
         cleanText(excludedOptionId) &&
         String(option.id) === String(excludedOptionId);
@@ -96,340 +85,20 @@ export default function DropdownField({
     value,
   ]);
 
-  const inputDisplayValue = open && searchable ? dropdownSearch : displayLabel;
-
-  const hasDisplayValue = Boolean(displayLabel);
-
-  function getBoundaryRect() {
-    const explicitBoundary = boundaryRef?.current;
-
-    const closestBoundary = dropdownRef.current?.closest?.(
-      '[data-dropdown-boundary="true"]',
-    );
-
-    return (
-      (explicitBoundary || closestBoundary)?.getBoundingClientRect?.() || null
-    );
-  }
-
-  function updateMenuPosition() {
-    if (!dropdownRef.current) {
-      return;
-    }
-
-    const rect = dropdownRef.current.getBoundingClientRect();
-
-    const boundaryRect = getBoundaryRect();
-
-    const gap = 8;
-    const viewportPadding = 12;
-
-    const viewportHeight =
-      window.innerHeight || document.documentElement.clientHeight;
-
-    const viewportWidth =
-      window.innerWidth || document.documentElement.clientWidth;
-
-    const boundaryTop = Math.max(
-      viewportPadding,
-      boundaryRect?.top ?? viewportPadding,
-    );
-
-    const boundaryBottom = Math.min(
-      viewportHeight - viewportPadding,
-      boundaryRect?.bottom ?? viewportHeight - viewportPadding,
-    );
-
-    const boundaryLeft = Math.max(
-      viewportPadding,
-      boundaryRect?.left ?? viewportPadding,
-    );
-
-    const boundaryRight = Math.min(
-      viewportWidth - viewportPadding,
-      boundaryRect?.right ?? viewportWidth - viewportPadding,
-    );
-
-    const availableBelow = Math.max(0, boundaryBottom - rect.bottom - gap);
-
-    const availableAbove = Math.max(0, rect.top - boundaryTop - gap);
-
-    const configuredMaxHeight = Math.max(40, Number(maxMenuHeight) || 224);
-
-    const measuredMenuHeight =
-      menuRef.current?.getBoundingClientRect?.().height || 0;
-
-    const estimatedMenuHeight = Math.max(
-      40,
-      filteredOptions.length > 0 ? filteredOptions.length * 41 : 44,
-    );
-
-    const preferredHeight = Math.min(
-      configuredMaxHeight,
-      measuredMenuHeight || estimatedMenuHeight,
-    );
-
-    const shouldOpenUp =
-      availableBelow < preferredHeight && availableAbove > availableBelow;
-
-    const availableHeight = shouldOpenUp ? availableAbove : availableBelow;
-
-    const cleanMaxHeight = Math.max(
-      40,
-      Math.min(preferredHeight, availableHeight || preferredHeight),
-    );
-
-    const boundaryWidth = Math.max(0, boundaryRight - boundaryLeft);
-
-    const cleanWidth = Math.min(rect.width, boundaryWidth || rect.width);
-
-    const left = Math.min(
-      Math.max(rect.left, boundaryLeft),
-      Math.max(boundaryRight - cleanWidth, boundaryLeft),
-    );
-
-    const preferredTop = shouldOpenUp
-      ? rect.top - gap - cleanMaxHeight
-      : rect.bottom + gap;
-
-    const top = Math.min(
-      Math.max(preferredTop, boundaryTop),
-      Math.max(boundaryBottom - cleanMaxHeight, boundaryTop),
-    );
-
-    setMenuStyle({
-      left,
-      top,
-      width: cleanWidth,
-      maxHeight: cleanMaxHeight,
-    });
-  }
-
-  useEffect(() => {
-    if (!open) {
-      return undefined;
-    }
-
-    updateMenuPosition();
-
-    function handleScrollOrResize() {
-      updateMenuPosition();
-    }
-
-    window.addEventListener("resize", handleScrollOrResize);
-
-    window.addEventListener("scroll", handleScrollOrResize, true);
-
-    return () => {
-      window.removeEventListener("resize", handleScrollOrResize);
-
-      window.removeEventListener("scroll", handleScrollOrResize, true);
-    };
-  }, [open, filteredOptions.length, maxMenuHeight, boundaryRef]);
-
-  useEffect(() => {
-    function handleClickOutside(event) {
-      const target = event.target;
-
-      const clickedInput = dropdownRef.current?.contains(target);
-
-      const clickedMenu = menuRef.current?.contains(target);
-
-      if (!clickedInput && !clickedMenu) {
-        setOpen(false);
-        setDropdownSearch("");
-      }
-    }
-
-    function handleEscape(event) {
-      if (event.key === "Escape") {
-        setOpen(false);
-        setDropdownSearch("");
-      }
-    }
-
-    document.addEventListener("mousedown", handleClickOutside);
-
-    document.addEventListener("touchstart", handleClickOutside);
-
-    document.addEventListener("keydown", handleEscape);
-
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-
-      document.removeEventListener("touchstart", handleClickOutside);
-
-      document.removeEventListener("keydown", handleEscape);
-    };
-  }, []);
-
-  function removeInputFocusDecoration() {
-    const input = inputRef.current;
-
-    if (!input) {
-      return;
-    }
-
-    input.style.setProperty("outline", "none", "important");
-
-    input.style.setProperty("border", "0", "important");
-
-    input.style.setProperty("border-width", "0", "important");
-
-    input.style.setProperty("border-color", "transparent", "important");
-
-    input.style.setProperty("box-shadow", "none", "important");
-
-    input.style.setProperty("--tw-ring-shadow", "0 0 transparent", "important");
-
-    input.style.setProperty(
-      "--tw-ring-offset-shadow",
-      "0 0 transparent",
-      "important",
-    );
-  }
-
-  function focusSearchInput() {
-    if (!searchable) {
-      return;
-    }
-
-    inputRef.current?.focus?.({
-      preventScroll: true,
-    });
-
-    removeInputFocusDecoration();
-  }
-
-  function openDropdown() {
-    if (disabled) {
-      return;
-    }
-
-    setOpen(true);
-
-    window.setTimeout(() => {
-      updateMenuPosition();
-      focusSearchInput();
-    }, 0);
-  }
-
-  function toggleDropdown() {
-    if (disabled) {
-      return;
-    }
-
-    setOpen((previous) => {
-      const nextOpen = !previous;
-
-      if (!nextOpen) {
-        setDropdownSearch("");
-      } else {
-        window.setTimeout(() => {
-          updateMenuPosition();
-          focusSearchInput();
-        }, 0);
-      }
-
-      return nextOpen;
-    });
-  }
-
-  function handleSelect(option) {
+  function handleSelectOption(option) {
     onChange?.(option.value, option);
-
     onSelectOption?.(option);
-
     setOpen(false);
     setDropdownSearch("");
   }
 
-  function handleInputKeyDown(event) {
-    if (event.key === "Escape") {
-      setOpen(false);
-      setDropdownSearch("");
-      return;
-    }
-
-    if (event.key === "Enter") {
-      event.preventDefault();
-
-      if (filteredOptions.length > 0) {
-        handleSelect(filteredOptions[0]);
-      }
-    }
-  }
-
-  const menu =
-    open && !disabled && typeof document !== "undefined"
-      ? createPortal(
-          <div
-            ref={menuRef}
-            role="listbox"
-            style={{
-              position: "fixed",
-              left: `${menuStyle.left}px`,
-              top: `${menuStyle.top}px`,
-              width: `${menuStyle.width}px`,
-              zIndex: 99999,
-            }}
-            className={`sibs-dropdown-pop-in overflow-hidden rounded-[10px] border border-sibs-border bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)] ${menuClassName}`}
-          >
-            <div
-              className="sibs-scrollbar overflow-y-auto overscroll-contain"
-              style={{
-                maxHeight: `${menuStyle.maxHeight}px`,
-              }}
-            >
-              {filteredOptions.length > 0 ? (
-                filteredOptions.map((option) => {
-                  const isSelected =
-                    String(option.value) === String(value ?? "");
-
-                  return (
-                    <button
-                      key={option.id || option.value}
-                      type="button"
-                      role="option"
-                      aria-selected={isSelected}
-                      onMouseDown={(event) => event.preventDefault()}
-                      onClick={() => handleSelect(option)}
-                      className={`block w-full px-3 py-1.5 2xl:py-2 text-left sibs-text-xs transition ${
-                        isSelected
-                          ? "bg-orange-50/50 font-extrabold text-sibs-orange"
-                          : "bg-white font-semibold text-sibs-navy hover:bg-orange-50/50 hover:text-sibs-orange"
-                      }`}
-                    >
-                      <span className="block min-w-0 truncate">
-                        {option.label}
-                      </span>
-
-                      {option.description ? (
-                        <span className="mt-0.5 block min-w-0 truncate text-[9px] font-bold text-sibs-muted">
-                          {option.description}
-                        </span>
-                      ) : null}
-                    </button>
-                  );
-                })
-              ) : (
-                <div className="px-3 py-2.5 text-xs font-semibold text-sibs-muted">
-                  {emptyMessage}
-                </div>
-              )}
-            </div>
-          </div>,
-          document.body,
-        )
-      : null;
-
   const isSecondaryAction = controlVariant === "secondaryAction";
 
-  const sharedControlClass = `flex h-8.5 2xl:h-10 w-full min-w-0 items-center ${
-    isSecondaryAction ? "rounded-lg px-3.5" : "rounded-lg 2xl:rounded-xl px-3"
+  const sharedControlClass = `flex h-9 2xl:h-10 w-full min-w-0 items-center justify-between gap-2 ${
+    isSecondaryAction ? "rounded-lg px-3.5" : "rounded-[10px] px-3"
   } border text-left sibs-text-xs outline-none transition ${
     open
-      ? "border-sibs-orange bg-white ring-2 ring-sibs-orange/10"
+      ? "border-sibs-orange bg-white ring-2 ring-sibs-orange/15"
       : isSecondaryAction
         ? "border-sibs-border bg-white hover:border-sibs-orange/35 hover:bg-orange-50/50 hover:text-sibs-orange"
         : "border-sibs-border bg-slate-50 hover:border-sibs-orange/40 hover:bg-white"
@@ -444,108 +113,97 @@ export default function DropdownField({
   return (
     <div
       ref={dropdownRef}
-      className={`relative min-w-0 ${className} ${open ? zIndex : "z-[1]"}`}
+      className={`relative min-w-0 font-jakarta ${className}`}
     >
       {label ? <FieldLabel required={required}>{label}</FieldLabel> : null}
 
-      {searchable ? (
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => setOpen((prev) => !prev)}
+        aria-expanded={open}
+        aria-haspopup="listbox"
+        className={sharedControlClass}
+      >
+        <span
+          className={`min-w-0 flex-1 truncate ${
+            displayLabel ? "text-sibs-navy" : "text-sibs-muted"
+          }`}
+        >
+          {displayLabel || placeholder}
+        </span>
+
+        <ChevronDown
+          className={`h-3.5 w-3.5 2xl:h-4 2xl:w-4 shrink-0 text-sibs-navy transition-transform duration-200 ${
+            open ? "rotate-180" : ""
+          }`}
+        />
+      </button>
+
+      <DropdownPortal
+        open={open}
+        anchorRef={dropdownRef}
+        onClose={() => {
+          setOpen(false);
+          setDropdownSearch("");
+        }}
+        maxHeight={maxMenuHeight}
+        className={zIndex}
+      >
         <div
-          className={`${sharedControlClass} cursor-pointer`}
-          onClick={toggleDropdown}
+          className={`overflow-y-auto rounded-[10px] border border-sibs-border bg-white p-1.5 shadow-xl font-jakarta ${menuClassName}`}
+          style={{ maxHeight: maxMenuHeight }}
         >
-          <input
-            ref={inputRef}
-            value={inputDisplayValue}
-            readOnly={!open}
-            disabled={disabled}
-            onClick={(event) => {
-              if (open) {
-                event.stopPropagation();
-              }
-            }}
-            onFocus={() => {
-              removeInputFocusDecoration();
+          {searchable && (
+            <div className="relative mb-1.5 p-1">
+              <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-sibs-muted" />
+              <input
+                type="text"
+                value={dropdownSearch}
+                onChange={(e) => setDropdownSearch(e.target.value)}
+                placeholder={searchPlaceholder}
+                autoFocus
+                className="w-full rounded-[8px] bg-sibs-canvas pl-8 pr-3 py-1.5 text-xs text-sibs-navy placeholder:text-sibs-muted focus:border-sibs-orange focus:outline-none focus:ring-1 focus:ring-sibs-orange border border-sibs-border"
+              />
+            </div>
+          )}
 
-              if (!open) {
-                openDropdown();
-              }
-            }}
-            onMouseDown={() => {
-              removeInputFocusDecoration();
-            }}
-            onChange={(event) => {
-              setDropdownSearch(event.target.value);
+          {filteredOptions.length > 0 ? (
+            filteredOptions.map((option) => {
+              const isSelected = String(option.value) === String(value ?? "");
 
-              removeInputFocusDecoration();
+              return (
+                <button
+                  key={option.value || option.id}
+                  type="button"
+                  onClick={() => handleSelectOption(option)}
+                  className={`flex w-full flex-col items-start rounded-[8px] px-3 py-2 text-left text-xs transition ${
+                    isSelected
+                      ? "bg-sibs-orange font-bold text-white shadow-sm"
+                      : "text-sibs-navy font-semibold hover:bg-sibs-orange/10 hover:text-sibs-orange"
+                  }`}
+                >
+                  <span className="block min-w-0 truncate">{option.label}</span>
 
-              if (!open) {
-                setOpen(true);
-              }
-
-              window.setTimeout(() => {
-                updateMenuPosition();
-                removeInputFocusDecoration();
-              }, 0);
-            }}
-            onKeyDown={handleInputKeyDown}
-            placeholder={searchPlaceholder || placeholder}
-            aria-expanded={open}
-            aria-haspopup="listbox"
-            autoComplete="off"
-            style={{
-              outline: "none",
-              border: 0,
-              borderWidth: 0,
-              borderColor: "transparent",
-              boxShadow: "none",
-              WebkitAppearance: "none",
-              appearance: "none",
-            }}
-            className={`h-full min-w-0 flex-1 !appearance-none !border-0 !border-transparent !bg-transparent !p-0 sibs-text-xs font-semibold !outline-none !ring-0 !shadow-none focus:!border-0 focus:!border-transparent focus:!outline-none focus:!ring-0 focus:!shadow-none focus-visible:!border-0 focus-visible:!border-transparent focus-visible:!outline-none focus-visible:!ring-0 focus-visible:!shadow-none active:!border-0 active:!outline-none active:!ring-0 active:!shadow-none placeholder:text-sibs-muted ${
-              hasDisplayValue || open
-                ? isSecondaryAction
-                  ? "font-extrabold text-sibs-navy"
-                  : "text-sibs-navy"
-                : "text-sibs-muted"
-            } disabled:cursor-not-allowed disabled:text-sibs-muted`}
-          />
-
-          <ChevronDown
-            className={`h-3.5 w-3.5 2xl:h-4 2xl:w-4 shrink-0 text-sibs-navy transition-transform ${
-              open ? "rotate-180" : ""
-            }`}
-          />
+                  {option.description ? (
+                    <span
+                      className={`mt-0.5 block min-w-0 truncate text-[10px] ${
+                        isSelected ? "text-white/80" : "text-sibs-muted"
+                      }`}
+                    >
+                      {option.description}
+                    </span>
+                  ) : null}
+                </button>
+              );
+            })
+          ) : (
+            <div className="px-3 py-2.5 text-xs font-semibold text-sibs-muted">
+              {emptyMessage}
+            </div>
+          )}
         </div>
-      ) : (
-        <button
-          type="button"
-          disabled={disabled}
-          onClick={toggleDropdown}
-          aria-expanded={open}
-          aria-haspopup="listbox"
-          className={`${sharedControlClass} justify-between gap-3`}
-        >
-          <span
-            className={`min-w-0 flex-1 truncate ${
-              hasDisplayValue
-                ? isSecondaryAction
-                  ? "text-sibs-navy"
-                  : "text-sibs-navy"
-                : "text-sibs-muted"
-            }`}
-          >
-            {displayLabel || placeholder}
-          </span>
-
-          <ChevronDown
-            className={`h-3.5 w-3.5 2xl:h-4 2xl:w-4 shrink-0 text-sibs-navy transition-transform ${
-              open ? "rotate-180" : ""
-            }`}
-          />
-        </button>
-      )}
-
-      {menu}
+      </DropdownPortal>
     </div>
   );
 }

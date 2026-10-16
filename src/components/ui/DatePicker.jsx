@@ -146,7 +146,7 @@ export default function DatePicker({
   className = "",
   buttonClassName = "",
   portalClassName = "",
-  showCalendarIcon = true,
+  showCalendarIcon = false,
 }) {
   const anchorRef = useRef(null);
   const yearInputRef = useRef(null);
@@ -352,7 +352,7 @@ export default function DatePicker({
   const defaultRoundedClass = hasCustomRounded ? "" : "rounded-[10px]";
   const defaultPaddingClass = hasCustomPadding ? "" : "px-3";
 
-  const triggerClasses = `flex w-full min-w-0 items-center justify-between gap-2 border bg-sibs-surface text-left font-jakarta sibs-text-xs 2xl:sibs-text-sm font-bold text-sibs-navy shadow-sm outline-none transition-all duration-200 ${defaultHeightClass} ${defaultRoundedClass} ${defaultPaddingClass} ${
+  const triggerClasses = `flex w-full min-w-0 items-center justify-between gap-2 border bg-sibs-surface text-left font-jakarta sibs-text-xs 2xl:sibs-text-sm font-bold text-sibs-navy outline-none transition-all duration-200 ${defaultHeightClass} ${defaultRoundedClass} ${defaultPaddingClass} ${
     isLocked
       ? "cursor-not-allowed border-sibs-border bg-sibs-canvas text-sibs-faint opacity-70"
       : open
@@ -405,10 +405,10 @@ export default function DatePicker({
           ) : null}
 
           <span
-            className={`truncate ${
+            className={`block min-w-0 flex-1 truncate ${
               renderedValue
-                ? "text-sibs-primary-1"
-                : "font-normal text-sibs-faint"
+                ? "font-bold text-sibs-navy"
+                : "font-bold text-sibs-muted"
             }`}
           >
             {renderedValue || placeholder}
@@ -417,7 +417,8 @@ export default function DatePicker({
 
         {!isLocked ? (
           <ChevronDown
-            size={14}
+            size={17}
+            aria-hidden="true"
             className={`shrink-0 transition-transform duration-300 ${
               open ? "rotate-180 text-sibs-orange" : "text-sibs-muted"
             }`}
@@ -435,7 +436,7 @@ export default function DatePicker({
         maxHeight={430}
       >
         <div className="w-full font-jakarta">
-          <div className="flex items-center justify-between border-b border-[#E6ECF2] px-4 py-2.5">
+          <div className="flex items-center justify-between border-b border-sibs-border px-4 py-2.5">
             {yearSearchOpen ? (
               <>
                 <button
@@ -550,7 +551,7 @@ export default function DatePicker({
                 {WEEKDAY_LABELS.map((day) => (
                   <div
                     key={day}
-                    className="flex h-7 items-center justify-center sibs-text-micro font-extrabold text-[#7B8DB3]"
+                    className="flex h-7 items-center justify-center sibs-text-micro font-extrabold text-slate-400"
                   >
                     {day}
                   </div>
@@ -592,7 +593,7 @@ export default function DatePicker({
               </div>
 
               {(effectiveClearable || showToday) && (
-                <div className="mt-2 flex items-center justify-between border-t border-[#E6ECF2] pt-2.5">
+                <div className="mt-2 flex items-center justify-between border-t border-sibs-border pt-2.5">
                   {effectiveClearable ? (
                     <button
                       type="button"

@@ -60,7 +60,7 @@ export default function DashboardLoadingSkeleton({
           >
             <section
               data-testid="dashboard-loading-metrics"
-              className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6"
+              className="grid grid-cols-2 gap-2.5 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6"
             >
               {Array.from({ length: METRIC_COUNT }, (_, index) => (
                 <MetricCardSkeleton key={index} index={index} />

@@ -6,9 +6,13 @@ import {
   formatDateTime,
 } from "@/components/layout/FormatDateTime";
 import { useUser } from "../../../services/context/UserContext";
-import PaginationTable from "@/services/pagination/PaginationTable";
-import StatusModal from "../../modals/StatusModal";
-import { ModalShell, SelectDropdown } from "@/components/ui";
+import {
+  ConfirmModal,
+  ModalShell,
+  SearchInput,
+  SelectDropdown,
+  TablePagination,
+} from "@/components/ui";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5001";
 const PAGE_LIMIT = 15;
@@ -654,6 +658,14 @@ export default function ResignationTable({
     setCurrentPage((prev) => Math.min(prev + 1, totalPages));
   }
 
+  function handleSearchChange(value) {
+    setSearchInput(value);
+    if (!value) {
+      setSearch("");
+      setCurrentPage(1);
+    }
+  }
+
   function handleSearchKeyDown(e) {
     if (e.key !== "Enter") return;
 
@@ -852,31 +864,54 @@ export default function ResignationTable({
     <>
       <div className="min-w-0 overflow-hidden rounded-xl border border-sibs-border bg-white shadow-xs">
         <div className="p-4 sm:p-5">
-          <PaginationTable
-            title="Resignation Records"
-            subtitle="Search and filter resignation requests loaded in this table."
-            loading={loading}
-            searchValue={searchInput}
-            searchPlaceholder="Search resignation then press Enter"
-            onSearchChange={(value) => setSearchInput(value)}
-            onSearchKeyDown={handleSearchKeyDown}
-            filters={[
-              {
-                key: "type",
-                value: typeFilter,
-                onChange: handleTypeFilter,
-                options: resignationTypeOptions,
-              },
-              {
-                key: "location",
-                value: locationFilter,
-                onChange: handleLocationFilter,
-                options: locationOptions,
-              },
-            ]}
-            showPagination={false}
-            className="mb-5"
-          />
+          <div className="mb-5">
+            <h3 className="font-heading text-sm 2xl:text-base font-bold text-sibs-navy tracking-tight">
+              Resignation Records
+            </h3>
+            <p className="mt-1 sibs-text-xs font-semibold text-sibs-muted">
+              Search and filter resignation requests loaded in this table.
+            </p>
+
+            <div className="mt-4 flex flex-col gap-3 overflow-visible xl:flex-row xl:items-end">
+              <div className="relative w-full min-w-0 xl:min-w-[180px] xl:flex-[1_1_220px] 2xl:min-w-[280px] 2xl:flex-[1_1_360px]">
+                <SearchInput
+                  label="Search"
+                  labelClassName="sibs-text-micro font-extrabold tracking-normal text-sibs-navy"
+                  value={searchInput}
+                  placeholder="Search resignation then press Enter"
+                  onChange={handleSearchChange}
+                  onKeyDown={handleSearchKeyDown}
+                  disabled={loading}
+                />
+              </div>
+
+              <div className="w-full xl:w-[200px] 2xl:w-[240px] xl:flex-none">
+                <SelectDropdown
+                  label="Resignation Type"
+                  labelClassName="sibs-text-micro font-extrabold tracking-normal text-sibs-navy"
+                  value={typeFilter}
+                  options={resignationTypeOptions}
+                  onChange={handleTypeFilter}
+                  placeholder="All Types"
+                  clearable={false}
+                  disabled={loading}
+                />
+              </div>
+
+              <div className="w-full xl:w-[200px] 2xl:w-[240px] xl:flex-none">
+                <SelectDropdown
+                  label="Assigned Location"
+                  labelClassName="sibs-text-micro font-extrabold tracking-normal text-sibs-navy"
+                  value={locationFilter}
+                  options={locationOptions}
+                  onChange={handleLocationFilter}
+                  placeholder="All Locations"
+                  clearable={false}
+                  disabled={loading}
+                />
+              </div>
+            </div>
+          </div>
 
           <div className="hidden overflow-hidden rounded-xl border border-sibs-border sibs-data-table-shell lg:block">
             <div
@@ -1054,18 +1089,19 @@ export default function ResignationTable({
             </div>
           </div>
 
-          <PaginationTable
-            loading={loading}
-            showSearch={false}
-            showPagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            loadedCount={paginatedData.length}
-            totalRecords={totalRecords}
-            recordLabel="resignation records"
-            onPrevious={handlePreviousPage}
-            onNext={handleNextPage}
-          />
+          <div className="mt-5">
+            <TablePagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalRecords={totalRecords}
+              hasNextPage={hasNextPage}
+              pageSize={PAGE_LIMIT}
+              loadedCount={paginatedData.length}
+              onPageChange={(page) => setCurrentPage(page)}
+              recordLabel="resignation records"
+              loading={loading}
+            />
+          </div>
         </div>
       </div>
 
@@ -1080,12 +1116,21 @@ export default function ResignationTable({
         readOnly={!!selectedItem?.hasAttritionRecord}
       />
 
-      <StatusModal
+      <ConfirmModal
         open={statusModal.open}
-        type={statusModal.type}
+        variant={statusModal.type === "error" ? "danger" : "info"}
         title={statusModal.title}
         message={statusModal.message}
-        onClose={() =>
+        confirmText="OK"
+        onConfirm={() =>
+          setStatusModal({
+            open: false,
+            type: "success",
+            title: "",
+            message: "",
+          })
+        }
+        onCancel={() =>
           setStatusModal({
             open: false,
             type: "success",

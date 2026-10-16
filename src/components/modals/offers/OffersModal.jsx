@@ -1,6 +1,7 @@
 import React from "react";
 import { Plus, RotateCcw } from "lucide-react";
 import ModalShell from "../../ui/ModalShell";
+import SelectDropdown from "@/components/ui/SelectDropdown";
 
 const declineCategoryOptions = [
   "Compensation",
@@ -205,23 +206,18 @@ export function CreateOfferModal({
                       Candidate <span className="text-sibs-orange"> *</span>
                     </label>
 
-                    <select
+                    <SelectDropdown
                       required
                       value={form.candidateApplicationId}
-                      onChange={(e) => handleCandidateChange(e.target.value)}
-                      className={inputClass()}
-                    >
-                      <option value="">Select candidate from Offered stage</option>
-
-                      {eligibleCandidates.map((candidate) => (
-                        <option
-                          key={`${candidate.candidateApplicationId}-${candidate.candidateEmail}`}
-                          value={candidate.candidateApplicationId}
-                        >
-                          {candidate.candidateName} — {candidate.roleAccount}
-                        </option>
-                      ))}
-                    </select>
+                      onChange={(val) => handleCandidateChange(val)}
+                      options={eligibleCandidates.map((candidate) => ({
+                        value: candidate.candidateApplicationId,
+                        label: `${candidate.candidateName} — ${candidate.roleAccount}`,
+                      }))}
+                      placeholder="Select candidate from Offered stage"
+                      searchable
+                      searchPlaceholder="Search candidate..."
+                    />
                   </div>
 
                   <div>
@@ -362,16 +358,17 @@ export function CreateOfferModal({
                       Initial Offer Status <span className="text-sibs-orange"> *</span>
                     </label>
 
-                    <select
+                    <SelectDropdown
                       required
                       value={form.status}
-                      onChange={(e) => handleStatusChange(e.target.value)}
-                      className={inputClass()}
-                    >
-                      <option value="Pending">Pending</option>
-                      <option value="Accepted">Accepted</option>
-                      <option value="Declined">Declined</option>
-                    </select>
+                      onChange={(val) => handleStatusChange(val)}
+                      options={[
+                        { value: "Pending", label: "Pending" },
+                        { value: "Accepted", label: "Accepted" },
+                        { value: "Declined", label: "Declined" },
+                      ]}
+                      placeholder="Select status"
+                    />
                   </div>
 
                   {form.status === "Accepted" && (
@@ -415,25 +412,21 @@ export function CreateOfferModal({
                           Decline Category <span className="text-sibs-orange"> *</span>
                         </label>
 
-                        <select
+                        <SelectDropdown
                           required
                           value={form.declineCategory}
-                          onChange={(e) =>
+                          onChange={(val) =>
                             setForm({
                               ...form,
-                              declineCategory: e.target.value,
+                              declineCategory: val,
                             })
                           }
-                          className={inputClass()}
-                        >
-                          <option value="">Select decline category</option>
-
-                          {declineCategoryOptions.map((category) => (
-                            <option key={category} value={category}>
-                              {category}
-                            </option>
-                          ))}
-                        </select>
+                          options={declineCategoryOptions.map((category) => ({
+                            value: category,
+                            label: category,
+                          }))}
+                          placeholder="Select decline category"
+                        />
                       </div>
 
                       <div className="md:col-span-2">
@@ -480,22 +473,23 @@ export function CreateOfferModal({
                           Experience Rating
                         </label>
 
-                        <select
-                          value={form.experienceRating}
-                          onChange={(e) =>
+                        <SelectDropdown
+                          value={String(form.experienceRating ?? "")}
+                          onChange={(val) =>
                             setForm({
                               ...form,
-                              experienceRating: Number(e.target.value),
+                              experienceRating: Number(val),
                             })
                           }
-                          className={inputClass()}
-                        >
-                          <option value={5}>5 - Excellent</option>
-                          <option value={4}>4 - Good</option>
-                          <option value={3}>3 - Neutral</option>
-                          <option value={2}>2 - Poor</option>
-                          <option value={1}>1 - Very Poor</option>
-                        </select>
+                          options={[
+                            { value: "5", label: "5 - Excellent" },
+                            { value: "4", label: "4 - Good" },
+                            { value: "3", label: "3 - Neutral" },
+                            { value: "2", label: "2 - Poor" },
+                            { value: "1", label: "1 - Very Poor" },
+                          ]}
+                          placeholder="Select rating"
+                        />
                       </div>
 
                       <div>
