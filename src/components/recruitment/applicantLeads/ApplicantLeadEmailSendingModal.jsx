@@ -22,47 +22,56 @@ export default function ApplicantLeadEmailSendingModal() {
   return (
     <ModalShell
       open={Boolean(isSendingApplicationLink)}
-      maxWidth="max-w-sm"
-      variant="white"
+      maxWidth="max-w-md"
+      variant="navy"
+      icon={Mail}
+      title={isSent ? "Application Link Sent" : "Sending Application Link"}
+      subtitle="SiBS HRIS · Talent Acquisition"
       hideCloseButton={true}
       closeOnBackdrop={false}
       closeOnEscape={false}
-      bodyClassName="p-6 text-center font-jakarta"
+      bodyClassName="px-5 py-5 sm:px-6 sm:py-6"
+      footerMeta={
+        <span className="text-xs font-semibold text-sibs-muted">
+          {isSent
+            ? "Application email delivery completed."
+            : "Please wait until the email process finishes."}
+        </span>
+      }
     >
       <div
-        className={`mx-auto flex h-12 w-12 items-center justify-center rounded-full ring-1 ${
-          isSent
-            ? "bg-emerald-50 text-emerald-600 ring-emerald-200"
-            : "bg-blue-50 text-sibs-navy ring-blue-200"
-        }`}
+        className="space-y-4 font-jakarta"
+        role="status"
+        aria-live="polite"
+        aria-busy={!isSent}
       >
-        {isSent ? (
-          <CircleCheckBig size={22} strokeWidth={2.4} />
-        ) : (
-          <Mail size={20} strokeWidth={2.2} />
-        )}
-      </div>
-      <h3 className="sibs-modal-title mt-4 text-sibs-navy">
-        {isSent ? "Email sent successfully" : "Sending application link"}
-      </h3>
-      <p className="sibs-modal-subtitle mt-2 text-sibs-muted">
-        {isSent
-          ? `The application email was sent to ${candidateName}.`
-          : `Please wait while HRIS sends the application email to ${candidateName}.`}
-      </p>
-      <div
-        className={`mt-5 flex items-center justify-center gap-2 font-jakarta text-xs font-extrabold uppercase tracking-normal ${
-          isSent ? "text-emerald-600" : "text-sibs-navy"
-        }`}
-      >
-        {isSent ? (
-          <CircleCheckBig size={16} strokeWidth={2.4} />
-        ) : (
-          <LoaderCircle size={16} className="animate-spin" />
-        )}
-        {isSent ? "Email sent" : "Sending email"}
+        <div className="flex items-start gap-3">
+          <span
+            className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border ${
+              isSent
+                ? "border-emerald-200 bg-emerald-50 text-emerald-600"
+                : "border-blue-100 bg-blue-50 text-sibs-navy"
+            }`}
+          >
+            {isSent ? (
+              <CircleCheckBig size={22} strokeWidth={2.3} />
+            ) : (
+              <LoaderCircle size={22} strokeWidth={2.3} className="animate-spin" />
+            )}
+          </span>
+          <div className="min-w-0 flex-1 pt-0.5">
+            <p className="sibs-modal-section-title text-sibs-navy">
+              {isSent ? "Email sent successfully" : "Sending application email"}
+            </p>
+            <p className="sibs-modal-subtitle mt-1 break-words text-sibs-muted">
+              {isSent
+                ? `The application email was sent to ${candidateName}.`
+                : `Please wait while HRIS sends the application email to ${candidateName}.`}
+            </p>
+          </div>
+        </div>
+
       </div>
     </ModalShell>
   );
 }
-
