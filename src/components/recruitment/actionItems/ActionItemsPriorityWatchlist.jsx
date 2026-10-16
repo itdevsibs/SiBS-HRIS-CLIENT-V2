@@ -1,12 +1,17 @@
 import React, { useMemo } from "react";
 import { AlertTriangle, CheckCircle2 } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useActionItems } from "../../../services/context/ActionItemsContext.jsx";
 import { useActionItemsReport } from "../../../services/context/ActionItemsReportContext.jsx";
+import { usePagination } from "../../../services/context/PaginationContext.jsx";
 import { formatDate, getDaysLeft, sortActionItems } from "../../../lib/utils/actionItems/actionItemsHelpers.js";
 
 export default function ActionItemsPriorityWatchlist() {
   const { setSelectedItem } = useActionItems();
   const { filteredActionItems } = useActionItemsReport();
+  const pagination = usePagination("action-items");
+  const loading = pagination?.loading ?? false;
+
   const risks = useMemo(
     () => sortActionItems(filteredActionItems.filter((item) => item.status !== "Completed" && item.status !== "Cancelled")).slice(0, 4),
     [filteredActionItems],
@@ -23,23 +28,42 @@ export default function ActionItemsPriorityWatchlist() {
       </div>
 
       <div className="divide-y divide-rose-100 rounded-[10px] border border-rose-100 bg-white">
-        {risks.length ? risks.map((item) => (
-          <button
-            type="button"
-            key={`${item.sourceType}-${item.id}-${item.actionId}`}
-            onClick={() => setSelectedItem(item)}
-            className="flex w-full flex-col gap-2 px-3 py-3 text-left transition hover:bg-sibs-surface sm:flex-row sm:items-center sm:justify-between"
-          >
-            <div className="min-w-0">
-              <p className="line-clamp-1 text-xs font-extrabold text-sibs-navy">{item.actionItem}</p>
-              <p className="mt-1 text-[10px] font-semibold text-sibs-muted">{item.account} · {item.roleTitle || item.roleAccount} · Owner: {item.owner}</p>
+        {loading ? (
+          Array.from({ length: 3 }).map((_, idx) => (
+            <div
+              key={`watchlist-skeleton-${idx}`}
+              data-testid={`watchlist-skeleton-${idx}`}
+              className="flex w-full items-center justify-between p-3"
+            >
+              <div className="min-w-0 flex-1 space-y-1.5">
+                <Skeleton className="h-3.5 w-3/4" />
+                <Skeleton className="h-2.5 w-1/2" />
+              </div>
+              <div className="w-16 space-y-1 text-right">
+                <Skeleton className="h-3 w-full" />
+                <Skeleton className="ml-auto h-2 w-3/4" />
+              </div>
             </div>
-            <div className="shrink-0 text-left sm:text-right font-jakarta">
-              <p className="text-[10px] font-extrabold text-rose-700">{formatDate(item.deadline)}</p>
-              <p className="mt-0.5 text-[9px] font-bold text-rose-600">{getDaysLeft(item.deadline)}</p>
-            </div>
-          </button>
-        )) : (
+          ))
+        ) : risks.length ? (
+          risks.map((item) => (
+            <button
+              type="button"
+              key={`${item.sourceType}-${item.id}-${item.actionId}`}
+              onClick={() => setSelectedItem(item)}
+              className="flex w-full flex-col gap-2 px-3 py-3 text-left transition hover:bg-sibs-surface sm:flex-row sm:items-center sm:justify-between"
+            >
+              <div className="min-w-0">
+                <p className="line-clamp-1 text-xs font-extrabold text-sibs-navy">{item.actionItem}</p>
+                <p className="mt-1 text-[10px] font-semibold text-sibs-muted">{item.account} · {item.roleTitle || item.roleAccount} · Owner: {item.owner}</p>
+              </div>
+              <div className="shrink-0 text-left sm:text-right font-jakarta">
+                <p className="text-[10px] font-extrabold text-rose-700">{formatDate(item.deadline)}</p>
+                <p className="mt-0.5 text-[9px] font-bold text-rose-600">{getDaysLeft(item.deadline)}</p>
+              </div>
+            </button>
+          ))
+        ) : (
           <div className="p-6 text-center">
             <CheckCircle2 size={25} className="mx-auto text-emerald-600" />
             <p className="mt-2 text-xs font-black text-emerald-700">No open priority items in this scope.</p>

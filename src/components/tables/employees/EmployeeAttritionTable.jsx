@@ -103,7 +103,7 @@ function getStatusClass(status) {
 export default function EmployeeAttritionTable({ data = [], loading = false }) {
   return (
     <div className="min-w-0 overflow-hidden rounded-xl bg-white">
-      <div className="border-b border-[#e6ecf2] bg-[#f3f4f6] px-4 py-3">
+      <div className="border-b border-sibs-border bg-sibs-canvas px-4 py-3">
         <h2 className="m-0 text-[15px] font-semibold text-sibs-primary-1">
           Attrition Table
         </h2>
@@ -111,7 +111,7 @@ export default function EmployeeAttritionTable({ data = [], loading = false }) {
 
       <div className="max-h-[670px] overflow-auto">
         <table className="w-full min-w-[1600px] border-collapse bg-white text-sm text-sibs-primary-1">
-          <thead className="sticky top-0 z-10 bg-[#f3f4f6]">
+          <thead className="sticky top-0 z-10 bg-sibs-canvas">
             <tr>
               <th className="h-12 whitespace-nowrap px-3 text-left text-sm font-semibold text-sibs-primary-1">
                 ID
@@ -168,43 +168,43 @@ export default function EmployeeAttritionTable({ data = [], loading = false }) {
             ) : (
               data.map((item) => (
                 <tr key={item.id} className="transition hover:bg-slate-50">
-                  <td className="h-14 whitespace-nowrap border-t border-[#e6ecf2] px-3 text-sm text-sibs-primary-1">
+                  <td className="h-14 whitespace-nowrap border-t border-sibs-border px-3 text-sm text-sibs-primary-1">
                     {item.id || "N/A"}
                   </td>
 
-                  <td className="h-14 whitespace-nowrap border-t border-[#e6ecf2] px-3 text-sm text-sibs-primary-1">
+                  <td className="h-14 whitespace-nowrap border-t border-sibs-border px-3 text-sm text-sibs-primary-1">
                     {item.resignationId || "N/A"}
                   </td>
 
-                  <td className="h-14 whitespace-nowrap border-t border-[#e6ecf2] px-3 text-sm text-sibs-primary-1">
+                  <td className="h-14 whitespace-nowrap border-t border-sibs-border px-3 text-sm text-sibs-primary-1">
                     {item.sibsId || "N/A"}
                   </td>
 
-                  <td className="h-14 whitespace-nowrap border-t border-[#e6ecf2] px-3 text-sm text-sibs-primary-1">
+                  <td className="h-14 whitespace-nowrap border-t border-sibs-border px-3 text-sm text-sibs-primary-1">
                     {item.reason || "N/A"}
                   </td>
 
-                  <td className="h-14 whitespace-nowrap border-t border-[#e6ecf2] px-3 text-sm text-sibs-primary-1">
+                  <td className="h-14 whitespace-nowrap border-t border-sibs-border px-3 text-sm text-sibs-primary-1">
                     {item.specifyOthers || "N/A"}
                   </td>
 
-                  <td className="h-14 whitespace-nowrap border-t border-[#e6ecf2] px-3 text-sm text-sibs-primary-1">
+                  <td className="h-14 whitespace-nowrap border-t border-sibs-border px-3 text-sm text-sibs-primary-1">
                     <UploadedFileCell item={item} />
                   </td>
 
-                  <td className="h-14 whitespace-nowrap border-t border-[#e6ecf2] px-3 text-sm text-sibs-primary-1">
+                  <td className="h-14 whitespace-nowrap border-t border-sibs-border px-3 text-sm text-sibs-primary-1">
                     {formatDate(item.attritionDate)}
                   </td>
 
-                  <td className="h-14 whitespace-nowrap border-t border-[#e6ecf2] px-3 text-sm text-sibs-primary-1">
+                  <td className="h-14 whitespace-nowrap border-t border-sibs-border px-3 text-sm text-sibs-primary-1">
                     {formatDate(item.lastWorkingDate)}
                   </td>
 
-                  <td className="h-14 whitespace-nowrap border-t border-[#e6ecf2] px-3 text-sm text-sibs-primary-1">
+                  <td className="h-14 whitespace-nowrap border-t border-sibs-border px-3 text-sm text-sibs-primary-1">
                     {formatDateTime(item.createdAt)}
                   </td>
 
-                  <td className="h-14 whitespace-nowrap border-t border-[#e6ecf2] px-3 text-sm">
+                  <td className="h-14 whitespace-nowrap border-t border-sibs-border px-3 text-sm">
                     <span
                       className={`inline-flex items-center justify-center rounded-full px-3 py-1.5 text-xs font-semibold ${getStatusClass(
                         item.status

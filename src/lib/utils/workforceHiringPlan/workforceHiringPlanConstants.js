@@ -40,10 +40,10 @@ export const WEEKLY_CLUSTER_OPTIONS = [
   "Corporate",
 ];
 
-export const WEEKLY_FLAT_PAGE_BG = "bg-[#F6F8FB]";
+export const WEEKLY_FLAT_PAGE_BG = "bg-sibs-canvas";
 
 export const WEEKLY_APPROVAL_EDGE =
-  "overflow-hidden rounded-[10px] border border-[#E1E7EF] bg-white shadow-sm";
+  "overflow-hidden rounded-[10px] border border-sibs-border bg-white shadow-sm";
 
 export const initialWeeklyActionItemForm = {
   actionItem: "",

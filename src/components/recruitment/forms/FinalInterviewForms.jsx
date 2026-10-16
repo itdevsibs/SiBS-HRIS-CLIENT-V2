@@ -1002,12 +1002,12 @@ function getLatestSubmittedForm(candidate = {}, submissionId = "") {
 
 function StatusBadge({ label, tone = "default" }) {
   const styles = {
-    success: "border-[#ABEFC6] bg-[#ECFDF3] text-[#067647]",
+    success: "border-emerald-200 bg-emerald-50 text-emerald-700",
     blue: "border-blue-100 bg-blue-50 text-blue-700",
     warning: "border-amber-100 bg-amber-50 text-amber-700",
     orange: "border-orange-100 bg-orange-50 text-orange-700",
-    danger: "border-[#FECDCA] bg-[#FEF3F2] text-[#D92D20]",
-    default: "border-[#D0D5DD] bg-[#F9FAFB] text-[#344054]",
+    danger: "border-red-200 bg-red-50 text-red-700",
+    default: "border-sibs-border-subtle bg-sibs-canvas text-sibs-text-secondary",
   };
 
   return (
@@ -1031,15 +1031,15 @@ function SummaryMetricCard({
   const toneClasses = {
     default: {
       value: "text-sibs-primary-1",
-      iconWrap: "bg-[#F2F4F7]",
-      border: "border-[#E4E7EC]",
+      iconWrap: "bg-sibs-canvas",
+      border: "border-sibs-border",
       progress: "bg-sibs-primary-1",
     },
     success: {
-      value: "text-[#079455]",
-      iconWrap: "bg-[#ECFDF3]",
-      border: "border-[#D0F0DD]",
-      progress: "bg-[#12B76A]",
+      value: "text-emerald-700",
+      iconWrap: "bg-emerald-50",
+      border: "border-emerald-200",
+      progress: "bg-emerald-600",
     },
     blue: {
       value: "text-blue-700",
@@ -1060,10 +1060,10 @@ function SummaryMetricCard({
       progress: "bg-orange-500",
     },
     danger: {
-      value: "text-[#D92D20]",
-      iconWrap: "bg-[#FEF3F2]",
-      border: "border-[#F5D3CF]",
-      progress: "bg-[#F04438]",
+      value: "text-red-700",
+      iconWrap: "bg-red-50",
+      border: "border-red-200",
+      progress: "bg-red-600",
     },
   };
 
@@ -1081,7 +1081,7 @@ function SummaryMetricCard({
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <p className="text-[13px] font-extrabold uppercase tracking-[0.02em] text-[#17406D]">
+            <p className="text-[13px] font-extrabold uppercase tracking-[0.02em] text-sibs-navy">
               {title}
             </p>
 
@@ -1096,7 +1096,7 @@ function SummaryMetricCard({
             {value}
           </p>
 
-          <p className="mt-3 text-[14px] font-semibold leading-5 text-[#365B85]">
+          <p className="mt-3 text-[14px] font-semibold leading-5 text-sibs-navy">
             {subtext}
           </p>
         </div>
@@ -1104,14 +1104,14 @@ function SummaryMetricCard({
         <div
           className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-[18px] ${styles.iconWrap}`}
         >
-          <div className="h-5 w-5 rounded-full border-2 border-[#123B67]" />
+          <div className="h-5 w-5 rounded-full border-2 border-sibs-navy" />
         </div>
       </div>
 
       {hasProgress && (
         <div className="mt-5">
           <div className="mb-2 flex items-center justify-between">
-            <span className="text-[11px] font-extrabold uppercase tracking-[0.04em] text-[#667085]">
+            <span className="text-[11px] font-extrabold uppercase tracking-[0.04em] text-sibs-text-secondary">
               Progress
             </span>
 
@@ -1120,7 +1120,7 @@ function SummaryMetricCard({
             </span>
           </div>
 
-          <div className="h-2.5 overflow-hidden rounded-full bg-[#E4E7EC]">
+          <div className="h-2.5 overflow-hidden rounded-full bg-slate-200">
             <div
               className={`h-full rounded-full transition-all duration-300 ${styles.progress}`}
               style={{
@@ -1136,12 +1136,12 @@ function SummaryMetricCard({
 
 function BreakdownPanel({ title, subtitle, children }) {
   return (
-    <div className="rounded-[22px] border border-[#D9E2EC] bg-white p-5 shadow-[0_1px_6px_rgba(16,24,40,0.04)]">
+    <div className="rounded-[22px] border border-sibs-border bg-white p-5 shadow-[0_1px_6px_rgba(16,24,40,0.04)]">
       <div className="mb-5">
-        <h3 className="text-[16px] font-extrabold text-[#101828]">{title}</h3>
+        <h3 className="text-[16px] font-extrabold text-sibs-primary-1">{title}</h3>
 
         {subtitle && (
-          <p className="mt-1 text-[14px] font-medium leading-6 text-[#3B6E9F]">
+          <p className="mt-1 text-[14px] font-medium leading-6 text-sibs-navy">
             {subtitle}
           </p>
         )}
@@ -1154,7 +1154,7 @@ function BreakdownPanel({ title, subtitle, children }) {
 
 function BreakdownScoreLine({ label, subtext = "", value = 0, suffix = "pts" }) {
   return (
-    <div className="rounded-[18px] bg-[#F8FAFC] px-4 py-4">
+    <div className="rounded-[18px] bg-sibs-canvas px-4 py-4">
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
           <p className="text-[12px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
@@ -1162,16 +1162,16 @@ function BreakdownScoreLine({ label, subtext = "", value = 0, suffix = "pts" }) 
           </p>
 
           {subtext && (
-            <p className="mt-1 break-words text-sm font-semibold leading-6 text-[#2E5B89]">
+            <p className="mt-1 break-words text-sm font-semibold leading-6 text-sibs-navy">
               {subtext}
             </p>
           )}
         </div>
 
-        <p className="shrink-0 text-right text-[18px] font-extrabold text-[#101828]">
+        <p className="shrink-0 text-right text-[18px] font-extrabold text-sibs-primary-1">
           {value}
           {suffix && (
-            <span className="ml-1 text-[14px] font-bold text-[#101828]">
+            <span className="ml-1 text-[14px] font-bold text-sibs-primary-1">
               {suffix}
             </span>
           )}
@@ -1183,13 +1183,13 @@ function BreakdownScoreLine({ label, subtext = "", value = 0, suffix = "pts" }) 
 
 function BreakdownTextLine({ label, value = "—" }) {
   return (
-    <div className="rounded-[18px] bg-[#F8FAFC] px-4 py-4">
+    <div className="rounded-[18px] bg-sibs-canvas px-4 py-4">
       <div className="grid grid-cols-[minmax(90px,0.8fr)_minmax(0,1.6fr)] items-start gap-4">
         <p className="min-w-0 break-words text-[12px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
           {label}
         </p>
 
-        <p className="min-w-0 break-words text-right text-[15px] font-extrabold leading-5 text-[#101828]">
+        <p className="min-w-0 break-words text-right text-[15px] font-extrabold leading-5 text-sibs-primary-1">
           {value || "—"}
         </p>
       </div>
@@ -1199,12 +1199,12 @@ function BreakdownTextLine({ label, value = "—" }) {
 
 function BreakdownResultLine({ label, value = "—" }) {
   return (
-    <div className="rounded-[18px] border border-[#D9E2EC] bg-[#F8FAFC] px-4 py-4">
+    <div className="rounded-[18px] border border-sibs-border bg-sibs-canvas px-4 py-4">
       <p className="text-[12px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
         {label}
       </p>
 
-      <p className="mt-2 text-[16px] font-extrabold text-[#101828]">
+      <p className="mt-2 text-[16px] font-extrabold text-sibs-primary-1">
         {value || "—"}
       </p>
     </div>
@@ -1264,13 +1264,13 @@ function ScoreSummaryCard({
   );
 
   return (
-    <section className="rounded-[24px] border border-[#D9E2EC] bg-white p-6 shadow-[0_2px_10px_rgba(16,24,40,0.04)]">
+    <section className="rounded-[24px] border border-sibs-border bg-white p-6 shadow-[0_2px_10px_rgba(16,24,40,0.04)]">
       <div className="mb-6">
-        <h2 className="text-[18px] font-extrabold text-[#101828]">
+        <h2 className="text-[18px] font-extrabold text-sibs-primary-1">
           Evaluation Performance Summary
         </h2>
 
-        <p className="mt-1 text-[14px] font-medium text-[#3B6E9F]">
+        <p className="mt-1 text-[14px] font-medium text-sibs-navy">
           Combined overview of Job Evaluation and Final Interview results.
         </p>
       </div>
@@ -1425,7 +1425,7 @@ function ScoreSummaryCard({
 
 function ScoreLine({ label, value, subtext = "" }) {
   return (
-    <div className="flex items-start justify-between gap-4 rounded-2xl bg-[#F8FAFC] px-4 py-3">
+    <div className="flex items-start justify-between gap-4 rounded-2xl bg-sibs-canvas px-4 py-3">
       <div className="min-w-0">
         <p className="text-[12px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
           {label}
@@ -1438,7 +1438,7 @@ function ScoreLine({ label, value, subtext = "" }) {
         )}
       </div>
 
-      <p className="shrink-0 text-right text-base font-extrabold text-[#101828]">
+      <p className="shrink-0 text-right text-base font-extrabold text-sibs-primary-1">
         {value}
       </p>
     </div>
@@ -1451,11 +1451,11 @@ function SelectedAnswerCard({
   emptyText = "No selected answer yet.",
 }) {
   return (
-    <div className="rounded-2xl border border-[#E6ECF2] bg-white p-4">
+    <div className="rounded-2xl border border-sibs-border bg-white p-4">
       <div className="mb-3 flex items-center justify-between gap-3">
         <h4 className="text-sm font-extrabold text-sibs-primary-1">{title}</h4>
 
-        <span className="rounded-full bg-[#F2F6FA] px-3 py-1 text-xs font-extrabold text-sibs-primary-1">
+        <span className="rounded-full bg-sibs-canvas px-3 py-1 text-xs font-extrabold text-sibs-primary-1">
           {selectedItems.length} selected
         </span>
       </div>
@@ -1478,7 +1478,7 @@ function SelectedAnswerCard({
           ))}
         </div>
       ) : (
-        <p className="rounded-xl border border-dashed border-[#D6DEE8] bg-[#F8FAFC] px-3 py-3 text-sm font-bold text-sibs-tertiary-5">
+        <p className="rounded-xl border border-dashed border-sibs-border-subtle bg-sibs-canvas px-3 py-3 text-sm font-bold text-sibs-tertiary-5">
           {emptyText}
         </p>
       )}
@@ -1513,9 +1513,9 @@ function JobEvaluationSelectedAnswers({ answers = {} }) {
   );
 
   return (
-    <section className="rounded-[22px] border border-[#D9E2EC] bg-[#F8FAFC] p-5">
+    <section className="rounded-[22px] border border-sibs-border bg-sibs-canvas p-5">
       <div className="mb-4">
-        <h3 className="text-base font-extrabold text-[#101828]">
+        <h3 className="text-base font-extrabold text-sibs-primary-1">
           Selected Job Evaluation Answers
         </h3>
 
@@ -1579,7 +1579,7 @@ function AnimatedRecruitmentDropdown({
     >
       <div className="min-h-0 overflow-hidden">
         <div
-          className={`overflow-hidden rounded-xl border border-[#D7DEE8] bg-white shadow-2xl transition-all duration-300 ease-out ${
+          className={`overflow-hidden rounded-xl border border-sibs-border-subtle bg-white shadow-2xl transition-all duration-300 ease-out ${
             open ? "translate-y-0 scale-100" : "-translate-y-2 scale-[0.98]"
           }`}
         >
@@ -1653,11 +1653,11 @@ function RecruitmentStyleDropdown({
           if (disabled) return;
           setOpen((previous) => !previous);
         }}
-        className="flex h-12 w-full items-center justify-between rounded-xl border border-[#D0D5DD] bg-white px-4 text-left text-sm font-bold text-[#344054] outline-none transition-all duration-200 hover:border-sibs-primary-1/40 hover:bg-[#F8FAFC] focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400"
+        className="flex h-12 w-full items-center justify-between rounded-xl border border-sibs-border-subtle bg-white px-4 text-left text-sm font-bold text-sibs-text-secondary outline-none transition-all duration-200 hover:border-sibs-primary-1/40 hover:bg-sibs-canvas focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400"
       >
         <span
           className={`truncate ${
-            selectedOption ? "text-[#344054]" : "text-[#98A2B3]"
+            selectedOption ? "text-sibs-text-secondary" : "text-sibs-muted"
           }`}
         >
           {selectedOption?.label || placeholder}
@@ -1694,8 +1694,8 @@ function RecruitmentStyleDropdown({
                   }}
                   className={`block w-full px-4 py-3 text-left text-sm transition ${
                     selected
-                      ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
-                      : "text-[#344054] hover:bg-[#F8FAFC]"
+                      ? "bg-sibs-canvas font-bold text-sibs-primary-1"
+                      : "text-sibs-text-secondary hover:bg-sibs-canvas"
                   }`}
                 >
                   <span className="block truncate">
@@ -1801,7 +1801,7 @@ function AutoResizeTextarea({
 
 function FieldInput({ field, value, onChange, readOnly = false }) {
   const disabledClass =
-    "disabled:cursor-not-allowed disabled:bg-[#F8FAFC] disabled:text-[#475467]";
+    "disabled:cursor-not-allowed disabled:bg-sibs-canvas disabled:text-sibs-text-secondary";
 
   if (field.type === "Rating") {
     return (
@@ -1825,7 +1825,7 @@ function FieldInput({ field, value, onChange, readOnly = false }) {
         readOnly={readOnly}
         onChange={onChange}
         placeholder="Type answer here..."
-        className={`mt-2 min-h-[104px] rounded-lg border border-[#B8C2CF] bg-white px-3 py-3 text-sm font-semibold leading-6 text-[#344054] outline-none transition placeholder:text-[#98A2B3] focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${disabledClass}`}
+        className={`mt-2 min-h-[104px] rounded-lg border border-sibs-border-subtle bg-white px-3 py-3 text-sm font-semibold leading-6 text-sibs-text-secondary outline-none transition placeholder:text-sibs-muted focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${disabledClass}`}
       />
     );
   }
@@ -1852,7 +1852,7 @@ function FieldInput({ field, value, onChange, readOnly = false }) {
         disabled={readOnly}
         onChange={(e) => onChange(e.target.value)}
         placeholder="Enter number..."
-        className={`mt-2 h-11 w-full rounded-lg border border-[#B8C2CF] bg-white px-3 text-sm font-semibold text-[#344054] outline-none transition placeholder:text-[#98A2B3] focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${disabledClass}`}
+        className={`mt-2 h-11 w-full rounded-lg border border-sibs-border-subtle bg-white px-3 text-sm font-semibold text-sibs-text-secondary outline-none transition placeholder:text-sibs-muted focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${disabledClass}`}
       />
     );
   }
@@ -1864,14 +1864,14 @@ function FieldInput({ field, value, onChange, readOnly = false }) {
         value={value || ""}
         disabled={readOnly}
         onChange={(e) => onChange(e.target.value)}
-        className={`mt-2 h-11 w-full rounded-lg border border-[#B8C2CF] bg-white px-3 text-sm font-semibold text-[#344054] outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${disabledClass}`}
+        className={`mt-2 h-11 w-full rounded-lg border border-sibs-border-subtle bg-white px-3 text-sm font-semibold text-sibs-text-secondary outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${disabledClass}`}
       />
     );
   }
 
   if (field.type === "Checkbox") {
     return (
-      <label className="mt-2 flex h-11 items-center gap-3 rounded-lg border border-[#B8C2CF] bg-white px-3 text-sm font-semibold text-[#344054]">
+      <label className="mt-2 flex h-11 items-center gap-3 rounded-lg border border-sibs-border-subtle bg-white px-3 text-sm font-semibold text-sibs-text-secondary">
         <input
           type="checkbox"
           checked={Boolean(value)}
@@ -1891,7 +1891,7 @@ function FieldInput({ field, value, onChange, readOnly = false }) {
       readOnly={readOnly}
       onChange={onChange}
       placeholder="Type answer here..."
-      className={`mt-2 min-h-[72px] rounded-lg border border-[#B8C2CF] bg-white px-3 py-3 text-sm font-semibold leading-6 text-[#344054] outline-none transition placeholder:text-[#98A2B3] focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${disabledClass}`}
+      className={`mt-2 min-h-[72px] rounded-lg border border-sibs-border-subtle bg-white px-3 py-3 text-sm font-semibold leading-6 text-sibs-text-secondary outline-none transition placeholder:text-sibs-muted focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${disabledClass}`}
     />
   );
 }
@@ -1909,7 +1909,7 @@ function QuestionRatingInput({
   const remarkValue = answers[remarkKey] || "";
 
   return (
-    <div className="mt-5 rounded-2xl border border-[#D9E2EC] bg-[#F8FAFC] p-4">
+    <div className="mt-5 rounded-2xl border border-sibs-border bg-sibs-canvas p-4">
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[220px_minmax(0,1fr)]">
         <div>
           <label className="block text-sm font-extrabold text-sibs-primary-1">
@@ -1945,7 +1945,7 @@ function QuestionRatingInput({
             readOnly={readOnly}
             onChange={(value) => onChange(remarkKey, value)}
             placeholder="Enter remarks about the applicant's response..."
-            className="mt-2 min-h-[96px] rounded-xl border border-[#B8C2CF] bg-white px-3 py-3 text-sm font-semibold leading-6 text-[#344054] outline-none transition placeholder:text-[#98A2B3] focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 disabled:cursor-not-allowed disabled:bg-[#F2F4F7] disabled:text-[#475467]"
+            className="mt-2 min-h-[96px] rounded-xl border border-sibs-border-subtle bg-white px-3 py-3 text-sm font-semibold leading-6 text-sibs-text-secondary outline-none transition placeholder:text-sibs-muted focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 disabled:cursor-not-allowed disabled:bg-sibs-canvas disabled:text-sibs-text-secondary"
           />
         </div>
       </div>
@@ -2009,7 +2009,7 @@ function JobEvaluationCheckboxGroup({
               className={`flex gap-3 rounded-xl border p-3 text-sm font-semibold leading-6 transition ${
                 checked
                   ? "border-blue-100 bg-blue-50 text-sibs-primary-1"
-                  : "border-[#E6ECF2] bg-white text-[#344054]"
+                  : "border-sibs-border bg-white text-sibs-text-secondary"
               } ${
                 readOnly
                   ? "cursor-not-allowed opacity-80"
@@ -2766,8 +2766,8 @@ export default function FinalInterviewForms({ publicMode = false }) {
   ]);
 
   const pageShellClass = publicMode
-    ? "fixed inset-0 z-[99999] min-h-screen overflow-y-auto bg-[#E9EEF5] px-4 py-8 font-jakarta text-sibs-primary-1"
-    : "min-h-screen bg-[#E9EEF5] px-4 py-8 font-jakarta text-sibs-primary-1";
+    ? "fixed inset-0 z-[99999] min-h-screen overflow-y-auto bg-sibs-canvas px-4 py-8 font-jakarta text-sibs-primary-1"
+    : "min-h-screen bg-sibs-canvas px-4 py-8 font-jakarta text-sibs-primary-1";
 
   const scoreSummary = useMemo(() => {
     const jobEvaluationPassed =
@@ -3380,7 +3380,7 @@ export default function FinalInterviewForms({ publicMode = false }) {
         />
       )}
 <div className="mx-auto max-w-[1180px] space-y-5">
-          <section className="rounded-2xl border border-[#E6ECF2] bg-white p-6 shadow-sm">
+          <section className="rounded-2xl border border-sibs-border bg-white p-6 shadow-sm">
             <div className="inline-flex rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
               {isSubmittedView ? "Finished Assessment" : "Job Evaluation"}
             </div>
@@ -3503,11 +3503,11 @@ export default function FinalInterviewForms({ publicMode = false }) {
 
           <form
             onSubmit={handleSubmit}
-            className="rounded-2xl border border-[#E6ECF2] bg-white p-8 shadow-sm"
+            className="rounded-2xl border border-sibs-border bg-white p-8 shadow-sm"
           >
             <section>
               <div>
-                <h2 className="text-base font-extrabold text-[#101828]">
+                <h2 className="text-base font-extrabold text-sibs-primary-1">
                   Default Job Evaluation Contents
                 </h2>
 
@@ -3569,10 +3569,10 @@ export default function FinalInterviewForms({ publicMode = false }) {
               </div>
             </section>
 
-            <section className="mt-10 border-t border-[#E6ECF2] pt-8">
+            <section className="mt-10 border-t border-sibs-border pt-8">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
-                  <h2 className="text-base font-extrabold text-[#101828]">
+                  <h2 className="text-base font-extrabold text-sibs-primary-1">
                     Final Interview Questions
                   </h2>
 
@@ -3593,7 +3593,7 @@ export default function FinalInterviewForms({ publicMode = false }) {
               {!publicMode && (
                 <div className="mt-5 grid grid-cols-1 gap-3 rounded-2xl border border-blue-100 bg-blue-50 p-4 sm:grid-cols-3">
                   <div className="rounded-xl bg-white px-4 py-3 shadow-sm">
-                    <p className="text-[11px] font-extrabold uppercase tracking-wide text-[#667085]">
+                    <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-text-secondary">
                       Total Final Interview Score
                     </p>
                     <p className="mt-2 text-2xl font-extrabold text-sibs-primary-1">
@@ -3603,7 +3603,7 @@ export default function FinalInterviewForms({ publicMode = false }) {
                   </div>
 
                   <div className="rounded-xl bg-white px-4 py-3 shadow-sm">
-                    <p className="text-[11px] font-extrabold uppercase tracking-wide text-[#667085]">
+                    <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-text-secondary">
                       Percentage
                     </p>
                     <p className="mt-2 text-2xl font-extrabold text-blue-700">
@@ -3612,10 +3612,10 @@ export default function FinalInterviewForms({ publicMode = false }) {
                   </div>
 
                   <div className="rounded-xl bg-white px-4 py-3 shadow-sm">
-                    <p className="text-[11px] font-extrabold uppercase tracking-wide text-[#667085]">
+                    <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-text-secondary">
                       Rated Questions
                     </p>
-                    <p className="mt-2 text-2xl font-extrabold text-[#344054]">
+                    <p className="mt-2 text-2xl font-extrabold text-sibs-text-secondary">
                       {finalInterviewRatingScore.answeredRatingFields}/
                       {finalInterviewRatingScore.totalRatingFields}
                     </p>
@@ -3640,7 +3640,7 @@ export default function FinalInterviewForms({ publicMode = false }) {
                 <div className="mt-6 space-y-6">
                   {groupedFields.map((group, groupIndex) => {
                     const previousQuestionCount =
-                      groupedFields
+                       groupedFields
                         .slice(0, groupIndex)
                         .reduce(
                           (total, previousGroup) =>
@@ -3654,14 +3654,14 @@ export default function FinalInterviewForms({ publicMode = false }) {
                     return (
                       <section
                         key={`${group.section}-${groupIndex}`}
-                        className="overflow-visible rounded-[20px] border border-[#D9E2EC] bg-white"
+                        className="overflow-visible rounded-[20px] border border-sibs-border bg-white"
                       >
-                        <div className="flex flex-wrap items-center justify-between gap-3 rounded-t-[20px] border-b border-[#E4E7EC] bg-[#F8FAFC] px-5 py-4">
+                        <div className="flex flex-wrap items-center justify-between gap-3 rounded-t-[20px] border-b border-sibs-border bg-sibs-canvas px-5 py-4">
                           <h3 className="min-w-0 text-sm font-extrabold uppercase tracking-wide text-sibs-primary-1">
                             {group.section}
                           </h3>
 
-                          <span className="inline-flex shrink-0 items-center rounded-full border border-[#D9E2EC] bg-white px-3 py-1.5 text-xs font-extrabold text-[#667085]">
+                          <span className="inline-flex shrink-0 items-center rounded-full border border-sibs-border bg-white px-3 py-1.5 text-xs font-extrabold text-sibs-text-secondary">
                             {safeArray(group.questions).length}{" "}
                             {safeArray(group.questions).length === 1
                               ? "question"
@@ -3669,7 +3669,7 @@ export default function FinalInterviewForms({ publicMode = false }) {
                           </span>
                         </div>
 
-                        <div className="divide-y divide-[#E4E7EC]">
+                        <div className="divide-y divide-sibs-border">
                           {safeArray(group.questions).map(
                             (field, fieldIndex) => {
                               const questionNumber =
@@ -3695,7 +3695,7 @@ export default function FinalInterviewForms({ publicMode = false }) {
                                       Question {questionNumber}
                                     </span>
 
-                                    <span className="inline-flex rounded-full bg-[#F2F4F7] px-3 py-1 text-xs font-extrabold text-[#475467]">
+                                    <span className="inline-flex rounded-full bg-sibs-canvas px-3 py-1 text-xs font-extrabold text-sibs-text-secondary">
                                       {field.type || "Text"}
                                     </span>
 
@@ -3712,7 +3712,7 @@ export default function FinalInterviewForms({ publicMode = false }) {
                                   <div className="mt-4">
                                     {(publicMode || !isRatingQuestion) && (
                                       <>
-                                        <p className="text-xs font-extrabold uppercase tracking-wide text-[#667085]">
+                                        <p className="text-xs font-extrabold uppercase tracking-wide text-sibs-text-secondary">
                                           {publicMode
                                             ? "Your Answer"
                                             : "Candidate Answer / Interview Notes"}
@@ -3751,7 +3751,7 @@ export default function FinalInterviewForms({ publicMode = false }) {
                   })}
                 </div>
               ) : (
-                <div className="mt-6 rounded-xl border border-dashed border-[#D6DEE8] bg-white px-4 py-10 text-center">
+                <div className="mt-6 rounded-xl border border-dashed border-sibs-border-subtle bg-white px-4 py-10 text-center">
                   <p className="text-sm font-extrabold text-sibs-tertiary-5">
                     {isSubmittedView
                       ? "No saved Final Interview questions were found for this submission."
@@ -3769,7 +3769,7 @@ export default function FinalInterviewForms({ publicMode = false }) {
 
             {isSubmittedView ? (
               !publicMode && !requestedViewMode && (
-                <div className="mt-8 flex flex-col items-stretch justify-end gap-3 border-t border-[#E6ECF2] pt-6 sm:flex-row sm:items-center">
+                <div className="mt-8 flex flex-col items-stretch justify-end gap-3 border-t border-sibs-border pt-6 sm:flex-row sm:items-center">
                   <button
                     type="button"
                     disabled={isSubmitting}

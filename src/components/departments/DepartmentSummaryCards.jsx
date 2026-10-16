@@ -1,5 +1,6 @@
 import { createElement } from "react";
 import { Activity, Building2, CheckCircle2, Layers3, XCircle } from "lucide-react";
+import { MetricGridSkeleton } from "@/components/ui";
 
 const METRICS = [
   { key: "totalDepartments", label: "Total Departments", description: "Approved HRIS departments", icon: Building2, tone: "text-blue-600 bg-blue-50" },
@@ -9,7 +10,18 @@ const METRICS = [
   { key: "activeRate", label: "Active Rate", description: "Account availability", icon: Activity, tone: "text-sibs-orange bg-sibs-cream-light", suffix: "%" },
 ];
 
-export default function DepartmentSummaryCards({ summary }) {
+export default function DepartmentSummaryCards({ summary = {}, loading = false }) {
+  if (loading) {
+    return (
+      <MetricGridSkeleton
+        columns={5}
+        count={5}
+        labels={METRICS.map((m) => m.label)}
+        ariaLabel="Loading department metrics"
+      />
+    );
+  }
+
   return (
     <section className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-5 font-jakarta">
       {METRICS.map(({ key, label, description, icon, tone, suffix = "" }, index) => (

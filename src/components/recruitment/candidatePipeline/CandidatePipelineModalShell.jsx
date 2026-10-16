@@ -1,10 +1,11 @@
-import React, { useEffect, useId, useMemo, useRef, useState } from "react";
-import { History, X } from "lucide-react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { History } from "lucide-react";
 
 import { useCandidatePipeline } from "../../../services/context/CandidatePipelineContext";
 import CandidateMovementHistoryDrawer, {
   getMovementHistoryItems,
 } from "./CandidateMovementHistoryDrawer";
+import ModalShell from "../../ui/ModalShell";
 
 const PRIMARY_VARIANTS = {
   orange: "bg-sibs-orange hover:bg-sibs-orange-deep focus-visible:ring-sibs-orange/20",
@@ -25,7 +26,7 @@ export function CandidateModalPrimaryButton({
   return (
     <button
       {...props}
-      className={`sibs-modal-btn-primary gap-2 ${variant !== "orange" ? variantClass : ""} ${className}`}
+      className={`sibs-modal-btn-primary w-full sm:w-auto justify-center gap-2 ${variant !== "orange" ? variantClass : ""} ${className}`}
     >
       {icon}
       {children}
@@ -41,7 +42,7 @@ export function CandidateModalSecondaryButton({
   return (
     <button
       {...props}
-      className={`sibs-modal-btn-secondary gap-2 ${className}`}
+      className={`sibs-modal-btn-secondary w-full sm:w-auto justify-center gap-2 ${className}`}
     >
       {children}
     </button>
@@ -124,12 +125,7 @@ export default function CandidatePipelineModalShell({
   showMovementHistory = undefined,
   onBeforeOpenMovementHistory = null,
 }) {
-  const dialogRef = useRef(null);
-  const openerRef = useRef(null);
   const movementTriggerRef = useRef(null);
-  const onCloseRef = useRef(onClose);
-  const closeDisabledRef = useRef(closeDisabled);
-  const movementHistoryOpenRef = useRef(false);
   const [movementHistoryOpen, setMovementHistoryOpen] = useState(false);
   const [movementHistoryRefreshing, setMovementHistoryRefreshing] = useState(false);
   const [realtimeCandidate, setRealtimeCandidate] = useState(null);
@@ -137,19 +133,12 @@ export default function CandidatePipelineModalShell({
   const pipeline = useCandidatePipeline();
   const selectedCandidate = pipeline?.selectedCandidate || null;
 
-  onCloseRef.current = onClose;
-  closeDisabledRef.current = closeDisabled;
-  movementHistoryOpenRef.current = movementHistoryOpen;
-
-  const reactId = useId();
-  const titleId = `candidate-pipeline-modal-title-${String(reactId).replace(/:/g, "")}`;
-
   const candidateForMovementHistory =
     realtimeCandidate || movementHistoryCandidate || selectedCandidate || {};
 
   const movementHistoryEnabled =
     showMovementHistory === undefined
-      ? Boolean(headerContent && getCandidateIdentity(candidateForMovementHistory))
+      ? Boolean(getCandidateIdentity(candidateForMovementHistory))
       : Boolean(showMovementHistory);
 
   const movementHistoryItems = useMemo(
@@ -203,83 +192,6 @@ export default function CandidatePipelineModalShell({
     };
   }, [candidateForMovementHistory, movementHistoryEnabled]);
 
-  useEffect(() => {
-    openerRef.current = document.activeElement;
-
-    const previousBodyOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-
-    const dialog = dialogRef.current;
-    const focusableSelector =
-      'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
-
-    window.requestAnimationFrame(() => {
-      const firstFocusable = dialog?.querySelector(focusableSelector);
-      (firstFocusable || dialog)?.focus?.();
-    });
-
-    function handleKeydown(event) {
-      if (!dialog || !dialog.contains(document.activeElement)) return;
-
-      if (event.key === "Escape") {
-        if (movementHistoryOpenRef.current) {
-          event.preventDefault();
-          setMovementHistoryOpen(false);
-          window.requestAnimationFrame(() => movementTriggerRef.current?.focus?.());
-          return;
-        }
-
-        if (!closeDisabledRef.current) {
-          event.preventDefault();
-          onCloseRef.current?.();
-        }
-        return;
-      }
-
-      if (event.key !== "Tab") return;
-
-      const focusable = Array.from(dialog.querySelectorAll(focusableSelector)).filter(
-        (element) =>
-          !element.hasAttribute("disabled") &&
-          element.getAttribute("aria-hidden") !== "true" &&
-          element.getAttribute("tabindex") !== "-1",
-      );
-
-      if (focusable.length === 0) {
-        event.preventDefault();
-        dialog.focus();
-        return;
-      }
-
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-
-      if (event.shiftKey && document.activeElement === first) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault();
-        first.focus();
-      }
-    }
-
-    document.addEventListener("keydown", handleKeydown);
-
-    return () => {
-      document.removeEventListener("keydown", handleKeydown);
-      document.body.style.overflow = previousBodyOverflow;
-
-      const opener = openerRef.current;
-      if (
-        opener &&
-        typeof opener.focus === "function" &&
-        document.contains(opener)
-      ) {
-        window.requestAnimationFrame(() => opener.focus());
-      }
-    };
-  }, []);
-
   async function handleMovementHistoryToggle() {
     if (movementHistoryOpen) {
       setMovementHistoryOpen(false);
@@ -321,131 +233,66 @@ export default function CandidatePipelineModalShell({
     setMovementHistoryOpen(true);
   }
 
-  function handleBackdrop(event) {
-    if (!closeOnBackdrop || closeDisabled) return;
-    if (event.target === event.currentTarget) onClose?.();
-  }
+  const movementHistoryAction = movementHistoryEnabled ? (
+    <button
+      ref={movementTriggerRef}
+      type="button"
+      onClick={handleMovementHistoryToggle}
+      disabled={movementHistoryRefreshing}
+      aria-busy={movementHistoryRefreshing || undefined}
+      aria-expanded={movementHistoryOpen}
+      aria-label={
+        movementHistoryOpen
+          ? "Close Movement History"
+          : `Open Movement History, ${movementHistoryItems.length} records`
+      }
+      className={`inline-flex h-8 items-center justify-center gap-1.5 rounded-[10px] border px-2.5 text-[9px] font-extrabold text-white shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sibs-orange/40 2xl:h-8.5 2xl:text-[10px] ${
+        movementHistoryOpen
+          ? "border-orange-300/70 bg-white/10 shadow-[0_0_14px_rgba(255,92,40,0.16)]"
+          : "border-white/15 bg-white/[0.06] hover:border-orange-300/55 hover:bg-white/10"
+      }`}
+    >
+      <History size={12} className="text-sibs-orange" />
+      <span className="hidden sm:inline">Movement History</span>
+      <span>({movementHistoryItems.length})</span>
+    </button>
+  ) : null;
 
   return (
-    <div
-      className={`sibs-modal-blur sibs-modal-backdrop-in fixed inset-0 ${zIndex} flex h-dvh items-center justify-center px-2 py-2 font-jakarta sm:px-4 sm:py-4`}
-      onMouseDown={handleBackdrop}
-    >
-      <div
-        ref={dialogRef}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={titleId}
-        tabIndex={-1}
-        className={`sibs-modal-pop-in relative flex max-h-[88vh] w-full ${maxWidth} flex-col overflow-hidden rounded-[14px] border border-white/70 bg-white shadow-2xl max-sm:max-h-[calc(100dvh-1rem)]`}
-        onMouseDown={(event) => event.stopPropagation()}
+    <>
+      <ModalShell
+        open={true}
+        onClose={onClose}
+        title={headerContent ? null : title}
+        subtitle={headerContent ? null : subtitle}
+        icon={headerContent ? null : Icon}
+        badge={headerContent ? null : badge}
+        maxWidth={maxWidth}
+        zIndex={zIndex}
+        footer={footer}
+        closeOnBackdrop={closeOnBackdrop}
+        hideCloseButton={closeDisabled}
+        variant="navy"
+        headerActions={movementHistoryAction}
+        headerMeta={headerContent}
+        className="rounded-[14px]"
+        headerClassName="bg-sibs-navy"
+        bodyClassName="bg-sibs-surface p-3 sm:p-4 2xl:p-5"
+        closeButtonClassName="sibs-modal-close-btn"
       >
-        <header className="relative shrink-0 overflow-hidden bg-sibs-navy px-3.5 py-2.5 text-white sm:px-5 2xl:py-3">
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-white/10" />
-          <div className="relative flex items-center justify-between gap-3">
-            <div className="min-w-0 flex-1">
-              {headerContent ? (
-                <>
-                  <h2 id={titleId} className="sr-only">
-                    {title}
-                  </h2>
-                  {headerContent}
-                </>
-              ) : (
-                <div className="flex min-w-0 items-center gap-2.5 2xl:gap-3">
-                  {Icon ? (
-                    <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] border border-white/10 bg-sibs-orange text-white shadow-[0_6px_16px_rgba(255,92,40,0.28)] 2xl:h-9 2xl:w-9">
-                      <Icon size={16} />
-                    </span>
-                  ) : null}
-
-                  <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      <h2
-                        id={titleId}
-                        className="sibs-modal-title truncate text-white"
-                      >
-                        {title}
-                      </h2>
-
-                      {badge ? (
-                        <span className="rounded-full border border-white/15 bg-white/[0.09] px-2.5 py-0.5 text-[8.5px] font-extrabold uppercase tracking-[0.08em] text-white/90 2xl:text-[9px]">
-                          {badge}
-                        </span>
-                      ) : null}
-                    </div>
-
-                    {subtitle ? (
-                      <p className="sibs-modal-subtitle mt-0.5 text-white/75 truncate sm:text-clip">
-                        {subtitle}
-                      </p>
-                    ) : null}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
-              {movementHistoryEnabled ? (
-                <button
-                  ref={movementTriggerRef}
-                  type="button"
-                  onClick={handleMovementHistoryToggle}
-                  disabled={movementHistoryRefreshing}
-                  aria-busy={movementHistoryRefreshing || undefined}
-                  aria-expanded={movementHistoryOpen}
-                  aria-label={
-                    movementHistoryOpen
-                      ? "Close Movement History"
-                      : `Open Movement History, ${movementHistoryItems.length} records`
-                  }
-                  className={`inline-flex h-8 items-center justify-center gap-1.5 rounded-[10px] border px-2.5 text-[9px] font-extrabold text-white shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sibs-orange/40 2xl:h-8.5 2xl:text-[10px] ${
-                    movementHistoryOpen
-                      ? "border-orange-300/70 bg-white/10 shadow-[0_0_14px_rgba(255,92,40,0.16)]"
-                      : "border-white/15 bg-white/[0.06] hover:border-orange-300/55 hover:bg-white/10"
-                  }`}
-                >
-                  <History size={12} className="text-sibs-orange" />
-                  <span className="hidden sm:inline">Movement History</span>
-                  <span>({movementHistoryItems.length})</span>
-                </button>
-              ) : null}
-
-              <button
-                type="button"
-                onClick={onClose}
-                disabled={closeDisabled}
-                className="sibs-modal-close-btn"
-                aria-label="Close modal"
-              >
-                <X size={16} />
-              </button>
-            </div>
-          </div>
-        </header>
-
-        <div
-          data-dropdown-boundary="true"
-          className="min-h-0 flex-1 overflow-y-auto bg-sibs-surface p-3 sm:p-4 2xl:p-5 sibs-scrollbar"
-        >
+        <div data-dropdown-boundary="true">
           {children}
         </div>
+      </ModalShell>
 
-        {footer ? (
-          <footer className="shrink-0 border-t border-sibs-border bg-white px-3.5 py-2.5 shadow-[0_-8px_24px_rgba(4,44,81,0.035)] sm:px-5 2xl:py-3">
-            {footer}
-          </footer>
-        ) : null}
-
-        {movementHistoryEnabled && movementHistoryOpen ? (
-          <CandidateMovementHistoryDrawer
-            open={movementHistoryOpen}
-            candidate={candidateForMovementHistory}
-            onClose={() => setMovementHistoryOpen(false)}
-            triggerRef={movementTriggerRef}
-          />
-        ) : null}
-      </div>
-    </div>
+      {movementHistoryEnabled && movementHistoryOpen ? (
+        <CandidateMovementHistoryDrawer
+          open={movementHistoryOpen}
+          candidate={candidateForMovementHistory}
+          onClose={() => setMovementHistoryOpen(false)}
+          triggerRef={movementTriggerRef}
+        />
+      ) : null}
+    </>
   );
 }

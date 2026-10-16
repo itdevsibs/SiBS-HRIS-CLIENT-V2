@@ -979,7 +979,7 @@ export default function PositionFormModal({
         </div>
       }
       footer={
-        <div className="flex flex-wrap items-center justify-end gap-2">
+        <div className="flex flex-wrap items-center justify-end gap-2.5 sm:gap-3">
           {isRelinkMode ? (
             <>
               <button

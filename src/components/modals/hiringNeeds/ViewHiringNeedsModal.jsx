@@ -930,7 +930,7 @@ export default function ViewHiringNeedsModal({
               type="button"
               onClick={handleRelink}
               disabled={relinkLoading || !selectedJobDescriptionId}
-              className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-xl bg-sibs-orange px-4 text-xs font-extrabold text-white shadow-xs transition hover:bg-sibs-orange-dark active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-white/70 sm:w-auto"
+              className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-[10px] bg-sibs-orange px-4 text-xs font-extrabold text-white shadow-xs transition hover:bg-sibs-orange-dark active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-white/70 sm:w-auto"
             >
               {relinkLoading ? (
                 <Loader2 size={14} className="animate-spin" />
@@ -945,7 +945,7 @@ export default function ViewHiringNeedsModal({
                 type="button"
                 onClick={() => handleDecision("reject")}
                 disabled={decisionLoading}
-                className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 text-xs font-extrabold text-red-700 transition hover:bg-red-100 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+                className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-[10px] border border-red-200 bg-red-50 px-4 text-xs font-extrabold text-red-700 transition hover:bg-red-100 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
               >
                 {decisionLoading && decisionAction === "reject" ? (
                   <Loader2 size={14} className="animate-spin" />
@@ -986,7 +986,7 @@ export default function ViewHiringNeedsModal({
                   </span>
 
                   <div className="min-w-0 flex-1">
-                    <h3 className="text-xs font-extrabold text-amber-900">
+                    <h3 className="font-heading text-xs font-extrabold text-amber-900">
                       New Job Description Required
                     </h3>
                     <p className="mt-1 text-[11px] font-semibold leading-5 text-amber-800">
@@ -1171,7 +1171,7 @@ export default function ViewHiringNeedsModal({
 
             {requestRemarks ? (
               <section className="rounded-[10px] border border-indigo-100 bg-indigo-50/50 px-3 py-3">
-                <h3 className="text-[9px] font-extrabold uppercase tracking-wide text-indigo-600">
+                <h3 className="font-heading text-[9px] font-extrabold uppercase tracking-wide text-indigo-600">
                   HR/OM Remarks Context
                 </h3>
                 <p className="mt-1 whitespace-pre-line break-words text-xs font-semibold leading-5 text-sibs-muted">
@@ -1182,7 +1182,7 @@ export default function ViewHiringNeedsModal({
 
             {isDownsize && supportingFileUrl ? (
               <section className="font-jakarta">
-                <h3 className="mb-2 text-[10px] font-extrabold uppercase tracking-normal text-sibs-muted">
+                <h3 className="font-heading mb-2 text-[10px] font-extrabold uppercase tracking-normal text-sibs-muted">
                   Supporting File
                 </h3>
                 <SupportingFilePreview
@@ -1200,7 +1200,7 @@ export default function ViewHiringNeedsModal({
                 <div className="flex items-start gap-2.5">
                   <Clock size={15} className="mt-0.5 shrink-0 text-sibs-navy" />
                   <div className="min-w-0">
-                    <h3 className="text-[10px] font-extrabold uppercase tracking-normal text-sibs-muted">
+                    <h3 className="font-heading text-[10px] font-extrabold uppercase tracking-normal text-sibs-muted">
                       Approval Action
                     </h3>
                     <p className="mt-1 text-xs font-semibold leading-5 text-sibs-muted">

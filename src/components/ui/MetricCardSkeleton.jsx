@@ -48,16 +48,16 @@ export function getMetricGridColClass(columns = 6) {
     return "grid-cols-2 md:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-6";
   }
   if (columns === 5) {
-    return "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5";
+    return "grid-cols-2 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5";
   }
   if (columns === 4) {
-    return "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4";
+    return "grid-cols-2 sm:grid-cols-2 lg:grid-cols-4";
   }
   if (columns === 3) {
-    return "grid-cols-1 sm:grid-cols-3";
+    return "grid-cols-2 sm:grid-cols-3";
   }
   if (columns === 2) {
-    return "grid-cols-1 sm:grid-cols-2";
+    return "grid-cols-2 sm:grid-cols-2";
   }
   return "grid-cols-2 md:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-6";
 }

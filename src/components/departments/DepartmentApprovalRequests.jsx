@@ -11,7 +11,7 @@ import {
   XCircle,
 } from "lucide-react";
 
-import { ModalShell } from "@/components/ui";
+import { ModalShell, TableSkeletonRows } from "@/components/ui";
 
 import { formatSystemDateTime } from "@/lib/axios/dateFormatter";
 
@@ -161,87 +161,85 @@ export default function DepartmentApprovalRequests({
           </div>
 
           <span className="rounded-[10px] border border-amber-200 bg-amber-50 px-3 py-1.5 text-[10px] font-extrabold text-amber-700">
-            {safeRequests.length} pending
+            {loading ? "Loading..." : `${safeRequests.length} pending`}
           </span>
         </div>
 
-        {loading ? (
-          <div className="flex min-h-28 items-center justify-center">
-            <Loader2 className="h-6 w-6 animate-spin text-sibs-orange" />
-          </div>
-        ) : (
-          <>
-            <div className="w-full overflow-x-auto sibs-scrollbar">
-              <table className="w-full min-w-[700px] border-collapse text-left">
-                <thead className="bg-sibs-surface text-[10px] font-extrabold uppercase tracking-wide text-sibs-muted">
-                  <tr className="border-b border-sibs-border">
-                    <th scope="col" className="px-4 py-3 sm:pl-5">
-                      Department Name
-                    </th>
+        <div className="w-full overflow-x-auto sibs-scrollbar">
+          <table className="w-full min-w-[700px] border-collapse text-left">
+            <thead className="bg-sibs-surface text-[10px] font-extrabold uppercase tracking-wide text-sibs-muted">
+              <tr className="border-b border-sibs-border">
+                <th scope="col" className="px-4 py-3 sm:pl-5">
+                  Department Name
+                </th>
 
-                    <th scope="col" className="px-3 py-3">
-                      Requested By
-                    </th>
+                <th scope="col" className="px-3 py-3">
+                  Requested By
+                </th>
 
-                    <th scope="col" className="px-3 py-3">
-                      Date Requested
-                    </th>
+                <th scope="col" className="px-3 py-3">
+                  Date Requested
+                </th>
 
-                    <th scope="col" className="px-3 py-3">
-                      Status
-                    </th>
+                <th scope="col" className="px-3 py-3">
+                  Status
+                </th>
 
-                    <th scope="col" className="px-4 py-3 text-right sm:pr-5">
-                      Details
-                    </th>
+                <th scope="col" className="px-4 py-3 text-right sm:pr-5">
+                  Details
+                </th>
+              </tr>
+            </thead>
+
+            <tbody className="divide-y divide-sibs-border text-xs">
+              {loading ? (
+                <TableSkeletonRows count={3} columns={5} />
+              ) : (
+                visibleRequests.map((request) => (
+                  <tr
+                    key={request.id}
+                    onClick={() => setSelectedRequestId(request.id)}
+                    className="group cursor-pointer transition-colors hover:bg-sibs-cream-light"
+                  >
+                    <td className="max-w-[260px] px-4 py-3 font-extrabold text-sibs-navy sm:pl-5">
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          setSelectedRequestId(request.id);
+                        }}
+                        className="break-words text-left outline-none hover:text-sibs-orange focus-visible:rounded focus-visible:ring-2 focus-visible:ring-sibs-orange"
+                        aria-label={`View department approval request for ${departmentName(request)}`}
+                      >
+                        {departmentName(request)}
+                      </button>
+                    </td>
+
+                    <td className="max-w-[250px] break-words px-3 py-3 font-semibold text-sibs-secondary">
+                      {requestedBy(request)}
+                    </td>
+
+                    <td className="whitespace-nowrap px-3 py-3 font-semibold text-sibs-muted">
+                      {requestedAt(request)}
+                    </td>
+
+                    <td className="px-3 py-3">
+                      <PendingBadge />
+                    </td>
+
+                    <td className="px-4 py-3 text-right sm:pr-5">
+                      <span className="inline-flex items-center gap-1 text-[11px] font-extrabold text-sibs-navy group-hover:text-sibs-orange">
+                        <Eye className="h-3.5 w-3.5" /> View
+                      </span>
+                    </td>
                   </tr>
-                </thead>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
 
-                <tbody className="divide-y divide-sibs-border text-xs">
-                  {visibleRequests.map((request) => (
-                    <tr
-                      key={request.id}
-                      onClick={() => setSelectedRequestId(request.id)}
-                      className="group cursor-pointer transition-colors hover:bg-sibs-cream-light"
-                    >
-                      <td className="max-w-[260px] px-4 py-3 font-extrabold text-sibs-navy sm:pl-5">
-                        <button
-                          type="button"
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            setSelectedRequestId(request.id);
-                          }}
-                          className="break-words text-left outline-none hover:text-sibs-orange focus-visible:rounded focus-visible:ring-2 focus-visible:ring-sibs-orange"
-                          aria-label={`View department approval request for ${departmentName(request)}`}
-                        >
-                          {departmentName(request)}
-                        </button>
-                      </td>
-
-                      <td className="max-w-[250px] break-words px-3 py-3 font-semibold text-sibs-secondary">
-                        {requestedBy(request)}
-                      </td>
-
-                      <td className="whitespace-nowrap px-3 py-3 font-semibold text-sibs-muted">
-                        {requestedAt(request)}
-                      </td>
-
-                      <td className="px-3 py-3">
-                        <PendingBadge />
-                      </td>
-
-                      <td className="px-4 py-3 text-right sm:pr-5">
-                        <span className="inline-flex items-center gap-1 text-[11px] font-extrabold text-sibs-navy group-hover:text-sibs-orange">
-                          <Eye className="h-3.5 w-3.5" /> View
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {safeRequests.length > ROWS_PER_PAGE ? (
+        {!loading && safeRequests.length > ROWS_PER_PAGE ? (
               <div className="flex flex-wrap items-center justify-between gap-3 border-t border-sibs-border px-4 py-3 text-xs font-semibold text-sibs-muted sm:px-5">
                 <span>
                   Showing {firstRowIndex + 1}–
@@ -275,8 +273,6 @@ export default function DepartmentApprovalRequests({
                 </div>
               </div>
             ) : null}
-          </>
-        )}
       </section>
 
       <ModalShell

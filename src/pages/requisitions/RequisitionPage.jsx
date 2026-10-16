@@ -197,7 +197,7 @@ export default function RequisitionPage() {
                         placeholder="Search by title, number, department..."
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        className="h-8.5 2xl:h-10 w-full rounded-lg 2xl:rounded-xl border border-sibs-border bg-[#F8FAFC] px-3 pl-9 sibs-text-xs font-semibold text-sibs-navy outline-none transition placeholder:text-sibs-muted hover:border-sibs-orange/40 hover:bg-white focus:border-sibs-orange focus:bg-white focus:ring-2 focus:ring-sibs-orange/20"
+                        className="h-8.5 2xl:h-10 w-full rounded-lg 2xl:rounded-xl border border-sibs-border bg-sibs-canvas px-3 pl-9 sibs-text-xs font-semibold text-sibs-navy outline-none transition placeholder:text-sibs-muted hover:border-sibs-orange/40 hover:bg-white focus:border-sibs-orange focus:bg-white focus:ring-2 focus:ring-sibs-orange/20"
                       />
                     </div>
                   </div>
@@ -209,7 +209,7 @@ export default function RequisitionPage() {
                     <select
                       value={statusFilter}
                       onChange={(e) => setStatusFilter(e.target.value)}
-                      className="h-8.5 2xl:h-10 w-full rounded-lg 2xl:rounded-xl border border-sibs-border bg-[#F8FAFC] px-3 sibs-text-xs font-bold text-sibs-navy outline-none transition hover:border-sibs-orange/40 hover:bg-white focus:border-sibs-orange focus:bg-white focus:ring-2 focus:ring-sibs-orange/20"
+                      className="h-8.5 2xl:h-10 w-full rounded-lg 2xl:rounded-xl border border-sibs-border bg-sibs-canvas px-3 sibs-text-xs font-bold text-sibs-navy outline-none transition hover:border-sibs-orange/40 hover:bg-white focus:border-sibs-orange focus:bg-white focus:ring-2 focus:ring-sibs-orange/20"
                     >
                       <option value="All">All Statuses</option>
                       <option value="Approved">Approved</option>
@@ -226,7 +226,7 @@ export default function RequisitionPage() {
                     <select
                       value={departmentFilter}
                       onChange={(e) => setDepartmentFilter(e.target.value)}
-                      className="h-8.5 2xl:h-10 w-full rounded-lg 2xl:rounded-xl border border-sibs-border bg-[#F8FAFC] px-3 sibs-text-xs font-bold text-sibs-navy outline-none transition hover:border-sibs-orange/40 hover:bg-white focus:border-sibs-orange focus:bg-white focus:ring-2 focus:ring-sibs-orange/20"
+                      className="h-8.5 2xl:h-10 w-full rounded-lg 2xl:rounded-xl border border-sibs-border bg-sibs-canvas px-3 sibs-text-xs font-bold text-sibs-navy outline-none transition hover:border-sibs-orange/40 hover:bg-white focus:border-sibs-orange focus:bg-white focus:ring-2 focus:ring-sibs-orange/20"
                     >
                       <option value="All">All Departments</option>
                       {departments.map((dept) => {
@@ -345,8 +345,8 @@ export default function RequisitionPage() {
                       <col className="w-[14%]" />
                       <col className="w-[14%]" />
                     </colgroup>
-                    <thead className="sticky top-0 z-10 bg-[#F5F7FA]">
-                      <tr className="border-b border-sibs-border text-xs font-extrabold uppercase tracking-wide text-[#174A7C]">
+                    <thead className="sticky top-0 z-10 bg-sibs-canvas">
+                      <tr className="border-b border-sibs-border text-xs font-extrabold uppercase tracking-wide text-sibs-navy">
                         <th className="px-4 py-3.5 text-left">Requisition ID</th>
                         <th className="px-4 py-3.5 text-left">Position Title</th>
                         <th className="px-4 py-3.5 text-left">Department</th>
@@ -450,7 +450,7 @@ export default function RequisitionPage() {
 
 function StatCard({ title, value, tone = "navy", index = 0 }) {
   const tones = {
-    navy: "text-[#042C51]",
+    navy: "text-sibs-navy",
     emerald: "text-emerald-700",
     rose: "text-rose-700",
   };
@@ -465,7 +465,7 @@ function StatCard({ title, value, tone = "navy", index = 0 }) {
     >
       <div className="flex h-full items-start justify-between">
         <div className="flex flex-col justify-between h-full min-w-0">
-          <p className="sibs-text-micro font-extrabold uppercase text-[#98A2B3] line-clamp-1 truncate">
+          <p className="sibs-text-micro font-extrabold uppercase text-sibs-muted line-clamp-1 truncate">
             {title}
           </p>
           <p

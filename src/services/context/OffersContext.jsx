@@ -29,7 +29,6 @@ import {
 import {
   buildPipelineOfferPayload,
   getCandidateKey,
-  isOfferedCandidate,
   normalizePipelineCandidateToOffer,
 } from "../../lib/utils/offers/offerHelpers";
 
@@ -301,10 +300,6 @@ function normalizeTerminalOfferStatus(value = "") {
   if (key === "rejected" || key === "declined") return "Rejected";
 
   return "";
-}
-
-function isTerminalOfferApprovalStatus(value = "") {
-  return Boolean(normalizeTerminalOfferStatus(value));
 }
 
 function isAcceptedOfferRecord(offer = {}) {

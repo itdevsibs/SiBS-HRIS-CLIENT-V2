@@ -161,29 +161,29 @@ export default function LoginPage() {
   };
 
   return (
-    <div style={styles.page}>
-      <div style={styles.card}>
-        <div style={styles.logoBox}>
+    <div className="flex min-h-screen w-full items-center justify-center p-6 bg-gradient-to-br from-sibs-navy via-slate-900 to-sibs-orange font-jakarta">
+      <div className="w-full max-w-md rounded-2xl border border-white/20 bg-white/10 p-8 shadow-2xl backdrop-blur-md">
+        <div className="mb-6 flex items-center justify-center gap-3">
           <img
             src="/SiBS_Login_Logo.svg"
             alt="SiBS HRIS"
             draggable={false}
-            style={styles.logoImage}
+            className="block h-auto w-full max-w-[300px] select-none object-contain"
           />
         </div>
 
         {showError && (
-          <div style={styles.errorBox}>
-            <AlertCircle size={18} color="#fecaca" />
+          <div className="mb-4 flex items-start gap-3 rounded-xl border border-rose-300/40 bg-rose-500/20 p-3.5 text-white">
+            <AlertCircle size={18} className="mt-0.5 shrink-0 text-rose-200" />
             <div>
-              <p style={styles.errorTitle}>Login Error</p>
-              <p style={styles.errorText}>{errorMessage}</p>
+              <p className="m-0 text-sm font-semibold text-rose-100">Login Error</p>
+              <p className="m-0 text-sm text-rose-50">{errorMessage}</p>
             </div>
           </div>
         )}
 
         <form onSubmit={handleLogin}>
-          <label style={styles.label}>
+          <label className="mb-4 block text-sm font-semibold text-white/85">
             SIBS ID
             <input
               type="text"
@@ -195,13 +195,13 @@ export default function LoginPage() {
                 setSibsId(e.target.value);
                 if (showError) clearError();
               }}
-              style={styles.input}
+              className="mt-1.5 w-full rounded-lg border border-white/20 bg-white/20 px-4 py-2.5 text-base text-white outline-none transition placeholder:text-white/40 focus:border-white/50 focus:ring-2 focus:ring-white/20"
             />
           </label>
 
-          <label style={styles.label}>
+          <label className="mb-4 block text-sm font-semibold text-white/85">
             Password
-            <div style={styles.passwordField}>
+            <div className="relative">
               <input
                 type={showPassword ? "text" : "password"}
                 name="password"
@@ -212,14 +212,14 @@ export default function LoginPage() {
                   setPassword(e.target.value);
                   if (showError) clearError();
                 }}
-                style={{ ...styles.input, ...styles.passwordInput }}
+                className="mt-1.5 w-full rounded-lg border border-white/20 bg-white/20 pl-4 pr-12 py-2.5 text-base text-white outline-none transition placeholder:text-white/40 focus:border-white/50 focus:ring-2 focus:ring-white/20"
               />
 
               <button
                 type="button"
                 onClick={() => setShowPassword((current) => !current)}
                 disabled={loading}
-                style={styles.passwordToggle}
+                className="absolute right-2 top-1/2 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-md text-white/90 transition hover:bg-white/10"
                 aria-label={showPassword ? "Hide password" : "Show password"}
                 title={showPassword ? "Hide password" : "Show password"}
               >
@@ -228,7 +228,11 @@ export default function LoginPage() {
             </div>
           </label>
 
-          <button type="submit" disabled={loading} style={styles.button}>
+          <button
+            type="submit"
+            disabled={loading}
+            className="mt-2 w-full rounded-lg bg-sibs-orange py-3 text-base font-extrabold text-white transition hover:bg-sibs-button-hover disabled:cursor-not-allowed disabled:opacity-50"
+          >
             {loading ? "Logging in..." : "Login"}
           </button>
         </form>
@@ -236,118 +240,3 @@ export default function LoginPage() {
     </div>
   );
 }
-
-const styles = {
-  page: {
-    width: "100vw",
-    minHeight: "100vh",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: "24px",
-    background:
-      "linear-gradient(135deg, #1e4d7b 0%, #3b5f7f 45%, #f05a28 100%)",
-    boxSizing: "border-box",
-  },
-  card: {
-    width: "100%",
-    maxWidth: "448px",
-    padding: "32px",
-    borderRadius: "16px",
-    border: "1px solid rgba(255,255,255,0.2)",
-    background: "rgba(255,255,255,0.1)",
-    backdropFilter: "blur(16px)",
-    boxShadow: "0 25px 50px rgba(0,0,0,0.35)",
-    boxSizing: "border-box",
-  },
-  logoBox: {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: "12px",
-    marginBottom: "24px",
-  },
-  logoImage: {
-    display: "block",
-    width: "100%",
-    maxWidth: "300px",
-    height: "auto",
-    objectFit: "contain",
-    userSelect: "none",
-    WebkitUserDrag: "none",
-  },
-  label: {
-    display: "block",
-    color: "rgba(255,255,255,0.85)",
-    fontSize: "14px",
-    marginBottom: "16px",
-  },
-  input: {
-    width: "100%",
-    marginTop: "6px",
-    padding: "11px 16px",
-    borderRadius: "8px",
-    border: "1px solid rgba(255,255,255,0.2)",
-    background: "rgba(255,255,255,0.2)",
-    color: "white",
-    outline: "none",
-    fontSize: "15px",
-    boxSizing: "border-box",
-  },
-  passwordField: {
-    position: "relative",
-  },
-  passwordInput: {
-    paddingRight: "46px",
-  },
-  passwordToggle: {
-    position: "absolute",
-    right: "10px",
-    top: "50%",
-    transform: "translateY(-38%)",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    width: "30px",
-    height: "30px",
-    padding: 0,
-    border: "none",
-    borderRadius: "6px",
-    background: "transparent",
-    color: "rgba(255,255,255,0.9)",
-    cursor: "pointer",
-  },
-  button: {
-    width: "100%",
-    marginTop: "8px",
-    padding: "12px",
-    borderRadius: "8px",
-    border: "none",
-    background: "#f97316",
-    color: "white",
-    fontWeight: "600",
-    cursor: "pointer",
-  },
-  errorBox: {
-    display: "flex",
-    gap: "12px",
-    alignItems: "flex-start",
-    marginBottom: "16px",
-    padding: "12px 16px",
-    borderRadius: "12px",
-    border: "1px solid #fca5a5",
-    background: "rgba(239,68,68,0.18)",
-    color: "white",
-  },
-  errorTitle: {
-    margin: 0,
-    fontSize: "14px",
-    fontWeight: "600",
-    color: "#fee2e2",
-  },
-  errorText: {
-    margin: 0,
-    fontSize: "14px",
-    color: "#fef2f2",
-  },
-};

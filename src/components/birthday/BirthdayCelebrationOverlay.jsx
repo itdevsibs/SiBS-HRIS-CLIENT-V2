@@ -116,7 +116,7 @@ export default function BirthdayCelebrationOverlay({ firstName = "", onDismiss }
     <div
       role="status"
       aria-live="polite"
-      className={`fixed inset-0 z-[9999] flex items-center justify-center overflow-hidden bg-[#042C51]/90 p-4 font-jakarta backdrop-blur-md transition-opacity ${
+      className={`fixed inset-0 z-[9999] flex items-center justify-center overflow-hidden bg-sibs-navy/90 p-4 font-jakarta backdrop-blur-md transition-opacity ${
         isExiting ? "sibs-birthday-overlay-out" : "sibs-birthday-overlay-in"
       }`}
     >
@@ -132,10 +132,10 @@ export default function BirthdayCelebrationOverlay({ firstName = "", onDismiss }
         </Suspense>
       ) : (
         <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
-          <div className="absolute top-12 left-12 h-3 w-3 rounded-full bg-[#FF5C28] opacity-70" />
-          <div className="absolute top-24 right-16 h-4 w-4 rounded-sm bg-[#FFB020] opacity-70" />
-          <div className="absolute bottom-20 left-20 h-4 w-4 rounded-full bg-[#38BDF8] opacity-70" />
-          <div className="absolute bottom-16 right-24 h-3 w-3 rounded-sm bg-[#34D399] opacity-70" />
+          <div className="absolute top-12 left-12 h-3 w-3 rounded-full bg-sibs-orange opacity-70" />
+          <div className="absolute top-24 right-16 h-4 w-4 rounded-sm bg-amber-400 opacity-70" />
+          <div className="absolute bottom-20 left-20 h-4 w-4 rounded-full bg-sky-400 opacity-70" />
+          <div className="absolute bottom-16 right-24 h-3 w-3 rounded-sm bg-emerald-400 opacity-70" />
         </div>
       )}
 
@@ -195,7 +195,7 @@ export default function BirthdayCelebrationOverlay({ firstName = "", onDismiss }
               transform: `translate(${btnPos.x}px, ${btnPos.y}px)`,
               transition: "transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1)",
             }}
-            className="inline-flex h-13 items-center justify-center whitespace-nowrap rounded-2xl bg-gradient-to-r from-[#FF5C28] via-[#FF7A45] to-[#FF5C28] px-9 text-base font-black text-white shadow-[0_15px_30px_rgba(255,92,40,0.6)] cursor-pointer transition active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+            className="inline-flex h-13 items-center justify-center whitespace-nowrap rounded-2xl bg-gradient-to-r from-sibs-orange via-orange-400 to-sibs-orange px-9 text-base font-black text-white shadow-[0_15px_30px_rgba(255,92,40,0.6)] cursor-pointer transition active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
           >
             {buttonLabel}
           </button>

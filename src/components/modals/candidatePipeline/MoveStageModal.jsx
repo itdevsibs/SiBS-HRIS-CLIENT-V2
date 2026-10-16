@@ -43,7 +43,7 @@ const MoveStageModal = ({
   }
 
   const footer = (
-    <div className="flex flex-col-reverse justify-end gap-2 sm:flex-row">
+    <div className="flex flex-col-reverse justify-end gap-2.5 sm:gap-3 sm:flex-row">
       <CandidateModalSecondaryButton
         type="button"
         onClick={onClose}
@@ -81,7 +81,7 @@ const MoveStageModal = ({
       zIndex="z-[10001]"
       footer={footer}
     >
-      <div className="space-y-2.5 2xl:space-y-3.5">
+      <div className="space-y-2.5 2xl:space-y-3.5 font-jakarta">
         <CandidateModalSummary
           candidate={candidate}
           stage={candidate.currentStage}

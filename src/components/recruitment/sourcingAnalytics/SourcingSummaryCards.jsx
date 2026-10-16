@@ -131,14 +131,14 @@ export default function SourcingSummaryCards({
       <MetricGridSkeleton
         count={5}
         labels={metricConfig.map((item) => item.title)}
-        className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5"
+        className="grid grid-cols-2 gap-2.5 2xl:gap-3 sm:grid-cols-2 xl:grid-cols-5"
         ariaLabel="Loading sourcing analytics metrics"
       />
     );
   }
 
   return (
-    <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
+    <section className="grid grid-cols-2 gap-2.5 2xl:gap-3 sm:grid-cols-2 xl:grid-cols-5">
       {metricConfig.map((item, index) => (
         <MetricCard
           key={item.key}

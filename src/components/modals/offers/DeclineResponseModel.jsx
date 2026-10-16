@@ -24,7 +24,7 @@ export default function DeclineResponseModal({
       className="rounded-[14px]"
       bodyClassName="space-y-4 p-5 font-jakarta"
       footer={
-        <div className="flex justify-end gap-2">
+        <div className="flex justify-end gap-2.5 sm:gap-3">
           <button
             type="button"
             onClick={onClose}

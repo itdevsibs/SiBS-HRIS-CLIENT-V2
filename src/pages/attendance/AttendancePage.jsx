@@ -164,7 +164,7 @@ export default function AttendancePage() {
                   "Computed Work Hours",
                 ]}
                 ariaLabel="Loading attendance metrics"
-                className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4"
+                className="grid grid-cols-2 gap-2.5 2xl:gap-3 sm:grid-cols-2 lg:grid-cols-4"
               />
               <section
                 className="sibs-page-card-in sibs-card overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-xs font-jakarta"

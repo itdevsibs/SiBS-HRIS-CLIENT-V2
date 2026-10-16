@@ -1391,7 +1391,7 @@ export default function KronosAttendancePage() {
                 </p>
               </div>
 
-              <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              <div className="mt-4 grid grid-cols-2 gap-2.5 2xl:gap-3 sm:grid-cols-2 xl:grid-cols-4">
                 <StatCard
                   title="Loaded Attendance"
                   value={loading ? "..." : formatNumber(pageStats.totalLoaded)}

@@ -134,9 +134,9 @@ export default function OnlineAssessmentPage() {
   }
 
   return (
-    <main className="fixed inset-0 z-[99999] min-h-screen overflow-y-auto bg-[#F5F8FB] px-4 py-8 font-['Plus_Jakarta_Sans'] sm:px-6 lg:px-8">
+    <main className="fixed inset-0 z-[99999] min-h-screen overflow-y-auto bg-sibs-canvas px-4 py-8 font-['Plus_Jakarta_Sans'] sm:px-6 lg:px-8">
       <div className="mx-auto w-full max-w-3xl">
-        <section className="overflow-hidden rounded-3xl border border-[#D9E2EC] bg-white shadow-sm">
+        <section className="overflow-hidden rounded-3xl border border-sibs-border bg-white shadow-sm">
           <div className="bg-sibs-primary-1 px-6 py-7 text-white sm:px-8">
             <div className="flex items-center gap-3">
               <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/15">
@@ -196,12 +196,12 @@ export default function OnlineAssessmentPage() {
               </div>
             ) : (
               <form onSubmit={handleSubmitAssessment} className="space-y-6">
-                <div className="rounded-2xl border border-[#E6ECF2] bg-[#F8FAFC] p-5">
+                <div className="rounded-2xl border border-sibs-border bg-sibs-canvas p-5">
                   <p className="text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
                     Candidate
                   </p>
 
-                  <h2 className="mt-2 text-xl font-extrabold text-[#101828]">
+                  <h2 className="mt-2 text-xl font-extrabold text-sibs-primary-1">
                     {candidate?.name || candidate?.candidateName || "Candidate"}
                   </h2>
 
@@ -214,7 +214,7 @@ export default function OnlineAssessmentPage() {
                       <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-tertiary-5">
                         Candidate ID
                       </p>
-                      <p className="mt-1 break-words text-sm font-extrabold text-[#101828]">
+                      <p className="mt-1 break-words text-sm font-extrabold text-sibs-primary-1">
                         {candidate?.candidateId || candidateId}
                       </p>
                     </div>
@@ -223,7 +223,7 @@ export default function OnlineAssessmentPage() {
                       <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-tertiary-5">
                         Assessment Status
                       </p>
-                      <p className="mt-1 text-sm font-extrabold text-[#101828]">
+                      <p className="mt-1 text-sm font-extrabold text-sibs-primary-1">
                         {candidate?.assessmentStatus || "Not Take"}
                       </p>
                     </div>
@@ -240,7 +240,7 @@ export default function OnlineAssessmentPage() {
                     onChange={(event) => setRemarks(event.target.value)}
                     rows={6}
                     placeholder="Type your confirmation or assessment notes here..."
-                    className="mt-2 w-full resize-none rounded-2xl border border-[#D6DEE8] bg-white px-4 py-3 text-sm font-semibold text-[#344054] outline-none transition placeholder:text-slate-400 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+                    className="mt-2 w-full resize-none rounded-2xl border border-sibs-border-subtle bg-white px-4 py-3 text-sm font-semibold text-sibs-text-secondary outline-none transition placeholder:text-slate-400 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
                   />
                 </label>
 

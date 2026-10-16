@@ -69,15 +69,15 @@ function getJdStatusClass(status) {
       return "border-emerald-200 bg-emerald-50 text-emerald-700";
 
     case "For Approval":
-      return "border-[#FFBFA8] bg-[#FFF3ED] text-sibs-primary-2";
+      return "border-sibs-orange/30 bg-sibs-orange-light text-sibs-primary-2";
 
     case "New Job Description":
     case "New JD":
     case "Draft":
-      return "border-[#B7D4FF] bg-[#EEF6FF] text-[#1454D9]";
+      return "border-blue-200 bg-blue-50 text-blue-700";
 
     case "For Revision":
-      return "border-[#F6C84C] bg-[#FFF8E6] text-[#9A6400]";
+      return "border-amber-200 bg-amber-50 text-amber-700";
 
     case "Returned for Revision":
     case "Rejected":
@@ -86,7 +86,7 @@ function getJdStatusClass(status) {
 
     case "Archived":
     case "Archived JD":
-      return "border-[#D6DEE8] bg-[#F8FAFC] text-[#475467]";
+      return "border-sibs-border-subtle bg-sibs-canvas text-sibs-text-secondary";
 
     default:
       return "border-gray-200 bg-gray-50 text-gray-600";
@@ -204,7 +204,7 @@ function JobDescriptionMobileCard({ item, onView }) {
     <button
       type="button"
       onClick={onView}
-      className="w-full rounded-xl border border-[#E6ECF2] bg-white p-4 text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-sibs-primary-1/40 hover:bg-[#F8FAFC] hover:shadow-md active:scale-[0.99]"
+      className="w-full rounded-xl border border-sibs-border bg-white p-4 text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-sibs-primary-1/40 hover:bg-sibs-canvas hover:shadow-md active:scale-[0.99]"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
@@ -212,7 +212,7 @@ function JobDescriptionMobileCard({ item, onView }) {
             {item.jdCode || "—"}
           </p>
 
-          <h3 className="mt-1 text-sm font-bold text-[#101828]">
+          <h3 className="mt-1 text-sm font-bold text-sibs-primary-1">
             {item.roleTitle || "—"}
           </h3>
 
@@ -225,22 +225,22 @@ function JobDescriptionMobileCard({ item, onView }) {
       </div>
 
       <div className="mt-4 grid grid-cols-2 gap-2">
-        <div className="rounded-lg bg-[#F8FAFC] p-3">
+        <div className="rounded-lg bg-sibs-canvas p-3">
           <p className="text-[10px] font-bold uppercase text-sibs-tertiary-5">
             Owner
           </p>
 
-          <p className="mt-1 text-xs font-bold text-[#344054]">
+          <p className="mt-1 text-xs font-bold text-sibs-text-secondary">
             {item.owner || "—"}
           </p>
         </div>
 
-        <div className="rounded-lg bg-[#F8FAFC] p-3">
+        <div className="rounded-lg bg-sibs-canvas p-3">
           <p className="text-[10px] font-bold uppercase text-sibs-tertiary-5">
             Linked Req.
           </p>
 
-          <p className="mt-1 text-xs font-bold text-[#344054]">
+          <p className="mt-1 text-xs font-bold text-sibs-text-secondary">
             {item.linkedHiringRequirement || "—"}
           </p>
         </div>
@@ -248,7 +248,7 @@ function JobDescriptionMobileCard({ item, onView }) {
 
       <div className="mt-3 text-xs font-semibold text-sibs-tertiary-5">
         Latest Revision:{" "}
-        <span className="font-bold text-[#344054]">
+        <span className="font-bold text-sibs-text-secondary">
           {latestRevision
             ? `${formatDate(latestRevision.revisedDate)} by ${
                 latestRevision.revisedBy || "—"
@@ -290,7 +290,7 @@ function FilterDropdown({
 
   return (
     <div ref={dropdownRef} className={`relative ${zIndex}`}>
-      <label className="mb-1 block text-sm font-bold text-[#101828]">
+      <label className="mb-1 block text-sm font-bold text-sibs-primary-1">
         {label}
       </label>
 
@@ -308,7 +308,7 @@ function FilterDropdown({
           }}
           placeholder={placeholder}
           autoComplete="off"
-          className="h-12 w-full rounded-xl border border-[#D0D5DD] bg-white px-4 pr-11 text-sm font-bold text-[#344054] outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+          className="h-12 w-full rounded-xl border border-sibs-border-subtle bg-white px-4 pr-11 text-sm font-bold text-sibs-text-secondary outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
         />
 
         <ChevronDown
@@ -338,8 +338,8 @@ function FilterDropdown({
                   }}
                   className={`block w-full px-4 py-3 text-left text-sm transition ${
                     selected
-                      ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
-                      : "text-[#344054] hover:bg-[#F8FAFC]"
+                      ? "bg-sibs-canvas font-bold text-sibs-primary-1"
+                      : "text-sibs-text-secondary hover:bg-sibs-canvas"
                   }`}
                 >
                   <span className="block truncate">{option.label}</span>
@@ -464,13 +464,13 @@ const JobDescriptionTable = ({ jobDescriptionList = [], onView }) => {
   }
 
   return (
-    <div className="flex h-[calc(100dvh-220px)] flex-col overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white shadow-sm">
-      <div className="shrink-0 border-b border-[#E6ECF2]">
+    <div className="flex h-[calc(100dvh-220px)] flex-col overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-sm">
+      <div className="shrink-0 border-b border-sibs-border">
         <section className="overflow-visible rounded-t-2xl bg-white">
           <div className="p-4 sm:p-5">
             <div className="grid grid-cols-1 gap-3 xl:grid-cols-[1.4fr_0.5fr_0.5fr_auto] xl:items-end">
               <div>
-                <label className="mb-1 block text-sm font-bold text-[#101828]">
+                <label className="mb-1 block text-sm font-bold text-sibs-primary-1">
                   Search
                 </label>
 
@@ -485,7 +485,7 @@ const JobDescriptionTable = ({ jobDescriptionList = [], onView }) => {
                     value={searchInput}
                     onChange={(e) => setSearchInput(e.target.value)}
                     placeholder="Search JD, role, account, owner..."
-                    className="h-12 w-full rounded-xl border border-[#D0D5DD] bg-white px-4 pl-11 text-sm font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+                    className="h-12 w-full rounded-xl border border-sibs-border-subtle bg-white px-4 pl-11 text-sm font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
                   />
                 </div>
               </div>
@@ -530,7 +530,7 @@ const JobDescriptionTable = ({ jobDescriptionList = [], onView }) => {
                 type="button"
                 onClick={handleClearFilters}
                 disabled={!hasActiveFilters}
-                className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC] hover:shadow-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-sibs-border-subtle bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:bg-sibs-canvas hover:shadow-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <RotateCcw size={17} />
                 Clear
@@ -557,7 +557,7 @@ const JobDescriptionTable = ({ jobDescriptionList = [], onView }) => {
                 ))}
               </div>
             ) : (
-              <div className="rounded-xl border border-[#E6ECF2] bg-white px-5 py-10 text-center text-sm font-bold text-gray-500">
+              <div className="rounded-xl border border-sibs-border bg-white px-5 py-10 text-center text-sm font-bold text-gray-500">
                 No job description records found.
               </div>
             )}
@@ -566,9 +566,9 @@ const JobDescriptionTable = ({ jobDescriptionList = [], onView }) => {
 
         <div className="hidden h-full overflow-hidden rounded-2xl bg-white lg:block">
           <div className="thin-scroll h-full overflow-auto">
-            <table className="w-full min-w-[980px] border-separate border-spacing-0 overflow-hidden rounded-2xl border border-[#D9E2EC] text-left text-sm">
+            <table className="w-full min-w-[980px] border-separate border-spacing-0 overflow-hidden rounded-2xl border border-sibs-border text-left text-sm">
               <thead>
-                <tr className="bg-[#F5F7FA] text-[12px] font-extrabold uppercase tracking-wide text-[#174A7C]">
+                <tr className="bg-sibs-canvas text-[12px] font-extrabold uppercase tracking-wide text-sibs-navy">
                   <th className="px-5 py-4 first:rounded-tl-2xl">
                     Job Title
                   </th>
@@ -591,37 +591,37 @@ const JobDescriptionTable = ({ jobDescriptionList = [], onView }) => {
                     return (
                       <tr
                         key={item.id}
-                        className="transition hover:bg-[#F8FAFC]"
+                        className="transition hover:bg-sibs-canvas"
                       >
-                        <td className="border-b border-[#E6ECF2] px-5 py-4 text-[13px] font-semibold text-[#344054]">
+                        <td className="border-b border-sibs-border px-5 py-4 text-[13px] font-semibold text-sibs-text-secondary">
                           {item.roleTitle || "—"}
                         </td>
 
-                        <td className="border-b border-[#E6ECF2] px-5 py-4 text-[13px] font-semibold text-[#344054]">
+                        <td className="border-b border-sibs-border px-5 py-4 text-[13px] font-semibold text-sibs-text-secondary">
                           {item.jdCode || "—"}
                         </td>
 
-                        <td className="border-b border-[#E6ECF2] px-5 py-4 text-[13px] font-semibold text-[#344054]">
+                        <td className="border-b border-sibs-border px-5 py-4 text-[13px] font-semibold text-sibs-text-secondary">
                           {item.department || "—"}
                         </td>
 
-                        <td className="border-b border-[#E6ECF2] px-5 py-4 text-center">
+                        <td className="border-b border-sibs-border px-5 py-4 text-center">
                           <JdStatusBadge status={realStatus} />
                         </td>
 
-                        <td className="border-b border-[#E6ECF2] px-5 py-4 text-center text-[13px] font-semibold text-[#344054]">
+                        <td className="border-b border-sibs-border px-5 py-4 text-center text-[13px] font-semibold text-sibs-text-secondary">
                           {getVersion(item)}
                         </td>
 
-                        <td className="border-b border-[#E6ECF2] px-5 py-4 text-[13px] font-semibold text-[#344054]">
+                        <td className="border-b border-sibs-border px-5 py-4 text-[13px] font-semibold text-sibs-text-secondary">
                           {formatDate(getLastApproved(item))}
                         </td>
 
-                        <td className="border-b border-[#E6ECF2] px-5 py-4 text-center">
+                        <td className="border-b border-sibs-border px-5 py-4 text-center">
                           <button
                             type="button"
                             onClick={() => handleOpenFullPageView(item)}
-                            className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-4 py-2 text-xs font-bold text-sibs-primary-1 transition hover:cursor-pointer hover:border-sibs-primary-1 hover:bg-sibs-primary-1/5 hover:shadow-sm active:scale-[0.98]"
+                            className="inline-flex items-center justify-center gap-2 rounded-xl border border-sibs-border bg-white px-4 py-2 text-xs font-bold text-sibs-primary-1 transition hover:cursor-pointer hover:border-sibs-primary-1 hover:bg-sibs-primary-1/5 hover:shadow-sm active:scale-[0.98]"
                           >
                             <Eye size={15} />
                             Preview
@@ -634,7 +634,7 @@ const JobDescriptionTable = ({ jobDescriptionList = [], onView }) => {
                   <tr>
                     <td
                       colSpan={7}
-                      className="border-b border-[#E6ECF2] px-5 py-12 text-center text-sm font-bold text-gray-500"
+                      className="border-b border-sibs-border px-5 py-12 text-center text-sm font-bold text-gray-500"
                     >
                       No job description records found.
                     </td>

@@ -5,29 +5,7 @@ import { X } from "lucide-react";
 const FOCUSABLE_SELECTOR =
   'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
-let activeScrollLockCount = 0;
-let savedBodyOverflow = "";
-let savedHtmlOverflow = "";
-
-function lockBodyScroll() {
-  if (activeScrollLockCount === 0) {
-    savedBodyOverflow = document.body.style.overflow;
-    savedHtmlOverflow = document.documentElement.style.overflow;
-    document.body.style.overflow = "hidden";
-    document.documentElement.style.overflow = "hidden";
-  }
-  activeScrollLockCount += 1;
-}
-
-function unlockBodyScroll() {
-  activeScrollLockCount = Math.max(0, activeScrollLockCount - 1);
-  if (activeScrollLockCount === 0) {
-    document.body.style.overflow = savedBodyOverflow;
-    document.documentElement.style.overflow = savedHtmlOverflow;
-    savedBodyOverflow = "";
-    savedHtmlOverflow = "";
-  }
-}
+import { lockBodyScroll, unlockBodyScroll } from "../../lib/utils/modalScrollLock";
 
 /**
  * Universal ModalShell component
@@ -313,7 +291,7 @@ export default function ModalShell({
           >
             {footerMeta && <div className="min-w-0 flex-1">{footerMeta}</div>}
             {footer && (
-              <div className="flex flex-wrap items-center justify-end gap-2.5">
+              <div className="flex w-full flex-wrap items-center justify-end gap-2.5 sm:w-auto">
                 {footer}
               </div>
             )}

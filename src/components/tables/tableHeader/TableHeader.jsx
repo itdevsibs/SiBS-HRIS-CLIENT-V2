@@ -23,7 +23,7 @@ const TableHeader = ({ tableEntity }) => {
   } = header || {};
 
   return (
-    <div className="border-b border-[#DDE6F0] bg-white px-3 py-4 sm:px-4">
+    <div className="border-b border-sibs-border bg-white px-3 py-4 sm:px-4">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="min-w-0">
           {title && (
@@ -51,7 +51,7 @@ const TableHeader = ({ tableEntity }) => {
               onChange={(event) => setSearchInput(event.target.value)}
               onKeyDown={handleSearchKeyDown}
               placeholder={searchPlaceholder}
-              className="h-12 w-full rounded-xl border border-[#DDE6F0] bg-white pl-10 pr-4 text-sm font-medium text-sibs-primary-1 outline-none transition placeholder:text-[#8C98AA] focus:border-sibs-orange focus:ring-4 focus:ring-sibs-orange/10"
+              className="h-12 w-full rounded-xl border border-sibs-border bg-white pl-10 pr-4 text-sm font-medium text-sibs-primary-1 outline-none transition placeholder:text-slate-400 focus:border-sibs-orange focus:ring-4 focus:ring-sibs-orange/10"
             />
           </div>
 

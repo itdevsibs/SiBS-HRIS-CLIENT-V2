@@ -273,7 +273,7 @@ export default function WeeklyReportDetailsModal({
               </button>
             </div>
 
-            <div className="flex flex-col-reverse gap-2 sm:flex-row">
+            <div className="flex flex-col-reverse gap-2.5 sm:gap-3 sm:flex-row">
               <button
                 type="button"
                 onClick={onClose}
@@ -294,7 +294,7 @@ export default function WeeklyReportDetailsModal({
             </div>
           </div>
         }
-        footerClassName="shrink-0 border-t border-sibs-border bg-white rounded-b-[14px] px-3.5 py-2 sm:px-4 2xl:px-6 2xl:py-3"
+        footerClassName="shrink-0 border-t border-sibs-border bg-sibs-surface rounded-b-[14px] px-5 py-3.5 2xl:px-6 2xl:py-4"
       >
         <div className="space-y-3 2xl:space-y-4">
           <div className="grid grid-cols-1 gap-3 2xl:gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(320px,0.6fr)]">

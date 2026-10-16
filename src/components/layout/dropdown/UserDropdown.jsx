@@ -289,7 +289,7 @@ export default function UserDropdown({
           <div
             ref={dropdownRef}
             role="menu"
-            className="fixed z-[2147483000] origin-top-right overflow-hidden rounded-xl border border-[#D7E0E9] bg-white shadow-[0_18px_50px_rgba(4,44,81,0.20)] animate-[sibsUserDropdownOpen_180ms_ease-out_both]"
+            className="fixed z-[2147483000] origin-top-right overflow-hidden rounded-xl border border-sibs-border-subtle bg-white shadow-[0_18px_50px_rgba(4,44,81,0.20)] animate-[sibsUserDropdownOpen_180ms_ease-out_both]"
             style={{
               top: dropdownPosition.top,
               left: dropdownPosition.left,
@@ -410,7 +410,7 @@ export default function UserDropdown({
         typeof document !== "undefined" &&
         createPortal(
           <div
-            className="pointer-events-none fixed z-[2147483001] h-[152px] w-[152px] overflow-hidden rounded-2xl border border-[#D7E0E9] bg-white p-1.5 shadow-[0_18px_50px_rgba(4,44,81,0.28)]"
+            className="pointer-events-none fixed z-[2147483001] h-[152px] w-[152px] overflow-hidden rounded-2xl border border-sibs-border-subtle bg-white p-1.5 shadow-[0_18px_50px_rgba(4,44,81,0.28)]"
             style={{
               top: avatarPreviewPosition.top,
               left: avatarPreviewPosition.left,
@@ -470,9 +470,9 @@ function DropdownItem({
       role="menuitem"
       onClick={onClick}
       disabled={disabled}
-      className="flex min-h-[48px] 2xl:min-h-[58px] w-full items-center gap-2.5 2xl:gap-3 rounded-lg px-2.5 2xl:px-3 py-1.5 2xl:py-2.5 text-left text-sibs-primary-1 transition hover:bg-[#F1F5F9] disabled:cursor-not-allowed disabled:opacity-60"
+      className="flex min-h-[48px] 2xl:min-h-[58px] w-full items-center gap-2.5 2xl:gap-3 rounded-lg px-2.5 2xl:px-3 py-1.5 2xl:py-2.5 text-left text-sibs-primary-1 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
     >
-      <span className="flex h-8 w-8 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-lg bg-[#EAF0F7] text-sibs-primary-1">
+      <span className="flex h-8 w-8 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-lg bg-sibs-canvas text-sibs-primary-1">
         {loading ? (
           <Loader2 size={15} className="animate-spin" />
         ) : (

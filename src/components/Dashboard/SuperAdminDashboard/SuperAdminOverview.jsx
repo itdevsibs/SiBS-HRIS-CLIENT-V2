@@ -15,7 +15,7 @@ export default function SuperAdminOverview({
 }) {
   return (
     <div className="space-y-4 2xl:space-y-5 font-jakarta">
-      <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 xl:grid-cols-4 2xl:gap-3.5">
+      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-2 xl:grid-cols-4 2xl:gap-3.5">
         {cards.map((card, index) => {
           const tone = OVERVIEW_CARD_TONES[card.label] || "navy";
           return (
