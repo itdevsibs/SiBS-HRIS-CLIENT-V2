@@ -1419,26 +1419,15 @@ export function CandidatePipelineProvider({ children }) {
   useEffect(() => {
     if (!isAuthenticated) return undefined;
 
-    const isPipelinePage = () =>
+    const isPipelinePageVisible = () =>
+      typeof document !== "undefined" &&
+      document.visibilityState === "visible" &&
       window.location.pathname.startsWith("/recruitment/candidate-pipeline");
 
-    const isPipelinePageVisible = () =>
-      isPipelinePage() && document.visibilityState === "visible";
-
-    // A server-pushed change is not a timer-based poll. Accept it even when
-    // this browser tab is hidden: local and production have separate Socket.IO
-    // servers, and the shared-database bridge relays changes to each server.
-    // Dropping the event while hidden was forcing the other tab to wait for a
-    // visibility/focus refresh or a throttled 15-second interval.
-    const syncFromServerEvent = () => {
-      if (isPipelinePage()) {
-        void refreshCandidatePipeline({ silent: true });
-      }
-    };
-
-    // Browser timer-based reconciliation remains visible-tab-only. Hidden
-    // tabs can be throttled or frozen by the browser; server push is primary.
-    const syncOnVisible = () => {
+    // Stage changes can originate from other users, public candidate links,
+    // offers, assessments, and interview workflows. Always refresh silently,
+    // preserving the Kanban, filters, scroll position, and open candidate.
+    const syncOpenPipeline = () => {
       if (isPipelinePageVisible()) {
         void refreshCandidatePipeline({ silent: true });
       }
@@ -1481,25 +1470,23 @@ export function CandidatePipelineProvider({ children }) {
     };
 
     socket.on("candidate-pipeline:stage-committed", applyCommittedStage);
-    socket.on("candidate-pipeline:changed", syncFromServerEvent);
-    // Reconcile missed events when the browser restores a suspended Socket.IO
-    // connection, regardless of the tab's foreground/background status.
-    socket.on("connect", syncFromServerEvent);
+    socket.on("candidate-pipeline:changed", syncOpenPipeline);
     if (!socket.connected) socket.connect();
 
-    // Keep the existing 15-second fallback for visible tabs only. It does not
-    // define realtime latency; hidden-tab timers may be throttled by Chrome.
-    const pollId = window.setInterval(syncOnVisible, 15000);
-    document.addEventListener("visibilitychange", syncOnVisible);
-    window.addEventListener("focus", syncOnVisible);
+    // Socket.IO gives prompt updates. Poll every 15 seconds even while the
+    // socket is connected: this also covers changes from other server
+    // instances, failed event delivery, and older workflow endpoints.
+    // Never show the full-page loading state for these background reads.
+    const pollId = window.setInterval(syncOpenPipeline, 15000);
+    document.addEventListener("visibilitychange", syncOpenPipeline);
+    window.addEventListener("focus", syncOpenPipeline);
 
     return () => {
       socket.off("candidate-pipeline:stage-committed", applyCommittedStage);
-      socket.off("candidate-pipeline:changed", syncFromServerEvent);
-      socket.off("connect", syncFromServerEvent);
+      socket.off("candidate-pipeline:changed", syncOpenPipeline);
       window.clearInterval(pollId);
-      document.removeEventListener("visibilitychange", syncOnVisible);
-      window.removeEventListener("focus", syncOnVisible);
+      document.removeEventListener("visibilitychange", syncOpenPipeline);
+      window.removeEventListener("focus", syncOpenPipeline);
       // The shared socket also carries notifications: do not disconnect it.
     };
   }, [isAuthenticated, refreshCandidatePipeline]);
