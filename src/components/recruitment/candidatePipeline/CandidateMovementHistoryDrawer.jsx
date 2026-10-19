@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   Clock3,
   ExternalLink,
@@ -776,6 +777,9 @@ export default function CandidateMovementHistoryDrawer({
     [candidate, currentAuditActorLabel],
   );
   const previewUrlRef = useRef("");
+  const historyDialogRef = useRef(null);
+  const previewDialogRef = useRef(null);
+  const previewReturnFocusRef = useRef(null);
   const [preview, setPreview] = useState(null);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [previewError, setPreviewError] = useState("");
@@ -792,6 +796,11 @@ export default function CandidateMovementHistoryDrawer({
     setPreview(null);
     setPreviewLoading(false);
     setPreviewError("");
+    window.requestAnimationFrame(() => {
+      if (previewReturnFocusRef.current?.isConnected) {
+        previewReturnFocusRef.current.focus({ preventScroll: true });
+      }
+    });
   }
 
   useEffect(() => {
@@ -807,6 +816,7 @@ export default function CandidateMovementHistoryDrawer({
   }, [open]);
 
   async function openMovementFilePreview(file = {}) {
+    previewReturnFocusRef.current = document.activeElement;
     const fileUrl = getMovementFileUrl(file);
     const fileName = getMovementFileName(file);
 
@@ -868,7 +878,68 @@ export default function CandidateMovementHistoryDrawer({
   }
 
 
-  if (!open) return null;
+  // This history panel is a second modal. The Candidate Pipeline ModalShell is
+  // already portaled to <body> at z-10000. A regular absolute sibling would be
+  // trapped behind that modal (and its Escape/Tab handlers would steal focus).
+  // Give history its own top-level portal and handle only the nested modal keys.
+  useEffect(() => {
+    if (!open || typeof document === "undefined") return undefined;
+    const frame = window.requestAnimationFrame(() => {
+      historyDialogRef.current?.querySelector('[aria-label="Close Movement History"]')?.focus({ preventScroll: true });
+    });
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.requestAnimationFrame(() => triggerRef?.current?.focus?.({ preventScroll: true }));
+    };
+  }, [open, triggerRef]);
+
+  useEffect(() => {
+    if (!open || !preview) return undefined;
+    const frame = window.requestAnimationFrame(() => {
+      previewDialogRef.current?.querySelector('[aria-label="Close file preview"]')?.focus({ preventScroll: true });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [open, Boolean(preview)]);
+
+  useEffect(() => {
+    if (!open || typeof document === "undefined") return undefined;
+    const focusableSelector =
+      'a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
+    function onNestedModalKeyDown(event) {
+      if (event.key !== "Escape" && event.key !== "Tab") return;
+      // Capture the event before ModalShell's document-level bubble listener:
+      // only the topmost history/preview modal should respond to Escape or Tab.
+      event.stopPropagation();
+      const activeDialog = previewDialogRef.current || historyDialogRef.current;
+      if (event.key === "Escape") {
+        event.preventDefault();
+        if (previewDialogRef.current) closeMovementFilePreview();
+        else handleClose();
+        return;
+      }
+      if (!activeDialog) return;
+      const focusables = Array.from(activeDialog.querySelectorAll(focusableSelector))
+        .filter((node) => node.getClientRects().length > 0);
+      if (!focusables.length) {
+        event.preventDefault();
+        activeDialog.focus();
+        return;
+      }
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      if (event.shiftKey && (document.activeElement === first || !activeDialog.contains(document.activeElement))) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && (document.activeElement === last || !activeDialog.contains(document.activeElement))) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
+    document.addEventListener("keydown", onNestedModalKeyDown, true);
+    return () => document.removeEventListener("keydown", onNestedModalKeyDown, true);
+  }, [open, Boolean(preview), onClose, triggerRef]);
+
+  if (!open || typeof document === "undefined") return null;
 
   function handleClose() {
     onClose?.();
@@ -878,24 +949,28 @@ export default function CandidateMovementHistoryDrawer({
     });
   }
 
-  return (
+  return createPortal(
     <div
-      className="sibs-modal-backdrop-in absolute inset-0 z-[100] flex justify-end overflow-hidden"
+      className="sibs-modal-backdrop-in fixed inset-0 z-[10050] flex justify-end overflow-hidden font-jakarta"
       aria-hidden={!open}
     >
       {/* Dimmed Backdrop over entire modal */}
       <button
         type="button"
-        tabIndex={0}
-        aria-label="Close Movement History"
+        tabIndex={-1}
+        aria-label="Close Movement History backdrop"
         onClick={handleClose}
         className="absolute inset-0 bg-slate-900/40 backdrop-blur-[1px] transition-opacity duration-300"
       />
 
       {/* Drawer Panel */}
       <aside
-        aria-label="Candidate Movement History"
-        className="sibs-modal-pop-in relative z-10 flex h-full w-full max-w-[440px] flex-col border-l border-sibs-border bg-white shadow-2xl"
+        ref={historyDialogRef}
+        tabIndex={-1}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="sibs-candidate-movement-history-title"
+        className="sibs-modal-pop-in relative z-10 flex h-[100dvh] min-h-0 w-full max-w-[480px] flex-col overflow-hidden border-l border-sibs-border bg-white shadow-[0_18px_60px_rgba(2,30,56,0.3)] sm:h-[calc(100dvh-32px)] sm:my-4 sm:rounded-l-2xl sm:border-y"
       >
         {/* Drawer Header */}
         <header className="shrink-0 bg-sibs-navy px-5 py-4 text-white">
@@ -915,7 +990,7 @@ export default function CandidateMovementHistoryDrawer({
                   </span>
                 </div>
 
-                <h3 className="sibs-modal-title mt-0.5 break-words text-white">
+                <h3 id="sibs-candidate-movement-history-title" className="sibs-modal-title mt-0.5 break-words text-white">
                   Movement History
                 </h3>
               </div>
@@ -1181,7 +1256,9 @@ export default function CandidateMovementHistoryDrawer({
 
       {preview ? (
         <div
-          className="absolute inset-0 z-[130] flex items-center justify-center bg-slate-900/70 p-4 backdrop-blur-sm"
+          ref={previewDialogRef}
+          tabIndex={-1}
+          className="fixed inset-0 z-[10060] flex items-center justify-center bg-slate-900/70 p-3 backdrop-blur-sm sm:p-4"
           onClick={closeMovementFilePreview}
           role="dialog"
           aria-modal="true"
@@ -1272,6 +1349,7 @@ export default function CandidateMovementHistoryDrawer({
           </div>
         </div>
       ) : null}
-    </div>
+    </div>,
+    document.body,
   );
 }

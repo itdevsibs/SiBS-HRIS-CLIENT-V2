@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   AlertTriangle,
   Bot,
@@ -174,15 +175,18 @@ export default function SiBSAIAssistant({
 
     const handleKeyDown = (event) => {
       if (event.key === "Escape") {
+        event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation?.();
         setOpen(false);
         window.requestAnimationFrame(() => triggerRef.current?.focus?.());
       }
     };
 
-    window.addEventListener("keydown", handleKeyDown);
+    document.addEventListener("keydown", handleKeyDown, true);
     window.requestAnimationFrame(() => inputRef.current?.focus?.());
 
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown, true);
   }, [open]);
 
   useEffect(() => {
@@ -392,7 +396,7 @@ export default function SiBSAIAssistant({
     }
   }
 
-  return (
+  const assistantUi = (
     <>
       {/* Floating Launcher Button with safe-area support */}
       {!hideTrigger ? (
@@ -437,7 +441,7 @@ export default function SiBSAIAssistant({
 
       {/* Drawer Overlay & Panel */}
       <div
-        className={`fixed inset-0 z-[130] transition ${
+        className={`fixed inset-0 z-[2147483600] transition ${
           open ? "pointer-events-auto" : "pointer-events-none"
         }`}
         aria-hidden={!open}
@@ -638,4 +642,10 @@ export default function SiBSAIAssistant({
       </div>
     </>
   );
+
+  // Match the Assistant launcher portal: nested Calendar modal stacking contexts
+  // must not hide the AI drawer or its backdrop.
+  return typeof document !== "undefined"
+    ? createPortal(assistantUi, document.body)
+    : assistantUi;
 }

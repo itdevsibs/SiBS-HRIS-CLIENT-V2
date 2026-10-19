@@ -129,6 +129,7 @@ export default function CandidatePipelineModalShell({
   const [movementHistoryOpen, setMovementHistoryOpen] = useState(false);
   const [movementHistoryRefreshing, setMovementHistoryRefreshing] = useState(false);
   const [realtimeCandidate, setRealtimeCandidate] = useState(null);
+  const lastHistoryCandidateIdRef = useRef("");
 
   const pipeline = useCandidatePipeline();
   const selectedCandidate = pipeline?.selectedCandidate || null;
@@ -146,9 +147,18 @@ export default function CandidatePipelineModalShell({
     [candidateForMovementHistory],
   );
 
+  // Updating the same candidate during realtime stage movement must NOT dismiss
+  // an open history panel. Reset only when the selected candidate really changes.
   useEffect(() => {
-    setRealtimeCandidate(movementHistoryCandidate || selectedCandidate || null);
-    setMovementHistoryOpen(false);
+    const incoming = movementHistoryCandidate || selectedCandidate || null;
+    const incomingId = getCandidateIdentity(incoming || {});
+    const isDifferentCandidate = lastHistoryCandidateIdRef.current !== incomingId;
+    lastHistoryCandidateIdRef.current = incomingId;
+    setRealtimeCandidate((current) => {
+      if (isDifferentCandidate || !current) return incoming;
+      return incoming ? { ...current, ...incoming } : null;
+    });
+    if (isDifferentCandidate) setMovementHistoryOpen(false);
   }, [movementHistoryCandidate, selectedCandidate]);
 
   useEffect(() => {
