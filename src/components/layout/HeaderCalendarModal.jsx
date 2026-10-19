@@ -87,6 +87,18 @@ const STATUS_OPTIONS = [
   "Done",
 ];
 
+// Match event indicators to existing Google Calendar theme colors without
+// duplicating the full desktop event chips in narrow mobile day cells.
+const EVENT_DOT_COLORS = {
+  blue: "bg-blue-500",
+  peacock: "bg-sky-500",
+  amber: "bg-amber-400",
+  emerald: "bg-emerald-500",
+  tomato: "bg-orange-500",
+  grape: "bg-violet-500",
+  graphite: "bg-slate-500",
+};
+
 const EVENT_COLORS = {
   blue: "border-blue-200 bg-blue-50 text-sibs-navy",
   peacock: "border-sky-200 bg-sky-50 text-sky-700",
@@ -2624,73 +2636,187 @@ function MonthCalendarView({
   onEditEvent,
   onViewDay,
 }) {
+  // On phones, tapping a date reveals its schedules below the month rather
+  // than accidentally creating an event or cutting off event names.
+  const [mobileDaySelection, setMobileDaySelection] = useState(todayKey);
+  const mobileSelectedDay = monthCells.some((cell) => cell.key === mobileDaySelection)
+    ? mobileDaySelection
+    : (monthCells.find((cell) => cell.inMonth)?.key || todayKey);
+  const mobileDayEvents = sortEventsByDateTime(eventsByDate[mobileSelectedDay] || []);
+
   return (
-    <div className="thin-scroll min-h-0 flex-1 overflow-y-auto bg-white">
-      <div className="grid grid-cols-7 border-b border-sibs-border bg-sibs-navy">
-        {WEEKDAY_LABELS.map((day) => (
-          <div
-            key={day}
-            className="border-r border-sibs-navy/80 px-3 py-3 text-center text-[10px] font-black uppercase text-white last:border-r-0"
-          >
-            {day}
-          </div>
-        ))}
-      </div>
-
-      <div className="grid min-w-[720px] grid-cols-7">
-        {monthCells.map((cell) => {
-          const dayEvents = sortEventsByDateTime(eventsByDate[cell.key] || []);
-          const isToday = cell.key === todayKey;
-
-          return (
-            <div
-              key={cell.key}
-              onClick={() => onCreateEvent(cell.key)}
-              className={[
-                "group flex min-h-[118px] flex-col border-r border-b border-sibs-border p-3 text-left transition last:border-r-0 hover:cursor-pointer hover:bg-sibs-canvas",
-                cell.inMonth ? "bg-white" : "bg-sibs-canvas",
-                isToday ? "ring-2 ring-inset ring-sibs-orange" : "",
-              ].join(" ")}
-            >
-              <span
+    <div className="thin-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain bg-white">
+      {/* Compact mobile month + readable, selectable daily schedule list. */}
+      <div className="md:hidden">
+        <div className="grid grid-cols-7 border-b border-sibs-border bg-sibs-canvas px-1.5 py-2">
+          {WEEKDAY_LABELS.map((day) => (
+            <span key={day} className="text-center text-[10px] font-black uppercase text-sibs-text-secondary">
+              {day}
+            </span>
+          ))}
+        </div>
+        <div className="grid grid-cols-7 gap-px border-b border-sibs-border bg-sibs-border-subtle px-px pb-px">
+          {monthCells.map((cell) => {
+            const dayEvents = eventsByDate[cell.key] || [];
+            const isToday = cell.key === todayKey;
+            const isSelected = cell.key === mobileSelectedDay;
+            return (
+              <button
+                key={cell.key}
+                type="button"
+                onClick={() => setMobileDaySelection(cell.key)}
+                aria-pressed={isSelected}
+                aria-controls="sibs-mobile-calendar-day-events"
+                aria-label={`${formatDayLabel(cell.key, { weekday: "long", year: true })}: ${dayEvents.length} schedule${dayEvents.length === 1 ? "" : "s"}`}
                 className={[
-                  "flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-black",
-                  isToday
-                    ? "bg-sibs-orange text-white"
-                    : cell.inMonth
-                      ? "text-sibs-primary-1"
-                      : "text-sibs-text-secondary",
+                  "flex min-h-[53px] min-w-0 flex-col items-center justify-start gap-1 bg-white px-0.5 py-1.5 text-center transition-colors focus-visible:z-[1] focus-visible:outline-2 focus-visible:outline-sibs-orange",
+                  !cell.inMonth ? "bg-sibs-canvas text-sibs-muted" : "text-sibs-navy",
+                  isSelected ? "bg-blue-50 ring-2 ring-inset ring-sibs-navy" : "hover:bg-sibs-canvas",
                 ].join(" ")}
               >
-                {cell.date.getDate()}
-              </span>
+                <span className={[
+                  "flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-extrabold tabular-nums",
+                  isToday ? "bg-sibs-orange text-white" : "",
+                ].join(" ")}>
+                  {cell.date.getDate()}
+                </span>
+                {dayEvents.length ? (
+                  <span className="flex h-2 items-center justify-center gap-0.5" aria-hidden="true">
+                    {dayEvents.slice(0, 3).map((event, index) => (
+                      <span key={`${event.id}-${index}`} className={`h-1.5 w-1.5 rounded-full ${EVENT_DOT_COLORS[event.color] || EVENT_DOT_COLORS.blue}`} />
+                    ))}
+                    {dayEvents.length > 3 ? <span className="text-[9px] font-black leading-none text-sibs-text-secondary">+</span> : null}
+                  </span>
+                ) : null}
+              </button>
+            );
+          })}
+        </div>
 
-              <div className="mt-1.5 space-y-1">
-                {dayEvents.slice(0, 3).map((event) => (
-                  <CompactScheduleCard
-                    key={event.id}
-                    event={event}
-                    onEdit={(clickEvent) => {
-                      clickEvent.stopPropagation();
-                      onEditEvent(sourceCalendarEvent(event));
-                    }}
-                  />
-                ))}
-                {dayEvents.length > 3 && (
-                  <button
-                    type="button"
-                    className="block w-full rounded px-1 text-left text-[11px] font-semibold text-[#1A73E8] hover:bg-[#E8F0FE]"
-                    onClick={(clickEvent) => { clickEvent.stopPropagation(); onViewDay(cell.key); }}
-                    title={`View all Google Calendar events on ${cell.key}`}
-                  >
-                    +{dayEvents.length - 3} more
-                  </button>
-                )}
-              </div>
-              <span className="mt-auto hidden pt-1 text-[10px] text-[#5F6368] group-hover:block">+ Create event</span>
+        <section id="sibs-mobile-calendar-day-events" className="min-w-0 bg-sibs-canvas px-3 py-4" aria-live="polite">
+          <div className="mb-3 flex min-w-0 items-center justify-between gap-3">
+            <div className="min-w-0">
+              <h3 className="text-[13px] font-black leading-5 text-sibs-navy">
+                {formatDayLabel(mobileSelectedDay, { weekday: "long", year: true })}
+              </h3>
+              <p className="text-[11px] font-medium text-sibs-text-secondary">
+                {mobileDayEvents.length} schedule{mobileDayEvents.length === 1 ? "" : "s"} · Philippine time
+              </p>
             </div>
-          );
-        })}
+            <button
+              type="button"
+              onClick={() => onCreateEvent(mobileSelectedDay)}
+              className="inline-flex h-9 shrink-0 items-center gap-1 rounded-lg border border-sibs-border bg-white px-3 text-[11px] font-black text-sibs-navy shadow-sm transition hover:border-sibs-orange hover:text-sibs-orange"
+              aria-label={`Create schedule on ${formatDayLabel(mobileSelectedDay, { year: true })}`}
+            >
+              <Plus className="h-3.5 w-3.5" /> Add
+            </button>
+          </div>
+          {mobileDayEvents.length ? (
+            <div className="space-y-2">
+              {mobileDayEvents.map((event) => (
+                <button
+                  key={event.id}
+                  type="button"
+                  onClick={() => onEditEvent(sourceCalendarEvent(event))}
+                  className="flex w-full min-w-0 items-start gap-3 rounded-xl border border-sibs-border bg-white p-3 text-left shadow-sm transition hover:border-sibs-orange/50 hover:bg-white"
+                  aria-label={`View ${event.title}, ${event.startTime}`}
+                >
+                  <span className={`mt-1 h-8 w-1 shrink-0 rounded-full ${EVENT_DOT_COLORS[event.color] || EVENT_DOT_COLORS.blue}`} aria-hidden="true" />
+                  <span className="min-w-0 flex-1">
+                    <span className="block break-words text-xs font-black leading-5 text-sibs-navy">{event.title}</span>
+                    <span className="mt-1 flex items-center gap-1 text-[11px] font-bold text-sibs-text-secondary">
+                      <Clock className="h-3.5 w-3.5 shrink-0 text-sibs-orange" />
+                      {event.startTime === "All Day" ? "All day" : `${event.startTime} – ${event.endTime}`}
+                    </span>
+                    {event.account || event.site || event.location ? (
+                      <span className="mt-1 block break-words text-[11px] text-sibs-text-secondary">
+                        {event.account || event.site || event.location}
+                      </span>
+                    ) : null}
+                  </span>
+                  <ChevronRight className="mt-2 h-4 w-4 shrink-0 text-sibs-muted" aria-hidden="true" />
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div className="rounded-xl border border-dashed border-sibs-border bg-white px-4 py-6 text-center">
+              <CalendarDays className="mx-auto h-6 w-6 text-sibs-muted" aria-hidden="true" />
+              <p className="mt-2 text-xs font-bold text-sibs-navy">No schedules for this day</p>
+              <p className="mt-1 text-[11px] text-sibs-text-secondary">Select another date or add a new schedule.</p>
+            </div>
+          )}
+        </section>
+      </div>
+
+      {/* Preserve the full-size interactive event grid for desktop. */}
+      <div className="hidden md:block">
+        <div className="grid grid-cols-7 border-b border-sibs-border bg-sibs-navy">
+          {WEEKDAY_LABELS.map((day) => (
+            <div
+              key={day}
+              className="border-r border-sibs-navy/80 px-3 py-3 text-center text-[10px] font-black uppercase text-white last:border-r-0"
+            >
+              {day}
+            </div>
+          ))}
+        </div>
+
+        <div className="grid min-w-[720px] grid-cols-7">
+          {monthCells.map((cell) => {
+            const dayEvents = sortEventsByDateTime(eventsByDate[cell.key] || []);
+            const isToday = cell.key === todayKey;
+
+            return (
+              <div
+                key={cell.key}
+                onClick={() => onCreateEvent(cell.key)}
+                className={[
+                  "group flex min-h-[118px] flex-col border-r border-b border-sibs-border p-3 text-left transition last:border-r-0 hover:cursor-pointer hover:bg-sibs-canvas",
+                  cell.inMonth ? "bg-white" : "bg-sibs-canvas",
+                  isToday ? "ring-2 ring-inset ring-sibs-orange" : "",
+                ].join(" ")}
+              >
+                <span
+                  className={[
+                    "flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-black",
+                    isToday
+                      ? "bg-sibs-orange text-white"
+                      : cell.inMonth
+                        ? "text-sibs-primary-1"
+                        : "text-sibs-text-secondary",
+                  ].join(" ")}
+                >
+                  {cell.date.getDate()}
+                </span>
+
+                <div className="mt-1.5 space-y-1">
+                  {dayEvents.slice(0, 3).map((event) => (
+                    <CompactScheduleCard
+                      key={event.id}
+                      event={event}
+                      onEdit={(clickEvent) => {
+                        clickEvent.stopPropagation();
+                        onEditEvent(sourceCalendarEvent(event));
+                      }}
+                    />
+                  ))}
+                  {dayEvents.length > 3 && (
+                    <button
+                      type="button"
+                      className="block w-full rounded px-1 text-left text-[11px] font-semibold text-blue-600 hover:bg-blue-50"
+                      onClick={(clickEvent) => { clickEvent.stopPropagation(); onViewDay(cell.key); }}
+                      title={`View all Google Calendar events on ${cell.key}`}
+                    >
+                      +{dayEvents.length - 3} more
+                    </button>
+                  )}
+                </div>
+                <span className="mt-auto hidden pt-1 text-[10px] text-sibs-text-secondary group-hover:block">+ Create event</span>
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
@@ -2705,9 +2831,9 @@ function WeekCalendarView({
   onEditEvent,
 }) {
   return (
-    <div className="thin-scroll min-h-0 flex-1 overflow-y-auto bg-sibs-canvas p-4">
-      <section className="flex min-h-full flex-col rounded-[14px] bg-white p-4 shadow-sm">
-        <div className="flex items-center justify-between border-b border-sibs-border pb-3">
+    <div className="thin-scroll min-h-0 flex-1 overflow-y-auto bg-sibs-canvas p-3 sm:p-4">
+      <section className="flex min-h-full min-w-0 flex-col rounded-[14px] bg-white p-3 shadow-sm sm:p-4">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-sibs-border pb-3">
           <div className="flex items-center gap-2 text-sm font-black text-sibs-navy">
             <CalendarDays className="h-4 w-4 text-sibs-orange" />
             7-Day Operational HR & TA Weekly Schedule View
@@ -2717,7 +2843,7 @@ function WeekCalendarView({
           </span>
         </div>
 
-        <div className="mt-4 grid min-h-0 flex-1 min-w-[880px] grid-cols-7 gap-3">
+        <div className="mt-4 grid min-h-0 min-w-0 flex-1 grid-cols-1 gap-3 sm:grid-cols-2 xl:min-w-[880px] xl:grid-cols-7">
           {weekCells.map((cell) => {
             const dayEvents = sortEventsByDateTime(
               eventsByDate[cell.key] || [],
@@ -2728,7 +2854,7 @@ function WeekCalendarView({
               <div
                 key={cell.key}
                 className={[
-                  "flex min-h-full flex-col rounded-[12px] border bg-sibs-canvas p-3",
+                  "flex min-h-[120px] flex-col rounded-[12px] border bg-sibs-canvas p-3 xl:min-h-full",
                   isToday
                     ? "border-sibs-orange ring-1 ring-sibs-orange"
                     : "border-sibs-border",
@@ -2755,7 +2881,7 @@ function WeekCalendarView({
 
                 <div className="thin-scroll mt-3 min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
                   {!calendarLoading && dayEvents.length === 0 ? (
-                    <div className="flex h-full min-h-[260px] items-center justify-center text-center text-[11px] font-semibold italic text-sibs-text-secondary">
+                    <div className="flex min-h-[58px] items-center justify-center text-center text-[11px] font-semibold italic text-sibs-text-secondary xl:min-h-[260px]">
                       No events scheduled
                     </div>
                   ) : null}
@@ -2786,9 +2912,9 @@ function AgendaCalendarView({
   const sortedEvents = sortEventsByDateTime(events);
 
   return (
-    <div className="thin-scroll min-h-0 flex-1 overflow-y-auto bg-sibs-canvas p-4">
-      <section className="flex min-h-full flex-col rounded-[14px] bg-white p-4 shadow-sm">
-        <div className="flex items-center justify-between border-b border-sibs-border pb-3">
+    <div className="thin-scroll min-h-0 flex-1 overflow-y-auto bg-sibs-canvas p-3 sm:p-4">
+      <section className="flex min-h-full min-w-0 flex-col rounded-[14px] bg-white p-3 shadow-sm sm:p-4">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-sibs-border pb-3">
           <div className="flex items-center gap-2 text-sm font-black text-sibs-navy">
             <List className="h-4 w-4" />
             Agenda Schedule Directory ({sortedEvents.length} Items)
@@ -2808,7 +2934,7 @@ function AgendaCalendarView({
           {sortedEvents.map((event) => (
             <article
               key={event.id}
-              className="flex gap-4 rounded-[12px] border border-sibs-border bg-white p-4 shadow-sm"
+              className="flex min-w-0 flex-wrap gap-3 rounded-[12px] border border-sibs-border bg-white p-3 shadow-sm sm:flex-nowrap sm:gap-4 sm:p-4"
             >
               <div className="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-[12px] bg-sibs-navy text-white">
                 <span className="text-[10px] font-black uppercase">
@@ -2844,7 +2970,7 @@ function AgendaCalendarView({
                   </span>
                 </div>
 
-                <h3 className="mt-2 truncate text-sm font-black text-sibs-primary-1">
+                <h3 className="mt-2 break-words text-sm font-black text-sibs-primary-1">
                   {event.title}
                 </h3>
                 <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs font-semibold text-sibs-text-secondary">
@@ -2871,7 +2997,7 @@ function AgendaCalendarView({
                 ) : null}
               </div>
 
-              <div className="flex shrink-0 flex-wrap items-center justify-end gap-2 self-center">
+              <div className="flex w-full shrink-0 flex-wrap items-center justify-end gap-2 self-center sm:w-auto">
                 {isEditableHrisCalendarEvent(sourceCalendarEvent(event)) && <>
                 <button
                   type="button"
@@ -3732,8 +3858,8 @@ export default function HeaderCalendarModal({ open, user, onClose }) {
 
   const modalContent = (
     <HeaderCalendarModalShell>
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-t-[14px] border-b border-white/10 bg-sibs-navy px-4 py-3 2xl:px-6 2xl:py-4 text-white shadow-[0_10px_30px_rgba(0,0,0,0.12)]">
-          <div className="flex min-w-0 items-center gap-3 2xl:gap-4">
+        <div className="flex shrink-0 flex-col gap-3 border-b border-white/10 bg-sibs-navy px-4 py-3 text-white shadow-[0_10px_30px_rgba(0,0,0,0.12)] sm:flex-row sm:flex-wrap sm:items-center sm:justify-between 2xl:px-6 2xl:py-4">
+          <div className="flex w-full min-w-0 items-center gap-2.5 sm:w-auto sm:gap-3 2xl:gap-4">
             <div className="flex h-9 w-9 2xl:h-11 2xl:w-11 shrink-0 items-center justify-center rounded-lg 2xl:rounded-xl border border-white/20 bg-white/10 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.12)]">
               <CalendarDays className="h-4.5 w-4.5 2xl:h-5.5 2xl:w-5.5" />
             </div>
@@ -3770,14 +3896,22 @@ export default function HeaderCalendarModal({ open, user, onClose }) {
                 Google Calendar · HR &amp; Talent Acquisition
               </h2>
             </div>
+            <button
+              type="button"
+              onClick={onClose}
+              className="ml-auto flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/10 text-white transition hover:bg-white/20 sm:hidden"
+              aria-label="Close calendar modal"
+            >
+              <X className="h-4.5 w-4.5" />
+            </button>
           </div>
 
-          <div className="flex shrink-0 flex-wrap items-center justify-end gap-2 sm:gap-2.5">
+          <div className="flex w-full shrink-0 items-center gap-2 sm:w-auto sm:flex-wrap sm:justify-end sm:gap-2.5">
             {calendarConnected && (
               <a href="https://calendar.google.com/calendar/u/0/r/month" target="_blank" rel="noopener noreferrer"
-                className="hidden h-8 items-center gap-1.5 rounded-lg border border-white/30 bg-white/10 px-3 text-xs font-bold text-white hover:bg-white/15 lg:inline-flex"
+                className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-white/30 bg-white/10 px-2.5 text-[11px] font-bold text-white hover:bg-white/15 sm:hidden lg:inline-flex lg:h-8 lg:px-3 lg:text-xs"
                 title="Open Google Calendar in a new tab (choose your connected Google account if asked)">
-                <Link2 size={14} /> Open Google Calendar
+                <Link2 size={14} /> <span className="lg:inline">Google</span><span className="hidden lg:inline"> Calendar</span>
               </a>
             )}
             <button
@@ -3803,6 +3937,19 @@ export default function HeaderCalendarModal({ open, user, onClose }) {
             {calendarConnected ? (
               <button
                 type="button"
+                onClick={() => loadGoogleCalendarEvents({ force: true, checkStatus: true })}
+                disabled={calendarLoading}
+                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-white/30 bg-white/10 text-white hover:bg-white/20 disabled:opacity-50 sm:hidden"
+                aria-label="Sync Google Calendar"
+                title="Sync Google Calendar"
+              >
+                <RefreshCw className={`h-4 w-4 ${calendarLoading ? "animate-spin" : ""}`} />
+              </button>
+            ) : null}
+
+            {calendarConnected ? (
+              <button
+                type="button"
                 disabled={calendarLoading || orphanBusy}
                 onClick={handlePreviewOrphanCleanup}
                 className="hidden h-8 2xl:h-9 items-center rounded-lg border border-white/30 bg-white/10 px-3 text-xs font-bold text-white transition hover:bg-white/20 disabled:opacity-50 sm:inline-flex"
@@ -3816,7 +3963,7 @@ export default function HeaderCalendarModal({ open, user, onClose }) {
               <button
                 type="button"
                 onClick={openGoogleCalendarConnection}
-                className="hidden h-8 2xl:h-9 items-center gap-1.5 rounded-lg border border-emerald-300/40 bg-emerald-500 px-3 2xl:px-4 text-xs font-black text-white shadow-sm transition hover:cursor-pointer hover:bg-emerald-600 sm:inline-flex"
+                className="inline-flex h-8 2xl:h-9 items-center gap-1.5 rounded-lg border border-emerald-300/40 bg-emerald-500 px-3 2xl:px-4 text-xs font-black text-white shadow-sm transition hover:cursor-pointer hover:bg-emerald-600"
               >
                 <Link2 className="h-3.5 w-3.5 2xl:h-4 2xl:w-4" />
                 Connect
@@ -3842,7 +3989,7 @@ export default function HeaderCalendarModal({ open, user, onClose }) {
                 setEditingEvent(createBlankEvent(todayKey, organizerLabel));
               }}
               disabled={!calendarConnected}
-              className="hidden h-8 2xl:h-9 items-center gap-1.5 rounded-lg bg-sibs-orange px-3 2xl:px-4 text-xs font-black text-white shadow-sm transition hover:cursor-pointer hover:bg-sibs-button-hover disabled:cursor-not-allowed disabled:opacity-50 sm:inline-flex"
+              className="order-first inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-lg bg-sibs-orange px-3 text-xs font-black text-white shadow-sm transition hover:cursor-pointer hover:bg-sibs-button-hover disabled:cursor-not-allowed disabled:opacity-50 sm:order-none sm:h-8 sm:flex-none 2xl:h-9 2xl:px-4"
             >
               <Plus className="h-3.5 w-3.5 2xl:h-4 2xl:w-4" />
               New Schedule
@@ -3851,7 +3998,7 @@ export default function HeaderCalendarModal({ open, user, onClose }) {
             <button
               type="button"
               onClick={onClose}
-              className="inline-flex h-7.5 w-7.5 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-lg text-slate-300 transition hover:bg-white/10 hover:text-white active:scale-[0.97]"
+              className="hidden h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-300 transition hover:bg-white/10 hover:text-white active:scale-[0.97] sm:inline-flex 2xl:h-9 2xl:w-9"
               aria-label="Close calendar modal"
             >
               <X size={18} />
@@ -3878,47 +4025,42 @@ export default function HeaderCalendarModal({ open, user, onClose }) {
           </>
         ) : (
           <>
-            <div className="thin-scroll flex items-center justify-between gap-2 overflow-x-auto border-b border-sibs-border bg-sibs-canvas px-4 py-3 lg:overflow-visible">
-              <div className="flex items-center gap-2">
-                <div className="flex h-8 shrink-0 overflow-hidden rounded-[10px] border border-sibs-border bg-sibs-canvas">
+            <div className="flex shrink-0 flex-col gap-2.5 border-b border-sibs-border bg-sibs-canvas px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-2 sm:px-4">
+              <div className="flex min-w-0 items-center justify-between gap-2 sm:justify-start">
+                <div className="flex h-9 shrink-0 overflow-hidden rounded-[10px] border border-sibs-border bg-white sm:h-8">
                   <button
                     type="button"
                     onClick={() => movePeriod(-1)}
-                    className="flex w-9 items-center justify-center text-sibs-navy transition hover:cursor-pointer hover:bg-white"
-                    aria-label={
-                      viewMode === "Week" ? "Previous week" : "Previous month"
-                    }
+                    className="flex w-9 items-center justify-center text-sibs-navy transition hover:cursor-pointer hover:bg-sibs-canvas"
+                    aria-label={viewMode === "Week" ? "Previous week" : "Previous month"}
                   >
                     <ChevronLeft className="h-4 w-4" />
                   </button>
                   <button
                     type="button"
                     onClick={handleToday}
-                    className="border-x border-sibs-border px-4 text-xs font-extrabold text-sibs-navy transition hover:cursor-pointer hover:bg-white"
+                    className="border-x border-sibs-border px-3 text-xs font-extrabold text-sibs-navy transition hover:cursor-pointer hover:bg-sibs-canvas sm:px-4"
                   >
                     Today
                   </button>
                   <button
                     type="button"
                     onClick={() => movePeriod(1)}
-                    className="flex w-9 items-center justify-center text-sibs-navy transition hover:cursor-pointer hover:bg-white"
-                    aria-label={
-                      viewMode === "Week" ? "Next week" : "Next month"
-                    }
+                    className="flex w-9 items-center justify-center text-sibs-navy transition hover:cursor-pointer hover:bg-sibs-canvas"
+                    aria-label={viewMode === "Week" ? "Next week" : "Next month"}
                   >
                     <ChevronRight className="h-4 w-4" />
                   </button>
                 </div>
-
-                <span className="min-w-[100px] shrink-0 px-1 text-sm font-black text-sibs-navy">
+                <span className="min-w-0 text-right text-sm font-black leading-4 text-sibs-navy sm:shrink-0 sm:px-1 sm:text-left">
                   {periodLabel}
                 </span>
-                <span className="hidden items-center gap-1.5 rounded-lg border border-[#DADCE0] bg-white px-2.5 py-1.5 text-[10px] font-semibold text-[#5F6368] md:inline-flex">
-                  <span className="h-2 w-2 rounded-full bg-[#34A853]" /> Google-synced · Asia/Manila
+                <span className="hidden items-center gap-1.5 rounded-lg border border-sibs-border bg-white px-2.5 py-1.5 text-[10px] font-semibold text-sibs-text-secondary xl:inline-flex">
+                  <span className="h-2 w-2 rounded-full bg-emerald-500" /> Google-synced · Asia/Manila
                 </span>
               </div>
 
-              <div className="flex h-8 shrink-0 overflow-hidden rounded-[10px] border border-sibs-border bg-sibs-canvas">
+              <div className="flex h-9 w-full shrink-0 overflow-hidden rounded-[10px] border border-sibs-border bg-white sm:h-8 sm:w-auto">
                 {[
                   ["Month", Grid3X3],
                   ["Week", CalendarDays],
@@ -3928,11 +4070,12 @@ export default function HeaderCalendarModal({ open, user, onClose }) {
                     key={label}
                     type="button"
                     onClick={() => setViewMode(label)}
+                    aria-pressed={viewMode === label}
                     className={[
-                      "flex items-center gap-1.5 px-3 text-xs font-extrabold transition",
+                      "flex min-w-0 flex-1 items-center justify-center gap-1.5 px-3 text-xs font-extrabold transition sm:flex-none",
                       viewMode === label
                         ? "bg-sibs-navy text-white"
-                        : "text-sibs-text-secondary hover:cursor-pointer hover:bg-white hover:text-sibs-navy",
+                        : "text-sibs-text-secondary hover:cursor-pointer hover:bg-sibs-canvas hover:text-sibs-navy",
                     ].join(" ")}
                   >
                     {React.createElement(Icon, { className: "h-3.5 w-3.5" })}
@@ -3992,13 +4135,13 @@ export default function HeaderCalendarModal({ open, user, onClose }) {
               />
             ) : null}
 
-            <div className="flex flex-wrap items-center gap-4 border-t border-sibs-border bg-sibs-canvas px-6 py-3 text-xs text-sibs-text-secondary">
+            <div className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-1 border-t border-sibs-border bg-sibs-canvas px-3 py-2.5 text-[11px] text-sibs-text-secondary sm:gap-4 sm:px-6 sm:py-3 sm:text-xs">
               <strong className="text-sibs-primary-1">
                 Google Calendar Events: {events.length}
               </strong>
-              <span className="h-4 w-px bg-sibs-border" />
+              <span className="hidden h-4 w-px bg-sibs-border sm:inline" />
               <span>TA Drives: {taDrives}</span>
-              <span className="h-4 w-px bg-sibs-border" />
+              <span className="hidden h-4 w-px bg-sibs-border sm:inline" />
               <span>HR Syncs: {hrSyncs}</span>
               <span className="ml-auto hidden items-center gap-1 italic md:flex">
                 <Clock className="h-3.5 w-3.5" />

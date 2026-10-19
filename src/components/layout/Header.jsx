@@ -8,6 +8,7 @@ import {
   Building2,
   Calendar,
   CalendarDays,
+  ChevronRight,
   CircleUser,
   ClipboardCheck,
   ClipboardList,
@@ -928,6 +929,8 @@ function HeaderContent() {
   ).trim();
 
   const [mounted, setMounted] = useState(false);
+  const [dateStr, setDateStr] = useState("");
+  const [mobileDateStr, setMobileDateStr] = useState("");
   const [timeStr, setTimeStr] = useState("");
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -1029,49 +1032,79 @@ function HeaderContent() {
   }, [mounted, loading, user, pathname, navigate]);
 
   useEffect(() => {
-    const formatter = createSystemDateTimeFormatter("en-PH", {
+    // Explicit Manila formatting keeps the display consistent across browser
+    // timezones, including devices configured outside the Philippines.
+    const dateFormatter = createSystemDateTimeFormatter("en-PH", {
       timeZone: "Asia/Manila",
       year: "numeric",
       month: "long",
       day: "numeric",
-      hour: "2-digit",
+      weekday: "long",
+    });
+    const mobileDateFormatter = createSystemDateTimeFormatter("en-PH", {
+      timeZone: "Asia/Manila",
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      weekday: "short",
+    });
+    const timeFormatter = createSystemDateTimeFormatter("en-PH", {
+      timeZone: "Asia/Manila",
+      hour: "numeric",
       minute: "2-digit",
       second: "2-digit",
       hour12: true,
     });
 
     let cancelled = false;
+    let syncInFlight = false;
     let authoritativeEpochMs = null;
     let performanceAnchorMs = null;
 
-    const getSyncedNow = () => {
+    const getDisplayNow = () => {
       if (
-        !Number.isFinite(authoritativeEpochMs) ||
-        !Number.isFinite(performanceAnchorMs)
+        Number.isFinite(authoritativeEpochMs) &&
+        Number.isFinite(performanceAnchorMs)
       ) {
-        return null;
+        // Monotonic elapsed time avoids clock jumps when a device's system
+        // clock is changed after successful server synchronization.
+        return new Date(
+          authoritativeEpochMs + Math.max(0, performance.now() - performanceAnchorMs),
+        );
       }
 
-      const elapsedMs = performance.now() - performanceAnchorMs;
-      return new Date(authoritativeEpochMs + Math.max(0, elapsedMs));
+      // Display a live clock immediately if the server is unreachable; the
+      // authoritative clock replaces this fallback as soon as it responds.
+      return new Date();
     };
 
     const updateClock = () => {
-      const syncedNow = getSyncedNow();
-      if (!syncedNow || cancelled) return;
-
-      setTimeStr(`${formatter.format(syncedNow)} GMT+8`);
+      if (cancelled) return;
+      const displayNow = getDisplayNow();
+      setDateStr(dateFormatter.format(displayNow));
+      setMobileDateStr(mobileDateFormatter.format(displayNow));
+      setTimeStr(timeFormatter.format(displayNow));
     };
 
     const syncClock = async () => {
+      if (cancelled || syncInFlight) return;
+      syncInFlight = true;
       try {
         const requestStartedAt = performance.now();
         const payload = await getManilaClock();
         const requestEndedAt = performance.now();
+        if (cancelled) return;
+
         const nextEpochMs = Number(payload?.serverEpochMs);
+        if (
+          !payload?.success ||
+          payload?.timeZone !== "Asia/Manila" ||
+          !Number.isFinite(nextEpochMs) ||
+          nextEpochMs <= 0
+        ) return;
 
-        if (!Number.isFinite(nextEpochMs) || nextEpochMs <= 0) return;
-
+        // The API timestamp is captured when the response is prepared.
+        // Approximately half of the round trip accounts for its transit.
         authoritativeEpochMs =
           nextEpochMs + Math.max(0, requestEndedAt - requestStartedAt) / 2;
         performanceAnchorMs = requestEndedAt;
@@ -1081,24 +1114,36 @@ function HeaderContent() {
           "[Header] Unable to synchronize authoritative Manila clock:",
           error?.message || error,
         );
+      } finally {
+        syncInFlight = false;
       }
     };
 
+    updateClock();
     void syncClock();
 
-    const tickInterval = window.setInterval(updateClock, 1000);
+    const tickInterval = window.setInterval(updateClock, 250);
     const resyncInterval = window.setInterval(syncClock, 5 * 60_000);
     const handleWindowFocus = () => {
+      updateClock();
       void syncClock();
+    };
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        updateClock();
+        void syncClock();
+      }
     };
 
     window.addEventListener("focus", handleWindowFocus);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
       cancelled = true;
       window.clearInterval(tickInterval);
       window.clearInterval(resyncInterval);
       window.removeEventListener("focus", handleWindowFocus);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, []);
 
@@ -1440,7 +1485,7 @@ function HeaderContent() {
             <div
               id="header-global-search-results"
               role="listbox"
-              className="fixed inset-x-3 top-[70px] z-[9999] max-h-[80vh] overflow-hidden rounded-2xl border border-sibs-border-subtle bg-white p-3 shadow-2xl lg:absolute lg:inset-auto lg:left-0 lg:top-[calc(100%+10px)] lg:max-h-[540px] lg:w-[560px] lg:p-3.5 lg:shadow-2xl"
+              className="fixed inset-x-3 top-[110px] sm:top-[70px] z-[9999] max-h-[80vh] overflow-hidden rounded-2xl border border-sibs-border-subtle bg-white p-3 shadow-2xl lg:absolute lg:inset-auto lg:left-0 lg:top-[calc(100%+10px)] lg:max-h-[540px] lg:w-[560px] lg:p-3.5 lg:shadow-2xl"
             >
               {isQueryEmpty ? (
                 <div className="space-y-4">
@@ -1691,17 +1736,47 @@ function HeaderContent() {
         </div>
 
         <div className="flex shrink-0 items-center gap-1.5 sm:gap-2.5 2xl:gap-3">
+          {/* A real clock is informational; Google Calendar has its own action. */}
+          <div
+            className="hidden min-w-0 items-center gap-2 rounded-xl border border-sibs-border-subtle bg-white px-3 py-1.5 xl:flex"
+            aria-label="Current Philippine date and time"
+            title="Philippine Standard Time (UTC+8)"
+          >
+            <Clock className="h-4 w-4 shrink-0 text-sibs-orange" aria-hidden="true" />
+            <div className="flex min-w-0 flex-col leading-tight">
+              <span className="whitespace-nowrap text-[10px] font-semibold text-sibs-muted">{dateStr || "Loading date..."}</span>
+              <span className="whitespace-nowrap text-[12px] font-extrabold tabular-nums text-sibs-navy">
+                <time>{timeStr || "--:--:--"}</time>
+                <span className="ml-1.5 text-[9px] font-bold text-sibs-muted">PHT</span>
+              </span>
+            </div>
+          </div>
+
+          {/* Keep the tablet action compact without squeezing the search bar. */}
           <button
             type="button"
             onClick={() => setCalendarOpen(true)}
-            className="group hidden h-8.5 2xl:h-10 items-center gap-1.5 2xl:gap-2 rounded-xl border border-transparent px-2.5 2xl:px-3 sibs-text-micro font-semibold text-sibs-muted transition-all duration-150 hover:border-sibs-orange/30 hover:bg-sibs-cream-subtle hover:text-sibs-orange hover:shadow-xs xl:flex hover:cursor-pointer"
-            aria-label="Open HR and talent acquisition calendar"
+            className="group hidden h-9 shrink-0 items-center gap-2 rounded-xl border border-sibs-border-subtle bg-white px-2.5 text-[11px] font-bold text-sibs-navy transition hover:border-sibs-orange/40 hover:bg-sibs-cream-subtle focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sibs-orange sm:inline-flex xl:hidden"
+            aria-label="Open Google Calendar and interview schedules"
+            title="Google Calendar · Philippine Standard Time"
           >
-            <CalendarDays className="h-3.5 w-3.5 text-sibs-faint transition-colors group-hover:text-sibs-orange" />
-            <span className="whitespace-nowrap">{timeStr}</span>
+            <CalendarDays className="h-4 w-4 shrink-0 text-sibs-orange" aria-hidden="true" />
+            <span className="whitespace-nowrap tabular-nums">{timeStr || "--:--"}</span>
+            <span className="hidden text-[9px] font-extrabold text-sibs-muted lg:inline">PHT</span>
           </button>
 
-          <div className="hidden h-5 2xl:h-6 w-px bg-sibs-border-subtle xl:block" />
+          <button
+            type="button"
+            onClick={() => setCalendarOpen(true)}
+            className="group hidden h-9 shrink-0 items-center gap-1.5 rounded-xl border border-sibs-orange/25 bg-sibs-cream-subtle px-3 text-[11px] font-extrabold text-sibs-navy transition hover:border-sibs-orange/50 hover:bg-sibs-orange/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sibs-orange xl:inline-flex 2xl:h-10"
+            aria-label="Open Google Calendar and interview schedules"
+          >
+            <CalendarDays className="h-4 w-4 text-sibs-orange" aria-hidden="true" />
+            <span className="whitespace-nowrap">Google Calendar</span>
+            <ChevronRight className="h-3.5 w-3.5 text-sibs-muted transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
+          </button>
+
+          <div className="hidden h-5 w-px bg-sibs-border-subtle xl:block 2xl:h-6" />
 
           <NotificationDropdown />
 
@@ -1723,6 +1798,37 @@ function HeaderContent() {
               />
             )}
           </div>
+        </div>
+      </div>
+
+      {/* Separate the live PHT clock from the Calendar action on mobile. */}
+      <div className="flex w-full min-w-0 shrink-0 items-center sm:hidden">
+        <div className="flex min-h-[60px] w-full min-w-0 items-center justify-between gap-2 rounded-xl border border-sibs-border-subtle bg-white px-2.5 py-2 shadow-xs min-[390px]:gap-3 min-[390px]:px-3">
+          <div className="flex min-w-0 flex-1 flex-col gap-1" aria-label="Current Philippine date and time">
+            <div className="flex min-w-0 items-center gap-1.5">
+              <CalendarDays className="h-3.5 w-3.5 shrink-0 text-sibs-orange" aria-hidden="true" />
+              <span className="truncate text-[10px] font-semibold text-sibs-muted min-[390px]:text-[11px]">
+                {mobileDateStr || "Loading date..."}
+              </span>
+            </div>
+            <div className="flex min-w-0 items-center gap-1.5">
+              <Clock className="h-3.5 w-3.5 shrink-0 text-sibs-orange" aria-hidden="true" />
+              <time className="whitespace-nowrap text-[13px] font-extrabold tabular-nums leading-none text-sibs-navy min-[390px]:text-[14px]">
+                {timeStr || "--:--:--"}
+              </time>
+              <span className="shrink-0 rounded bg-sibs-surface px-1 py-0.5 text-[9px] font-bold leading-none text-sibs-muted">PHT</span>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setCalendarOpen(true)}
+            className="group flex min-h-[42px] shrink-0 items-center justify-center gap-1.5 rounded-lg border border-sibs-orange/25 bg-sibs-cream-subtle px-2.5 text-sibs-navy transition hover:border-sibs-orange/50 hover:bg-sibs-orange/10 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sibs-orange min-[390px]:px-3"
+            aria-label="Open Google Calendar and interview schedules"
+          >
+            <CalendarDays className="h-4 w-4 shrink-0 text-sibs-orange" aria-hidden="true" />
+            <span className="flex flex-col text-left text-[10px] font-extrabold leading-[1.2]"><span>Google</span><span>Calendar</span></span>
+            <ChevronRight className="h-3.5 w-3.5 shrink-0 text-sibs-muted transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
+          </button>
         </div>
       </div>
 
@@ -1748,7 +1854,7 @@ export default function Header({ persistent = false }) {
   if (persistentHeaderActive && !persistent) {
     return (
       <div
-        className="h-[74px] 2xl:h-[86px] shrink-0"
+        className="h-[132px] shrink-0 sm:h-[74px] 2xl:h-[86px]"
         aria-hidden="true"
         data-sibs-header-spacer="true"
       />

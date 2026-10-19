@@ -40,7 +40,11 @@ export async function markAuditNotificationRead(auditLogId) {
 }
 
 export async function getManilaClock() {
-  const response = await api.get("/api/audit-notifications/clock");
+  // Clock responses must never be reused from a browser/CDN cache. A stale
+  // serverEpochMs would silently shift every displayed header clock tick.
+  const response = await api.get("/api/audit-notifications/clock", {
+    params: { _: Date.now() },
+  });
 
   return response?.data || {
     success: false,
