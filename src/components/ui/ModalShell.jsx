@@ -239,13 +239,13 @@ export default function ModalShell({
                 </div>
 
                 {subtitle && (
-                  <p
+                  <div
                     className={`sibs-modal-subtitle mt-0.5 truncate sm:text-clip ${
                       isNavy ? "text-white/75" : "text-sibs-muted"
                     }`}
                   >
                     {subtitle}
-                  </p>
+                  </div>
                 )}
               </div>
             </div>

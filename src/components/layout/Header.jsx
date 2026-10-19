@@ -1736,7 +1736,7 @@ function HeaderContent() {
         </div>
 
         <div className="flex shrink-0 items-center gap-1.5 sm:gap-2.5 2xl:gap-3">
-          {/* A real clock is informational; Google Calendar has its own action. */}
+          {/* A real clock is informational; SiBS Calendar has its own action. */}
           <div
             className="hidden min-w-0 items-center gap-2 rounded-xl border border-sibs-border-subtle bg-white px-3 py-1.5 xl:flex"
             aria-label="Current Philippine date and time"
@@ -1757,8 +1757,8 @@ function HeaderContent() {
             type="button"
             onClick={() => setCalendarOpen(true)}
             className="group hidden h-9 shrink-0 items-center gap-2 rounded-xl border border-sibs-border-subtle bg-white px-2.5 text-[11px] font-bold text-sibs-navy transition hover:border-sibs-orange/40 hover:bg-sibs-cream-subtle focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sibs-orange sm:inline-flex xl:hidden"
-            aria-label="Open Google Calendar and interview schedules"
-            title="Google Calendar · Philippine Standard Time"
+            aria-label="Open SiBS Calendar, powered by Google Calendar"
+            title="SiBS Calendar · Powered by Google Calendar · Philippine Standard Time"
           >
             <CalendarDays className="h-4 w-4 shrink-0 text-sibs-orange" aria-hidden="true" />
             <span className="whitespace-nowrap tabular-nums">{timeStr || "--:--"}</span>
@@ -1769,10 +1769,10 @@ function HeaderContent() {
             type="button"
             onClick={() => setCalendarOpen(true)}
             className="group hidden h-9 shrink-0 items-center gap-1.5 rounded-xl border border-sibs-orange/25 bg-sibs-cream-subtle px-3 text-[11px] font-extrabold text-sibs-navy transition hover:border-sibs-orange/50 hover:bg-sibs-orange/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sibs-orange xl:inline-flex 2xl:h-10"
-            aria-label="Open Google Calendar and interview schedules"
+            aria-label="Open SiBS Calendar, powered by Google Calendar"
           >
             <CalendarDays className="h-4 w-4 text-sibs-orange" aria-hidden="true" />
-            <span className="whitespace-nowrap">Google Calendar</span>
+            <span className="whitespace-nowrap">SiBS Calendar</span>
             <ChevronRight className="h-3.5 w-3.5 text-sibs-muted transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
           </button>
 
@@ -1823,10 +1823,10 @@ function HeaderContent() {
             type="button"
             onClick={() => setCalendarOpen(true)}
             className="group flex min-h-[42px] shrink-0 items-center justify-center gap-1.5 rounded-lg border border-sibs-orange/25 bg-sibs-cream-subtle px-2.5 text-sibs-navy transition hover:border-sibs-orange/50 hover:bg-sibs-orange/10 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sibs-orange min-[390px]:px-3"
-            aria-label="Open Google Calendar and interview schedules"
+            aria-label="Open SiBS Calendar, powered by Google Calendar"
           >
             <CalendarDays className="h-4 w-4 shrink-0 text-sibs-orange" aria-hidden="true" />
-            <span className="flex flex-col text-left text-[10px] font-extrabold leading-[1.2]"><span>Google</span><span>Calendar</span></span>
+            <span className="flex flex-col text-left text-[10px] font-extrabold leading-[1.2]"><span>SiBS</span><span>Calendar</span></span>
             <ChevronRight className="h-3.5 w-3.5 shrink-0 text-sibs-muted transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
           </button>
         </div>
