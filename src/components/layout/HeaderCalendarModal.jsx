@@ -953,7 +953,7 @@ function isEditableHrisCalendarEvent(event = {}) {
   return event.hrisManaged === true && !event.recruitmentEventType;
 }
 
-function normalizeGoogleCalendarEvent(event = {}) {
+function normalizeGoogleCalendarEvent(event = {}, googleAccount = {}) {
   const privateProperties = event?.extendedProperties?.private || {};
   const startValue = event?.start?.dateTime || event?.start?.date;
   const endValue = event?.end?.dateTime || event?.end?.date || startValue;
@@ -971,6 +971,34 @@ function normalizeGoogleCalendarEvent(event = {}) {
     hrisManaged: isHrisOwnedGoogleEvent(event),
     googleHtmlLink: /^https:\/\/calendar\.google\.com\//.test(event.htmlLink || "") ? event.htmlLink : "",
     meetLink,
+    // Preserve Google data for guest profiles, RSVPs, recurrence and reminders.
+    // The Calendar Events API supplies names/emails/status, but NOT other users'
+    // Google profile photographs. Only use real pictures actually supplied by
+    // Google or the connected account's existing OAuth profile permission.
+    googleAttendees: Array.isArray(event.attendees) ? event.attendees.map((attendee) => ({
+      email: String(attendee.email || "").trim(),
+      displayName: String(attendee.displayName || "").trim(),
+      responseStatus: attendee.responseStatus || "needsAction",
+      organizer: Boolean(attendee.organizer),
+      self: Boolean(attendee.self),
+      optional: Boolean(attendee.optional),
+      photoUrl: attendee.photoUrl || attendee.picture || "",
+    })) : [],
+    googleOrganizer: {
+      displayName: event?.organizer?.displayName || "",
+      email: event?.organizer?.email || "",
+    },
+    googleCreator: {
+      displayName: event?.creator?.displayName || "",
+      email: event?.creator?.email || "",
+    },
+    googleAccount: {
+      email: String(googleAccount.email || "").trim(),
+      photoUrl: String(googleAccount.photoUrl || "").trim(),
+    },
+    isRecurring: Boolean(event.recurringEventId || (Array.isArray(event.recurrence) && event.recurrence.length)),
+    recurrenceRules: Array.isArray(event.recurrence) ? event.recurrence : [],
+    googleReminders: event.reminders || null,
     title: event.summary || "Untitled Schedule",
     category: privateProperties.category || "Talent Acquisition",
     status:
@@ -2557,22 +2585,136 @@ function GoogleCalendarDayDetails({ date, events, nowMs, onClose, onCreateEvent,
   );
 }
 
+// Only render genuine Google-hosted profile images. External guests do not have
+// photo URLs in the Calendar Events API; those guests use initials instead.
+function trustedGoogleCalendarPhoto(url) {
+  try {
+    const parsed = new URL(String(url || ""));
+    return parsed.protocol === "https:" &&
+      (parsed.hostname === "googleusercontent.com" || parsed.hostname.endsWith(".googleusercontent.com") ||
+       parsed.hostname === "gstatic.com" || parsed.hostname.endsWith(".gstatic.com"))
+      ? parsed.href : "";
+  } catch {
+    return "";
+  }
+}
+
+function googleCalendarGuestLabel(guest = {}) {
+  if (guest.displayName) return guest.displayName;
+  const emailName = String(guest.email || "").split("@")[0].replace(/[._-]+/g, " ").trim();
+  return emailName || guest.email || "Guest";
+}
+
+function googleCalendarGuestInitials(guest = {}) {
+  const words = googleCalendarGuestLabel(guest).trim().split(/\s+/).filter(Boolean);
+  if (!words.length) return "?";
+  return `${words[0][0]}${words.length > 1 ? words[words.length - 1][0] : ""}`.toUpperCase();
+}
+
+function GoogleCalendarGuestAvatar({ guest, account }) {
+  const [imageBroken, setImageBroken] = useState(false);
+  const ownPhoto = guest.email && account?.email &&
+    guest.email.toLowerCase() === account.email.toLowerCase() ? account.photoUrl : "";
+  const photo = trustedGoogleCalendarPhoto(guest.photoUrl || ownPhoto);
+  const status = guest.responseStatus;
+  return (
+    <span className="relative inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#E7EFF7] text-xs font-black text-sibs-navy" aria-label={`Profile of ${googleCalendarGuestLabel(guest)}`}>
+      {photo && !imageBroken ? (
+        <img src={photo} alt="" loading="lazy" referrerPolicy="no-referrer"
+          onError={() => setImageBroken(true)} className="h-full w-full rounded-full object-cover" />
+      ) : googleCalendarGuestInitials(guest)}
+      {status === "accepted" ? (
+        <span title="Accepted" aria-label="Accepted" className="absolute -bottom-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full border border-white bg-emerald-500 text-white"><Check size={9} strokeWidth={3} /></span>
+      ) : status === "declined" ? (
+        <span title="Declined" aria-label="Declined" className="absolute -bottom-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full border border-white bg-rose-500 text-white"><X size={9} strokeWidth={3} /></span>
+      ) : status === "tentative" ? (
+        <span title="Maybe" aria-label="Maybe" className="absolute -bottom-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full border border-white bg-amber-500 text-[9px] font-black text-white">?</span>
+      ) : null}
+    </span>
+  );
+}
+
+function calendarGuestStatus(status) {
+  return { accepted: "Accepted", declined: "Declined", tentative: "Maybe", needsAction: "Awaiting response" }[status] || "Awaiting response";
+}
+
+function getSafeCalendarWebLink(link) {
+  try {
+    const parsed = new URL(String(link || ""));
+    return parsed.protocol === "https:" || parsed.protocol === "http:" ? parsed.href : "";
+  } catch { return ""; }
+}
+
+function detectCalendarMeeting(event = {}) {
+  const sources = [event.meetLink, event.location, event.notes];
+  for (const source of sources) {
+    const match = String(source || "").match(/https?:\/\/(?:meet\.google\.com|teams\.(?:microsoft|live)\.com|[^\s<>/]*zoom\.us)\/[^\s<>\"']+/i);
+    const link = getSafeCalendarWebLink(match?.[0]?.replace(/[.,;)}\]]+$/, ""));
+    if (!link) continue;
+    const hostname = new URL(link).hostname;
+    if (hostname === "meet.google.com") return { link, service: "Google Meet" };
+    if (hostname === "teams.microsoft.com" || hostname === "teams.live.com") return { link, service: "Microsoft Teams" };
+    if (hostname.endsWith("zoom.us")) return { link, service: "Zoom" };
+  }
+  return null;
+}
+
+function getCalendarRepeatLabel(event) {
+  const rule = (event.recurrenceRules || []).find((item) => /RRULE:/i.test(item));
+  const frequency = /(?:RRULE:|;)FREQ=(DAILY|WEEKLY|MONTHLY|YEARLY)/i.exec(rule || "")?.[1]?.toUpperCase();
+  if (frequency === "WEEKLY") return "Repeats weekly";
+  if (frequency === "DAILY") return "Repeats daily";
+  if (frequency === "MONTHLY") return "Repeats monthly";
+  if (frequency === "YEARLY") return "Repeats yearly";
+  return event.isRecurring ? "Recurring event" : "";
+}
+
+// Preserve each original line and clickable URLs. Render React text, not HTML,
+// so forwarded invitations cannot inject scripts or markup into the modal.
+function GoogleCalendarOriginalDescription({ text }) {
+  const parts = String(text || "").replace(/\r\n?/g, "\n").split(/(https?:\/\/[^\s<>]+|mailto:[^\s<>]+)/gi);
+  return <div className="min-w-0 whitespace-pre-wrap break-words text-[13px] font-normal leading-[1.75] text-[#344054] [overflow-wrap:anywhere]">
+    {parts.map((part, index) => {
+      if (!/^(https?:\/\/|mailto:)/i.test(part)) return <React.Fragment key={index}>{part}</React.Fragment>;
+      const urlPart = part.replace(/[.,;)}\]]+$/, "");
+      const trailing = part.slice(urlPart.length);
+      const href = urlPart.toLowerCase().startsWith("mailto:")
+        ? (/^mailto:[^\s@<>]+@[^\s@<>]+$/i.test(urlPart) ? urlPart : "") : getSafeCalendarWebLink(urlPart);
+      if (!href) return <React.Fragment key={index}>{part}</React.Fragment>;
+      return <React.Fragment key={index}>
+        <a href={href} target={href.startsWith("mailto:") ? undefined : "_blank"}
+          rel={href.startsWith("mailto:") ? undefined : "noopener noreferrer"}
+          className="text-[#1967D2] underline underline-offset-2 hover:text-[#174EA6]">{urlPart}</a>{trailing}
+      </React.Fragment>;
+    })}
+  </div>;
+}
+
 function ExternalGoogleCalendarReadOnlyDetails({ event, onClose, historical = false }) {
-  const meetLink = /^https:\/\/meet\.google\.com\/[^\s]+$/i.test(String(event.meetLink || ""))
-    ? event.meetLink : "";
   const description = String(event.notes || "").trim();
+  const meeting = detectCalendarMeeting(event);
+  const googleGuests = Array.isArray(event.googleAttendees) ? event.googleAttendees : [];
+  const organizer = event.googleOrganizer?.email
+    ? event.googleOrganizer
+    : { email: event.organizer || "", displayName: event.googleOrganizer?.displayName || "" };
+  const organizerInGuests = organizer.email && googleGuests.some((guest) => guest.email.toLowerCase() === organizer.email.toLowerCase());
+  const guests = organizerInGuests || !organizer.email ? googleGuests : [
+    { email: organizer.email, displayName: organizer.displayName, organizer: true, responseStatus: "needsAction" }, ...googleGuests,
+  ];
+  const accepted = googleGuests.filter((guest) => guest.responseStatus === "accepted").length;
+  const tentative = googleGuests.filter((guest) => guest.responseStatus === "tentative").length;
+  const awaiting = googleGuests.filter((guest) => guest.responseStatus === "needsAction" || !guest.responseStatus).length;
+  const declined = googleGuests.filter((guest) => guest.responseStatus === "declined").length;
+  const repeatLabel = getCalendarRepeatLabel(event);
+  const meetingLocation = event.location && !/^https?:\/\//i.test(String(event.location)) ? event.location : "";
+  const reminder = event.googleReminders;
 
   return (
-    <div
-      className="sibs-action-backdrop-in absolute inset-0 z-[2] flex items-center justify-center bg-black/55 px-3 py-4 backdrop-blur-[3px] font-jakarta"
-      onMouseDown={(clickEvent) => { if (clickEvent.target === clickEvent.currentTarget) onClose(); }}
-    >
-      <section
-        role="dialog"
-        aria-modal="true"
-        aria-label={historical ? "Past calendar event (read-only)" : "External Google Calendar event (read-only)"}
-        className="sibs-modal-pop-in flex max-h-[86vh] w-full max-w-[660px] min-h-0 flex-col overflow-hidden rounded-[18px] bg-white shadow-[0_24px_80px_rgba(2,30,56,0.38)]"
-      >
+    <div className="sibs-action-backdrop-in absolute inset-0 z-[2] flex items-center justify-center bg-black/55 px-3 py-4 backdrop-blur-[3px] font-jakarta"
+      onMouseDown={(clickEvent) => { if (clickEvent.target === clickEvent.currentTarget) onClose(); }}>
+      <section role="dialog" aria-modal="true" aria-label={historical ? "Past calendar event (read-only)" : "External Google Calendar event (read-only)"}
+        className="sibs-modal-pop-in flex max-h-[86vh] w-full max-w-[660px] min-h-0 flex-col overflow-hidden rounded-[18px] bg-white shadow-[0_24px_80px_rgba(2,30,56,0.38)]">
+        {/* Keep the established SiBS modal header and footer. */}
         <header className="flex shrink-0 items-center justify-between gap-3 border-b border-white/10 bg-sibs-navy px-5 py-3.5 text-white sm:px-6">
           <div className="flex min-w-0 items-center gap-3">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[11px] bg-sibs-orange text-white shadow-sm">
@@ -2591,53 +2733,73 @@ function ExternalGoogleCalendarReadOnlyDetails({ event, onClose, historical = fa
         </header>
 
         <div className="thin-scroll min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain bg-white px-5 py-5 sm:px-6">
-          <div>
-            <h3 className="break-words border-b border-sibs-border pb-3 text-[22px] font-black leading-tight text-sibs-navy">{event.title}</h3>
-            <p className="mt-3 inline-flex rounded-[9px] bg-sibs-canvas px-3 py-2 text-[11px] font-bold text-sibs-text-secondary">
-              {historical ? "Past SiBS Calendar event · View only" : "External Google Calendar event · View only"}
+          <div className="border-b border-sibs-border pb-4">
+            <h3 className="break-words text-[22px] font-black leading-tight text-sibs-navy">{event.title}</h3>
+            <p className="mt-1 text-[13px] font-medium text-sibs-text-secondary">
+              {formatDayLabel(event.date, { weekday: "long", year: true })} · {event.startTime === "All Day" ? "All day" : `${event.startTime} – ${event.endTime}`}
             </p>
+            {repeatLabel ? <p className="mt-1 text-[12px] text-sibs-text-secondary">{repeatLabel}</p> : null}
           </div>
-          <div className="space-y-4 text-sm font-semibold text-sibs-navy">
-            <div className="flex items-start gap-3">
-              <Clock className="mt-0.5 h-5 w-5 shrink-0 text-sibs-orange" />
-              <div>
-                <p>{formatDayLabel(event.date, { weekday: "long", year: true })}</p>
-                <p className="mt-1 text-xs text-sibs-text-secondary">{event.startTime === "All Day" ? "All day" : `${event.startTime} – ${event.endTime}`} · Asia/Manila</p>
-              </div>
-            </div>
-            <div className="flex items-start gap-3">
+
+          {meetingLocation || meeting ? (
+            <div className="flex min-w-0 items-start gap-3">
               <MapPin className="mt-0.5 h-5 w-5 shrink-0 text-sibs-navy" />
-              <p className="min-w-0 break-all">{event.location || "No location specified"}</p>
-            </div>
-            {event.organizer ? (
-              <div className="flex items-start gap-3">
-                <Users className="mt-0.5 h-5 w-5 shrink-0 text-sibs-navy" />
-                <p className="min-w-0 break-all">{event.organizer}</p>
+              <div className="min-w-0 space-y-1 text-[13px] font-medium text-sibs-navy">
+                {meetingLocation ? <p className="break-words">{meetingLocation}</p> : null}
+                {meeting ? <a href={meeting.link} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-[#1967D2] hover:underline">
+                  <Link2 size={15} /> Join {meeting.service}
+                </a> : null}
               </div>
-            ) : null}
-            {meetLink ? (
-              <div className="flex items-start gap-3">
-                <Link2 className="mt-0.5 h-5 w-5 shrink-0 text-sibs-orange" />
-                <a href={meetLink} target="_blank" rel="noopener noreferrer" className="min-w-0 break-all text-[#1A73E8] underline hover:text-[#174EA6]">Join Google Meet</a>
-              </div>
-            ) : null}
-          </div>
-          {description ? (
-            <div className="rounded-[12px] border border-sibs-border bg-sibs-canvas px-4 py-3 text-xs text-sibs-navy">
-              <h4 className="font-black">Description / agenda</h4>
-              {description.length > 350 ? (
-                <details className="mt-2">
-                  <summary className="cursor-pointer text-[11px] font-bold text-sibs-primary-1">View original description</summary>
-                  <p className="thin-scroll mt-2 max-h-44 overflow-auto whitespace-pre-wrap break-words font-medium text-sibs-text-secondary">{description}</p>
-                </details>
-              ) : (
-                <p className="mt-2 whitespace-pre-wrap break-words font-medium text-sibs-text-secondary">{description}</p>
-              )}
             </div>
           ) : null}
+
+          <div className="flex min-w-0 items-start gap-3">
+            <Users className="mt-0.5 h-5 w-5 shrink-0 text-sibs-navy" />
+            <div className="min-w-0 flex-1">
+              <h4 className="text-[13px] font-black text-sibs-navy">{googleGuests.length ? `${googleGuests.length} guest${googleGuests.length === 1 ? "" : "s"}` : "Guests & organizer"}</h4>
+              {googleGuests.length ? (
+                <p className="mt-1 text-[11px] font-medium text-sibs-text-secondary">
+                  {accepted ? `${accepted} accepted` : ""}{tentative ? ` · ${tentative} maybe` : ""}{declined ? ` · ${declined} declined` : ""}{awaiting ? ` · ${awaiting} awaiting` : ""}
+                </p>
+              ) : null}
+              <div className="mt-3 space-y-3">
+                {guests.map((guest, index) => {
+                  const isOrganizer = guest.organizer || Boolean(organizer.email && guest.email.toLowerCase() === organizer.email.toLowerCase());
+                  return <div key={`${guest.email || guest.displayName}-${index}`} className="flex min-w-0 items-center gap-3">
+                    <GoogleCalendarGuestAvatar guest={guest} account={event.googleAccount} />
+                    <div className="min-w-0 flex-1">
+                      <p className="break-words text-[13px] font-semibold leading-5 text-sibs-navy">{googleCalendarGuestLabel(guest)}</p>
+                      {guest.displayName && guest.email ? <p className="break-all text-[11px] text-sibs-text-secondary">{guest.email}</p> : null}
+                      <p className="text-[11px] text-sibs-text-secondary">{isOrganizer ? "Organizer" : calendarGuestStatus(guest.responseStatus)}{guest.optional ? " · Optional" : ""}</p>
+                    </div>
+                  </div>;
+                })}
+                {!guests.length ? <p className="text-[12px] font-medium text-sibs-text-secondary">Google Calendar has not provided a guest list for this event.</p> : null}
+              </div>
+            </div>
+          </div>
+
+          {description ? (
+            <div className="flex min-w-0 items-start gap-3 border-t border-sibs-border pt-4">
+              <List className="mt-0.5 h-5 w-5 shrink-0 text-sibs-navy" aria-hidden="true" />
+              <div className="min-w-0 flex-1">
+                <h4 className="mb-3 text-[12px] font-black text-sibs-navy">Description / agenda</h4>
+                <GoogleCalendarOriginalDescription text={description} />
+              </div>
+            </div>
+          ) : null}
+
+          {reminder ? (
+            <div className="flex min-w-0 items-start gap-3 border-t border-sibs-border pt-4 text-[12px] text-sibs-text-secondary">
+              <Clock className="mt-0.5 h-4 w-4 shrink-0 text-sibs-navy" />
+              <div>{reminder.useDefault ? "Google Calendar default reminders" : Array.isArray(reminder.overrides) && reminder.overrides.length
+                ? reminder.overrides.map((entry) => `${entry.minutes} minutes before (${entry.method === "email" ? "email" : "notification"})`).join(" · ")
+                : "No notifications"}</div>
+            </div>
+          ) : null}
+
           <p className="rounded-[10px] border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-800">
-            {historical
-              ? "This schedule has already started or its date has passed. Historical events are view-only in SiBS HRIS."
+            {historical ? "This schedule has already started or its date has passed. Historical events are view-only in SiBS HRIS."
               : "This event is not registered as a SiBS HRIS-managed schedule. It can be viewed here but cannot be edited, rescheduled, or deleted from SiBS HRIS."}
           </p>
         </div>
@@ -3753,7 +3915,10 @@ export default function HeaderCalendarModal({ open, user, onClose }) {
         givenName: statusResult.googleGivenName || "",
         familyName: statusResult.googleFamilyName || "",
       });
-      setEvents(googleEvents.map(normalizeGoogleCalendarEvent));
+      setEvents(googleEvents.map((event) => normalizeGoogleCalendarEvent(event, {
+        email: payload?.googleAccountEmail || googleCalendarEmail || "",
+        photoUrl: payload?.googleProfilePicture || "",
+      })));
     } catch (error) {
       if (calendarLoadRequestRef.current !== requestId) return;
 
@@ -3852,7 +4017,10 @@ export default function HeaderCalendarModal({ open, user, onClose }) {
 
       lastLoadedRangeRef.current = rangeKey;
       calendarConnectedRef.current = true;
-      setEvents(googleEvents.map(normalizeGoogleCalendarEvent));
+      setEvents(googleEvents.map((event) => normalizeGoogleCalendarEvent(event, {
+        email: payload?.googleAccountEmail || googleCalendarEmail || "",
+        photoUrl: payload?.googleProfilePicture || "",
+      })));
       setCalendarConnected(true);
       const recruitment = payload?.recruitmentSync;
       const firstSyncError = recruitment?.results?.flatMap((candidate) => [

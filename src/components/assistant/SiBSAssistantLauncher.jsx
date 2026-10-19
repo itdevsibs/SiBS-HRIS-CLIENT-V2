@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ChevronRight, MessageCircleMore, Sparkles, X } from "lucide-react";
+import { createPortal } from "react-dom";
 
 import { useUser } from "@/services/context/UserContext";
 import { useChat } from "@/services/context/ChatContext";
@@ -297,16 +298,19 @@ export default function SiBSAssistantLauncher({
       : "bottom-[calc(100%+0.75rem)]"
   } ${isLeftHalf ? "left-0" : "right-0"}`;
 
-  return (
+  // Mount outside AppShell stacking contexts so the launcher remains above
+  // calendar, candidate and other modal backdrops even when they use portals.
+  const launcher = (
     <aside
       ref={containerRef}
       aria-label="SiBS Assistant Navigation"
-      className={`fixed z-[100] font-jakarta transform-gpu ${
+      className={`fixed font-jakarta transform-gpu ${
         triggerPosition ? "" : "right-4 sm:right-6"
       }`}
       style={
         triggerPosition
           ? {
+              zIndex: 2147483647,
               left: `${triggerPosition.left}px`,
               top: `${triggerPosition.top}px`,
               right: "auto",
@@ -314,6 +318,7 @@ export default function SiBSAssistantLauncher({
               touchAction: "none",
             }
           : {
+              zIndex: 2147483647,
               bottom: "calc(1.25rem + env(safe-area-inset-bottom, 0px))",
               touchAction: "none",
             }
@@ -455,4 +460,9 @@ export default function SiBSAssistantLauncher({
       </button>
     </aside>
   );
+
+  // Fallback retains the markup if this file is ever rendered without a DOM.
+  return typeof document !== "undefined"
+    ? createPortal(launcher, document.body)
+    : launcher;
 }
