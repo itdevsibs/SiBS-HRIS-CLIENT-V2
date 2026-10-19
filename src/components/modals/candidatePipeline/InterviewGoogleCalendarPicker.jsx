@@ -212,21 +212,21 @@ function timeLabel(time) {
   return `${two(hour % 12 || 12)}:${two(minute)} ${hour >= 12 ? "PM" : "AM"}`;
 }
 
-/** The Google Calendar event-editor layout, displayed strictly read-only.
- * Historical appointments can be reviewed, but cannot be edited or republished.
- * Multiple events on one day are browsed one at a time from the calendar. */
+/** Read-only details for registered Google events and pending HRIS proposals.
+ * The description is displayed across the full modal width (not a two-column
+ * field), and forwarded invitations are collapsed by default. */
 function ReadOnlyCalendarEventsDialog({ dateKey, events, initialEventId, onClose, expired }) {
   const dialogRef = useRef(null);
   const [activeId, setActiveId] = useState(initialEventId || events[0]?.id || "");
+  const [descriptionExpanded, setDescriptionExpanded] = useState(false);
   const activeIndex = Math.max(0, events.findIndex((event) => event.id === activeId));
   const activeEvent = events[activeIndex] || null;
   const isPending = Boolean(activeEvent?.isPendingHris);
+
   const formatDate = (date) => {
-    // Keep the read-only date chip in sync with the actual HRIS/Google date.
-    // The former double-escaped regexp made every valid date render blank.
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date || "")) return "Date unavailable";
     const [year, month, day] = date.split("-");
-    return `${month}/${day}/${year}`;
+    return `${MONTHS[Number(month) - 1]} ${Number(day)}, ${year}`;
   };
   const googleColors = {
     "1": { label: "Blue", dot: "bg-blue-500" },
@@ -237,33 +237,34 @@ function ReadOnlyCalendarEventsDialog({ dateKey, events, initialEventId, onClose
     "5": { label: "Banana Yellow", dot: "bg-amber-400" },
     "8": { label: "Graphite", dot: "bg-slate-500" },
   };
-  const color = googleColors[activeEvent?.calendarColorId] || { label: "Default color", dot: "bg-slate-400" };
+  const color = googleColors[activeEvent?.calendarColorId] || { label: "Default", dot: "bg-slate-400" };
   const availability = activeEvent?.isFree ? "Free" : "Busy";
-  const visibility = activeEvent?.visibility === "default"
-    ? "Default visibility"
-    : activeEvent?.visibility === "private"
-      ? "Private"
-      : activeEvent?.visibility === "public"
-        ? "Public"
-        : (activeEvent?.visibility || "Default visibility");
-  const notifications = isPending ? "Not yet registered with Google"
+  const visibility = activeEvent?.visibility === "private" ? "Private"
+    : activeEvent?.visibility === "public" ? "Public" : "Default visibility";
+  const notifications = isPending ? "Not registered yet"
     : activeEvent?.reminders?.useDefault ? "Default notifications"
     : activeEvent?.reminders?.overrides?.length
       ? `${activeEvent.reminders.overrides.length} notification(s)`
       : activeEvent?.reminders ? "No notifications" : "Notifications not specified";
-  const eventType = isPending || activeEvent?.isAvailability ? "Interview availability"
+  // Legacy interview-availability records remain identifiable, but the obsolete
+  // fourth tab is not shown in a view-only event detail dialog.
+  const eventType = activeEvent?.isAvailability || isPending ? "Interview availability"
     : activeEvent?.eventType === "outOfOffice" ? "Out of office"
     : activeEvent?.eventType === "focusTime" ? "Task" : "Event";
-  const readonlyChip = (value, width = "min-w-[175px]") => (
-    <span className={`inline-flex min-h-9 max-w-full items-center rounded-[9px] border border-[#DDE7F2] bg-[#F7FAFD] px-3 py-2 text-[12px] font-bold text-[#06325E] ${width}`}>
-      <span className="min-w-0 break-words">{value || "Not specified"}</span>
-    </span>
-  );
+  const description = String(activeEvent?.description || "").trim();
+  const descriptionPreview = description
+    .replace(/<\/?(?:mailto|https?):[^>]*>/gi, "")
+    .replace(/https?:\/\/\S+/gi, "[Link]")
+    .replace(/\b[\w.+-]+@[\w.-]+\.[a-z]{2,}\b/gi, "[Email]")
+    .replace(/\s+/g, " ").trim().slice(0, 260);
+  const isLongDescription = description.length > 300 || description.includes("\n");
 
   useEffect(() => {
     setActiveId(initialEventId || events[0]?.id || "");
   }, [dateKey, initialEventId]);
-
+  useEffect(() => {
+    setDescriptionExpanded(false);
+  }, [activeId]);
   useEffect(() => {
     const previousFocus = document.activeElement;
     dialogRef.current?.focus();
@@ -282,118 +283,111 @@ function ReadOnlyCalendarEventsDialog({ dateKey, events, initialEventId, onClose
   }, [onClose]);
 
   if (!activeEvent) return null;
+
   return createPortal(
-    <div className="fixed inset-0 z-[10070] flex h-dvh items-center justify-center bg-[#03182C]/50 px-2 py-2 font-jakarta sm:px-4 sm:py-4 sibs-modal-backdrop-in motion-reduce:animate-none" role="presentation">
+    <div className="sibs-modal-backdrop-in fixed inset-0 z-[10070] flex h-dvh items-center justify-center bg-[#03182C]/60 p-2 font-jakarta backdrop-blur-[3px] motion-reduce:animate-none sm:p-4" role="presentation">
       <section ref={dialogRef} role="dialog" aria-modal="true"
         aria-label={`View ${isPending ? "HRIS proposed interview" : "Google Calendar event"}: ${activeEvent.title}`}
         tabIndex={-1}
-        className="sibs-modal-pop-in relative flex max-h-[88dvh] w-full max-w-3xl flex-col overflow-hidden rounded-[14px] border border-white/70 bg-white shadow-2xl outline-none max-sm:max-h-[calc(100dvh-1rem)] motion-reduce:animate-none">
-        {/* Match the Update Interview Schedule modal: a fixed navy header, scrollable body and fixed footer. */}
-        <header className="shrink-0 bg-[#062F53] px-3.5 py-3 text-white sm:px-5">
+        className="sibs-modal-pop-in relative flex max-h-[min(90dvh,860px)] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-white/70 bg-white shadow-2xl outline-none max-sm:max-h-[calc(100dvh-1rem)] motion-reduce:animate-none">
+        <header className="shrink-0 bg-[#062F53] px-4 py-4 text-white sm:px-6">
           <div className="flex min-w-0 items-center gap-3">
-            <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] border border-white/10 bg-[#FF5C28] shadow-[0_6px_16px_rgba(255,92,40,0.22)]" aria-hidden="true"><CalendarDays size={18}/></span>
+            <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#FF5C28] shadow-[0_6px_16px_rgba(255,92,40,0.22)]" aria-hidden="true"><CalendarDays size={19}/></span>
             <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-center gap-2">
-                <h3 className="truncate text-sm font-black leading-5 sm:text-base">{isPending ? "SiBS HRIS Proposed Interview" : "Google Calendar Event"}</h3>
-                <span className="rounded-full border border-white/20 bg-white/10 px-2.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wide">{isPending ? "HRIS only" : "View only"}</span>
-              </div>
-              <p className="mt-0.5 truncate text-[11px] font-medium text-white/80">{activeEvent.title}</p>
+              <p className="text-[10px] font-extrabold text-white/70">SiBS HRIS Operational Workspace</p>
+              <h3 className="mt-0.5 text-[16px] font-black leading-snug sm:text-lg">{isPending ? "SiBS Calendar · Proposed Interview" : "SiBS Calendar · Event Details"}</h3>
+              <p className="mt-0.5 text-[11px] font-medium text-white/75">{isPending ? "HRIS proposal" : "Powered by Google Calendar"} · Asia/Manila</p>
             </div>
-            <button type="button" aria-label="Close schedule details" onClick={onClose} className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] border border-white/10 bg-white/10 text-white transition hover:bg-white/20"><X size={17}/></button>
+            <button type="button" aria-label="Close schedule details" onClick={onClose}
+              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/10 text-white transition hover:bg-white/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"><X size={18}/></button>
           </div>
         </header>
 
-        <div className="min-h-0 flex-1 touch-pan-y overflow-y-auto overscroll-contain bg-[#F5F8FC] px-3 py-3 sm:px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" style={{ scrollbarWidth: "none", msOverflowStyle: "none", WebkitOverflowScrolling: "touch" }}>
-          <div className="space-y-4 rounded-xl border border-[#DDE7F2] bg-white p-3.5 sm:p-4">
-            <div className="flex flex-wrap items-center gap-2 sm:gap-4" aria-label="Calendar event type (read only)">
-              {(isPending ? ["Interview availability"] : ["Event", "Interview availability", "Task", "Out of office"]).map((tab) => (
-                <span key={tab} aria-current={eventType === tab ? "true" : undefined}
-                  className={`inline-flex min-h-8 items-center rounded-[9px] px-3 text-[11px] font-extrabold ${eventType === tab ? "bg-[#06325E] text-white shadow-sm" : "text-[#667085]"}`}>{tab}</span>
-              ))}
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain bg-[#F5F8FC] px-3 py-4 sm:px-5 sm:py-5" style={{ WebkitOverflowScrolling: "touch" }}>
+          <div className="space-y-4">
+            <div className="rounded-xl border border-[#DDE7F2] bg-white p-4 sm:p-5">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="rounded-lg bg-[#06325E] px-3 py-1.5 text-[11px] font-extrabold text-white">{eventType}</span>
+                <span className="rounded-lg border border-[#DDE7F2] bg-[#F7FAFD] px-2.5 py-1.5 text-[10px] font-bold text-[#52637A]">View only</span>
+                {activeEvent.isRecurring && <span className="rounded-lg border border-[#DDE7F2] px-2.5 py-1.5 text-[10px] font-bold text-[#52637A]">Recurring</span>}
+                {activeEvent.allDay && <span className="rounded-lg border border-[#DDE7F2] px-2.5 py-1.5 text-[10px] font-bold text-[#52637A]">All day</span>}
+                <span className={`ml-auto h-2.5 w-2.5 shrink-0 rounded-full ${color.dot}`} title={color.label}/>
+              </div>
+              <h4 className="mt-3 break-words text-lg font-black leading-snug text-[#06325E] sm:text-xl">{activeEvent.title}</h4>
+              {isPending && <p role="status" className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold leading-relaxed text-amber-900">{activeEvent.scheduleStatus}. Saved in SiBS HRIS, not yet registered with Google Calendar.</p>}
+              {events.length > 1 && <div className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-[#DDE7F2] bg-[#F7FAFD] px-3 py-2">
+                <span className="text-[11px] font-bold text-[#06325E]">Schedule {activeIndex + 1} of {events.length} · {formatDate(dateKey)}</span>
+                <div className="flex items-center gap-2">
+                  <button type="button" aria-label="Previous schedule" disabled={activeIndex === 0} onClick={() => setActiveId(events[activeIndex - 1].id)} className="rounded-lg border border-[#DDE7F2] bg-white p-1.5 text-[#06325E] hover:bg-[#EEF4FA] disabled:cursor-not-allowed disabled:opacity-40"><ChevronLeft size={16}/></button>
+                  <button type="button" aria-label="Next schedule" disabled={activeIndex === events.length - 1} onClick={() => setActiveId(events[activeIndex + 1].id)} className="rounded-lg border border-[#DDE7F2] bg-white p-1.5 text-[#06325E] hover:bg-[#EEF4FA] disabled:cursor-not-allowed disabled:opacity-40"><ChevronRight size={16}/></button>
+                </div>
+              </div>}
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                <div className="rounded-lg border border-[#E5ECF5] bg-[#F8FAFC] px-3 py-3">
+                  <div className="flex items-center gap-2 text-[10px] font-extrabold uppercase tracking-wide text-[#667085]"><CalendarDays size={15} className="text-[#FF5C28]"/>Date</div>
+                  <p className="mt-1.5 text-[13px] font-extrabold text-[#06325E]">{formatDate(activeEvent.dateKey)}{activeEvent.endDateKey && activeEvent.endDateKey !== activeEvent.dateKey ? ` – ${formatDate(activeEvent.endDateKey)}` : ""}</p>
+                </div>
+                <div className="rounded-lg border border-[#E5ECF5] bg-[#F8FAFC] px-3 py-3">
+                  <div className="flex items-center gap-2 text-[10px] font-extrabold uppercase tracking-wide text-[#667085]"><Clock size={15} className="text-[#FF5C28]"/>Time (PHT)</div>
+                  <p className="mt-1.5 text-[13px] font-extrabold text-[#06325E]">{activeEvent.allDay ? "All day" : `${timeLabel(activeEvent.time) || "Time unavailable"} – ${timeLabel(activeEvent.endTime) || "Not specified"}`}</p>
+                </div>
+              </div>
             </div>
 
-            {events.length > 1 && <div className="flex flex-wrap items-center justify-between gap-2 rounded-[9px] border border-[#DDE7F2] bg-[#F7FAFD] px-3 py-2">
-              <span className="text-[11px] font-bold text-[#06325E]">Schedule {activeIndex + 1} of {events.length} on {formatDate(dateKey)}</span>
-              <div className="flex items-center gap-2">
-                <button type="button" aria-label="Previous schedule" disabled={activeIndex === 0}
-                  onClick={() => setActiveId(events[activeIndex - 1].id)}
-                  className="rounded-lg border border-[#DDE7F2] bg-white p-1.5 text-[#06325E] hover:bg-[#EEF4FA] disabled:cursor-not-allowed disabled:opacity-40"><ChevronLeft size={16}/></button>
-                <button type="button" aria-label="Next schedule" disabled={activeIndex === events.length - 1}
-                  onClick={() => setActiveId(events[activeIndex + 1].id)}
-                  className="rounded-lg border border-[#DDE7F2] bg-white p-1.5 text-[#06325E] hover:bg-[#EEF4FA] disabled:cursor-not-allowed disabled:opacity-40"><ChevronRight size={16}/></button>
+            {(activeEvent.meetLink || (isPending && activeEvent.interviewType === "Online")) && <div className="flex min-w-0 items-start gap-3 rounded-xl border border-[#DDE7F2] bg-white p-4">
+              <Video size={19} className="mt-0.5 shrink-0 text-[#FF5C28]" aria-hidden="true"/>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-extrabold text-[#06325E]">Google Meet</p>
+                {/^https:\/\//i.test(activeEvent.meetLink || "")
+                  ? <a className="mt-1 block max-w-full truncate text-xs font-semibold text-blue-700 hover:underline" href={activeEvent.meetLink} target="_blank" rel="noopener noreferrer" title={activeEvent.meetLink}>{activeEvent.meetLink}</a>
+                  : <p className="mt-1 text-xs font-medium text-[#667085]">The meeting link will be generated after the online interview is confirmed.</p>}
               </div>
             </div>}
 
-            {isPending && <div role="status" className="rounded-[9px] border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold leading-5 text-amber-900">
-              {activeEvent.scheduleStatus}. Saved in SiBS HRIS; this proposal is not a registered Google Calendar event.
+            {(activeEvent.location || activeEvent.site || activeEvent.organizer || activeEvent.category || activeEvent.scheduleStatus || isPending) && <div className="grid gap-3 sm:grid-cols-2">
+              {(activeEvent.location || activeEvent.site) && <div className="min-w-0 rounded-xl border border-[#DDE7F2] bg-white p-4">
+                <div className="flex items-center gap-2 text-[11px] font-extrabold text-[#667085]"><MapPin size={16} className="text-[#FF5C28]"/>Location / site</div>
+                <p className="mt-2 break-words text-[13px] font-bold text-[#06325E] [overflow-wrap:anywhere]">{activeEvent.location || activeEvent.site}</p>
+                {activeEvent.site && activeEvent.location && activeEvent.site !== activeEvent.location && <p className="mt-1 break-words text-xs text-[#667085]">{activeEvent.site}</p>}
+              </div>}
+              {activeEvent.organizer && <div className="min-w-0 rounded-xl border border-[#DDE7F2] bg-white p-4">
+                <div className="flex items-center gap-2 text-[11px] font-extrabold text-[#667085]"><CalendarDays size={16} className="text-[#FF5C28]"/>Organizer</div>
+                <p className="mt-2 break-words text-[13px] font-bold text-[#06325E] [overflow-wrap:anywhere]">{activeEvent.organizer}</p>
+              </div>}
+              {(activeEvent.category || activeEvent.scheduleStatus || isPending) && <div className="min-w-0 rounded-xl border border-[#DDE7F2] bg-white p-4 sm:col-span-2">
+                <div className="flex items-center gap-2 text-[11px] font-extrabold text-[#667085]"><Tags size={16} className="text-[#FF5C28]"/>Event information</div>
+                <div className="mt-2 flex flex-wrap gap-2 text-[11px] font-bold text-[#06325E]">
+                  {activeEvent.category && <span className="rounded-lg bg-[#F0F5FB] px-3 py-1.5">{activeEvent.category}</span>}
+                  {activeEvent.scheduleStatus && <span className="rounded-lg bg-[#F0F5FB] px-3 py-1.5">{activeEvent.scheduleStatus}</span>}
+                  {isPending && activeEvent.interviewType && <span className="rounded-lg bg-[#F0F5FB] px-3 py-1.5">{activeEvent.interviewType}</span>}
+                </div>
+              </div>}
             </div>}
 
-            <div className="space-y-4">
-              <div className="grid grid-cols-[24px_minmax(0,1fr)] items-start gap-3">
-                <Clock size={19} className="mt-1.5 text-[#FF5C28]" aria-hidden="true"/>
-                <div className="space-y-2">
-                  <div className="flex flex-wrap items-center gap-2">
-                    {readonlyChip(<><CalendarDays size={15} className="mr-2 text-[#FF5C28]"/>{formatDate(activeEvent.dateKey)}</>, "min-w-[190px]")}
-                    <span className="text-xs font-bold text-[#667085]">–</span>
-                    {activeEvent.endDateKey && activeEvent.endDateKey !== activeEvent.dateKey && readonlyChip(formatDate(activeEvent.endDateKey), "min-w-[115px]")}
-                  </div>
-                  {activeEvent.allDay
-                    ? readonlyChip("All day", "min-w-[125px]")
-                    : <div className="flex flex-wrap items-center gap-2">
-                        {readonlyChip(timeLabel(activeEvent.time), "min-w-[132px]")}
-                        <span className="text-xs font-bold text-[#667085]">–</span>
-                        {readonlyChip(timeLabel(activeEvent.endTime) || "Not specified", "min-w-[132px]")}
-                      </div>}
-                  <p className="text-[10px] font-semibold text-[#667085]">{activeEvent.isRecurring ? "Recurring event" : "Does not repeat"} · Asia/Manila · View only</p>
-                </div>
+            {description && <div className="min-w-0 rounded-xl border border-[#DDE7F2] bg-white p-4 sm:p-5">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2 text-[12px] font-extrabold text-[#06325E]"><List size={17} className="text-[#FF5C28]"/>Description / agenda</div>
+                {isLongDescription && <button type="button" aria-expanded={descriptionExpanded} onClick={() => setDescriptionExpanded((current) => !current)} className="shrink-0 rounded-lg border border-[#DDE7F2] bg-[#F7FAFD] px-3 py-1.5 text-[11px] font-bold text-[#06325E] transition hover:bg-[#EEF4FA]">{descriptionExpanded ? "Show less" : "Show full description"}</button>}
               </div>
+              {descriptionExpanded || !isLongDescription
+                ? <div className="mt-3 min-w-0 whitespace-pre-wrap break-words rounded-lg bg-[#F7FAFD] p-3 text-[12px] leading-5 text-[#35465C] [overflow-wrap:anywhere]">{description}</div>
+                : <p className="mt-3 min-w-0 break-words rounded-lg bg-[#F7FAFD] p-3 text-[12px] leading-5 text-[#35465C] [overflow-wrap:anywhere]">{descriptionPreview}{descriptionPreview.length < description.length ? "…" : ""}</p>}
+            </div>}
 
-              {(isPending ? activeEvent.interviewType === "Online" : true) && <div className="grid grid-cols-[24px_minmax(0,1fr)] items-start gap-3">
-                <Video size={19} className="mt-1 text-[#FF8A00]" aria-hidden="true"/>
-                {isPending
-                  ? <span className="inline-flex min-h-9 items-center text-xs font-semibold text-emerald-700">Google Meet will be generated after the Online interview is confirmed.</span>
-                  : /^https:\/\//i.test(activeEvent.meetLink || "")
-                    ? <div className="min-w-0 rounded-[9px] bg-[#EEF4FA] px-4 py-2">
-                        <strong className="block text-sm font-black text-[#06325E]">Join with Google Meet</strong>
-                        <a className="block truncate text-xs font-semibold text-[#52637A] hover:underline" href={activeEvent.meetLink} target="_blank" rel="noopener noreferrer">{activeEvent.meetLink}</a>
-                      </div>
-                    : <span className="inline-flex min-h-9 items-center gap-2 text-sm font-bold text-[#667085]"><Link2 size={16} className="text-[#FF5C28]"/>No Google Meet link</span>}
-              </div>}
-
-              {isPending && activeEvent.interviewType && <div className="grid grid-cols-[24px_minmax(0,1fr)] items-center gap-3">
-                <Video size={19} className="text-[#06325E]"/>
-                <div className="min-w-0"><p className="mb-1 text-[10px] font-extrabold uppercase tracking-wide text-[#667085]">Interview Type</p>{readonlyChip(activeEvent.interviewType, "min-w-[170px]")}</div>
-              </div>}
-
-              <div className="grid gap-3 lg:grid-cols-2">
-                <div className="grid grid-cols-[24px_minmax(0,1fr)] items-center gap-3"><MapPin size={19} className="text-[#06325E]"/><span className="min-h-9 min-w-0 break-words border-b border-[#DDE7F2] py-2 text-xs font-semibold text-[#06325E]">{activeEvent.location || "No location specified"}</span></div>
-                <div className="grid grid-cols-[24px_minmax(0,1fr)] items-start gap-3"><List size={19} className="mt-2 text-[#06325E]"/><span className="min-h-9 min-w-0 whitespace-pre-wrap break-words border-b border-[#DDE7F2] py-2 text-xs font-semibold text-[#06325E]">{activeEvent.description || "No description or agenda"}</span></div>
-              </div>
-
-              <div className="space-y-3 border-b border-[#DDE7F2] pb-3">
-                <div className="grid grid-cols-[24px_minmax(0,1fr)] items-center gap-3">
-                  <CalendarDays size={19} className="text-[#06325E]"/>
-                  <div className="flex min-w-0 flex-wrap items-center justify-between gap-2">
-                    <div className="min-w-0"><p className="break-words text-sm font-black text-[#06325E]">{activeEvent.organizer || "Google Calendar"} <span className="inline-block h-2 w-2 rounded-full bg-[#FF5C28]"/></p><p className="text-[11px] font-semibold text-[#667085]">{availability} • {visibility} • {notifications}</p></div>
-                    <div className="flex shrink-0 items-center gap-2">{readonlyChip(color.label, "min-w-[155px]")}<span className={`h-3 w-3 shrink-0 rounded-full ${color.dot}`}/></div>
-                  </div>
-                </div>
-                <div className="grid grid-cols-[24px_minmax(0,1fr)] items-center gap-3"><Tags size={19} className="text-[#06325E]"/><div className="flex flex-wrap gap-2">{readonlyChip(activeEvent.category || "Not specified", "min-w-[145px]")}{readonlyChip(activeEvent.scheduleStatus || "Not specified", "min-w-[130px]")}</div></div>
-                <div className="grid grid-cols-[24px_minmax(0,1fr)] items-center gap-3"><MapPin size={19} className="text-[#06325E]"/>{readonlyChip(activeEvent.site || "Not specified", "min-w-[190px]")}</div>
-                <div className="grid grid-cols-[24px_minmax(0,1fr)] items-center gap-3"><BriefcaseBusiness size={19} className="text-[#06325E]"/>{readonlyChip(availability, "min-w-[120px]")}</div>
-                <div className="grid grid-cols-[24px_minmax(0,1fr)] items-center gap-3"><LockKeyhole size={19} className="text-[#06325E]"/>{readonlyChip(visibility, "min-w-[180px]")}</div>
-                <div className="grid grid-cols-[24px_minmax(0,1fr)] items-center gap-3"><Bell size={19} className="text-[#06325E]"/><span className="text-xs font-black text-[#06325E]">{notifications}</span></div>
-              </div>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-lg px-1 text-[11px] font-semibold text-[#667085]">
+              <span className="inline-flex items-center gap-1.5"><BriefcaseBusiness size={14}/>{availability}</span>
+              <span className="inline-flex items-center gap-1.5"><LockKeyhole size={14}/>{visibility}</span>
+              <span className="inline-flex items-center gap-1.5"><Bell size={14}/>{notifications}</span>
             </div>
           </div>
         </div>
 
-        <footer className="flex shrink-0 items-center justify-between gap-3 border-t border-[#DDE7F2] bg-white px-3.5 py-2.5 sm:px-5">
-          <span className="max-w-[380px] text-[10px] font-semibold leading-4 text-[#667085]">{isPending
-            ? "SiBS HRIS proposal only · Google Calendar registration follows candidate acceptance or approved reschedule."
-            : expired ? "Past Google Calendar event · Read-only. New scheduling is disabled for this date."
-            : "Registered Google Calendar event · Read-only. Changes are disabled here."}</span>
-          <button type="button" onClick={onClose} className="h-10 shrink-0 rounded-[11px] bg-[#FF5C28] px-6 text-xs font-black text-white transition hover:bg-[#E84F1F]">Close</button>
+        <footer className="flex shrink-0 items-center justify-between gap-3 border-t border-[#DDE7F2] bg-white px-4 py-3 sm:px-6">
+          <span className="max-w-[470px] text-[10px] font-semibold leading-4 text-[#667085]">{isPending
+            ? "SiBS HRIS proposal only. Google Calendar registration follows the approved interview schedule."
+            : expired ? "Past Google Calendar event · View only. Scheduling changes are disabled here."
+            : "Google Calendar event · View only. Make changes in the authorized calendar workflow."}</span>
+          <button type="button" onClick={onClose} className="h-10 shrink-0 rounded-xl bg-[#FF5C28] px-6 text-xs font-black text-white transition hover:bg-[#E84F1F] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FF5C28]">Close</button>
         </footer>
       </section>
     </div>,
