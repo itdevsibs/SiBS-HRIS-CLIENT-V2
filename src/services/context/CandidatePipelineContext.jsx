@@ -1098,6 +1098,9 @@ export function CandidatePipelineProvider({ children }) {
   const backgroundRefreshInFlightRef = useRef(false);
   // An older GET must never overwrite a stage committed by a newer write.
   const candidateMutationRevisionRef = useRef(0);
+  // Production reads can lag behind the committed DB row. Never temporarily
+  // move a recently committed card backwards when a replica returns old data.
+  const recentlyCommittedStagesRef = useRef(new Map());
   const [hasLoadedStorage, setHasLoadedStorage] = useState(true);
 
   const [isLoading, setIsLoading] = useState(false);
@@ -1255,7 +1258,30 @@ export function CandidatePipelineProvider({ children }) {
           : [];
       // Empty API responses are valid: never populate the board with sample candidates.
       const rows = apiRows;
-      const normalizedRows = rows.map(normalizePipelineCandidateForBoard);
+      const normalizedRows = rows.map((row) => {
+        const normalized = normalizePipelineCandidateForBoard(row);
+        const rowId = cleanText(getCandidatePipelineRecordId(normalized));
+        const committed = recentlyCommittedStagesRef.current.get(rowId);
+        if (!committed) return normalized;
+
+        const serverStage = normalizePipelineStageName(getCandidateStage(normalized));
+        if (Date.now() >= committed.expiresAt ||
+            serverStage === committed.stage ||
+            (serverStage !== committed.previousStage && serverStage !== committed.stage)) {
+          recentlyCommittedStagesRef.current.delete(rowId);
+          return normalized;
+        }
+
+        // Only protect the specific old stage from a stale read. A different
+        // later stage is always allowed through without waiting for the TTL.
+        return normalizePipelineCandidateForBoard({
+          ...normalized,
+          currentStage: committed.stage,
+          currentPipelineStage: committed.stage,
+          pipelineStage: committed.stage,
+          stage: committed.stage,
+        });
+      });
 
       // Socket and GET responses may arrive after a local save. A fetch that
       // started before that save contains potentially obsolete stage values.
@@ -1407,6 +1433,43 @@ export function CandidatePipelineProvider({ children }) {
       }
     };
 
+    // A small stage-only event arrives right after the authoritative database
+    // write, before slower Google Calendar and Talent Pool follow-up work.
+    // No candidate names, emails, or private candidate records are broadcast.
+    const applyCommittedStage = (payload = {}) => {
+      const recordId = cleanText(payload?.candidatePipelineId);
+      const stage = normalizePipelineStageName(payload?.stage, "");
+      const previousStage = normalizePipelineStageName(payload?.previousStage, "");
+      if (!/^\d+$/.test(recordId) || !stage) return;
+
+      // Protect a newly committed move from delayed production GET responses.
+      recentlyCommittedStagesRef.current.set(recordId, {
+        stage,
+        previousStage,
+        expiresAt: Date.now() + 20000,
+      });
+      candidateMutationRevisionRef.current += 1;
+      const applyStage = (candidate) => {
+        if (!candidate || cleanText(getCandidatePipelineRecordId(candidate)) !== recordId) {
+          return candidate;
+        }
+        return normalizePipelineCandidateForBoard({
+          ...candidate,
+          currentStage: stage,
+          currentPipelineStage: stage,
+          pipelineStage: stage,
+          stage,
+        });
+      };
+      setCandidateList((previous) => previous.map(applyStage));
+      setSelectedCandidate((previous) => applyStage(previous));
+      setMoveCandidate((previous) => applyStage(previous));
+      setScheduleCandidate((previous) => applyStage(previous));
+      setAssessmentCandidate((previous) => applyStage(previous));
+      setOfferCandidate((previous) => applyStage(previous));
+    };
+
+    socket.on("candidate-pipeline:stage-committed", applyCommittedStage);
     socket.on("candidate-pipeline:changed", syncOpenPipeline);
     if (!socket.connected) socket.connect();
 
@@ -1419,6 +1482,7 @@ export function CandidatePipelineProvider({ children }) {
     window.addEventListener("focus", syncOpenPipeline);
 
     return () => {
+      socket.off("candidate-pipeline:stage-committed", applyCommittedStage);
       socket.off("candidate-pipeline:changed", syncOpenPipeline);
       window.clearInterval(pollId);
       document.removeEventListener("visibilitychange", syncOpenPipeline);
@@ -1804,6 +1868,21 @@ export function CandidatePipelineProvider({ children }) {
           normalizePipelineCandidateForBoard(updatedCandidate);
 
         // Update the persisted stage in this render, immediately after Save.
+        const recordId = cleanText(getCandidatePipelineRecordId(normalizedCandidate));
+        const newStage = normalizePipelineStageName(getCandidateStage(normalizedCandidate));
+        const prior = candidateList.find((row) =>
+          cleanText(getCandidatePipelineRecordId(row)) === recordId,
+        );
+        const previousStage = prior
+          ? normalizePipelineStageName(getCandidateStage(prior))
+          : "";
+        if (recordId && previousStage && newStage && previousStage !== newStage) {
+          recentlyCommittedStagesRef.current.set(recordId, {
+            previousStage,
+            stage: newStage,
+            expiresAt: Date.now() + 20000,
+          });
+        }
         candidateMutationRevisionRef.current += 1;
         setCandidateList((previous) =>
           mergeUpdatedCandidateList(
