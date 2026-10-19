@@ -3083,6 +3083,52 @@ function WeekCalendarView({
   );
 }
 
+// Google Calendar descriptions sometimes contain an entire forwarded email or
+// meeting invitation, including attendees, reply headers, URLs, and RSVP data.
+// Keep the ORIGINAL notes on the event for the details modal; Agenda only needs
+// a short, readable preview so one imported event cannot fill the whole view.
+function summarizeAgendaDescription(notes) {
+  const original = String(notes || "").trim();
+  if (!original) return "";
+
+  const forwardedHeader = /(?:-{2,}\s*(?:original appointment|original message|forwarded message)\s*-{2,}|(?:^|\n)\s*(?:begin forwarded message|from:\s*google calendar|on .{6,100} wrote:))/im;
+  const forwardedMatch = forwardedHeader.exec(original);
+  const plainText = (forwardedMatch ? original.slice(0, forwardedMatch.index) : original)
+    // Remove pasted email HTML and long URLs from the compact summary only.
+    .replace(/<[^>]*>/g, " ")
+    .replace(/\b(?:https?:\/\/|www\.)\S+/gi, " ")
+    .replace(/\bmailto:\S+/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  if (!plainText && forwardedMatch) {
+    return "Imported invitation · Open details to read the original message.";
+  }
+  if (!plainText) return "";
+
+  const limit = 160;
+  if (plainText.length <= limit) return plainText;
+  const lastSpace = plainText.lastIndexOf(" ", limit);
+  return `${plainText.slice(0, lastSpace > 105 ? lastSpace : limit).trimEnd()}…`;
+}
+
+function formatAgendaLocation(location) {
+  const value = String(location || "").trim();
+  if (/^https?:\/\/meet\.google\.com\//i.test(value)) return "Google Meet";
+  if (/^https?:\/\//i.test(value)) return "Online meeting link";
+  return value;
+}
+
+function AgendaNotePreview({ notes }) {
+  const preview = summarizeAgendaDescription(notes);
+  if (!preview) return null;
+  return (
+    <p className="mt-2 max-w-full break-words rounded-lg border border-sibs-border bg-sibs-canvas px-3 py-2 text-[11px] font-medium leading-relaxed text-sibs-text-secondary">
+      {preview}
+    </p>
+  );
+}
+
 function AgendaCalendarView({
   events,
   nowMs,
@@ -3105,7 +3151,7 @@ function AgendaCalendarView({
           </span>
         </div>
 
-        <div className="mt-3 min-h-0 flex-1 space-y-3 overflow-y-auto pr-1">
+        <div className="mt-3 min-w-0 flex-1 space-y-3">
           {sortedEvents.length === 0 ? (
             <div className="flex min-h-[360px] items-center justify-center rounded-[12px] border border-dashed border-sibs-border bg-sibs-canvas px-4 py-10 text-center text-sm font-bold text-sibs-text-secondary">
               No schedules match the selected filters.
@@ -3115,7 +3161,7 @@ function AgendaCalendarView({
           {sortedEvents.map((event) => (
             <article
               key={event.id}
-              className="flex min-w-0 flex-wrap gap-3 rounded-[12px] border border-sibs-border bg-white p-3 shadow-sm sm:flex-nowrap sm:gap-4 sm:p-4"
+              className="flex min-w-0 flex-wrap items-start gap-3 rounded-[12px] border border-sibs-border bg-white p-3 shadow-sm sm:flex-nowrap sm:gap-4 sm:p-4"
             >
               <div className="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-[12px] bg-sibs-navy text-white">
                 <span className="text-[10px] font-black uppercase">
@@ -3145,40 +3191,44 @@ function AgendaCalendarView({
                   >
                     {event.status}
                   </span>
-                  <span className="flex items-center gap-1 text-sm font-black text-sibs-navy">
-                    <Clock className="h-3.5 w-3.5 text-sibs-orange" />
-                    {event.startTime} - {event.endTime}
+                  <span className="inline-flex items-center gap-1 text-xs font-black text-sibs-navy sm:text-sm">
+                    <Clock className="h-3.5 w-3.5 shrink-0 text-sibs-orange" />
+                    {event.startTime === "All Day" ? "All day" : `${event.startTime} – ${event.endTime}`}
                   </span>
                 </div>
 
                 <h3 className="mt-2 break-words text-sm font-black text-sibs-primary-1">
                   {event.title}
                 </h3>
-                <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs font-semibold text-sibs-text-secondary">
-                  <span className="inline-flex items-center gap-1">
-                    <Users className="h-3.5 w-3.5 text-sibs-navy" />
-                    Account: {event.account || "Not specified"}
-                  </span>
-                  <span className="inline-flex items-center gap-1">
-                    <Users className="h-3.5 w-3.5 text-sibs-navy" />
-                    Host: {event.organizer || "Not specified"}
-                  </span>
+                <div className="mt-1.5 flex min-w-0 flex-wrap items-center gap-x-4 gap-y-1.5 text-xs font-semibold text-sibs-text-secondary">
+                  {event.account ? (
+                    <span className="inline-flex min-w-0 max-w-full items-center gap-1">
+                      <Users className="h-3.5 w-3.5 shrink-0 text-sibs-navy" />
+                      <span className="min-w-0 break-words">Account: {event.account}</span>
+                    </span>
+                  ) : null}
+                  {event.organizer ? (
+                    <span className="inline-flex min-w-0 max-w-full items-center gap-1">
+                      <Users className="h-3.5 w-3.5 shrink-0 text-sibs-navy" />
+                      <span className="min-w-0 break-all sm:max-w-[300px] sm:truncate" title={event.organizer}>
+                        Host: {event.organizer}
+                      </span>
+                    </span>
+                  ) : null}
                   {event.location ? (
-                    <span className="inline-flex items-center gap-1">
-                      <MapPin className="h-3.5 w-3.5 text-sibs-orange" />
-                      {event.location}
+                    <span className="inline-flex min-w-0 max-w-full items-center gap-1">
+                      <MapPin className="h-3.5 w-3.5 shrink-0 text-sibs-orange" />
+                      <span className="min-w-0 break-words sm:max-w-[260px] sm:truncate" title={event.location}>
+                        {formatAgendaLocation(event.location)}
+                      </span>
                     </span>
                   ) : null}
                 </div>
 
-                {event.notes ? (
-                  <p className="mt-3 max-w-[560px] rounded-[8px] bg-sibs-canvas px-3 py-2 text-[11px] font-semibold italic text-sibs-text-secondary">
-                    {event.notes}
-                  </p>
-                ) : null}
+                <AgendaNotePreview notes={event.notes} />
               </div>
 
-              <div className="flex w-full shrink-0 flex-wrap items-center justify-end gap-2 self-center sm:w-auto">
+              <div className="flex w-full shrink-0 flex-wrap items-center justify-end gap-2 self-end sm:w-auto">
                 {isEditableHrisCalendarEvent(sourceCalendarEvent(event)) && !isPastCalendarEvent(sourceCalendarEvent(event), nowMs) && <>
                 <button
                   type="button"
