@@ -1242,7 +1242,7 @@
   }
 
   .sibs-dashboard-header {
-    @apply sticky top-0 z-[70] flex h-[74px] 2xl:h-[86px] shrink-0 items-center border-b border-sibs-border-subtle bg-sibs-surface px-4 font-jakarta shadow-xs sm:px-6 lg:px-7;
+    @apply sticky top-0 z-[70] flex h-[132px] shrink-0 flex-col justify-center border-b border-sibs-border-subtle bg-sibs-surface px-4 font-jakarta shadow-xs sm:h-[74px] sm:flex-row sm:items-center sm:px-6 lg:px-7 2xl:h-[86px];
   }
 
   .t-resize {
@@ -1259,11 +1259,11 @@
   }
 
   .sibs-dashboard-header-inner {
-    @apply mx-auto flex h-full w-full max-w-[1700px] min-w-0 flex-1 items-center justify-between gap-2 sm:gap-3 2xl:gap-4;
+    @apply mx-auto flex h-[66px] w-full max-w-[1700px] min-w-0 flex-none items-center justify-between gap-2 sm:h-full sm:flex-1 sm:gap-3 2xl:gap-4;
   }
 
   .sibs-dashboard-header-skeleton {
-    @apply h-[86px] shrink-0 border-b border-sibs-border-subtle bg-white px-4 shadow-sm sm:px-6 lg:px-7;
+    @apply h-[132px] shrink-0 border-b border-sibs-border-subtle bg-white px-4 shadow-sm sm:h-[74px] sm:px-6 lg:px-7 2xl:h-[86px];
   }
 
   .sibs-top-accent {

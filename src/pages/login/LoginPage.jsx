@@ -161,8 +161,45 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen w-full items-center justify-center p-6 bg-gradient-to-br from-sibs-navy via-slate-900 to-sibs-orange font-jakarta">
-      <div className="w-full max-w-md rounded-2xl border border-white/20 bg-white/10 p-8 shadow-2xl backdrop-blur-md">
+    <div className="relative flex min-h-screen w-full items-center justify-center overflow-hidden bg-[#051733] p-6 font-jakarta">
+      <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
+        <div
+          className="absolute inset-0"
+          style={{
+            background: `
+              radial-gradient(circle at 16% 18%, rgba(35, 92, 178, 0.34), transparent 24%),
+              radial-gradient(circle at 82% 84%, rgba(255, 96, 40, 0.32), transparent 28%),
+              radial-gradient(circle at 64% 72%, rgba(255, 132, 78, 0.14), transparent 22%),
+              linear-gradient(135deg, #03112a 0%, #07285b 46%, #08122b 100%)
+            `,
+          }}
+        />
+
+        <div className="sibs-drift-1 absolute -left-24 top-[8%] h-80 w-80 rounded-full bg-[#11438b]/35 blur-3xl" />
+        <div className="sibs-drift-2 absolute left-[12%] bottom-[-9%] h-72 w-72 rounded-full bg-[#0b2f6f]/30 blur-3xl" />
+        <div className="sibs-drift-3 absolute right-[-7%] bottom-[-10%] h-[28rem] w-[28rem] rounded-full bg-[#ff6228]/25 blur-3xl" />
+        <div className="sibs-drift-4 absolute right-[14%] top-[12%] h-64 w-64 rounded-full bg-white/6 blur-3xl" />
+
+        <div
+          className="sibs-float-slow absolute left-[-8%] top-[24%] h-64 w-[34rem] rotate-[-18deg] rounded-full blur-3xl"
+          style={{
+            background:
+              'linear-gradient(90deg, rgba(12,55,121,0.08) 0%, rgba(32,92,176,0.28) 40%, rgba(255,255,255,0.08) 100%)',
+          }}
+        />
+        <div
+          className="sibs-float-reverse absolute right-[-10%] bottom-[14%] h-72 w-[36rem] rotate-[18deg] rounded-full blur-3xl"
+          style={{
+            background:
+              'linear-gradient(90deg, rgba(255,93,35,0.05) 0%, rgba(255,95,46,0.3) 42%, rgba(255,255,255,0.08) 100%)',
+          }}
+        />
+
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/15 to-transparent" />
+        <div className="absolute bottom-0 left-0 right-0 h-[32vh] bg-gradient-to-t from-[#ff5b2e]/10 via-transparent to-transparent" />
+      </div>
+
+      <div className="relative z-10 w-full max-w-md rounded-2xl border border-white/20 bg-white/10 p-8 shadow-2xl backdrop-blur-md">
         <div className="mb-6 flex items-center justify-center gap-3">
           <img
             src="/SiBS_Login_Logo.svg"

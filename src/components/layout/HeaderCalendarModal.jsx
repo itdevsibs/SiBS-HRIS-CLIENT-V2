@@ -52,6 +52,7 @@ import HeaderCalendarModalShell from "./HeaderCalendarModalShell";
 import ConfirmModal from "@/components/ui/ConfirmModal";
 import { buildCalendarDisplayEvents, sourceCalendarEvent } from "./calendarAvailabilityVisibility";
 import DatePicker from "@/components/ui/DatePicker.jsx";
+import { getManilaClock } from "@/lib/axios/getAuditNotifications";
 
 const MONTH_NAMES = [
   "January",
@@ -86,6 +87,18 @@ const STATUS_OPTIONS = [
   "Rescheduled",
   "Done",
 ];
+
+// Match event indicators to existing Google Calendar theme colors without
+// duplicating the full desktop event chips in narrow mobile day cells.
+const EVENT_DOT_COLORS = {
+  blue: "bg-blue-500",
+  peacock: "bg-sky-500",
+  amber: "bg-amber-400",
+  emerald: "bg-emerald-500",
+  tomato: "bg-orange-500",
+  grape: "bg-violet-500",
+  graphite: "bg-slate-500",
+};
 
 const EVENT_COLORS = {
   blue: "border-blue-200 bg-blue-50 text-sibs-navy",
@@ -210,6 +223,90 @@ function minutesToTimeLabel(totalMinutes) {
   return `${String(hour % 12 || 12).padStart(2, "0")}:${String(minutes).padStart(2, "0")} ${hour < 12 ? "AM" : "PM"}`;
 }
 
+// Calendar cutoffs are calculated from Manila instants, independent of the
+// browser's timezone. The header/calendar clock is synchronized with HRIS.
+const MANILA_OFFSET_MS = 8 * 60 * 60 * 1000;
+
+function getManilaDateKey(epochMs) {
+  return new Date(epochMs + MANILA_OFFSET_MS).toISOString().slice(0, 10);
+}
+
+function isPastCalendarDay(dateKey, epochMs) {
+  return Boolean(dateKey) && dateKey < getManilaDateKey(epochMs);
+}
+
+function isPastCalendarTime(dateKey, timeLabel, epochMs) {
+  if (!dateKey) return true;
+  if (timeLabel === "All Day") return isPastCalendarDay(dateKey, epochMs);
+  const value = calendarLocalTimeMs(dateKey, timeLabel);
+  return !Number.isFinite(value) || value < epochMs;
+}
+
+function isPastCalendarEvent(event, epochMs) {
+  return isPastCalendarTime(event?.date, event?.startTime || "All Day", epochMs);
+}
+
+// Preset intervals are 15 minutes. Give each new schedule a future slot;
+// don't silently choose an earlier hour when adding an event today.
+function getNextAvailableStartMinute(dateKey, epochMs) {
+  if (dateKey !== getManilaDateKey(epochMs)) return 9 * 60;
+  const midnight = Date.parse(`${dateKey}T00:00:00+08:00`);
+  const nextQuarter = Math.ceil((epochMs - midnight + 1) / (15 * 60_000)) * 15;
+  return Math.max(EVENT_FIRST_MINUTE, nextQuarter);
+}
+
+function canCreateCalendarEventOnDate(dateKey, epochMs) {
+  if (!dateKey || isPastCalendarDay(dateKey, epochMs)) return false;
+  if (dateKey > getManilaDateKey(epochMs)) return true;
+  return getNextAvailableStartMinute(dateKey, epochMs) <= EVENT_LAST_MINUTE - EVENT_DEFAULT_DURATION;
+}
+
+// Empty historical dates are inert. Historical dates with visible schedule
+// records can be opened only for viewing those records (never for creation).
+function canOpenCalendarDay(dateKey, eventCount, epochMs) {
+  return canCreateCalendarEventOnDate(dateKey, epochMs) || eventCount > 0;
+}
+
+// Shared clock with the HRIS header: use server epoch when available, and
+// continue ticking locally while disconnected. Re-sync on tab focus.
+function useManilaCalendarClock(enabled) {
+  const [nowMs, setNowMs] = useState(() => Date.now());
+  const offsetRef = useRef(0);
+  const getNowMs = useCallback(() => Date.now() + offsetRef.current, []);
+  useEffect(() => {
+    if (!enabled) return undefined;
+    let cancelled = false;
+    const tick = () => { if (!cancelled) setNowMs(getNowMs()); };
+    const sync = async () => {
+      try {
+        const began = Date.now();
+        const result = await getManilaClock();
+        const received = Date.now();
+        const serverEpoch = Number(result?.serverEpochMs);
+        if (!cancelled && Number.isFinite(serverEpoch) && serverEpoch > 0) {
+          offsetRef.current = serverEpoch + (received - began) / 2 - received;
+          tick();
+        }
+      } catch {
+        // Offline clock fallback; final validation still uses a live instant.
+      }
+    };
+    tick();
+    void sync();
+    const interval = window.setInterval(tick, 5000);
+    const resync = window.setInterval(sync, 5 * 60_000);
+    const onFocus = () => { tick(); void sync(); };
+    window.addEventListener("focus", onFocus);
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+      window.clearInterval(resync);
+      window.removeEventListener("focus", onFocus);
+    };
+  }, [enabled, getNowMs]);
+  return { nowMs, getNowMs };
+}
+
 /** Turn hand-typed times into the existing API's HH:MM AM/PM format. */
 function normalizeTypedTime(input, fallbackMeridiem = "AM") {
   const value = String(input || "").trim().toUpperCase().replace(/\./g, "");
@@ -226,9 +323,12 @@ function normalizeTypedTime(input, fallbackMeridiem = "AM") {
   return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")} ${typedMeridiem || fallbackMeridiem}`;
 }
 
-function getTimeSelectionError(value, { isInterviewAvailability, isEventTime, isEndTime, startTime }) {
+function getTimeSelectionError(value, { isInterviewAvailability, isEventTime, isEndTime, startTime, date, nowMs }) {
   const minutes = timeLabelToMinutes(value);
   if (minutes === null) return "Enter a valid time, such as 02:15 PM.";
+  if (date && Number.isFinite(nowMs) && isPastCalendarTime(date, value, nowMs)) {
+    return "This time has already passed in Philippine time. Choose a future time.";
+  }
   if (isInterviewAvailability) {
     const earliest = INTERVIEW_AVAILABILITY_START_MINUTES + (isEndTime ? 30 : 0);
     const latest = INTERVIEW_AVAILABILITY_END_MINUTES - (isEndTime ? 0 : 30);
@@ -289,6 +389,8 @@ function CalendarTimePicker({
   isEndTime = false,
   startTime,
   date,
+  nowMs,
+  getNowMs,
   busy = [],
   busyLoading = false,
   isOpen,
@@ -377,7 +479,7 @@ function CalendarTimePicker({
   function selectTime(candidate) {
     const normalized = normalizeTypedTime(candidate, meridiem);
     const nextError = getTimeSelectionError(normalized, {
-      isInterviewAvailability, isEventTime, isEndTime, startTime,
+      isInterviewAvailability, isEventTime, isEndTime, startTime, date, nowMs: getNowMs(),
     });
     if (nextError) {
       setError(nextError);
@@ -425,9 +527,10 @@ function CalendarTimePicker({
       } else if (exactMatch) {
         selectTime(exactMatch);
       } else if (filteredOptions.length) {
-        const firstAvailable = filteredOptions.find((time) => !isTimeOptionTaken({
-          time, isEndTime, startTime, date, busy, isInterviewAvailability, isEventTime,
-        }));
+        const firstAvailable = filteredOptions.find((time) =>
+          !isPastCalendarTime(date, time, nowMs) && !isTimeOptionTaken({
+            time, isEndTime, startTime, date, busy, isInterviewAvailability, isEventTime,
+          }));
         if (firstAvailable) selectTime(firstAvailable);
         else setError("All matching times are already scheduled.");
       } else if (typedTime) {
@@ -492,23 +595,24 @@ function CalendarTimePicker({
             {busyLoading ? (
               <p className="px-3 py-3 text-xs font-semibold text-sibs-muted">Checking booked times...</p>
             ) : filteredOptions.length ? filteredOptions.map((time) => {
+              const expired = isPastCalendarTime(date, time, nowMs);
               const taken = isTimeOptionTaken({
                 time, isEndTime, startTime, date, busy, isInterviewAvailability, isEventTime,
               });
               return (
               <button
                 key={time}
-                disabled={taken}
-                title={taken ? "Already scheduled for your account" : "Select time"}
+                disabled={taken || expired}
+                title={expired ? "This time has passed (Asia/Manila)" : taken ? "Already scheduled for your account" : "Select time"}
                 type="button"
                 role="option"
                 aria-selected={time === value}
                 data-current={time === value}
                 onClick={() => selectTime(time)}
-                className={`flex w-full items-center justify-between px-3 py-2 text-left font-jakarta text-[12px] transition ${taken ? "cursor-not-allowed bg-slate-50 text-slate-400 opacity-70" : "hover:cursor-pointer hover:bg-sibs-cream-subtle hover:text-sibs-orange"} ${!taken && time === value ? "bg-sibs-cream-light font-extrabold text-sibs-orange" : "font-semibold"}`}
+                className={`flex w-full items-center justify-between px-3 py-2 text-left font-jakarta text-[12px] transition ${taken || expired ? "cursor-not-allowed bg-slate-50 text-slate-400 opacity-70" : "hover:cursor-pointer hover:bg-sibs-cream-subtle hover:text-sibs-orange"} ${!taken && !expired && time === value ? "bg-sibs-cream-light font-extrabold text-sibs-orange" : "font-semibold"}`}
               >
                 <span>{time}</span>
-                {taken && <span className="text-[10px] font-bold text-rose-500">Booked</span>}
+                {expired ? <span className="text-[10px] font-bold text-slate-500">Passed</span> : taken ? <span className="text-[10px] font-bold text-rose-500">Booked</span> : null}
               </button>
             );}) : <div className="px-3 py-3 text-xs text-sibs-text-secondary">No preset match. Press Enter for a custom time or use the editor below.</div>}
           </div>
@@ -1127,15 +1231,16 @@ function formatGoogleEmailDisplayName(email) {
     .join(" ");
 }
 
-function createBlankEvent(baseDate, organizer = "") {
+function createBlankEvent(baseDate, organizer = "", nowMs = Date.now()) {
+  const firstMinute = getNextAvailableStartMinute(baseDate, nowMs);
   return {
     id: "",
-    title: SIBS_HRIS_CALENDAR_TITLE_PREFIX,
+    title: withSibsHrisCalendarTitle("Event"),
     category: "Talent Acquisition",
     status: "Scheduled",
     date: baseDate,
-    startTime: "09:00 AM",
-    endTime: "10:00 AM",
+    startTime: minutesToTimeLabel(firstMinute),
+    endTime: minutesToTimeLabel(firstMinute + EVENT_DEFAULT_DURATION),
     account: "",
     site: "",
     organizer,
@@ -1163,13 +1268,19 @@ function EventEditorModal({
   onClose,
   onDelete,
   onSave,
+  nowMs,
+  getNowMs,
 }) {
   const initialForm = useMemo(
     () => ({
-      ...createBlankEvent(formatDateKey(new Date()), organizerLabel),
+      ...createBlankEvent(getManilaDateKey(nowMs), organizerLabel, nowMs),
       ...event,
       organizer: event?.organizer || organizerLabel,
-      scheduleType: event?.scheduleType || "Event",
+      // Legacy interview availability entries remain readable, but this editor
+      // now offers only Event, Task, and Out of office.
+      scheduleType: event?.scheduleType === "Interview availability"
+        ? "Event"
+        : event?.scheduleType || "Event",
     }),
     [event, organizerLabel],
   );
@@ -1230,7 +1341,8 @@ function EventEditorModal({
   const durationPresets = [30, 45, 60, 90, 120];
 
   function canUseDuration(durationMinutes) {
-    if (!moreOptionsTimedEvent || !busyReady || selectedStartMinutes === null) return false;
+    if (!moreOptionsTimedEvent || !busyReady || selectedStartMinutes === null ||
+        isPastCalendarTime(form.date, form.startTime, getNowMs())) return false;
     const proposedEnd = selectedStartMinutes + durationMinutes;
     if (proposedEnd > 23 * 60 + 59) return false;
     if (activeType === "Event" && (durationMinutes < EVENT_DEFAULT_DURATION || proposedEnd > EVENT_LAST_MINUTE)) return false;
@@ -1293,6 +1405,31 @@ function EventEditorModal({
   }
 
   function updateField(field, value) {
+    if (field === "date") {
+      if (isPastCalendarDay(value, getNowMs())) {
+        setValidationError("Past dates are view-only. Choose today or a future date.");
+        return;
+      }
+      setForm((current) => {
+        const next = {
+          ...current,
+          date: value,
+          outOfOfficeEndDate: current.outOfOfficeEndDate && current.outOfOfficeEndDate >= value
+            ? current.outOfOfficeEndDate : value,
+        };
+        const previousStart = calendarLocalTimeMs(value, current.startTime);
+        if (!Number.isFinite(previousStart) || previousStart < getNowMs()) {
+          const firstMinute = getNextAvailableStartMinute(value, getNowMs());
+          if (firstMinute <= EVENT_LAST_MINUTE - EVENT_DEFAULT_DURATION) {
+            next.startTime = minutesToTimeLabel(firstMinute);
+            next.endTime = minutesToTimeLabel(firstMinute + EVENT_DEFAULT_DURATION);
+          }
+        }
+        return next;
+      });
+      setValidationError("");
+      return;
+    }
     setForm((current) => ({ ...current, [field]: value }));
   }
 
@@ -1340,28 +1477,22 @@ function EventEditorModal({
   });
 
   function updateScheduleType(nextType) {
-    setForm((current) => ({
-      ...current,
-      scheduleType: nextType,
-      ...(nextType === "Interview availability" ? {
-        title: withSibsHrisCalendarTitle(
-          current.title,
-          "Available for Candidate Interviews",
-        ),
-        startTime: current.scheduleType === "Event" && current.startTime !== "09:00 AM" ? current.startTime : "10:00 AM",
-        endTime: current.scheduleType === "Event" && current.endTime !== "10:00 AM" ? current.endTime : "11:00 AM",
-        availability: "Free", color: "emerald", category: "Talent Acquisition",
-      } : {}),
-      status:
-        nextType === "Task"
-          ? "Scheduled"
-          : nextType === "Out of office"
-            ? "Scheduled"
-            : current.status || "Scheduled",
-      outOfOfficeEndDate: current.outOfOfficeEndDate || current.date,
-      addGoogleMeet:
-        nextType === "Event" ? (current.addGoogleMeet ?? true) : false,
-    }));
+    if (!["Event", "Task", "Out of office"].includes(nextType)) return;
+    setForm((current) => {
+      // Re-clicking the active tab must not overwrite a title the user renamed.
+      if (current.scheduleType === nextType) return current;
+      return {
+        ...current,
+        scheduleType: nextType,
+        // Each new type starts with an editable, type-specific SiBS HRIS title.
+        title: withSibsHrisCalendarTitle(nextType),
+        status: nextType === "Event" ? current.status || "Scheduled" : "Scheduled",
+        outOfOfficeEndDate: current.outOfOfficeEndDate || current.date,
+        addGoogleMeet: nextType === "Event" ? (current.addGoogleMeet ?? true) : false,
+      };
+    });
+    setValidationError("");
+    setOpenTimePicker(null);
   }
 
   function handleAddGoogleMeetRequest() {
@@ -1397,18 +1528,34 @@ function EventEditorModal({
   async function handleSubmit(submitEvent) {
     submitEvent.preventDefault();
     setValidationError("");
+    const submissionNow = getNowMs();
+    if (isPastCalendarDay(form.date, submissionNow)) {
+      setValidationError("Past dates are view-only. Please choose today or a future date.");
+      return;
+    }
+    if (activeType === "Out of office" && (form.outOfOfficeEndDate || form.date) < form.date) {
+      setValidationError("Out of office end date must not be before its start date.");
+      return;
+    }
     if (!busyReady) {
       setValidationError(busyState.error || "Please wait while your calendar availability is checked.");
       return;
     }
-    if (activeType === "Event" || activeType === "Interview availability") {
+    if (["Event", "Task", "Out of office", "Interview availability"].includes(activeType)) {
       const start = calendarLocalTimeMs(form.date, form.startTime);
       const end = calendarLocalTimeMs(form.date, form.endTime);
-      if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) {
+      const finalEnd = activeType === "Out of office"
+        ? calendarLocalTimeMs(form.outOfOfficeEndDate || form.date, "05:00 PM")
+        : end;
+      if (!Number.isFinite(start) || !Number.isFinite(finalEnd) || finalEnd <= start) {
         setValidationError("Select a valid start and end time.");
         return;
       }
-      if (calendarTimeOverlaps(busyIntervals, start, end)) {
+      if (start < submissionNow || finalEnd <= submissionNow) {
+        setValidationError("Start and end time must be in the future (Asia/Manila). Select a later time.");
+        return;
+      }
+      if (activeType === "Event" && calendarTimeOverlaps(busyIntervals, start, end)) {
         setValidationError("This time is already scheduled on your calendar. Choose another time.");
         return;
       }
@@ -1438,7 +1585,7 @@ function EventEditorModal({
     }
   }
 
-  const tabItems = ["Event", "Interview availability", "Task", "Out of office"];
+  const tabItems = ["Event", "Task", "Out of office"];
 
   return (
     <div
@@ -1461,7 +1608,7 @@ function EventEditorModal({
             <div className="min-w-0">
               <p className="truncate text-[10px] font-bold text-white/75">SiBS HRIS Operational Workspace</p>
               <h2 className="truncate text-[17px] font-black leading-tight text-white">
-                {activeType === "Interview availability" ? "Interview Availability" : "Google Calendar Event"}
+                {`SiBS Calendar · ${activeType}`}
               </h2>
               <p className="truncate text-[10px] font-medium text-white/75">HR &amp; Talent Acquisition · Asia/Manila</p>
             </div>
@@ -1482,7 +1629,8 @@ function EventEditorModal({
           onChange={(inputEvent) =>
             updateField("title", inputEvent.target.value)
           }
-          placeholder="Add title"
+          placeholder={`SiBS HRIS - ${activeType}`}
+          aria-label={`${activeType} title (editable)`}
           className="mt-4 h-10 w-full border-b border-sibs-border bg-transparent text-[22px] font-black leading-tight text-sibs-navy outline-none placeholder:text-sibs-muted"
         />
 
@@ -1508,12 +1656,6 @@ function EventEditorModal({
           })}
         </div>
 
-        {activeType === "Interview availability" && (
-          <p className="mt-3 rounded-[9px] border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-800">
-            This block will offer 30-minute interview slots to you in Candidate Pipeline and in candidate reschedule links.
-            Only open, unbooked slots can be selected.
-          </p>
-        )}
         <div className="mt-5 space-y-4">
           {activeType === "Event" || activeType === "Interview availability" ? (
             <>
@@ -1526,6 +1668,8 @@ function EventEditorModal({
                       <DatePicker
                         value={form.date || ""}
                         displayValue={formatCalendarShortDate(form.date)}
+                        min={getManilaDateKey(nowMs)}
+                        clearable={false}
                         onChange={(date) => updateField("date", date)}
                         label="Schedule date"
                         hideLabel
@@ -1545,6 +1689,8 @@ function EventEditorModal({
                         isInterviewAvailability={isInterviewAvailability}
                         isEventTime={isEventTime}
                         date={form.date}
+                        nowMs={nowMs}
+                        getNowMs={getNowMs}
                         busy={busyIntervals}
                         busyLoading={!busyReady}
                         isEndTime={false}
@@ -1561,6 +1707,8 @@ function EventEditorModal({
                         isInterviewAvailability={isInterviewAvailability}
                         isEventTime={isEventTime}
                         date={form.date}
+                        nowMs={nowMs}
+                        getNowMs={getNowMs}
                         busy={busyIntervals}
                         busyLoading={!busyReady}
                         isEndTime
@@ -1865,6 +2013,8 @@ function EventEditorModal({
                     <DatePicker
                       value={form.date || ""}
                       displayValue={formatCalendarShortDate(form.date)}
+                      min={getManilaDateKey(nowMs)}
+                      clearable={false}
                       onChange={(date) => updateField("date", date)}
                       label="Task date"
                       hideLabel
@@ -1984,7 +2134,10 @@ function EventEditorModal({
                       <DatePicker
                         value={form.date || ""}
                         displayValue={formatCalendarShortDate(form.date)}
+                        min={getManilaDateKey(nowMs)}
+                        clearable={false}
                         onChange={(date) => {
+                          if (isPastCalendarDay(date, getNowMs())) return;
                           setForm((current) => ({
                             ...current,
                             date,
@@ -2005,7 +2158,8 @@ function EventEditorModal({
                       <DatePicker
                         value={form.outOfOfficeEndDate || form.date || ""}
                         displayValue={formatCalendarShortDate(form.outOfOfficeEndDate || form.date)}
-                        min={form.date || ""}
+                        min={form.date > getManilaDateKey(nowMs) ? form.date : getManilaDateKey(nowMs)}
+                        clearable={false}
                         onChange={(date) => updateField("outOfOfficeEndDate", date)}
                         label="Out of office to date"
                         hideLabel
@@ -2180,7 +2334,7 @@ function EventEditorModal({
                   })}
                 </div>
                 <p className="mt-1.5 text-[10px] font-medium text-sibs-text-secondary">
-                  Conflicting durations are disabled. Interview availability must end by 5:30 PM.
+                  Conflicting durations are disabled to prevent overlapping calendar events.
                 </p>
               </div>
             )}
@@ -2357,7 +2511,7 @@ function DisconnectCalendarConfirmModal({
   );
 }
 
-function GoogleCalendarDayDetails({ date, events, onClose, onCreateEvent, onEditEvent }) {
+function GoogleCalendarDayDetails({ date, events, nowMs, onClose, onCreateEvent, onEditEvent }) {
   return (
     <div className="sibs-action-backdrop-in absolute inset-0 z-[2] flex items-center justify-center bg-black/55 p-3 backdrop-blur-[3px]" onClick={onClose}>
       <section role="dialog" aria-modal="true" aria-label="Google Calendar day details"
@@ -2386,17 +2540,24 @@ function GoogleCalendarDayDetails({ date, events, onClose, onCreateEvent, onEdit
           ))}
         </div>
         <div className="border-t border-[#E8EAED] px-5 py-4">
-          <button type="button" onClick={() => { onClose(); onCreateEvent(date); }}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#1A73E8] px-4 py-2.5 text-xs font-bold text-white hover:bg-[#1558B0]">
-            <Plus size={16} /> Create event on this date
-          </button>
+          {canCreateCalendarEventOnDate(date, nowMs) ? (
+            <button type="button"
+              onClick={() => { onClose(); onCreateEvent(date); }}
+              className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#1A73E8] px-4 py-2.5 text-xs font-bold text-white hover:bg-[#1558B0]">
+              <Plus size={16} /> Create event on this date
+            </button>
+          ) : (
+            <p className="text-center text-[11px] font-semibold text-sibs-text-secondary">
+              Past schedules are available for viewing only.
+            </p>
+          )}
         </div>
       </section>
     </div>
   );
 }
 
-function ExternalGoogleCalendarReadOnlyDetails({ event, onClose }) {
+function ExternalGoogleCalendarReadOnlyDetails({ event, onClose, historical = false }) {
   const meetLink = /^https:\/\/meet\.google\.com\/[^\s]+$/i.test(String(event.meetLink || ""))
     ? event.meetLink : "";
   const description = String(event.notes || "").trim();
@@ -2409,7 +2570,7 @@ function ExternalGoogleCalendarReadOnlyDetails({ event, onClose }) {
       <section
         role="dialog"
         aria-modal="true"
-        aria-label="External Google Calendar event (read-only)"
+        aria-label={historical ? "Past calendar event (read-only)" : "External Google Calendar event (read-only)"}
         className="sibs-modal-pop-in flex max-h-[86vh] w-full max-w-[660px] min-h-0 flex-col overflow-hidden rounded-[18px] bg-white shadow-[0_24px_80px_rgba(2,30,56,0.38)]"
       >
         <header className="flex shrink-0 items-center justify-between gap-3 border-b border-white/10 bg-sibs-navy px-5 py-3.5 text-white sm:px-6">
@@ -2418,9 +2579,9 @@ function ExternalGoogleCalendarReadOnlyDetails({ event, onClose }) {
               <CalendarDays className="h-[19px] w-[19px]" aria-hidden="true" />
             </div>
             <div className="min-w-0">
-              <p className="truncate text-[10px] font-bold text-white/75">GOOGLE CALENDAR · READ-ONLY</p>
-              <h2 className="truncate text-[17px] font-black leading-tight text-white">Google Calendar Event</h2>
-              <p className="truncate text-[10px] font-medium text-white/75">Not managed by SiBS HRIS · Asia/Manila</p>
+              <p className="truncate text-[10px] font-bold text-white/75">{historical ? "SIBS CALENDAR · PAST EVENT" : "GOOGLE CALENDAR · READ-ONLY"}</p>
+              <h2 className="truncate text-[17px] font-black leading-tight text-white">{historical ? "Past Calendar Event" : "Google Calendar Event"}</h2>
+              <p className="truncate text-[10px] font-medium text-white/75">{historical ? "Historical schedule · Asia/Manila" : "Not managed by SiBS HRIS · Asia/Manila"}</p>
             </div>
           </div>
           <button type="button" onClick={onClose} aria-label="Close event details"
@@ -2433,7 +2594,7 @@ function ExternalGoogleCalendarReadOnlyDetails({ event, onClose }) {
           <div>
             <h3 className="break-words border-b border-sibs-border pb-3 text-[22px] font-black leading-tight text-sibs-navy">{event.title}</h3>
             <p className="mt-3 inline-flex rounded-[9px] bg-sibs-canvas px-3 py-2 text-[11px] font-bold text-sibs-text-secondary">
-              External Google Calendar event · View only
+              {historical ? "Past SiBS Calendar event · View only" : "External Google Calendar event · View only"}
             </p>
           </div>
           <div className="space-y-4 text-sm font-semibold text-sibs-navy">
@@ -2475,7 +2636,9 @@ function ExternalGoogleCalendarReadOnlyDetails({ event, onClose }) {
             </div>
           ) : null}
           <p className="rounded-[10px] border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-800">
-            This event is not registered as a SiBS HRIS-managed schedule. It can be viewed here but cannot be edited, rescheduled, or deleted from SiBS HRIS.
+            {historical
+              ? "This schedule has already started or its date has passed. Historical events are view-only in SiBS HRIS."
+              : "This event is not registered as a SiBS HRIS-managed schedule. It can be viewed here but cannot be edited, rescheduled, or deleted from SiBS HRIS."}
           </p>
         </div>
 
@@ -2620,77 +2783,216 @@ function MonthCalendarView({
   monthCells,
   eventsByDate,
   todayKey,
+  nowMs,
   onCreateEvent,
   onEditEvent,
   onViewDay,
 }) {
+  // On phones, tapping a date reveals its schedules below the month rather
+  // than accidentally creating an event or cutting off event names.
+  const [mobileDaySelection, setMobileDaySelection] = useState(todayKey);
+  const mobileSelectedDay = monthCells.some(
+    (cell) => cell.key === mobileDaySelection &&
+      canOpenCalendarDay(cell.key, (eventsByDate[cell.key] || []).length, nowMs),
+  )
+    ? mobileDaySelection
+    : (monthCells.find((cell) => cell.inMonth &&
+        canOpenCalendarDay(cell.key, (eventsByDate[cell.key] || []).length, nowMs))?.key ||
+      monthCells.find((cell) =>
+        canOpenCalendarDay(cell.key, (eventsByDate[cell.key] || []).length, nowMs))?.key || "");
+  const mobileDayEvents = sortEventsByDateTime(eventsByDate[mobileSelectedDay] || []);
+
   return (
-    <div className="thin-scroll min-h-0 flex-1 overflow-y-auto bg-white">
-      <div className="grid grid-cols-7 border-b border-sibs-border bg-sibs-navy">
-        {WEEKDAY_LABELS.map((day) => (
-          <div
-            key={day}
-            className="border-r border-sibs-navy/80 px-3 py-3 text-center text-[10px] font-black uppercase text-white last:border-r-0"
-          >
-            {day}
-          </div>
-        ))}
-      </div>
-
-      <div className="grid min-w-[720px] grid-cols-7">
-        {monthCells.map((cell) => {
-          const dayEvents = sortEventsByDateTime(eventsByDate[cell.key] || []);
-          const isToday = cell.key === todayKey;
-
-          return (
-            <div
-              key={cell.key}
-              onClick={() => onCreateEvent(cell.key)}
-              className={[
-                "group flex min-h-[118px] flex-col border-r border-b border-sibs-border p-3 text-left transition last:border-r-0 hover:cursor-pointer hover:bg-sibs-canvas",
-                cell.inMonth ? "bg-white" : "bg-sibs-canvas",
-                isToday ? "ring-2 ring-inset ring-sibs-orange" : "",
-              ].join(" ")}
-            >
-              <span
+    <div className="thin-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain bg-white">
+      {/* Compact mobile month + readable, selectable daily schedule list. */}
+      <div className="md:hidden">
+        <div className="grid grid-cols-7 border-b border-sibs-border bg-sibs-canvas px-1.5 py-2">
+          {WEEKDAY_LABELS.map((day) => (
+            <span key={day} className="text-center text-[10px] font-black uppercase text-sibs-text-secondary">
+              {day}
+            </span>
+          ))}
+        </div>
+        <div className="grid grid-cols-7 gap-px border-b border-sibs-border bg-sibs-border-subtle px-px pb-px">
+          {monthCells.map((cell) => {
+            const dayEvents = eventsByDate[cell.key] || [];
+            const isToday = cell.key === todayKey;
+            const isSelected = cell.key === mobileSelectedDay;
+            const canOpenDay = canOpenCalendarDay(cell.key, dayEvents.length, nowMs);
+            return (
+              <button
+                key={cell.key}
+                type="button"
+                disabled={!canOpenDay}
+                onClick={() => setMobileDaySelection(cell.key)}
+                aria-pressed={canOpenDay && isSelected}
+                aria-controls={canOpenDay ? "sibs-mobile-calendar-day-events" : undefined}
+                aria-label={`${formatDayLabel(cell.key, { weekday: "long", year: true })}: ${dayEvents.length} schedule${dayEvents.length === 1 ? "" : "s"}${!canOpenDay ? ", unavailable" : ""}`}
+                title={!canOpenDay ? "No schedules to view on this past date" : undefined}
                 className={[
-                  "flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-black",
-                  isToday
-                    ? "bg-sibs-orange text-white"
-                    : cell.inMonth
-                      ? "text-sibs-primary-1"
-                      : "text-sibs-text-secondary",
+                  "flex min-h-[53px] min-w-0 flex-col items-center justify-start gap-1 bg-white px-0.5 py-1.5 text-center transition-colors focus-visible:z-[1] focus-visible:outline-2 focus-visible:outline-sibs-orange",
+                  !cell.inMonth ? "bg-sibs-canvas text-sibs-muted" : "text-sibs-navy",
+                  isPastCalendarDay(cell.key, nowMs) && !canOpenDay ? "opacity-60" : "",
+                  !canOpenDay ? "cursor-default" : isSelected ? "bg-blue-50 ring-2 ring-inset ring-sibs-navy" : "hover:bg-sibs-canvas",
                 ].join(" ")}
               >
-                {cell.date.getDate()}
-              </span>
+                <span className={[
+                  "flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-extrabold tabular-nums",
+                  isToday ? "bg-sibs-orange text-white" : "",
+                ].join(" ")}>
+                  {cell.date.getDate()}
+                </span>
+                {dayEvents.length ? (
+                  <span className="flex h-2 items-center justify-center gap-0.5" aria-hidden="true">
+                    {dayEvents.slice(0, 3).map((event, index) => (
+                      <span key={`${event.id}-${index}`} className={`h-1.5 w-1.5 rounded-full ${EVENT_DOT_COLORS[event.color] || EVENT_DOT_COLORS.blue}`} />
+                    ))}
+                    {dayEvents.length > 3 ? <span className="text-[9px] font-black leading-none text-sibs-text-secondary">+</span> : null}
+                  </span>
+                ) : null}
+              </button>
+            );
+          })}
+        </div>
 
-              <div className="mt-1.5 space-y-1">
-                {dayEvents.slice(0, 3).map((event) => (
-                  <CompactScheduleCard
-                    key={event.id}
-                    event={event}
-                    onEdit={(clickEvent) => {
-                      clickEvent.stopPropagation();
-                      onEditEvent(sourceCalendarEvent(event));
-                    }}
-                  />
-                ))}
-                {dayEvents.length > 3 && (
-                  <button
-                    type="button"
-                    className="block w-full rounded px-1 text-left text-[11px] font-semibold text-[#1A73E8] hover:bg-[#E8F0FE]"
-                    onClick={(clickEvent) => { clickEvent.stopPropagation(); onViewDay(cell.key); }}
-                    title={`View all Google Calendar events on ${cell.key}`}
-                  >
-                    +{dayEvents.length - 3} more
-                  </button>
-                )}
-              </div>
-              <span className="mt-auto hidden pt-1 text-[10px] text-[#5F6368] group-hover:block">+ Create event</span>
+        {mobileSelectedDay ? (
+        <section id="sibs-mobile-calendar-day-events" className="min-w-0 bg-sibs-canvas px-3 py-4" aria-live="polite">
+          <div className="mb-3 flex min-w-0 items-center justify-between gap-3">
+            <div className="min-w-0">
+              <h3 className="text-[13px] font-black leading-5 text-sibs-navy">
+                {formatDayLabel(mobileSelectedDay, { weekday: "long", year: true })}
+              </h3>
+              <p className="text-[11px] font-medium text-sibs-text-secondary">
+                {mobileDayEvents.length} schedule{mobileDayEvents.length === 1 ? "" : "s"} · Philippine time
+              </p>
             </div>
-          );
-        })}
+            <button
+              type="button"
+              onClick={() => onCreateEvent(mobileSelectedDay)}
+              disabled={!canCreateCalendarEventOnDate(mobileSelectedDay, nowMs)}
+              title={!canCreateCalendarEventOnDate(mobileSelectedDay, nowMs) ? "Past date or no future time slots remaining" : "Add schedule"}
+              className="inline-flex h-9 disabled:cursor-not-allowed disabled:opacity-40 shrink-0 items-center gap-1 rounded-lg border border-sibs-border bg-white px-3 text-[11px] font-black text-sibs-navy shadow-sm transition hover:border-sibs-orange hover:text-sibs-orange"
+              aria-label={`Create schedule on ${formatDayLabel(mobileSelectedDay, { year: true })}`}
+            >
+              <Plus className="h-3.5 w-3.5" /> Add
+            </button>
+          </div>
+          {mobileDayEvents.length ? (
+            <div className="space-y-2">
+              {mobileDayEvents.map((event) => (
+                <button
+                  key={event.id}
+                  type="button"
+                  onClick={() => onEditEvent(sourceCalendarEvent(event))}
+                  className="flex w-full min-w-0 items-start gap-3 rounded-xl border border-sibs-border bg-white p-3 text-left shadow-sm transition hover:border-sibs-orange/50 hover:bg-white"
+                  aria-label={`View ${event.title}, ${event.startTime}`}
+                >
+                  <span className={`mt-1 h-8 w-1 shrink-0 rounded-full ${EVENT_DOT_COLORS[event.color] || EVENT_DOT_COLORS.blue}`} aria-hidden="true" />
+                  <span className="min-w-0 flex-1">
+                    <span className="block break-words text-xs font-black leading-5 text-sibs-navy">{event.title}</span>
+                    <span className="mt-1 flex items-center gap-1 text-[11px] font-bold text-sibs-text-secondary">
+                      <Clock className="h-3.5 w-3.5 shrink-0 text-sibs-orange" />
+                      {event.startTime === "All Day" ? "All day" : `${event.startTime} – ${event.endTime}`}
+                    </span>
+                    {event.account || event.site || event.location ? (
+                      <span className="mt-1 block break-words text-[11px] text-sibs-text-secondary">
+                        {event.account || event.site || event.location}
+                      </span>
+                    ) : null}
+                  </span>
+                  <ChevronRight className="mt-2 h-4 w-4 shrink-0 text-sibs-muted" aria-hidden="true" />
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div className="rounded-xl border border-dashed border-sibs-border bg-white px-4 py-6 text-center">
+              <CalendarDays className="mx-auto h-6 w-6 text-sibs-muted" aria-hidden="true" />
+              <p className="mt-2 text-xs font-bold text-sibs-navy">No schedules for this day</p>
+              <p className="mt-1 text-[11px] text-sibs-text-secondary">Select another date or add a new schedule.</p>
+            </div>
+          )}
+        </section>
+        ) : null}
+      </div>
+
+      {/* Preserve the full-size interactive event grid for desktop. */}
+      <div className="hidden md:block">
+        <div className="grid grid-cols-7 border-b border-sibs-border bg-sibs-navy">
+          {WEEKDAY_LABELS.map((day) => (
+            <div
+              key={day}
+              className="border-r border-sibs-navy/80 px-3 py-3 text-center text-[10px] font-black uppercase text-white last:border-r-0"
+            >
+              {day}
+            </div>
+          ))}
+        </div>
+
+        <div className="grid min-w-[720px] grid-cols-7">
+          {monthCells.map((cell) => {
+            const dayEvents = sortEventsByDateTime(eventsByDate[cell.key] || []);
+            const isToday = cell.key === todayKey;
+            const canCreateDay = canCreateCalendarEventOnDate(cell.key, nowMs);
+            const canOpenDay = canOpenCalendarDay(cell.key, dayEvents.length, nowMs);
+
+            return (
+              <div
+                key={cell.key}
+                onClick={canOpenDay ? () => {
+                  if (canCreateDay) onCreateEvent(cell.key);
+                  else onViewDay(cell.key);
+                } : undefined}
+                title={canCreateDay ? "Add schedule" : dayEvents.length ? "View existing schedules (read only)" : undefined}
+                className={[
+                  "group flex min-h-[118px] flex-col border-r border-b border-sibs-border p-3 text-left transition last:border-r-0",
+                  canOpenDay ? "cursor-pointer hover:bg-sibs-canvas" : "cursor-default",
+                  isPastCalendarDay(cell.key, nowMs) ? "bg-slate-50/80" : "",
+                  cell.inMonth ? "bg-white" : "bg-sibs-canvas",
+                  isToday ? "ring-2 ring-inset ring-sibs-orange" : "",
+                ].join(" ")}
+              >
+                <span
+                  className={[
+                    "flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-black",
+                    isToday
+                      ? "bg-sibs-orange text-white"
+                      : cell.inMonth
+                        ? "text-sibs-primary-1"
+                        : "text-sibs-text-secondary",
+                  ].join(" ")}
+                >
+                  {cell.date.getDate()}
+                </span>
+
+                <div className="mt-1.5 space-y-1">
+                  {dayEvents.slice(0, 3).map((event) => (
+                    <CompactScheduleCard
+                      key={event.id}
+                      event={event}
+                      onEdit={(clickEvent) => {
+                        clickEvent.stopPropagation();
+                        onEditEvent(sourceCalendarEvent(event));
+                      }}
+                    />
+                  ))}
+                  {dayEvents.length > 3 && (
+                    <button
+                      type="button"
+                      className="block w-full rounded px-1 text-left text-[11px] font-semibold text-blue-600 hover:bg-blue-50"
+                      onClick={(clickEvent) => { clickEvent.stopPropagation(); onViewDay(cell.key); }}
+                      title={`View all Google Calendar events on ${cell.key}`}
+                    >
+                      +{dayEvents.length - 3} more
+                    </button>
+                  )}
+                </div>
+                {canCreateDay ? (
+                  <span className="mt-auto hidden pt-1 text-[10px] text-sibs-text-secondary group-hover:block">+ Create event</span>
+                ) : null}
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
@@ -2701,13 +3003,14 @@ function WeekCalendarView({
   weekCells,
   eventsByDate,
   todayKey,
+  nowMs,
   onCreateEvent,
   onEditEvent,
 }) {
   return (
-    <div className="thin-scroll min-h-0 flex-1 overflow-y-auto bg-sibs-canvas p-4">
-      <section className="flex min-h-full flex-col rounded-[14px] bg-white p-4 shadow-sm">
-        <div className="flex items-center justify-between border-b border-sibs-border pb-3">
+    <div className="thin-scroll min-h-0 flex-1 overflow-y-auto bg-sibs-canvas p-3 sm:p-4">
+      <section className="flex min-h-full min-w-0 flex-col rounded-[14px] bg-white p-3 shadow-sm sm:p-4">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-sibs-border pb-3">
           <div className="flex items-center gap-2 text-sm font-black text-sibs-navy">
             <CalendarDays className="h-4 w-4 text-sibs-orange" />
             7-Day Operational HR & TA Weekly Schedule View
@@ -2717,7 +3020,7 @@ function WeekCalendarView({
           </span>
         </div>
 
-        <div className="mt-4 grid min-h-0 flex-1 min-w-[880px] grid-cols-7 gap-3">
+        <div className="mt-4 grid min-h-0 min-w-0 flex-1 grid-cols-1 gap-3 sm:grid-cols-2 xl:min-w-[880px] xl:grid-cols-7">
           {weekCells.map((cell) => {
             const dayEvents = sortEventsByDateTime(
               eventsByDate[cell.key] || [],
@@ -2728,10 +3031,11 @@ function WeekCalendarView({
               <div
                 key={cell.key}
                 className={[
-                  "flex min-h-full flex-col rounded-[12px] border bg-sibs-canvas p-3",
+                  "flex min-h-[120px] flex-col rounded-[12px] border bg-sibs-canvas p-3 xl:min-h-full",
                   isToday
                     ? "border-sibs-orange ring-1 ring-sibs-orange"
                     : "border-sibs-border",
+                  isPastCalendarDay(cell.key, nowMs) ? "opacity-70" : "",
                 ].join(" ")}
               >
                 <div className="flex items-center justify-between border-b border-sibs-border-subtle pb-2">
@@ -2746,7 +3050,9 @@ function WeekCalendarView({
                   <button
                     type="button"
                     onClick={() => onCreateEvent(cell.key)}
-                    className="flex h-6 w-6 items-center justify-center rounded-md text-sibs-navy transition hover:cursor-pointer hover:bg-sibs-canvas hover:text-sibs-orange"
+                    disabled={!canCreateCalendarEventOnDate(cell.key, nowMs)}
+                    title={!canCreateCalendarEventOnDate(cell.key, nowMs) ? "Past date or elapsed time slots · view only" : "Add schedule"}
+                    className="flex h-6 w-6 disabled:cursor-not-allowed disabled:opacity-30 items-center justify-center rounded-md text-sibs-navy transition hover:cursor-pointer hover:bg-sibs-canvas hover:text-sibs-orange"
                     aria-label={`Add schedule on ${cell.label}`}
                   >
                     <Plus className="h-4 w-4" />
@@ -2755,7 +3061,7 @@ function WeekCalendarView({
 
                 <div className="thin-scroll mt-3 min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
                   {!calendarLoading && dayEvents.length === 0 ? (
-                    <div className="flex h-full min-h-[260px] items-center justify-center text-center text-[11px] font-semibold italic text-sibs-text-secondary">
+                    <div className="flex min-h-[58px] items-center justify-center text-center text-[11px] font-semibold italic text-sibs-text-secondary xl:min-h-[260px]">
                       No events scheduled
                     </div>
                   ) : null}
@@ -2779,6 +3085,7 @@ function WeekCalendarView({
 
 function AgendaCalendarView({
   events,
+  nowMs,
   onEditEvent,
   onDeleteEvent,
   onRescheduleEvent,
@@ -2786,9 +3093,9 @@ function AgendaCalendarView({
   const sortedEvents = sortEventsByDateTime(events);
 
   return (
-    <div className="thin-scroll min-h-0 flex-1 overflow-y-auto bg-sibs-canvas p-4">
-      <section className="flex min-h-full flex-col rounded-[14px] bg-white p-4 shadow-sm">
-        <div className="flex items-center justify-between border-b border-sibs-border pb-3">
+    <div className="thin-scroll min-h-0 flex-1 overflow-y-auto bg-sibs-canvas p-3 sm:p-4">
+      <section className="flex min-h-full min-w-0 flex-col rounded-[14px] bg-white p-3 shadow-sm sm:p-4">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-sibs-border pb-3">
           <div className="flex items-center gap-2 text-sm font-black text-sibs-navy">
             <List className="h-4 w-4" />
             Agenda Schedule Directory ({sortedEvents.length} Items)
@@ -2808,7 +3115,7 @@ function AgendaCalendarView({
           {sortedEvents.map((event) => (
             <article
               key={event.id}
-              className="flex gap-4 rounded-[12px] border border-sibs-border bg-white p-4 shadow-sm"
+              className="flex min-w-0 flex-wrap gap-3 rounded-[12px] border border-sibs-border bg-white p-3 shadow-sm sm:flex-nowrap sm:gap-4 sm:p-4"
             >
               <div className="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-[12px] bg-sibs-navy text-white">
                 <span className="text-[10px] font-black uppercase">
@@ -2844,7 +3151,7 @@ function AgendaCalendarView({
                   </span>
                 </div>
 
-                <h3 className="mt-2 truncate text-sm font-black text-sibs-primary-1">
+                <h3 className="mt-2 break-words text-sm font-black text-sibs-primary-1">
                   {event.title}
                 </h3>
                 <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs font-semibold text-sibs-text-secondary">
@@ -2871,8 +3178,8 @@ function AgendaCalendarView({
                 ) : null}
               </div>
 
-              <div className="flex shrink-0 flex-wrap items-center justify-end gap-2 self-center">
-                {isEditableHrisCalendarEvent(sourceCalendarEvent(event)) && <>
+              <div className="flex w-full shrink-0 flex-wrap items-center justify-end gap-2 self-center sm:w-auto">
+                {isEditableHrisCalendarEvent(sourceCalendarEvent(event)) && !isPastCalendarEvent(sourceCalendarEvent(event), nowMs) && <>
                 <button
                   type="button"
                   onClick={() => onRescheduleEvent(sourceCalendarEvent(event), 1)}
@@ -2896,9 +3203,9 @@ function AgendaCalendarView({
                   className="inline-flex h-8 items-center gap-1 rounded-[8px] bg-sibs-navy px-3 text-xs font-black text-white transition hover:cursor-pointer hover:brightness-95"
                 >
                   <Edit3 className="h-3.5 w-3.5" />
-                  {isEditableHrisCalendarEvent(sourceCalendarEvent(event)) ? "Edit / Resched" : "View details"}
+                  {isEditableHrisCalendarEvent(sourceCalendarEvent(event)) && !isPastCalendarEvent(sourceCalendarEvent(event), nowMs) ? "Edit / Resched" : "View details"}
                 </button>
-                {isEditableHrisCalendarEvent(sourceCalendarEvent(event)) && <button
+                {isEditableHrisCalendarEvent(sourceCalendarEvent(event)) && !isPastCalendarEvent(sourceCalendarEvent(event), nowMs) && <button
                   type="button"
                   onClick={() => onDeleteEvent(sourceCalendarEvent(event).id)}
                   className="flex h-8 w-8 items-center justify-center rounded-[8px] text-sibs-muted transition hover:cursor-pointer hover:bg-rose-50 hover:text-rose-600"
@@ -3093,6 +3400,7 @@ function waitForGoogleCalendarSync(milliseconds) {
 }
 
 export default function HeaderCalendarModal({ open, user, onClose }) {
+  const { nowMs, getNowMs } = useManilaCalendarClock(open);
   const [viewDate, setViewDate] = useState(() => new Date());
   const [events, setEvents] = useState([]);
   const [calendarLoading, setCalendarLoading] = useState(false);
@@ -3108,10 +3416,13 @@ export default function HeaderCalendarModal({ open, user, onClose }) {
   const [editingEvent, setEditingEvent] = useState(null);
   const [selectedDay, setSelectedDay] = useState("");
   const [disconnectConfirmOpen, setDisconnectConfirmOpen] = useState(false);
+  const [orphanDialogOpen, setOrphanDialogOpen] = useState(false);
   const [orphanPreview, setOrphanPreview] = useState(null);
   const [orphanBusy, setOrphanBusy] = useState(false);
   const [orphanMessage, setOrphanMessage] = useState("");
   const [selectedLegacyIds, setSelectedLegacyIds] = useState([]);
+  const orphanDialogRef = useRef(null);
+  const orphanPreviousFocusRef = useRef(null);
   const calendarLoadRequestRef = useRef(0);
   const googleConnectPopupTimerRef = useRef(null);
   const wasOpenRef = useRef(false);
@@ -3129,6 +3440,55 @@ export default function HeaderCalendarModal({ open, user, onClose }) {
     onClose,
     onCleanup: handlePortalCleanup,
   });
+
+  // A cleanup preview is a nested modal. Keep keyboard focus within it and
+  // prevent Escape from dismissing the entire calendar behind the dialog.
+  useEffect(() => {
+    if (!orphanDialogOpen) return undefined;
+    orphanPreviousFocusRef.current = document.activeElement;
+    orphanDialogRef.current?.focus({ preventScroll: true });
+    return () => {
+      if (orphanPreviousFocusRef.current?.isConnected) {
+        orphanPreviousFocusRef.current.focus({ preventScroll: true });
+      }
+    };
+  }, [orphanDialogOpen]);
+
+  useEffect(() => {
+    if (!orphanDialogOpen) return undefined;
+
+    const handleCleanupDialogKeydown = (event) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        event.stopImmediatePropagation?.();
+        event.stopPropagation();
+        if (!orphanBusy) closeOrphanCleanup();
+        return;
+      }
+      if (event.key !== "Tab" || !orphanDialogRef.current) return;
+      const focusable = [...orphanDialogRef.current.querySelectorAll(
+        'button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      )];
+      if (!focusable.length) {
+        event.preventDefault();
+        return;
+      }
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && (document.activeElement === first || document.activeElement === orphanDialogRef.current)) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && (document.activeElement === last || !orphanDialogRef.current.contains(document.activeElement))) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener("keydown", handleCleanupDialogKeydown, true);
+    return () => document.removeEventListener("keydown", handleCleanupDialogKeydown, true);
+    // The cleanup handlers are component-local functions; only active dialog state matters.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orphanDialogOpen, orphanBusy]);
 
   const organizerLabel = useMemo(() => {
     const googleProfileName = firstCalendarValue(
@@ -3185,6 +3545,7 @@ export default function HeaderCalendarModal({ open, user, onClose }) {
       setEditingEvent(null);
       setSelectedDay("");
       setDisconnectConfirmOpen(false);
+      setOrphanDialogOpen(false);
       setOrphanPreview(null);
       setOrphanMessage("");
       setCalendarError("");
@@ -3204,6 +3565,7 @@ export default function HeaderCalendarModal({ open, user, onClose }) {
       googleConnectFinalizingRef.current = false;
       stopCalendarLoading();
       setDisconnectConfirmOpen(false);
+      setOrphanDialogOpen(false);
     }
     // The open reset must run exactly when `open` flips; `loadGoogleCalendarEvents`
     // is invoked after the reset so the modal always syncs on open.
@@ -3494,7 +3856,7 @@ export default function HeaderCalendarModal({ open, user, onClose }) {
 
   const monthCells = useMemo(() => buildMonthCells(viewDate), [viewDate]);
   const weekCells = useMemo(() => buildWeekCells(viewDate), [viewDate]);
-  const todayKey = formatDateKey(new Date());
+  const todayKey = getManilaDateKey(nowMs);
   const monthLabel = `${MONTH_NAMES[viewDate.getMonth()]} ${viewDate.getFullYear()}`;
   const periodLabel =
     viewMode === "Week" ? buildRangeLabel(weekCells) : monthLabel;
@@ -3559,7 +3921,22 @@ export default function HeaderCalendarModal({ open, user, onClose }) {
     setViewDate(new Date());
   }
 
+  function openNewEvent(dateKey) {
+    if (!canCreateCalendarEventOnDate(dateKey, getNowMs())) return;
+    setEditingEvent(createBlankEvent(dateKey, organizerLabel, getNowMs()));
+  }
+
   async function handleSaveEvent(nextEvent) {
+    const currentMs = getNowMs();
+    if (isPastCalendarDay(nextEvent.date, currentMs) ||
+        isPastCalendarTime(nextEvent.date, nextEvent.startTime, currentMs) ||
+        (nextEvent.scheduleType !== "Out of office" && isPastCalendarTime(nextEvent.date, nextEvent.endTime, currentMs))) {
+      return { success: false, message: "Past schedules and elapsed times are read-only (Asia/Manila)." };
+    }
+    const originalEvent = events.find((item) => item.id === (nextEvent.googleEventId || nextEvent.id));
+    if (originalEvent && isPastCalendarEvent(originalEvent, currentMs)) {
+      return { success: false, message: "Historical events are view-only. Changes to past schedules are not permitted." };
+    }
     // Do not permit updates to third-party events even if the editor is opened
     // programmatically. Newly created HRIS events are not present in `events`.
     if (nextEvent?.googleEventId || (nextEvent?.id && events.some((item) => item.id === nextEvent.id))) {
@@ -3618,18 +3995,34 @@ export default function HeaderCalendarModal({ open, user, onClose }) {
   }
 
   async function handlePreviewOrphanCleanup() {
+    // Keep the confirmation window visible even when preview API is unavailable.
+    setOrphanDialogOpen(true);
     setOrphanBusy(true);
     setOrphanMessage("");
     setOrphanPreview(null);
     setSelectedLegacyIds([]);
     try {
       const result = await previewHrisCalendarOrphans();
+      if (result?.success === false) {
+        throw new Error(result.error || result.message || "Unable to verify HRIS events.");
+      }
       setOrphanPreview(result);
     } catch (error) {
-      setCalendarError(error?.response?.data?.error || error?.message || "Unable to verify HRIS events.");
+      const status = error?.response?.status;
+      setOrphanMessage(status === 404
+        ? "Cleanup preview is unavailable (404). The HRIS server does not have the required calendar cleanup endpoint. Deploy the updated server, then retry. No events were deleted."
+        : error?.response?.data?.error || error?.response?.data?.message || error?.message || "Unable to verify HRIS events. No events were deleted.");
     } finally {
       setOrphanBusy(false);
     }
+  }
+
+  function closeOrphanCleanup() {
+    if (orphanBusy) return;
+    setOrphanDialogOpen(false);
+    setOrphanPreview(null);
+    setOrphanMessage("");
+    setSelectedLegacyIds([]);
   }
 
   async function handleConfirmOrphanCleanup() {
@@ -3637,6 +4030,9 @@ export default function HeaderCalendarModal({ open, user, onClose }) {
     setOrphanMessage("");
     try {
       const result = await cleanupHrisCalendarOrphans({ legacyEventIds: selectedLegacyIds });
+      if (result?.success === false && !Array.isArray(result?.failed)) {
+        throw new Error(result.error || result.message || "Cleanup failed.");
+      }
       setOrphanMessage(`${result.deleted || 0} selected/verified orphan Google Calendar event(s) removed. ${result.retained || 0} verified database-backed events preserved.${result.failed?.length ? ` ${result.failed.length} failed or need ledger reconciliation; review details and retry.` : ""}`);
       setOrphanPreview(null);
       await loadGoogleCalendarEvents({ force: true });
@@ -3649,7 +4045,7 @@ export default function HeaderCalendarModal({ open, user, onClose }) {
 
   async function handleDeleteEvent(eventId) {
     const sourceEvent = events.find((event) => event.id === eventId);
-    if (!sourceEvent || !isEditableHrisCalendarEvent(sourceEvent)) {
+    if (!sourceEvent || !isEditableHrisCalendarEvent(sourceEvent) || isPastCalendarEvent(sourceEvent, getNowMs())) {
       if (sourceEvent) setEditingEvent(sourceEvent);
       else setCalendarError("The selected event cannot be changed from SiBS HRIS.");
       return;
@@ -3680,7 +4076,7 @@ export default function HeaderCalendarModal({ open, user, onClose }) {
   }
 
   function handleRescheduleEvent(event, days) {
-    if (!isEditableHrisCalendarEvent(event)) {
+    if (!isEditableHrisCalendarEvent(event) || isPastCalendarEvent(event, getNowMs())) {
       setEditingEvent(event);
       return;
     }
@@ -3732,8 +4128,17 @@ export default function HeaderCalendarModal({ open, user, onClose }) {
 
   const modalContent = (
     <HeaderCalendarModalShell>
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-t-[14px] border-b border-white/10 bg-sibs-navy px-4 py-3 2xl:px-6 2xl:py-4 text-white shadow-[0_10px_30px_rgba(0,0,0,0.12)]">
-          <div className="flex min-w-0 items-center gap-3 2xl:gap-4">
+        <div className="relative flex shrink-0 flex-col gap-3 border-b border-white/10 bg-sibs-navy px-4 py-3 text-white shadow-[0_10px_30px_rgba(0,0,0,0.12)] sm:flex-row sm:flex-wrap sm:items-center sm:justify-between 2xl:px-6 2xl:py-4">
+          <button
+            type="button"
+            onClick={onClose}
+            className="absolute right-3 top-3 z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/10 text-white transition hover:bg-white/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white sm:right-4 2xl:right-6 2xl:top-4"
+            aria-label="Close calendar modal"
+            title="Close SiBS Calendar"
+          >
+            <X size={18} />
+          </button>
+          <div className="flex w-full min-w-0 items-center gap-2.5 pr-10 sm:w-auto sm:gap-3 2xl:gap-4">
             <div className="flex h-9 w-9 2xl:h-11 2xl:w-11 shrink-0 items-center justify-center rounded-lg 2xl:rounded-xl border border-white/20 bg-white/10 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.12)]">
               <CalendarDays className="h-4.5 w-4.5 2xl:h-5.5 2xl:w-5.5" />
             </div>
@@ -3767,17 +4172,20 @@ export default function HeaderCalendarModal({ open, user, onClose }) {
               </div>
 
               <h2 className="sibs-modal-title mt-0.5 truncate text-white">
-                Google Calendar · HR &amp; Talent Acquisition
+                SiBS Calendar · HR &amp; Talent Acquisition
               </h2>
+              <p className="mt-0.5 truncate text-[10px] font-semibold text-white/70">
+                Powered by Google Calendar · Asia/Manila
+              </p>
             </div>
           </div>
 
-          <div className="flex shrink-0 flex-wrap items-center justify-end gap-2 sm:gap-2.5">
+          <div className="flex w-full shrink-0 items-center gap-2 sm:w-auto sm:flex-wrap sm:justify-end sm:gap-2.5">
             {calendarConnected && (
               <a href="https://calendar.google.com/calendar/u/0/r/month" target="_blank" rel="noopener noreferrer"
-                className="hidden h-8 items-center gap-1.5 rounded-lg border border-white/30 bg-white/10 px-3 text-xs font-bold text-white hover:bg-white/15 lg:inline-flex"
+                className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-white/30 bg-white/10 px-2.5 text-[11px] font-bold text-white hover:bg-white/15 sm:hidden lg:inline-flex lg:h-8 lg:px-3 lg:text-xs"
                 title="Open Google Calendar in a new tab (choose your connected Google account if asked)">
-                <Link2 size={14} /> Open Google Calendar
+                <Link2 size={14} /> <span className="lg:inline">Google</span><span className="hidden lg:inline"> Calendar</span>
               </a>
             )}
             <button
@@ -3803,6 +4211,19 @@ export default function HeaderCalendarModal({ open, user, onClose }) {
             {calendarConnected ? (
               <button
                 type="button"
+                onClick={() => loadGoogleCalendarEvents({ force: true, checkStatus: true })}
+                disabled={calendarLoading}
+                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-white/30 bg-white/10 text-white hover:bg-white/20 disabled:opacity-50 sm:hidden"
+                aria-label="Sync Google Calendar"
+                title="Sync Google Calendar"
+              >
+                <RefreshCw className={`h-4 w-4 ${calendarLoading ? "animate-spin" : ""}`} />
+              </button>
+            ) : null}
+
+            {calendarConnected ? (
+              <button
+                type="button"
                 disabled={calendarLoading || orphanBusy}
                 onClick={handlePreviewOrphanCleanup}
                 className="hidden h-8 2xl:h-9 items-center rounded-lg border border-white/30 bg-white/10 px-3 text-xs font-bold text-white transition hover:bg-white/20 disabled:opacity-50 sm:inline-flex"
@@ -3816,7 +4237,7 @@ export default function HeaderCalendarModal({ open, user, onClose }) {
               <button
                 type="button"
                 onClick={openGoogleCalendarConnection}
-                className="hidden h-8 2xl:h-9 items-center gap-1.5 rounded-lg border border-emerald-300/40 bg-emerald-500 px-3 2xl:px-4 text-xs font-black text-white shadow-sm transition hover:cursor-pointer hover:bg-emerald-600 sm:inline-flex"
+                className="inline-flex h-8 2xl:h-9 items-center gap-1.5 rounded-lg border border-emerald-300/40 bg-emerald-500 px-3 2xl:px-4 text-xs font-black text-white shadow-sm transition hover:cursor-pointer hover:bg-emerald-600"
               >
                 <Link2 className="h-3.5 w-3.5 2xl:h-4 2xl:w-4" />
                 Connect
@@ -3839,23 +4260,15 @@ export default function HeaderCalendarModal({ open, user, onClose }) {
               type="button"
               onClick={(event) => {
                 event.stopPropagation();
-                setEditingEvent(createBlankEvent(todayKey, organizerLabel));
+                openNewEvent(canCreateCalendarEventOnDate(todayKey, getNowMs()) ? todayKey : addDays(todayKey, 1));
               }}
               disabled={!calendarConnected}
-              className="hidden h-8 2xl:h-9 items-center gap-1.5 rounded-lg bg-sibs-orange px-3 2xl:px-4 text-xs font-black text-white shadow-sm transition hover:cursor-pointer hover:bg-sibs-button-hover disabled:cursor-not-allowed disabled:opacity-50 sm:inline-flex"
+              className="order-first inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-lg bg-sibs-orange px-3 text-xs font-black text-white shadow-sm transition hover:cursor-pointer hover:bg-sibs-button-hover disabled:cursor-not-allowed disabled:opacity-50 sm:order-none sm:h-8 sm:flex-none 2xl:h-9 2xl:px-4"
             >
               <Plus className="h-3.5 w-3.5 2xl:h-4 2xl:w-4" />
               New Schedule
             </button>
 
-            <button
-              type="button"
-              onClick={onClose}
-              className="inline-flex h-7.5 w-7.5 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-lg text-slate-300 transition hover:bg-white/10 hover:text-white active:scale-[0.97]"
-              aria-label="Close calendar modal"
-            >
-              <X size={18} />
-            </button>
           </div>
         </div>
 
@@ -3878,47 +4291,42 @@ export default function HeaderCalendarModal({ open, user, onClose }) {
           </>
         ) : (
           <>
-            <div className="thin-scroll flex items-center justify-between gap-2 overflow-x-auto border-b border-sibs-border bg-sibs-canvas px-4 py-3 lg:overflow-visible">
-              <div className="flex items-center gap-2">
-                <div className="flex h-8 shrink-0 overflow-hidden rounded-[10px] border border-sibs-border bg-sibs-canvas">
+            <div className="flex shrink-0 flex-col gap-2.5 border-b border-sibs-border bg-sibs-canvas px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-2 sm:px-4">
+              <div className="flex min-w-0 items-center justify-between gap-2 sm:justify-start">
+                <div className="flex h-9 shrink-0 overflow-hidden rounded-[10px] border border-sibs-border bg-white sm:h-8">
                   <button
                     type="button"
                     onClick={() => movePeriod(-1)}
-                    className="flex w-9 items-center justify-center text-sibs-navy transition hover:cursor-pointer hover:bg-white"
-                    aria-label={
-                      viewMode === "Week" ? "Previous week" : "Previous month"
-                    }
+                    className="flex w-9 items-center justify-center text-sibs-navy transition hover:cursor-pointer hover:bg-sibs-canvas"
+                    aria-label={viewMode === "Week" ? "Previous week" : "Previous month"}
                   >
                     <ChevronLeft className="h-4 w-4" />
                   </button>
                   <button
                     type="button"
                     onClick={handleToday}
-                    className="border-x border-sibs-border px-4 text-xs font-extrabold text-sibs-navy transition hover:cursor-pointer hover:bg-white"
+                    className="border-x border-sibs-border px-3 text-xs font-extrabold text-sibs-navy transition hover:cursor-pointer hover:bg-sibs-canvas sm:px-4"
                   >
                     Today
                   </button>
                   <button
                     type="button"
                     onClick={() => movePeriod(1)}
-                    className="flex w-9 items-center justify-center text-sibs-navy transition hover:cursor-pointer hover:bg-white"
-                    aria-label={
-                      viewMode === "Week" ? "Next week" : "Next month"
-                    }
+                    className="flex w-9 items-center justify-center text-sibs-navy transition hover:cursor-pointer hover:bg-sibs-canvas"
+                    aria-label={viewMode === "Week" ? "Next week" : "Next month"}
                   >
                     <ChevronRight className="h-4 w-4" />
                   </button>
                 </div>
-
-                <span className="min-w-[100px] shrink-0 px-1 text-sm font-black text-sibs-navy">
+                <span className="min-w-0 text-right text-sm font-black leading-4 text-sibs-navy sm:shrink-0 sm:px-1 sm:text-left">
                   {periodLabel}
                 </span>
-                <span className="hidden items-center gap-1.5 rounded-lg border border-[#DADCE0] bg-white px-2.5 py-1.5 text-[10px] font-semibold text-[#5F6368] md:inline-flex">
-                  <span className="h-2 w-2 rounded-full bg-[#34A853]" /> Google-synced · Asia/Manila
+                <span className="hidden items-center gap-1.5 rounded-lg border border-sibs-border bg-white px-2.5 py-1.5 text-[10px] font-semibold text-sibs-text-secondary xl:inline-flex">
+                  <span className="h-2 w-2 rounded-full bg-emerald-500" /> Google-synced · Asia/Manila
                 </span>
               </div>
 
-              <div className="flex h-8 shrink-0 overflow-hidden rounded-[10px] border border-sibs-border bg-sibs-canvas">
+              <div className="flex h-9 w-full shrink-0 overflow-hidden rounded-[10px] border border-sibs-border bg-white sm:h-8 sm:w-auto">
                 {[
                   ["Month", Grid3X3],
                   ["Week", CalendarDays],
@@ -3928,11 +4336,12 @@ export default function HeaderCalendarModal({ open, user, onClose }) {
                     key={label}
                     type="button"
                     onClick={() => setViewMode(label)}
+                    aria-pressed={viewMode === label}
                     className={[
-                      "flex items-center gap-1.5 px-3 text-xs font-extrabold transition",
+                      "flex min-w-0 flex-1 items-center justify-center gap-1.5 px-3 text-xs font-extrabold transition sm:flex-none",
                       viewMode === label
                         ? "bg-sibs-navy text-white"
-                        : "text-sibs-text-secondary hover:cursor-pointer hover:bg-white hover:text-sibs-navy",
+                        : "text-sibs-text-secondary hover:cursor-pointer hover:bg-sibs-canvas hover:text-sibs-navy",
                     ].join(" ")}
                   >
                     {React.createElement(Icon, { className: "h-3.5 w-3.5" })}
@@ -3962,9 +4371,8 @@ export default function HeaderCalendarModal({ open, user, onClose }) {
                 monthCells={monthCells}
                 eventsByDate={eventsByDate}
                 todayKey={todayKey}
-                onCreateEvent={(dateKey) =>
-                  setEditingEvent(createBlankEvent(dateKey, organizerLabel))
-                }
+                nowMs={nowMs}
+                onCreateEvent={openNewEvent}
                 onEditEvent={setEditingEvent}
                 onViewDay={setSelectedDay}
               />
@@ -3976,9 +4384,8 @@ export default function HeaderCalendarModal({ open, user, onClose }) {
                 weekCells={weekCells}
                 eventsByDate={eventsByDate}
                 todayKey={todayKey}
-                onCreateEvent={(dateKey) =>
-                  setEditingEvent(createBlankEvent(dateKey, organizerLabel))
-                }
+                nowMs={nowMs}
+                onCreateEvent={openNewEvent}
                 onEditEvent={setEditingEvent}
               />
             ) : null}
@@ -3986,34 +4393,38 @@ export default function HeaderCalendarModal({ open, user, onClose }) {
             {viewMode === "Agenda" ? (
               <AgendaCalendarView
                 events={filteredEvents}
+                nowMs={nowMs}
                 onEditEvent={setEditingEvent}
                 onDeleteEvent={handleDeleteEvent}
                 onRescheduleEvent={handleRescheduleEvent}
               />
             ) : null}
 
-            <div className="flex flex-wrap items-center gap-4 border-t border-sibs-border bg-sibs-canvas px-6 py-3 text-xs text-sibs-text-secondary">
+            <div className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-1 border-t border-sibs-border bg-sibs-canvas px-3 py-2.5 text-[11px] text-sibs-text-secondary sm:gap-4 sm:px-6 sm:py-3 sm:text-xs">
               <strong className="text-sibs-primary-1">
-                Google Calendar Events: {events.length}
+                SiBS Calendar Events: {events.length}
               </strong>
-              <span className="h-4 w-px bg-sibs-border" />
+              <span className="hidden h-4 w-px bg-sibs-border sm:inline" />
               <span>TA Drives: {taDrives}</span>
-              <span className="h-4 w-px bg-sibs-border" />
+              <span className="hidden h-4 w-px bg-sibs-border sm:inline" />
               <span>HR Syncs: {hrSyncs}</span>
               <span className="ml-auto hidden items-center gap-1 italic md:flex">
                 <Clock className="h-3.5 w-3.5" />
-                Click a date to create a Google event. Candidate reschedules use the SiBS interview calendar.
+                Past dates are view-only. Choose today or later to create an event. Candidate reschedules use the SiBS interview calendar.
               </span>
             </div>
           </>
         )}
 
-        {selectedDay && !editingEvent ? (
+        {selectedDay && !editingEvent && canOpenCalendarDay(
+          selectedDay, (eventsByDate[selectedDay] || []).length, nowMs,
+        ) ? (
           <GoogleCalendarDayDetails
             date={selectedDay}
             events={eventsByDate[selectedDay] || []}
+            nowMs={nowMs}
             onClose={() => setSelectedDay("")}
-            onCreateEvent={(dateKey) => setEditingEvent(createBlankEvent(dateKey, organizerLabel))}
+            onCreateEvent={openNewEvent}
             onEditEvent={setEditingEvent}
           />
         ) : null}
@@ -4022,9 +4433,10 @@ export default function HeaderCalendarModal({ open, user, onClose }) {
           <ManagedRecruitmentCalendarDetails event={editingEvent}
             onClose={() => setEditingEvent(null)}
             onOpenCandidate={() => { setEditingEvent(null); onClose?.(); }} />
-        ) : editingEvent?.googleEventId && !isEditableHrisCalendarEvent(editingEvent) ? (
+        ) : editingEvent && (isPastCalendarEvent(editingEvent, nowMs) || (editingEvent?.googleEventId && !isEditableHrisCalendarEvent(editingEvent))) ? (
           <ExternalGoogleCalendarReadOnlyDetails
             event={editingEvent}
+            historical={isPastCalendarEvent(editingEvent, nowMs)}
             onClose={() => setEditingEvent(null)}
           />
         ) : editingEvent ? (
@@ -4032,63 +4444,206 @@ export default function HeaderCalendarModal({ open, user, onClose }) {
             key={`${editingEvent.id || "new"}-${editingEvent.date || ""}`}
             event={editingEvent}
             organizerLabel={organizerLabel}
+            nowMs={nowMs}
+            getNowMs={getNowMs}
             onClose={() => setEditingEvent(null)}
             onDelete={handleDeleteEvent}
             onSave={handleSaveEvent}
           />
         ) : null}
 
-        {(orphanPreview || orphanMessage || orphanBusy) ? (
-          <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-[#031C33]/65 p-4 backdrop-blur-sm"
-            onMouseDown={(event) => { if (event.target === event.currentTarget && !orphanBusy) { setOrphanPreview(null); setOrphanMessage(""); } }}>
-            <section role="dialog" aria-modal="true" aria-label="Clean unmatched HRIS Google Calendar events"
-              className="w-full max-w-xl rounded-2xl border border-[#DDE7F2] bg-white p-6 text-[#06325E] shadow-2xl">
-              <div className="flex items-center justify-between gap-4">
-                <h3 className="text-lg font-black">Reconcile SiBS HRIS Google events</h3>
-                <button type="button" disabled={orphanBusy} onClick={() => { setOrphanPreview(null); setOrphanMessage(""); }}
-                  aria-label="Close cleanup preview"><X className="h-5 w-5" /></button>
-              </div>
-              {orphanBusy ? <p className="mt-4 text-sm">Checking HRIS database and Google Calendar…</p> : null}
-              {orphanPreview ? (
-                <>
-                  <p className="mt-3 text-sm">Scanned {orphanPreview.scanned} Google events. <strong>{orphanPreview.count} confirmed orphaned HRIS events</strong> and <strong>{orphanPreview.legacyCount || 0} older HRIS-titled or generic Interview events needing manual review</strong>. {orphanPreview.retained || 0} events remain linked to active HRIS schedules.</p>
-                  <p className="mt-2 text-xs text-slate-600">The HRIS database is authoritative. Confirmed orphans can be deleted. Older SiBS HRIS-titled events and events simply named “Interview” are unverified: they are never removed automatically. Select each one only if you know it belongs to an obsolete HRIS schedule. Other Google events are excluded.</p>
-                  <div className="mt-3 max-h-40 overflow-y-auto rounded-lg border border-[#DDE7F2] bg-[#F8FAFC] p-3 text-xs">
-                    <p className="mb-2 font-bold">Confirmed database orphans (will be deleted)</p>
-                    {orphanPreview.orphans?.length ? orphanPreview.orphans.map((item) => (
-                      <p key={item.id} className="border-b border-slate-200 py-1 last:border-0">{item.start ? `${item.start} — ` : ""}{item.title}</p>
-                    )) : "No confirmed orphans."}
-                    {orphanPreview.truncatedPreview ? <p>Showing first 100 of {orphanPreview.count}.</p> : null}
-                  </div>
-                  {orphanPreview.legacyCount > 0 ? (
-                    <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs">
-                      <div className="flex items-center justify-between gap-2">
-                        <strong>Legacy HRIS / generic Interview events (manual review)</strong>
-                      </div>
-                      <p className="mt-1 text-amber-900">These may include unrelated Google meetings. Review the date and title carefully, then check each obsolete event individually. Generic “Interview” events are never selected or deleted automatically.</p>
-                      <div className="mt-2 max-h-44 overflow-y-auto">
-                        {orphanPreview.legacy?.map((item) => (
-                          <label key={item.id} className="flex cursor-pointer items-start gap-2 border-b border-amber-200 py-2 last:border-0">
-                            <input type="checkbox" className="mt-0.5 accent-[#FF5C28]" checked={selectedLegacyIds.includes(item.id)}
-                              onChange={(e) => setSelectedLegacyIds((ids) => e.target.checked ? [...ids, item.id] : ids.filter((id) => id !== item.id))} />
-                            <span>{item.start ? `${item.start} — ` : ""}{item.title}</span>
-                          </label>
-                        ))}
-                      </div>
-                      {orphanPreview.truncatedLegacy ? <p>Showing first 100; rerun after cleanup to review remaining events.</p> : null}
+        {orphanDialogOpen ? (
+          <div
+            className="sibs-modal-backdrop-in sibs-modal-blur fixed inset-0 z-[10000] flex items-center justify-center p-3 font-jakarta sm:p-5"
+            onMouseDown={(event) => event.stopPropagation()}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <section
+              ref={orphanDialogRef}
+              tabIndex={-1}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="sibs-calendar-cleanup-title"
+              aria-describedby="sibs-calendar-cleanup-description"
+              className="sibs-modal-pop-in flex max-h-[min(88dvh,760px)] w-full max-w-[640px] flex-col overflow-hidden rounded-2xl border border-white/70 bg-white text-sibs-navy shadow-[0_28px_90px_rgba(2,30,56,0.34)]"
+            >
+              <header className="shrink-0 bg-sibs-navy px-4 py-4 text-white sm:px-5">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex min-w-0 items-start gap-3">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/15 bg-white/10 text-sibs-orange">
+                      <Trash2 className="h-[18px] w-[18px]" />
+                    </span>
+                    <div className="min-w-0">
+                      <p className="sibs-modal-subtitle text-white/70">
+                        SiBS Calendar <span className="mx-1 text-white/35">·</span> Powered by Google Calendar
+                      </p>
+                      <h3 id="sibs-calendar-cleanup-title" className="sibs-modal-title mt-0.5 text-white">
+                        Clean Old HRIS Events
+                      </h3>
+                      <p className="mt-1 text-[10px] font-medium text-white/70 sm:text-[11px]">
+                        Review and reconcile outdated calendar schedules
+                      </p>
                     </div>
-                  ) : null}
-                </>
-              ) : null}
-              {orphanMessage ? <p className="mt-4 text-sm">{orphanMessage}</p> : null}
-              <div className="mt-5 flex justify-end gap-3">
-                <button type="button" disabled={orphanBusy} onClick={() => { setOrphanPreview(null); setOrphanMessage(""); }}
-                  className="rounded-lg border px-4 py-2 text-xs font-bold">Close</button>
-                {(orphanPreview?.count > 0 || selectedLegacyIds.length > 0) ? <button type="button" disabled={orphanBusy} onClick={handleConfirmOrphanCleanup}
-                  className="rounded-lg bg-[#FF5C28] px-4 py-2 text-xs font-bold text-white disabled:opacity-50">
-                  Delete selected ({(orphanPreview?.count || 0) + selectedLegacyIds.length})
-                </button> : null}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={closeOrphanCleanup}
+                    disabled={orphanBusy}
+                    className="sibs-modal-close-btn shrink-0"
+                    aria-label="Close cleanup modal"
+                    title="Close"
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+              </header>
+
+              <div className="thin-scroll min-h-0 flex-1 space-y-4 overflow-y-auto bg-white p-4 sm:p-5">
+                <div id="sibs-calendar-cleanup-description">
+                  <p className="text-xs font-semibold leading-relaxed text-sibs-muted sm:text-[12.5px]">
+                    Compare Google Calendar events with SiBS HRIS records before removing old schedules.
+                    Events linked to active HRIS schedules remain protected.
+                  </p>
+                </div>
+
+                {orphanBusy ? (
+                  <div role="status" className="flex items-center gap-3 rounded-xl border border-blue-100 bg-blue-50 px-3.5 py-3 text-xs font-semibold text-sibs-navy">
+                    <RefreshCw size={17} className="shrink-0 animate-spin text-sibs-orange" />
+                    {orphanPreview ? "Removing verified or selected events…" : "Checking HRIS records and Google Calendar…"}
+                  </div>
+                ) : null}
+
+                {orphanPreview ? (
+                  <>
+                    <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+                      {[
+                        { label: "Events Scanned", value: orphanPreview.scanned || 0, tone: "text-sibs-navy", surface: "bg-slate-50" },
+                        { label: "Confirmed Orphans", value: orphanPreview.count || 0, tone: "text-orange-600", surface: "bg-orange-50" },
+                        { label: "Manual Review", value: orphanPreview.legacyCount || 0, tone: "text-amber-700", surface: "bg-amber-50" },
+                        { label: "Active / Protected", value: orphanPreview.retained || 0, tone: "text-emerald-700", surface: "bg-emerald-50" },
+                      ].map((metric) => (
+                        <div key={metric.label} className={`rounded-xl border border-sibs-border-subtle px-3 py-3 ${metric.surface}`}>
+                          <p className="text-[10px] font-bold leading-snug text-sibs-muted">{metric.label}</p>
+                          <p className={`mt-1.5 text-[23px] font-extrabold leading-none ${metric.tone}`}>
+                            {metric.value}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="flex items-start gap-2.5 rounded-xl border border-blue-100 bg-[#F5F9FE] p-3.5">
+                      <Check className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+                      <p className="text-[11px] font-semibold leading-relaxed text-slate-700">
+                        <strong className="text-sibs-navy">Your HRIS database is the source of truth.</strong>{" "}
+                        Confirmed database orphans can be removed. Older HRIS-titled or generic “Interview”
+                        events are unverified and will only be deleted if you select them manually.
+                        Unrelated Google Calendar events are excluded.
+                      </p>
+                    </div>
+
+                    <div className="overflow-hidden rounded-xl border border-sibs-border-subtle bg-white">
+                      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-sibs-border-subtle bg-[#F8FAFC] px-3.5 py-3">
+                        <h4 className="sibs-modal-section-title">Confirmed Database Orphans</h4>
+                        <span className="rounded-full bg-orange-50 px-2.5 py-1 text-[10px] font-extrabold text-orange-700">
+                          {orphanPreview.count || 0} found
+                        </span>
+                      </div>
+                      {orphanPreview.orphans?.length ? (
+                        <div className="thin-scroll max-h-40 divide-y divide-sibs-border-subtle overflow-y-auto px-3.5">
+                          {orphanPreview.orphans.map((item) => (
+                            <p key={item.id} className="break-words py-2.5 text-[11px] font-semibold text-slate-700">
+                              {item.start ? <span className="text-sibs-muted">{item.start} — </span> : null}
+                              {item.title}
+                            </p>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2.5 px-3.5 py-4 text-[11px] font-semibold text-emerald-700">
+                          <Check className="h-4 w-4 shrink-0" />
+                          No confirmed orphaned events found.
+                        </div>
+                      )}
+                      {orphanPreview.truncatedPreview ? (
+                        <p className="border-t border-sibs-border-subtle px-3.5 py-2 text-[10px] text-sibs-muted">
+                          Showing the first 100 of {orphanPreview.count} events.
+                        </p>
+                      ) : null}
+                    </div>
+
+                    {orphanPreview.legacyCount > 0 ? (
+                      <div className="overflow-hidden rounded-xl border border-amber-200 bg-white">
+                        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-amber-200 bg-amber-50 px-3.5 py-3">
+                          <h4 className="sibs-modal-section-title text-amber-900">Older Events · Manual Review</h4>
+                          <span className="rounded-full bg-white px-2.5 py-1 text-[10px] font-extrabold text-amber-800">
+                            {selectedLegacyIds.length} selected
+                          </span>
+                        </div>
+                        <p className="px-3.5 pt-3 text-[11px] font-semibold leading-relaxed text-amber-900">
+                          Select an event only if you have confirmed it belongs to an obsolete HRIS schedule.
+                          Generic “Interview” events are never automatically selected.
+                        </p>
+                        <div className="thin-scroll mx-3.5 my-3 max-h-48 divide-y divide-amber-100 overflow-y-auto rounded-lg border border-amber-100">
+                          {orphanPreview.legacy?.map((item) => (
+                            <label key={item.id} className="flex cursor-pointer items-start gap-3 px-3 py-2.5 text-[11px] font-semibold text-slate-700 hover:bg-amber-50/70">
+                              <input
+                                type="checkbox"
+                                className="mt-0.5 h-4 w-4 shrink-0 accent-[#FF5C28]"
+                                checked={selectedLegacyIds.includes(item.id)}
+                                disabled={orphanBusy}
+                                onChange={(event) => setSelectedLegacyIds((ids) =>
+                                  event.target.checked ? [...ids, item.id] : ids.filter((id) => id !== item.id)
+                                )}
+                              />
+                              <span className="min-w-0 break-words">
+                                {item.start ? <span className="text-sibs-muted">{item.start} — </span> : null}
+                                {item.title}
+                              </span>
+                            </label>
+                          ))}
+                        </div>
+                        {orphanPreview.truncatedLegacy ? (
+                          <p className="px-3.5 pb-3 text-[10px] text-amber-900">
+                            Showing the first 100 events. Review the remaining events after cleanup.
+                          </p>
+                        ) : null}
+                      </div>
+                    ) : null}
+                  </>
+                ) : !orphanBusy && !orphanMessage ? (
+                  <div className="rounded-xl border border-sibs-border-subtle bg-slate-50 px-4 py-5 text-center">
+                    <CalendarDays className="mx-auto h-6 w-6 text-sibs-muted" />
+                    <p className="mt-2 text-xs font-semibold text-sibs-muted">No preview available yet.</p>
+                  </div>
+                ) : null}
+
+                {orphanMessage ? (
+                  <div role="status" className="rounded-xl border border-sibs-border-subtle bg-slate-50 px-3.5 py-3 text-[11px] font-semibold leading-relaxed text-sibs-navy">
+                    {orphanMessage}
+                  </div>
+                ) : null}
               </div>
+
+              <footer className="flex shrink-0 flex-col-reverse gap-2 border-t border-sibs-border-subtle bg-slate-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-end sm:px-5">
+                {!orphanPreview && !orphanBusy ? (
+                  <button type="button" className="sibs-modal-btn-secondary" onClick={handlePreviewOrphanCleanup}>
+                    <RefreshCw className="h-3.5 w-3.5" /> Retry Preview
+                  </button>
+                ) : null}
+                <button type="button" className="sibs-modal-btn-secondary" disabled={orphanBusy} onClick={closeOrphanCleanup}>
+                  Close
+                </button>
+                {orphanPreview?.count > 0 || selectedLegacyIds.length > 0 ? (
+                  <button
+                    type="button"
+                    disabled={orphanBusy}
+                    onClick={handleConfirmOrphanCleanup}
+                    className="sibs-modal-btn-primary"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                    Delete selected ({(orphanPreview?.count || 0) + selectedLegacyIds.length})
+                  </button>
+                ) : null}
+              </footer>
             </section>
           </div>
         ) : null}
