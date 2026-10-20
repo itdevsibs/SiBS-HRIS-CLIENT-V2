@@ -51,26 +51,41 @@ function getCandidateSiteKey(candidate = {}) {
 const two = (n) => String(n).padStart(2, "0");
 const keyOf = (date) => `${date.getFullYear()}-${two(date.getMonth() + 1)}-${two(date.getDate())}`;
 const makeDate = (dateKey) => new Date(`${dateKey}T12:00:00`);
-const monthStart = (date) => new Date(date.getFullYear(), date.getMonth(), 1);
+const isValidCalendarDate = (date) => date instanceof Date && Number.isFinite(date.getTime());
+const isValidDateKey = (dateKey) => {
+  if (typeof dateKey !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(dateKey)) return false;
+  const date = makeDate(dateKey);
+  return isValidCalendarDate(date) && keyOf(date) === dateKey;
+};
+// A malformed stored reschedule value must not produce an Invalid Date month.
+// Fall back to the Philippine calendar month before rendering cells or making API calls.
+const monthStart = (date) => {
+  const safe = isValidCalendarDate(date) ? date : makeDate(todayKey());
+  const fallback = isValidCalendarDate(safe) ? safe : new Date();
+  return new Date(fallback.getFullYear(), fallback.getMonth(), 1);
+};
+const interviewDateKey = (value) => {
+  const dateKey = /^(\d{4}-\d{2}-\d{2})(?:$|[T\s])/.exec(String(value ?? "").trim())?.[1];
+  if (isValidDateKey(dateKey)) return dateKey;
+  // Confirmed interviews may also arrive as Date instances or legacy date strings.
+  const parsed = value instanceof Date ? value : value ? new Date(value) : null;
+  return parsed && isValidCalendarDate(parsed) ? manilaDateTime(parsed)?.dateKey || "" : "";
+};
 
 function initialInterviewCalendarDate(value) {
   // Updated interviews can arrive as ISO dates, MySQL datetimes, Date instances,
   // or older display strings. An invalid form value must never render NaN cells
   // or be sent as an interview-availability request parameter.
   const text = String(value ?? "").trim();
-  const dateKey = /^(\d{4}-\d{2}-\d{2})(?:$|[T\s])/.exec(text)?.[1];
-  if (dateKey) {
-    const wallDate = makeDate(dateKey);
-    if (!Number.isNaN(wallDate.getTime()) && keyOf(wallDate) === dateKey) {
-      return wallDate;
-    }
-  }
+  const dateKey = interviewDateKey(value);
+  if (dateKey) return makeDate(dateKey);
   if (value) {
     const parsed = value instanceof Date ? value : new Date(text);
     const manila = manilaDateTime(parsed);
     if (manila) return makeDate(manila.dateKey);
   }
-  return makeDate(todayKey());
+  const fallback = makeDate(todayKey());
+  return isValidCalendarDate(fallback) ? fallback : new Date();
 }
 // Always compare against Philippine wall time, regardless of the browser's timezone.
 const todayKey = () => manilaDateTime(new Date())?.dateKey || keyOf(new Date());
@@ -80,8 +95,59 @@ function monthCells(viewDate) {
   const firstCell = new Date(first.getFullYear(), first.getMonth(), 1 - first.getDay());
   return Array.from({ length: 42 }, (_, index) => {
     const date = new Date(firstCell.getFullYear(), firstCell.getMonth(), firstCell.getDate() + index);
-    return { dateKey: keyOf(date), day: date.getDate(), current: date.getMonth() === viewDate.getMonth() };
+    return { dateKey: keyOf(date), day: date.getDate(), current: date.getMonth() === first.getMonth() };
   });
+}
+
+/**
+ * A month grid contains 42 dates. Normally HRIS verifies that month in one
+ * request. Some deployments reject even a valid month-wide proposal query
+ * with their 63-day guard; retry using small, calendar-day-aligned requests.
+ * Never infer availability from Google events or fall back to unverified slots.
+ */
+async function loadVerifiedInterviewSlots({ from, to, excludeCandidateId }) {
+  // Fail locally instead of ever sending from=NaN-NaN-NaN to the HRIS API.
+  if (!isValidDateKey(from) || !isValidDateKey(to) || from > to) {
+    throw new Error("Invalid interview calendar date range. Please reopen the schedule and try again.");
+  }
+  const params = { from, to, excludeCandidateId, mode: "proposal" };
+  const checked = async (input) => {
+    const result = await getGoogleInterviewAvailability(input);
+    if (result?.success !== true || !Array.isArray(result.slots)) {
+      throw new Error(result?.message || "Could not verify SiBS HRIS interview availability.");
+    }
+    return result;
+  };
+  try {
+    return await checked(params);
+  } catch (error) {
+    const reason = String(error?.response?.data?.message || error?.message || "");
+    if (!/valid interview period|maximum 63 days/i.test(reason)) throw error;
+
+    // Only use fallback for a demonstrably valid date range, never mask a
+    // broken caller or silently bypass a real HRIS validation failure.
+    const validDate = /^\d{4}-\d{2}-\d{2}$/;
+    if (!validDate.test(from) || !validDate.test(to)) throw error;
+    const start = Date.parse(`${from}T00:00:00Z`);
+    const end = Date.parse(`${to}T00:00:00Z`);
+    const days = Math.round((end - start) / 86400000);
+    if (!Number.isFinite(days) || days < 0 || days > 62) throw error;
+
+    // An individual date must pass HRIS; a failing single-day request is not
+    // recoverable and the editor must stay blocked.
+    if (days === 0) throw error;
+    const parts = [];
+    for (let offset = 0; offset <= days; offset += 14) {
+      const dateAt = (dayOffset) => new Date(start + dayOffset * 86400000).toISOString().slice(0, 10);
+      parts.push({ ...params, from: dateAt(offset), to: dateAt(Math.min(days, offset + 13)) });
+    }
+    const results = await Promise.all(parts.map(checked));
+    return {
+      success: true,
+      slots: results.flatMap((result) => result.slots),
+      slotMinutes: results[0]?.slotMinutes || 30,
+    };
+  }
 }
 
 function manilaDateTime(value) {
@@ -398,7 +464,7 @@ function ReadOnlyCalendarEventsDialog({ dateKey, events, initialEventId, onClose
 /** Same search/list/custom-time layout as HeaderCalendarModal.CalendarTimePicker.
  * The editor is HRIS-only; the API is read-only and checks a custom 30-minute
  * proposal against existing HRIS interview bookings before it can be applied. */
-function ProposalTimeDropdown({ value, options, dateKey, candidateId, onChange, onValidationError, kind = "start", disabled = false, open = false, onOpenChange, nowManila }) {
+function ProposalTimeDropdown({ value, options, dateKey, candidateId, onChange, onValidationError, kind = "start", disabled = false, open = false, onOpenChange, nowManila, availableStartClocks, availabilityLoading = false, availabilityError = "" }) {
   const [search, setSearch] = useState("");
   const [customTime, setCustomTime] = useState("");
   const [meridiem, setMeridiem] = useState("AM");
@@ -421,6 +487,16 @@ function ProposalTimeDropdown({ value, options, dateKey, candidateId, onChange, 
   const current = normalized.find((option) => option.value === value);
   const currentClock = value?.slice(11, 16) || "";
   const selectedLabel = current?.label || (currentClock ? timeLabel(currentClock) : "Select time");
+  // Start and end options both reserve the same 30-minute HRIS interview interval.
+  // Missing times in the server's available slots are disabled *before* clicking.
+  // Google-only events are deliberately absent from this HRIS availability set.
+  const startClockForOption = (option) => {
+    const [hour, minute] = option.value.slice(11, 16).split(":").map(Number);
+    const startMinute = hour * 60 + minute - (isEnd ? INTERVIEW_SLOT_DURATION : 0);
+    return `${two(Math.floor(startMinute / 60))}:${two(startMinute % 60)}`;
+  };
+  const isOptionAvailable = (option) => Boolean(availableStartClocks?.has(startClockForOption(option))) &&
+    !isPastInterviewStart(dateKey, startClockForOption(option), nowManila);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -488,7 +564,7 @@ function ProposalTimeDropdown({ value, options, dateKey, candidateId, onChange, 
   // The currently chosen end time can change the start
   // but the existing HRIS interview duration stays at 30 minutes.
   async function verifyAndSelect(displayClock) {
-    if (checking || !/^\d{2}:\d{2}$/.test(displayClock)) return;
+    if (checking || availabilityLoading || availabilityError || !/^\d{2}:\d{2}$/.test(displayClock)) return;
     const [hour, minute] = displayClock.split(":").map(Number);
     const minuteOfDay = hour * 60 + minute;
     const proposalStart = isEnd ? minuteOfDay - INTERVIEW_SLOT_DURATION : minuteOfDay;
@@ -504,6 +580,14 @@ function ProposalTimeDropdown({ value, options, dateKey, candidateId, onChange, 
     }
     if (isPastInterviewStart(dateKey, startClock)) {
       setError("This interview time has already passed in Manila. Choose a future time or date.");
+      return;
+    }
+    // The standard quarter-hour options have already been resolved by HRIS.
+    // For a custom non-quarter-hour clock, allow a precise backend check below.
+    // Do not allow typing a booked standard time to bypass its disabled option.
+    if (minuteOfDay % INTERVIEW_TIME_STEP_MINUTES === 0 &&
+        availableStartClocks && !availableStartClocks.has(startClock)) {
+      setError("This time is unavailable in SiBS HRIS. Select a free interview time.");
       return;
     }
     const request = ++pendingCheckRef.current;
@@ -583,7 +667,11 @@ function ProposalTimeDropdown({ value, options, dateKey, candidateId, onChange, 
               if (event.key !== "Enter") return;
               event.preventDefault(); event.stopPropagation();
               const exact = filtered.find((option) => option.label.toLowerCase() === search.trim().toLowerCase());
-              const match = exact || filtered[0];
+              if (exact && !isOptionAvailable(exact)) {
+                setError("This time is unavailable in SiBS HRIS. Choose an enabled time.");
+                return;
+              }
+              const match = exact || filtered.find(isOptionAvailable);
               if (match) verifyAndSelect(match.value.slice(11, 16));
               else if (/^\d{1,2}:\d{2}\s*(?:AM|PM)?$/i.test(search.trim())) applyCustom(search.trim());
             }}
@@ -598,13 +686,18 @@ function ProposalTimeDropdown({ value, options, dateKey, candidateId, onChange, 
             const startMinute = isEnd ? minuteOfDay - INTERVIEW_SLOT_DURATION : minuteOfDay;
             const startClock = `${two(Math.floor(startMinute / 60))}:${two(startMinute % 60)}`;
             const isPast = isPastInterviewStart(dateKey, startClock, nowManila);
+            const isUnavailable = !availableStartClocks?.has(startClock);
+            const isBlocked = availabilityLoading || Boolean(availabilityError) || isPast || isUnavailable;
             const selected = value === option.value;
             return <button key={option.value} type="button" role="option"
-              data-selected={selected} aria-selected={selected}
-              title={isPast ? "This time has already passed in Manila" : undefined}
-              disabled={checking || isPast} onClick={() => verifyAndSelect(option.value.slice(11, 16))}
-              className={`mb-0.5 flex min-h-8 w-full items-center justify-between rounded-lg px-3 py-1.5 text-left text-[12px] font-bold transition-colors ${isPast ? "cursor-not-allowed bg-slate-50 text-slate-400 opacity-60" : selected ? "bg-[#FF5C28] text-white shadow-sm" : "text-[#06325E] hover:bg-[#FFF1E9] hover:text-[#FF5C28]"} disabled:cursor-not-allowed`}>
-              <span>{option.label}</span>{selected && !isPast && <Check size={14} className="shrink-0 text-white"/>}
+              data-selected={selected} aria-selected={selected && !isBlocked}
+              aria-label={`${option.label}${isPast ? ", past time" : isBlocked ? ", unavailable in SiBS HRIS" : ""}`}
+              title={isPast ? "This time has already passed in Manila" : isUnavailable ? "Unavailable: conflicts with an HRIS interview or scheduling restriction" : undefined}
+              disabled={checking || isBlocked} onClick={() => verifyAndSelect(option.value.slice(11, 16))}
+              className={`mb-0.5 flex min-h-8 w-full items-center justify-between rounded-lg px-3 py-1.5 text-left text-[12px] font-bold transition-colors ${isBlocked ? "cursor-not-allowed bg-slate-50 text-slate-400 opacity-60" : selected ? "bg-[#FF5C28] text-white shadow-sm" : "text-[#06325E] hover:bg-[#FFF1E9] hover:text-[#FF5C28]"} disabled:cursor-not-allowed`}>
+              <span className={isUnavailable && !isPast ? "line-through decoration-slate-300" : ""}>{option.label}</span>
+              {isUnavailable && !isPast && !availabilityLoading && !availabilityError && <span className="ml-auto text-[10px] font-semibold text-slate-400">Unavailable</span>}
+              {selected && !isBlocked && <Check size={14} className="shrink-0 text-white"/>}
             </button>;
           }) : <p className="px-3 py-3 text-center text-xs font-semibold text-[#667085]">No matching times. Enter a custom time below.</p>}
         </div>
@@ -614,16 +707,18 @@ function ProposalTimeDropdown({ value, options, dateKey, candidateId, onChange, 
             <input id={`${listId}-custom`} type="text" inputMode="numeric" aria-label={`Custom ${isEnd ? "end" : "start"} time`}
               placeholder="HH:MM" value={customTime} onChange={(event) => { setCustomTime(event.target.value); setError(""); }}
               onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); event.stopPropagation(); applyCustom(); } }}
-              disabled={checking}
+              disabled={checking || availabilityLoading || Boolean(availabilityError)}
               className="h-9 min-w-0 flex-1 rounded-[9px] border border-[#DDE7F2] bg-[#F7FAFD] px-2.5 text-xs font-bold outline-none transition focus:border-[#FF5C28] focus:bg-white focus:ring-2 focus:ring-[#FF5C28]/10"/>
             <div className="flex h-9 overflow-hidden rounded-[9px] border border-[#DDE7F2] bg-white" role="group" aria-label="Choose AM or PM">
               {["AM", "PM"].map((period) => <button key={period} type="button" aria-pressed={period === meridiem}
-                disabled={checking} onClick={() => { setMeridiem(period); setError(""); }}
+                disabled={checking || availabilityLoading || Boolean(availabilityError)} onClick={() => { setMeridiem(period); setError(""); }}
                 className={`px-1.5 text-[10px] font-extrabold transition ${period === meridiem ? "bg-[#FF5C28] text-white" : "text-[#667085] hover:bg-[#FFF1E9] hover:text-[#FF5C28]"}`}>{period}</button>)}
             </div>
-            <button type="button" disabled={checking} onClick={() => applyCustom()}
+            <button type="button" disabled={checking || availabilityLoading || Boolean(availabilityError)} onClick={() => applyCustom()}
               className="h-9 rounded-[9px] bg-[#FF5C28] px-3 text-[11px] font-extrabold text-white transition hover:bg-[#E85022] disabled:opacity-60">{checking ? "Checking" : "Apply"}</button>
           </div>
+          {availabilityLoading && <p role="status" className="mt-2 text-[11px] font-semibold text-[#667085]">Checking latest HRIS interview bookings…</p>}
+          {availabilityError && <p role="alert" className="mt-2 text-[11px] font-semibold text-red-600">{availabilityError} Close and reopen the time picker to retry.</p>}
           {error && <p role="alert" className="mt-2 text-[11px] font-semibold leading-snug text-red-600">{error}</p>}
           <p className="mt-2 text-[10px] font-medium text-[#667085]">{isEnd ? "8:30 AM–5:00 PM" : "8:00 AM–4:30 PM"} · 30-minute interview · Past times disabled (Manila).</p>
         </div>
@@ -743,7 +838,7 @@ function ProposalVisibilityDropdown({ value = "Default visibility", onChange, op
       if (event.key === "Escape" && open) { event.preventDefault(); event.stopPropagation(); close(); }
       if (event.key === "ArrowDown" && !open) { event.preventDefault(); onOpenChange?.(true); }
     }}>
-      <div className={`flex h-9 w-full items-center gap-1 rounded-[10px] border px-3 font-jakarta text-[12px] font-bold text-[#06325E] shadow-sm transition-all duration-200 ${open ? "border-[#FF5C28] bg-white ring-4 ring-[#FF5C28]/10" : "border-[#DDE7F2] bg-[#F7FAFD] hover:border-[#FF5C28]/40 hover:bg-white"}`}>
+      <div className={`sibs-calendar-dropdown-trigger flex h-9 w-full items-center gap-1 rounded-[10px] border px-3 font-jakarta text-[12px] font-bold text-[#06325E] shadow-sm transition-all duration-200 ${open ? "border-[#FF5C28] bg-white ring-4 ring-[#FF5C28]/10" : "border-[#DDE7F2] bg-[#F7FAFD] hover:border-[#FF5C28]/40 hover:bg-white"}`}>
         <input ref={searchRef} type="text" autoComplete="off" spellCheck={false}
           aria-label="Visibility selection" role="combobox" aria-autocomplete="list"
           aria-expanded={open} aria-controls={open ? listId : undefined}
@@ -757,7 +852,7 @@ function ProposalVisibilityDropdown({ value = "Default visibility", onChange, op
               event.preventDefault(); event.stopPropagation(); choose(filtered[0]);
             }
           }}
-          className="h-full min-w-0 flex-1 appearance-none border-0 bg-transparent p-0 text-[12px] font-bold text-[#06325E] outline-none placeholder:text-[#98A2B3]" />
+          className="sibs-calendar-dropdown-input h-full min-w-0 flex-1 appearance-none border-0 bg-transparent p-0 text-[12px] font-bold text-[#06325E] outline-none placeholder:text-[#98A2B3]" />
         <button type="button" aria-label={open ? "Close visibility options" : "Open visibility options"}
           aria-haspopup="listbox" aria-expanded={open}
           onClick={() => open ? close() : onOpenChange?.(true)}
@@ -837,6 +932,20 @@ function InterviewProposalEditor({ dateKey, slots, candidateId, candidate, value
     if (!/^\d{2}:\d{2}$/.test(time)) return null;
     return { date: dateKey, time, dateTime: `${dateKey} ${time}:00` };
   });
+  // When an approved interview is being moved to another day, its old time
+  // belongs to the previous date. Re-initialize from the new day's available
+  // slots so the editor remains selectable instead of showing an empty Save.
+  useEffect(() => {
+    const existingClock = selectedPrevious.slice(0, 10) === dateKey
+      ? selectedPrevious.slice(11, 16) : "";
+    const existingSlot = existingClock
+      ? `${dateKey} ${existingClock}:00` : "";
+    const firstChoice = daySlots.find((slot) => slot.dateTime === existingSlot)?.dateTime ||
+      existingSlot || daySlots[0]?.dateTime || "";
+    setChosen(firstChoice);
+    setVerifiedCustomSlot(existingSlot && !daySlots.some((slot) => slot.dateTime === existingSlot)
+      ? { date: dateKey, time: existingClock, dateTime: existingSlot } : null);
+  }, [dateKey]);
   // Keep remarks outside the calendar editor render cycle while staff types.
   // Reading from the input at Save time retains every edit without rerendering
   // the time pickers, dropdowns, or modal on each keystroke.
@@ -858,6 +967,51 @@ function InterviewProposalEditor({ dateKey, slots, candidateId, candidate, value
   // One shared state controls the time, color, Busy/Free, and Visibility dropdowns.
   // Switching fields closes the previous popup in the same render.
   const [activeDropdown, setActiveDropdown] = useState(null);
+  const [latestDaySlots, setLatestDaySlots] = useState(null);
+  const [timeAvailabilityLoading, setTimeAvailabilityLoading] = useState(false);
+  const [timeAvailabilityError, setTimeAvailabilityError] = useState("");
+  // Month availability initially disables booked times; refetch on opening a time
+  // dropdown so newly added HRIS interviews are reflected without page refresh.
+  useEffect(() => {
+    setLatestDaySlots(null);
+    setTimeAvailabilityError("");
+  }, [dateKey, candidateId]);
+  useEffect(() => {
+    if (activeDropdown !== "start" && activeDropdown !== "end") return undefined;
+    let active = true;
+    setTimeAvailabilityLoading(true);
+    setTimeAvailabilityError("");
+    void getGoogleInterviewAvailability({
+      from: dateKey, to: dateKey, excludeCandidateId: candidateId, mode: "proposal",
+    }).then((response) => {
+      if (!active) return;
+      if (!response?.success || !Array.isArray(response.slots)) {
+        throw new Error(response?.message || "Could not check SiBS HRIS interview availability.");
+      }
+      setLatestDaySlots({ dateKey, slots: response.slots.filter((slot) => slot.date === dateKey) });
+    }).catch((failure) => {
+      if (!active) return;
+      setTimeAvailabilityError(failure?.response?.data?.message || failure?.message || "Unable to verify available times.");
+    }).finally(() => { if (active) setTimeAvailabilityLoading(false); });
+    return () => { active = false; };
+  }, [activeDropdown, dateKey, candidateId]);
+  const effectiveDaySlots = latestDaySlots?.dateKey === dateKey ? latestDaySlots.slots : daySlots;
+  const availableStartClocks = useMemo(() => new Set(effectiveDaySlots.map((slot) => slot.time)), [effectiveDaySlots]);
+  const choice = daySlots.find((slot) => slot.dateTime === chosen) || (verifiedCustomSlot?.date === dateKey && verifiedCustomSlot?.dateTime === chosen ? verifiedCustomSlot : null);
+  const choiceIsUnavailable = Boolean(choice && choice.dateTime !== verifiedCustomSlot?.dateTime &&
+    !availableStartClocks.has(choice.time));
+  useEffect(() => {
+    if (latestDaySlots?.dateKey !== dateKey || !chosen.startsWith(`${dateKey} `)) return;
+    const currentClock = chosen.slice(11, 16);
+    const minute = Number(currentClock.slice(3, 5));
+    // The HRIS response enumerates the standard 15-minute start times. Custom
+    // off-grid times are checked individually on selection and again at save.
+    if (minute % INTERVIEW_TIME_STEP_MINUTES === 0 &&
+        !latestDaySlots.slots.some((slot) => slot.dateTime === chosen)) {
+      setChosen(latestDaySlots.slots[0]?.dateTime || "");
+      setVerifiedCustomSlot(null);
+    }
+  }, [latestDaySlots, dateKey, chosen]);
   const changeActiveDropdown = (name, shouldOpen) => {
     setActiveDropdown((current) => shouldOpen ? name : (current === name ? null : current));
   };
@@ -865,7 +1019,6 @@ function InterviewProposalEditor({ dateKey, slots, candidateId, candidate, value
   const openerRef = useRef(null);
   const exitTimerRef = useRef(null);
   const closingRef = useRef(false);
-  const choice = daySlots.find((slot) => slot.dateTime === chosen) || (verifiedCustomSlot?.date === dateKey && verifiedCustomSlot?.dateTime === chosen ? verifiedCustomSlot : null);
   const choiceIsPast = Boolean(choice && isPastInterviewStart(dateKey, choice.time || choice.dateTime?.slice(11, 16), nowManila));
   const isWeekend = isInterviewWeekend(dateKey);
   // A Meet URL does not exist until the candidate accepts and Google publishes the event.
@@ -967,15 +1120,15 @@ function InterviewProposalEditor({ dateKey, slots, candidateId, candidate, value
 
   return createPortal(
     <div className={`fixed inset-0 z-[10060] flex h-dvh items-center justify-center bg-[#03182C]/50 px-2 py-2 font-jakarta sm:px-4 sm:py-4 ${isClosing ? "sibs-modal-backdrop-out" : "sibs-modal-backdrop-in"} motion-reduce:animate-none`} role="presentation">
-      <div ref={dialogRef} role="dialog" aria-modal="true" aria-label={`Propose candidate interview on ${dateKey}`} tabIndex={-1} className={`relative flex max-h-[88dvh] w-full max-w-3xl flex-col overflow-hidden rounded-[14px] border border-white/70 bg-white shadow-2xl outline-none max-sm:max-h-[calc(100dvh-1rem)] ${isClosing ? "sibs-modal-pop-out pointer-events-none" : "sibs-modal-pop-in"} motion-reduce:animate-none`} onClick={(event) => event.stopPropagation()}>
+      <div ref={dialogRef} role="dialog" aria-modal="true" aria-label={`${candidate?.currentStage === "Interview Scheduled" ? "Update" : "Propose"} candidate interview on ${dateKey}`} tabIndex={-1} className={`relative flex max-h-[88dvh] w-full max-w-3xl flex-col overflow-hidden rounded-[14px] border border-white/70 bg-white shadow-2xl outline-none max-sm:max-h-[calc(100dvh-1rem)] ${isClosing ? "sibs-modal-pop-out pointer-events-none" : "sibs-modal-pop-in"} motion-reduce:animate-none`} onClick={(event) => event.stopPropagation()}>
         {/* Same shell as Schedule Candidate Interview: fixed navy title bar, scrollable content, fixed actions. */}
         <header className="relative shrink-0 bg-[#062F53] px-3.5 py-3 text-white sm:px-5">
           <div className="flex min-w-0 items-center gap-3">
             <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] border border-white/10 bg-[#FF5C28] shadow-[0_6px_16px_rgba(255,92,40,0.22)]" aria-hidden="true"><CalendarDays size={18}/></span>
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">
-                <h3 className="truncate text-sm font-black leading-5 text-white sm:text-base">Schedule Candidate Interview</h3>
-                <span className="rounded-full border border-white/20 bg-white/10 px-2.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wide">Interview</span>
+                <h3 className="truncate text-sm font-black leading-5 text-white sm:text-base">{candidate?.currentStage === "Interview Scheduled" ? "Update Interview Schedule" : "Schedule Candidate Interview"}</h3>
+                <span className="rounded-full border border-white/20 bg-white/10 px-2.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wide">{candidate?.currentStage === "Interview Scheduled" ? "Reschedule" : "Interview"}</span>
               </div>
               <p className="mt-0.5 truncate text-[11px] font-medium text-white/80">SiBS HRIS – Interview: {candidateName}</p>
             </div>
@@ -1006,7 +1159,8 @@ function InterviewProposalEditor({ dateKey, slots, candidateId, candidate, value
                 <div className="flex flex-wrap items-center gap-1.5">
                 <ProposalTimeDropdown value={choice?.dateTime || ""} dateKey={dateKey} candidateId={candidateId} nowManila={nowManila}
                   open={activeDropdown === "start"} onOpenChange={(nextOpen) => changeActiveDropdown("start", nextOpen)}
-                  options={presetTimeOptions} onValidationError={setError}
+                  options={presetTimeOptions} availableStartClocks={availableStartClocks}
+                  availabilityLoading={timeAvailabilityLoading} availabilityError={timeAvailabilityError} onValidationError={setError}
                   onChange={(nextTime, customSlot) => {
                     if (customSlot) setVerifiedCustomSlot(customSlot);
                     setChosen(nextTime);
@@ -1015,7 +1169,8 @@ function InterviewProposalEditor({ dateKey, slots, candidateId, candidate, value
                 <span className="text-xs font-black text-[#667085]">–</span>
                 <ProposalTimeDropdown kind="end" value={selectedEnd} dateKey={dateKey} candidateId={candidateId} nowManila={nowManila}
                   open={activeDropdown === "end"} onOpenChange={(nextOpen) => changeActiveDropdown("end", nextOpen)}
-                  options={endTimeOptions} onValidationError={setError} onChange={(verifiedStart, customSlot) => {
+                  options={endTimeOptions} availableStartClocks={availableStartClocks}
+                  availabilityLoading={timeAvailabilityLoading} availabilityError={timeAvailabilityError} onValidationError={setError} onChange={(verifiedStart, customSlot) => {
                     if (customSlot) setVerifiedCustomSlot(customSlot);
                     setChosen(verifiedStart);
                     setError("");
@@ -1123,9 +1278,9 @@ function InterviewProposalEditor({ dateKey, slots, candidateId, candidate, value
           </div>
         </div>
         <footer className="flex shrink-0 items-center justify-between gap-3 border-t border-[#DDE7F2] bg-white px-3.5 py-2.5 shadow-[0_-8px_24px_rgba(4,44,81,0.035)] sm:px-5">
-          <span className="max-w-[340px] text-[10px] font-semibold leading-4 text-[#667085]" role="status">SiBS HRIS proposed only · Google Calendar is updated after candidate acceptance or approved reschedule.</span>
+          <span className="max-w-[340px] text-[10px] font-semibold leading-4 text-[#667085]" role="status">{candidate?.currentStage === "Interview Scheduled" ? "Changes are submitted as a new HRIS proposal. The current Google Calendar booking stays until the candidate confirms the replacement." : "SiBS HRIS proposed only · Google Calendar is updated after candidate acceptance or approved reschedule."}</span>
           <div className="flex gap-2"><button type="button" onClick={() => closeWithAnimation(onCancel)} className="h-10 rounded-[10px] px-4 text-xs font-black text-[#06325E] hover:bg-slate-100">Cancel</button>
-            <button type="button" disabled={!choice || choiceIsPast || isWeekend || !hasRequiredDetails} onClick={() => {
+            <button type="button" disabled={!choice || choiceIsPast || choiceIsUnavailable || timeAvailabilityLoading || Boolean(timeAvailabilityError) || isWeekend || !hasRequiredDetails} onClick={() => {
               if (isInterviewWeekend(dateKey)) {
                 setError("Interviews cannot be scheduled on Saturdays or Sundays.");
                 return;
@@ -1144,7 +1299,7 @@ function InterviewProposalEditor({ dateKey, slots, candidateId, candidate, value
                 calendarAvailability: selectedAvailability, calendarVisibility: selectedVisibility,
                 calendarAddNotification: addNotification,
               }));
-            }} className="inline-flex h-10 items-center gap-2 rounded-[12px] bg-[#FF5C28] px-6 text-xs font-black text-white shadow-[0_8px_20px_rgba(255,92,40,0.18)] transition hover:bg-[#E84F1F] disabled:cursor-not-allowed disabled:opacity-40"><Check size={15}/>Save</button>
+            }} className="inline-flex h-10 items-center gap-2 rounded-[12px] bg-[#FF5C28] px-6 text-xs font-black text-white shadow-[0_8px_20px_rgba(255,92,40,0.18)] transition hover:bg-[#E84F1F] disabled:cursor-not-allowed disabled:opacity-40"><Check size={15}/>{candidate?.currentStage === "Interview Scheduled" ? "Update" : "Save"}</button>
           </div>
         </footer>
       </div>
@@ -1157,6 +1312,12 @@ function InterviewProposalEditor({ dateKey, slots, candidateId, candidate, value
 export default function InterviewGoogleCalendarPicker({ value, onChange, onProposalSaved, onOpenSibsCalendar, candidateId, candidate, remarks = "", interviewType = "", onlineInterviewLink = "", color = "peacock", onColorChange, availability = "Busy", onAvailabilityChange, visibility = "Default visibility", onVisibilityChange, notification = false }) {
   const [viewDate, setViewDate] = useState(() => monthStart(initialInterviewCalendarDate(value)));
   const [nowManila, setNowManila] = useState(() => manilaDateTime(new Date()));
+  // Recover an invalid month in existing mounted modal state without a page reload.
+  // The calendar and APIs below use the validated month even before this effect runs.
+  const safeViewDate = useMemo(() => monthStart(viewDate), [viewDate]);
+  useEffect(() => {
+    if (!isValidCalendarDate(viewDate)) setViewDate(safeViewDate);
+  }, [viewDate, safeViewDate]);
   // Keep day selection in sync with the actual Philippine time without
   // refetching historical Google Calendar events every 15 seconds.
   useEffect(() => {
@@ -1176,6 +1337,7 @@ export default function InterviewGoogleCalendarPicker({ value, onChange, onPropo
   const [googleSynced, setGoogleSynced] = useState(false);
   const [availabilityReady, setAvailabilityReady] = useState(false);
   const [googleError, setGoogleError] = useState("");
+  const [calendarPreviewError, setCalendarPreviewError] = useState("");
   const [availabilityError, setAvailabilityError] = useState("");
   const [editorDate, setEditorDate] = useState("");
   const [details, setDetails] = useState(null);
@@ -1187,7 +1349,7 @@ export default function InterviewGoogleCalendarPicker({ value, onChange, onPropo
     setLocalColor(nextColor);
     onColorChange?.(nextColor);
   };
-  const cells = useMemo(() => monthCells(viewDate), [viewDate]);
+  const cells = useMemo(() => monthCells(safeViewDate), [safeViewDate]);
   const availabilityDates = useMemo(() => new Set([
     ...slots.map((slot) => slot.date),
     ...events.filter((event) => event.isAvailability).map((event) => event.dateKey),
@@ -1196,18 +1358,43 @@ export default function InterviewGoogleCalendarPicker({ value, onChange, onPropo
     (acc[event.dateKey] ||= []).push(event);
     return acc;
   }, {}), [events]);
-  const selectedDate = String(value || "").slice(0, 10);
+  const selectedDate = interviewDateKey(value);
+  const isUpdatingInterview = candidate?.currentStage === "Interview Scheduled";
+  const autoEditorOpenedForRef = useRef("");
+  // The Update Schedule action should open the editable event form (not a
+  // read-only Google event). Wait until both sync and HRIS availability pass.
+  useEffect(() => {
+    if (!isUpdatingInterview || !googleSynced || !availabilityReady || loading) return;
+    const identity = String(candidateId || candidate?.id || selectedDate);
+    if (autoEditorOpenedForRef.current === identity) return;
+    const editableDate = selectedDate && !interviewDateIsExpired(selectedDate) &&
+      !isInterviewWeekend(selectedDate) ? selectedDate : firstBookableInterviewDate();
+    const startMonth = monthStart(makeDate(editableDate));
+    if (safeViewDate.getMonth() !== startMonth.getMonth() || safeViewDate.getFullYear() !== startMonth.getFullYear()) {
+      // Loading another month clears the editor; open it only AFTER that
+      // month's Google/HRIS availability is ready (also handles past dates).
+      setViewDate(startMonth);
+      return;
+    }
+    autoEditorOpenedForRef.current = identity;
+    setEditorDate(editableDate);
+  }, [isUpdatingInterview, googleSynced, availabilityReady, loading, selectedDate, candidateId, candidate?.id, safeViewDate]);
 
   useEffect(() => {
     let alive = true;
     const first = cells[0]?.dateKey;
     const last = cells[cells.length - 1]?.dateKey;
-    if (!first || !last) return undefined;
+    if (!isValidDateKey(first) || !isValidDateKey(last) || first > last) {
+      setAvailabilityReady(false);
+      setAvailabilityError("The interview calendar date is invalid. Please reopen the schedule.");
+      return undefined;
+    }
     setLoading(true);
     setGoogleConnected(null);
     setGoogleSynced(false);
     setAvailabilityReady(false);
     setGoogleError("");
+    setCalendarPreviewError("");
     setAvailabilityError("");
     setSlots([]);
     setEvents([]);
@@ -1218,9 +1405,15 @@ export default function InterviewGoogleCalendarPicker({ value, onChange, onPropo
     async function load() {
       const status = await getGoogleCalendarStatus();
       if (!alive) return;
-      if (status?.success === false || !status?.connected) {
+      if (status?.success === false) {
+        // A request error is not evidence that the user disconnected Google.
+        // Avoid telling an already-connected user to sign in again.
+        setGoogleError(status?.message || "Could not verify Google Calendar connection. Retry the check.");
+        return;
+      }
+      if (!status?.connected) {
         setGoogleConnected(false);
-        setGoogleError(status?.success === false ? status?.message : "Connect your Google account from SiBS Calendar before scheduling interviews.");
+        setGoogleError("Connect your Google account from SiBS Calendar before scheduling interviews.");
         return;
       }
       setGoogleConnected(true);
@@ -1229,25 +1422,45 @@ export default function InterviewGoogleCalendarPicker({ value, onChange, onPropo
         return;
       }
 
+      // /status reads the same user's persisted successful Google event sync as
+      // SiBS Calendar. Do not override that verified state solely because the
+      // editor's *separate, read-only* events preview request returns HTTP 400.
+      setGoogleSynced(true);
+      const finalDay = makeDate(last);
+      const exclusiveEnd = keyOf(new Date(finalDay.getFullYear(), finalDay.getMonth(), finalDay.getDate() + 1));
+      if (!isValidDateKey(exclusiveEnd)) {
+        setAvailabilityError("The calendar's date range is invalid. Please try again.");
+        return;
+      }
       const results = await Promise.allSettled([
-        getGoogleCalendarEvents({ timeMin: `${first}T00:00:00+08:00`, timeMax: `${keyOf(new Date(makeDate(last).getFullYear(), makeDate(last).getMonth(), makeDate(last).getDate() + 1))}T00:00:00+08:00`, maxResults: 250 }),
-        getGoogleInterviewAvailability({ from: first, to: last, excludeCandidateId: candidateId, mode: "proposal" }),
+        getGoogleCalendarEvents({ timeMin: `${first}T00:00:00+08:00`, timeMax: `${exclusiveEnd}T00:00:00+08:00`, maxResults: 250 }),
+        loadVerifiedInterviewSlots({ from: first, to: last, excludeCandidateId: candidateId }),
         api.get("/api/candidate-pipeline/interview/calendar-bookings", { params: { from: first, to: last } }),
       ]);
       if (!alive) return;
       const google = results[0].status === "fulfilled" ? results[0].value : null;
       const available = results[1].status === "fulfilled" ? results[1].value : null;
       const bookings = results[2].status === "fulfilled" ? results[2].value?.data?.bookings : [];
-      if (!google || google.success === false || google.connected === false) {
-        setGoogleError(google?.message || "Google Calendar sync failed. Open SiBS Calendar and sync your account before scheduling.");
+
+      // An authorization failure invalidates the old successful sync. Never
+      // treat an expired/revoked Google grant as a harmless preview failure.
+      const previewHttpStatus = Number(google?.status || results[0].reason?.response?.status || 0);
+      if (google?.connected === false || previewHttpStatus === 401 || previewHttpStatus === 403) {
+        setGoogleSynced(false);
+        setGoogleError("Google Calendar access has expired or been disconnected. Reconnect your account in SiBS Calendar.");
         return;
       }
-      setGoogleSynced(true);
+
+      const previewFailed = results[0].status === "rejected" || !google || google.success === false;
+      if (previewFailed) {
+        const detail = google?.message || google?.error || results[0].reason?.response?.data?.message || results[0].reason?.message;
+        setCalendarPreviewError(`Google Calendar events could not be displayed${detail ? ` (${detail})` : ""}. Your account is already synced; interview availability is checked separately in SiBS HRIS.`);
+      }
       if (!available || available.success === false) {
-        setAvailabilityError(available?.message || "Unable to verify HRIS interview availability. Retry Sync before scheduling.");
+        setAvailabilityError(available?.message || results[1].reason?.response?.data?.message || results[1].reason?.message || "Unable to verify HRIS interview availability. Retry before scheduling.");
         return;
       }
-      const googleEvents = (Array.isArray(google.events) ? google.events : []).map(googleCalendarEvent).filter(Boolean);
+      const googleEvents = (Array.isArray(google?.events) ? google.events : []).map(googleCalendarEvent).filter(Boolean);
       const pendingEvents = (Array.isArray(bookings) ? bookings : []).map(pendingHrisCalendarEvent).filter(Boolean);
       setEvents([...googleEvents, ...pendingEvents]);
       setSlots(Array.isArray(available.slots) ? available.slots : []);
@@ -1257,9 +1470,12 @@ export default function InterviewGoogleCalendarPicker({ value, onChange, onPropo
       if (alive) setGoogleError(error?.message || "Unable to check Google Calendar synchronization.");
     }).finally(() => { if (alive) setLoading(false); });
     return () => { alive = false; };
-  }, [candidateId, viewDate, refreshToken]);
+  }, [candidateId, safeViewDate, refreshToken]);
 
-  const changeMonth = (step) => setViewDate((date) => new Date(date.getFullYear(), date.getMonth() + step, 1));
+  const changeMonth = (step) => setViewDate((date) => {
+    const current = monthStart(date);
+    return new Date(current.getFullYear(), current.getMonth() + step, 1);
+  });
   return (
     <div className="font-jakarta">
       <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
@@ -1272,13 +1488,23 @@ export default function InterviewGoogleCalendarPicker({ value, onChange, onPropo
       </div>
       {!loading && (!googleSynced || !availabilityReady) && <div role="alert" className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-4 text-amber-900">
         <div className="min-w-0 flex-1">
-          <p className="text-xs font-black">{googleSynced ? "Interview availability could not be verified" : "Google Calendar account sync required"}</p>
-          <p className="mt-1 text-[11px] font-semibold leading-5">{googleSynced ? "Your Google account is synced, but SiBS HRIS could not confirm available interview slots. Retry before scheduling." : googleConnected ? "Your account is connected but needs synchronization. Open SiBS Calendar; this interview will resume automatically after a successful sync." : "Open SiBS Calendar to connect and sync your Google account before scheduling an interview."}</p>
+          <p className="text-xs font-black">{googleSynced ? "Interview availability could not be verified" : googleConnected === null ? "Google Calendar connection check failed" : "Google Calendar account sync required"}</p>
+          <p className="mt-1 text-[11px] font-semibold leading-5">{googleSynced ? "Your Google account is synced, but SiBS HRIS could not confirm available interview slots. Retry before scheduling." : googleConnected === null ? "We could not verify the Google account status. Retry before making changes." : googleConnected ? "Your account is connected but needs synchronization. Open SiBS Calendar; this interview will resume automatically after a successful sync." : "Open SiBS Calendar to connect and sync your Google account before scheduling an interview."}</p>
           {(googleError || availabilityError) && <p className="mt-1 text-[11px] font-semibold">{googleError || availabilityError}</p>}
         </div>
-        <button type="button" onClick={googleSynced ? () => setRefreshToken((count) => count + 1) : onOpenSibsCalendar} className="inline-flex items-center gap-2 rounded-lg border border-amber-300 bg-white px-3 py-2 text-[11px] font-extrabold text-[#06325E] hover:bg-amber-100">{googleSynced ? <RefreshCw size={14}/> : <CalendarDays size={14}/>} {googleSynced ? "Retry availability" : "Open SiBS Calendar"}</button>
+        <button type="button" onClick={googleSynced || googleConnected === null ? () => setRefreshToken((count) => count + 1) : onOpenSibsCalendar} className="inline-flex items-center gap-2 rounded-lg border border-amber-300 bg-white px-3 py-2 text-[11px] font-extrabold text-[#06325E] hover:bg-amber-100">{googleSynced || googleConnected === null ? <RefreshCw size={14}/> : <CalendarDays size={14}/>} {googleSynced ? "Retry availability" : googleConnected === null ? "Retry connection" : "Open SiBS Calendar"}</button>
       </div>}
+      {googleSynced && availabilityReady && calendarPreviewError && (
+        <p role="status" className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] font-semibold leading-5 text-amber-900">{calendarPreviewError}</p>
+      )}
       {loading && <p role="status" className="mb-3 rounded-lg bg-slate-50 px-3 py-2 text-[11px] font-semibold text-[#667085]">Verifying your Google Calendar account and interview availability…</p>}
+      {googleSynced && availabilityReady && isUpdatingInterview && <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-blue-200 bg-blue-50 px-3 py-3">
+        <div className="min-w-0"><p className="text-xs font-extrabold text-[#06325E]">Edit existing final interview</p>
+          <p className="mt-0.5 text-[11px] font-medium text-[#667085]">Select a new date or time if the confirmed appointment conflicts with another commitment. Your own existing booking does not block editing.</p>
+        </div>
+        <button type="button" onClick={() => setEditorDate(selectedDate && !interviewDateIsExpired(selectedDate) && !isInterviewWeekend(selectedDate) ? selectedDate : firstBookableInterviewDate())}
+          className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-[#06325E] px-3 py-2 text-[11px] font-extrabold text-white hover:bg-[#0C4278]"><CalendarDays size={14}/> Edit schedule</button>
+      </div>}
       {googleSynced && availabilityReady && <div className="overflow-hidden rounded-xl border border-[#DDE7F2] bg-white shadow-sm">
         <div className="flex items-center justify-between gap-2 border-b border-[#DDE7F2] bg-[#F8FAFC] px-3 py-3">
           <div className="flex items-center gap-2">
@@ -1286,7 +1512,7 @@ export default function InterviewGoogleCalendarPicker({ value, onChange, onPropo
             <button type="button" onClick={() => setViewDate(monthStart(makeDate(nowManila?.dateKey || todayKey())))} className="rounded-lg border border-[#DDE7F2] bg-white px-3 py-2 text-[11px] font-bold text-[#06325E]">Today</button>
             <button type="button" onClick={() => changeMonth(1)} aria-label="Next month" className="rounded-lg border border-[#DDE7F2] bg-white p-2 text-[#06325E] hover:bg-[#EEF4FA]"><ChevronRight size={15}/></button>
           </div>
-          <strong className="text-xs font-extrabold text-[#06325E]">{MONTHS[viewDate.getMonth()]} {viewDate.getFullYear()}</strong>
+          <strong className="text-xs font-extrabold text-[#06325E]">{MONTHS[safeViewDate.getMonth()]} {safeViewDate.getFullYear()}</strong>
         </div>
         {googleError && <p role="status" className="mx-3 mt-2 text-[11px] font-semibold text-amber-700">{googleError}</p>}
         {availabilityError && <p role="alert" className="mx-3 mt-2 text-[11px] font-semibold text-rose-600">{availabilityError}</p>}
@@ -1335,16 +1561,23 @@ export default function InterviewGoogleCalendarPicker({ value, onChange, onPropo
         </div>
       </div>}
       <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-[10px] font-semibold text-[#667085]"><span>Saturdays, Sundays, and expired dates are disabled. Google events are view-only and do not block HRIS interviews.</span><span>Green: available · Blue: Google event · Amber: HRIS pending approval</span></div>
-      {googleSynced && availabilityReady && selectedDate && <p className="mt-2 rounded-lg border border-orange-200 bg-orange-50 px-3 py-2 text-xs font-bold text-[#06325E]">Proposed schedule: {selectedDate} · {timeLabel(String(value).slice(11, 16))} — Pending candidate approval (not yet on Google)</p>}
+      {googleSynced && availabilityReady && selectedDate && <p className="mt-2 rounded-lg border border-orange-200 bg-orange-50 px-3 py-2 text-xs font-bold text-[#06325E]">{isUpdatingInterview ? "Selected interview schedule" : "Proposed schedule"}: {selectedDate} · {timeLabel(String(value).slice(11, 16))}{isUpdatingInterview ? " — Edit to propose a replacement; the confirmed Google event remains until acceptance." : " — Pending candidate approval (not yet on Google)"}</p>}
       {googleSynced && availabilityReady && !loading && !availabilityError && slots.length === 0 && <p className="mt-2 text-[11px] font-semibold text-[#667085]">No available HRIS interview times in this period. Check the interview booking calendar or select a later date.</p>}
       {details && <ReadOnlyCalendarEventsDialog dateKey={details.dateKey} events={groupedEvents[details.dateKey] || []}
         initialEventId={details.eventId} onClose={closeDetails} expired={interviewDateIsExpired(details.dateKey, nowManila)} />}
       {googleSynced && availabilityReady && editorDate && <InterviewProposalEditor dateKey={editorDate} slots={slots} candidateId={candidateId} value={value} candidate={candidate} remarks={remarks} interviewType={interviewType} onlineInterviewLink={onlineInterviewLink} color={localColor} onColorChange={changeColor} availability={availability} onAvailabilityChange={onAvailabilityChange} visibility={visibility} onVisibilityChange={onVisibilityChange} notification={notification} onCancel={() => setEditorDate("")} onDateChange={(nextDate) => {
         if (!/^\d{4}-\d{2}-\d{2}$/.test(nextDate) || interviewDateIsExpired(nextDate) || isInterviewWeekend(nextDate)) return;
+        // Keep the editor mounted while changing months. Reloading the month
+        // calendar here discards the in-progress interview type and remarks.
+        // Individual start times are checked against HRIS for the new date.
         if (editorDate !== nextDate) setEditorDate(nextDate);
-        const parsed = makeDate(nextDate);
-        if (parsed.getMonth() !== viewDate.getMonth() || parsed.getFullYear() !== viewDate.getFullYear()) setViewDate(monthStart(parsed));
-      }} onSelect={(next, details) => { onChange(next, details); setEditorDate(""); onProposalSaved?.(); }} />}
+      }} onSelect={(next, details) => {
+        onChange(next, details);
+        setEditorDate("");
+        const nextDate = String(next).slice(0, 10);
+        if (/^\d{4}-\d{2}-\d{2}$/.test(nextDate)) setViewDate(monthStart(makeDate(nextDate)));
+        onProposalSaved?.();
+      }} />}
     </div>
   );
 }

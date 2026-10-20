@@ -2347,7 +2347,11 @@ export function CandidatePipelineProvider({ children }) {
     setScheduleCandidate(normalizedCandidate);
     setScheduleForm({
       interviewDate: isUpdatingSchedule
-        ? normalizeDateTimeInput(normalizedCandidate.interviewDate)
+        ? normalizeDateTimeInput(
+            normalizedCandidate.finalInterviewDate ||
+            normalizedCandidate.interviewDate ||
+            normalizedCandidate.proposedInterviewDate,
+          )
         : "",
       interviewType:
         isUpdatingSchedule && normalizedCandidate.interviewType !== "-"
@@ -2357,7 +2361,9 @@ export function CandidatePipelineProvider({ children }) {
         isUpdatingSchedule && normalizedCandidate.interviewType === "Online"
           ? normalizedCandidate.onlineInterviewLink || ""
           : "",
-      remarks: "",
+      remarks: isUpdatingSchedule
+        ? String(normalizedCandidate.interviewSchedulingRemarks || normalizedCandidate.schedulingRemarks || "")
+        : "",
     });
   }
 
