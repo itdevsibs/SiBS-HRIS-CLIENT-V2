@@ -933,6 +933,12 @@ function HeaderContent() {
   const [mobileDateStr, setMobileDateStr] = useState("");
   const [timeStr, setTimeStr] = useState("");
   const [calendarOpen, setCalendarOpen] = useState(false);
+  // Allow other HRIS workflows to open the same SiBS Calendar modal used by the header.
+  useEffect(() => {
+    const handleOpenCalendar = () => setCalendarOpen(true);
+    window.addEventListener("sibs:open-calendar", handleOpenCalendar);
+    return () => window.removeEventListener("sibs:open-calendar", handleOpenCalendar);
+  }, []);
   const [query, setQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const [recentSearches, setRecentSearches] = useState(getRecentSearchesFromStorage);
