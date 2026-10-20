@@ -3618,6 +3618,7 @@ export default function HeaderCalendarModal({ open, user, onClose }) {
   const [calendarLoading, setCalendarLoading] = useState(false);
   const [calendarError, setCalendarError] = useState("");
   const [calendarConnected, setCalendarConnected] = useState(false);
+  const [calendarSynced, setCalendarSynced] = useState(false);
   const [googleCalendarEmail, setGoogleCalendarEmail] = useState("");
   const [googleCalendarProfile, setGoogleCalendarProfile] = useState({
     name: "",
@@ -3639,6 +3640,7 @@ export default function HeaderCalendarModal({ open, user, onClose }) {
   const googleConnectPopupTimerRef = useRef(null);
   const wasOpenRef = useRef(false);
   const calendarConnectedRef = useRef(false);
+  const calendarSyncedRef = useRef(false);
   const lastLoadedRangeRef = useRef("");
   const googleConnectFinalizingRef = useRef(false);
   const calendarLoadingTimeoutRef = useRef(null);
@@ -3753,6 +3755,8 @@ export default function HeaderCalendarModal({ open, user, onClose }) {
       wasOpenRef.current = true;
       calendarLoadRequestRef.current += 1;
       lastLoadedRangeRef.current = "";
+      calendarSyncedRef.current = false;
+      setCalendarSynced(false);
       setViewDate(new Date());
       setEditingEvent(null);
       setSelectedDay("");
@@ -3790,6 +3794,8 @@ export default function HeaderCalendarModal({ open, user, onClose }) {
 
       if (payload?.success === false) {
         calendarConnectedRef.current = false;
+        calendarSyncedRef.current = false;
+        setCalendarSynced(false);
         lastLoadedRangeRef.current = "";
         setCalendarConnected(false);
         setGoogleCalendarEmail("");
@@ -3812,6 +3818,8 @@ export default function HeaderCalendarModal({ open, user, onClose }) {
       };
 
       calendarConnectedRef.current = connected;
+      calendarSyncedRef.current = connected && Boolean(payload?.synced);
+      setCalendarSynced(calendarSyncedRef.current);
 
       if (!connected) {
         lastLoadedRangeRef.current = "";
@@ -3823,6 +3831,7 @@ export default function HeaderCalendarModal({ open, user, onClose }) {
 
       return {
         connected,
+        synced: calendarSyncedRef.current,
         googleEmail,
         googleName: googleProfile.name,
         googleGivenName: googleProfile.givenName,
@@ -3830,6 +3839,8 @@ export default function HeaderCalendarModal({ open, user, onClose }) {
       };
     } catch {
       calendarConnectedRef.current = false;
+      calendarSyncedRef.current = false;
+      setCalendarSynced(false);
       lastLoadedRangeRef.current = "";
       setCalendarConnected(false);
       setGoogleCalendarEmail("");
@@ -3892,14 +3903,15 @@ export default function HeaderCalendarModal({ open, user, onClose }) {
         maxResults: 250,
       });
 
-      if (payload?.success === false) {
+      if (payload?.success === false || payload?.connected === false) {
         throw new Error(
           payload?.message ||
             payload?.error ||
-            "Unable to load Google Calendar events.",
+            "Google Calendar is disconnected or could not complete synchronization.",
         );
       }
 
+      if (calendarLoadRequestRef.current !== requestId) return;
       const googleEvents = Array.isArray(payload?.events)
         ? payload.events
         : Array.isArray(payload?.data)
@@ -3908,6 +3920,8 @@ export default function HeaderCalendarModal({ open, user, onClose }) {
 
       lastLoadedRangeRef.current = rangeKey;
       calendarConnectedRef.current = true;
+      calendarSyncedRef.current = true;
+      setCalendarSynced(true);
       setCalendarConnected(true);
       setGoogleCalendarEmail(statusResult.googleEmail || "");
       setGoogleCalendarProfile({
@@ -3945,6 +3959,8 @@ export default function HeaderCalendarModal({ open, user, onClose }) {
         googleConnectFinalizingRef.current = false;
         stopCalendarLoading();
         setCalendarConnected(false);
+        calendarSyncedRef.current = false;
+        setCalendarSynced(false);
         setGoogleCalendarEmail("");
         setGoogleCalendarProfile({ name: "", givenName: "", familyName: "" });
         setCalendarError("Google Calendar connection failed.");
@@ -3988,7 +4004,7 @@ export default function HeaderCalendarModal({ open, user, onClose }) {
       const { timeMin, timeMax } = getMonthRange(viewDate);
       const rangeKey = `${timeMin}|${timeMax}`;
 
-      if (!force && lastLoadedRangeRef.current === rangeKey) {
+      if (!force && lastLoadedRangeRef.current === rangeKey && calendarSyncedRef.current) {
         stopCalendarLoading();
         return;
       }
@@ -4001,14 +4017,15 @@ export default function HeaderCalendarModal({ open, user, onClose }) {
         maxResults: 250,
       });
 
-      if (payload?.success === false) {
+      if (payload?.success === false || payload?.connected === false) {
         throw new Error(
           payload?.message ||
             payload?.error ||
-            "Unable to load Google Calendar events.",
+            "Google Calendar is disconnected or could not complete synchronization.",
         );
       }
 
+      if (calendarLoadRequestRef.current !== requestId) return;
       const googleEvents = Array.isArray(payload?.events)
         ? payload.events
         : Array.isArray(payload?.data)
@@ -4017,6 +4034,8 @@ export default function HeaderCalendarModal({ open, user, onClose }) {
 
       lastLoadedRangeRef.current = rangeKey;
       calendarConnectedRef.current = true;
+      calendarSyncedRef.current = true;
+      setCalendarSynced(true);
       setEvents(googleEvents.map((event) => normalizeGoogleCalendarEvent(event, {
         email: payload?.googleAccountEmail || googleCalendarEmail || "",
         photoUrl: payload?.googleProfilePicture || "",
@@ -4037,6 +4056,8 @@ export default function HeaderCalendarModal({ open, user, onClose }) {
     } catch (error) {
       if (calendarLoadRequestRef.current !== requestId) return;
 
+      calendarSyncedRef.current = false;
+      setCalendarSynced(false);
       setCalendarError(
         error?.message || "Unable to load Google Calendar events.",
       );
@@ -4140,11 +4161,18 @@ export default function HeaderCalendarModal({ open, user, onClose }) {
   }
 
   function openNewEvent(dateKey) {
+    if (!calendarConnectedRef.current || !calendarSyncedRef.current) {
+      setCalendarError("Connect and sync your Google account before creating calendar schedules.");
+      return;
+    }
     if (!canCreateCalendarEventOnDate(dateKey, getNowMs())) return;
     setEditingEvent(createBlankEvent(dateKey, organizerLabel, getNowMs()));
   }
 
   async function handleSaveEvent(nextEvent) {
+    if (!calendarConnectedRef.current || !calendarSyncedRef.current) {
+      return { success: false, message: "Connect and sync Google Calendar before saving." };
+    }
     const currentMs = getNowMs();
     if (isPastCalendarDay(nextEvent.date, currentMs) ||
         isPastCalendarTime(nextEvent.date, nextEvent.startTime, currentMs) ||
@@ -4321,6 +4349,8 @@ export default function HeaderCalendarModal({ open, user, onClose }) {
       }
 
       calendarConnectedRef.current = false;
+      calendarSyncedRef.current = false;
+      setCalendarSynced(false);
       lastLoadedRangeRef.current = "";
       setCalendarConnected(false);
       setGoogleCalendarEmail("");
@@ -4480,7 +4510,8 @@ export default function HeaderCalendarModal({ open, user, onClose }) {
                 event.stopPropagation();
                 openNewEvent(canCreateCalendarEventOnDate(todayKey, getNowMs()) ? todayKey : addDays(todayKey, 1));
               }}
-              disabled={!calendarConnected}
+              disabled={!calendarConnected || !calendarSynced || calendarLoading}
+              title={!calendarSynced ? "Sync Google Calendar before creating schedules" : "Create a new calendar schedule"}
               className="order-first inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-lg bg-sibs-orange px-3 text-xs font-black text-white shadow-sm transition hover:cursor-pointer hover:bg-sibs-button-hover disabled:cursor-not-allowed disabled:opacity-50 sm:order-none sm:h-8 sm:flex-none 2xl:h-9 2xl:px-4"
             >
               <Plus className="h-3.5 w-3.5 2xl:h-4 2xl:w-4" />
@@ -4540,7 +4571,7 @@ export default function HeaderCalendarModal({ open, user, onClose }) {
                   {periodLabel}
                 </span>
                 <span className="hidden items-center gap-1.5 rounded-lg border border-sibs-border bg-white px-2.5 py-1.5 text-[10px] font-semibold text-sibs-text-secondary xl:inline-flex">
-                  <span className="h-2 w-2 rounded-full bg-emerald-500" /> Google-synced · Asia/Manila
+                  <span className={`h-2 w-2 rounded-full ${calendarSynced ? "bg-emerald-500" : "bg-amber-500"}`} /> {calendarSynced ? "Google-synced" : "Sync required"} · Asia/Manila
                 </span>
               </div>
 
@@ -4569,6 +4600,17 @@ export default function HeaderCalendarModal({ open, user, onClose }) {
               </div>
             </div>
 
+            {!calendarSynced ? (
+              <div role="alert" className="flex flex-wrap items-center justify-between gap-3 border-b border-amber-200 bg-amber-50 px-5 py-3 text-xs font-semibold text-amber-900">
+                <span><strong>Calendar sync required.</strong> Your Google account is connected, but SiBS Calendar must successfully sync events before you can create schedules or use the interview calendar.</span>
+                <button type="button" onClick={() => loadGoogleCalendarEvents({ force: true, checkStatus: true })}
+                  disabled={calendarLoading}
+                  className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-amber-300 bg-white px-3 py-2 font-extrabold text-sibs-navy hover:bg-amber-100 disabled:opacity-60">
+                  <RefreshCw size={14} className={calendarLoading ? "animate-spin" : ""} /> {calendarLoading ? "Syncing…" : "Sync account"}
+                </button>
+              </div>
+            ) : null}
+
             {calendarError ? (
               <div className="border-b border-amber-200 bg-amber-50 px-5 py-2 text-xs font-bold text-amber-700">
                 {calendarError}
@@ -4584,7 +4626,15 @@ export default function HeaderCalendarModal({ open, user, onClose }) {
               </div>
             ) : null}
 
-            {viewMode === "Month" ? (
+            {!calendarSynced ? (
+              <div className="flex min-h-[260px] flex-col items-center justify-center gap-2 bg-sibs-canvas px-6 py-10 text-center" role="status">
+                <CalendarDays className="h-8 w-8 text-sibs-orange" />
+                <strong className="text-sm text-sibs-navy">Google Calendar sync is required</strong>
+                <p className="max-w-md text-xs leading-relaxed text-sibs-text-secondary">{calendarLoading ? "Checking your connected Google Calendar account…" : "Click Sync account above to finish synchronizing before viewing or creating schedules."}</p>
+              </div>
+            ) : null}
+
+            {calendarSynced && viewMode === "Month" ? (
               <MonthCalendarView
                 monthCells={monthCells}
                 eventsByDate={eventsByDate}
@@ -4596,7 +4646,7 @@ export default function HeaderCalendarModal({ open, user, onClose }) {
               />
             ) : null}
 
-            {viewMode === "Week" ? (
+            {calendarSynced && viewMode === "Week" ? (
               <WeekCalendarView
                 calendarLoading={calendarLoading}
                 weekCells={weekCells}
@@ -4608,7 +4658,7 @@ export default function HeaderCalendarModal({ open, user, onClose }) {
               />
             ) : null}
 
-            {viewMode === "Agenda" ? (
+            {calendarSynced && viewMode === "Agenda" ? (
               <AgendaCalendarView
                 events={filteredEvents}
                 nowMs={nowMs}

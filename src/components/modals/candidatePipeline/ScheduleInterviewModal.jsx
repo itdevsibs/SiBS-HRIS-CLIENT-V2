@@ -19,6 +19,7 @@ import CandidatePipelineModalShell, {
 } from "../../recruitment/candidatePipeline/CandidatePipelineModalShell";
 import CandidateModalSummary from "../../recruitment/candidatePipeline/CandidateModalSummary";
 import InterviewGoogleCalendarPicker from "./InterviewGoogleCalendarPicker";
+import { getGoogleCalendarStatus } from "../../../lib/axios/googleCalendarApi";
 
 const MONTH_OPTIONS = [
   { value: 0, label: "January" },
@@ -958,6 +959,7 @@ const ScheduleInterviewModal = ({
   onSubmit,
 }) => {
   const [processSubmitting, setProcessSubmitting] = useState(false);
+  const [syncWarning, setSyncWarning] = useState("");
   const [submitAfterEditorSave, setSubmitAfterEditorSave] = useState(false);
   const isUpdatingSchedule = candidate?.currentStage === "Interview Scheduled";
   const busy = isSaving || processSubmitting;
@@ -979,13 +981,29 @@ const ScheduleInterviewModal = ({
 
   if (!open || !candidate) return null;
 
+  function handleOpenSibsCalendar() {
+    if (busy || typeof window === "undefined") return;
+    // Close this interview overlay first so the header calendar is visible and usable.
+    // This opens the same modal as the header's SiBS Calendar button, without a route change.
+    onClose?.();
+    window.dispatchEvent(new Event("sibs:open-calendar"));
+  }
+
   async function handleProcessSubmit(event) {
     event?.preventDefault?.();
     event?.stopPropagation?.();
     if (busy || !canScheduleInterview) return;
 
     setProcessSubmitting(true);
+    setSyncWarning("");
     try {
+      const status = await getGoogleCalendarStatus();
+      if (status?.success === false || !status?.connected || !status?.synced) {
+        setSyncWarning(status?.connected
+          ? "Sync your connected Google account in SiBS Calendar before scheduling an interview."
+          : "Connect and sync your Google account in SiBS Calendar before scheduling an interview.");
+        return;
+      }
       await onSubmit?.(event);
     } finally {
       setProcessSubmitting(false);
@@ -1045,6 +1063,11 @@ const ScheduleInterviewModal = ({
           statusClass={getInterviewStatusClass(candidate.interviewStatus || "For Scheduling")}
         />
 
+        {syncWarning && <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-semibold text-amber-900">
+          <span>{syncWarning}</span>
+          <button type="button" onClick={handleOpenSibsCalendar} className="shrink-0 rounded-lg border border-amber-300 bg-white px-3 py-2 font-extrabold text-sibs-navy hover:bg-amber-100">Open SiBS Calendar</button>
+        </div>}
+
         <CandidateModalSection
           title="Interview Schedule"
           subtitle="Select a date to complete the interview type, online link (if needed), and internal remarks in the Google-style editor. The schedule stays pending in HRIS until approved."
@@ -1057,6 +1080,7 @@ const ScheduleInterviewModal = ({
                 generated online link, site and internal remarks. Do not add
                 duplicate fields to this outer scheduling modal. */}
             <InterviewGoogleCalendarPicker
+              onOpenSibsCalendar={handleOpenSibsCalendar}
               candidate={candidate}
               candidateId={candidate?.id || candidate?.candidatePipelineId}
               value={form.interviewDate}
