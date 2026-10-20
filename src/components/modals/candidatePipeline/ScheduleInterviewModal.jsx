@@ -1074,7 +1074,9 @@ const ScheduleInterviewModal = ({
 
         <CandidateModalSection
           title="Interview Schedule"
-          subtitle="Select a date to complete the interview type, online link (if needed), and internal remarks in the Google-style editor. The schedule stays pending in HRIS until approved."
+          subtitle={isUpdatingSchedule
+            ? "Edit the existing final interview date, start time, interview type, and internal remarks. The candidate will be asked to confirm the replacement before Google Calendar is updated."
+            : "Select a date to complete the interview type, online link (if needed), and internal remarks in the Google-style editor. The schedule stays pending in HRIS until approved."}
         >
           <div>
             <label className={SCHEDULE_FIELD_LABEL_CLASS}>

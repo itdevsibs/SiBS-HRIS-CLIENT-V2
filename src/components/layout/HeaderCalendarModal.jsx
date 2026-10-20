@@ -41,6 +41,7 @@ import {
   getGoogleCalendarEvents,
   previewHrisCalendarOrphans,
   cleanupHrisCalendarOrphans,
+  autoCleanupVerifiedHrisCalendarOrphans,
   getGoogleCalendarBusyTimes,
   createGoogleCalendarEvent,
   updateGoogleCalendarEvent,
@@ -3641,6 +3642,7 @@ export default function HeaderCalendarModal({ open, user, onClose, onSyncComplet
   const orphanDialogRef = useRef(null);
   const orphanPreviousFocusRef = useRef(null);
   const calendarLoadRequestRef = useRef(0);
+  const automaticCleanupRef = useRef({ account: "", lastAttemptAt: 0, inFlight: false });
   const googleConnectPopupTimerRef = useRef(null);
   const wasOpenRef = useRef(false);
   const calendarConnectedRef = useRef(false);
@@ -4047,6 +4049,32 @@ export default function HeaderCalendarModal({ open, user, onClose, onSyncComplet
         photoUrl: payload?.googleProfilePicture || "",
       })));
       setCalendarConnected(true);
+      // Verified orphan cleanup runs automatically after every first successful
+      // sync, without a destructive side effect on the calendar GET endpoint.
+      // It is non-blocking: the calendar stays usable while verification runs.
+      const cleanupAccount = String(payload?.googleAccountEmail || googleCalendarEmail || "connected").toLowerCase();
+      const cleanupState = automaticCleanupRef.current;
+      const cleanupNow = Date.now();
+      if (!cleanupState.inFlight &&
+          (cleanupState.account !== cleanupAccount || cleanupNow - cleanupState.lastAttemptAt >= 15 * 60_000)) {
+        automaticCleanupRef.current = { account: cleanupAccount, lastAttemptAt: cleanupNow, inFlight: true };
+        void autoCleanupVerifiedHrisCalendarOrphans().then((cleanup) => {
+          if (cleanup?.success === false) throw new Error(cleanup?.error || "Automatic HRIS cleanup failed.");
+          // Remove any deleted event chips immediately without another sync
+          // or resetting the current month/selected candidate.
+          if (Array.isArray(cleanup?.removed) && cleanup.removed.length &&
+              calendarLoadRequestRef.current === requestId) {
+            const removedIds = new Set(cleanup.removed.map(String));
+            setEvents((current) => current.filter((event) =>
+              !removedIds.has(String(event.googleEventId || event.id))));
+          }
+        }).catch((error) => {
+          automaticCleanupRef.current.lastAttemptAt = 0; // Retry on next sync.
+          console.warn("[SiBS Calendar] Automatic verified orphan cleanup could not finish:", error?.message || error);
+        }).finally(() => {
+          automaticCleanupRef.current.inFlight = false;
+        });
+      }
       // Covers both a newly connected account and an existing account needing Sync.
       // The Header decides whether this calendar was launched by interview scheduling.
       onSyncComplete?.();
@@ -4514,17 +4542,8 @@ export default function HeaderCalendarModal({ open, user, onClose, onSyncComplet
               </button>
             ) : null}
 
-            {calendarConnected ? (
-              <button
-                type="button"
-                disabled={calendarLoading || orphanBusy}
-                onClick={handlePreviewOrphanCleanup}
-                className="hidden h-8 2xl:h-9 items-center rounded-lg border border-white/30 bg-white/10 px-3 text-xs font-bold text-white transition hover:bg-white/20 disabled:opacity-50 sm:inline-flex"
-                title="Preview SiBS HRIS Google events not linked to the HRIS database"
-              >
-                Clean Old HRIS Events
-              </button>
-            ) : null}
+            {/* Verified orphaned HRIS events are cleaned automatically after each
+                successful Google Calendar sync; no manual toolbar action is needed. */}
 
             {!calendarConnected ? (
               <button

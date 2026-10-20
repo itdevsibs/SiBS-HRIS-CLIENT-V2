@@ -222,6 +222,15 @@ export async function previewHrisCalendarOrphans() {
   return response.data;
 }
 
+/** Automatically remove verified orphaned HRIS events after a successful calendar sync.
+ * The server excludes ambiguous legacy entries and unrelated Google events. */
+export async function autoCleanupVerifiedHrisCalendarOrphans() {
+  const response = await api.post("/api/google/calendar/orphan-hris-events/auto-cleanup", {}, {
+    timeout: 120000, skipAuthRedirect: true,
+  });
+  return response.data;
+}
+
 /** Explicitly confirmed deletion of unmatched, HRIS-owned events. */
 export async function cleanupHrisCalendarOrphans({ legacyEventIds = [] } = {}) {
   const response = await api.post("/api/google/calendar/orphan-hris-events/cleanup", {
