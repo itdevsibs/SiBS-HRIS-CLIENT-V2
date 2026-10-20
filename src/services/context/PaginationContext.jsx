@@ -482,8 +482,21 @@ export function PaginationDateRangeFilter({
 
   if (!visible || !allowedDateRangeEntities.includes(entity)) return null;
 
-  const dateFrom = filterValues?.dateFrom || "";
-  const dateTo = filterValues?.dateTo || "";
+  const today = new Date();
+  const sixDaysAgo = new Date(today);
+  sixDaysAgo.setDate(today.getDate() - 6);
+
+  const defaultDateFrom =
+    entity === "attendance"
+      ? toDateKey(today)
+      : entity === "leaves"
+        ? toDateKey(sixDaysAgo)
+        : "";
+  const defaultDateTo = ["attendance", "leaves"].includes(entity)
+    ? toDateKey(today)
+    : "";
+  const dateFrom = filterValues?.dateFrom || defaultDateFrom;
+  const dateTo = filterValues?.dateTo || defaultDateTo;
 
   function handleDateFromChange(value) {
     setDateRange({

@@ -9,6 +9,7 @@ import Header from "../../components/layout/Header";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   CalendarDays,
+  AlertCircle,
   CheckCircle2,
   Clock,
   FileText,
@@ -46,6 +47,7 @@ export default function LeavesPage() {
   const initializedRef = useRef(false);
   const leavesRequestRef = useRef(0);
   const [filtersReady, setFiltersReady] = useState(false);
+  const [loadError, setLoadError] = useState("");
 
   const [leaves, setLeaves] = useState([]);
   const [recordScope, setRecordScope] = useState("all");
@@ -134,6 +136,7 @@ export default function LeavesPage() {
     leavesRequestRef.current = requestId;
 
     setLoading(true);
+    setLoadError("");
 
     try {
       const res = await getLeaves({
@@ -192,30 +195,14 @@ export default function LeavesPage() {
           },
         );
       } else {
-        setLeaves([]);
-
-        setPagination({
-          currentPage: pageValue,
-          limit: PAGE_LIMIT,
-          returned: 0,
-          hasPreviousPage: pageValue > 1,
-          hasNextPage: false,
-        });
+        setLoadError(res?.message || "Unable to load leave records. Please try again.");
       }
     } catch (err) {
       if (leavesRequestRef.current !== requestId) return;
 
       console.error("FETCH LEAVES ERROR:", err);
 
-      setLeaves([]);
-
-      setPagination({
-        currentPage: pageValue,
-        limit: PAGE_LIMIT,
-        returned: 0,
-        hasPreviousPage: pageValue > 1,
-        hasNextPage: false,
-      });
+      setLoadError(err?.message || "Unable to load leave records. Please try again.");
     } finally {
       if (leavesRequestRef.current === requestId) {
         setLoading(false);
@@ -523,6 +510,23 @@ export default function LeavesPage() {
               />
             </MetricGrid>
           )}
+
+          {loadError ? (
+            <div role="alert" className="flex items-center justify-between gap-3 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-rose-800">
+              <div className="flex min-w-0 items-center gap-2">
+                <AlertCircle className="h-4 w-4 shrink-0" />
+                <p className="sibs-text-xs font-bold">{loadError}</p>
+              </div>
+              <button
+                type="button"
+                onClick={handleManualRefresh}
+                disabled={loading || isManualRefreshing}
+                className="shrink-0 rounded-lg border border-rose-300 bg-white px-3 py-1.5 sibs-text-xs font-extrabold text-rose-700 hover:bg-rose-100 disabled:opacity-60"
+              >
+                Retry
+              </button>
+            </div>
+          ) : null}
 
           <section className="flex flex-1 flex-col min-w-0">
             <LeavesTable

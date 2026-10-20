@@ -1,5 +1,14 @@
 import api from "./api-template";
 
+function getLocalCalendarDate() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
 export async function getAttendance(
   page = 1,
   search = "",
@@ -7,12 +16,14 @@ export async function getAttendance(
   options = {},
 ) {
   try {
+    const defaultDate = getLocalCalendarDate();
+
     const res = await api.get("/api/attendance", {
       params: {
         page,
         search,
-        dateFrom: options?.dateFrom || "",
-        dateTo: options?.dateTo || "",
+        dateFrom: options?.dateFrom || defaultDate,
+        dateTo: options?.dateTo || defaultDate,
         department: options?.department || "All",
         account: account || "All",
         includeDepartments: options?.includeDepartments ? 1 : 0,
@@ -20,6 +31,7 @@ export async function getAttendance(
         fast: options?.fast ? 1 : 0,
       },
       withCredentials: true,
+      timeout: 30000,
     });
 
     return res.data;

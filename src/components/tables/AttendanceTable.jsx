@@ -10,6 +10,7 @@ import {
   RotateCcw,
   Timer,
   Loader2,
+  AlertCircle,
 } from "lucide-react";
 
 import { useUser } from "../../services/context/UserContext";
@@ -941,6 +942,7 @@ export default function AttendanceTable() {
 
   const [isDraggingTable, setIsDraggingTable] = useState(false);
   const [searchSubmitVersion, setSearchSubmitVersion] = useState(0);
+  const [loadError, setLoadError] = useState("");
 
   const paginationContext = usePagination("attendance");
 
@@ -1297,6 +1299,7 @@ export default function AttendanceTable() {
     const fetchAttendance = async () => {
       try {
         setLoadingRef.current?.(true);
+        setLoadError("");
 
         const currentAccountFilter = attendanceFiltersView
           ? accountFilterQuery
@@ -1316,16 +1319,7 @@ export default function AttendanceTable() {
         if (cancelled || latestRequestIdRef.current !== requestId) return;
 
         if (!result?.success) {
-          setAttendance([]);
-
-          setPaginationRef.current?.({
-            currentPage: 1,
-            totalPages: 1,
-            total: null,
-            limit: PAGE_LIMIT,
-            hasPreviousPage: false,
-            hasNextPage: false,
-          });
+          setLoadError(result?.message || "Unable to load attendance records. Please try again.");
 
           return;
         }
@@ -1396,16 +1390,7 @@ export default function AttendanceTable() {
 
         console.error("Fetch attendance error:", err);
 
-        setAttendance([]);
-
-        setPaginationRef.current?.({
-          currentPage: 1,
-          totalPages: 1,
-          total: null,
-          limit: PAGE_LIMIT,
-          hasPreviousPage: false,
-          hasNextPage: false,
-        });
+        setLoadError(err?.message || "Unable to load attendance records. Please try again.");
       } finally {
         if (!cancelled && latestRequestIdRef.current === requestId) {
           setLoadingRef.current?.(false);
@@ -1510,6 +1495,22 @@ export default function AttendanceTable() {
           }
         }
       `}</style>
+      {loadError ? (
+        <div role="alert" className="flex items-center justify-between gap-3 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-rose-800">
+          <div className="flex min-w-0 items-center gap-2">
+            <AlertCircle className="h-4 w-4 shrink-0" />
+            <p className="sibs-text-xs font-bold">{loadError}</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setSearchSubmitVersion((version) => version + 1)}
+            disabled={loading}
+            className="shrink-0 rounded-lg border border-rose-300 bg-white px-3 py-1.5 sibs-text-xs font-extrabold text-rose-700 hover:bg-rose-100 disabled:opacity-60"
+          >
+            Retry
+          </button>
+        </div>
+      ) : null}
       <section
         style={getAnimationStyle(60)}
       >
