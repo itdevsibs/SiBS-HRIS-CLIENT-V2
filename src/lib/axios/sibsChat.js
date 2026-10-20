@@ -29,6 +29,22 @@ export function getChatAttachmentUrl(value) {
   return `${baseUrl}${url.startsWith("/") ? "" : "/"}${url}`;
 }
 
+/** Read-only preview fetched through the same authenticated Chat API as messages. */
+export async function getChatAttachmentPreview(attachmentId, signal, { original = false } = {}) {
+  const id = Number(attachmentId);
+  if (!Number.isSafeInteger(id) || id <= 0) {
+    throw new Error("Invalid chat attachment.");
+  }
+  const response = await api.get(`/chat/attachments/${id}`, {
+    // CSV should read the same original bytes as Download, not the HTML preview.
+    params: original ? { full: 1 } : { view: 1 },
+    responseType: "blob",
+    timeout: 45000,
+    signal,
+  });
+  return response.data;
+}
+
 export async function getChatParticipants(query = "", limit = 0) {
   const response = await api.get("/chat/participants", {
     params: {

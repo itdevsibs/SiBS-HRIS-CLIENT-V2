@@ -12,6 +12,7 @@ import { useLocation } from "react-router-dom";
 import {
   ArrowLeft,
   Check,
+  Eye,
   EyeOff,
   FileText,
   FileSpreadsheet,
@@ -39,6 +40,7 @@ import {
 
 import {
   getChatAttachmentUrl,
+  getChatAttachmentPreview,
   getChatParticipants,
   getChatThemeImageBlob,
 } from "@/lib/axios/sibsChat";
@@ -46,6 +48,8 @@ import {
   getTrendingChatGifs,
   searchChatGifs,
 } from "@/lib/axios/gifSearch";
+import ChatDocumentPreviewModal from "@/components/chat/ChatDocumentPreviewModal";
+import { decodeChatCsvBytes } from "@/lib/utils/chat/chatCsvPreview";
 import ChatVideoPlayer from "@/components/chat/ChatVideoPlayer";
 import ChatAudioPlayer from "@/components/chat/ChatAudioPlayer";
 import ChatTypingIndicator from "@/components/chat/ChatTypingIndicator";
@@ -159,11 +163,30 @@ function detectChatDocumentMime(bytes, extension) {
   return "";
 }
 
+// CSV has no binary file signature. Accept a real .csv filename only when
+// its entire content is valid UTF-8 text (including UTF-8 BOM exported by Excel).
+// Reject binary/NUL/control-byte payloads rather than trusting file.type.
+function isValidChatCsvText(bytes) {
+  try {
+    decodeChatCsvBytes(bytes);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function isChatDocumentMime(value) {
+  const mime = cleanText(value).toLowerCase();
+  return mime.startsWith("application/") || mime === "text/csv";
+}
+
 function detectSupportedAttachmentMime(bytes, file = {}) {
-  if (!(bytes instanceof Uint8Array) || bytes.length < 4) return "";
+  if (!(bytes instanceof Uint8Array) || !bytes.length) return "";
+  const extension = getFileExtension(file?.name);
+  if (extension === ".csv") return isValidChatCsvText(bytes) ? "text/csv" : "";
+  if (bytes.length < 4) return "";
 
   const declaredMime = cleanText(file?.type).toLowerCase();
-  const extension = getFileExtension(file?.name);
   const documentMime = detectChatDocumentMime(bytes, extension);
   if (documentMime) return documentMime;
   // Never relabel a rejected document as a media upload just because it shares a magic header.
@@ -373,7 +396,7 @@ function getReplyPreviewLabel(message = {}) {
     const hasVideo = mimeTypes.some((value) => value.startsWith("video/"));
     const hasAudio = mimeTypes.some((value) => value.startsWith("audio/"));
     const hasImage = mimeTypes.some((value) => value.startsWith("image/"));
-    const hasDocument = mimeTypes.some((value) => value.startsWith("application/"));
+    const hasDocument = mimeTypes.some(isChatDocumentMime);
     const kinds = [hasVideo, hasAudio, hasImage, hasDocument].filter(Boolean).length;
 
     if (kinds > 1 || attachments.length > 1) return "Attachments";
@@ -1596,6 +1619,8 @@ export default function SiBSChat({
   const [actionBusy, setActionBusy] = useState(false);
   const [localError, setLocalError] = useState("");
   const [attachmentNotice, setAttachmentNotice] = useState("");
+  const [documentPreview, setDocumentPreview] = useState(null);
+  const closeDocumentPreview = useCallback(() => setDocumentPreview(null), []);
   const [presenceClockMs, setPresenceClockMs] = useState(() => Date.now());
   const [emojiPickerOpen, setEmojiPickerOpen] = useState(false);
   const [gifPickerOpen, setGifPickerOpen] = useState(false);
@@ -1862,6 +1887,8 @@ export default function SiBSChat({
   }, [expandedBounds, isExpanded]);
 
   const toggleExpanded = useCallback(() => {
+    // Mobile Chat is always full screen; expansion is only for desktop.
+    if (window.matchMedia?.("(max-width: 639px)")?.matches) return;
     const panel = chatPanelRef.current;
     layoutStartRef.current = panel?.getBoundingClientRect() ?? null;
     layoutAnimationRef.current?.cancel();
@@ -2707,13 +2734,13 @@ export default function SiBSChat({
 
           const detectedMimeType = await validateAttachmentBeforeSelection(file);
           if (!detectedMimeType) {
-            problems.push(`${file.name} is not a supported or valid image, audio, video, Word, Excel, or PDF file.`);
+            problems.push(`${file.name} is not a supported or valid image, audio, video, Word, Excel, PDF, or CSV file.`);
             continue;
           }
           accepted.push({
             file,
             detectedMimeType,
-            previewUrl: detectedMimeType.startsWith("application/") ? "" : URL.createObjectURL(file),
+            previewUrl: isChatDocumentMime(detectedMimeType) ? "" : URL.createObjectURL(file),
           });
         }
 
@@ -3380,7 +3407,7 @@ export default function SiBSChat({
         onDragLeave={handleChatDragLeave}
         onDrop={handleChatDrop}
         onDragEnd={() => setDraggingAttachments(false)}
-        className={`font-jakarta t-resize fixed right-4 z-[2147483600] flex ${
+        className={`font-jakarta t-resize fixed right-4 z-[2147483600] flex max-sm:!inset-0 max-sm:!h-[100dvh] max-sm:!w-screen max-sm:!rounded-none max-sm:!border-0 ${
           hideTrigger
             ? "h-[min(720px,calc(100dvh-3rem))]"
             : "h-[min(720px,calc(100dvh-9rem))]"
@@ -3392,7 +3419,7 @@ export default function SiBSChat({
             : "pointer-events-none translate-y-3 scale-[0.98] opacity-0"
         }`}
         style={
-          isExpanded && expandedBounds
+          isExpanded && expandedBounds && !(typeof window !== "undefined" && window.matchMedia("(max-width: 639px)").matches)
             ? {
                 left: `${expandedBounds.left}px`,
                 right: "auto",
@@ -3401,7 +3428,7 @@ export default function SiBSChat({
                 width: `${expandedBounds.width}px`,
                 height: `${expandedBounds.height}px`,
               }
-            : hideTrigger
+            : hideTrigger && !(typeof window !== "undefined" && window.matchMedia("(max-width: 639px)").matches)
             ? {
                 bottom: "calc(1.5rem + env(safe-area-inset-bottom, 0px))",
               }
@@ -3465,7 +3492,7 @@ export default function SiBSChat({
                 aria-label={isExpanded ? "Restore chat size" : "Expand chat"}
                 aria-expanded={isExpanded}
                 aria-controls="sibs-chat-panel"
-                className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-white/75 transition hover:bg-white/10 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+                className="hidden h-8 w-8 shrink-0 items-center justify-center rounded-lg text-white/75 transition hover:bg-white/10 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white sm:inline-flex"
               >
                 {isExpanded ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
               </button>
@@ -3715,7 +3742,7 @@ export default function SiBSChat({
         }`}>
           {activeConversation ? (
             <>
-              <header className="flex h-[68px] shrink-0 items-center gap-3 border-b border-white/10 bg-sibs-navy px-4 text-white shadow-xs">
+              <header className="flex h-[68px] shrink-0 items-center gap-1.5 border-b border-white/10 bg-sibs-navy px-2 text-white shadow-xs sm:gap-3 sm:px-4">
                 <button
                   type="button"
                   onClick={() => void chat.selectConversation(null)}
@@ -3807,7 +3834,7 @@ export default function SiBSChat({
                 <div
                   ref={messageScrollRef}
                   onScroll={handleMessagesScroll}
-                  className="sibs-scrollbar relative z-10 min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-4 py-4 sm:px-5 [overflow-anchor:auto]"
+                  className="sibs-scrollbar relative z-10 min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-2.5 py-3 sm:px-5 sm:py-4 [overflow-anchor:auto]"
                 >
                 {chat.messagesLoading ? (
                   <div className="flex h-full items-center justify-center text-sibs-muted">
@@ -3999,7 +4026,7 @@ export default function SiBSChat({
                             ) : null}
 
                             {/* Message content container */}
-                            <div className={`max-w-[70%] sm:max-w-[68%] flex flex-col ${mine ? "items-end" : "items-start"}`}>
+                            <div className={`max-w-[88%] sm:max-w-[68%] flex flex-col ${mine ? "items-end" : "items-start"}`}>
                               {showSender ? (
                                 <p className="chat-theme-sender-name truncate">
                                   {senderDisplayName}
@@ -4227,25 +4254,35 @@ export default function SiBSChat({
                                           .toLowerCase();
                                         const isVideo = attachmentMimeType.startsWith("video/");
                                         const isAudio = attachmentMimeType.startsWith("audio/");
-                                        const isDocument = attachmentMimeType.startsWith("application/");
+                                        const isDocument = isChatDocumentMime(attachmentMimeType);
 
                                         if (isDocument) {
-                                          const isExcel = /spreadsheet|ms-excel/.test(attachmentMimeType);
+                                          const isExcel = /spreadsheet|ms-excel|text\/csv/.test(attachmentMimeType);
                                           const AttachmentIcon = isExcel ? FileSpreadsheet : FileText;
                                           return (
-                                            <a key={attachment.id} href={attachmentUrl} target="_blank" rel="noopener noreferrer"
-                                              download={attachment.originalName || undefined}
-                                              className="col-span-full flex w-full min-w-0 items-center gap-2 rounded-xl border border-sibs-border bg-white px-3 py-3 text-left text-sibs-navy hover:border-sibs-orange"
-                                              title={`Download ${attachment.originalName || "document"}`}>
+                                            <div key={attachment.id}
+                                              className="col-span-full flex w-full min-w-0 flex-wrap items-center gap-2 rounded-xl border border-sibs-border bg-white px-3 py-2.5 text-sibs-navy">
                                               <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-sibs-navy">
                                                 <AttachmentIcon size={20} />
                                               </span>
                                               <span className="min-w-0 flex-1">
-                                                <span className="block truncate text-xs font-bold">{attachment.originalName || "Document"}</span>
+                                                <span className="block truncate text-xs font-bold" title={attachment.originalName || "Document"}>{attachment.originalName || "Document"}</span>
                                                 <span className="block text-[10px] text-sibs-muted">{(Number(attachment.fileSize || 0) / 1024 / 1024).toFixed(2)} MB</span>
                                               </span>
-                                              <Download className="h-4 w-4 shrink-0 text-sibs-orange" />
-                                            </a>
+                                              <div className="flex shrink-0 items-center gap-1.5" role="group" aria-label={`${attachment.originalName || "Document"} options`}>
+                                                <button type="button" onClick={() => setDocumentPreview({ ...attachment, downloadUrl: attachmentUrl })}
+                                                  className="inline-flex h-8 items-center gap-1 rounded-lg border border-blue-200 bg-blue-50 px-2 text-[11px] font-bold text-sibs-navy transition hover:border-sibs-orange hover:bg-orange-50"
+                                                  title="Preview file" aria-label={`View ${attachment.originalName || "document"} in SiBS Chat`}>
+                                                  <Eye size={14} /> View
+                                                </button>
+                                                <a href={attachmentUrl} target="_blank" rel="noopener noreferrer"
+                                                  download={attachment.originalName || undefined}
+                                                  className="inline-flex h-8 items-center gap-1 rounded-lg border border-orange-200 bg-orange-50 px-2 text-[11px] font-bold text-sibs-orange transition hover:bg-orange-100"
+                                                  title="Download original file" aria-label={`Download ${attachment.originalName || "document"}`}>
+                                                  <Download size={14} /> Download
+                                                </a>
+                                              </div>
+                                            </div>
                                           );
                                         }
 
@@ -4272,9 +4309,10 @@ export default function SiBSChat({
                                           <button
                                             key={attachment.id}
                                             type="button"
-                                            onClick={() => window.open(attachmentUrl, "_blank", "noopener,noreferrer")}
-                                            className="overflow-hidden rounded-xl bg-slate-100"
-                                            title={attachment.originalName || "Open image"}
+                                            onClick={() => setDocumentPreview({ ...attachment, downloadUrl: attachmentUrl })}
+                                            className="overflow-hidden rounded-xl bg-slate-100 transition hover:opacity-95"
+                                            title={attachment.originalName || "View image"}
+                                            aria-label={`View ${attachment.originalName || "image"} in SiBS Chat`}
                                           >
                                             <img
                                               src={attachmentUrl}
@@ -4573,7 +4611,7 @@ export default function SiBSChat({
               </div>
             </div>
 
-              <footer className="shrink-0 border-t border-sibs-border bg-white px-3 py-3 max-sm:px-2 max-sm:py-2">
+              <footer className="shrink-0 border-t border-sibs-border bg-white px-3 py-3 max-sm:px-2 max-sm:py-2 max-sm:pb-[max(0.5rem,env(safe-area-inset-bottom))]">
                 {attachmentNotice ? (
                   <div
                     role="alert"
@@ -4626,10 +4664,10 @@ export default function SiBSChat({
                     {selectedImages.map((item, index) => {
                       const isAudio = cleanText(item.detectedMimeType || item.file.type).toLowerCase().startsWith("audio/");
                       const isVideo = cleanText(item.detectedMimeType || item.file.type).toLowerCase().startsWith("video/");
-                      const isDocument = cleanText(item.detectedMimeType || item.file.type).toLowerCase().startsWith("application/");
+                      const isDocument = isChatDocumentMime(item.detectedMimeType || item.file.type);
 
                       if (isDocument) {
-                        const isExcel = /\.xlsx?$/i.test(item.file.name);
+                        const isExcel = /\.(?:xls|xlsx|csv)$/i.test(item.file.name);
                         const AttachmentIcon = isExcel ? FileSpreadsheet : FileText;
                         return (
                           <div key={`${item.file.name}-${index}`}
@@ -4710,7 +4748,7 @@ export default function SiBSChat({
                   <input
                     ref={fileInputRef}
                     type="file"
-                    accept="image/jpeg,image/png,image/webp,image/gif,audio/mpeg,audio/wav,audio/ogg,audio/webm,audio/mp4,audio/aac,audio/flac,video/mp4,video/webm,video/ogg,video/quicktime,video/x-m4v,.pdf,.doc,.docx,.xls,.xlsx"
+                    accept="image/jpeg,image/png,image/webp,image/gif,audio/mpeg,audio/wav,audio/ogg,audio/webm,audio/mp4,audio/aac,audio/flac,video/mp4,video/webm,video/ogg,video/quicktime,video/x-m4v,.pdf,.doc,.docx,.xls,.xlsx,.csv"
                     multiple
                     onChange={handleFiles}
                     className="hidden"
@@ -5062,6 +5100,14 @@ export default function SiBSChat({
           />
         </div>
       </section>
+
+      {documentPreview ? (
+        <ChatDocumentPreviewModal
+          attachment={documentPreview}
+          getPreview={getChatAttachmentPreview}
+          onClose={closeDocumentPreview}
+        />
+      ) : null}
 
       {nicknameConversation && typeof document !== "undefined"
         ? createPortal(
