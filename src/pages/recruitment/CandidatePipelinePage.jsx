@@ -314,6 +314,7 @@ export default function CandidatePipelinePage() {
   const [sourceFilter, setSourceFilter] = useState("All Sources");
   const [boardSubView, setBoardSubView] = useState("board");
   const [interviewCalendarHandoff, setInterviewCalendarHandoff] = useState(false);
+  const [linkedInterviewError, setLinkedInterviewError] = useState("");
 
   // Keep the selected candidate and form in context while the Google account
   // is connected/synced in SiBS Calendar. No route change or form reset.
@@ -399,6 +400,7 @@ export default function CandidatePipelinePage() {
     const targetStage = queryParams.get("stage");
     const targetPipelineId = cleanText(queryParams.get("pipelineId"));
     const targetCandidateId = cleanText(queryParams.get("candidateId"));
+    const updateLinkedInterview = queryParams.get("updateInterview") === "1";
     const stateCandidate = location.state?.candidate;
 
     if (targetStage && typeof setActiveStage === "function") {
@@ -445,7 +447,7 @@ export default function CandidatePipelinePage() {
           }
 
           const verifiedId = Number(numericId);
-          setSelectedCandidate({
+          const verifiedCandidate = {
             ...record,
             id: verifiedId,
             dbId: verifiedId,
@@ -453,10 +455,36 @@ export default function CandidatePipelinePage() {
             candidate_pipeline_row_id: verifiedId,
             candidatePipelineId: verifiedId,
             candidate_pipeline_id: verifiedId,
-          });
+          };
+          if (updateLinkedInterview) {
+            // Never open an editor for a different stage or a stale/cancelled
+            // interview. CandidatePipelineContext checks permissions again.
+            if (normalizeText(getCandidateStage(verifiedCandidate)) === "interview scheduled") {
+              await handleOpenScheduleInterview(verifiedCandidate);
+            } else {
+              setLinkedInterviewError("This candidate no longer has an active scheduled interview. Open the candidate record to review the latest stage.");
+              setSelectedCandidate(verifiedCandidate);
+            }
+            const cleanParams = new URLSearchParams(location.search || "");
+            cleanParams.delete("updateInterview");
+            cleanParams.delete("candidateId");
+            cleanParams.delete("pipelineId");
+            navigate({ pathname: location.pathname, search: cleanParams.toString() ? `?${cleanParams}` : "" }, { replace: true, state: null });
+          } else {
+            setSelectedCandidate(verifiedCandidate);
+          }
         } catch (error) {
           if (!cancelled) {
             console.error("Unable to open linked Candidate Pipeline record:", error);
+            if (updateLinkedInterview) {
+              setLinkedInterviewError(error?.response?.data?.message || error?.message || "Unable to locate this candidate's scheduled interview.");
+              // Consume the action to avoid a retry loop if the user refreshes.
+              const cleanParams = new URLSearchParams(location.search || "");
+              cleanParams.delete("updateInterview");
+              cleanParams.delete("candidateId");
+              cleanParams.delete("pipelineId");
+              navigate({ pathname: location.pathname, search: cleanParams.toString() ? `?${cleanParams}` : "" }, { replace: true, state: null });
+            }
           }
         }
       }
@@ -550,6 +578,22 @@ export default function CandidatePipelinePage() {
     );
   }
 
+  function handleUpdateFromCalendarEvent(linkedCandidate) {
+    const pipelineId = cleanText(linkedCandidate?.pipelineId);
+    const candidateId = cleanText(linkedCandidate?.candidateId);
+    if (!/^\d+$/.test(pipelineId) && !/^PUB-[A-Za-z0-9_-]+$/i.test(candidateId)) return;
+    // Leave the current candidate's proposal untouched; select the verified
+    // linked record on the Pipeline page instead of editing a Google event.
+    setLinkedInterviewError("");
+    void handleCloseScheduleInterview();
+    setInterviewCalendarHandoff(false);
+    const params = new URLSearchParams();
+    if (/^\d+$/.test(pipelineId)) params.set("pipelineId", pipelineId);
+    else params.set("candidateId", candidateId);
+    params.set("updateInterview", "1");
+    navigate(`/recruitment/candidate-pipeline?${params.toString()}`, { state: null });
+  }
+
   async function handleRefreshPage() {
     await Promise.all([
       Promise.resolve(refreshCandidatePipeline?.()),
@@ -565,6 +609,12 @@ export default function CandidatePipelinePage() {
 
       <main className="sibs-dashboard-main-wide">
         <div className="mx-auto w-full max-w-[1700px] space-y-4 sm:space-y-5">
+          {linkedInterviewError && (
+            <div role="alert" className="flex items-start justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-semibold text-amber-900">
+              <span>{linkedInterviewError}</span>
+              <button type="button" aria-label="Dismiss linked interview error" onClick={() => setLinkedInterviewError("")} className="shrink-0 rounded-md p-1 hover:bg-amber-100"><X size={16} /></button>
+            </div>
+          )}
           <PageHeaderHero
             kicker="Recruitment Lifecycle"
             title="Candidate Pipeline"
@@ -880,6 +930,7 @@ export default function CandidatePipelinePage() {
         onClose={handleCloseScheduleInterview}
         onSubmit={handleSubmitScheduleInterview}
         onOpenSibsCalendar={openCalendarForInterview}
+        onUpdateCandidateSchedule={handleUpdateFromCalendarEvent}
       />
 
       <AssessmentModal

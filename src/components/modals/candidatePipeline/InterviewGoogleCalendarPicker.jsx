@@ -237,6 +237,9 @@ function googleCalendarEvent(event) {
     reminders: event.reminders || null,
     isFree: event.transparency === "transparent" || privateInfo.scheduleType === "Interview availability",
     isAvailability: privateInfo.scheduleType === "Interview availability",
+    hrisSource: String(privateInfo.source || ""),
+    candidatePipelineId: String(privateInfo.candidatePipelineId || ""),
+    candidateId: String(privateInfo.candidateId || ""),
   };
 }
 
@@ -269,7 +272,31 @@ function pendingHrisCalendarEvent(booking) {
     isAvailability: false, isFree: false, visibility: "default",
     organizer: "SiBS HRIS", meetLink: "", transparency: "opaque",
     isPendingHris: true,
+    candidatePipelineId: String(booking?.candidate_pipeline_id || ""),
+    candidateId: String(booking?.candidate_id || ""),
+    candidateName: String(booking?.candidate_name || ""),
   };
+}
+
+// A Google event must carry a real HRIS candidate reference before this
+// read-only details panel can hand off to the Candidate Pipeline editor.
+// Do not infer an editable HRIS record from a meeting title or guest alone.
+function linkedInterviewCandidate(event = {}) {
+  if (!event || event.isAvailability || event.isRecurring || event.allDay) return null;
+  const pipelineId = String(event.candidatePipelineId || "").trim();
+  const candidateId = String(event.candidateId || "").trim();
+  const description = String(event.description || "");
+  const title = String(event.title || "");
+  const tagged = event.hrisSource === "sibs-hris-recruitment";
+  const legacyHrisInterview = /^SiBS\s+HRIS\s*[-–—]\s*(?:Final\s+)?Interview\s*[-–—]/i.test(title) &&
+    /SiBS\s+HRIS\s*\|\s*Talent Acquisition/i.test(description);
+  if (!event.isPendingHris && !tagged && !legacyHrisInterview) return null;
+  const descriptionId = description.match(/\bCandidate\s+ID\s*:\s*([A-Za-z0-9_-]+)/i)?.[1] || "";
+  const publicId = candidateId || descriptionId;
+  if (!/^\d+$/.test(pipelineId) && !/^PUB-[A-Za-z0-9_-]+$/i.test(publicId)) return null;
+  const candidateName = String(event.candidateName || "").trim() ||
+    title.match(/^SiBS\s+HRIS\s*[-–—]\s*(?:Final\s+)?Interview\s*[-–—]\s*(.+)$/i)?.[1]?.trim() || "";
+  return { pipelineId: /^\d+$/.test(pipelineId) ? pipelineId : "", candidateId: publicId, candidateName };
 }
 
 function timeLabel(time) {
@@ -281,13 +308,15 @@ function timeLabel(time) {
 /** Read-only details for registered Google events and pending HRIS proposals.
  * The description is displayed across the full modal width (not a two-column
  * field), and forwarded invitations are collapsed by default. */
-function ReadOnlyCalendarEventsDialog({ dateKey, events, initialEventId, onClose, expired }) {
+function ReadOnlyCalendarEventsDialog({ dateKey, events, initialEventId, onClose, expired, onUpdateCandidateSchedule }) {
   const dialogRef = useRef(null);
   const [activeId, setActiveId] = useState(initialEventId || events[0]?.id || "");
   const [descriptionExpanded, setDescriptionExpanded] = useState(false);
   const activeIndex = Math.max(0, events.findIndex((event) => event.id === activeId));
   const activeEvent = events[activeIndex] || null;
   const isPending = Boolean(activeEvent?.isPendingHris);
+  const linkedCandidate = linkedInterviewCandidate(activeEvent);
+  const canUpdateInterview = Boolean(linkedCandidate && !expired && typeof onUpdateCandidateSchedule === "function");
 
   const formatDate = (date) => {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date || "")) return "Date unavailable";
@@ -380,6 +409,10 @@ function ReadOnlyCalendarEventsDialog({ dateKey, events, initialEventId, onClose
                 <span className={`ml-auto h-2.5 w-2.5 shrink-0 rounded-full ${color.dot}`} title={color.label}/>
               </div>
               <h4 className="mt-3 break-words text-lg font-black leading-snug text-[#06325E] sm:text-xl">{activeEvent.title}</h4>
+              {linkedCandidate && <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-blue-100 bg-blue-50 px-3 py-2 text-xs font-semibold text-[#06325E]" aria-label="Linked HRIS candidate">
+                <span className="font-extrabold">Candidate: {linkedCandidate.candidateName || "Linked HRIS candidate"}</span>
+                {linkedCandidate.candidateId && <span className="break-all text-[#52637A]">ID: {linkedCandidate.candidateId}</span>}
+              </div>}
               {isPending && <p role="status" className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold leading-relaxed text-amber-900">{activeEvent.scheduleStatus}. Saved in SiBS HRIS, not yet registered with Google Calendar.</p>}
               {events.length > 1 && <div className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-[#DDE7F2] bg-[#F7FAFD] px-3 py-2">
                 <span className="text-[11px] font-bold text-[#06325E]">Schedule {activeIndex + 1} of {events.length} · {formatDate(dateKey)}</span>
@@ -452,8 +485,12 @@ function ReadOnlyCalendarEventsDialog({ dateKey, events, initialEventId, onClose
           <span className="max-w-[470px] text-[10px] font-semibold leading-4 text-[#667085]">{isPending
             ? "SiBS HRIS proposal only. Google Calendar registration follows the approved interview schedule."
             : expired ? "Past Google Calendar event · View only. Scheduling changes are disabled here."
+            : canUpdateInterview ? "This Google event is view-only. Update the linked candidate's interview through SiBS HRIS."
             : "Google Calendar event · View only. Make changes in the authorized calendar workflow."}</span>
-          <button type="button" onClick={onClose} className="h-10 shrink-0 rounded-xl bg-[#FF5C28] px-6 text-xs font-black text-white transition hover:bg-[#E84F1F] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FF5C28]">Close</button>
+          <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+            {canUpdateInterview && <button type="button" onClick={() => onUpdateCandidateSchedule(linkedCandidate)} className="inline-flex h-10 items-center gap-2 rounded-xl border border-[#FF5C28] bg-[#FF5C28] px-4 text-xs font-black text-white transition hover:bg-[#E84F1F] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FF5C28]" aria-label={`Update interview schedule for ${linkedCandidate.candidateName || linkedCandidate.candidateId || linkedCandidate.pipelineId}`}><CalendarDays size={15} /> Update Schedule</button>}
+            <button type="button" onClick={onClose} className="h-10 shrink-0 rounded-xl border border-[#DDE7F2] bg-white px-5 text-xs font-black text-[#06325E] transition hover:bg-[#F7FAFD] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FF5C28]">Close</button>
+          </div>
         </footer>
       </section>
     </div>,
@@ -1309,7 +1346,7 @@ function InterviewProposalEditor({ dateKey, slots, candidateId, candidate, value
 }
 
 /** Calendar is a read-only Google view; proposed interview appointments are HRIS-only. */
-export default function InterviewGoogleCalendarPicker({ value, onChange, onProposalSaved, onOpenSibsCalendar, candidateId, candidate, remarks = "", interviewType = "", onlineInterviewLink = "", color = "peacock", onColorChange, availability = "Busy", onAvailabilityChange, visibility = "Default visibility", onVisibilityChange, notification = false }) {
+export default function InterviewGoogleCalendarPicker({ value, onChange, onProposalSaved, onOpenSibsCalendar, onUpdateCandidateSchedule, candidateId, candidate, remarks = "", interviewType = "", onlineInterviewLink = "", color = "peacock", onColorChange, availability = "Busy", onAvailabilityChange, visibility = "Default visibility", onVisibilityChange, notification = false }) {
   const [viewDate, setViewDate] = useState(() => monthStart(initialInterviewCalendarDate(value)));
   const [nowManila, setNowManila] = useState(() => manilaDateTime(new Date()));
   // Recover an invalid month in existing mounted modal state without a page reload.
@@ -1564,7 +1601,8 @@ export default function InterviewGoogleCalendarPicker({ value, onChange, onPropo
       {googleSynced && availabilityReady && selectedDate && <p className="mt-2 rounded-lg border border-orange-200 bg-orange-50 px-3 py-2 text-xs font-bold text-[#06325E]">{isUpdatingInterview ? "Selected interview schedule" : "Proposed schedule"}: {selectedDate} · {timeLabel(String(value).slice(11, 16))}{isUpdatingInterview ? " — Edit to propose a replacement; the confirmed Google event remains until acceptance." : " — Pending candidate approval (not yet on Google)"}</p>}
       {googleSynced && availabilityReady && !loading && !availabilityError && slots.length === 0 && <p className="mt-2 text-[11px] font-semibold text-[#667085]">No available HRIS interview times in this period. Check the interview booking calendar or select a later date.</p>}
       {details && <ReadOnlyCalendarEventsDialog dateKey={details.dateKey} events={groupedEvents[details.dateKey] || []}
-        initialEventId={details.eventId} onClose={closeDetails} expired={interviewDateIsExpired(details.dateKey, nowManila)} />}
+        initialEventId={details.eventId} onClose={closeDetails} expired={interviewDateIsExpired(details.dateKey, nowManila)}
+        onUpdateCandidateSchedule={onUpdateCandidateSchedule} />}
       {googleSynced && availabilityReady && editorDate && <InterviewProposalEditor dateKey={editorDate} slots={slots} candidateId={candidateId} value={value} candidate={candidate} remarks={remarks} interviewType={interviewType} onlineInterviewLink={onlineInterviewLink} color={localColor} onColorChange={changeColor} availability={availability} onAvailabilityChange={onAvailabilityChange} visibility={visibility} onVisibilityChange={onVisibilityChange} notification={notification} onCancel={() => setEditorDate("")} onDateChange={(nextDate) => {
         if (!/^\d{4}-\d{2}-\d{2}$/.test(nextDate) || interviewDateIsExpired(nextDate) || isInterviewWeekend(nextDate)) return;
         // Keep the editor mounted while changing months. Reloading the month

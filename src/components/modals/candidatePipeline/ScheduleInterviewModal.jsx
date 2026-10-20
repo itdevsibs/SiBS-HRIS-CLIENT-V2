@@ -958,6 +958,7 @@ const ScheduleInterviewModal = ({
   onClose,
   onSubmit,
   onOpenSibsCalendar,
+  onUpdateCandidateSchedule,
 }) => {
   const [processSubmitting, setProcessSubmitting] = useState(false);
   const [syncWarning, setSyncWarning] = useState("");
@@ -1087,6 +1088,7 @@ const ScheduleInterviewModal = ({
                 duplicate fields to this outer scheduling modal. */}
             <InterviewGoogleCalendarPicker
               onOpenSibsCalendar={handleOpenSibsCalendar}
+              onUpdateCandidateSchedule={onUpdateCandidateSchedule}
               candidate={candidate}
               candidateId={candidate?.id || candidate?.candidatePipelineId}
               value={form.interviewDate}
