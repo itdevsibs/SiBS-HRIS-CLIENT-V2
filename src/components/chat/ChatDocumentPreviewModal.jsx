@@ -2,11 +2,12 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Download, FileSpreadsheet, FileText, Image as ImageIcon, Loader2, X } from "lucide-react";
 import { chatCsvColumnLabel, parseChatCsvBytes } from "@/lib/utils/chat/chatCsvPreview";
+import { isChatHeicImage, makeChatHeicJpeg } from "@/lib/utils/chat/chatHeicPreview";
 
 function getFileType(name, mimeType = "") {
   const extension = String(name || "").trim().toLowerCase().split(".").pop();
   const mime = String(mimeType || "").trim().toLowerCase();
-  if (mime.startsWith("image/")) return "Image";
+  if (mime.startsWith("image/") || ["heic", "heif"].includes(extension)) return "Image";
   return extension === "pdf" ? "PDF" : extension === "csv" ? "CSV" : ["xls", "xlsx"].includes(extension) ? "Excel" : "Word";
 }
 
@@ -30,6 +31,7 @@ export default function ChatDocumentPreviewModal({ attachment, getPreview, onClo
   const type = getFileType(name, mimeType);
   const isPdf = type === "PDF";
   const isImage = type === "Image";
+  const isHeic = isChatHeicImage(attachment);
   const isCsv = type === "CSV";
   const DocumentIcon = isImage ? ImageIcon : (type === "Excel" || type === "CSV" ? FileSpreadsheet : FileText);
   const fileSize = Number(attachment?.fileSize || 0);
@@ -49,7 +51,7 @@ export default function ChatDocumentPreviewModal({ attachment, getPreview, onClo
     setCsvData(null);
     setMobileOfficeHeight(0);
 
-    if (isImage) {
+    if (isImage && !isHeic) {
       const imageUrl = String(attachment?.downloadUrl || attachment?.url || "").trim();
       if (!imageUrl) {
         setError("This image is no longer available.");
@@ -70,7 +72,7 @@ export default function ChatDocumentPreviewModal({ attachment, getPreview, onClo
     // CSV is rendered from original attachment bytes directly in React.
     // This avoids the blank server-generated HTML grid while preserving exact
     // original string cell values, including leading zeroes and bad dates.
-    Promise.resolve(getPreview(attachment?.id, controller.signal, { original: isCsv })).then(async (blob) => {
+    Promise.resolve(getPreview(attachment?.id, controller.signal, { original: isCsv || isHeic })).then(async (blob) => {
       if (!alive) return;
       if (!(blob instanceof Blob) || blob.size === 0) {
         throw new Error("This file has no preview available.");
@@ -78,6 +80,13 @@ export default function ChatDocumentPreviewModal({ attachment, getPreview, onClo
       if (isCsv) {
         const bytes = await blob.arrayBuffer();
         if (alive) setCsvData(parseChatCsvBytes(bytes));
+        return;
+      }
+      if (isHeic) {
+        const jpeg = await makeChatHeicJpeg(blob);
+        if (!alive) return;
+        objectUrl = URL.createObjectURL(jpeg);
+        setSource(objectUrl);
         return;
       }
       const expectedType = isPdf ? "application/pdf" : "text/html;charset=utf-8";
@@ -91,6 +100,7 @@ export default function ChatDocumentPreviewModal({ attachment, getPreview, onClo
           ? "The stored copy of this CSV is damaged. Re-upload the original CSV file to restore its preview."
           : requestError?.message?.includes("CSV") || requestError?.message?.includes("UTF-8")
             ? requestError.message
+            : isHeic ? "Unable to decode this HEIC image here. Download the original file to open it in a compatible viewer."
             : "Unable to load a preview. You can still download the original file.");
     }).finally(() => {
       if (alive) setLoading(false);
@@ -100,7 +110,7 @@ export default function ChatDocumentPreviewModal({ attachment, getPreview, onClo
       controller.abort();
       if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
-  }, [attachment?.downloadUrl, attachment?.id, attachment?.url, getPreview, isCsv, isImage, isPdf]);
+  }, [attachment?.downloadUrl, attachment?.id, attachment?.url, getPreview, isCsv, isHeic, isImage, isPdf]);
 
   // iOS browsers can refuse to swipe-scroll a small sandboxed iframe.
   // Office HTML is rendered with scripts disabled and its content already

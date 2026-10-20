@@ -49,6 +49,8 @@ import {
   searchChatGifs,
 } from "@/lib/axios/gifSearch";
 import ChatDocumentPreviewModal from "@/components/chat/ChatDocumentPreviewModal";
+import ChatHeicThumbnail from "@/components/chat/ChatHeicThumbnail";
+import { hasChatHeicSignature, isChatHeicImage } from "@/lib/utils/chat/chatHeicPreview";
 import { decodeChatCsvBytes } from "@/lib/utils/chat/chatCsvPreview";
 import ChatVideoPlayer from "@/components/chat/ChatVideoPlayer";
 import ChatAudioPlayer from "@/components/chat/ChatAudioPlayer";
@@ -184,6 +186,9 @@ function detectSupportedAttachmentMime(bytes, file = {}) {
   if (!(bytes instanceof Uint8Array) || !bytes.length) return "";
   const extension = getFileExtension(file?.name);
   if (extension === ".csv") return isValidChatCsvText(bytes) ? "text/csv" : "";
+  if (extension === ".heic" || extension === ".heif") {
+    return hasChatHeicSignature(bytes) ? (extension === ".heif" ? "image/heif" : "image/heic") : "";
+  }
   if (bytes.length < 4) return "";
 
   const declaredMime = cleanText(file?.type).toLowerCase();
@@ -2734,13 +2739,13 @@ export default function SiBSChat({
 
           const detectedMimeType = await validateAttachmentBeforeSelection(file);
           if (!detectedMimeType) {
-            problems.push(`${file.name} is not a supported or valid image, audio, video, Word, Excel, PDF, or CSV file.`);
+            problems.push(`${file.name} is not a supported or valid image (including HEIC), audio, video, Word, Excel, PDF, or CSV file.`);
             continue;
           }
           accepted.push({
             file,
             detectedMimeType,
-            previewUrl: isChatDocumentMime(detectedMimeType) ? "" : URL.createObjectURL(file),
+            previewUrl: isChatDocumentMime(detectedMimeType) || isChatHeicImage(file) ? "" : URL.createObjectURL(file),
           });
         }
 
@@ -4254,7 +4259,7 @@ export default function SiBSChat({
                                           .toLowerCase();
                                         const isVideo = attachmentMimeType.startsWith("video/");
                                         const isAudio = attachmentMimeType.startsWith("audio/");
-                                        const isDocument = isChatDocumentMime(attachmentMimeType);
+                                        const isDocument = !isChatHeicImage(attachment) && isChatDocumentMime(attachmentMimeType);
 
                                         if (isDocument) {
                                           const isExcel = /spreadsheet|ms-excel|text\/csv/.test(attachmentMimeType);
@@ -4314,17 +4319,25 @@ export default function SiBSChat({
                                             title={attachment.originalName || "View image"}
                                             aria-label={`View ${attachment.originalName || "image"} in SiBS Chat`}
                                           >
-                                            <img
-                                              src={attachmentUrl}
-                                              alt={attachment.originalName || "Chat attachment"}
-                                              className="max-h-56 w-full object-cover"
-                                              loading="lazy"
-                                              onLoad={() => {
-                                                if (shouldSnapToBottom(isInitialConversationLoadRef.current, isNearBottomRef.current)) {
-                                                  scrollToLatest();
-                                                }
-                                              }}
-                                            />
+                                            {isChatHeicImage(attachment) ? (
+                                              <ChatHeicThumbnail
+                                                attachmentId={attachment.id}
+                                                alt={attachment.originalName || "HEIC image"}
+                                                className="max-h-56 w-full object-cover"
+                                              />
+                                            ) : (
+                                              <img
+                                                src={attachmentUrl}
+                                                alt={attachment.originalName || "Chat attachment"}
+                                                className="max-h-56 w-full object-cover"
+                                                loading="lazy"
+                                                onLoad={() => {
+                                                  if (shouldSnapToBottom(isInitialConversationLoadRef.current, isNearBottomRef.current)) {
+                                                    scrollToLatest();
+                                                  }
+                                                }}
+                                              />
+                                            )}
                                           </button>
                                         );
                                       })}
@@ -4724,6 +4737,8 @@ export default function SiBSChat({
                               preload="metadata"
                               className="h-full w-full bg-black object-cover"
                             />
+                          ) : isChatHeicImage(item.file) ? (
+                            <ChatHeicThumbnail file={item.file} alt={item.file.name} className="h-full w-full object-cover" />
                           ) : (
                             <img
                               src={item.previewUrl}
@@ -4748,7 +4763,7 @@ export default function SiBSChat({
                   <input
                     ref={fileInputRef}
                     type="file"
-                    accept="image/jpeg,image/png,image/webp,image/gif,audio/mpeg,audio/wav,audio/ogg,audio/webm,audio/mp4,audio/aac,audio/flac,video/mp4,video/webm,video/ogg,video/quicktime,video/x-m4v,.pdf,.doc,.docx,.xls,.xlsx,.csv"
+                    accept="image/jpeg,image/png,image/webp,image/gif,audio/mpeg,audio/wav,audio/ogg,audio/webm,audio/mp4,audio/aac,audio/flac,video/mp4,video/webm,video/ogg,video/quicktime,video/x-m4v,.pdf,.doc,.docx,.xls,.xlsx,.csv,.heic,.heif,image/heic,image/heif"
                     multiple
                     onChange={handleFiles}
                     className="hidden"
