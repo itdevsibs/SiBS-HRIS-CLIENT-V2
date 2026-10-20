@@ -957,6 +957,7 @@ const ScheduleInterviewModal = ({
   isSaving = false,
   onClose,
   onSubmit,
+  onOpenSibsCalendar,
 }) => {
   const [processSubmitting, setProcessSubmitting] = useState(false);
   const [syncWarning, setSyncWarning] = useState("");
@@ -979,14 +980,17 @@ const ScheduleInterviewModal = ({
     void handleProcessSubmit();
   }, [open, submitAfterEditorSave, busy, canScheduleInterview]);
 
+  // A temporary calendar handoff must not retain an obsolete submit warning.
+  useEffect(() => {
+    if (open) setSyncWarning("");
+  }, [open]);
+
   if (!open || !candidate) return null;
 
   function handleOpenSibsCalendar() {
-    if (busy || typeof window === "undefined") return;
-    // Close this interview overlay first so the header calendar is visible and usable.
-    // This opens the same modal as the header's SiBS Calendar button, without a route change.
-    onClose?.();
-    window.dispatchEvent(new Event("sibs:open-calendar"));
+    if (busy) return;
+    // Parent temporarily hides this modal; it retains candidate + form state.
+    onOpenSibsCalendar?.();
   }
 
   async function handleProcessSubmit(event) {

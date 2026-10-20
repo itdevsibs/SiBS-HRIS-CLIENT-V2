@@ -182,6 +182,10 @@ function normalizeCalendarSite(value) {
 const AVAILABILITY_OPTIONS = ["Busy", "Free"];
 const VISIBILITY_OPTIONS = ["Default visibility", "Public", "Private"];
 const GOOGLE_CALENDAR_UI_SYNC_TIMEOUT_MS = 20000;
+// Google OAuth can isolate the popup using Cross-Origin-Opener-Policy. Never
+// inspect its closed property; use the OAuth message and status API.
+const GOOGLE_CALENDAR_CONNECT_POLL_MS = 2000;
+const GOOGLE_CALENDAR_CONNECT_MAX_POLLS = 90;
 
 // Use one consistent SIBS prefix in new and edited HRIS calendar schedules.
 const SIBS_HRIS_CALENDAR_TITLE_PREFIX = "SiBS HRIS - ";
@@ -3611,7 +3615,7 @@ function waitForGoogleCalendarSync(milliseconds) {
   });
 }
 
-export default function HeaderCalendarModal({ open, user, onClose }) {
+export default function HeaderCalendarModal({ open, user, onClose, onSyncComplete }) {
   const { nowMs, getNowMs } = useManilaCalendarClock(open);
   const [viewDate, setViewDate] = useState(() => new Date());
   const [events, setEvents] = useState([]);
@@ -3933,6 +3937,8 @@ export default function HeaderCalendarModal({ open, user, onClose }) {
         email: payload?.googleAccountEmail || googleCalendarEmail || "",
         photoUrl: payload?.googleProfilePicture || "",
       })));
+      // Resume the interview only after the first successful event sync.
+      onSyncComplete?.();
     } catch (error) {
       if (calendarLoadRequestRef.current !== requestId) return;
 
@@ -4041,6 +4047,9 @@ export default function HeaderCalendarModal({ open, user, onClose }) {
         photoUrl: payload?.googleProfilePicture || "",
       })));
       setCalendarConnected(true);
+      // Covers both a newly connected account and an existing account needing Sync.
+      // The Header decides whether this calendar was launched by interview scheduling.
+      onSyncComplete?.();
       const recruitment = payload?.recruitmentSync;
       const firstSyncError = recruitment?.results?.flatMap((candidate) => [
         ...(candidate?.results || []),
@@ -4115,6 +4124,10 @@ export default function HeaderCalendarModal({ open, user, onClose }) {
   function openGoogleCalendarConnection() {
     clearGoogleCalendarPopupTimer();
     const connectUrl = getGoogleCalendarConnectUrl();
+    // When reconnecting an existing account, simply seeing connected=true is
+    // not evidence that the NEW authorization has completed. In that case the
+    // existing GOOGLE_CALENDAR_CONNECTED postMessage remains authoritative.
+    const wasConnected = calendarConnectedRef.current;
 
     const popup = window.open(
       connectUrl,
@@ -4127,12 +4140,44 @@ export default function HeaderCalendarModal({ open, user, onClose }) {
       return;
     }
 
-    googleConnectPopupTimerRef.current = window.setInterval(() => {
-      if (popup.closed) {
+    // Chrome may isolate the OAuth popup with Cross-Origin-Opener-Policy.
+    // Repeatedly checking the popup's closed property logs a warning even when
+    // caught in a try/catch. Instead, fall back to the server's connection
+    // status if the OAuth callback cannot postMessage to this window.
+    if (wasConnected) return;
+
+    let pollCount = 0;
+    let pollInFlight = false;
+    const pollId = window.setInterval(async () => {
+      if (googleConnectPopupTimerRef.current !== pollId ||
+          googleConnectFinalizingRef.current || pollInFlight) return;
+
+      pollCount += 1;
+      if (pollCount > GOOGLE_CALENDAR_CONNECT_MAX_POLLS) {
         clearGoogleCalendarPopupTimer();
-        finishGoogleCalendarConnection();
+        setCalendarError(
+          "Google sign-in has not completed. Finish the Google sign-in window, then click Sync to refresh your connection.",
+        );
+        return;
       }
-    }, 800);
+
+      pollInFlight = true;
+      try {
+        const status = await getGoogleCalendarStatus();
+        // The user may have closed the calendar or received the OAuth message
+        // while this network request was in flight.
+        if (googleConnectPopupTimerRef.current !== pollId) return;
+        if (status?.success !== false && status?.connected) {
+          clearGoogleCalendarPopupTimer();
+          void finishGoogleCalendarConnection();
+        }
+      } catch {
+        // A temporary status-check failure should not interrupt Google OAuth.
+      } finally {
+        pollInFlight = false;
+      }
+    }, GOOGLE_CALENDAR_CONNECT_POLL_MS);
+    googleConnectPopupTimerRef.current = pollId;
   }
 
   function moveMonth(direction) {
