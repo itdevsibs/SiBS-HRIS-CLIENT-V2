@@ -33,6 +33,7 @@ import {
 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import React, {
+  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -933,9 +934,26 @@ function HeaderContent() {
   const [mobileDateStr, setMobileDateStr] = useState("");
   const [timeStr, setTimeStr] = useState("");
   const [calendarOpen, setCalendarOpen] = useState(false);
-  // Allow other HRIS workflows to open the same SiBS Calendar modal used by the header.
+  // Only SiBS Calendar instances opened from an interview should return to it.
+  const returnToInterviewRef = useRef(false);
+  const closeCalendar = useCallback(() => {
+    const resumeInterview = returnToInterviewRef.current;
+    returnToInterviewRef.current = false;
+    setCalendarOpen(false);
+    if (resumeInterview) {
+      window.dispatchEvent(new Event("sibs:return-to-interview"));
+    }
+  }, []);
+  const handleCalendarSyncComplete = useCallback(() => {
+    // Regular header-launched SiBS Calendar must stay open after syncing.
+    if (returnToInterviewRef.current) closeCalendar();
+  }, [closeCalendar]);
+
   useEffect(() => {
-    const handleOpenCalendar = () => setCalendarOpen(true);
+    const handleOpenCalendar = (event) => {
+      returnToInterviewRef.current = event.detail?.source === "schedule-interview";
+      setCalendarOpen(true);
+    };
     window.addEventListener("sibs:open-calendar", handleOpenCalendar);
     return () => window.removeEventListener("sibs:open-calendar", handleOpenCalendar);
   }, []);
@@ -1841,7 +1859,8 @@ function HeaderContent() {
       <HeaderCalendarModal
         open={calendarOpen}
         user={user}
-        onClose={() => setCalendarOpen(false)}
+        onClose={closeCalendar}
+        onSyncComplete={handleCalendarSyncComplete}
       />
     </header>
   );

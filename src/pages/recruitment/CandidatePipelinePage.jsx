@@ -313,6 +313,23 @@ export default function CandidatePipelinePage() {
   const [prfStatusFilter, setPrfStatusFilter] = useState("All PRF Status");
   const [sourceFilter, setSourceFilter] = useState("All Sources");
   const [boardSubView, setBoardSubView] = useState("board");
+  const [interviewCalendarHandoff, setInterviewCalendarHandoff] = useState(false);
+
+  // Keep the selected candidate and form in context while the Google account
+  // is connected/synced in SiBS Calendar. No route change or form reset.
+  useEffect(() => {
+    const resumeInterview = () => setInterviewCalendarHandoff(false);
+    window.addEventListener("sibs:return-to-interview", resumeInterview);
+    return () => window.removeEventListener("sibs:return-to-interview", resumeInterview);
+  }, []);
+
+  function openCalendarForInterview() {
+    if (!scheduleCandidate) return;
+    setInterviewCalendarHandoff(true);
+    window.dispatchEvent(new CustomEvent("sibs:open-calendar", {
+      detail: { source: "schedule-interview" },
+    }));
+  }
 
   useEffect(() => {
     if (roleFilter !== "All Roles") {
@@ -856,12 +873,13 @@ export default function CandidatePipelinePage() {
       />
 
       <ScheduleInterviewModal
-        open={!!scheduleCandidate}
+        open={!!scheduleCandidate && !interviewCalendarHandoff}
         candidate={scheduleCandidate}
         form={scheduleForm}
         setForm={setScheduleForm}
         onClose={handleCloseScheduleInterview}
         onSubmit={handleSubmitScheduleInterview}
+        onOpenSibsCalendar={openCalendarForInterview}
       />
 
       <AssessmentModal
