@@ -10,6 +10,7 @@ import {
   RotateCcw,
   Timer,
   Loader2,
+  AlertCircle,
 } from "lucide-react";
 
 import { useUser } from "../../services/context/UserContext";
@@ -48,6 +49,7 @@ import {
   getLogoutIndicator,
   getSiteBadgeClass,
   getAssignedSite,
+  getAttendanceInitialDateRange,
 } from "../../lib/utils/attendance/attendanceHelpers";
 
 const AVATAR_TONES = [
@@ -941,6 +943,7 @@ export default function AttendanceTable() {
 
   const [isDraggingTable, setIsDraggingTable] = useState(false);
   const [searchSubmitVersion, setSearchSubmitVersion] = useState(0);
+  const [loadError, setLoadError] = useState("");
 
   const paginationContext = usePagination("attendance");
 
@@ -960,10 +963,6 @@ export default function AttendanceTable() {
     handlePageChange,
   } = paginationContext;
 
-  // Show attendance history from every date on initial entry. The date pickers
-  // continue to narrow the server-side query when the user selects a range.
-  const dateFrom = filterValues?.dateFrom || "";
-  const dateTo = filterValues?.dateTo || "";
   const [filtersInitialized, setFiltersInitialized] = useState(false);
   const countCacheRef = useRef(new Map());
 
@@ -1000,18 +999,27 @@ export default function AttendanceTable() {
     talentAcquisitionView ||
     financeView;
 
+  const employeeAttendanceView =
+    String(user?.role || "").trim().toLowerCase() === "employee";
+
+  const initialDateRange = useMemo(
+    () => getAttendanceInitialDateRange(employeeAttendanceView),
+    [employeeAttendanceView],
+  );
+
+  const dateFrom = filterValues?.dateFrom || initialDateRange.dateFrom;
+  const dateTo = filterValues?.dateTo || initialDateRange.dateTo;
+
   useEffect(() => {
     setLoadingRef.current = setLoading;
     setPaginationRef.current = setPagination;
   }, [setLoading, setPagination]);
 
-  // Reset old filters on each visit BEFORE starting the first query. This
-  // prevents one query with the prior page's date range and a second query
-  // after resetting it. "All dates" is represented by two empty date values.
+  // Reset old filters on each visit BEFORE starting the first query.
   useEffect(() => {
     setSearch?.("");
     setSearchInput?.("");
-    paginationContext.setDateRange?.({ dateFrom: "", dateTo: "" });
+    paginationContext.setDateRange?.(initialDateRange);
     setFiltersInitialized(true);
 
     // This intentionally runs once per AttendanceTable mount.
@@ -1136,7 +1144,10 @@ export default function AttendanceTable() {
     handleAttendanceSearchSubmit();
   }
 
-  const hasCustomDateRange = Boolean(dateFrom || dateTo);
+  const hasCustomDateRange = Boolean(
+    (filterValues?.dateFrom && filterValues.dateFrom !== initialDateRange.dateFrom) ||
+    (filterValues?.dateTo && filterValues.dateTo !== initialDateRange.dateTo)
+  );
 
   const hasActiveFilters = Boolean(
     String(searchInput || "").trim() ||
@@ -1165,7 +1176,7 @@ export default function AttendanceTable() {
     setDepartmentFilter("All");
     setAccountFilters([]);
     const { setDateRange } = paginationContext;
-    setDateRange?.({ dateFrom: "", dateTo: "" });
+    setDateRange?.(initialDateRange);
     goToPage(1);
   }
 
@@ -1297,6 +1308,7 @@ export default function AttendanceTable() {
     const fetchAttendance = async () => {
       try {
         setLoadingRef.current?.(true);
+        setLoadError("");
 
         const currentAccountFilter = attendanceFiltersView
           ? accountFilterQuery
@@ -1316,16 +1328,7 @@ export default function AttendanceTable() {
         if (cancelled || latestRequestIdRef.current !== requestId) return;
 
         if (!result?.success) {
-          setAttendance([]);
-
-          setPaginationRef.current?.({
-            currentPage: 1,
-            totalPages: 1,
-            total: null,
-            limit: PAGE_LIMIT,
-            hasPreviousPage: false,
-            hasNextPage: false,
-          });
+          setLoadError(result?.message || "Unable to load attendance records. Please try again.");
 
           return;
         }
@@ -1396,16 +1399,7 @@ export default function AttendanceTable() {
 
         console.error("Fetch attendance error:", err);
 
-        setAttendance([]);
-
-        setPaginationRef.current?.({
-          currentPage: 1,
-          totalPages: 1,
-          total: null,
-          limit: PAGE_LIMIT,
-          hasPreviousPage: false,
-          hasNextPage: false,
-        });
+        setLoadError(err?.message || "Unable to load attendance records. Please try again.");
       } finally {
         if (!cancelled && latestRequestIdRef.current === requestId) {
           setLoadingRef.current?.(false);
@@ -1510,6 +1504,22 @@ export default function AttendanceTable() {
           }
         }
       `}</style>
+      {loadError ? (
+        <div role="alert" className="flex items-center justify-between gap-3 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-rose-800">
+          <div className="flex min-w-0 items-center gap-2">
+            <AlertCircle className="h-4 w-4 shrink-0" />
+            <p className="sibs-text-xs font-bold">{loadError}</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setSearchSubmitVersion((version) => version + 1)}
+            disabled={loading}
+            className="shrink-0 rounded-lg border border-rose-300 bg-white px-3 py-1.5 sibs-text-xs font-extrabold text-rose-700 hover:bg-rose-100 disabled:opacity-60"
+          >
+            Retry
+          </button>
+        </div>
+      ) : null}
       <section
         style={getAnimationStyle(60)}
       >

@@ -2,6 +2,33 @@ import { formatHrisDateLocalized, formatHrisDateTimeLocalized } from "@/lib/axio
 export const PAGE_LIMIT = 15;
 export const LEAVES_STATE_KEY = "leavesPageState";
 
+function toLocalDateKey(value) {
+  const date = value instanceof Date ? value : new Date(value);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
+export function getLeavesInitialDateRange(
+  isEmployee,
+  today = new Date(),
+) {
+  if (!isEmployee) {
+    return { dateFrom: "", dateTo: "" };
+  }
+
+  const dateTo = today instanceof Date ? today : new Date(today);
+  const dateFrom = new Date(dateTo);
+  dateFrom.setDate(dateTo.getDate() - 6);
+
+  return {
+    dateFrom: toLocalDateKey(dateFrom),
+    dateTo: toLocalDateKey(dateTo),
+  };
+}
+
 export function formatNumber(value) {
   if (value === "..." || value === null || value === undefined) return "...";
 

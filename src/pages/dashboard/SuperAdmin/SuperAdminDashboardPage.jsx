@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import Header from "../../../components/layout/Header";
@@ -81,7 +81,21 @@ export default function SuperAdminDashboardPage() {
   });
   const [notice, setNotice] = useState("");
   const [isManualRefreshing, setIsManualRefreshing] = useState(false);
-  const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [initialSections, setInitialSections] = useState({
+    metrics: true,
+    admins: true,
+    activity: true,
+  });
+  const pendingRequest = useRef(null);
+  const isInitialLoading = Object.values(initialSections).some(Boolean);
+  const statsLoading = initialSections.metrics;
+  const activeSectionLoading = activeTab === "activity"
+    ? initialSections.activity
+    : activeTab === "access_roles"
+      ? initialSections.admins
+      : activeTab === "exceptions"
+        ? initialSections.metrics
+        : statsLoading;
 
   const accessLevel = filterValues?.accessLevel || "All Access Levels";
   const module = filterValues?.module || "All Modules";
@@ -89,139 +103,179 @@ export default function SuperAdminDashboardPage() {
   const status = filterValues?.status || "All Statuses";
 
   const fetchDashboardData = useCallback(
-    async ({ forceRefresh = false, completesInitialLoad = false } = {}) => {
-      try {
-        setLoading(true);
-        const [
-          overviewData,
-          feedData,
-          employeeData,
-          assignedUsersData,
-          approvalsData,
-          leavesData,
-        ] = await Promise.allSettled([
-          getHrDashboardOverview({ forceRefresh }),
-          getHrDashboardFeed({ forceRefresh }),
-          getEmployee(1, "", "All", {
-            includeDepartments: true,
-            includeAccounts: true,
-          }),
-          getUserSettingsUsers({ limit: 100 }),
-          getApprovalRequests({ status: "Pending", limit: 50 }),
-          getLeaves({ status: "Pending", limit: 50 }),
-        ]);
-
-        if (overviewData.status === "fulfilled" && overviewData.value) {
-          const normOverview = normalizeDashboardOverview(overviewData.value);
-          setBackendOverview(normOverview);
-        }
-
-        let empTotal = null;
-        let deptTotal = null;
-        if (employeeData.status === "fulfilled" && employeeData.value) {
-          const empVal = employeeData.value;
-          empTotal = empVal.pagination?.total ?? null;
-          deptTotal = Array.isArray(empVal.departmentOptions)
-            ? empVal.departmentOptions.length
-            : null;
-        }
-
-        if (
-          assignedUsersData.status === "fulfilled" &&
-          Array.isArray(assignedUsersData.value?.data) &&
-          assignedUsersData.value.data.length > 0
-        ) {
-          const liveAdmins = normalizeAssignedAdminUsers(
-            assignedUsersData.value.data,
+    function fetchDashboardData({ forceRefresh = false } = {}) {
+      const pending = pendingRequest.current;
+      if (pending) {
+        // A manual request must still reach the server with refresh=1 after an
+        // ordinary request finishes. Coalesce additional manual requests too.
+        if (forceRefresh && !pending.forceRefresh) {
+          pending.queuedForce ||= pending.promise.then(() =>
+            fetchDashboardData({ forceRefresh: true }),
           );
-          setAdminUsers(liveAdmins);
-        } else if (
-          employeeData.status === "fulfilled" &&
-          Array.isArray(employeeData.value?.data) &&
-          employeeData.value.data.length > 0
-        ) {
-          const liveAdmins = employeeData.value.data
-            .filter(
-              (emp) =>
-                Number(emp.adminAccess || emp.admin_access || 0) > 0 ||
-                emp.role === "admin" ||
-                emp.role === "super_admin",
-            )
-            .map((emp, idx) => ({
-              id: emp.sibsId || emp.sibs_id || `ADM-${idx + 1}`,
-              name:
-                emp.fullName ||
-                emp.name ||
-                `${emp.firstName || ""} ${emp.lastName || ""}`.trim() ||
-                "User",
-              email: emp.email || "—",
-              accessLevel: `${emp.adminAccess || emp.admin_access || 7} - ${emp.role || "Admin"}`,
-              department: emp.department || "Operations",
-              accountGroup: emp.account || "Internal HR Ops",
-              lastActive: "Today",
-              status: emp.employmentStatus || emp.status || "Active",
+          return pending.queuedForce;
+        }
+        return pending.promise;
+      }
+
+      const request = { forceRefresh, promise: null, queuedForce: null };
+      pendingRequest.current = request;
+      const finishSection = (section) => {
+        setInitialSections((current) => current[section]
+          ? { ...current, [section]: false }
+          : current);
+      };
+      request.promise = (async () => {
+        try {
+          setLoading(true);
+          const overviewPromise = getHrDashboardOverview({ forceRefresh }).then((value) => {
+            if (value) {
+              const normalized = normalizeDashboardOverview(value);
+              setBackendOverview(normalized);
+              setExtraCounts((current) => ({
+                ...current,
+                employeeTotal: normalized.metrics.employees,
+                departmentsTotal: normalized.metrics.departments,
+              }));
+            }
+            return value;
+          });
+          const secondaryStart = overviewPromise.then(
+            () => undefined,
+            () => undefined,
+          );
+          const feedPromise = secondaryStart
+            .then(() => getHrDashboardFeed({ forceRefresh }))
+            .then((value) => {
+              if (Array.isArray(value?.recentActivities) && value.recentActivities.length > 0) {
+                setActivityLogs(enrichActivityLogs(value.recentActivities));
+              }
+            })
+            .finally(() => finishSection("activity"));
+          let employeePromise = null;
+          const getEmployeeFallback = () => {
+            employeePromise ||= getEmployee(1, "", "All", {
+              includeDepartments: true,
+              includeAccounts: true,
+            });
+            return employeePromise;
+          };
+          const assignedUsersPromise = secondaryStart.then(() =>
+            getUserSettingsUsers({ limit: 100 }),
+          );
+          const approvalsPromise = secondaryStart.then(() =>
+            getApprovalRequests({ status: "Pending", limit: 50 }),
+          );
+          const leavesPromise = secondaryStart.then(() =>
+            getLeaves({ status: "Pending", limit: 50 }),
+          );
+
+          const adminsPromise = (async () => {
+            const [assignedUsersData] = await Promise.allSettled([assignedUsersPromise]);
+            if (
+              assignedUsersData.status === "fulfilled" &&
+              Array.isArray(assignedUsersData.value?.data) &&
+              assignedUsersData.value.data.length > 0
+            ) {
+              setAdminUsers(normalizeAssignedAdminUsers(assignedUsersData.value.data));
+              return;
+            }
+
+            // Only wait for employee data if assigned users cannot supply admins.
+            const [employeeData] = await Promise.allSettled([getEmployeeFallback()]);
+            if (
+              employeeData.status === "fulfilled" &&
+              Array.isArray(employeeData.value?.data) &&
+              employeeData.value.data.length > 0
+            ) {
+              const liveAdmins = employeeData.value.data
+                .filter((emp) =>
+                  Number(emp.adminAccess || emp.admin_access || 0) > 0 ||
+                  emp.role === "admin" || emp.role === "super_admin",
+                )
+                .map((emp, idx) => ({
+                  id: emp.sibsId || emp.sibs_id || `ADM-${idx + 1}`,
+                  name: emp.fullName || emp.name ||
+                    `${emp.firstName || ""} ${emp.lastName || ""}`.trim() || "User",
+                  email: emp.email || "—",
+                  accessLevel: `${emp.adminAccess || emp.admin_access || 7} - ${emp.role || "Admin"}`,
+                  department: emp.department || "Operations",
+                  accountGroup: emp.account || "Internal HR Ops",
+                  lastActive: "Today",
+                  status: emp.employmentStatus || emp.status || "Active",
+                }));
+              if (liveAdmins.length > 0) setAdminUsers(liveAdmins);
+            }
+          })().finally(() => finishSection("admins"));
+
+          const metricsPromise = overviewPromise.finally(() => finishSection("metrics"));
+
+          const secondaryMetricsPromise = (async () => {
+            const [
+              overviewData,
+              approvalsData,
+              leavesData,
+            ] = await Promise.allSettled([
+              overviewPromise,
+              approvalsPromise,
+              leavesPromise,
+            ]);
+
+            let appTotal = null;
+            if (approvalsData.status === "fulfilled" && approvalsData.value) {
+              appTotal =
+                approvalsData.value.counts?.pending ??
+                approvalsData.value.total ??
+                null;
+            }
+
+            let lvsTotal = null;
+            if (leavesData.status === "fulfilled" && leavesData.value) {
+              lvsTotal =
+                leavesData.value.pagination?.total ?? leavesData.value.total ?? null;
+            }
+
+            setExtraCounts((current) => ({
+              ...current,
+              approvalsTotal: appTotal,
+              leavesTotal: lvsTotal,
             }));
 
-          if (liveAdmins.length > 0) {
-            setAdminUsers(liveAdmins);
-          }
-        }
+            const liveExceptions = deriveLiveExceptions({
+              employeeData: null,
+              approvalsData:
+                approvalsData.status === "fulfilled" ? approvalsData.value : null,
+              leavesData:
+                leavesData.status === "fulfilled" ? leavesData.value : null,
+              overviewData:
+                overviewData.status === "fulfilled" ? overviewData.value : null,
+            });
+            setExceptions(liveExceptions);
+          })();
 
-        let appTotal = null;
-        if (approvalsData.status === "fulfilled" && approvalsData.value) {
-          appTotal =
-            approvalsData.value.counts?.pending ??
-            approvalsData.value.total ??
-            null;
+          await Promise.allSettled([
+            metricsPromise,
+            secondaryMetricsPromise,
+            adminsPromise,
+            feedPromise,
+          ]);
+        } catch (err) {
+          console.error("Super Admin Dashboard fetch error:", err);
+        } finally {
+          setLoading(false);
+          // Also clear skeletons if setup itself failed before sections started.
+          setInitialSections((current) => Object.values(current).some(Boolean)
+            ? { metrics: false, admins: false, activity: false }
+            : current);
+          pendingRequest.current = null;
         }
-
-        let lvsTotal = null;
-        if (leavesData.status === "fulfilled" && leavesData.value) {
-          lvsTotal =
-            leavesData.value.pagination?.total ?? leavesData.value.total ?? null;
-        }
-
-        setExtraCounts({
-          employeeTotal: empTotal,
-          departmentsTotal: deptTotal,
-          approvalsTotal: appTotal,
-          leavesTotal: lvsTotal,
-        });
-
-        const liveExceptions = deriveLiveExceptions({
-          employeeData:
-            employeeData.status === "fulfilled" ? employeeData.value : null,
-          approvalsData:
-            approvalsData.status === "fulfilled" ? approvalsData.value : null,
-          leavesData:
-            leavesData.status === "fulfilled" ? leavesData.value : null,
-          overviewData:
-            overviewData.status === "fulfilled" ? overviewData.value : null,
-        });
-        setExceptions(liveExceptions);
-
-        if (
-          feedData.status === "fulfilled" &&
-          Array.isArray(feedData.value?.recentActivities) &&
-          feedData.value.recentActivities.length > 0
-        ) {
-          const mappedLogs = enrichActivityLogs(feedData.value.recentActivities);
-          setActivityLogs(mappedLogs);
-        }
-      } catch (err) {
-        console.error("Super Admin Dashboard fetch error:", err);
-      } finally {
-        setLoading(false);
-        if (completesInitialLoad) {
-          setIsInitialLoading(false);
-        }
-      }
+      })();
+      return request.promise;
     },
     [setLoading],
   );
 
   useEffect(() => {
-    fetchDashboardData({ completesInitialLoad: true });
+    fetchDashboardData();
   }, [fetchDashboardData]);
 
   useRefetchOnFocus(fetchDashboardData);
@@ -306,8 +360,7 @@ export default function SuperAdminDashboardPage() {
       currentPage: activePagination.currentPage,
       limit: activePagination.limit,
     });
-    setLoading(false);
-  }, [activePagination, setLoading, setPagination]);
+  }, [activePagination, setPagination]);
 
   useEffect(() => {
     if (Number(page) !== activePagination.currentPage) {
@@ -467,7 +520,7 @@ export default function SuperAdminDashboardPage() {
             isManualRefreshing={isManualRefreshing}
           />
 
-          {isInitialLoading ? (
+          {statsLoading ? (
             <SuperAdminDashboardStatsSkeleton />
           ) : (
             <SuperAdminDashboardStats
@@ -497,11 +550,11 @@ export default function SuperAdminDashboardPage() {
               role="tabpanel"
               className="sibs-page-card-in min-w-0 p-4 sm:p-5 lg:p-6"
             >
-              {isInitialLoading ? (
+              {activeSectionLoading ? (
                 <SuperAdminTabPanelSkeleton activeTab={activeTab} />
               ) : null}
 
-              {!isInitialLoading && activeTab === "overview" ? (
+              {!activeSectionLoading && activeTab === "overview" ? (
                 <SuperAdminOverview
                   cards={dynamicSummaryCards}
                   exceptionsCount={exceptions.length}
@@ -510,7 +563,7 @@ export default function SuperAdminDashboardPage() {
                 />
               ) : null}
 
-              {!isInitialLoading && activeTab === "exceptions" ? (
+              {!activeSectionLoading && activeTab === "exceptions" ? (
                 <SuperAdminExceptions
                   items={activePagination.items}
                   totalItems={filteredExceptions.length}
@@ -526,7 +579,7 @@ export default function SuperAdminDashboardPage() {
                 />
               ) : null}
 
-              {!isInitialLoading && activeTab === "access_roles" ? (
+              {!activeSectionLoading && activeTab === "access_roles" ? (
                 <SuperAdminAccessGovernance
                   admins={activePagination.items}
                   totalItems={filteredAdmins.length}
@@ -544,14 +597,14 @@ export default function SuperAdminDashboardPage() {
                 />
               ) : null}
 
-              {!isInitialLoading && activeTab === "snapshot" ? (
+              {!activeSectionLoading && activeTab === "snapshot" ? (
                 <SuperAdminSnapshot
                   cards={dynamicSnapshotCards}
                   onNavigate={navigate}
                 />
               ) : null}
 
-              {!isInitialLoading && activeTab === "activity" ? (
+              {!activeSectionLoading && activeTab === "activity" ? (
                 <SuperAdminActivity
                   items={activePagination.items}
                   totalItems={filteredLogs.length}

@@ -378,7 +378,15 @@ export default function DatePicker({
         type="button"
         aria-haspopup="dialog"
         aria-expanded={open}
-        aria-label={label || leadingLabel || placeholder}
+        aria-label={
+          renderedValue
+            ? leadingLabel
+              ? `${leadingLabel} ${renderedValue}`
+              : label
+                ? `${label} ${renderedValue}`
+                : renderedValue
+            : label || leadingLabel || placeholder
+        }
         disabled={isLocked}
         onClick={() => {
           if (isLocked) return;

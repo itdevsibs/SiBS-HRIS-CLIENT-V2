@@ -1,5 +1,13 @@
 import api from "./api-template";
 
+function getLocalCalendarDate(date = new Date()) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
 export async function getLeaves({
   page = 1,
   limit = 15,
@@ -13,6 +21,10 @@ export async function getLeaves({
   includeAccounts = false,
 } = {}) {
   try {
+    const defaultDateTo = new Date();
+    const defaultDateFrom = new Date(defaultDateTo);
+    defaultDateFrom.setDate(defaultDateTo.getDate() - 6);
+
     const res = await api.get("/api/leaves", {
       params: {
         page,
@@ -21,11 +33,12 @@ export async function getLeaves({
         status,
         department,
         account,
-        dateFrom,
-        dateTo,
+        dateFrom: dateFrom || getLocalCalendarDate(defaultDateFrom),
+        dateTo: dateTo || getLocalCalendarDate(defaultDateTo),
         includeDepartments: includeDepartments ? 1 : 0,
         includeAccounts: includeAccounts ? 1 : 0,
       },
+      timeout: 30000,
     });
 
     return res.data;
