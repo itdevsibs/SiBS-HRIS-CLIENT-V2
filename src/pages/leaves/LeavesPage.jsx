@@ -35,6 +35,7 @@ import {
   canViewLeaveFilters,
   formatNumber,
   getLeaveTypeLabel,
+  getLeavesInitialDateRange,
   normalizeStatus,
 } from "@/lib/utils/leaves/leaveHelpers";
 
@@ -75,11 +76,15 @@ export default function LeavesPage() {
     setDateRange,
   } = paginationContext;
 
-  const dateFrom = filterValues?.dateFrom || "";
-  const dateTo = filterValues?.dateTo || "";
-
   const isEmployeeAccount =
     String(user?.role || "").toLowerCase() === "employee";
+
+  const initialLeavesDateRange = useMemo(
+    () => getLeavesInitialDateRange(isEmployeeAccount),
+    [isEmployeeAccount],
+  );
+  const dateFrom = filterValues?.dateFrom || initialLeavesDateRange.dateFrom;
+  const dateTo = filterValues?.dateTo || initialLeavesDateRange.dateTo;
 
   const showDepartmentFilter = canViewLeaveFilters(user);
   const showAccountFilter = canViewLeaveFilters(user);
@@ -235,10 +240,7 @@ export default function LeavesPage() {
     setAccountOptions([]);
 
     if (typeof setDateRange === "function") {
-      setDateRange({
-        dateFrom: "",
-        dateTo: "",
-      });
+      setDateRange(initialLeavesDateRange);
     }
 
     setFiltersReady(true);

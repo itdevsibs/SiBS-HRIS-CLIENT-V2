@@ -1,14 +1,70 @@
+import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import api from "./api-template";
 import { getAttendance } from "./getAttendance";
 import { getLeaves } from "./getLeaves";
+import { getAttendanceInitialDateRange } from "../utils/attendance/attendanceHelpers";
+import { getLeavesInitialDateRange } from "../utils/leaves/leaveHelpers";
+import {
+  PaginationDateRangeFilter,
+  PaginationProvider,
+} from "../../services/context/PaginationContext";
 
 afterEach(() => {
+  cleanup();
   vi.useRealTimers();
   vi.restoreAllMocks();
 });
 
 describe("Attendance and Leaves page API clients", () => {
+  it("defaults employee attendance to an inclusive fourteen-day range", () => {
+    expect(
+      getAttendanceInitialDateRange(
+        true,
+        new Date(2026, 9, 21, 12, 0, 0),
+      ),
+    ).toEqual({
+      dateFrom: "2026-10-08",
+      dateTo: "2026-10-21",
+    });
+  });
+
+  it("leaves the administrative attendance range unchanged", () => {
+    expect(
+      getAttendanceInitialDateRange(
+        false,
+        new Date(2026, 9, 21, 12, 0, 0),
+      ),
+    ).toEqual({
+      dateFrom: "",
+      dateTo: "",
+    });
+  });
+
+  it("defaults employee leaves to an inclusive seven-day range", () => {
+    expect(
+      getLeavesInitialDateRange(
+        true,
+        new Date(2026, 9, 21, 12, 0, 0),
+      ),
+    ).toEqual({
+      dateFrom: "2026-10-15",
+      dateTo: "2026-10-21",
+    });
+  });
+
+  it("leaves the administrative leaves range unchanged", () => {
+    expect(
+      getLeavesInitialDateRange(
+        false,
+        new Date(2026, 9, 21, 12, 0, 0),
+      ),
+    ).toEqual({
+      dateFrom: "",
+      dateTo: "",
+    });
+  });
+
   it("bounds the attendance request and preserves the backend envelope", async () => {
     const payload = { success: true, data: [], pagination: { hasNextPage: false } };
     const getSpy = vi.spyOn(api, "get").mockResolvedValueOnce({ data: payload });
@@ -100,5 +156,23 @@ describe("Attendance and Leaves page API clients", () => {
         }),
       }),
     );
+  });
+
+  it("reflects default dates on schedule controls when filter is unselected", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 9, 21, 12, 0, 0));
+
+    render(
+      <PaginationProvider>
+        <PaginationDateRangeFilter entity="schedule" visible />
+      </PaginationProvider>,
+    );
+
+    expect(
+      screen.getByRole("button", { name: "From October 15, 2026" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "To October 21, 2026" }),
+    ).toBeInTheDocument();
   });
 });

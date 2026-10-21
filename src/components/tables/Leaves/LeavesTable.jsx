@@ -36,6 +36,7 @@ import {
   getAvatarTone,
   getEmployeeName,
   getInitials,
+  getLeavesInitialDateRange,
   getLeaveTypeLabel,
   getPaidLeaveLabel,
   getStatusClass,
@@ -890,8 +891,12 @@ export default function LeavesTable({
   }, []);
 
   const { setDateRange: setLeavesDateRange } = usePagination("leaves");
-  const dateFrom = filterValues?.dateFrom || "";
-  const dateTo = filterValues?.dateTo || "";
+  const initialDateRange = useMemo(
+    () => getLeavesInitialDateRange(isPersonalView),
+    [isPersonalView],
+  );
+  const dateFrom = filterValues?.dateFrom || initialDateRange.dateFrom;
+  const dateTo = filterValues?.dateTo || initialDateRange.dateTo;
 
   function handleLeavesDateFromChange(value) {
     setLeavesDateRange?.({
@@ -935,13 +940,17 @@ export default function LeavesTable({
     runSearch();
   }
 
+  const hasCustomDateRange = Boolean(
+    (filterValues?.dateFrom && filterValues.dateFrom !== initialDateRange.dateFrom) ||
+    (filterValues?.dateTo && filterValues.dateTo !== initialDateRange.dateTo)
+  );
+
   const hasActiveFilters = Boolean(
     String(searchInput || "").trim() ||
     (statusFilter && statusFilter !== "All") ||
     (departmentFilter && departmentFilter !== "All") ||
     (accountFilter && accountFilter !== "All") ||
-    dateFrom ||
-    dateTo
+    hasCustomDateRange
   );
 
   function handleClearLeavesFilters() {
@@ -950,7 +959,7 @@ export default function LeavesTable({
     if (typeof onStatusChange === "function") onStatusChange("All");
     if (typeof onDepartmentSelect === "function") onDepartmentSelect("All");
     if (typeof onAccountSelect === "function") onAccountSelect("All");
-    setLeavesDateRange?.({ dateFrom: "", dateTo: "" });
+    setLeavesDateRange?.(initialDateRange);
     setPage?.(1);
   }
 

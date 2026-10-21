@@ -1,6 +1,33 @@
 export const PAGE_LIMIT = 15;
 export const LATE_GRACE_MS = 60 * 1000;
 
+function toLocalDateKey(value) {
+  const date = value instanceof Date ? value : new Date(value);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
+export function getAttendanceInitialDateRange(
+  isEmployee,
+  today = new Date(),
+) {
+  if (!isEmployee) {
+    return { dateFrom: "", dateTo: "" };
+  }
+
+  const baseDate = today instanceof Date ? today : new Date(today);
+  const dateFrom = new Date(baseDate);
+  dateFrom.setDate(dateFrom.getDate() - 13);
+
+  return {
+    dateFrom: toLocalDateKey(dateFrom),
+    dateTo: toLocalDateKey(baseDate),
+  };
+}
+
 export function formatNumber(value) {
   if (value === "..." || value === null || value === undefined) return "...";
 

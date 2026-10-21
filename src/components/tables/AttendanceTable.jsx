@@ -49,6 +49,7 @@ import {
   getLogoutIndicator,
   getSiteBadgeClass,
   getAssignedSite,
+  getAttendanceInitialDateRange,
 } from "../../lib/utils/attendance/attendanceHelpers";
 
 const AVATAR_TONES = [
@@ -962,10 +963,6 @@ export default function AttendanceTable() {
     handlePageChange,
   } = paginationContext;
 
-  // Show attendance history from every date on initial entry. The date pickers
-  // continue to narrow the server-side query when the user selects a range.
-  const dateFrom = filterValues?.dateFrom || "";
-  const dateTo = filterValues?.dateTo || "";
   const [filtersInitialized, setFiltersInitialized] = useState(false);
   const countCacheRef = useRef(new Map());
 
@@ -1002,18 +999,27 @@ export default function AttendanceTable() {
     talentAcquisitionView ||
     financeView;
 
+  const employeeAttendanceView =
+    String(user?.role || "").trim().toLowerCase() === "employee";
+
+  const initialDateRange = useMemo(
+    () => getAttendanceInitialDateRange(employeeAttendanceView),
+    [employeeAttendanceView],
+  );
+
+  const dateFrom = filterValues?.dateFrom || initialDateRange.dateFrom;
+  const dateTo = filterValues?.dateTo || initialDateRange.dateTo;
+
   useEffect(() => {
     setLoadingRef.current = setLoading;
     setPaginationRef.current = setPagination;
   }, [setLoading, setPagination]);
 
-  // Reset old filters on each visit BEFORE starting the first query. This
-  // prevents one query with the prior page's date range and a second query
-  // after resetting it. "All dates" is represented by two empty date values.
+  // Reset old filters on each visit BEFORE starting the first query.
   useEffect(() => {
     setSearch?.("");
     setSearchInput?.("");
-    paginationContext.setDateRange?.({ dateFrom: "", dateTo: "" });
+    paginationContext.setDateRange?.(initialDateRange);
     setFiltersInitialized(true);
 
     // This intentionally runs once per AttendanceTable mount.
@@ -1138,7 +1144,10 @@ export default function AttendanceTable() {
     handleAttendanceSearchSubmit();
   }
 
-  const hasCustomDateRange = Boolean(dateFrom || dateTo);
+  const hasCustomDateRange = Boolean(
+    (filterValues?.dateFrom && filterValues.dateFrom !== initialDateRange.dateFrom) ||
+    (filterValues?.dateTo && filterValues.dateTo !== initialDateRange.dateTo)
+  );
 
   const hasActiveFilters = Boolean(
     String(searchInput || "").trim() ||
@@ -1167,7 +1176,7 @@ export default function AttendanceTable() {
     setDepartmentFilter("All");
     setAccountFilters([]);
     const { setDateRange } = paginationContext;
-    setDateRange?.({ dateFrom: "", dateTo: "" });
+    setDateRange?.(initialDateRange);
     goToPage(1);
   }
 

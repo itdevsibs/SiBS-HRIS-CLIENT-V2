@@ -10,6 +10,17 @@ import DatePicker from "../../components/ui/DatePicker.jsx";
 
 const PaginationContext = createContext(null);
 
+function toDateKey(value = new Date()) {
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
 const createDefaultPaginationState = () => ({
   page: 1,
   search: "",
@@ -489,10 +500,10 @@ export function PaginationDateRangeFilter({
   const defaultDateFrom =
     entity === "attendance"
       ? toDateKey(today)
-      : entity === "leaves"
+      : ["leaves", "schedule"].includes(entity)
         ? toDateKey(sixDaysAgo)
         : "";
-  const defaultDateTo = ["attendance", "leaves"].includes(entity)
+  const defaultDateTo = ["attendance", "leaves", "schedule"].includes(entity)
     ? toDateKey(today)
     : "";
   const dateFrom = filterValues?.dateFrom || defaultDateFrom;
