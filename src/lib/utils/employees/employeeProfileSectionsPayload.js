@@ -127,9 +127,20 @@ export function mergeEmployeeProfileSections(employee = {}, sections = {}) {
 
   for (const key of SECTION_KEYS) {
     if (!Object.prototype.hasOwnProperty.call(sections, key)) continue;
-    allowed[key] = Array.isArray(sections[key])
-      ? [...sections[key]]
-      : sections[key] ?? "";
+    const value = sections[key];
+    // Kronos emergency contact data may not yet have been migrated to the
+    // structured HRIS family table. An empty structured field must not hide
+    // a real legacy emergency contact; saved nonempty HRIS values still win.
+    if (
+      (key === "emergencyName" || key === "emergencyPhone") &&
+      (value === null || value === undefined || String(value).trim() === "") &&
+      String(employee?.[key] ?? "").trim()
+    ) {
+      continue;
+    }
+    allowed[key] = Array.isArray(value)
+      ? [...value]
+      : value ?? "";
   }
 
   return {

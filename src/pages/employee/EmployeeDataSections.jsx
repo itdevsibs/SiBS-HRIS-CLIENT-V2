@@ -813,6 +813,13 @@ export function PersonalSection({
                 </div>
               </Panel>
             ))}
+            {hasValue(employee?.personalEmail) && (
+              <Panel title="Personal Email">
+                <p className="break-all rounded-[10px] bg-sibs-surface p-3 text-sm font-bold text-sibs-navy">
+                  {employee.personalEmail}
+                </p>
+              </Panel>
+            )}
           </div>
         )
       )}
@@ -822,7 +829,6 @@ export function PersonalSection({
           <Panel title="Update Address Details">
             <div className="space-y-4">
               <FieldControl label="Residential Address" type="textarea" rows={3} value={employee?.residentialAddress} onChange={(v) => onChange("residentialAddress", v)} required />
-              <FieldControl label="Permanent Address" type="textarea" rows={3} value={employee?.permanentAddress} onChange={(v) => onChange("permanentAddress", v)} required />
               <FieldControl label="Work Setup" type="select" options={["Hybrid", "WFH", "On-site", "Onsite"]} value={employee?.workSetup} onChange={(v) => onChange("workSetup", v)} className="max-w-sm" />
             </div>
           </Panel>
@@ -831,7 +837,15 @@ export function PersonalSection({
             <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
               {[
                 ["Residential Address", employee?.residentialAddress, "orange"],
-                ["Permanent Address", employee?.permanentAddress, "navy"],
+                ...(hasValue(employee?.emergencyAddress)
+                  ? [["Emergency Address (Kronos)", employee.emergencyAddress, "orange"]]
+                  : []),
+                ...(hasValue(employee?.mailingAddress)
+                  ? [["Mailing Address (Kronos)", employee.mailingAddress, "navy"]]
+                  : []),
+                ...(hasValue(employee?.secondaryAddress)
+                  ? [["Secondary Address (Kronos)", employee.secondaryAddress, "orange"]]
+                  : []),
               ].map(([label, value, accent]) => (
                 <Panel key={label} title={label} accent={accent}>
                   <p className={`min-h-24 rounded-[10px] bg-sibs-surface p-4 text-sm font-bold leading-6 ${hasValue(value) ? "text-sibs-navy" : "italic text-sibs-muted"}`}>
@@ -1097,6 +1111,12 @@ export function FamilySection({
                 <div className="mt-4 grid grid-cols-1 gap-3 border-t border-sibs-border pt-4 sm:grid-cols-2">
                   <div className="flex items-center gap-2 text-xs font-bold text-sibs-navy"><Phone size={15} className="text-sibs-muted" />{employee?.emergencyPhone || "—"}</div>
                   <div className="flex min-w-0 items-center gap-2 text-xs font-semibold text-sibs-muted"><Mail size={15} className="shrink-0 text-sibs-muted" /><span className="truncate">{employee?.emergencyEmail || "—"}</span></div>
+                  {hasValue(employee?.emergencyAddress) && (
+                    <div className="flex min-w-0 items-start gap-2 text-xs font-semibold text-sibs-navy sm:col-span-2">
+                      <span className="shrink-0 text-sibs-muted">Emergency Address:</span>
+                      <span className="break-words">{employee.emergencyAddress}</span>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

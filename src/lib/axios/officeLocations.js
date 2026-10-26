@@ -15,7 +15,10 @@ export async function getOfficeLocations() {
   try {
     const response = await api.get(BASE_PATH, { withCredentials: true });
 
-    return Array.isArray(response.data?.data) ? response.data.data : [];
+    return {
+      data: Array.isArray(response.data?.data) ? response.data.data : [],
+      summary: response.data?.summary ?? null,
+    };
   } catch (error) {
     throw new Error(
       getErrorMessage(error, "Unable to load office location counts."),

@@ -199,6 +199,12 @@ export function FamilySection({
                 <div className="mt-4 grid grid-cols-1 gap-3 border-t border-sibs-border-subtle pt-4 sm:grid-cols-2">
                   <div className="flex items-center gap-2 text-xs font-bold text-sibs-navy"><Phone size={15} className="text-sibs-muted" />{employee?.emergencyPhone || "—"}</div>
                   <div className="flex min-w-0 items-center gap-2 text-xs font-semibold text-sibs-navy"><Mail size={15} className="shrink-0 text-sibs-muted" /><span className="truncate">{employee?.emergencyEmail || "—"}</span></div>
+                  {employee?.emergencyAddress && (
+                    <div className="min-w-0 text-xs font-semibold text-sibs-navy sm:col-span-2">
+                      <span className="text-sibs-muted">Emergency Address: </span>
+                      <span className="break-words">{employee.emergencyAddress}</span>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Building2, MapPin, RefreshCw, UsersRound } from "lucide-react";
+import { AlertCircle, Building2, MapPin, RefreshCw, UsersRound } from "lucide-react";
 
 import Header from "../../components/layout/Header";
 import {
@@ -139,6 +139,12 @@ function LocationCard({ location, loading, index = 0 }) {
                   </span>
                 )}
               </div>
+              {safeCount(location.sharedSiteAllocatedCount) > 0 ? (
+                <p className="mt-1 text-[11px] font-semibold text-sibs-muted">
+                  Includes {safeCount(location.sharedSiteAllocatedCount).toLocaleString()} Both Sites
+                  {safeCount(location.sharedSiteAllocatedCount) === 1 ? " employee" : " employees"} for reporting
+                </p>
+              ) : null}
             </div>
 
             <span className="inline-flex h-10 w-10 items-center justify-center rounded-[10px] bg-sibs-surface text-sibs-navy">
@@ -153,6 +159,7 @@ function LocationCard({ location, loading, index = 0 }) {
 
 export default function OfficeLocationsPage() {
   const [locations, setLocations] = useState(DEFAULT_LOCATIONS);
+  const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
@@ -164,7 +171,8 @@ export default function OfficeLocationsPage() {
     setErrorMessage("");
 
     try {
-      const data = await getOfficeLocations();
+      const { data, summary: locationSummary } = await getOfficeLocations();
+      setSummary(locationSummary);
       const byId = new Map(data.map((item) => [Number(item.id), item]));
 
       setLocations(
@@ -178,6 +186,7 @@ export default function OfficeLocationsPage() {
         })),
       );
     } catch (error) {
+      setSummary(null);
       setErrorMessage(error?.message || "Unable to load office location counts.");
     } finally {
       setLoading(false);
@@ -191,11 +200,25 @@ export default function OfficeLocationsPage() {
 
   const totalActiveEmployees = useMemo(
     () =>
-      locations
-        .filter((location) => !location.comingSoon)
-        .reduce((total, location) => total + safeCount(location.employeeCount), 0),
-    [locations],
+      summary?.activeHeadcount != null
+        ? safeCount(summary.activeHeadcount)
+        : locations
+            .filter((location) => !location.comingSoon)
+            .reduce((total, location) => total + safeCount(location.employeeCount), 0),
+    [locations, summary],
   );
+  const otherHeadcount = safeCount(summary?.otherHeadcount);
+  const sharedAllocatedCount = safeCount(summary?.bothSitesAllocatedCount);
+  const allocatedSiteName = summary?.bothSitesAllocatedTo === "davao" ? "Davao" : "Tagum";
+  const otherBreakdown = summary?.otherBreakdown ?? {};
+  const otherLabels = [
+    ["Both sites", otherBreakdown.bothSites],
+    ["Hybrid", otherBreakdown.hybrid],
+    ["No assigned location", otherBreakdown.unassigned],
+    ["Other location code", otherBreakdown.otherLocation],
+  ]
+    .filter(([, count]) => safeCount(count) > 0)
+    .map(([name, count]) => `${name}: ${safeCount(count).toLocaleString()}`);
 
   return (
     <div className="sibs-dashboard-shell font-jakarta">
@@ -255,7 +278,7 @@ export default function OfficeLocationsPage() {
               <MetricCard
                 title="Active Headcount"
                 value={totalActiveEmployees.toLocaleString()}
-                description="Assigned employees in Kronos biometric systems"
+                description="Active employees across all Kronos location assignments"
                 icon={UsersRound}
                 tone="coral"
                 index={1}
@@ -266,6 +289,30 @@ export default function OfficeLocationsPage() {
           {errorMessage ? (
             <div className="rounded-[10px] border border-rose-200 bg-rose-50 px-4 py-3.5 text-sm font-semibold text-rose-700">
               {errorMessage}
+            </div>
+          ) : null}
+
+          {!loading && !errorMessage && sharedAllocatedCount > 0 ? (
+            <div role="status" className="rounded-[12px] border border-blue-200 bg-blue-50 px-4 py-3 text-xs font-semibold text-sibs-navy">
+              {sharedAllocatedCount.toLocaleString()} {sharedAllocatedCount === 1 ? "employee is" : "employees are"} assigned to Both Sites in Kronos and counted under {allocatedSiteName} for reporting only.
+              The underlying Kronos site assignments are unchanged.
+            </div>
+          ) : null}
+
+          {!loading && !errorMessage && otherHeadcount > 0 ? (
+            <div
+              role="status"
+              className="flex items-start gap-3 rounded-[12px] border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"
+            >
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+              <div className="space-y-1">
+                <p className="font-bold">
+                  {otherHeadcount.toLocaleString()} active {otherHeadcount === 1 ? "employee is" : "employees are"} not assigned exclusively to Tagum or Davao.
+                </p>
+                <p className="text-xs font-medium leading-5">
+                  {otherLabels.join(" · ")}. Included in Active Headcount, but not added to either site without a matching Kronos assignment.
+                </p>
+              </div>
             </div>
           ) : null}
 

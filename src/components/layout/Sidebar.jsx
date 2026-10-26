@@ -903,6 +903,11 @@ export default function Sidebar() {
   useEffect(() => {
     if (!mounted || loading || !user) return;
 
+    // Skip costly notification count reads on the Workforce Overview. They
+    // fetch complete leads/position lists and contend with its Kronos load.
+    // Counts refresh as usual after navigation to another page.
+    if (pathname === "/recruitment/workforce-hiring-overview") return;
+
     if (!ADMIN_ROLES.includes(normalizeRole(user.role))) {
       const resetTimer = window.setTimeout(() => {
         setApprovalRequestNotificationCount(0);
