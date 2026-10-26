@@ -68,10 +68,11 @@ export async function getLeaves({
 
 export async function getLeavesSummary() {
   try {
-    const res = await api.get("/api/leaves/summary");
+    const res = await api.get("/api/leaves/summary/sidebar", { timeout: 10000 });
     return res.data;
   } catch (err) {
-    console.error("GET LEAVES SUMMARY API ERROR:", err);
+    // A temporary Kronos outage should not flood every page console;
+    // the existing sidebar effect retains the last verified notification.
 
     return {
       success: false,

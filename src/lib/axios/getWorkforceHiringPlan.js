@@ -60,6 +60,64 @@ async function getCachedWorkforceRead({
   return request;
 }
 
+// A large Kronos snapshot should never keep a single browser request open
+// for minutes: the proxy or server can close that connection with Axios
+// `Network Error` even if the calculation is still running. Start one job
+// and poll it with short, independently recoverable HTTP requests.
+const WORKFORCE_JOB_POLL_MS = 2500;
+const WORKFORCE_JOB_MAX_MS = 10 * 60 * 1000;
+function sleepWorkforceJob(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+async function getWorkforceJobResult(path, params) {
+  const start = await api.get(path, {
+    params,
+    withCredentials: true,
+    timeout: 15000,
+  });
+  if (!start.data?.success || !start.data?.jobId) {
+    throw new Error(start.data?.message || "Unable to start workforce data request.");
+  }
+  const jobId = start.data.jobId;
+  const started = Date.now();
+  let consecutiveNetworkFailures = 0;
+  while (Date.now() - started < WORKFORCE_JOB_MAX_MS) {
+    await sleepWorkforceJob(WORKFORCE_JOB_POLL_MS);
+    let response;
+    try {
+      response = await api.get(`${path}/${encodeURIComponent(jobId)}`, {
+        withCredentials: true,
+        timeout: 15000,
+      });
+      consecutiveNetworkFailures = 0;
+    } catch (error) {
+      // Transient network failures during a long job shouldn't trigger
+      // another full Kronos snapshot. A lost/restarted server is still an
+      // error after a few attempts, and must not appear as zero workforce.
+      const retriable = !error?.response && (error?.code === "ERR_NETWORK" || error?.code === "ECONNABORTED" || error?.code === "ETIMEDOUT");
+      if (retriable && ++consecutiveNetworkFailures <= 3) continue;
+      throw error;
+    }
+    const payload = response.data;
+    if (!payload?.success) throw new Error(payload?.message || "Invalid workforce job response.");
+    if (payload.status === "ready") {
+      if (payload.result?.success === false) {
+        const issue = new Error(payload.result?.error || payload.result?.message || "Workforce API source failed.");
+        issue.code = payload.result?.code || null;
+        throw issue;
+      }
+      return payload.result;
+    }
+    if (payload.status === "failed") {
+      const issue = new Error(payload.result?.error || payload.result?.message || "Workforce data could not be loaded.");
+      issue.code = payload.result?.code || null;
+      throw issue;
+    }
+    if (!["queued", "running"].includes(payload.status)) throw new Error("Unexpected workforce job status.");
+  }
+  throw new Error("Workforce data processing exceeded 10 minutes. Check the Kronos API and backend logs.");
+}
+
 function clearWorkforceHiringPlanReadCache() {
   workforceReadCache.clear();
 }
@@ -156,6 +214,39 @@ export async function getWorkforceHiringPlanAccountOptions(
   }
 }
 
+// Quick, independent roster-only read. Other weekly KPIs require the full
+// report and must stay in loading state until that report is verified.
+// A missing route is an HRIS client/server version mismatch, not an empty roster.
+// Avoid repeatedly requesting it until the page is reloaded after deployment.
+let rosterPreviewRouteMissing = false;
+const unavailableRosterPreview = Object.freeze({ success: false, preliminary: false, unavailable: true });
+export async function getWorkforceHiringPlanRosterPreview(cluster, startDate, endDate, account) {
+  if (rosterPreviewRouteMissing) return unavailableRosterPreview;
+  return getCachedWorkforceRead({
+    name: "roster-preview",
+    params: { cluster, startDate, endDate, account },
+    ttlMs: 30_000,
+    loader: async () => {
+      try {
+        const response = await api.get("/api/weekly-hiring-plan/accounts/roster-preview", {
+          params: { cluster, startDate, endDate, account },
+          withCredentials: true,
+          timeout: 20_000,
+        });
+        if (!response.data?.success) throw new Error(response.data?.message || "Roster preview failed");
+        return response.data;
+      } catch (error) {
+        if (error?.response?.status === 404) {
+          rosterPreviewRouteMissing = true;
+          console.warn("[Workforce] Roster preview route is missing on the running HRIS server; apply the matching server patch and restart the backend.");
+          return unavailableRosterPreview;
+        }
+        throw error;
+      }
+    },
+  });
+}
+
 export async function getWorkforceHiringPlanAccounts(
   cluster = "All",
   startDate = "",
@@ -178,13 +269,7 @@ export async function getWorkforceHiringPlanAccounts(
       params,
       ttlMs: 10000,
       loader: async () => {
-        const res = await api.get("/api/weekly-hiring-plan/accounts", {
-          params,
-          withCredentials: true,
-          // Surface a recoverable error instead of displaying loading forever
-          // if the upstream Kronos collection takes excessively long.
-          timeout: 60000,
-        });
+        const res = { data: await getWorkforceJobResult("/api/weekly-hiring-plan/accounts/jobs", params) };
 
         if (res.data?.success === false) {
           const responseError = new Error(res.data?.error || res.data?.message || "Workforce accounts request failed.");
@@ -256,15 +341,7 @@ export async function getWorkforceHiringPlanTrends({
       params,
       ttlMs: 15000,
       loader: async () => {
-        const response = await api.get(
-          "/api/weekly-hiring-plan/accounts/trends",
-          {
-            params,
-            withCredentials: true,
-          },
-        );
-
-        return response.data;
+        return getWorkforceJobResult("/api/weekly-hiring-plan/accounts/trends/jobs", params);
       },
     });
   } catch (error) {

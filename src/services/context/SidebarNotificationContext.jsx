@@ -8,6 +8,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { useLocation } from "react-router-dom";
 
 import { useUser } from "./UserContext";
 import { getLeavesSummary } from "../../lib/axios/getLeaves";
@@ -252,21 +253,49 @@ export function SidebarNotificationProvider({ children }) {
   }, [userNotificationId]);
 
 
+  const { pathname } = useLocation();
+  // The workforce view already performs large Kronos reads. Global leave
+  // notifications must not launch a competing leave-history scan on that page.
+  const deferLeaveBadge = pathname === "/recruitment/workforce-hiring-overview";
+  const hasAuthenticatedUser = Boolean(user);
   useEffect(() => {
     let cancelled = false;
+    let inFlight = false;
+    let nextAllowedAt = 0;
 
     async function refreshPendingLeaveNotification() {
-      if (!user) {
+      if (!hasAuthenticatedUser) {
         if (!cancelled) setLeavePendingNotification(null);
         return;
       }
-
-      const result = await getLeavesSummary();
+      if (deferLeaveBadge) return;
+      // React strict mode, focus events, and the interval may fire together.
+      // Only one request is allowed, and a failed source is backed off.
+      if (inFlight || Date.now() < nextAllowedAt) return;
+      inFlight = true;
+      nextAllowedAt = Date.now() + 15_000;
+      let result;
+      try {
+        result = await getLeavesSummary();
+      } catch {
+        result = null;
+      } finally {
+        inFlight = false;
+      }
 
       if (cancelled) return;
 
+      if (result?.success && result?.ready === false) {
+        // A calculation is queued or running on the server. This is not an
+        // error and should never clear a previously verified badge.
+        nextAllowedAt = Date.now() + 15_000;
+        return;
+      }
+
       if (!result?.success || !result?.data) {
-        setLeavePendingNotification(null);
+        // A temporary Kronos failure is not proof there are no pending
+        // requests. Preserve an already known count rather than reset it.
+        nextAllowedAt = Date.now() + 5 * 60_000;
         return;
       }
 
@@ -300,11 +329,11 @@ export function SidebarNotificationProvider({ children }) {
       });
     }
 
-    refreshPendingLeaveNotification();
+    if (!deferLeaveBadge) refreshPendingLeaveNotification();
 
     const interval = window.setInterval(
       refreshPendingLeaveNotification,
-      60_000,
+      20_000,
     );
 
     const handleWindowFocus = () => {
@@ -318,7 +347,7 @@ export function SidebarNotificationProvider({ children }) {
       window.clearInterval(interval);
       window.removeEventListener("focus", handleWindowFocus);
     };
-  }, [user, userNotificationId]);
+  }, [hasAuthenticatedUser, userNotificationId, deferLeaveBadge]);
 
   useEffect(() => {
     let cancelled = false;
