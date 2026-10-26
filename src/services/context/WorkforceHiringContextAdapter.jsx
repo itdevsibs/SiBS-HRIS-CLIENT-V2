@@ -665,8 +665,8 @@ export function useWorkforceHiringView(optional = false) {
       ),
       isLoadingAccountData: Boolean(weeklyVersion.accountDataLoading),
       isLoadingTrends: Boolean(tables.trendsLoading),
-      error: "",
-      refetch: () => {},
+      error: weeklyVersion.accountDataError || "",
+      refetch: weeklyVersion.retryAccountData || (() => {}),
     },
   };
 }

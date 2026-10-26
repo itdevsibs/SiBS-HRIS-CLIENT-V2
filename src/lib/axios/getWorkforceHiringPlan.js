@@ -162,6 +162,7 @@ export async function getWorkforceHiringPlanAccounts(
   endDate = "",
   account = "All",
   includeWeeklySeries = true,
+  failOnError = false,
 ) {
   const params = {
     cluster,
@@ -180,9 +181,16 @@ export async function getWorkforceHiringPlanAccounts(
         const res = await api.get("/api/weekly-hiring-plan/accounts", {
           params,
           withCredentials: true,
+          // Surface a recoverable error instead of displaying loading forever
+          // if the upstream Kronos collection takes excessively long.
+          timeout: 60000,
         });
 
-        console.log("getWorkforceHiringPlanAccounts res:", res.data);
+        if (res.data?.success === false) {
+          const responseError = new Error(res.data?.error || res.data?.message || "Workforce accounts request failed.");
+          responseError.code = res.data?.code || null;
+          throw responseError;
+        }
 
         return res.data?.data || [];
       },
@@ -193,6 +201,20 @@ export async function getWorkforceHiringPlanAccounts(
       err?.response?.status,
       err?.response?.data || err?.message,
     );
+
+    // The Overview cannot treat a failed 500 response as a genuine zero-HC
+    // week. Preserve existing empty-list behavior for legacy consumers.
+    if (failOnError) {
+      const issue = new Error(
+        err?.response?.data?.error ||
+        err?.response?.data?.message ||
+        err?.message ||
+        "Workforce account data is temporarily unavailable.",
+      );
+      issue.status = err?.response?.status || err?.status || null;
+      issue.code = err?.response?.data?.code || err?.code || null;
+      throw issue;
+    }
 
     return [];
   }

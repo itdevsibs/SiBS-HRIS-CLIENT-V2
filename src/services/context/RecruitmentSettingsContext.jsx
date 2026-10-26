@@ -350,8 +350,13 @@ export function RecruitmentSettingsProvider({
   const { user, loading: userLoading } = useUser();
 
   const publicRoute = isPublicRecruitmentPath(location.pathname);
+  // Workforce Overview has its own heavy Kronos read. Its summary does not
+  // consume interview forms or the complete available-positions list; load
+  // these when visiting a recruitment page instead of blocking the overview.
+  const isWorkforceOverview =
+    location.pathname === "/recruitment/workforce-hiring-overview";
   const canLoadRecruitmentSettings =
-    Boolean(user) && !userLoading && !publicRoute;
+    Boolean(user) && !userLoading && !publicRoute && !isWorkforceOverview;
 
   const questionSaveQueueRef =
     useRef(Promise.resolve());

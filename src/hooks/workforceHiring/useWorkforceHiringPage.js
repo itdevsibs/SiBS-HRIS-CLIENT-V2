@@ -179,6 +179,7 @@ export default function useWorkforceHiringPage({
   const [accountOptionsLoading, setAccountOptionsLoading] = useState(false);
   const [accountDataLoading, setAccountDataLoading] = useState(false);
   const [accountDataReady, setAccountDataReady] = useState(false);
+  const [accountDataError, setAccountDataError] = useState("");
   const [accountSelectionPending, setAccountSelectionPending] = useState(
     requireFilterSelection,
   );
@@ -353,6 +354,9 @@ export default function useWorkforceHiringPage({
         endDate: weekEnd,
       });
 
+      if (result?.success === false) {
+        throw new Error(result?.message || "Unable to load workforce trends.");
+      }
       setTrendData(result);
 
       if (fastOverviewMode) {
@@ -1158,6 +1162,7 @@ export default function useWorkforceHiringPage({
     try {
       setAccountDataReady(false);
       setAccountDataLoading(true);
+      setAccountDataError("");
 
       let accounts = await getWorkforceHiringPlanAccounts(
         selectedClusterRequestValue,
@@ -1165,6 +1170,7 @@ export default function useWorkforceHiringPage({
         activeWeekEndDate,
         selectedAccountRequestValue,
         !fastOverviewMode,
+        fastOverviewMode,
       );
 
       if (!weeklyAccess.hasFullAccess) {
@@ -1287,11 +1293,17 @@ export default function useWorkforceHiringPage({
 
       const normalizedAccounts = Array.from(uniqueAccountsMap.values());
       setRemoteAccounts(normalizedAccounts);
+      setAccountDataError("");
       setAccountDataReady(true);
       return normalizedAccounts;
     } catch (error) {
       console.error("FETCH ACCOUNTS BY CLUSTER ERROR:", error);
       setRemoteAccounts([]);
+      setAccountDataError(
+        error?.code
+          ? `${error.message} (${error.code})`
+          : error?.message || "Failed to load workforce account data.",
+      );
       setAccountDataReady(false);
       return [];
     } finally {
@@ -1343,6 +1355,7 @@ export default function useWorkforceHiringPage({
       }
     } else if (!canLoadWorkforceData) {
       setRemoteAccounts([]);
+      setAccountDataError("");
       setAccountDataReady(false);
       setAccountDataLoading(false);
     }
@@ -3095,6 +3108,8 @@ export default function useWorkforceHiringPage({
       accountsLoading,
       accountOptionsLoading,
       accountDataLoading,
+      accountDataError,
+      retryAccountData: fetchAccountsByCluster,
       accountSelectionPending,
       filteredAccountOptions,
       isAllClustersSelected,

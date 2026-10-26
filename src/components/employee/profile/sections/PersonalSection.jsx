@@ -69,7 +69,7 @@ export function PersonalSection({
     ],
     address: [
       "Registered Addresses & Work Environment",
-      "Residential, permanent, and work arrangement records.",
+      "Residential, additional addresses, and work arrangement records.",
       MapPin,
     ],
     ids: [
@@ -240,7 +240,6 @@ export function PersonalSection({
           <ProfilePanel title="Update Address Details">
             <div className="space-y-3">
               <ProfileFieldControl label="Residential Address" type="textarea" rows={2} value={employee?.residentialAddress} onChange={(v) => onChange("residentialAddress", v)} required />
-              <ProfileFieldControl label="Permanent Address" type="textarea" rows={2} value={employee?.permanentAddress} onChange={(v) => onChange("permanentAddress", v)} required />
               <ProfileFieldControl label="Work Setup" type="select" options={["Hybrid", "WFH", "On-site", "Onsite"]} value={employee?.workSetup} onChange={(v) => onChange("workSetup", v)} className="max-w-sm" />
             </div>
           </ProfilePanel>
@@ -249,7 +248,15 @@ export function PersonalSection({
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               {[
                 ["Residential Address", employee?.residentialAddress, "orange"],
-                ["Permanent Address", employee?.permanentAddress, "navy"],
+                ...(hasValue(employee?.emergencyAddress)
+                  ? [["Emergency Address (Kronos)", employee.emergencyAddress, "orange"]]
+                  : []),
+                ...(hasValue(employee?.mailingAddress)
+                  ? [["Mailing Address (Kronos)", employee.mailingAddress, "navy"]]
+                  : []),
+                ...(hasValue(employee?.secondaryAddress)
+                  ? [["Secondary Address (Kronos)", employee.secondaryAddress, "orange"]]
+                  : []),
               ].map(([label, value, accent]) => (
                 <ProfilePanel key={label} title={label} accent={accent} className="p-3.5 2xl:p-4">
                   <p className={`min-h-16 2xl:min-h-20 rounded-xl bg-slate-50 p-3 sibs-text-xs font-semibold leading-relaxed ${hasValue(value) ? "text-sibs-navy" : "italic text-sibs-faint"}`}>

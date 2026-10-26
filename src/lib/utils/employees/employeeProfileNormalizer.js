@@ -83,6 +83,7 @@ export function normalizeEmployeeData(employee) {
       employee?.emailAddress,
       employee?.email_address,
       employee?.gy_email,
+      employee?.gy_emp_email,
       employee?.gy_user_email,
     ),
 
@@ -93,6 +94,7 @@ export function normalizeEmployeeData(employee) {
       employee?.mobileNumber,
       employee?.mobile_number,
       employee?.gy_contact_num,
+      employee?.gy_emp_mobile,
     ),
 
     telephone: firstValue(
@@ -105,16 +107,39 @@ export function normalizeEmployeeData(employee) {
       employee?.residentialAddress,
       employee?.residential_address,
       employee?.homeAddress,
+      employee?.gy_home_address,
       employee?.address,
-      employee?.location,
     ),
 
+    // Keep site/location and mailing/secondary addresses distinct from a
+    // permanent home address; these fields do not mean the same thing.
     permanentAddress: firstValue(
       employee?.permanentAddress,
       employee?.permanent_address,
-      employee?.homeAddress,
-      employee?.address,
-      employee?.location,
+    ),
+
+    emergencyAddress: firstValue(
+      employee?.emergencyAddress,
+      employee?.emergency_address,
+      employee?.gy_emrg_address,
+    ),
+
+    mailingAddress: firstValue(
+      employee?.mailingAddress,
+      employee?.mailing_address,
+      employee?.gy_mail_address,
+    ),
+
+    secondaryAddress: firstValue(
+      employee?.secondaryAddress,
+      employee?.secondary_address,
+      employee?.gy_second_address,
+    ),
+
+    personalEmail: firstValue(
+      employee?.personalEmail,
+      employee?.personal_email,
+      employee?.gy_personal_email,
     ),
 
     location: firstValue(
@@ -278,6 +303,7 @@ export function normalizeEmployeeData(employee) {
       employee?.emergencyName,
       employee?.emergencyContactName,
       employee?.emergency_contact_name,
+      employee?.gy_ecperson,
     ),
     emergencyRelationship: firstValue(
       employee?.emergencyRelationship,
@@ -288,6 +314,7 @@ export function normalizeEmployeeData(employee) {
       employee?.emergencyPhone,
       employee?.emergencyContactNumber,
       employee?.emergency_contact_number,
+      employee?.gy_ecnumber,
     ),
     emergencyEmail: firstValue(
       employee?.emergencyEmail,
