@@ -9,7 +9,7 @@ import {
   Users,
 } from "lucide-react";
 import { useWorkforceHiringView } from "@/services/context/WorkforceHiringContextAdapter";
-import { MetricGridSkeleton } from "@/components/ui";
+import { MetricGridSkeleton, MetricCardSkeleton } from "@/components/ui";
 import KpiCard from "./shared/KpiCard";
 import { WORKFORCE_OVERVIEW_METRIC_LABELS } from "../../../lib/utils/workforceHiringOverview/workforceHiringOverviewConstants";
 
@@ -21,6 +21,32 @@ export default function WorkforceHiringOverviewSummary() {
   const summary = overview?.summary || {};
 
   if (status?.isLoading) {
+    const preview = status?.rosterPreview;
+    if (preview && Number.isFinite(preview.actualHeadcount)) {
+      return (
+        <section aria-label="Workforce roster preview" className="space-y-2">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-5 2xl:grid-cols-9 xl:gap-3 2xl:gap-4">
+            {WORKFORCE_OVERVIEW_METRIC_LABELS.map((label) =>
+              label === "Actual HC" ? (
+                <KpiCard
+                  key={label}
+                  title={label}
+                  value={preview.actualHeadcount}
+                  subtitle="Roster preview"
+                  icon={Users}
+                  tone="navy"
+                />
+              ) : (
+                <MetricCardSkeleton key={label} label={label} />
+              ),
+            )}
+          </div>
+          <p role="status" className="px-1 text-xs text-sibs-muted">
+            Roster preview as of {preview.asOfDate}. Attendance, attrition, and hiring metrics are still being calculated from Kronos; no unavailable value is shown as zero.
+          </p>
+        </section>
+      );
+    }
     return (
       <MetricGridSkeleton
         labels={WORKFORCE_OVERVIEW_METRIC_LABELS}

@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   getWorkforceHiringPlanAccountOptions,
   getWorkforceHiringPlanAccounts,
+  getWorkforceHiringPlanRosterPreview,
   getWorkforceHiringPlanAccountTrends,
   getWorkforceHiringPlanSixWeekTable,
   getWorkforceHiringPlanForecast,
@@ -180,6 +181,8 @@ export default function useWorkforceHiringPage({
   const [accountDataLoading, setAccountDataLoading] = useState(false);
   const [accountDataReady, setAccountDataReady] = useState(false);
   const [accountDataError, setAccountDataError] = useState("");
+  const [rosterPreview, setRosterPreview] = useState(null);
+  const rosterPreviewSequence = useRef(0);
   const [accountSelectionPending, setAccountSelectionPending] = useState(
     requireFilterSelection,
   );
@@ -1163,6 +1166,26 @@ export default function useWorkforceHiringPage({
       setAccountDataReady(false);
       setAccountDataLoading(true);
       setAccountDataError("");
+      const previewSequence = ++rosterPreviewSequence.current;
+      setRosterPreview(null);
+      if (fastOverviewMode && weeklyAccess.hasFullAccess) {
+        // Do not block the main workforce job on a nonessential preview.
+        // In restricted scopes the preview is intentionally disabled rather
+        // than risk disclosing company-wide headcount.
+        getWorkforceHiringPlanRosterPreview(
+          selectedClusterRequestValue,
+          activeWeekStartDate,
+          activeWeekEndDate,
+          selectedAccountRequestValue,
+        ).then((preview) => {
+          if (previewSequence === rosterPreviewSequence.current &&
+              preview?.preliminary && Number.isFinite(preview.actualHeadcount)) {
+            setRosterPreview(preview);
+          }
+        }).catch((error) => {
+          console.info("[Workforce] Roster preview unavailable:", error.message);
+        });
+      }
 
       let accounts = await getWorkforceHiringPlanAccounts(
         selectedClusterRequestValue,
@@ -3109,6 +3132,7 @@ export default function useWorkforceHiringPage({
       accountOptionsLoading,
       accountDataLoading,
       accountDataError,
+      rosterPreview,
       retryAccountData: fetchAccountsByCluster,
       accountSelectionPending,
       filteredAccountOptions,
