@@ -137,6 +137,11 @@ export default function ApplicantLeadMobileCard({
                 type="button"
                 disabled={isSendingApplicationLink}
                 onClick={(event) => onRequestSendEmail?.(event, lead)}
+                aria-label={
+                  applicationLinkSent
+                    ? `Resend application link email to ${fullName}`
+                    : `Send application link email to ${fullName}`
+                }
                 className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-[10px] font-extrabold transition active:scale-95 disabled:cursor-not-allowed ${
                   applicationLinkSent
                     ? "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
