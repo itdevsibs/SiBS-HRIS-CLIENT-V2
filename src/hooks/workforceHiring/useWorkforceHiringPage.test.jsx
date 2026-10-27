@@ -6,6 +6,7 @@ const state = vi.hoisted(() => ({ snapshot: null, reads: [] }));
 const api = vi.hoisted(() => ({
   getWorkforceHiringPlanWeeks: vi.fn(), getWorkforceHiringPlanFilterOptions: vi.fn(),
   getWorkforceHiringPlanAccountOptions: vi.fn(), getWorkforceHiringPlanAccounts: vi.fn(),
+  getWorkforceHiringPlanRosterPreview: vi.fn(),
   getWorkforceHiringPlanAccountTrends: vi.fn(), getWorkforceHiringPlanSixWeekTable: vi.fn(),
   getWorkforceHiringPlanForecast: vi.fn(), lockWorkforceHiringPlanSnapshot: vi.fn(),
   openWorkforceHiringPlanFile: vi.fn(), saveRequiredHeadcount: vi.fn(),
@@ -21,6 +22,7 @@ beforeEach(() => {
   api.getWorkforceHiringPlanWeeks.mockResolvedValue([{ startDate: "2026-10-19", endDate: "2026-10-25", weekNumber: 43 }]);
   api.getWorkforceHiringPlanFilterOptions.mockResolvedValue({ clusters: ["C"], accounts: [] });
   api.getWorkforceHiringPlanAccountOptions.mockResolvedValue([{ id: 4, accountName: "A" }, { id: 5, accountName: "B" }]);
+  api.getWorkforceHiringPlanRosterPreview.mockResolvedValue(null);
   api.getWorkforceHiringPlanAccountTrends.mockResolvedValue({ success: true, sixWeekTableRows: [], sixWeekTableWeeks: [] });
   api.getWorkforceHiringPlanAccounts.mockImplementation((...args) => new Promise((resolve, reject) => state.reads.push({ args, resolve, reject })));
 });
