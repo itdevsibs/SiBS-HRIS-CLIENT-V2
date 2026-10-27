@@ -9,6 +9,7 @@ import { CalendarDays, ChevronDown, ChevronRight, ChevronUp, GripHorizontal, Rot
 import { useWorkforceHiringView } from "../../../services/context/WorkforceHiringContextAdapter";
 import { usePagination } from "../../../services/context/PaginationContext";
 import PaginationTable from "../../../services/pagination/PaginationTable";
+import WorkforceReadNotice from "./shared/WorkforceReadNotice";
 import {
   DataCard,
   ResponsiveTableShell,
@@ -25,9 +26,7 @@ import {
 const DETAILS_ENTITY = "workforce-hiring-overview-details";
 const TABLE_COLUMN_COUNT = 24;
 
-const HISTORY_FACTORS = [0.88, 0.9, 0.93, 0.95, 0.98, 1];
-const ABSENTEEISM_OFFSETS = [-0.8, -0.6, 0.2, -0.3, 0.1, 0];
-const ATTRITION_OFFSETS = [-0.6, -0.5, -0.2, 0.1, 0.2, 0];
+
 
 
 const WORKFORCE_RISK_OPTIONS = [
@@ -298,16 +297,8 @@ function firstDefined(source = {}, keys = [], fallback = 0) {
   return fallback;
 }
 
-function buildFilteredTotals(rows = [], fallbackTotals = {}) {
-  if (!Array.isArray(rows) || rows.length === 0) {
-    return {
-      ...(fallbackTotals || {}),
-      cluster: "TOTAL / AVERAGE",
-      account: "",
-    };
-  }
-
-  const sum = rows.reduce(
+export function buildFilteredTotals(rows = [], fallbackTotals = {}) {
+  const sum = (Array.isArray(rows) ? rows : []).reduce(
     (total, row) => {
       total.requiredHeadcount += toNumber(row.requiredHeadcount);
       total.actualHeadcount += toNumber(row.actualHeadcount);
@@ -560,73 +551,6 @@ function normalizeHistoryRow(historyRow = {}, fallbackRow = {}, period = "") {
   };
 }
 
-function buildFallbackHistory(row = {}, selectedWeekNumber = 28) {
-  const endWeek = Math.max(6, Number(selectedWeekNumber) || 28);
-  const startWeek = endWeek - 5;
-  const currentRequired = toNumber(row.requiredHeadcount);
-  const currentActual = toNumber(row.actualHeadcount);
-  const currentAbsPercentage = toNumber(row.absenteeismPercentage);
-  const currentAttPercentage = toNumber(row.attritionPercentage);
-
-  return HISTORY_FACTORS.map((factor, index) => {
-    const period = `Week ${startWeek + index}`;
-
-    if (index === HISTORY_FACTORS.length - 1) {
-      return normalizeHistoryRow({ ...row, period }, row, period);
-    }
-
-    const requiredHeadcount = Math.round(
-      currentRequired * (0.95 + (factor - 0.88) * 0.4),
-    );
-    const actualHeadcount = Math.round(currentActual * factor);
-    const absenteeismPercentage = Math.max(
-      0,
-      Number(
-        (currentAbsPercentage + ABSENTEEISM_OFFSETS[index]).toFixed(2),
-      ),
-    );
-    const attritionPercentage = Math.max(
-      0,
-      Number((currentAttPercentage + ATTRITION_OFFSETS[index]).toFixed(2)),
-    );
-    const absenteeism = Math.round(
-      (actualHeadcount * absenteeismPercentage) / 100,
-    );
-    const attrition = Math.round(
-      (actualHeadcount * attritionPercentage) / 100,
-    );
-    const netActualHc = Math.max(
-      0,
-      actualHeadcount - absenteeism - attrition,
-    );
-    const acceptedJo = Math.round(toNumber(row.acceptedJo) * factor);
-    const hiredCount = Math.round(toNumber(row.hiredCount) * factor);
-
-    return {
-      period,
-      requiredHeadcount,
-      actualHeadcount,
-      bufferPercentage: getPercent(
-        netActualHc - requiredHeadcount,
-        requiredHeadcount,
-      ),
-      absenteeism,
-      absenteeismPercentage,
-      attrition,
-      attritionPercentage,
-      netActualHc,
-      hiringNeeded: Math.max(0, requiredHeadcount - netActualHc),
-      acceptedJo,
-      nho: Math.round(toNumber(row.nho) * factor),
-      fst: Math.round(toNumber(row.fst) * factor),
-      pst: Math.round(toNumber(row.pst) * factor),
-      goLive: Math.round(toNumber(row.goLive) * factor),
-      hiredCount,
-      hiringRate: getPercent(hiredCount, acceptedJo),
-    };
-  });
-}
-
 function getSixWeekHistory(row = {}, selectedWeekNumber = 28) {
   const endWeek = Math.max(6, Number(selectedWeekNumber) || 28);
   const startWeek = endWeek - 5;
@@ -644,7 +568,7 @@ function getSixWeekHistory(row = {}, selectedWeekNumber = 28) {
       );
   }
 
-  return buildFallbackHistory(row, selectedWeekNumber);
+  return [];
 }
 
 
@@ -833,7 +757,7 @@ function buildAllWeeksDisplayRow(row = {}, history = []) {
   };
 }
 
-function buildPeriodDisplayRow(
+export function buildPeriodDisplayRow(
   row = {},
   selectedPeriod = "",
   selectedWeekNumber = 28,
@@ -848,13 +772,10 @@ function buildPeriodDisplayRow(
   const matchedHistoryRow =
     history.find(
       (week) => getPeriodWeekNumber(week?.period) === selectedWeek,
-    ) || history[history.length - 1];
+    );
 
   if (!matchedHistoryRow) {
-    return {
-      ...row,
-      history,
-    };
+    return null;
   }
 
   return buildSingleWeekDisplayRow(row, matchedHistoryRow, history);
@@ -1551,7 +1472,7 @@ export default function WorkforceHiringOverviewDetailsTable() {
     sixWeekTable,
     status,
   } = workforceView;
-  const isLoading = Boolean(sixWeekTable?.loading || status?.isLoading || status?.isLoadingAccounts);
+  const isLoading = Boolean(sixWeekTable?.loading);
 
   const {
     search,
@@ -1638,7 +1559,7 @@ export default function WorkforceHiringOverviewDetailsTable() {
     () =>
       sourceRows.map((row) =>
         buildPeriodDisplayRow(row, activePeriod, normalizedSelectedWeekNumber),
-      ),
+      ).filter(Boolean),
     [activePeriod, normalizedSelectedWeekNumber, sourceRows],
   );
 
@@ -1843,6 +1764,7 @@ export default function WorkforceHiringOverviewDetailsTable() {
       </div>
 
       <div className="p-3 sm:p-4">
+        {sixWeekTable?.error && <WorkforceReadNotice error={sixWeekTable.error} onRetry={status.refetch} />}
         <ResponsiveTableShell
           mobileContent={
             isLoading ? (

@@ -29,23 +29,26 @@ async function getCachedWorkforceRead({
   params = {},
   ttlMs = 5000,
   loader,
+  signal,
 }) {
+  if (signal?.aborted) throw new DOMException("Request cancelled", "AbortError");
   const key = stableRequestKey(name, params);
   const now = Date.now();
   const cached = workforceReadCache.get(key);
 
-  if (cached && now - cached.createdAt <= ttlMs) {
+  if (ttlMs > 0 && cached && now - cached.createdAt <= ttlMs) {
     return cached.value;
   }
 
-  if (workforceReadInflight.has(key)) {
-    return workforceReadInflight.get(key);
-  }
-
-  const request = Promise.resolve()
-    .then(loader)
+  let pending = workforceReadInflight.get(key);
+  if (!pending) {
+    const controller = new AbortController();
+    pending = { controller, consumers: 0 };
+    const entry = pending;
+    entry.promise = Promise.resolve()
+    .then(() => loader(controller.signal))
     .then((value) => {
-      workforceReadCache.set(key, {
+      if (ttlMs > 0) workforceReadCache.set(key, {
         createdAt: Date.now(),
         value,
       });
@@ -53,73 +56,44 @@ async function getCachedWorkforceRead({
       return value;
     })
     .finally(() => {
-      workforceReadInflight.delete(key);
+      if (workforceReadInflight.get(key) === entry) workforceReadInflight.delete(key);
     });
-
-  workforceReadInflight.set(key, request);
-  return request;
-}
-
-// A large Kronos snapshot should never keep a single browser request open
-// for minutes: the proxy or server can close that connection with Axios
-// `Network Error` even if the calculation is still running. Start one job
-// and poll it with short, independently recoverable HTTP requests.
-const WORKFORCE_JOB_POLL_MS = 2500;
-const WORKFORCE_JOB_MAX_MS = 10 * 60 * 1000;
-function sleepWorkforceJob(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-async function getWorkforceJobResult(path, params) {
-  const start = await api.get(path, {
-    params,
-    withCredentials: true,
-    timeout: 15000,
-  });
-  if (!start.data?.success || !start.data?.jobId) {
-    throw new Error(start.data?.message || "Unable to start workforce data request.");
+    workforceReadInflight.set(key, entry);
   }
-  const jobId = start.data.jobId;
-  const started = Date.now();
-  let consecutiveNetworkFailures = 0;
-  while (Date.now() - started < WORKFORCE_JOB_MAX_MS) {
-    await sleepWorkforceJob(WORKFORCE_JOB_POLL_MS);
-    let response;
-    try {
-      response = await api.get(`${path}/${encodeURIComponent(jobId)}`, {
-        withCredentials: true,
-        timeout: 15000,
+  pending.consumers += 1;
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    const finish = (callback, value) => {
+      if (settled) return;
+      settled = true;
+      signal?.removeEventListener("abort", onAbort);
+      pending.consumers -= 1;
+      callback(value);
+    };
+    const onAbort = () => {
+      finish(reject, new DOMException("Request cancelled", "AbortError"));
+      queueMicrotask(() => {
+        if (pending.consumers === 0) {
+          pending.controller.abort();
+          if (workforceReadInflight.get(key) === pending) workforceReadInflight.delete(key);
+        }
       });
-      consecutiveNetworkFailures = 0;
-    } catch (error) {
-      // Transient network failures during a long job shouldn't trigger
-      // another full Kronos snapshot. A lost/restarted server is still an
-      // error after a few attempts, and must not appear as zero workforce.
-      const retriable = !error?.response && (error?.code === "ERR_NETWORK" || error?.code === "ECONNABORTED" || error?.code === "ETIMEDOUT");
-      if (retriable && ++consecutiveNetworkFailures <= 3) continue;
-      throw error;
-    }
-    const payload = response.data;
-    if (!payload?.success) throw new Error(payload?.message || "Invalid workforce job response.");
-    if (payload.status === "ready") {
-      if (payload.result?.success === false) {
-        const issue = new Error(payload.result?.error || payload.result?.message || "Workforce API source failed.");
-        issue.code = payload.result?.code || null;
-        throw issue;
-      }
-      return payload.result;
-    }
-    if (payload.status === "failed") {
-      const issue = new Error(payload.result?.error || payload.result?.message || "Workforce data could not be loaded.");
-      issue.code = payload.result?.code || null;
-      throw issue;
-    }
-    if (!["queued", "running"].includes(payload.status)) throw new Error("Unexpected workforce job status.");
-  }
-  throw new Error("Workforce data processing exceeded 10 minutes. Check the Kronos API and backend logs.");
+    };
+    signal?.addEventListener("abort", onAbort, { once: true });
+    pending.promise.then((value) => finish(resolve, value), (error) => finish(reject, error));
+  });
 }
 
 function clearWorkforceHiringPlanReadCache() {
   workforceReadCache.clear();
+}
+
+if (typeof window !== "undefined") {
+  window.addEventListener("sibs-auth-logout-start", () => {
+    clearWorkforceHiringPlanReadCache();
+    for (const request of workforceReadInflight.values()) request.controller.abort();
+    workforceReadInflight.clear();
+  });
 }
 
 
@@ -137,8 +111,8 @@ export async function getWorkforceHiringPlanWeeks() {
           withCredentials: true,
         });
 
-        console.log("getWorkforceHiringPlanWeeks res:", res.data);
-        return res.data?.data || [];
+        if (res.data?.success !== true || !Array.isArray(res.data.data)) throw new Error(res.data?.message || "Failed to load workforce weeks.");
+        return res.data.data;
       },
     });
   } catch (err) {
@@ -148,7 +122,7 @@ export async function getWorkforceHiringPlanWeeks() {
       err?.response?.data || err?.message,
     );
 
-    return [];
+    throw new Error(err?.response?.data?.message || err.message || "Failed to load workforce weeks.", { cause: err });
   }
 }
 
@@ -186,6 +160,7 @@ export async function getWorkforceHiringPlanFilterOptions() {
 
 export async function getWorkforceHiringPlanAccountOptions(
   cluster = "All",
+  { signal } = {},
 ) {
   const params = { cluster };
 
@@ -194,10 +169,12 @@ export async function getWorkforceHiringPlanAccountOptions(
       name: "account-options",
       params,
       ttlMs: 15000,
-      loader: async () => {
+      signal,
+      loader: async (requestSignal) => {
         const res = await api.get("/api/weekly-hiring-plan/account-options", {
           params,
           withCredentials: true,
+          signal: requestSignal,
         });
 
         return res.data?.data || [];
@@ -253,7 +230,7 @@ export async function getWorkforceHiringPlanAccounts(
   endDate = "",
   account = "All",
   includeWeeklySeries = true,
-  failOnError = false,
+  { signal } = {},
 ) {
   const params = {
     cluster,
@@ -267,41 +244,22 @@ export async function getWorkforceHiringPlanAccounts(
     return await getCachedWorkforceRead({
       name: "accounts",
       params,
-      ttlMs: 10000,
-      loader: async () => {
-        const res = { data: await getWorkforceJobResult("/api/weekly-hiring-plan/accounts/jobs", params) };
-
-        if (res.data?.success === false) {
-          const responseError = new Error(res.data?.error || res.data?.message || "Workforce accounts request failed.");
-          responseError.code = res.data?.code || null;
-          throw responseError;
+      ttlMs: 0,
+      signal,
+      loader: async (requestSignal) => {
+        const res = await api.get("/api/weekly-hiring-plan/accounts", {
+          params,
+          withCredentials: true,
+          signal: requestSignal,
+        });
+        if (res.data?.success !== true || !Array.isArray(res.data.data)) {
+          throw new Error(res.data?.message || "Failed to fetch workforce accounts.");
         }
-
-        return res.data?.data || [];
+        return res.data.data;
       },
     });
   } catch (err) {
-    console.error(
-      "Axios getWorkforceHiringPlanAccounts API error:",
-      err?.response?.status,
-      err?.response?.data || err?.message,
-    );
-
-    // The Overview cannot treat a failed 500 response as a genuine zero-HC
-    // week. Preserve existing empty-list behavior for legacy consumers.
-    if (failOnError) {
-      const issue = new Error(
-        err?.response?.data?.error ||
-        err?.response?.data?.message ||
-        err?.message ||
-        "Workforce account data is temporarily unavailable.",
-      );
-      issue.status = err?.response?.status || err?.status || null;
-      issue.code = err?.response?.data?.code || err?.code || null;
-      throw issue;
-    }
-
-    return [];
+    throw new Error(err?.response?.data?.message || err.message || "Failed to fetch workforce accounts.", { cause: err });
   }
 }
 
@@ -318,6 +276,7 @@ export async function getWorkforceHiringPlanTrends({
   endDate = "",
   rangeStartDate = "",
   rangeEndDate = "",
+  signal,
 } = {}) {
   const params = {
     cluster,
@@ -335,42 +294,30 @@ export async function getWorkforceHiringPlanTrends({
     rangeEndDate,
   };
 
-  try {
-    return await getCachedWorkforceRead({
-      name: "account-trends",
-      params,
-      ttlMs: 15000,
-      loader: async () => {
-        return getWorkforceJobResult("/api/weekly-hiring-plan/accounts/trends/jobs", params);
-      },
-    });
-  } catch (error) {
-    console.error(
-      "Axios getWorkforceHiringPlanAccountTrends API error:",
-      error?.response?.status,
-      error?.response?.data || error?.message,
-    );
+  return getCachedWorkforceRead({
+    name: "account-trends",
+    params,
+    ttlMs: 0,
+    signal,
+    loader: async (requestSignal) => {
+      const response = await api.get(
+        "/api/weekly-hiring-plan/accounts/trends",
+        {
+          params,
+          withCredentials: true,
+          signal: requestSignal,
+        },
+      );
 
-    return {
-      success: false,
-      labels: [],
-      trends: {
-        absenteeism: [],
-        attrition: [],
-        buffer: [],
-      },
-      data: [],
-      weeklyResults: [],
-      averages: {},
-      totals: {},
-      summary: {},
-      message:
-        error?.response?.data?.message ||
-        error?.response?.data?.error ||
-        error?.message ||
-        "Failed to fetch 6-week trends.",
-    };
-  }
+      if (response.data?.success !== true) {
+        throw new Error(response.data?.message || "Failed to fetch 6-week trends.");
+      }
+      return response.data;
+    },
+  }).catch((error) => {
+    if (error.name === "AbortError" || signal?.aborted) throw error;
+    throw new Error(error?.response?.data?.message || error.message || "Failed to fetch 6-week trends.", { cause: error });
+  });
 }
 
 /*

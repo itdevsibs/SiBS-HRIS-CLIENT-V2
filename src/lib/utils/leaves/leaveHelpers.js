@@ -15,7 +15,7 @@ export function getLeavesInitialDateRange(
   isEmployee,
   today = new Date(),
 ) {
-  if (!isEmployee) {
+  if (isEmployee) {
     return { dateFrom: "", dateTo: "" };
   }
 

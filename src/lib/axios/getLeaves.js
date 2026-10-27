@@ -19,6 +19,7 @@ export async function getLeaves({
   dateTo = "",
   includeDepartments = false,
   includeAccounts = false,
+  useDefaultDateRange = true,
 } = {}) {
   try {
     const defaultDateTo = new Date();
@@ -33,8 +34,12 @@ export async function getLeaves({
         status,
         department,
         account,
-        dateFrom: dateFrom || getLocalCalendarDate(defaultDateFrom),
-        dateTo: dateTo || getLocalCalendarDate(defaultDateTo),
+        dateFrom:
+          dateFrom ||
+          (useDefaultDateRange ? getLocalCalendarDate(defaultDateFrom) : ""),
+        dateTo:
+          dateTo ||
+          (useDefaultDateRange ? getLocalCalendarDate(defaultDateTo) : ""),
         includeDepartments: includeDepartments ? 1 : 0,
         includeAccounts: includeAccounts ? 1 : 0,
       },
