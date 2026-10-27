@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import api from "./api-template";
 import { getAttendance } from "./getAttendance";
 import { getLeaves } from "./getLeaves";
+import { getSchedule } from "./getSchedule";
 import { getAttendanceInitialDateRange } from "../utils/attendance/attendanceHelpers";
 import { getLeavesInitialDateRange } from "../utils/leaves/leaveHelpers";
 import {
@@ -29,39 +30,39 @@ describe("Attendance and Leaves page API clients", () => {
     });
   });
 
-  it("leaves the administrative attendance range unchanged", () => {
+  it("defaults administrative attendance to today's date", () => {
     expect(
       getAttendanceInitialDateRange(
         false,
         new Date(2026, 9, 21, 12, 0, 0),
       ),
     ).toEqual({
-      dateFrom: "",
-      dateTo: "",
+      dateFrom: "2026-10-21",
+      dateTo: "2026-10-21",
     });
   });
 
-  it("defaults employee leaves to an inclusive seven-day range", () => {
+  it("keeps employee leave dates optional so My Leaves can show all records", () => {
     expect(
       getLeavesInitialDateRange(
         true,
         new Date(2026, 9, 21, 12, 0, 0),
       ),
     ).toEqual({
-      dateFrom: "2026-10-15",
-      dateTo: "2026-10-21",
+      dateFrom: "",
+      dateTo: "",
     });
   });
 
-  it("leaves the administrative leaves range unchanged", () => {
+  it("defaults administrative leaves to an inclusive seven-day range", () => {
     expect(
       getLeavesInitialDateRange(
         false,
         new Date(2026, 9, 21, 12, 0, 0),
       ),
     ).toEqual({
-      dateFrom: "",
-      dateTo: "",
+      dateFrom: "2026-10-15",
+      dateTo: "2026-10-21",
     });
   });
 
@@ -149,6 +150,45 @@ describe("Attendance and Leaves page API clients", () => {
 
     expect(getSpy).toHaveBeenCalledWith(
       "/api/leaves",
+      expect.objectContaining({
+        params: expect.objectContaining({
+          dateFrom: "2026-10-14",
+          dateTo: "2026-10-20",
+        }),
+      }),
+    );
+  });
+
+  it("preserves blank optional dates when loading all personal leave records", async () => {
+    const getSpy = vi.spyOn(api, "get").mockResolvedValueOnce({
+      data: { success: true, data: [] },
+    });
+
+    await getLeaves({ useDefaultDateRange: false });
+
+    expect(getSpy).toHaveBeenCalledWith(
+      "/api/leaves",
+      expect.objectContaining({
+        params: expect.objectContaining({
+          dateFrom: "",
+          dateTo: "",
+        }),
+      }),
+    );
+  });
+
+  it("defaults blank schedule dates to an inclusive seven-day local range", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 9, 20, 12, 0, 0));
+
+    const getSpy = vi.spyOn(api, "get").mockResolvedValueOnce({
+      data: { success: true, data: [] },
+    });
+
+    await getSchedule();
+
+    expect(getSpy).toHaveBeenCalledWith(
+      "/api/employee-schedule",
       expect.objectContaining({
         params: expect.objectContaining({
           dateFrom: "2026-10-14",

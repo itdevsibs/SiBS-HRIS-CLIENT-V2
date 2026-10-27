@@ -11,6 +11,7 @@ import {
 import { useWorkforceHiringView } from "@/services/context/WorkforceHiringContextAdapter";
 import { MetricGridSkeleton, MetricCardSkeleton } from "@/components/ui";
 import KpiCard from "./shared/KpiCard";
+import WorkforceReadNotice from "./shared/WorkforceReadNotice";
 import { WORKFORCE_OVERVIEW_METRIC_LABELS } from "../../../lib/utils/workforceHiringOverview/workforceHiringOverviewConstants";
 
 export default function WorkforceHiringOverviewSummary() {
@@ -19,6 +20,8 @@ export default function WorkforceHiringOverviewSummary() {
     status,
   } = useWorkforceHiringView();
   const summary = overview?.summary || {};
+
+  if (!status?.isLoading && (status?.error || status?.empty)) return <WorkforceReadNotice error={status.error} empty={status.empty} onRetry={status.refetch} />;
 
   if (status?.isLoading) {
     const preview = status?.rosterPreview;

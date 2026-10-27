@@ -11,6 +11,7 @@ import { useWorkforceHiringView } from "../../../services/context/WorkforceHirin
 import { formatOverviewNumber } from "../../../lib/utils/workforceHiringOverview/workforceHiringOverviewHelpers";
 import AnimatedNumber from "./shared/AnimatedNumber";
 import FunnelShape from "./shared/FunnelShape";
+import WorkforceReadNotice from "./shared/WorkforceReadNotice";
 import { SmallTd, SmallTh } from "./shared/TableCells";
 import { Skeleton } from "../../ui";
 import { WorkforceHiringPipelineStripSkeleton } from "./WorkforceHiringOverviewSkeleton";
@@ -38,6 +39,7 @@ export function WorkforceHiringOverviewPipelineStrip() {
   } = useWorkforceHiringView();
   const pipeline = overview?.pipeline || [];
   const summary = overview?.summary || {};
+  if (!status?.isLoading && (status?.error || status?.empty)) return null;
 
   if (status?.isLoading) {
     return <WorkforceHiringPipelineStripSkeleton />;
@@ -117,6 +119,7 @@ export function HiringFunnelCard() {
   const pipeline = Array.isArray(overview?.pipeline) ? overview.pipeline : [];
   const summary = overview?.summary || {};
   const loading = Boolean(status?.isLoading);
+  if (!loading && (status?.error || status?.empty)) return <WorkforceReadNotice error={status.error} empty={status.empty} onRetry={status.refetch} />;
 
   if (loading) {
     return (
