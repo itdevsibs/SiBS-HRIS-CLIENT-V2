@@ -113,11 +113,15 @@ export default function useWorkforceHiringPage({
   const canManageHiringPlanPercent = canManageHiringPlanByRole(user);
 
   const mainScrollRef = useRef(null);
-  const pageStartedAtRef = useRef(performance.now());
+  const pageStartedAtRef = useRef(null);
   const weekDropdownRef = useRef(null);
   const clusterDropdownRef = useRef(null);
   const accountDropdownRef = useRef(null);
   const editedRequiredInputsRef = useRef(new Set());
+
+  useEffect(() => {
+    pageStartedAtRef.current = performance.now();
+  }, []);
 
   const adminAccessValue = getCurrentAdminAccess(user);
 
@@ -186,8 +190,7 @@ export default function useWorkforceHiringPage({
   const accountRequestRef = useRef(null);
   const accountOptionsRequestRef = useRef(null);
   const [accountDataReady, setAccountDataReady] = useState(false);
-  const [accountDataError, setAccountDataError] = useState("");
-  const [rosterPreview, setRosterPreview] = useState(null);
+  const [, setRosterPreview] = useState(null);
   const rosterPreviewSequence = useRef(0);
   const [accountSelectionPending, setAccountSelectionPending] = useState(
     requireFilterSelection,
@@ -895,11 +898,18 @@ export default function useWorkforceHiringPage({
   }, [weeksReloadSequence]);
 
   useEffect(() => {
-    if (!activeWeek) return;
+    if (!activeWeek) return undefined;
 
     const weekPercent = getWeekHiringPlanPercent(activeWeek);
+    let cancelled = false;
 
-    setSelectedHiringPlanPercent(weekPercent);
+    queueMicrotask(() => {
+      if (!cancelled) setSelectedHiringPlanPercent(weekPercent);
+    });
+
+    return () => {
+      cancelled = true;
+    };
   }, [
     activeWeek,
     activeWeekId,
@@ -1314,7 +1324,7 @@ export default function useWorkforceHiringPage({
       setRemoteAccounts(normalizedAccounts);
       setAccountDataError("");
       setAccountDataReady(true);
-      if (import.meta.env.DEV) console.debug("[RAMPS useful data]", { durationMs: Math.round(performance.now() - startedAt), elapsedSinceMountMs: Math.round(performance.now() - pageStartedAtRef.current), accountCount: normalizedAccounts.length });
+      if (import.meta.env.DEV) console.debug("[RAMPS useful data]", { durationMs: Math.round(performance.now() - startedAt), elapsedSinceMountMs: Math.round(performance.now() - (pageStartedAtRef.current ?? startedAt)), accountCount: normalizedAccounts.length });
       return normalizedAccounts;
     } catch (error) {
       if (controller.signal.aborted) return [];
@@ -1334,13 +1344,20 @@ export default function useWorkforceHiringPage({
   }
 
   useEffect(() => {
-    if (userAccessReady && hasClusterSelection) {
-      fetchAccountOptionsByCluster();
-    } else {
-      setAccountOptions([]);
-      setAccountOptionsLoading(false);
-    }
-    return () => accountOptionsRequestRef.current?.abort();
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (cancelled) return;
+      if (userAccessReady && hasClusterSelection) {
+        fetchAccountOptionsByCluster();
+      } else {
+        setAccountOptions([]);
+        setAccountOptionsLoading(false);
+      }
+    });
+    return () => {
+      cancelled = true;
+      accountOptionsRequestRef.current?.abort();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     selectedClusters,
@@ -1353,37 +1370,42 @@ export default function useWorkforceHiringPage({
 
   useEffect(() => {
     let deferredTimer = null;
+    let cancelled = false;
 
-    if (
-      canLoadWorkforceData &&
-      activeWeekStartDate &&
-      activeWeekEndDate &&
-      userAccessReady
-    ) {
-      if (forecastPlanMode) {
-        /*
-          Workforce Hiring Plan renders from /accounts/forecast. Do not start the
-          separate current-account query at the same time because both queries
-          scan the same Kronos attendance / tracker data. Give the forecast the
-          first connection/window, then hydrate legacy plan/AI data afterward.
-        */
-        setAccountDataReady(false);
-        setAccountDataLoading(true);
+    queueMicrotask(() => {
+      if (cancelled) return;
+      if (
+        canLoadWorkforceData &&
+        activeWeekStartDate &&
+        activeWeekEndDate &&
+        userAccessReady
+      ) {
+        if (forecastPlanMode) {
+          /*
+            Workforce Hiring Plan renders from /accounts/forecast. Do not start the
+            separate current-account query at the same time because both queries
+            scan the same Kronos attendance / tracker data. Give the forecast the
+            first connection/window, then hydrate legacy plan/AI data afterward.
+          */
+          setAccountDataReady(false);
+          setAccountDataLoading(true);
 
-        deferredTimer = window.setTimeout(() => {
+          deferredTimer = window.setTimeout(() => {
+            if (!cancelled) fetchAccountsByCluster();
+          }, 2500);
+        } else {
           fetchAccountsByCluster();
-        }, 2500);
-      } else {
-        fetchAccountsByCluster();
+        }
+      } else if (!canLoadWorkforceData) {
+        setRemoteAccounts([]);
+        setAccountDataError("");
+        setAccountDataReady(false);
+        setAccountDataLoading(false);
       }
-    } else if (!canLoadWorkforceData) {
-      setRemoteAccounts([]);
-      setAccountDataError("");
-      setAccountDataReady(false);
-      setAccountDataLoading(false);
-    }
+    });
 
     return () => {
+      cancelled = true;
       accountRequestRef.current?.abort();
       if (deferredTimer) {
         window.clearTimeout(deferredTimer);
@@ -2306,18 +2328,29 @@ export default function useWorkforceHiringPage({
     : null;
 
   useEffect(() => {
-    if (!selectedPlan) return;
+    if (!selectedPlan) return undefined;
 
     const refreshedPlan = filteredPlans.find(
       (plan) => String(plan.id) === String(selectedPlan.id),
     );
 
-    if (refreshedPlan) {
-      setSelectedPlan((prev) => ({
-        ...prev,
-        ...refreshedPlan,
-      }));
-    }
+    if (!refreshedPlan) return undefined;
+
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (cancelled) return;
+      setSelectedPlan((prev) => {
+        if (!prev || String(prev.id) !== String(refreshedPlan.id)) return prev;
+        const changed = Object.keys(refreshedPlan).some(
+          (key) => prev[key] !== refreshedPlan[key],
+        );
+        return changed ? { ...prev, ...refreshedPlan } : prev;
+      });
+    });
+
+    return () => {
+      cancelled = true;
+    };
   }, [filteredPlans, selectedPlan]);
 
   function openStatusModal({
