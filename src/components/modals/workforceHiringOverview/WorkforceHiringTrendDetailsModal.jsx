@@ -16,11 +16,9 @@ import PaginationTable from "../../../services/pagination/PaginationTable";
 import { DataCard, ResponsiveTableShell } from "@/components/ui";
 import {
   getWorkforceHiringPlanAccountTrends,
-  getWorkforceHiringPlanSixWeekTable,
 } from "../../../lib/axios/getWorkforceHiringPlan";
 import {
   TREND_RANGE_OPTIONS,
-  buildSixWeekRequestChunks,
   buildTrendSeries,
   calculateTrendRangeSummary,
   getTrendRangeDisplayLabel,
@@ -2235,6 +2233,8 @@ export default function WorkforceHiringTrendDetailsModal({
 }) {
   const workforceHiringView = useWorkforceHiringView();
   const sixWeekTable = workforceHiringView?.sixWeekTable || {};
+  const availableRangeRef = useRef(null);
+  availableRangeRef.current = sixWeekTable;
   const filterState = workforceHiringView?.filters || {};
   const filterOptions = filterState?.options || {};
   const statusState = workforceHiringView?.status || {};
@@ -2370,29 +2370,50 @@ export default function WorkforceHiringTrendDetailsModal({
     if (!open || !rangeSelection.selectedOptions.length) return undefined;
 
     let cancelled = false;
-    const chunks = buildSixWeekRequestChunks(rangeSelection.selectedOptions);
+    const controller = new AbortController();
+    const first = rangeSelection.startOption;
+    const last = rangeSelection.endOption;
+    const start = first?.weekStart || first?.startDate || first?.week_start || first?.start_date;
+    const end = last?.weekEnd || last?.endDate || last?.week_end || last?.end_date;
+    const chunks = [{
+      weekStart: last?.weekStart || last?.startDate || last?.week_start || last?.start_date,
+      weekEnd: end,
+      rangeStartDate: start,
+      rangeEndDate: end,
+      weight: rangeSelection.selectedOptions.length,
+    }];
     const cluster = normalizeRequestFilterValue(selectedClusters, "All");
     const account = normalizeRequestFilterValue(selectedAccounts, "All");
 
     async function fetchRangeData() {
+      const available = availableRangeRef.current;
+      const availableStart = available.weeks?.[0]?.weekStart;
+      const availableEnd = available.weeks?.at(-1)?.weekEnd;
+      if (!available.loading && !available.error && availableStart === start && availableEnd === end &&
+        cluster === normalizeRequestFilterValue(trendMeta.cluster, "All") &&
+        account === normalizeRequestFilterValue(trendMeta.account, "All") && fallbackPoints.length) {
+        setRangeState({ loading: false, error: "", points: fallbackPoints, rows: available.rows || [], returnedWeeks: fallbackPoints.length });
+        return;
+      }
       setRangeState((current) => ({ ...current, loading: true, error: "" }));
 
       try {
         const chunkResults = await Promise.all(
           chunks.map(async (chunk, order) => {
             const request = {
+              signal: controller.signal,
               cluster,
               account,
               weekStart: chunk.weekStart,
               weekEnd: chunk.weekEnd,
               startDate: chunk.weekStart,
               endDate: chunk.weekEnd,
+              rangeStartDate: chunk.rangeStartDate,
+              rangeEndDate: chunk.rangeEndDate,
             };
 
-            const [trendResult, tableResult] = await Promise.all([
-              getWorkforceHiringPlanAccountTrends(request),
-              getWorkforceHiringPlanSixWeekTable(request),
-            ]);
+            const trendResult = await getWorkforceHiringPlanAccountTrends(request);
+            const tableResult = { success: true, data: trendResult.sixWeekTableRows || [], weeks: trendResult.sixWeekTableWeeks || [] };
 
             return {
               order,
@@ -2427,8 +2448,8 @@ export default function WorkforceHiringTrendDetailsModal({
           rows:
             rows.length > 0
               ? rows
-              : Array.isArray(sixWeekTable.rows)
-                ? sixWeekTable.rows
+              : Array.isArray(availableRangeRef.current.rows)
+                ? availableRangeRef.current.rows
                 : [],
           returnedWeeks: points.length,
         });
@@ -2441,7 +2462,7 @@ export default function WorkforceHiringTrendDetailsModal({
             error?.message ||
             "The selected trend range could not be loaded. Existing available data is displayed.",
           points: fallbackPoints,
-          rows: Array.isArray(sixWeekTable.rows) ? sixWeekTable.rows : [],
+          rows: Array.isArray(availableRangeRef.current.rows) ? availableRangeRef.current.rows : [],
           returnedWeeks: fallbackPoints.length,
         });
       }
@@ -2451,6 +2472,7 @@ export default function WorkforceHiringTrendDetailsModal({
 
     return () => {
       cancelled = true;
+      controller.abort();
     };
   }, [
     fallbackPoints,
@@ -2458,6 +2480,9 @@ export default function WorkforceHiringTrendDetailsModal({
     rangeSelection.selectedOptions,
     selectedAccounts,
     selectedClusters,
+    sixWeekTable.loading,
+    trendMeta.account,
+    trendMeta.cluster,
   ]);
 
   const activePoints = rangeState.points.length ? rangeState.points : fallbackPoints;
@@ -2493,12 +2518,11 @@ export default function WorkforceHiringTrendDetailsModal({
     !rangeState.loading &&
     requestedWeekCount > 0 &&
     activePoints.length < requestedWeekCount;
-  const customTableCoverageLimited =
-    rangeMode === "custom" && selectedWeekCount > 0 && selectedWeekCount % 6 !== 0;
+  const customTableCoverageLimited = false;
   const combinedTrendLoading = Boolean(
     rangeState.loading ||
     (!activePoints.length &&
-      (statusState.isLoadingTrends || statusState.isLoading || trendsLoading)),
+      (statusState.isLoadingTrends || statusState.isLoading)),
   );
 
   function toggleTrendDropdown(key) {

@@ -1,6 +1,7 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useState } from "react";
 import { Maximize2, X } from "lucide-react";
 import WorkforceHiringTrendDetailsModal from "../../modals/workforceHiringOverview/WorkforceHiringTrendDetailsModal";
+import WorkforceReadNotice from "./shared/WorkforceReadNotice";
 import { useWorkforceHiringView } from "../../../services/context/WorkforceHiringContextAdapter";
 import { Skeleton } from "../../ui";
 import AnimatedNumber from "./shared/AnimatedNumber";
@@ -119,7 +120,8 @@ function AttritionBetweenStagesCard() {
   } = useWorkforceHiringView();
   const attritionStages = overview?.attritionStages || [];
   const summary = overview?.summary || {};
-  const loading = overview?.trendsLoading || status?.isLoading;
+  const loading = Boolean(status?.isLoading);
+  if (!status?.isLoading && (status?.error || status?.empty)) return <WorkforceReadNotice error={status.error} empty={status.empty} onRetry={status.refetch} />;
 
   if (loading) {
     return (
@@ -258,42 +260,21 @@ function SixWeekTrendsCard() {
       trendDetails,
       trendMeta,
       trendsLoading,
-      trendsError,
+      trendsError: requestError,
+      trendsEmpty,
     },
+    status,
   } = useWorkforceHiringView();
+  const trendsError = requestError || (trendsEmpty || status?.empty ? "No tracking data is available for the selected range." : (!trendWeeks?.length ? status?.error : ""));
 
   const [trendModalOpen, setTrendModalOpen] = useState(false);
-  const [readyAnimationKey, setReadyAnimationKey] = useState("");
   const footerSummary = trendSummary || summary;
   const trendRangeLabel = getTrendWeekNumberRange(filters?.selectedWeek);
   const displayTrendWeeks = getTrendWeekLabels(
     filters?.selectedWeek,
     trendWeeks,
   );
-  const trendAnimationKey = useMemo(
-    () =>
-      JSON.stringify({
-        weeks: trendWeeks || [],
-        absenteeism: trends?.absenteeism || [],
-        attrition: trends?.attrition || [],
-        buffer: trends?.buffer || [],
-      }),
-    [trendWeeks, trends],
-  );
-
-  useEffect(() => {
-    if (trendsLoading || trendsError) return undefined;
-
-    const timer = window.setTimeout(
-      () => setReadyAnimationKey(trendAnimationKey),
-      900,
-    );
-    return () => window.clearTimeout(timer);
-  }, [trendAnimationKey, trendsError, trendsLoading]);
-
-  const summaryReady =
-    readyAnimationKey === trendAnimationKey && !trendsLoading && !trendsError;
-  const summaryLoading = trendsLoading || Boolean(trendsError) || !summaryReady;
+  const summaryLoading = Boolean(trendsLoading);
 
   return (
     <section className="sibs-page-card-in sibs-card flex h-full min-h-0 flex-col rounded-2xl border border-sibs-border bg-white p-4 shadow-sm xl:min-h-[520px]">
@@ -363,26 +344,26 @@ function SixWeekTrendsCard() {
       <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
         <TrendSummaryBox
           label="ABS AVG"
-          value={`${Number(footerSummary.absenteeismPercentage || 0).toFixed(2)}%`}
+          value={trendsError ? "—" : `${Number(footerSummary.absenteeismPercentage || 0).toFixed(2)}%`}
           tone="blue"
           loading={summaryLoading}
-          animate={summaryReady}
+          animate={false}
         />
         <TrendSummaryBox
           label="ATT AVG"
-          value={`${Number(footerSummary.attritionPercentage || 0).toFixed(2)}%`}
+          value={trendsError ? "—" : `${Number(footerSummary.attritionPercentage || 0).toFixed(2)}%`}
           tone="orange"
           loading={summaryLoading}
-          animate={summaryReady}
+          animate={false}
         />
         <TrendSummaryBox
           label="BUFFER AVG"
-          value={`${Number(footerSummary.bufferPercentage || 0).toFixed(2)}%`}
+          value={trendsError ? "—" : `${Number(footerSummary.bufferPercentage || 0).toFixed(2)}%`}
           tone={
             Number(footerSummary.bufferPercentage || 0) < 0 ? "red" : "green"
           }
           loading={summaryLoading}
-          animate={summaryReady}
+          animate={false}
         />
       </div>
 

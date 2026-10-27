@@ -105,7 +105,8 @@ function toggleMultiValue(currentValue, nextValue, allValue) {
   const withoutAll = current.filter((item) => item !== allValue);
 
   if (withoutAll.includes(nextValue)) {
-    return withoutAll.filter((item) => item !== nextValue);
+    const remaining = withoutAll.filter((item) => item !== nextValue);
+    return remaining.length ? remaining : [allValue];
   }
 
   return [...withoutAll, nextValue];
@@ -722,11 +723,6 @@ export default function WorkforceHiringOverviewFilters({ weekMode = "actual" } =
               value={weeklyVersionValue}
               onChange={(nextValue) => {
                 handleWeeklyVersionChange?.(nextValue);
-
-                if (!usesForecastWeeks) {
-                  setCluster?.([]);
-                  setAccount?.([]);
-                }
               }}
               options={weeklyVersionOptions}
               loading={weeklyVersionLoading}

@@ -14,11 +14,13 @@ export function getAttendanceInitialDateRange(
   isEmployee,
   today = new Date(),
 ) {
+  const baseDate = today instanceof Date ? today : new Date(today);
+
   if (!isEmployee) {
-    return { dateFrom: "", dateTo: "" };
+    const dateKey = toLocalDateKey(baseDate);
+    return { dateFrom: dateKey, dateTo: dateKey };
   }
 
-  const baseDate = today instanceof Date ? today : new Date(today);
   const dateFrom = new Date(baseDate);
   dateFrom.setDate(dateFrom.getDate() - 13);
 

@@ -74,7 +74,7 @@ function normalizeOverviewValues(values, planAllValue) {
   return values;
 }
 
-function buildDetailRows(plans = []) {
+export function buildDetailRows(plans = []) {
   return plans.map((row) => {
     const requiredHeadcount = cleanNumber(
       row.requiredHeadcount ?? row.required_headcount,
@@ -155,6 +155,7 @@ function buildDetailRows(plans = []) {
     );
 
     return {
+      id: row.id ?? row.accountId,
       cluster: row.cluster || row.clusterName || "",
       account: row.account || row.accountName || "",
 
@@ -568,6 +569,23 @@ function buildSummary(totals) {
   };
 }
 
+export function buildWorkforceLedgerRows(rows = []) {
+  return buildDetailRows(rows).map((row, index) => ({
+    ...row,
+    history: (rows[index].weekRows || rows[index].week_rows || []).map((week) => {
+      const rate = Number(week.interviewCount) > 0 ? Number(week.fstCount) / Number(week.interviewCount) : 0;
+      const [entry] = buildDetailRows([{
+        ...rows[index], ...week, scheduledDays: 0,
+        averageAbsentHeadcount: week.absenteeismCount,
+        currentWeekAbsenteeismCount: week.absenteeismCount,
+        attritionPastCount: week.attritionCount,
+        hiringRate: rate,
+      }]);
+      return { ...entry, period: week.label, weekStart: week.weekStart, weekEnd: week.weekEnd, effectiveWeekEnd: week.effectiveWeekEnd };
+    }),
+  }));
+}
+
 export function useWorkforceHiringView(optional = false) {
   const plan = useWorkforceHiring(optional);
 
@@ -575,6 +593,7 @@ export function useWorkforceHiringView(optional = false) {
   const tables = plan?.tables || {};
 
   const detailRows = buildDetailRows(tables.filteredPlans || []);
+  const ledgerRows = buildWorkforceLedgerRows(tables.sixWeekTableRows || []);
   const totals = buildTotals(detailRows);
 
   const summary = buildSummary(totals);
@@ -633,20 +652,21 @@ export function useWorkforceHiringView(optional = false) {
       trendWeeks: endpointTrendWeeks,
       trends: endpointTrends || buildTrends(detailRows),
 
-      trendsLoading: Boolean(tables.trendsLoading),
+      trendsLoading: Boolean(tables.trendsLoading || (!tables.trendData && !tables.trendsError && (weeklyVersion.weeksLoading || weeklyVersion.accountDataLoading))),
       trendsError: tables.trendsError || "",
+      trendsEmpty: Boolean(tables.trendData?.weeklyResults?.length && tables.trendData.weeklyResults.every((week) => week.rowCount === 0)),
     },
 
     sixWeekTable: {
-      rows: buildDetailRows(tables.sixWeekTableRows || []),
+      rows: ledgerRows,
       rawRows: tables.sixWeekTableRows || [],
       weeks: tables.sixWeekTableWeeks || [],
-      loading: Boolean(tables.sixWeekTableLoading),
-      error: tables.sixWeekTableError || "",
+      loading: Boolean(tables.sixWeekTableLoading || (!tables.trendData && !tables.sixWeekTableError && weeklyVersion.weeksLoading)),
+      error: tables.sixWeekTableError || (!weeklyVersion.activeWeek ? weeklyVersion.accountDataError : "") || "",
     },
 
     detailTable: {
-      detailRows,
+      detailRows: ledgerRows,
       totals,
     },
 
@@ -666,7 +686,8 @@ export function useWorkforceHiringView(optional = false) {
       isLoadingAccountData: Boolean(weeklyVersion.accountDataLoading),
       isLoadingTrends: Boolean(tables.trendsLoading),
       error: weeklyVersion.accountDataError || "",
-      refetch: weeklyVersion.retryAccountData || (() => {}),
+      empty: Boolean(weeklyVersion.accountDataReady && detailRows.length === 0),
+      refetch: weeklyVersion.refetch || (() => {}),
     },
   };
 }

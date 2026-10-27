@@ -113,6 +113,7 @@ export default function useWorkforceHiringPage({
   const canManageHiringPlanPercent = canManageHiringPlanByRole(user);
 
   const mainScrollRef = useRef(null);
+  const pageStartedAtRef = useRef(performance.now());
   const weekDropdownRef = useRef(null);
   const clusterDropdownRef = useRef(null);
   const accountDropdownRef = useRef(null);
@@ -178,7 +179,12 @@ export default function useWorkforceHiringPage({
 
   const [remoteAccounts, setRemoteAccounts] = useState([]);
   const [accountOptionsLoading, setAccountOptionsLoading] = useState(false);
-  const [accountDataLoading, setAccountDataLoading] = useState(false);
+  const [accountDataLoading, setAccountDataLoading] = useState(fastOverviewMode);
+  const [accountDataError, setAccountDataError] = useState("");
+  const [reloadSequence, setReloadSequence] = useState(0);
+  const [weeksReloadSequence, setWeeksReloadSequence] = useState(0);
+  const accountRequestRef = useRef(null);
+  const accountOptionsRequestRef = useRef(null);
   const [accountDataReady, setAccountDataReady] = useState(false);
   const [accountDataError, setAccountDataError] = useState("");
   const [rosterPreview, setRosterPreview] = useState(null);
@@ -321,13 +327,18 @@ export default function useWorkforceHiringPage({
   const canLoadSecondaryData =
     canLoadWorkforceData &&
     !forecastPlanMode &&
-    (!fastOverviewMode || accountDataReady);
+    userAccessReady;
 
-  const fetchSixWeekTrends = useCallback(async () => {
+  const fetchSixWeekTrends = useCallback(async (signal) => {
     if (!canLoadSecondaryData) {
       setTrendData(null);
       setTrendsError("");
       setTrendsLoading(false);
+      if (fastOverviewMode) {
+        setSixWeekTableLoading(false);
+        setSixWeekTableRows([]);
+        setSixWeekTableError("");
+      }
       return;
     }
 
@@ -336,6 +347,8 @@ export default function useWorkforceHiringPage({
 
     if (!weekStart || !weekEnd) {
       setTrendData(null);
+      setTrendsLoading(false);
+      if (fastOverviewMode) setSixWeekTableLoading(false);
       return;
     }
 
@@ -349,6 +362,7 @@ export default function useWorkforceHiringPage({
       }
 
       const result = await getWorkforceHiringPlanAccountTrends({
+        signal,
         cluster: selectedClusterRequestValue,
         account: selectedAccountRequestValue,
         weekStart,
@@ -357,9 +371,7 @@ export default function useWorkforceHiringPage({
         endDate: weekEnd,
       });
 
-      if (result?.success === false) {
-        throw new Error(result?.message || "Unable to load workforce trends.");
-      }
+      if (signal?.aborted) return;
       setTrendData(result);
 
       if (fastOverviewMode) {
@@ -378,7 +390,8 @@ export default function useWorkforceHiringPage({
         setSixWeekTableError("");
       }
     } catch (error) {
-      console.error("FETCH 6-WEEK TRENDS ERROR:", error);
+      if (signal?.aborted) return;
+      console.error("FETCH 6-WEEK TRENDS ERROR:", error.message);
       setTrendData(null);
       setTrendsError(error?.message || "Failed to fetch 6-week trends.");
 
@@ -390,73 +403,26 @@ export default function useWorkforceHiringPage({
         );
       }
     } finally {
-      setTrendsLoading(false);
-
-      if (fastOverviewMode) {
-        setSixWeekTableLoading(false);
+      if (!signal?.aborted) {
+        setTrendsLoading(false);
+        if (fastOverviewMode) setSixWeekTableLoading(false);
       }
     }
   }, [
     canLoadSecondaryData,
     activeWeek,
     fastOverviewMode,
-    forecastPlanMode,
     selectedAccountRequestValue,
     selectedClusterRequestValue,
   ]);
 
   useEffect(() => {
-    let secondaryDataTimer = null;
-    let secondaryIdleHandle = null;
-    let cancelled = false;
-
-    /*
-      Overview loading priority:
-      1. Selected-week account/KPI data
-      2. Allow React/browser to fully paint the visible dashboard
-      3. Start historical 6-week trend/detail work during browser idle time
-
-      In development React StrictMode can replay mount effects. The Axios layer
-      now also deduplicates identical reads, so the replay cannot start a second
-      expensive workforce calculation while the first one is still running.
-    */
-    if (fastOverviewMode && canLoadSecondaryData) {
-      const runSecondaryLoad = () => {
-        if (!cancelled) {
-          fetchSixWeekTrends();
-        }
-      };
-
-      if (typeof window.requestIdleCallback === "function") {
-        secondaryIdleHandle = window.requestIdleCallback(runSecondaryLoad, {
-          timeout: 1800,
-        });
-      } else {
-        secondaryDataTimer = window.setTimeout(runSecondaryLoad, 1200);
-      }
-    } else {
-      fetchSixWeekTrends();
-    }
-
-    return () => {
-      cancelled = true;
-
-      if (
-        secondaryIdleHandle !== null &&
-        typeof window.cancelIdleCallback === "function"
-      ) {
-        window.cancelIdleCallback(secondaryIdleHandle);
-      }
-
-      if (secondaryDataTimer) {
-        window.clearTimeout(secondaryDataTimer);
-      }
-    };
-  }, [
-    canLoadSecondaryData,
-    fastOverviewMode,
-    fetchSixWeekTrends,
-  ]);
+    const controller = new AbortController();
+    queueMicrotask(() => {
+      if (!controller.signal.aborted) fetchSixWeekTrends(controller.signal);
+    });
+    return () => controller.abort();
+  }, [fetchSixWeekTrends, reloadSequence]);
 
   useEffect(() => {
     let cancelled = false;
@@ -798,6 +764,13 @@ export default function useWorkforceHiringPage({
         setWeeksLoading(true);
 
         const weeks = await getWorkforceHiringPlanWeeks();
+        if (ignore) return;
+        setAccountDataError("");
+        if (weeks.length === 0) {
+          setRemoteAccounts([]);
+          setAccountDataLoading(false);
+          setAccountDataReady(true);
+        }
 
         const formattedWeeks = (weeks || []).map((week, index) => {
           const startDate = week?.startDate || week?.weekStart || "";
@@ -895,13 +868,15 @@ export default function useWorkforceHiringPage({
         if (!ignore) {
           setWeeklyVersions(formattedWeeks);
           setDatabaseLockedWeekKeys(initialDatabaseLockedWeekKeys);
-          setActiveWeekId(latestWeekId);
+          setActiveWeekId((current) => formattedWeeks.some((week) => week.id === current) ? current : latestWeekId);
         }
       } catch (error) {
         console.error("FETCH WEEKLY VERSIONS ERROR:", error);
 
         if (!ignore) {
           setWeeklyVersions([]);
+          setAccountDataError(error.message || "Failed to load workforce weeks. Please retry.");
+          setAccountDataLoading(false);
           setActiveWeekId("");
           setDatabaseLockedWeekKeys(new Set());
         }
@@ -917,7 +892,7 @@ export default function useWorkforceHiringPage({
     return () => {
       ignore = true;
     };
-  }, []);
+  }, [weeksReloadSequence]);
 
   useEffect(() => {
     if (!activeWeek) return;
@@ -970,16 +945,25 @@ export default function useWorkforceHiringPage({
       selectedClusters,
       nextValueOrUpdater,
     );
+    const selectAllAccounts = !requireFilterSelection && nextClusters.length > 0;
 
     setSelectedClusters(nextClusters);
 
-    // A cluster must be chosen first. Changing it resets the account
-    // selection and clears all previously loaded workforce calculations.
-    setSelectedAccounts([]);
+    // The overview loads the full selected cluster; the plan keeps its
+    // explicit account-selection flow.
+    setSelectedAccounts(selectAllAccounts ? ["All"] : []);
     setAccountOptions([]);
     setAccountSearch("");
-    setAccountSelectionPending(true);
+    setAccountSelectionPending(!selectAllAccounts);
     clearLoadedAccountData();
+    if (
+      selectAllAccounts &&
+      activeWeekStartDate &&
+      activeWeekEndDate &&
+      userAccessReady
+    ) {
+      setAccountDataLoading(true);
+    }
   }
 
   function updateSelectedAccounts(nextValueOrUpdater) {
@@ -1076,12 +1060,17 @@ export default function useWorkforceHiringPage({
       return [];
     }
 
+    accountOptionsRequestRef.current?.abort();
+    const controller = new AbortController();
+    accountOptionsRequestRef.current = controller;
     try {
       setAccountOptionsLoading(true);
 
       let accounts = await getWorkforceHiringPlanAccountOptions(
         selectedClusterRequestValue,
+        { signal: controller.signal },
       );
+      if (controller.signal.aborted) return [];
 
       if (!weeklyAccess.hasFullAccess) {
         const assignedAccountIds = weeklyAccess.assignedAccountIds;
@@ -1142,10 +1131,11 @@ export default function useWorkforceHiringPage({
       return accounts || [];
     } catch (error) {
       console.error("FETCH ACCOUNT OPTIONS BY CLUSTER ERROR:", error);
+      if (controller.signal.aborted) return [];
       setAccountOptions([]);
       return [];
     } finally {
-      setAccountOptionsLoading(false);
+      if (!controller.signal.aborted) setAccountOptionsLoading(false);
     }
   }
 
@@ -1162,8 +1152,13 @@ export default function useWorkforceHiringPage({
       return [];
     }
 
+    accountRequestRef.current?.abort();
+    const controller = new AbortController();
+    accountRequestRef.current = controller;
+    const startedAt = performance.now();
     try {
       setAccountDataReady(false);
+      setAccountDataError("");
       setAccountDataLoading(true);
       setAccountDataError("");
       const previewSequence = ++rosterPreviewSequence.current;
@@ -1193,8 +1188,9 @@ export default function useWorkforceHiringPage({
         activeWeekEndDate,
         selectedAccountRequestValue,
         !fastOverviewMode,
-        fastOverviewMode,
+        { signal: controller.signal },
       );
+      if (controller.signal.aborted) return [];
 
       if (!weeklyAccess.hasFullAccess) {
         const assignedAccountIds = weeklyAccess.assignedAccountIds;
@@ -1318,9 +1314,12 @@ export default function useWorkforceHiringPage({
       setRemoteAccounts(normalizedAccounts);
       setAccountDataError("");
       setAccountDataReady(true);
+      if (import.meta.env.DEV) console.debug("[RAMPS useful data]", { durationMs: Math.round(performance.now() - startedAt), elapsedSinceMountMs: Math.round(performance.now() - pageStartedAtRef.current), accountCount: normalizedAccounts.length });
       return normalizedAccounts;
     } catch (error) {
-      console.error("FETCH ACCOUNTS BY CLUSTER ERROR:", error);
+      if (controller.signal.aborted) return [];
+      setAccountDataError(error.message || "Failed to load workforce metrics. Please retry.");
+      console.error("FETCH ACCOUNTS BY CLUSTER ERROR:", error.message);
       setRemoteAccounts([]);
       setAccountDataError(
         error?.code
@@ -1330,7 +1329,7 @@ export default function useWorkforceHiringPage({
       setAccountDataReady(false);
       return [];
     } finally {
-      setAccountDataLoading(false);
+      if (!controller.signal.aborted) setAccountDataLoading(false);
     }
   }
 
@@ -1341,6 +1340,7 @@ export default function useWorkforceHiringPage({
       setAccountOptions([]);
       setAccountOptionsLoading(false);
     }
+    return () => accountOptionsRequestRef.current?.abort();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     selectedClusters,
@@ -1384,6 +1384,7 @@ export default function useWorkforceHiringPage({
     }
 
     return () => {
+      accountRequestRef.current?.abort();
       if (deferredTimer) {
         window.clearTimeout(deferredTimer);
       }
@@ -1391,6 +1392,7 @@ export default function useWorkforceHiringPage({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     canLoadWorkforceData,
+    reloadSequence,
     selectedClusters,
     selectedAccounts,
     activeWeekStartDate,
@@ -3132,8 +3134,11 @@ export default function useWorkforceHiringPage({
       accountOptionsLoading,
       accountDataLoading,
       accountDataError,
-      rosterPreview,
-      retryAccountData: fetchAccountsByCluster,
+      accountDataReady,
+      refetch: () => {
+        if (!activeWeek) setWeeksReloadSequence((value) => value + 1);
+        setReloadSequence((value) => value + 1);
+      },
       accountSelectionPending,
       filteredAccountOptions,
       isAllClustersSelected,

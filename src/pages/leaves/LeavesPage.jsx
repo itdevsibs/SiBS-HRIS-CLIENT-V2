@@ -155,6 +155,7 @@ export default function LeavesPage() {
         dateTo: dateToValue,
         includeDepartments: showDepartmentFilter,
         includeAccounts: showAccountFilter,
+        useDefaultDateRange: !isEmployeeAccount,
       });
 
       // Ignore stale responses from an older search/filter request.
