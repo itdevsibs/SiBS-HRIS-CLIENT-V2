@@ -258,6 +258,7 @@ export function SidebarNotificationProvider({ children }) {
   // notifications must not launch a competing leave-history scan on that page.
   const deferLeaveBadge = pathname === "/recruitment/workforce-hiring-overview";
   const hasAuthenticatedUser = Boolean(user);
+  const leaveSummaryIdentity = `${userNotificationId || ""}|${user?.admin_access ?? user?.adminAccess ?? ""}|${user?.role ?? user?.userRole ?? user?.tokenType ?? ""}`;
   useEffect(() => {
     let cancelled = false;
     let inFlight = false;
@@ -276,7 +277,7 @@ export function SidebarNotificationProvider({ children }) {
       nextAllowedAt = Date.now() + 15_000;
       let result;
       try {
-        result = await getLeavesSummary();
+        result = await getLeavesSummary({ cacheKey: leaveSummaryIdentity });
       } catch {
         result = null;
       } finally {
@@ -333,7 +334,7 @@ export function SidebarNotificationProvider({ children }) {
 
     const interval = window.setInterval(
       refreshPendingLeaveNotification,
-      20_000,
+      30_000,
     );
 
     const handleWindowFocus = () => {
@@ -347,7 +348,7 @@ export function SidebarNotificationProvider({ children }) {
       window.clearInterval(interval);
       window.removeEventListener("focus", handleWindowFocus);
     };
-  }, [hasAuthenticatedUser, userNotificationId, deferLeaveBadge]);
+  }, [hasAuthenticatedUser, userNotificationId, deferLeaveBadge, leaveSummaryIdentity]);
 
   useEffect(() => {
     let cancelled = false;

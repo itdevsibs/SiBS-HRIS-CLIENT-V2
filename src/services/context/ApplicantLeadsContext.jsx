@@ -272,9 +272,7 @@ export function ApplicantLeadsProvider({ children }) {
         } else {
           setErrorMessage(result.message || "Failed to load applicant leads.");
 
-          if (!silent) {
-            setLeads([]);
-          }
+          // Keep previously loaded records visible when a refresh fails.
         }
 
         return result;

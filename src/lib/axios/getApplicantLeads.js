@@ -221,7 +221,26 @@ function unwrapApplicantLeadResponse(resData, fallback = []) {
   return Array.isArray(data) ? data : fallback;
 }
 
+// React StrictMode can mount twice in development. Share an in-flight list read
+// so the backend receives only one expensive request.
+let inflightApplicantLeads = null;
+
 export async function getApplicantLeads(params = {}) {
+  const canCoalesce = !params || Object.keys(params).length === 0;
+  if (canCoalesce && inflightApplicantLeads) return inflightApplicantLeads;
+
+  const request = fetchApplicantLeads(params);
+  if (!canCoalesce) return request;
+
+  inflightApplicantLeads = request;
+  try {
+    return await request;
+  } finally {
+    if (inflightApplicantLeads === request) inflightApplicantLeads = null;
+  }
+}
+
+async function fetchApplicantLeads(params = {}) {
   try {
     const res = await api.get(BASE_PATH, {
       params,
