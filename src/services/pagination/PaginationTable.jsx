@@ -456,6 +456,7 @@ export default function PaginationTable({
                 }
                 onKeyDown={onSearchKeyDown}
                 placeholder={searchPlaceholder}
+                aria-label={searchLabel || searchPlaceholder || "Search table"}
                 className={`w-full ${EDGE} border border-sibs-border bg-sibs-surface px-3 pl-9 font-jakarta sibs-text-xs font-semibold text-sibs-navy outline-none transition placeholder:text-sibs-muted hover:border-sibs-orange/40 hover:bg-white focus:border-sibs-orange focus:bg-white focus:ring-4 focus:ring-sibs-orange/10 ${
                   isTaInlineLayout ? "h-8.5 sm:h-9 2xl:h-10" : "h-9 2xl:h-11"
                 }`}

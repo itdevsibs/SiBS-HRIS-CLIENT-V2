@@ -267,6 +267,8 @@ export default function ApplicantLeadsTable({
                       key={lead.id || `lead-${index}`}
                       onClick={() => openEditModal(lead)}
                       tabIndex={0}
+                      role="button"
+                      aria-label={`View or edit applicant lead details for ${fullName}`}
                       style={{
                         animationDelay: `${index * 30}ms`,
                         animationFillMode: "both",
