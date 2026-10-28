@@ -1,4 +1,5 @@
 import axios from "axios";
+import { hrisQueryCache } from "./hrisQueryCache";
 
 function getBaseURL() {
   const rawBaseURL =
@@ -106,6 +107,99 @@ const api = axios.create({
   },
   withCredentials: true,
 });
+const networkAdapter = axios.getAdapter(api.defaults.adapter);
+export { isCancellation } from "./cancellation";
+
+function withCancellation(promise, adapterConfig) {
+  const signal = adapterConfig.signal;
+  const cancelToken = adapterConfig.cancelToken;
+  if (!signal && !cancelToken) return promise;
+  if (signal?.aborted) {
+    return Promise.reject(new axios.CanceledError(signal.reason || "canceled"));
+  }
+  if (cancelToken?.reason) {
+    return Promise.reject(cancelToken.reason);
+  }
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    const cleanup = () => {
+      settled = true;
+      if (signal) signal.removeEventListener("abort", onAbort);
+    };
+    const onAbort = () => {
+      if (settled) return;
+      cleanup();
+      reject(new axios.CanceledError(signal?.reason || "canceled"));
+    };
+    if (signal) {
+      signal.addEventListener("abort", onAbort, { once: true });
+    }
+    if (cancelToken) {
+      cancelToken.promise.then((cancel) => {
+        if (settled) return;
+        cleanup();
+        reject(cancel);
+      });
+    }
+    promise.then(
+      (value) => {
+        cleanup();
+        resolve(value);
+      },
+      (error) => {
+        cleanup();
+        reject(error);
+      },
+    );
+  });
+}
+
+// Explicit read-only allowlist. Transactional, attendance, approval, auth and
+// employee records continue to make fresh requests.
+function cachePolicy(url = "") {
+  const path = String(url).split("?")[0];
+  if ([
+    "/api/assigned-accounts/departments",
+    "/api/assigned-accounts/accounts",
+    "/api/departments",
+    "/api/departments/account-creation-departments",
+    "/api/requisitions/departments",
+    "/api/requisitions/hiring-managers",
+    "/api/job-description/dropdowns",
+    "/api/available-position/meta",
+    "/api/available-position/status-options",
+    "/api/recruitment-settings/holidays",
+    "/api/recruitment-settings",
+    "/api/weekly-hiring-plan/weeks",
+    "/api/weekly-hiring-plan/filter-options",
+    "/api/weekly-hiring-plan/account-options",
+    "/api/workforce-hiring-plan/weeks",
+    "/api/workforce-hiring-plan/filter-options",
+    "/api/workforce-hiring-plan/account-options",
+    "/api/office-locations",
+    "/api/applicant-leads/options",
+    "/api/talent-pool/options",
+    "/api/talent-pool/open-positions",
+    "/api/sourcing-analytics/options",
+  ].includes(path)) {
+    return { ttlMs: 60_000, staleMs: 120_000 };
+  }
+  if (path === "/api/hr-dashboard/overview") return { ttlMs: 15_000, staleMs: 30_000 };
+  if (path === "/api/ta-dashboard/overview") return { ttlMs: 10_000, staleMs: 15_000 };
+  if (/^\/api\/(ta|om|som|wfm|finance)-dashboard\/bootstrap$/.test(path)) {
+    return { ttlMs: 15_000, staleMs: 30_000 };
+  }
+  if ([
+    "/api/sourcing-analytics",
+    "/api/weekly-hiring-plan/trends",
+    "/api/workforce-hiring-plan/trends",
+    "/api/weekly-hiring-plan/accounts/roster-preview",
+    "/api/workforce-hiring-plan/accounts/roster-preview",
+  ].includes(path)) {
+    return { ttlMs: 30_000, staleMs: 60_000 };
+  }
+  return null;
+}
 
 const logoutApi = axios.create({
   baseURL: BASE_URL,
@@ -117,6 +211,7 @@ let isRedirecting = false;
 let logoutPromise = null;
 
 function clearClientSession() {
+  hrisQueryCache.invalidate();
   if (typeof sessionStorage !== "undefined") {
     /*
      * Session storage is tab-scoped. Clear it completely so an expired
@@ -233,6 +328,28 @@ api.interceptors.request.use(
     config.url = normalizeApiUrl(config.url);
 
     if (config.method?.toLowerCase() === "get") {
+      const policy = cachePolicy(config.url);
+      if (policy && !config.skipHrisCache) {
+        const forceRefresh = Boolean(config.params?.refresh || config.params?.forceRefresh);
+        config.adapter = async (adapterConfig) => {
+          const execute = async () => {
+            const cached = await hrisQueryCache.get(
+              { path: adapterConfig.url, params: adapterConfig.params, ...policy, forceRefresh },
+              async (networkSignal) => {
+                const response = await networkAdapter({ ...adapterConfig, adapter: networkAdapter, signal: networkSignal });
+                return {
+                  data: response.data,
+                  status: response.status,
+                  statusText: response.statusText,
+                  headers: response.headers,
+                };
+              },
+            );
+            return { ...cached, config: adapterConfig };
+          };
+          return withCancellation(execute(), adapterConfig);
+        };
+      }
       config.params = {
         ...(config.params || {}),
         _t: Date.now(),
@@ -248,8 +365,37 @@ api.interceptors.request.use(
   (error) => Promise.reject(error),
 );
 
+const NON_MUTATING_POST_ROUTES = [
+  "/api/users/login",
+  "/api/users/logout",
+  "/api/users/refresh",
+  "/api/users/me",
+  "/api/users/admin-login",
+  "/api/users/manager-login",
+  "/users/login",
+  "/users/logout",
+  "/users/refresh",
+  "/users/me",
+  "/users/admin-login",
+  "/users/manager-login",
+  "/api/audit-notifications/clock",
+  "/audit-notifications/clock",
+  "/api/notifications",
+  "/notifications",
+];
+
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    const method = response.config?.method?.toLowerCase();
+    const url = response.config?.url || "";
+    if (["post", "put", "patch", "delete"].includes(method)) {
+      const isNonMutating = NON_MUTATING_POST_ROUTES.some((route) => url.includes(route));
+      if (!isNonMutating) {
+        hrisQueryCache.invalidate();
+      }
+    }
+    return response;
+  },
   (error) => {
     const status = error.response?.status;
     const requestUrl = error.config?.url || "";

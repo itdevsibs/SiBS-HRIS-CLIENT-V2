@@ -1,4 +1,5 @@
 import api from "./api-template";
+import { isCancellation } from "./cancellation";
 
 /*
   Workforce Hiring read-request cache / in-flight dedupe.
@@ -74,8 +75,8 @@ async function getCachedWorkforceRead({
       finish(reject, new DOMException("Request cancelled", "AbortError"));
       queueMicrotask(() => {
         if (pending.consumers === 0) {
-          pending.controller.abort();
           if (workforceReadInflight.get(key) === pending) workforceReadInflight.delete(key);
+          pending.controller.abort();
         }
       });
     };
@@ -101,14 +102,16 @@ if (typeof window !== "undefined") {
    WORKFORCE HIRING PLAN API
 ========================================= */
 
-export async function getWorkforceHiringPlanWeeks() {
+export async function getWorkforceHiringPlanWeeks({ signal } = {}) {
   try {
     return await getCachedWorkforceRead({
       name: "weeks",
       ttlMs: 30000,
-      loader: async () => {
+      signal,
+      loader: async (requestSignal) => {
         const res = await api.get("/api/weekly-hiring-plan/weeks", {
           withCredentials: true,
+          signal: requestSignal,
         });
 
         if (res.data?.success !== true || !Array.isArray(res.data.data)) throw new Error(res.data?.message || "Failed to load workforce weeks.");
@@ -116,6 +119,7 @@ export async function getWorkforceHiringPlanWeeks() {
       },
     });
   } catch (err) {
+    if (isCancellation(err)) throw err;
     console.error(
       "Axios getWorkforceHiringPlanWeeks API error:",
       err?.response?.status,
@@ -126,14 +130,16 @@ export async function getWorkforceHiringPlanWeeks() {
   }
 }
 
-export async function getWorkforceHiringPlanFilterOptions() {
+export async function getWorkforceHiringPlanFilterOptions({ signal } = {}) {
   try {
     return await getCachedWorkforceRead({
       name: "filter-options",
       ttlMs: 30000,
-      loader: async () => {
+      signal,
+      loader: async (requestSignal) => {
         const res = await api.get("/api/weekly-hiring-plan/filter-options", {
           withCredentials: true,
+          signal: requestSignal,
         });
 
         console.log("getWorkforceHiringPlanFilterOptions res:", res.data);
@@ -145,6 +151,12 @@ export async function getWorkforceHiringPlanFilterOptions() {
       },
     });
   } catch (err) {
+    if (isCancellation(err)) {
+      return {
+        clusters: [],
+        accounts: [],
+      };
+    }
     console.error(
       "Axios getWorkforceHiringPlanFilterOptions API error:",
       err?.response?.status,
@@ -181,6 +193,7 @@ export async function getWorkforceHiringPlanAccountOptions(
       },
     });
   } catch (err) {
+    if (isCancellation(err)) return [];
     console.error(
       "Axios getWorkforceHiringPlanAccountOptions API error:",
       err?.response?.status,
@@ -259,6 +272,7 @@ export async function getWorkforceHiringPlanAccounts(
       },
     });
   } catch (err) {
+    if (isCancellation(err)) throw err;
     throw new Error(err?.response?.data?.message || err.message || "Failed to fetch workforce accounts.", { cause: err });
   }
 }
@@ -315,7 +329,7 @@ export async function getWorkforceHiringPlanTrends({
       return response.data;
     },
   }).catch((error) => {
-    if (error.name === "AbortError" || signal?.aborted) throw error;
+    if (isCancellation(error) || error.name === "AbortError" || signal?.aborted) throw error;
     throw new Error(error?.response?.data?.message || error.message || "Failed to fetch 6-week trends.", { cause: error });
   });
 }

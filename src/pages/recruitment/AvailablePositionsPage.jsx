@@ -19,6 +19,7 @@ import {
   updateAvailablePosition,
   updateAvailablePositionStatus,
 } from "../../lib/axios/getAvailablePosition";
+import { isCancellation } from "../../lib/axios/cancellation";
 import { getAvailablePositionApprovalUsers } from "../../lib/axios/getAvailablePositionApprovalSettings";
 import useApprovalRuleRevision from "../../hooks/useApprovalRuleRevision";
 import {
@@ -595,15 +596,18 @@ export default function AvailablePositionsPage() {
 
   function scrollToTop(behavior = "auto") {
     requestAnimationFrame(() => {
-      if (mainRef.current) {
+      if (mainRef.current && typeof mainRef.current.scrollTo === "function") {
         mainRef.current.scrollTo({
           top: 0,
           left: 0,
           behavior,
         });
+      } else if (mainRef.current) {
+        mainRef.current.scrollTop = 0;
+        mainRef.current.scrollLeft = 0;
       }
 
-      if (typeof window !== "undefined") {
+      if (typeof window !== "undefined" && typeof window.scrollTo === "function") {
         window.scrollTo({
           top: 0,
           left: 0,
@@ -700,9 +704,22 @@ export default function AvailablePositionsPage() {
             : [],
         );
       } catch (error) {
+        if (isCancellation(error)) return;
         console.error("Load available positions error:", error);
 
-        setLoadError(error?.message || "Failed to load available positions.");
+        const rawMessage = String(error?.message || "");
+        const isTechnicalException =
+          rawMessage.includes("is not defined") ||
+          rawMessage.includes("ReferenceError") ||
+          rawMessage.includes("TypeError") ||
+          rawMessage.includes("SyntaxError") ||
+          rawMessage.includes("Cannot read properties");
+
+        const displayMessage = isTechnicalException
+          ? "Unable to load positions due to a server connection issue. Please retry."
+          : error?.message || "Failed to load available positions.";
+
+        setLoadError(displayMessage);
 
         setPositionList([]);
 
@@ -718,7 +735,7 @@ export default function AvailablePositionsPage() {
           openStatusModal(
             "error",
             "Unable to load positions",
-            error?.message || "Failed to load available positions.",
+            displayMessage,
           );
         }
       } finally {
