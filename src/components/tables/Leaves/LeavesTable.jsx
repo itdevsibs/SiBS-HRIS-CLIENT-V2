@@ -1045,6 +1045,7 @@ export default function LeavesTable({
             {showDepartmentFilter ? (
               <div className="w-full xl:w-[150px] 2xl:w-[210px] xl:flex-none">
                 <SelectDropdown
+                  className="sibs-leaves-directory-filter"
                   label="Department"
                   labelClassName="sibs-text-micro font-extrabold tracking-normal text-sibs-navy"
                   value={departmentFilter || "All"}
@@ -1064,6 +1065,7 @@ export default function LeavesTable({
             {showAccountFilter ? (
               <div className="w-full xl:w-[150px] 2xl:w-[210px] xl:flex-none">
                 <SelectDropdown
+                  className="sibs-leaves-directory-filter"
                   label="Account"
                   labelClassName="sibs-text-micro font-extrabold tracking-normal text-sibs-navy"
                   value={accountFilter || "All"}

@@ -1262,6 +1262,7 @@ export default function EmployeeTable({
             <>
               <div className="w-full xl:w-[150px] 2xl:w-[210px] xl:flex-none">
                 <SelectDropdown
+                  className="sibs-employee-directory-filter"
                   label="Department"
                   labelClassName="sibs-text-micro font-extrabold tracking-normal text-sibs-navy"
                   value={departmentFilter || "All"}
@@ -1277,6 +1278,7 @@ export default function EmployeeTable({
 
               <div className="w-full xl:w-[150px] 2xl:w-[210px] xl:flex-none">
                 <SelectDropdown
+                  className="sibs-employee-directory-filter"
                   label="Account"
                   labelClassName="sibs-text-micro font-extrabold tracking-normal text-sibs-navy"
                   multiple

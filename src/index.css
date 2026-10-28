@@ -2161,3 +2161,47 @@
 .sibs-calendar-date-panel {
   z-index: 2147483600 !important;
 }
+
+/* Employee Directory: searchable Department/Account dropdowns should have
+   one border around the SELECT control, not a second border/outline around
+   the text input when it receives focus. The global :focus-visible rule uses
+   !important inside @layer base, so override it in the same layer. */
+@layer base {
+  .sibs-employee-directory-filter input[role="combobox"],
+  .sibs-employee-directory-filter input[role="combobox"]:focus,
+  .sibs-employee-directory-filter input[role="combobox"]:focus-visible {
+    border: 0 !important;
+    outline: none !important;
+    outline-offset: 0 !important;
+    box-shadow: none !important;
+    --tw-ring-shadow: 0 0 #0000 !important;
+  }
+}
+
+/* Time & Attendance: no extra input border/focus outline inside the two
+   searchable Department and Account dropdowns. Retain outer trigger focus. */
+@layer base {
+  .sibs-attendance-directory-filter input[role="combobox"],
+  .sibs-attendance-directory-filter input[role="combobox"]:focus,
+  .sibs-attendance-directory-filter input[role="combobox"]:focus-visible {
+    border: 0 !important;
+    outline: none !important;
+    outline-offset: 0 !important;
+    box-shadow: none !important;
+    --tw-ring-shadow: 0 0 #0000 !important;
+  }
+}
+
+/* Leaves: keep the outer Department/Account selector focus border but remove
+   the inner search input border and focus-visible outline/ring. */
+@layer base {
+  .sibs-leaves-directory-filter input[role="combobox"],
+  .sibs-leaves-directory-filter input[role="combobox"]:focus,
+  .sibs-leaves-directory-filter input[role="combobox"]:focus-visible {
+    border: 0 !important;
+    outline: none !important;
+    outline-offset: 0 !important;
+    box-shadow: none !important;
+    --tw-ring-shadow: 0 0 #0000 !important;
+  }
+}
