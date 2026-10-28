@@ -7,6 +7,7 @@ import { WorkforceHiringOverviewPipelineStrip } from "../../components/recruitme
 import WorkforceHiringOverviewSummary from "../../components/recruitment/workforceHiringOverview/WorkforceHiringOverviewSummary";
 import useWorkforceHiringPage from "../../hooks/workforceHiring/useWorkforceHiringPage";
 import { useWorkforceHiringView } from "../../services/context/WorkforceHiringContextAdapter";
+import { isCancellation } from "../../lib/axios/cancellation";
 
 export default function WorkforceHiringOverviewPage() {
   const { mainScrollRef } = useWorkforceHiringPage({
@@ -19,7 +20,7 @@ export default function WorkforceHiringOverviewPage() {
   });
 
   const { status } = useWorkforceHiringView();
-  const hasAccountError = Boolean(status?.error) && !status?.isLoadingAccountData;
+  const hasAccountError = Boolean(status?.error) && !status?.isLoadingAccountData && !isCancellation(status?.error);
 
   return (
     <div className="sibs-dashboard-shell bg-sibs-canvas font-jakarta">
@@ -30,29 +31,28 @@ export default function WorkforceHiringOverviewPage() {
       <main ref={mainScrollRef} className="sibs-dashboard-main-wide">
         <div className="mx-auto w-full max-w-[1700px] space-y-4 sm:space-y-5">
           <WorkforceHiringOverviewHeader />
-          {hasAccountError ? (
-            <section role="alert" className="rounded-2xl border border-amber-300 bg-amber-50 p-5 text-sibs-navy shadow-sm">
-              <h2 className="text-base font-bold">Workforce data could not be loaded</h2>
-              <p className="mt-2 text-sm">
-                The server returned an error, so headcount and hiring metrics are unavailable—not zero.
-              </p>
-              <p className="mt-1 break-words text-xs text-slate-600">{status.error}</p>
+          {hasAccountError && (
+            <div
+              role="alert"
+              className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs text-rose-800 shadow-sm"
+            >
+              <div className="flex items-center gap-2">
+                <span className="font-semibold">Unable to load latest workforce data:</span>
+                <span className="truncate max-w-xl">{status.error}</span>
+              </div>
               <button
                 type="button"
                 onClick={status.refetch}
-                className="mt-4 rounded-lg bg-sibs-navy px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
+                className="rounded-lg bg-rose-600 px-3 py-1 font-semibold text-white transition hover:bg-rose-700"
               >
-                Retry loading data
+                Retry
               </button>
-            </section>
-          ) : (
-            <>
-              <WorkforceHiringOverviewSummary />
-              <WorkforceHiringOverviewPipelineStrip />
-              <WorkforceHiringOverviewCharts />
-              <WorkforceHiringOverviewDetailsTable />
-            </>
+            </div>
           )}
+          <WorkforceHiringOverviewSummary />
+          <WorkforceHiringOverviewPipelineStrip />
+          <WorkforceHiringOverviewCharts />
+          <WorkforceHiringOverviewDetailsTable />
         </div>
       </main>
     </div>

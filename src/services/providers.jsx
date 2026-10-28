@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { hrisQueryCache } from "../lib/axios/hrisQueryCache";
 
 import { UserProvider } from "./context/UserContext";
 import { ChatProvider } from "./context/ChatContext";
@@ -23,10 +23,8 @@ import ActionItemsDataBridge from "./context/ActionItemsDataBridgeContext";
 import { ResignationListProvider } from "./context/ResignationListContext";
 
 export default function Providers({ children }) {
-  const [queryClient] = useState(() => new QueryClient());
-
   return (
-    <QueryClientProvider client={queryClient}>
+    <QueryClientProvider client={hrisQueryCache.queryClient}>
       <PaginationProvider>
         <HeaderProvider>
           <UserProvider>

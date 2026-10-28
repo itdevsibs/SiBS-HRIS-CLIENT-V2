@@ -1,5 +1,6 @@
 import { formatHrisDateLocalized } from "@/lib/axios/dateFormatter";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { isCancellation } from "../../lib/axios/cancellation";
 import {
   getWorkforceHiringPlanAccountOptions,
   getWorkforceHiringPlanAccounts,
@@ -393,7 +394,7 @@ export default function useWorkforceHiringPage({
         setSixWeekTableError("");
       }
     } catch (error) {
-      if (signal?.aborted) return;
+      if (signal?.aborted || isCancellation(error)) return;
       console.error("FETCH 6-WEEK TRENDS ERROR:", error.message);
       setTrendData(null);
       setTrendsError(error?.message || "Failed to fetch 6-week trends.");
@@ -740,6 +741,7 @@ export default function useWorkforceHiringPage({
           setClusterOptions(normalizedClusters);
         }
       } catch (error) {
+        if (ignore || isCancellation(error)) return;
         console.error("FETCH WORKFORCE FILTER OPTIONS ERROR:", error);
 
         if (!ignore) {
@@ -761,13 +763,14 @@ export default function useWorkforceHiringPage({
 
   useEffect(() => {
     let ignore = false;
+    const controller = new AbortController();
 
     async function fetchWeeklyVersions() {
       try {
         setWeeksLoading(true);
 
-        const weeks = await getWorkforceHiringPlanWeeks();
-        if (ignore) return;
+        const weeks = await getWorkforceHiringPlanWeeks({ signal: controller.signal });
+        if (ignore || controller.signal.aborted) return;
         setAccountDataError("");
         if (weeks.length === 0) {
           setRemoteAccounts([]);
@@ -868,23 +871,24 @@ export default function useWorkforceHiringPage({
 
         const latestWeekId = sortedLatestWeeks[0]?.id || formattedWeeks[formattedWeeks.length - 1]?.id || "";
 
-        if (!ignore) {
+        if (!ignore && !controller.signal.aborted) {
           setWeeklyVersions(formattedWeeks);
           setDatabaseLockedWeekKeys(initialDatabaseLockedWeekKeys);
           setActiveWeekId((current) => formattedWeeks.some((week) => week.id === current) ? current : latestWeekId);
         }
       } catch (error) {
+        if (ignore || controller.signal.aborted || isCancellation(error)) {
+          return;
+        }
         console.error("FETCH WEEKLY VERSIONS ERROR:", error);
 
-        if (!ignore) {
-          setWeeklyVersions([]);
-          setAccountDataError(error.message || "Failed to load workforce weeks. Please retry.");
-          setAccountDataLoading(false);
-          setActiveWeekId("");
-          setDatabaseLockedWeekKeys(new Set());
-        }
+        setWeeklyVersions([]);
+        setAccountDataError(error.message || "Failed to load workforce weeks. Please retry.");
+        setAccountDataLoading(false);
+        setActiveWeekId("");
+        setDatabaseLockedWeekKeys(new Set());
       } finally {
-        if (!ignore) {
+        if (!ignore && !controller.signal.aborted) {
           setWeeksLoading(false);
         }
       }
@@ -894,6 +898,7 @@ export default function useWorkforceHiringPage({
 
     return () => {
       ignore = true;
+      controller.abort();
     };
   }, [weeksReloadSequence]);
 
@@ -1140,8 +1145,8 @@ export default function useWorkforceHiringPage({
 
       return accounts || [];
     } catch (error) {
+      if (controller.signal.aborted || isCancellation(error)) return [];
       console.error("FETCH ACCOUNT OPTIONS BY CLUSTER ERROR:", error);
-      if (controller.signal.aborted) return [];
       setAccountOptions([]);
       return [];
     } finally {
@@ -1327,8 +1332,7 @@ export default function useWorkforceHiringPage({
       if (import.meta.env.DEV) console.debug("[RAMPS useful data]", { durationMs: Math.round(performance.now() - startedAt), elapsedSinceMountMs: Math.round(performance.now() - (pageStartedAtRef.current ?? startedAt)), accountCount: normalizedAccounts.length });
       return normalizedAccounts;
     } catch (error) {
-      if (controller.signal.aborted) return [];
-      setAccountDataError(error.message || "Failed to load workforce metrics. Please retry.");
+      if (controller.signal.aborted || isCancellation(error)) return [];
       console.error("FETCH ACCOUNTS BY CLUSTER ERROR:", error.message);
       setRemoteAccounts([]);
       setAccountDataError(
