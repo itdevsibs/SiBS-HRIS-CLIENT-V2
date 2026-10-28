@@ -609,7 +609,7 @@ function TimeIndicator({ value, label, tone = "neutral" }) {
 }
 
 function AttendanceStatusBadge({ status }) {
-  const normalized = String(status || "Pending").trim();
+  const normalized = String(status || "Unverified").trim();
 
   const tone =
     normalized === "Approved"
@@ -622,17 +622,27 @@ function AttendanceStatusBadge({ status }) {
             wrap: "border-rose-200 bg-rose-50 text-rose-700",
             dot: "bg-rose-500",
           }
-        : {
-            wrap: "border-amber-200 bg-amber-50 text-amber-700",
-            dot: "bg-amber-500",
-          };
+        : normalized === "Escalating"
+          ? {
+              wrap: "border-violet-200 bg-violet-50 text-violet-700",
+              dot: "bg-violet-500",
+            }
+          : normalized === "Pending"
+            ? {
+                wrap: "border-amber-200 bg-amber-50 text-amber-700",
+                dot: "bg-amber-500",
+              }
+            : {
+                wrap: "border-slate-200 bg-slate-50 text-slate-600",
+                dot: "bg-slate-400",
+              };
 
   return (
     <span
       className={`inline-flex min-w-[94px] items-center justify-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-extrabold uppercase ${tone.wrap}`}
     >
       <span className={`h-1.5 w-1.5 rounded-full ${tone.dot}`} />
-      {normalized || "Pending"}
+      {normalized}
     </span>
   );
 }
@@ -1456,6 +1466,10 @@ export default function AttendanceTable() {
       (item) => item.gy_tracker_status !== "Approved",
     ).length;
 
+    const escalatingCount = attendance.filter(
+      (item) => item.gy_tracker_status === "Escalating",
+    ).length;
+
     const totalWorkHours = attendance.reduce(
       (sum, item) => sum + capWorkHoursFromItem(item),
       0,
@@ -1465,6 +1479,7 @@ export default function AttendanceTable() {
       totalLoaded,
       approvedCount,
       pendingCount,
+      escalatingCount,
       totalWorkHours,
     };
   }, [attendance]);
@@ -1558,7 +1573,9 @@ export default function AttendanceTable() {
             <MetricCard
               label="Pending Review"
               value={formatNumber(pageStats.pendingCount)}
-              description="Awaiting attendance validation"
+              description={pageStats.escalatingCount
+                ? `${pageStats.escalatingCount} escalating · awaiting validation`
+                : "Awaiting attendance validation"}
               icon={CircleX}
               tone="amber"
               delay={120}
