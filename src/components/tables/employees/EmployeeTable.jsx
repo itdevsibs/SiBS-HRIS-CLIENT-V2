@@ -1209,31 +1209,6 @@ export default function EmployeeTable({
 
   return (
     <div className="flex h-full min-h-[520px] min-w-0 flex-col bg-white font-jakarta">
-      <style>{`
-        @keyframes sibsEmployeeRowReveal {
-          from {
-            opacity: 0;
-            transform: translateY(8px);
-          }
-
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
-        .sibs-employee-row-reveal {
-          animation: sibsEmployeeRowReveal 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
-          will-change: opacity, transform;
-        }
-
-        @media (prefers-reduced-motion: reduce) {
-          .sibs-employee-row-reveal {
-            animation: none !important;
-            transform: none !important;
-          }
-        }
-      `}</style>
 
       <div className="border-b border-sibs-border p-4 sm:p-5 2xl:p-6 font-jakarta">
         <h3 className="font-heading text-sm 2xl:text-base font-bold text-sibs-navy tracking-tight">
@@ -1326,7 +1301,7 @@ export default function EmployeeTable({
           <ResponsiveTableShell
             mobileContent={
               <div ref={mobileScrollRef} className="p-3.5 sm:p-4">
-                {loading ? (
+                {loading && employees.length === 0 ? (
                   <DataCard.Skeleton count={5} lines={3} />
                 ) : employees.length === 0 ? (
                   <DataCard.Empty
@@ -1337,13 +1312,7 @@ export default function EmployeeTable({
                   <div className="space-y-3">
                     {employees.map((employee, index) => (
                       <div
-                        key={`${currentPage}-${
-                          getSibsId(employee) || `${getEmployeeName(employee)}-${index}`
-                        }`}
-                        className="sibs-employee-row-reveal"
-                        style={{
-                          animationDelay: `${Math.min(index, 10) * 36}ms`,
-                        }}
+                        key={getSibsId(employee) || `${getEmployeeName(employee)}-${index}`}
                       >
                         <MobileEmployeeCard
                           employee={employee}
@@ -1387,11 +1356,8 @@ export default function EmployeeTable({
                     </tr>
                   </thead>
 
-                  <tbody
-                    key={`${activeTab}-${currentPage}-${search}-${departmentFilter}-${accountFilterKey}`}
-                    className="divide-y divide-sibs-border"
-                  >
-                    {loading ? (
+                  <tbody className="divide-y divide-sibs-border" aria-busy={loading}>
+                    {loading && employees.length === 0 ? (
                       <TableSkeletonRows
                         count={PAGE_LIMIT}
                         columns={columns.length}
@@ -1415,10 +1381,7 @@ export default function EmployeeTable({
                             onClick={() => goToEmployee(employee)}
                             onKeyDown={(event) => handleRowKeyDown(event, employee)}
                             aria-label={`Open employee profile for ${getEmployeeName(employee)}`}
-                            className="group sibs-employee-row-reveal cursor-pointer transition-colors hover:bg-sibs-cream-light focus-visible:bg-sibs-cream-light focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sibs-orange/30"
-                            style={{
-                              animationDelay: `${Math.min(index, 10) * 36}ms`,
-                            }}
+                            className="group cursor-pointer transition-colors hover:bg-sibs-cream-light focus-visible:bg-sibs-cream-light focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sibs-orange/30"
                           >
                             <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle sibs-text-xs font-extrabold text-sibs-orange">
                               {getSibsId(employee) || "N/A"}
