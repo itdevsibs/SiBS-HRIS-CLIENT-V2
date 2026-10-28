@@ -151,6 +151,71 @@ export async function getApprovedHiringNeeds() {
   }
 }
 
+// Share the lightweight active-count request between the sidebar and the
+// Super Admin overview. Avoid a second HTTP request during route changes and
+// expose the last verified value synchronously (including a valid count of 0).
+const ACTIVE_COUNT_CACHE_MS = 10_000;
+const activeCountByUser = new Map();
+const activeCountListeners = new Map();
+const activeCountRequests = new Map();
+
+export function getActiveCandidateCountCacheKey(user = {}) {
+  return String(
+    user?.sibsId || user?.sibs_id || user?.employeeSibsId ||
+    user?.employee_sibs_id || user?.gy_emp_code || user?.gy_user_code ||
+    user?.userCode || user?.user_code || user?.employeeCode ||
+    user?.employee_code || user?.username || user?.id || user?.email || "",
+  ).trim();
+}
+
+export function getCachedActiveCandidatePipelineCount(cacheKey) {
+  if (!cacheKey) return null;
+  return activeCountByUser.get(cacheKey)?.count ?? null;
+}
+
+export function subscribeActiveCandidatePipelineCount(cacheKey, listener) {
+  if (!cacheKey) return () => {};
+  if (!activeCountListeners.has(cacheKey)) activeCountListeners.set(cacheKey, new Set());
+  const listeners = activeCountListeners.get(cacheKey);
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+    if (listeners.size === 0) activeCountListeners.delete(cacheKey);
+  };
+}
+
+export async function getActiveCandidatePipelineCount({
+  cacheKey = "",
+  forceRefresh = false,
+} = {}) {
+  // Account-scoped caching: never display the previous signed-in user's count.
+  // Missing identity still permits a request but cannot access a shared cache.
+  const cached = cacheKey ? activeCountByUser.get(cacheKey) : null;
+  if (!forceRefresh && cached && Date.now() - cached.fetchedAt < ACTIVE_COUNT_CACHE_MS) {
+    return { success: true, activeCandidates: cached.count };
+  }
+  const requestKey = cacheKey || "__uncached__";
+  if (activeCountRequests.has(requestKey)) return activeCountRequests.get(requestKey);
+
+  const request = api.get("/api/candidate-pipeline/active-count", {
+    withCredentials: true,
+  }).then(({ data }) => {
+    const count = Number(data?.activeCandidates);
+    if (data?.success && Number.isSafeInteger(count) && count >= 0 && cacheKey) {
+      const previous = activeCountByUser.get(cacheKey)?.count;
+      activeCountByUser.set(cacheKey, { count, fetchedAt: Date.now() });
+      if (previous !== count) {
+        activeCountListeners.get(cacheKey)?.forEach((listener) => listener());
+      }
+    }
+    return data;
+  }).finally(() => {
+    activeCountRequests.delete(requestKey);
+  });
+  activeCountRequests.set(requestKey, request);
+  return request;
+}
+
 export async function getCandidatePipelineCandidates(params = {}) {
   try {
     const res = await api.get("/api/candidate-pipeline", {

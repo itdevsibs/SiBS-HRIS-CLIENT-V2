@@ -44,6 +44,11 @@ import { getAvailablePositionApprovalUsers } from "../../lib/axios/getAvailableP
 import { getHiringNeeds } from "../../lib/axios/getHiringNeeds";
 import { getAvailablePositions } from "../../lib/axios/getAvailablePosition";
 import { getApplicantLeads } from "../../lib/axios/getApplicantLeads";
+import {
+  getActiveCandidateCountCacheKey,
+  getActiveCandidatePipelineCount,
+} from "../../lib/axios/getCandidatePipeline";
+import { socket } from "../../lib/axios/socket";
 import { useTalentPool } from "../../services/context/TalentPoolContext";
 import {
   filterTalentPoolCandidatesForTab,
@@ -499,6 +504,7 @@ export default function Sidebar() {
   const [mounted, setMounted] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [openGroupIds, setOpenGroupIds] = useState({});
+  const activeCandidateCountRef = useRef(null);
   const [closedActiveGroup, setClosedActiveGroup] = useState(null);
   const [flyoutGroupId, setFlyoutGroupId] = useState(null);
   const flyoutRef = useRef(null);
@@ -554,6 +560,82 @@ export default function Sidebar() {
     talentPoolNewApplicantCount,
     setSidebarNotification,
   ]);
+
+  // This is an ACTIVE RECORD count, not a new/unread notification.
+  // Read only COUNT(*) from HRIS: the full candidate list/offer history can be
+  // large, and the sidebar is mounted even on unrelated dashboard pages.
+  const candidatePipelineAccess =
+    !loading && Boolean(user) && normalizeRole(user?.role) !== "employee" &&
+    [1, 2, 3, 6, 7].includes(getAdminAccess(user));
+  const candidatePipelineUserId = getActiveCandidateCountCacheKey(user);
+
+  useEffect(() => {
+    if (!candidatePipelineAccess) {
+      activeCandidateCountRef.current = null;
+      setSidebarNotification?.("candidatePipelineActive", null);
+      return undefined;
+    }
+
+    let disposed = false;
+    let requestRevision = 0;
+
+    const refreshCount = async () => {
+      const revision = ++requestRevision;
+      try {
+        const result = await getActiveCandidatePipelineCount({
+          cacheKey: candidatePipelineUserId,
+          // For stage changes and the 20s poll, always verify on the server.
+          // Requests from the overview reuse the same in-flight call.
+          forceRefresh: true,
+        });
+        if (disposed || revision !== requestRevision || !result?.success) return;
+
+        const count = Number(result.activeCandidates);
+        if (!Number.isSafeInteger(count) || count < 0) return;
+        if (activeCandidateCountRef.current === count) return;
+        activeCandidateCountRef.current = count;
+
+        setSidebarNotification?.(
+          "candidatePipelineActive",
+          count > 0
+            ? {
+                count,
+                tone: "action",
+                title: `${count} active candidate${count === 1 ? "" : "s"} in Candidate Pipeline`,
+              }
+            : null,
+        );
+      } catch (error) {
+        // Preserve the last successful count on transient network failures.
+        console.warn("Candidate Pipeline sidebar count unavailable:", error?.message);
+      }
+    };
+
+    const refreshIfVisible = () => {
+      if (document.visibilityState === "visible") void refreshCount();
+    };
+    const refreshOnVisibility = () => refreshIfVisible();
+    const initialTimer = window.setTimeout(() => void refreshCount(), 0);
+    const pollTimer = window.setInterval(refreshIfVisible, 20000);
+    socket.on("candidate-pipeline:changed", refreshCount);
+    socket.on("candidate-pipeline:stage-committed", refreshCount);
+    window.addEventListener("ta-pipeline-candidates-updated", refreshCount);
+    window.addEventListener("ta-talent-pool-updated", refreshCount);
+    window.addEventListener("focus", refreshCount);
+    document.addEventListener("visibilitychange", refreshOnVisibility);
+
+    return () => {
+      disposed = true;
+      window.clearTimeout(initialTimer);
+      window.clearInterval(pollTimer);
+      socket.off("candidate-pipeline:changed", refreshCount);
+      socket.off("candidate-pipeline:stage-committed", refreshCount);
+      window.removeEventListener("ta-pipeline-candidates-updated", refreshCount);
+      window.removeEventListener("ta-talent-pool-updated", refreshCount);
+      window.removeEventListener("focus", refreshCount);
+      document.removeEventListener("visibilitychange", refreshOnVisibility);
+    };
+  }, [candidatePipelineAccess, candidatePipelineUserId, setSidebarNotification]);
 
   const loadApplicantLeadNotifications = useCallback(async () => {
     try {
@@ -1121,6 +1203,7 @@ export default function Sidebar() {
       icon: Table2,
       path: "/recruitment/candidate-pipeline",
       allowedUsers: [1, 2, 3, 6, 7],
+      notificationKey: "candidatePipelineActive",
     },
     {
       name: "Offers",
