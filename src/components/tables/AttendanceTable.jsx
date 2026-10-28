@@ -52,6 +52,31 @@ import {
   getAttendanceInitialDateRange,
 } from "../../lib/utils/attendance/attendanceHelpers";
 
+// The Attendance list is a live operational view. Poll only the current page;
+// refreshing the exact total is much more expensive and runs less frequently.
+const ATTENDANCE_LIVE_REFRESH_MS = 5_000;
+const ATTENDANCE_COUNT_REFRESH_MS = 30_000;
+
+function sameAttendanceRows(previous, next) {
+  // Max 15 rows: a content comparison avoids re-rendering (and reloading GIF
+  // avatars) when the server returned an unchanged page.
+  return JSON.stringify(previous) === JSON.stringify(next);
+}
+
+function getAttendanceRowKey(item, index) {
+  if (item?.gy_tracker_id !== null && item?.gy_tracker_id !== undefined && String(item.gy_tracker_id).trim()) {
+    // One tracker can produce multiple displayed rows if it has multiple
+    // schedules. Distinguish those without tying normal keys to the row index.
+    return `tracker-${item.gy_tracker_id}-${item.gy_sched_day || ""}-${item.gy_sched_login || ""}-${item.gy_sched_logout || ""}`;
+  }
+  const employeeCode = String(item?.gy_emp_code || item?.gy_emp_id || "").trim();
+  const trackerDate = String(item?.gy_tracker_date || "").trim();
+  const login = String(item?.gy_tracker_login || "").trim();
+  return employeeCode && trackerDate
+    ? `attendance-${employeeCode}-${trackerDate}-${login}`
+    : `attendance-row-${index}`;
+}
+
 const AVATAR_TONES = [
   "border-orange-100 bg-orange-50 text-sibs-orange",
   "border-emerald-100 bg-emerald-50 text-emerald-700",
@@ -975,6 +1000,7 @@ export default function AttendanceTable() {
 
   const [filtersInitialized, setFiltersInitialized] = useState(false);
   const countCacheRef = useRef(new Map());
+  const countCheckedAtRef = useRef(new Map());
 
   const tableScrollRef = useRef(null);
   const mobileScrollRef = useRef(null);
@@ -1181,13 +1207,15 @@ export default function AttendanceTable() {
   }
 
   function handleClearAttendanceFilters() {
+    // Clearing only a draft must not create a loading state without a request.
+    // PaginationContext already clears an applied search when the draft is emptied.
     setSearchInput?.("");
-    if (typeof setSearch === "function") setSearch("");
-    setDepartmentFilter("All");
-    setAccountFilters([]);
-    const { setDateRange } = paginationContext;
-    setDateRange?.(initialDateRange);
-    goToPage(1);
+    if (departmentFilter !== "All") setDepartmentFilter("All");
+    if (accountFilters.length > 0) setAccountFilters([]);
+    if (hasCustomDateRange) {
+      paginationContext.setDateRange?.(initialDateRange);
+    }
+    if (page !== 1) goToPage(1);
   }
 
   function handleDragStart(e) {
@@ -1308,24 +1336,107 @@ export default function AttendanceTable() {
 
   useEffect(() => {
     // Wait for mount-time filter reset, avoiding a stale-range fetch.
-    if (!filtersInitialized) return;
+    if (!filtersInitialized) return undefined;
 
     let cancelled = false;
+    let requestInFlight = false;
     const requestId = latestRequestIdRef.current + 1;
-
     latestRequestIdRef.current = requestId;
 
-    const fetchAttendance = async () => {
-      try {
-        setLoadingRef.current?.(true);
-        setLoadError("");
+    const currentAccountFilter = attendanceFiltersView
+      ? accountFilterQuery
+      : "All";
+    const currentDepartment = attendanceFiltersView
+      ? departmentFilter
+      : "All";
+    const countKey = JSON.stringify([
+      user?.sibs_id || user?.sibsId || user?.username || "",
+      user?.tokenType || user?.role || "",
+      search,
+      dateFrom,
+      dateTo,
+      currentDepartment,
+      currentAccountFilter,
+    ]);
 
-        const currentAccountFilter = attendanceFiltersView
-          ? accountFilterQuery
-          : "All";
-        const currentDepartment = attendanceFiltersView
-          ? departmentFilter
-          : "All";
+    const isCurrentRequest = () =>
+      !cancelled && latestRequestIdRef.current === requestId;
+
+    const updateExactCount = (total, pageInfo) => {
+      if (!isCurrentRequest() || !Number.isFinite(Number(total))) return;
+      const safeTotal = Math.max(0, Number(total));
+      setPaginationRef.current?.({
+        ...pageInfo,
+        total: safeTotal,
+        totalPages: Math.max(1, Math.ceil(safeTotal / PAGE_LIMIT)),
+        hasNextPage: page * PAGE_LIMIT < safeTotal,
+      });
+    };
+
+    const syncAttendanceCount = (pageInfo, isBackgroundRefresh) => {
+      if (pageInfo.total !== null && pageInfo.total !== undefined) {
+        countCacheRef.current.set(countKey, Number(pageInfo.total));
+        countCheckedAtRef.current.set(countKey, Date.now());
+        if (isBackgroundRefresh) {
+          updateExactCount(pageInfo.total, pageInfo);
+        }
+        return;
+      }
+
+      const cached = countCacheRef.current.get(countKey);
+      // Keep a previously confirmed pagination total visible during polling.
+      if (!isBackgroundRefresh && typeof cached === "number") {
+        updateExactCount(cached, pageInfo);
+      }
+
+      const recentlyChecked =
+        Date.now() - (countCheckedAtRef.current.get(countKey) || 0) <
+        ATTENDANCE_COUNT_REFRESH_MS;
+      if (cached && typeof cached.then === "function") {
+        cached.then((result) => {
+          if (result?.success) updateExactCount(result.total, pageInfo);
+        });
+        return;
+      }
+      if (recentlyChecked && typeof cached === "number") return;
+
+      // Count only once per 30 seconds, not on every 5-second row update.
+      countCheckedAtRef.current.set(countKey, Date.now());
+      const countPromise = getAttendanceCount(search, currentAccountFilter, {
+        dateFrom,
+        dateTo,
+        department: currentDepartment,
+      });
+      countCacheRef.current.set(countKey, countPromise);
+      countPromise.then((countResult) => {
+        if (!countResult?.success || !Number.isFinite(Number(countResult.total))) {
+          countCacheRef.current.delete(countKey);
+          countCheckedAtRef.current.delete(countKey);
+          return;
+        }
+        const total = Math.max(0, Number(countResult.total));
+        countCacheRef.current.set(countKey, total);
+        updateExactCount(total, pageInfo);
+      }).catch(() => {
+        countCacheRef.current.delete(countKey);
+        countCheckedAtRef.current.delete(countKey);
+      });
+    };
+
+    const fetchAttendance = async (isBackgroundRefresh = false) => {
+      // One request per active filter state; never overlap polls or the first load.
+      if (!isCurrentRequest() || requestInFlight) return;
+      if (isBackgroundRefresh && typeof document !== "undefined" && document.hidden) return;
+      requestInFlight = true;
+
+      try {
+        // Background updates must not show skeletons, disable filters, or reset
+        // the search input, scroll position, and existing avatar components.
+        if (!isBackgroundRefresh) {
+          setLoadingRef.current?.(true);
+          setLoadError("");
+        }
+
         const result = await getAttendance(page, search, currentAccountFilter, {
           dateFrom,
           dateTo,
@@ -1335,15 +1446,19 @@ export default function AttendanceTable() {
           fast: true,
         });
 
-        if (cancelled || latestRequestIdRef.current !== requestId) return;
-
+        if (!isCurrentRequest()) return;
         if (!result?.success) {
-          setLoadError(result?.message || "Unable to load attendance records. Please try again.");
-
+          // Retain the last successful page if a background request fails.
+          if (!isBackgroundRefresh) {
+            setLoadError(result?.message || "Unable to load attendance records. Please try again.");
+          }
           return;
         }
 
-        setAttendance(result.data || []);
+        const nextRows = Array.isArray(result.data) ? result.data : [];
+        setAttendance((previous) =>
+          sameAttendanceRows(previous, nextRows) ? previous : nextRows,
+        );
 
         const pageInfo = result.pagination || {
           currentPage: page,
@@ -1353,74 +1468,39 @@ export default function AttendanceTable() {
           hasPreviousPage: page > 1,
           hasNextPage: false,
         };
-
-        // A COUNT across the full historical tracker table can be expensive.
-        // Paint the first 15 rows immediately, then resolve the exact total
-        // separately without turning the skeleton back on.
-        const countKey = JSON.stringify([
-          user?.sibs_id || user?.sibsId || user?.username || "",
-          user?.tokenType || user?.role || "",
-          search,
-          dateFrom,
-          dateTo,
-          currentDepartment,
-          currentAccountFilter,
-        ]);
-        const cached = countCacheRef.current.get(countKey);
-        const applyCount = (total) => {
-          if (cancelled || latestRequestIdRef.current !== requestId) return;
-          if (!Number.isFinite(Number(total))) return;
-          const safeTotal = Number(total);
-          setPaginationRef.current?.({
-            ...pageInfo,
-            total: safeTotal,
-            totalPages: Math.max(1, Math.ceil(safeTotal / PAGE_LIMIT)),
-            hasNextPage: page * PAGE_LIMIT < safeTotal,
-          });
-        };
-
-        setPaginationRef.current?.(pageInfo);
-        if (pageInfo.total === null || pageInfo.total === undefined) {
-          if (typeof cached === "number") {
-            applyCount(cached);
-          } else {
-            const countPromise = cached || getAttendanceCount(
-              search,
-              currentAccountFilter,
-              { dateFrom, dateTo, department: currentDepartment },
-            );
-            if (!cached) countCacheRef.current.set(countKey, countPromise);
-            countPromise.then((countResult) => {
-              if (!countResult?.success) {
-                countCacheRef.current.delete(countKey);
-                return;
-              }
-              const exactTotal = Number(countResult.total);
-              if (!Number.isFinite(exactTotal)) return;
-              countCacheRef.current.set(countKey, exactTotal);
-              applyCount(exactTotal);
-            }).catch(() => {
-              countCacheRef.current.delete(countKey);
-            });
-          }
+        if (!isBackgroundRefresh) {
+          setPaginationRef.current?.(pageInfo);
         }
+        syncAttendanceCount(pageInfo, isBackgroundRefresh);
       } catch (err) {
-        if (cancelled || latestRequestIdRef.current !== requestId) return;
-
+        if (!isCurrentRequest()) return;
         console.error("Fetch attendance error:", err);
-
-        setLoadError(err?.message || "Unable to load attendance records. Please try again.");
+        if (!isBackgroundRefresh) {
+          setLoadError(err?.message || "Unable to load attendance records. Please try again.");
+        }
       } finally {
-        if (!cancelled && latestRequestIdRef.current === requestId) {
+        requestInFlight = false;
+        if (!isBackgroundRefresh && isCurrentRequest()) {
           setLoadingRef.current?.(false);
         }
       }
     };
 
-    fetchAttendance();
+    void fetchAttendance();
+    const interval = window.setInterval(() => {
+      void fetchAttendance(true);
+    }, ATTENDANCE_LIVE_REFRESH_MS);
+
+    // Catch up as soon as the user returns; don't poll while tab is hidden.
+    const handleVisibilityChange = () => {
+      if (!document.hidden) void fetchAttendance(true);
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
       cancelled = true;
+      window.clearInterval(interval);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, [
     page,
@@ -1433,6 +1513,11 @@ export default function AttendanceTable() {
     accountFilterQuery,
     attendanceFiltersView,
     filtersInitialized,
+    user?.sibs_id,
+    user?.sibsId,
+    user?.username,
+    user?.tokenType,
+    user?.role,
   ]);
 
   function formatTime(time) {
@@ -1454,6 +1539,16 @@ export default function AttendanceTable() {
   function renderStatusBadge(status) {
     return <AttendanceStatusBadge status={status} />;
   }
+
+  const attendanceRowKeys = useMemo(() => {
+    const seen = new Map();
+    return attendance.map((item, index) => {
+      const baseKey = getAttendanceRowKey(item, index);
+      const duplicate = seen.get(baseKey) || 0;
+      seen.set(baseKey, duplicate + 1);
+      return `${baseKey}-${duplicate}`;
+    });
+  }, [attendance]);
 
   const pageStats = useMemo(() => {
     const totalLoaded = attendance.length;
@@ -1622,7 +1717,6 @@ export default function AttendanceTable() {
                   setSearchInput?.(typeof val === "string" ? val : val?.target?.value ?? "")
                 }
                 onKeyDown={handleAttendanceSearchKeyDown}
-                disabled={loading}
               />
             </div>
 
@@ -1707,7 +1801,6 @@ export default function AttendanceTable() {
                 <button
                   type="button"
                   onClick={handleClearAttendanceFilters}
-                  disabled={loading}
                   className="inline-flex h-8.5 2xl:h-10 w-full items-center justify-center gap-1.5 rounded-[10px] border border-sibs-border bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-muted transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange disabled:cursor-not-allowed disabled:opacity-50 xl:w-auto"
                 >
                   <RotateCcw size={14} />
@@ -1720,7 +1813,6 @@ export default function AttendanceTable() {
           <button
             type="button"
             onClick={handleAttendanceSearchSubmit}
-            disabled={loading}
             className="mt-3 sibs-btn-primary !h-10 w-full text-xs font-extrabold lg:hidden"
           >
             {loading ? (
@@ -1852,9 +1944,7 @@ export default function AttendanceTable() {
 
                         return (
                           <tr
-                            key={`${
-                              item.gy_tracker_id || item.gy_tracker_date || "row"
-                            }-${index}`}
+                            key={attendanceRowKeys[index]}
                             className="sibs-data-table-row sibs-attendance-row-reveal hover:bg-sibs-cream-light transition-colors"
                             style={{
                               animationDelay: `${Math.min(index, 10) * 36}ms`,
@@ -1996,9 +2086,7 @@ export default function AttendanceTable() {
 
                   return (
                     <DataCard
-                      key={`${
-                        item.gy_tracker_id || item.gy_tracker_date || "mobile"
-                      }-${index}`}
+                      key={attendanceRowKeys[index]}
                       index={index}
                     >
                       <DataCard.Header

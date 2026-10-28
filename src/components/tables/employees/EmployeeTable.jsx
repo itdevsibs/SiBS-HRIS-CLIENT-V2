@@ -1222,6 +1222,7 @@ export default function EmployeeTable({
 
         <div className="mt-4 flex flex-col gap-3 overflow-visible xl:flex-row xl:items-end">
           <div className="relative w-full min-w-0 xl:min-w-[180px] xl:flex-[1_1_220px] 2xl:min-w-[280px] 2xl:flex-[1_1_360px]">
+            {/* Search stays editable while asynchronous employee results load. */}
             <SearchInput
               label="Search"
               labelClassName="sibs-text-micro font-extrabold tracking-normal text-sibs-navy"
@@ -1229,7 +1230,6 @@ export default function EmployeeTable({
               placeholder="Search by employee, SIBS ID, department, or account..."
               onChange={(value) => setSearchInput?.(value)}
               onKeyDown={handleEmployeeSearchKeyDown}
-              disabled={loading}
             />
           </div>
 
@@ -1274,7 +1274,6 @@ export default function EmployeeTable({
         <button
           type="button"
           onClick={submitSearch}
-          disabled={loading}
           className="sibs-btn-primary mt-4 inline-flex h-10 w-full items-center justify-center gap-2 text-xs font-extrabold lg:hidden"
         >
           <Search size={15} />

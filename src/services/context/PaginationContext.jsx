@@ -129,10 +129,17 @@ export const PaginationProvider = ({ children }) => {
       const current = prev[entity] || createDefaultPaginationState();
       const cleanValue = String(value ?? "");
 
+      // Only refetch on clear if the applied query/page actually changes.
+      // Otherwise loading=true can remain set without a new request.
+      const clearChangesQuery =
+        cleanValue.trim() === "" &&
+        (String(current.search ?? "").trim() !== "" ||
+          Number(current.page || 1) !== 1);
+
       const nextState = {
         ...current,
         searchInput: cleanValue,
-        ...(cleanValue.trim() === ""
+        ...(clearChangesQuery
           ? {
               search: "",
               page: 1,
