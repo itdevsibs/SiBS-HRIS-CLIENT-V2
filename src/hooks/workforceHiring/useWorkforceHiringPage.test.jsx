@@ -86,3 +86,34 @@ it("keeps account selection explicit on the workforce plan page", async () => {
   expect(state.reads).toHaveLength(0);
   hook.unmount();
 });
+
+it("treats CancelledError during metadata loading as non-error and does not populate accountDataError", async () => {
+  const cancelErr = new Error("CancelledError");
+  cancelErr.name = "CancelledError";
+  api.getWorkforceHiringPlanWeeks.mockRejectedValueOnce(cancelErr);
+  let hook;
+  await act(async () => {
+    hook = renderHook(() => useWorkforceHiringPage({ fastOverviewMode: true }));
+  });
+  expect(state.snapshot.weeklyVersion.accountDataError).toBe("");
+  hook.unmount();
+});
+
+it("treats CanceledError and AbortError in accounts read as non-errors without wiping valid accounts", async () => {
+  const hook = renderHook(() => useWorkforceHiringPage({ fastOverviewMode: true }));
+  await waitFor(() => expect(state.reads.length).toBeGreaterThan(0));
+  await act(async () => state.reads[0].resolve([{ id: 10, accountName: "Alpha", actualHeadcount: 12 }]));
+  await waitFor(() => expect(state.snapshot.weeklyVersion.accountDataReady).toBe(true));
+
+  act(() => state.snapshot.weeklyVersion.setSelectedAccounts(["Alpha"]));
+  await waitFor(() => expect(state.reads.length).toBeGreaterThan(1));
+  const secondRead = state.reads[state.reads.length - 1];
+
+  const cancelErr = new Error("canceled");
+  cancelErr.name = "CanceledError";
+  await act(async () => secondRead.reject(cancelErr));
+
+  expect(state.snapshot.weeklyVersion.accountDataError).toBe("");
+  expect(state.snapshot.tables.displayData.length).toBeGreaterThan(0);
+  hook.unmount();
+});

@@ -63,6 +63,7 @@ test/
 src/test/
 tests/
 *.test.*
+!src/lib/axios/hrisQueryCache.test.jsx
 !src/pages/recruitment/JobDescriptionPage.test.jsx
 !src/pages/recruitment/HiringNeedsPage.test.jsx
 !src/pages/recruitment/AvailablePositionsPage.test.jsx
