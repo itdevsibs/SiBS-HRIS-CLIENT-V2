@@ -25,6 +25,7 @@ import {
   TableSkeletonRows,
 } from "@/components/ui";
 import DropdownPortal from "@/components/ui/DropdownPortal.jsx";
+import api from "@/lib/axios/api-template";
 import {
   LEAVES_STATE_KEY,
   PAGE_LIMIT,
@@ -498,6 +499,48 @@ function LeaveDetailsModal({
   onRejectLeave,
 }) {
   const [decisionAction, setDecisionAction] = useState("");
+  const [attachmentDownloading, setAttachmentDownloading] = useState(false);
+  const [attachmentError, setAttachmentError] = useState("");
+
+  useEffect(() => {
+    setAttachmentDownloading(false);
+    setAttachmentError("");
+  }, [item?.gy_leave_id]);
+
+  async function downloadLeaveAttachment() {
+    const leaveId = item?.gy_leave_id;
+    if (!leaveId || attachmentDownloading) return;
+    setAttachmentDownloading(true);
+    setAttachmentError("");
+    try {
+      const response = await api.get(`/api/leaves/${encodeURIComponent(leaveId)}/attachment`, {
+        responseType: "blob",
+        timeout: 45000,
+      });
+      const objectUrl = window.URL.createObjectURL(response.data);
+      const link = document.createElement("a");
+      link.href = objectUrl;
+      link.download = String(item.gy_leave_attachment || item.leave_attachment || "leave-attachment")
+        .split(/[\\/]/).pop();
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => window.URL.revokeObjectURL(objectUrl), 30000);
+    } catch (error) {
+      let message = error?.response?.data?.message || "Unable to download this attachment.";
+      const responseBlob = error?.response?.data;
+      if (responseBlob instanceof Blob) {
+        try {
+          const parsed = JSON.parse(await responseBlob.text());
+          message = parsed?.message || message;
+        } catch { /* Leave the safe default error message. */ }
+      }
+      setAttachmentError(message);
+    } finally {
+      setAttachmentDownloading(false);
+    }
+  }
+
 
   const normalizedStatus = normalizeStatus(item?.gy_leave_status);
   const isPending = normalizedStatus === "Pending";
@@ -763,14 +806,25 @@ function LeaveDetailsModal({
                     {attachmentName}
                   </span>
 
-                  <span className="shrink-0 text-[9px] text-blue-500">
-                    Download
-                  </span>
+                  <button
+                    type="button"
+                    onClick={downloadLeaveAttachment}
+                    disabled={attachmentDownloading}
+                    aria-label={`Download leave attachment ${attachmentName}`}
+                    className="shrink-0 rounded px-1 text-[10px] font-extrabold text-blue-600 underline underline-offset-2 hover:text-blue-800 disabled:cursor-wait disabled:opacity-60"
+                  >
+                    {attachmentDownloading ? "Downloading…" : "Download"}
+                  </button>
                 </div>
               ) : (
                 <div className="mt-1 rounded-lg border border-sibs-border bg-sibs-surface px-2.5 py-2 sibs-text-xs font-semibold text-sibs-muted">
                   No attachments provided.
                 </div>
+              )}
+              {attachmentError && (
+                <p role="alert" className="mt-1 text-xs font-semibold text-red-600">
+                  {attachmentError}
+                </p>
               )}
             </CompactField>
           </div>
