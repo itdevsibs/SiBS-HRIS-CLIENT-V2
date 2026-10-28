@@ -151,6 +151,13 @@ export async function getApprovedHiringNeeds() {
   }
 }
 
+export async function getActiveCandidatePipelineCount() {
+  const response = await api.get("/api/candidate-pipeline/active-count", {
+    withCredentials: true,
+  });
+  return response.data;
+}
+
 export async function getCandidatePipelineCandidates(params = {}) {
   try {
     const res = await api.get("/api/candidate-pipeline", {

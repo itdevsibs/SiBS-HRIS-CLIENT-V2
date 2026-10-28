@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import Header from "../../../components/layout/Header";
-import DashboardLoadingSkeleton from "../../../components/Dashboard/shared/DashboardLoadingSkeleton";
 import { useUser } from "../../../services/context/UserContext";
 import { usePagination } from "../../../services/context/PaginationContext";
 import useRefetchOnFocus from "../../../hooks/useRefetchOnFocus";
@@ -78,6 +77,7 @@ export default function SuperAdminDashboardPage() {
     departmentsTotal: null,
     approvalsTotal: null,
     leavesTotal: null,
+    recruitmentTotal: null,
   });
   const [notice, setNotice] = useState("");
   const [isManualRefreshing, setIsManualRefreshing] = useState(false);
@@ -87,7 +87,8 @@ export default function SuperAdminDashboardPage() {
     activity: true,
   });
   const pendingRequest = useRef(null);
-  const isInitialLoading = Object.values(initialSections).some(Boolean);
+  // Secondary governance and audit queries must never block the main dashboard.
+  const isInitialLoading = initialSections.metrics;
   const statsLoading = initialSections.metrics;
   const activeSectionLoading = activeTab === "activity"
     ? initialSections.activity
@@ -139,13 +140,23 @@ export default function SuperAdminDashboardPage() {
             }
             return value;
           });
-          const secondaryStart = overviewPromise.then(
-            () => undefined,
-            () => undefined,
-          );
-          const feedPromise = secondaryStart
-            .then(() => getHrDashboardFeed({ forceRefresh }))
+          // Independent endpoints run concurrently, rather than in a waterfall
+          // behind the (potentially slow) Kronos overview request.
+          const feedPromise = getHrDashboardFeed({ forceRefresh })
             .then((value) => {
+              // The overview's `interviewsToday` metric is NOT the active TA
+              // pipeline. Reuse the active-candidate total already returned by
+              // the feed: no extra API request or dashboard loading dependency.
+              const activeCandidates = value?.notificationCounts?.activeCandidates;
+              if (activeCandidates !== null && activeCandidates !== undefined && activeCandidates !== "") {
+                const total = Number(activeCandidates);
+                if (Number.isFinite(total) && total >= 0) {
+                  setExtraCounts((current) => ({
+                    ...current,
+                    recruitmentTotal: total,
+                  }));
+                }
+              }
               if (Array.isArray(value?.recentActivities) && value.recentActivities.length > 0) {
                 setActivityLogs(enrichActivityLogs(value.recentActivities));
               }
@@ -159,15 +170,9 @@ export default function SuperAdminDashboardPage() {
             });
             return employeePromise;
           };
-          const assignedUsersPromise = secondaryStart.then(() =>
-            getUserSettingsUsers({ limit: 100 }),
-          );
-          const approvalsPromise = secondaryStart.then(() =>
-            getApprovalRequests({ status: "Pending", limit: 50 }),
-          );
-          const leavesPromise = secondaryStart.then(() =>
-            getLeaves({ status: "Pending", limit: 50 }),
-          );
+          const assignedUsersPromise = getUserSettingsUsers({ limit: 100 });
+          const approvalsPromise = getApprovalRequests({ status: "Pending", limit: 50 });
+          const leavesPromise = getLeaves({ status: "Pending", limit: 50 });
 
           const adminsPromise = (async () => {
             const [assignedUsersData] = await Promise.allSettled([assignedUsersPromise]);
@@ -436,11 +441,6 @@ export default function SuperAdminDashboardPage() {
     setNotice(`Resolved exception: ${target?.title || id}.`);
   }
 
-  function handleEditAccess(item) {
-    setNotice(`Navigating to access editor for ${item.name || item.email}...`);
-    navigate(SUPER_ADMIN_ROUTES.accessSettings);
-  }
-
   const paginationProps = {
     currentPage: activePagination.currentPage,
     totalPages: activePagination.totalPages,
@@ -479,23 +479,6 @@ export default function SuperAdminDashboardPage() {
     if (metric.key === "recruitment") {
       navigate(SUPER_ADMIN_ROUTES.taDashboard);
     }
-  }
-
-  if (isInitialLoading) {
-    return (
-      <DashboardLoadingSkeleton
-        ariaLabel="Loading Super Admin Dashboard"
-        showStatutoryCoverage={true}
-        hero={
-          <SuperAdminDashboardHeader
-            displayName={getUserDisplayName(user)}
-            onOpenEmployees={() => navigate(SUPER_ADMIN_ROUTES.employees)}
-            onRefresh={handleManualRefresh}
-            isManualRefreshing
-          />
-        }
-      />
-    );
   }
 
   return (

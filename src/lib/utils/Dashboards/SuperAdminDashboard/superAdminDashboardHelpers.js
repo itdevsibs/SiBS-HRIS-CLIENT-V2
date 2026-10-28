@@ -370,9 +370,14 @@ export function normalizeSuperAdminMetrics(overview = {}, extraData = {}) {
       overview?.notificationCounts?.approvals ??
       0,
   );
-  const recruitmentCount = Number(
-    extraData?.recruitmentTotal ?? overview?.metrics?.interviewsToday ?? 0,
-  );
+  // `interviewsToday` counts only today's interviews, not active candidates.
+  // Until the feed supplies an actual pipeline count, show unavailable rather
+  // than a misleading zero.
+  const rawRecruitmentCount = extraData?.recruitmentTotal;
+  const recruitmentCount = rawRecruitmentCount === null ||
+    rawRecruitmentCount === undefined || rawRecruitmentCount === ""
+    ? null
+    : Number(rawRecruitmentCount);
   const adminCount = Number(extraData?.adminCount ?? 7);
 
   return {
@@ -383,7 +388,10 @@ export function normalizeSuperAdminMetrics(overview = {}, extraData = {}) {
     attendanceFlags: String(attendanceFlags),
     pendingApprovals: String(pendingApprovals),
     leavesCount: String(onLeave),
-    recruitmentCount: String(recruitmentCount),
+    recruitmentCount: recruitmentCount !== null &&
+      Number.isFinite(recruitmentCount) && recruitmentCount >= 0
+      ? String(recruitmentCount)
+      : "—",
   };
 }
 
