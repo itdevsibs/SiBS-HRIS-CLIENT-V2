@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { useNavigate } from "react-router-dom";
 
 import Header from "../../../components/layout/Header";
@@ -12,6 +12,12 @@ import {
 import { getEmployee } from "../../../lib/axios/getEmployee";
 import { getApprovalRequests } from "../../../lib/axios/getApprovalRequest";
 import { getLeaves } from "../../../lib/axios/getLeaves";
+import {
+  getActiveCandidateCountCacheKey,
+  getActiveCandidatePipelineCount,
+  getCachedActiveCandidatePipelineCount,
+  subscribeActiveCandidatePipelineCount,
+} from "../../../lib/axios/getCandidatePipeline";
 import { getUserSettingsUsers } from "../../../lib/axios/userSettings";
 import { normalizeDashboardOverview } from "../../../lib/utils/Dashboards/AdminDashboard/adminDashboardHelpers";
 import {
@@ -53,6 +59,18 @@ const SUPER_ADMIN_ENTITY = "super-admin-dashboard";
 export default function SuperAdminDashboardPage() {
   const navigate = useNavigate();
   const { user } = useUser();
+  const activeCountCacheKey = getActiveCandidateCountCacheKey(user);
+  const subscribeToActiveCount = useCallback(
+    (listener) => subscribeActiveCandidatePipelineCount(activeCountCacheKey, listener),
+    [activeCountCacheKey],
+  );
+  const getActiveCountSnapshot = useCallback(
+    () => getCachedActiveCandidatePipelineCount(activeCountCacheKey),
+    [activeCountCacheKey],
+  );
+  const quickActiveCount = useSyncExternalStore(
+    subscribeToActiveCount, getActiveCountSnapshot, () => null,
+  );
 
   const {
     page,
@@ -139,6 +157,16 @@ export default function SuperAdminDashboardPage() {
               }));
             }
             return value;
+          });
+          // The active candidate count uses the same lightweight, shared endpoint
+          // as the sidebar, so activity-feed queries cannot delay the TA card.
+          const countPromise = getActiveCandidatePipelineCount({
+            cacheKey: activeCountCacheKey,
+            forceRefresh,
+          }).catch((error) => {
+            // A feed count can still supply a fallback when the dedicated
+            // count endpoint fails; never replace a verified count with zero.
+            console.warn("Super Admin active pipeline count unavailable:", error?.message);
           });
           // Independent endpoints run concurrently, rather than in a waterfall
           // behind the (potentially slow) Kronos overview request.
@@ -262,6 +290,7 @@ export default function SuperAdminDashboardPage() {
             secondaryMetricsPromise,
             adminsPromise,
             feedPromise,
+            countPromise,
           ]);
         } catch (err) {
           console.error("Super Admin Dashboard fetch error:", err);
@@ -276,7 +305,7 @@ export default function SuperAdminDashboardPage() {
       })();
       return request.promise;
     },
-    [setLoading],
+    [setLoading, activeCountCacheKey],
   );
 
   useEffect(() => {
@@ -302,9 +331,10 @@ export default function SuperAdminDashboardPage() {
     () =>
       normalizeSuperAdminMetrics(backendOverview, {
         ...extraCounts,
+        recruitmentTotal: quickActiveCount ?? extraCounts.recruitmentTotal,
         adminCount: adminUsers.length,
       }),
-    [backendOverview, extraCounts, adminUsers.length],
+    [backendOverview, extraCounts, adminUsers.length, quickActiveCount],
   );
 
   const dynamicSummaryCards = useMemo(
