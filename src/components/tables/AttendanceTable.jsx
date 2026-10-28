@@ -15,6 +15,7 @@ import {
 
 import { useUser } from "../../services/context/UserContext";
 import { getAttendance, getAttendanceCount, getAttendanceOptions } from "../../lib/axios/getAttendance";
+import { socket } from "../../lib/axios/socket";
 import {
   usePagination,
   PaginationDateRangeFilter,
@@ -54,7 +55,11 @@ import {
 
 // The Attendance list is a live operational view. Poll only the current page;
 // refreshing the exact total is much more expensive and runs less frequently.
+// The server sends attendance:changed as soon as its shared Kronos observer
+// notices a tracker update. Continue polling as a safety net for missed events,
+// historical edits, and instances without a working Socket.IO connection.
 const ATTENDANCE_LIVE_REFRESH_MS = 5_000;
+const ATTENDANCE_SOCKET_FALLBACK_MS = 30_000;
 const ATTENDANCE_COUNT_REFRESH_MS = 30_000;
 
 function sameAttendanceRows(previous, next) {
@@ -1340,6 +1345,10 @@ export default function AttendanceTable() {
 
     let cancelled = false;
     let requestInFlight = false;
+    let queuedRealtimeRefresh = false;
+    let lastFallbackCheck = Date.now();
+    let hasConnectedOnce = socket.connected;
+    let subscriptionConfirmed = false;
     const requestId = latestRequestIdRef.current + 1;
     latestRequestIdRef.current = requestId;
 
@@ -1423,9 +1432,14 @@ export default function AttendanceTable() {
       });
     };
 
-    const fetchAttendance = async (isBackgroundRefresh = false) => {
-      // One request per active filter state; never overlap polls or the first load.
-      if (!isCurrentRequest() || requestInFlight) return;
+    const fetchAttendance = async (isBackgroundRefresh = false, fromSocketEvent = false) => {
+      // One request per active filter state. If a socket update arrives during
+      // an in-flight request, queue one more read so the change isn't lost.
+      if (!isCurrentRequest()) return;
+      if (requestInFlight) {
+        if (fromSocketEvent) queuedRealtimeRefresh = true;
+        return;
+      }
       if (isBackgroundRefresh && typeof document !== "undefined" && document.hidden) return;
       requestInFlight = true;
 
@@ -1483,17 +1497,60 @@ export default function AttendanceTable() {
         if (!isBackgroundRefresh && isCurrentRequest()) {
           setLoadingRef.current?.(false);
         }
+        if (queuedRealtimeRefresh && isCurrentRequest()) {
+          queuedRealtimeRefresh = false;
+          // Drain the coalesced notification after the previous request ends.
+          void fetchAttendance(true);
+        }
       }
     };
 
     void fetchAttendance();
+
+    const handleAttendanceEvent = () => {
+      if (document.hidden || !isCurrentRequest()) return;
+      void fetchAttendance(true, true);
+    };
+    const subscribe = () => {
+      subscriptionConfirmed = false;
+      socket.emit("attendance:subscribe", (reply) => {
+        if (isCurrentRequest()) {
+          subscriptionConfirmed = reply?.subscribed === true;
+        }
+      });
+      // The initial page fetch is already running; only refresh on reconnect.
+      if (hasConnectedOnce) void fetchAttendance(true, true);
+      hasConnectedOnce = true;
+    };
+    const onDisconnect = () => {
+      subscriptionConfirmed = false;
+    };
+
+    socket.on("attendance:changed", handleAttendanceEvent);
+    // Existing HRIS attendance edits already emit this legacy event.
+    socket.on("attendance-updated", handleAttendanceEvent);
+    socket.on("connect", subscribe);
+    socket.on("disconnect", onDisconnect);
+    if (!socket.connected) socket.connect();
+    else subscribe();
+
+    // Poll less frequently when the socket is connected; use the original
+    // 5-second fallback if the socket is disconnected or cannot connect.
     const interval = window.setInterval(() => {
+      const now = Date.now();
+      const timeout = socket.connected && subscriptionConfirmed
+        ? ATTENDANCE_SOCKET_FALLBACK_MS
+        : ATTENDANCE_LIVE_REFRESH_MS;
+      if (now - lastFallbackCheck < timeout) return;
+      lastFallbackCheck = now;
       void fetchAttendance(true);
     }, ATTENDANCE_LIVE_REFRESH_MS);
 
-    // Catch up as soon as the user returns; don't poll while tab is hidden.
     const handleVisibilityChange = () => {
-      if (!document.hidden) void fetchAttendance(true);
+      if (!document.hidden) {
+        lastFallbackCheck = Date.now();
+        void fetchAttendance(true);
+      }
     };
     document.addEventListener("visibilitychange", handleVisibilityChange);
 
@@ -1501,6 +1558,13 @@ export default function AttendanceTable() {
       cancelled = true;
       window.clearInterval(interval);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
+      socket.off("attendance:changed", handleAttendanceEvent);
+      socket.off("attendance-updated", handleAttendanceEvent);
+      socket.off("connect", subscribe);
+      socket.off("disconnect", onDisconnect);
+      socket.emit("attendance:unsubscribe");
+      // This socket is shared with candidate and notification features.
+      // Do not disconnect it when leaving Attendance.
     };
   }, [
     page,
