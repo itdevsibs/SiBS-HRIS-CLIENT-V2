@@ -52,7 +52,7 @@ export default function OMRequirementProgress({ roles = [], delay = 0 }) {
                     <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${dotClass}`} />
                     <span className="truncate">{role.roleTitle}</span>
                     <span className="truncate font-semibold text-sibs-muted">
-                      ({role.department || role.account})
+                      ({role.jobDescriptionDepartment || role.department || "Department unverified"})
                     </span>
                   </span>
 

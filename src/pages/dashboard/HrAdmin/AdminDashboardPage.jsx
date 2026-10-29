@@ -47,6 +47,7 @@ import {
   EMPTY_OVERVIEW,
   normalizeDashboardOverview,
 } from "../../../lib/utils/Dashboards/AdminDashboard/adminDashboardHelpers";
+import { buildScopedDashboardNotifications } from "../../../lib/utils/Dashboards/AdminDashboard/dashboardNotifications";
 
 const EXISTING_ADMIN_ROUTES = {
   employees: "/employee",
@@ -482,16 +483,16 @@ export default function AdminDashboardPage() {
   const dashboardTitle = dashboardTitleMap[userRole] || "Admin Dashboard";
 
   const notifications = useMemo(
-    () =>
-      overview.notifications.map((notification) => ({
-        ...notification,
-        icon:
-          notificationIconMap[notification.icon] ||
-          notificationIconMap.info,
-      })),
-    [overview.notifications],
+    () => buildScopedDashboardNotifications({
+      dashboardNotifications: overview.notifications,
+      sidebarNotifications: notificationsList,
+      icons: notificationIconMap,
+    }),
+    [overview.notifications, notificationsList],
   );
 
+  // The overview arrives asynchronously; do not display its initial zero values
+  // as verified counts until the first overview response has completed.
   const metricsReady = Boolean(overview.generatedAt);
   const displayMetric = (number) => metricsReady ? formatNumber(number) : "—";
 
@@ -596,7 +597,10 @@ export default function AdminDashboardPage() {
 
   const handleNotificationAction = useCallback(
     (notification) => {
-      navigate(notification.path || EXISTING_ADMIN_ROUTES.approvals);
+      const pathname = notification.path || EXISTING_ADMIN_ROUTES.approvals;
+      navigate(pathname, notification.actionState
+        ? { state: notification.actionState }
+        : undefined);
     },
     [navigate],
   );
@@ -724,7 +728,7 @@ export default function AdminDashboardPage() {
             const sidebarCount = notificationsList?.find(
               (notification) => notification.id === "notif-leaves-pending",
             )?.actionState?.pendingCount;
-            const pendingCount = sidebarCount ?? overview.notificationCounts?.pendingLeaves;
+            const pendingCount = sidebarCount ?? null;
             const target = resolveActivityNavigationTarget(entry, { pendingCount });
             if (!target) return;
             closeActivityHistory();

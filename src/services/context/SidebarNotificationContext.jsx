@@ -38,6 +38,7 @@ import {
   normalizeAuditNotificationsResponse,
   shouldUseExactAuditNotificationTime,
 } from "../../lib/utils/notifications/auditNotificationHelpers";
+import { isScheduleUpdatedNotification } from "../../lib/utils/notifications/notificationVisibility";
 import {
   createSidebarNotificationState,
   getSidebarNotification,
@@ -168,6 +169,8 @@ function mapAuditNotifications(payload = {}) {
 
     return {
       id: item.id || `audit-${item.auditLogId}`,
+      module: item.module,
+      action: item.action,
       auditLogId: item.auditLogId,
       isRead: item.isRead,
       category: isApproval ? "approvals" : "system",
@@ -534,6 +537,8 @@ export function SidebarNotificationProvider({ children }) {
         id: item.id || `notif-${item.auditLogId}`,
         auditLogId: item.auditLogId,
         notificationKey: item.notificationKey,
+        module: item.module,
+        action: item.action,
         isRead: Boolean(item.isRead),
         isResolved: Boolean(item.isResolved),
         isDismissed: Boolean(item.isDismissed),
@@ -564,7 +569,9 @@ export function SidebarNotificationProvider({ children }) {
         const payload = await getNotifications({ limit: 30 });
         if (cancelled) return;
         if (payload?.success) {
-          const mapped = (payload.notifications || []).map(mapServerNotification);
+          const mapped = (payload.notifications || [])
+            .map(mapServerNotification)
+            .filter((item) => !isScheduleUpdatedNotification(item));
           setRecipientNotifications(mapped);
           setServerUnreadCount(Number(payload.unreadCount || 0));
         }
@@ -588,6 +595,7 @@ export function SidebarNotificationProvider({ children }) {
       const handleNotificationNew = (newNotif) => {
         if (!newNotif?.id) return;
         const mapped = mapServerNotification(newNotif);
+        if (isScheduleUpdatedNotification(mapped)) return;
         setRecipientNotifications((prev) => [
           mapped,
           ...prev.filter((n) => n.id !== mapped.id && n.auditLogId !== mapped.auditLogId),
@@ -867,6 +875,7 @@ export function SidebarNotificationProvider({ children }) {
       ...DEFAULT_SYSTEM_NOTIFICATIONS,
     ]);
     return combined
+      .filter((n) => !isScheduleUpdatedNotification(n))
       .filter((n) => !dismissedNotifIds[n.id] && !dismissedNotifIds[n.auditLogId])
       .map((n) => ({
         ...n,
@@ -907,6 +916,7 @@ export function SidebarNotificationProvider({ children }) {
     ]);
 
     return combined
+      .filter((n) => !isScheduleUpdatedNotification(n))
       .filter((n) => !dismissedNotifIds[n.id] && !dismissedNotifIds[n.auditLogId])
       .map((n) => ({
         ...n,

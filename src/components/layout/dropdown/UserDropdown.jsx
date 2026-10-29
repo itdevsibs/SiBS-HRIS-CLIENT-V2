@@ -101,25 +101,9 @@ export default function UserDropdown({
   email,
   mobileCompact = false,
 }) {
+  // Keep exactly one profile menu mounted while open. The old delayed unmount
+  // could leave an exiting dropdown visible when users toggled the menu quickly.
   const [open, setOpen] = useState(false);
-  const [menuMounted, setMenuMounted] = useState(false);
-  const [menuActive, setMenuActive] = useState(false);
-
-  useEffect(() => {
-    let timer;
-    let frame;
-    if (open) {
-      setMenuMounted(true);
-      frame = requestAnimationFrame(() => setMenuActive(true));
-    } else {
-      setMenuActive(false);
-      timer = setTimeout(() => setMenuMounted(false), 200);
-    }
-    return () => {
-      if (frame) cancelAnimationFrame(frame);
-      if (timer) clearTimeout(timer);
-    };
-  }, [open]);
   const [actionLoading, setActionLoading] = useState("");
   const [profileImageFailed, setProfileImageFailed] = useState(false);
   const [avatarPreviewOpen, setAvatarPreviewOpen] = useState(false);
@@ -388,22 +372,20 @@ export default function UserDropdown({
   const handleToggleDropdown = (event) => {
     event.stopPropagation();
     hideAvatarPreview();
-    setOpen((previous) => {
-      if (!previous) {
-        const nextPos = calculateDropdownPosition();
-        if (nextPos) setDropdownPosition(nextPos);
-      }
-      return !previous;
-    });
+    if (!open) {
+      const nextPos = calculateDropdownPosition();
+      if (nextPos) setDropdownPosition(nextPos);
+    }
+    setOpen((previous) => !previous);
   };
 
   const dropdownMenu =
-    menuMounted && dropdownPosition && typeof document !== "undefined"
+    open && dropdownPosition && typeof document !== "undefined"
       ? createPortal(
           <div
             ref={dropdownRef}
             role="menu"
-            className={`sibs-animated-dropdown ${menuActive ? "open" : "closed"} fixed z-[2147483000]`}
+            className="sibs-animated-dropdown open fixed z-[2147483000]"
             style={{
               top: dropdownPosition.top,
               left: dropdownPosition.left,
@@ -467,11 +449,10 @@ export default function UserDropdown({
         aria-expanded={open}
         aria-haspopup="menu"
         className={[
-          "group flex max-w-[360px] cursor-pointer items-center gap-2 2xl:gap-2.5 rounded-xl border px-2 py-1 2xl:py-1.5 text-left transition-all duration-150",
+          // The profile itself is the trigger; do not turn it into a second
+          // bordered dropdown-style card while its menu is open.
+          "group flex max-w-[360px] cursor-pointer items-center gap-2 2xl:gap-2.5 rounded-xl border border-transparent bg-transparent px-2 py-1 2xl:py-1.5 text-left transition-colors duration-150 hover:bg-sibs-tertiary-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sibs-primary-1/30",
           mobileCompact ? "max-[430px]:gap-0 max-[430px]:px-0 max-[430px]:py-0" : "",
-          open
-            ? "border-sibs-primary-1/25 bg-white shadow-sm ring-2 ring-sibs-primary-1/10"
-            : "border-transparent bg-transparent hover:border-sibs-tertiary-9 hover:bg-white",
         ].join(" ")}
       >
         <div
@@ -546,7 +527,7 @@ export default function UserDropdown({
         />
       </button>
 
-      {avatarPreviewOpen &&
+      {!open && avatarPreviewOpen &&
         avatarPreviewPosition &&
         typeof document !== "undefined" &&
         createPortal(

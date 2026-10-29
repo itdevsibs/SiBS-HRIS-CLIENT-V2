@@ -44,10 +44,8 @@ import { getAvailablePositionApprovalUsers } from "../../lib/axios/getAvailableP
 import { getHiringNeeds } from "../../lib/axios/getHiringNeeds";
 import { getAvailablePositions } from "../../lib/axios/getAvailablePosition";
 import { getApplicantLeads } from "../../lib/axios/getApplicantLeads";
-import {
-  getActiveCandidateCountCacheKey,
-  getActiveCandidatePipelineCount,
-} from "../../lib/axios/getCandidatePipeline";
+import { hasApplicantLeadsPermission } from "../../lib/utils/applicantLeads/applicantLeadAccess";
+import { getActiveCandidatePipelineCount } from "../../lib/axios/getCandidatePipeline";
 import { socket } from "../../lib/axios/socket";
 import { useTalentPool } from "../../services/context/TalentPoolContext";
 import {
@@ -567,7 +565,7 @@ export default function Sidebar() {
   const candidatePipelineAccess =
     !loading && Boolean(user) && normalizeRole(user?.role) !== "employee" &&
     [1, 2, 3, 6, 7].includes(getAdminAccess(user));
-  const candidatePipelineUserId = getActiveCandidateCountCacheKey(user);
+  const candidatePipelineUserId = getCurrentUserSibsId(user);
 
   useEffect(() => {
     if (!candidatePipelineAccess) {
@@ -582,12 +580,7 @@ export default function Sidebar() {
     const refreshCount = async () => {
       const revision = ++requestRevision;
       try {
-        const result = await getActiveCandidatePipelineCount({
-          cacheKey: candidatePipelineUserId,
-          // For stage changes and the 20s poll, always verify on the server.
-          // Requests from the overview reuse the same in-flight call.
-          forceRefresh: true,
-        });
+        const result = await getActiveCandidatePipelineCount();
         if (disposed || revision !== requestRevision || !result?.success) return;
 
         const count = Number(result.activeCandidates);
@@ -637,7 +630,16 @@ export default function Sidebar() {
     };
   }, [candidatePipelineAccess, candidatePipelineUserId, setSidebarNotification]);
 
+  // The Applicant Leads endpoint is recruitment-only. Sidebar remains mounted
+  // for Finance, OM, WFM, and employee accounts, which must never poll it.
+  const canReadApplicantLeads = !loading && hasApplicantLeadsPermission(user);
+
   const loadApplicantLeadNotifications = useCallback(async () => {
+    if (!canReadApplicantLeads) {
+      setSidebarNotification?.("applicantLeadsNew", null);
+      return;
+    }
+
     try {
       const result = await getApplicantLeads();
       if (!result?.success) return;
@@ -659,7 +661,7 @@ export default function Sidebar() {
     } catch (error) {
       console.error("Failed to load Applicant Leads notification count:", error);
     }
-  }, [setSidebarNotification]);
+  }, [canReadApplicantLeads, setSidebarNotification]);
 
   const loadApprovalRequestNotifications = useCallback(async () => {
     try {
@@ -1005,16 +1007,21 @@ export default function Sidebar() {
       };
     }
 
+    if (!canReadApplicantLeads) {
+      // Clear a badge retained from a prior (authorized) session/account.
+      setSidebarNotification?.("applicantLeadsNew", null);
+    }
+
     const initialLoadTimer = window.setTimeout(() => {
       loadApprovalRequestNotifications();
       loadUnlinkedJdNotifications();
-      loadApplicantLeadNotifications();
+      if (canReadApplicantLeads) loadApplicantLeadNotifications();
     }, 0);
 
     const interval = window.setInterval(() => {
       loadApprovalRequestNotifications();
       loadUnlinkedJdNotifications();
-      loadApplicantLeadNotifications();
+      if (canReadApplicantLeads) loadApplicantLeadNotifications();
     }, 30000);
 
     return () => {
@@ -1030,6 +1037,7 @@ export default function Sidebar() {
     loadApprovalRequestNotifications,
     loadUnlinkedJdNotifications,
     loadApplicantLeadNotifications,
+    canReadApplicantLeads,
     setSidebarNotification,
     jdApprovalRuleRevision,
     hiringNeedsApprovalRuleRevision,

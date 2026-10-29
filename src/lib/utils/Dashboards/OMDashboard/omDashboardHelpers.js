@@ -1,5 +1,5 @@
 import { formatHrisDateLocalized } from "@/lib/axios/dateFormatter";
-const CACHE_KEY = "sibs.om-dashboard.bootstrap.v1";
+const CACHE_KEY = "sibs.om-dashboard.bootstrap.jd-scope-v3";
 const CACHE_TTL_MS = 10 * 60_000;
 
 const EMPTY_FUNNEL = Object.freeze({
@@ -75,6 +75,8 @@ export function normalizeRole(role = {}) {
       cleanText(role.roleAccount) ||
       [role.roleTitle || role.role, role.account].filter(Boolean).join(" - "),
     department: cleanText(role.department) || "Unassigned",
+    jobDescriptionDepartment: cleanText(role.jobDescriptionDepartment),
+    jobDescriptionDepartmentId: role.jobDescriptionDepartmentId ?? null,
     account: cleanText(role.account) || "Unassigned",
     req: Number(role.req || 0),
     filled: Number(role.filled || 0),
@@ -142,34 +144,17 @@ export function normalizeMetrics(payload = {}) {
   };
 }
 
+// Manager-specific HRIS access can change between sessions. Avoid rendering
+// another manager's cached role list before the authenticated bootstrap returns.
+// Server-side user-scoped SWR caching remains enabled for performance.
 export function readCachedDashboard() {
-  try {
-    const raw = window.sessionStorage.getItem(CACHE_KEY);
-
-    if (!raw) return null;
-
-    const parsed = JSON.parse(raw);
-
-    if (!parsed?.cachedAt || Date.now() - parsed.cachedAt > CACHE_TTL_MS) {
-      window.sessionStorage.removeItem(CACHE_KEY);
-      return null;
-    }
-
-    return parsed.payload && typeof parsed.payload === "object"
-      ? parsed.payload
-      : null;
-  } catch {
-    return null;
-  }
+  return null;
 }
 
-export function writeCachedDashboard(payload) {
+export function writeCachedDashboard(_payload) {
   try {
-    window.sessionStorage.setItem(
-      CACHE_KEY,
-      JSON.stringify({ cachedAt: Date.now(), payload }),
-    );
+    window.sessionStorage.removeItem(CACHE_KEY);
   } catch {
-    // Session storage is optional and must not block the dashboard.
+    // Browser storage is optional.
   }
 }

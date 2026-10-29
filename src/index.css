@@ -2318,3 +2318,19 @@
     --tw-ring-shadow: 0 0 #0000 !important;
   }
 }
+
+
+/* User Settings > Assigned Account: draw the focus border on the dropdown's
+   outer trigger only, not on its inner searchable combobox input. This must
+   live in @layer base to override the global :focus-visible !important rule. */
+@layer base {
+  .sibs-user-settings-account-filter input[role="combobox"],
+  .sibs-user-settings-account-filter input[role="combobox"]:focus,
+  .sibs-user-settings-account-filter input[role="combobox"]:focus-visible {
+    border: 0 !important;
+    outline: none !important;
+    outline-offset: 0 !important;
+    box-shadow: none !important;
+    --tw-ring-shadow: 0 0 #0000 !important;
+  }
+}

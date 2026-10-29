@@ -52,21 +52,6 @@ function getCurrentSibsId(user = {}) {
   );
 }
 
-const CHAT_ALLOWED_DEPARTMENT_ID = 3;
-
-function getCurrentDepartmentId(user = {}) {
-  const value =
-    user?.departmentId ??
-    user?.department_id ??
-    user?.deptId ??
-    user?.gy_dept_id ??
-    user?.gyDeptId ??
-    null;
-
-  const departmentId = Number(value);
-  return Number.isFinite(departmentId) ? departmentId : null;
-}
-
 const CHAT_RECEIVE_SOUND_URL =
   `${import.meta.env.BASE_URL}snapchat-sound.mp3`;
 
@@ -230,10 +215,9 @@ function sortConversations(items = []) {
 export function ChatProvider({ children }) {
   const { user, loading: userLoading } = useUser() || {};
   const currentSibsId = useMemo(() => getCurrentSibsId(user), [user]);
-  const chatAllowed = useMemo(
-    () => getCurrentDepartmentId(user) === CHAT_ALLOWED_DEPARTMENT_ID,
-    [user],
-  );
+  // Chat is available to every authenticated HRIS employee with a SIBS ID,
+  // regardless of their department, account, or assigned role.
+  const chatAllowed = Boolean(user && currentSibsId);
 
   const [conversations, setConversations] = useState([]);
   const [conversationsLoading, setConversationsLoading] = useState(false);

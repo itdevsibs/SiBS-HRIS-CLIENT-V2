@@ -29,12 +29,13 @@ import FinanceDashboardSkeleton from "../../../components/Dashboard/FinanceDashb
 const StatutoryCoverageModal = lazy(() => import("../../../components/Dashboard/FinanceDashboard/StatutoryCoverageModal"));
 import { PageHeaderHero } from "../../../components/ui";
 import { getFinanceDashboardBootstrap } from "../../../lib/axios/getFinanceDashboard";
+import { validateFinanceDashboardPayload } from "../../../lib/utils/finance/validateFinanceDashboardPayload";
 
 const PAGE_SHELL_CLASS = "sibs-dashboard-shell";
 const MAIN_SHELL_CLASS = "sibs-dashboard-main-wide";
 const AUTO_REFRESH_INTERVAL_MS = 60_000;
-const CACHE_KEY = "sibs.finance-dashboard.bootstrap.v1";
-const CACHE_TTL_MS = 10 * 60_000;
+const CACHE_KEY = "sibs.finance-dashboard.bootstrap.v3.reconciled";
+const CACHE_TTL_MS = 45_000;
 const PAGE_SIZE = 10;
 
 const EMPTY_METRICS = {
@@ -128,10 +129,13 @@ function readCachedDashboard() {
       return null;
     }
 
-    return parsed.payload && typeof parsed.payload === "object"
-      ? parsed.payload
-      : null;
+    return validateFinanceDashboardPayload(parsed.payload);
   } catch {
+    try {
+      window.sessionStorage.removeItem(CACHE_KEY);
+    } catch {
+      // Storage may be disabled; ignore.
+    }
     return null;
   }
 }
@@ -313,7 +317,9 @@ export default function FinanceDashboardPage() {
       background ? setRefreshing(true) : setInitialLoading(true);
 
       try {
-        const payload = await getFinanceDashboardBootstrap({ forceRefresh });
+        const payload = validateFinanceDashboardPayload(
+          await getFinanceDashboardBootstrap({ forceRefresh }),
+        );
         if (requestId !== requestIdRef.current) return false;
 
         setMetrics(normalizeMetrics(payload));
@@ -645,7 +651,7 @@ export default function FinanceDashboardPage() {
 
           <div className="flex flex-col gap-3 border-t border-sibs-border px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-xs font-semibold text-sibs-muted">
-              Showing {pageRows.length ? (safePage - 1) * PAGE_SIZE + 1 : 0}–{Math.min(safePage * PAGE_SIZE, filteredAccounts.length)} of {formatNumber(filteredAccounts.length)} accounts
+              Showing {pageRows.length ? (safePage - 1) * PAGE_SIZE + 1 : 0}–{Math.min(safePage * PAGE_SIZE, filteredAccounts.length)} of {formatNumber(filteredAccounts.length)} account / department groups
             </p>
             <div className="flex items-center gap-2">
               <button

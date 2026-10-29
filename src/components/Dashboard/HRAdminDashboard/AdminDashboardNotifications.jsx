@@ -37,10 +37,9 @@ export default function AdminDashboardNotifications({
     useSidebarNotifications() || {};
 
   // Use props if provided, otherwise fallback to context notifications list
-  const activeNotifications =
-    Array.isArray(notifications) && notifications.length > 0
-      ? notifications
-      : notificationsList;
+  const activeNotifications = Array.isArray(notifications)
+    ? notifications
+    : notificationsList;
 
   const handleDismiss = (id) => {
     if (onDismiss) {
@@ -74,10 +73,10 @@ export default function AdminDashboardNotifications({
           <div className="rounded-xl border border-dashed border-sibs-border-subtle bg-sibs-surface px-5 py-6 2xl:py-8 text-center">
             <CheckCircle2 className="sibs-tone-green-label mx-auto h-7 w-7 2xl:h-8 2xl:w-8" />
             <p className="mt-2 sibs-text-xs font-extrabold text-sibs-navy">
-              All caught up!
+              No notifications to show
             </p>
             <p className="mt-0.5 sibs-text-micro text-sibs-muted">
-              No new administrative notifications
+              Only verified, available notifications are displayed
             </p>
           </div>
         ) : (

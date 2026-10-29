@@ -138,7 +138,7 @@ export default function OMDashboardPage() {
       const matchesStatus = statusFilter === "All" || role.status === statusFilter;
       if (!matchesStatus) return false;
       if (!keyword) return true;
-      return [role.roleTitle, role.roleAccount, role.account, role.department, role.taOwner, role.status]
+      return [role.roleTitle, role.roleAccount, role.account, role.jobDescriptionDepartment, role.department, role.taOwner, role.status]
         .some((value) => cleanText(value).toLowerCase().includes(keyword));
     });
   }, [roles, search, statusFilter]);
