@@ -94,15 +94,20 @@ const MultiSelectDropdown = ({
         </div>
 
         <ChevronDown
-          size={18}
-          className={`shrink-0 text-sibs-tertiary-5 transition-transform ${
+          size={17}
+          className={`shrink-0 text-sibs-muted transition-transform duration-300 ${
             open ? "rotate-180" : ""
           }`}
         />
       </button>
 
-      {open && !disabled && (
-        <div className="absolute left-0 right-0 top-full z-[9999] mt-2 max-h-72 overflow-hidden rounded-xl border border-sibs-tertiary-8 bg-white shadow-2xl">
+      <div
+        className={`sibs-animated-dropdown absolute left-0 right-0 top-full z-[9999] mt-2 ${
+          open && !disabled ? "open" : "closed"
+        }`}
+      >
+        <div className="sibs-animated-dropdown-inner">
+          <div className="sibs-animated-dropdown-box overflow-hidden rounded-[10px] border border-sibs-border bg-white shadow-[0_18px_40px_rgba(15,23,42,0.16)]">
           <div className="max-h-72 overflow-y-auto py-2">
             {options.map((option) => {
               const isSelected = values.includes(option.value);
@@ -114,8 +119,8 @@ const MultiSelectDropdown = ({
                   onClick={() => handleToggleOption(option.value)}
                   className={`flex w-full items-center justify-between gap-3 px-4 py-3 text-left text-sm transition ${
                     isSelected
-                      ? "bg-sibs-canvas font-bold text-sibs-primary-1"
-                      : "text-sibs-primary-1 hover:bg-sibs-canvas"
+                      ? "bg-sibs-cream-light font-extrabold text-sibs-orange"
+                      : "font-semibold text-sibs-text-secondary hover:bg-sibs-cream-subtle hover:text-sibs-orange"
                   }`}
                 >
                   <span>{option.label}</span>
@@ -133,8 +138,9 @@ const MultiSelectDropdown = ({
               );
             })}
           </div>
+                  </div>
         </div>
-      )}
+      </div>
     </div>
   );
 };

@@ -535,8 +535,14 @@ function SearchableSelect({
         className="h-8.5 2xl:h-10 w-full rounded-xl border border-sibs-border-subtle bg-sibs-canvas px-3 2xl:px-3.5 sibs-text-xs font-semibold text-sibs-navy outline-none transition placeholder:text-sibs-muted focus:border-sibs-orange focus:bg-white focus:ring-4 focus:ring-sibs-orange/10 disabled:bg-sibs-canvas disabled:text-sibs-muted"
       />
 
-      {open && !disabled && (
-        <div className="sibs-dropdown-pop-in absolute z-20 mt-1 max-h-60 w-full overflow-y-auto rounded-xl border border-sibs-border-subtle bg-white p-1 shadow-lg sibs-scrollbar">
+      <div
+        className={`sibs-animated-dropdown absolute z-20 mt-1 w-full ${
+          open && !disabled ? "open" : "closed"
+        }`}
+      >
+        <div className="sibs-animated-dropdown-inner">
+          <div className="sibs-animated-dropdown-box overflow-hidden rounded-xl border border-sibs-border-subtle bg-white p-1 shadow-lg">
+            <div className="max-h-60 overflow-y-auto sibs-scrollbar">
           {filteredOptions.length > 0 ? (
             filteredOptions.map((option) => (
               <button
@@ -553,8 +559,10 @@ function SearchableSelect({
               NO RESULTS FOUND
             </div>
           )}
+            </div>
+          </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }

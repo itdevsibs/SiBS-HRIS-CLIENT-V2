@@ -81,11 +81,16 @@ function TextAreaInput({ className = "", ...props }) {
 }
 
 function AnimatedDropdown({ open, children }) {
-  if (!open) return null;
   return (
-    <div className="sibs-dropdown-pop-in absolute left-0 right-0 top-full z-[9999] mt-1.5">
-      <div className="overflow-hidden rounded-[14px] border border-sibs-border bg-white shadow-xl">
-        <div className="sibs-scrollbar max-h-56 overflow-y-auto py-1.5">{children}</div>
+    <div
+      className={`sibs-animated-dropdown absolute left-0 right-0 top-full z-[9999] mt-1.5 ${
+        open ? "open" : "closed"
+      }`}
+    >
+      <div className="sibs-animated-dropdown-inner">
+        <div className="sibs-animated-dropdown-box overflow-hidden rounded-[14px] border border-sibs-border bg-white shadow-xl">
+          <div className="sibs-scrollbar max-h-56 overflow-y-auto py-1.5">{children}</div>
+        </div>
       </div>
     </div>
   );

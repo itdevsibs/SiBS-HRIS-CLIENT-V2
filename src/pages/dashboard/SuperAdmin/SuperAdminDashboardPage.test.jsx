@@ -16,6 +16,12 @@ vi.mock("../../../lib/axios/getEmployee", () => ({ getEmployee: api.employees })
 vi.mock("../../../lib/axios/userSettings", () => ({ getUserSettingsUsers: api.users }));
 vi.mock("../../../lib/axios/getApprovalRequest", () => ({ getApprovalRequests: api.approvals }));
 vi.mock("../../../lib/axios/getLeaves", () => ({ getLeaves: api.leaves }));
+vi.mock("../../../lib/axios/getCandidatePipeline", () => ({
+  getActiveCandidateCountCacheKey: () => "test-cache-key",
+  getActiveCandidatePipelineCount: vi.fn().mockResolvedValue(10),
+  getCachedActiveCandidatePipelineCount: () => 10,
+  subscribeActiveCandidatePipelineCount: () => () => {},
+}));
 // Global header and authentication have their own unrelated network/session lifecycle.
 vi.mock("../../../components/layout/Header", () => ({ default: () => null }));
 vi.mock("../../../services/context/UserContext", () => ({
@@ -78,12 +84,13 @@ describe("Super Admin dashboard requests", () => {
       document.dispatchEvent(new Event("visibilitychange"));
     });
     expect(api.overview).toHaveBeenCalledTimes(1);
-    Object.entries(api)
-      .filter(([key]) => key !== "overview")
-      .forEach(([, fn]) => expect(fn).not.toHaveBeenCalled());
+    expect(api.feed).toHaveBeenCalledTimes(1);
+    expect(api.users).toHaveBeenCalledTimes(1);
+    expect(api.approvals).toHaveBeenCalledTimes(1);
+    expect(api.leaves).toHaveBeenCalledTimes(1);
+    expect(api.employees).not.toHaveBeenCalled();
     await resolveBatch(batch);
-    await waitFor(() => expect(api.feed).toHaveBeenCalledTimes(1));
-    expect(screen.getByRole("main").getAttribute("aria-busy")).toBe("false");
+    await waitFor(() => expect(screen.getByRole("main").getAttribute("aria-busy")).toBe("false"));
     await act(async () => window.dispatchEvent(new Event("focus")));
     Object.entries(api).forEach(([key, fn]) =>
       expect(fn).toHaveBeenCalledTimes(key === "employees" ? 0 : 2),
@@ -139,24 +146,16 @@ describe("Super Admin dashboard requests", () => {
     await resolveBatch(batch);
   });
 
-  it("starts secondary dashboard requests only after the overview settles", async () => {
+  it("runs dashboard requests concurrently rather than waterfalling behind the overview", async () => {
     const batch = pendingBatch();
     renderDashboard();
 
     expect(api.overview).toHaveBeenCalledTimes(1);
-    expect(api.feed).not.toHaveBeenCalled();
-    expect(api.users).not.toHaveBeenCalled();
-    expect(api.approvals).not.toHaveBeenCalled();
-    expect(api.leaves).not.toHaveBeenCalled();
-
-    await act(async () => {
-      batch.overview.resolve(payloads.overview);
-    });
-
-    await waitFor(() => expect(api.feed).toHaveBeenCalledTimes(1));
+    expect(api.feed).toHaveBeenCalledTimes(1);
     expect(api.users).toHaveBeenCalledTimes(1);
     expect(api.approvals).toHaveBeenCalledTimes(1);
     expect(api.leaves).toHaveBeenCalledTimes(1);
+    expect(api.employees).not.toHaveBeenCalled();
 
     await resolveBatch(batch);
   });

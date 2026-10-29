@@ -385,9 +385,14 @@ function ResumeStageDropdown({
         />
       </button>
 
-      {open && !disabled && (
-        <div className="sibs-dropdown-pop-in absolute left-0 right-0 top-[calc(100%+8px)] z-[10050] overflow-hidden rounded-[10px] border border-sibs-border bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)]">
-          <div className="max-h-64 overflow-y-auto py-1 sibs-scrollbar" role="listbox">
+      <div
+        className={`sibs-animated-dropdown absolute left-0 right-0 top-[calc(100%+8px)] z-[10050] ${
+          open && !disabled ? "open" : "closed"
+        }`}
+      >
+        <div className="sibs-animated-dropdown-inner">
+          <div className="sibs-animated-dropdown-box overflow-hidden rounded-[10px] border border-sibs-border bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)]">
+            <div className="max-h-64 overflow-y-auto py-1 sibs-scrollbar" role="listbox">
             {options.length > 0 ? (
               options.map((option) => {
                 const active = option === value;
@@ -414,9 +419,10 @@ function ResumeStageDropdown({
                 No completed stages found.
               </div>
             )}
+            </div>
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }

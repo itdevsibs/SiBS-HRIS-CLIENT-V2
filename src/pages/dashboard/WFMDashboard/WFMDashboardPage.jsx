@@ -638,7 +638,7 @@ export default function WFMDashboardPage() {
                 Company-wide candidate progression through the hiring pipeline.
               </p>
 
-              <div className="mt-5 grid grid-cols-3 gap-2 sm:grid-cols-6">
+              <div className="mt-5 grid grid-cols-2 min-[360px]:grid-cols-3 sm:grid-cols-6 gap-2">
                 {funnelStages.map(([label, value, className]) => (
                   <div
                     key={label}

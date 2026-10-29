@@ -593,9 +593,11 @@ function CalendarTimePicker({
       {isOpen && typeof document !== "undefined" && createPortal(
         <div
           ref={panelRef}
-          className="sibs-dropdown-pop-in fixed z-[2147483600] w-[282px] overflow-hidden rounded-xl border border-sibs-border-subtle bg-white font-jakarta text-sibs-navy shadow-[0_16px_36px_rgba(4,44,81,0.16)]"
+          className="sibs-animated-dropdown open fixed z-[2147483600] w-[282px]"
           style={{ top: placement.top, left: placement.left, width: Math.min(282, typeof window !== "undefined" ? window.innerWidth - 16 : 282) }}
         >
+          <div className="sibs-animated-dropdown-inner">
+            <div className="sibs-animated-dropdown-box overflow-hidden rounded-xl border border-sibs-border-subtle bg-white font-jakarta text-sibs-navy shadow-[0_16px_36px_rgba(4,44,81,0.16)]">
           <div id={listId} ref={optionsRef} className="sibs-scrollbar max-h-[155px] overflow-y-auto overscroll-contain py-1" role="listbox" aria-label={`${label} suggested times`}>
             {busyLoading ? (
               <p className="px-3 py-3 text-xs font-semibold text-sibs-muted">Checking booked times...</p>
@@ -660,6 +662,8 @@ function CalendarTimePicker({
             </div>
             {error && <p role="alert" className="mt-2 text-[11px] font-semibold leading-snug text-red-600">{error}</p>}
             <p className="mt-1.5 text-[10px] font-medium text-sibs-text-secondary">Search above or enter HH:MM and choose AM/PM.</p>
+              </div>
+            </div>
           </div>
         </div>,
         document.body,
@@ -794,10 +798,12 @@ function CalendarOptionDropdown({ label, value, options, onChange, widthClass = 
       {isOpen && typeof document !== "undefined" && createPortal(
         <div
           ref={panelRef}
-          className="sibs-dropdown-pop-in fixed z-[2147483600] overflow-hidden rounded-xl border border-sibs-border-subtle bg-white font-jakarta shadow-[0_16px_36px_rgba(4,44,81,0.16)]"
+          className="sibs-animated-dropdown open fixed z-[2147483600]"
           style={{ top: placement.top, left: placement.left, width: placement.width, maxHeight: placement.maxHeight }}
         >
-          <div className="border-b border-[#E6ECF2] px-4 py-2.5 text-xs font-extrabold text-[#06325E]">Select {label.toLowerCase()}</div>
+          <div className="sibs-animated-dropdown-inner">
+            <div className="sibs-animated-dropdown-box overflow-hidden rounded-xl border border-sibs-border-subtle bg-white font-jakarta shadow-[0_16px_36px_rgba(4,44,81,0.16)]">
+          <div className="border-b border-sibs-border px-4 py-2.5 text-xs font-extrabold text-sibs-navy">Select {label.toLowerCase()}</div>
           <div id={listId} className="sibs-scrollbar max-h-[250px] overflow-y-auto overscroll-contain p-1.5" role="listbox" aria-label={`${label} options`}>
             {filtered.length ? filtered.map((option) => (
               <button
@@ -806,7 +812,7 @@ function CalendarOptionDropdown({ label, value, options, onChange, widthClass = 
                 role="option"
                 aria-selected={option.value === value}
                 onClick={() => choose(option.value)}
-                className={`mb-0.5 flex w-full items-center justify-between rounded-lg px-3 py-2 text-left font-jakarta text-[12px] transition hover:bg-[#F3F7FC] hover:text-sibs-orange ${option.value === value ? "bg-[#FFF1E9] font-extrabold text-[#E75522]" : "font-semibold text-sibs-text-secondary"}`}
+                className={`mb-0.5 flex w-full items-center justify-between rounded-lg px-3 py-2 text-left font-jakarta text-[12px] transition hover:bg-sibs-surface hover:text-sibs-orange ${option.value === value ? "bg-sibs-cream-light font-extrabold text-sibs-orange" : "font-semibold text-sibs-text-secondary"}`}
               >
                 <span className="truncate">{option.label}</span>
                 {option.value === value && <Check size={14} className="ml-2 shrink-0 text-sibs-orange" />}
@@ -814,6 +820,8 @@ function CalendarOptionDropdown({ label, value, options, onChange, widthClass = 
             )) : (
               <p className="px-3 py-3 text-center text-[11px] font-semibold text-sibs-muted">No matching options</p>
             )}
+              </div>
+            </div>
           </div>
         </div>,
         document.body,
@@ -2550,11 +2558,11 @@ function GoogleCalendarDayDetails({ date, events, nowMs, onClose, onCreateEvent,
       <section role="dialog" aria-modal="true" aria-label="Google Calendar day details"
         onClick={(e) => e.stopPropagation()}
         className="sibs-modal-pop-in flex max-h-[80vh] w-full max-w-[460px] flex-col overflow-hidden rounded-[18px] bg-white font-jakarta shadow-2xl">
-        <div className="flex items-center justify-between gap-3 border-b border-[#E8EAED] px-5 py-4">
+        <div className="flex items-center justify-between gap-3 border-b border-sibs-border-subtle px-5 py-4">
           <div>
-            <span className="text-[10px] font-bold uppercase tracking-wider text-[#1A73E8]">Google Calendar</span>
-            <h3 className="mt-1 text-base font-black text-[#202124]">{formatDayLabel(date, { weekday: "long", year: true })}</h3>
-            <p className="text-[11px] text-[#5F6368]">{events.length} schedule{events.length === 1 ? "" : "s"} · Asia/Manila</p>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-sibs-navy">Google Calendar</span>
+            <h3 className="mt-1 text-base font-black text-sibs-navy">{formatDayLabel(date, { weekday: "long", year: true })}</h3>
+            <p className="text-[11px] text-sibs-muted">{events.length} schedule{events.length === 1 ? "" : "s"} · Asia/Manila</p>
           </div>
           <button type="button" onClick={onClose} className="rounded-lg p-2 hover:bg-slate-100" aria-label="Close day details"><X size={18} /></button>
         </div>
@@ -2562,21 +2570,21 @@ function GoogleCalendarDayDetails({ date, events, nowMs, onClose, onCreateEvent,
           {sortEventsByDateTime(events).map((event) => (
             <button key={event.id} type="button"
               onClick={() => { onClose(); onEditEvent(sourceCalendarEvent(event)); }}
-              className="flex w-full items-center gap-3 rounded-xl border border-[#E8EAED] bg-white p-3 text-left hover:border-[#A8C7FA] hover:bg-[#F8FBFF]">
-              <span className="h-9 w-1.5 shrink-0 rounded-full bg-[#1A73E8]" />
+              className="flex w-full items-center gap-3 rounded-xl border border-sibs-border-subtle bg-white p-3 text-left hover:border-sibs-border hover:bg-sibs-surface">
+              <span className="h-9 w-1.5 shrink-0 rounded-full bg-sibs-navy" />
               <span className="min-w-0 flex-1">
-                <span className="block text-[12px] font-bold text-[#202124]">{event.title}</span>
-                <span className="mt-0.5 block text-[11px] text-[#5F6368]">{event.startTime} – {event.endTime}{event.site ? ` · ${event.site}` : ""}</span>
+                <span className="block text-[12px] font-bold text-sibs-navy">{event.title}</span>
+                <span className="mt-0.5 block text-[11px] text-sibs-muted">{event.startTime} – {event.endTime}{event.site ? ` · ${event.site}` : ""}</span>
               </span>
               {event.recruitmentEventType ? <span className="rounded bg-blue-50 px-2 py-1 text-[9px] font-semibold text-blue-700">HRIS</span> : null}
             </button>
           ))}
         </div>
-        <div className="border-t border-[#E8EAED] px-5 py-4">
+        <div className="border-t border-sibs-border-subtle px-5 py-4">
           {canCreateCalendarEventOnDate(date, nowMs) ? (
             <button type="button"
               onClick={() => { onClose(); onCreateEvent(date); }}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#1A73E8] px-4 py-2.5 text-xs font-bold text-white hover:bg-[#1558B0]">
+              className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-sibs-navy px-4 py-2.5 text-xs font-bold text-white hover:bg-sibs-button-hover">
               <Plus size={16} /> Create event on this date
             </button>
           ) : (
@@ -2623,7 +2631,7 @@ function GoogleCalendarGuestAvatar({ guest, account }) {
   const photo = trustedGoogleCalendarPhoto(guest.photoUrl || ownPhoto);
   const status = guest.responseStatus;
   return (
-    <span className="relative inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#E7EFF7] text-xs font-black text-sibs-navy" aria-label={`Profile of ${googleCalendarGuestLabel(guest)}`}>
+    <span className="relative inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-sibs-canvas text-xs font-black text-sibs-navy" aria-label={`Profile of ${googleCalendarGuestLabel(guest)}`}>
       {photo && !imageBroken ? (
         <img src={photo} alt="" loading="lazy" referrerPolicy="no-referrer"
           onError={() => setImageBroken(true)} className="h-full w-full rounded-full object-cover" />
@@ -2678,7 +2686,7 @@ function getCalendarRepeatLabel(event) {
 // so forwarded invitations cannot inject scripts or markup into the modal.
 function GoogleCalendarOriginalDescription({ text }) {
   const parts = String(text || "").replace(/\r\n?/g, "\n").split(/(https?:\/\/[^\s<>]+|mailto:[^\s<>]+)/gi);
-  return <div className="min-w-0 whitespace-pre-wrap break-words text-[13px] font-normal leading-[1.75] text-[#344054] [overflow-wrap:anywhere]">
+  return <div className="min-w-0 whitespace-pre-wrap break-words text-[13px] font-normal leading-[1.75] text-sibs-text-secondary [overflow-wrap:anywhere]">
     {parts.map((part, index) => {
       if (!/^(https?:\/\/|mailto:)/i.test(part)) return <React.Fragment key={index}>{part}</React.Fragment>;
       const urlPart = part.replace(/[.,;)}\]]+$/, "");
@@ -2689,7 +2697,7 @@ function GoogleCalendarOriginalDescription({ text }) {
       return <React.Fragment key={index}>
         <a href={href} target={href.startsWith("mailto:") ? undefined : "_blank"}
           rel={href.startsWith("mailto:") ? undefined : "noopener noreferrer"}
-          className="text-[#1967D2] underline underline-offset-2 hover:text-[#174EA6]">{urlPart}</a>{trailing}
+          className="text-sibs-navy underline underline-offset-2 hover:text-sibs-orange">{urlPart}</a>{trailing}
       </React.Fragment>;
     })}
   </div>;
@@ -2751,7 +2759,7 @@ function ExternalGoogleCalendarReadOnlyDetails({ event, onClose, historical = fa
               <MapPin className="mt-0.5 h-5 w-5 shrink-0 text-sibs-navy" />
               <div className="min-w-0 space-y-1 text-[13px] font-medium text-sibs-navy">
                 {meetingLocation ? <p className="break-words">{meetingLocation}</p> : null}
-                {meeting ? <a href={meeting.link} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-[#1967D2] hover:underline">
+                {meeting ? <a href={meeting.link} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-sibs-navy hover:underline">
                   <Link2 size={15} /> Join {meeting.service}
                 </a> : null}
               </div>
@@ -4863,7 +4871,7 @@ export default function HeaderCalendarModal({ open, user, onClose, onSyncComplet
                       ))}
                     </div>
 
-                    <div className="flex items-start gap-2.5 rounded-xl border border-blue-100 bg-[#F5F9FE] p-3.5">
+                    <div className="flex items-start gap-2.5 rounded-xl border border-blue-100 bg-sibs-surface p-3.5">
                       <Check className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
                       <p className="text-[11px] font-semibold leading-relaxed text-slate-700">
                         <strong className="text-sibs-navy">Your HRIS database is the source of truth.</strong>{" "}
@@ -4874,7 +4882,7 @@ export default function HeaderCalendarModal({ open, user, onClose, onSyncComplet
                     </div>
 
                     <div className="overflow-hidden rounded-xl border border-sibs-border-subtle bg-white">
-                      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-sibs-border-subtle bg-[#F8FAFC] px-3.5 py-3">
+                      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-sibs-border-subtle bg-sibs-surface px-3.5 py-3">
                         <h4 className="sibs-modal-section-title">Confirmed Database Orphans</h4>
                         <span className="rounded-full bg-orange-50 px-2.5 py-1 text-[10px] font-extrabold text-orange-700">
                           {orphanPreview.count || 0} found
@@ -4919,7 +4927,7 @@ export default function HeaderCalendarModal({ open, user, onClose, onSyncComplet
                             <label key={item.id} className="flex cursor-pointer items-start gap-3 px-3 py-2.5 text-[11px] font-semibold text-slate-700 hover:bg-amber-50/70">
                               <input
                                 type="checkbox"
-                                className="mt-0.5 h-4 w-4 shrink-0 accent-[#FF5C28]"
+                                className="mt-0.5 h-4 w-4 shrink-0 accent-sibs-orange"
                                 checked={selectedLegacyIds.includes(item.id)}
                                 disabled={orphanBusy}
                                 onChange={(event) => setSelectedLegacyIds((ids) =>

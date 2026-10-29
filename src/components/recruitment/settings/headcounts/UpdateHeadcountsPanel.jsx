@@ -950,7 +950,8 @@ function UpdateHeadcountsPanel() {
           }
           desktopView={
             <div className="overflow-hidden rounded-xl border border-sibs-border bg-white">
-              <table className="w-full min-w-[1120px] border-collapse text-left">
+              <div className="overflow-x-auto sibs-scrollbar">
+                <table className="w-full min-w-[1120px] border-collapse text-left">
                   <thead>
                     <tr className="border-b border-sibs-border bg-sibs-surface text-[9px] 2xl:text-[9.5px] font-extrabold uppercase tracking-wide text-sibs-muted">
                       <th className="sibs-data-table-th w-[21%] px-3.5 py-3">Account</th>
@@ -1146,7 +1147,8 @@ function UpdateHeadcountsPanel() {
                   </tbody>
                 </table>
               </div>
-            }
+            </div>
+          }
           />
         </div>
 

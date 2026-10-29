@@ -135,18 +135,28 @@ export function buildDynamicSnapshotCards({
 }
 
 export function getUserDisplayName(user) {
-  const values = [
-    user?.gy_emp_lname,
-    user?.gy_emp_fname,
-    user?.gy_emp_mname,
-  ].filter(Boolean);
+  const lastName = (
+    user?.gy_emp_lname ||
+    user?.lastName ||
+    user?.last_name ||
+    ""
+  ).trim();
+  const firstName = (
+    user?.gy_emp_fname ||
+    user?.firstName ||
+    user?.first_name ||
+    ""
+  ).trim();
+  const middleName = (
+    user?.gy_emp_mname ||
+    user?.middleName ||
+    user?.middle_name ||
+    ""
+  ).trim();
 
-  if (values.length) {
-    return `${values[0] || ""}, ${values.slice(1).join(" ")}`
-      .replace(/^,\s*/, "")
-      .replace(/\s+/g, " ")
-      .trim()
-      .toUpperCase();
+  if (lastName || firstName) {
+    const parts = [lastName, [firstName, middleName].filter(Boolean).join(" ")].filter(Boolean);
+    return parts.join(", ").trim().toUpperCase();
   }
 
   return String(

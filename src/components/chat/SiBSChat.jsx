@@ -1613,6 +1613,8 @@ export default function SiBSChat({
     [isControlled, open, onOpenChange],
   );
   const [newChatOpen, setNewChatOpen] = useState(false);
+  const [isNavigatingBack, setIsNavigatingBack] = useState(false);
+  const navigateBackTimerRef = useRef(null);
   const [groupInfoOpen, setGroupInfoOpen] = useState(false);
   const [themeModalOpen, setThemeModalOpen] = useState(false);
   const [conversationSearch, setConversationSearch] = useState("");
@@ -1849,8 +1851,21 @@ export default function SiBSChat({
     if (!open) {
       setIsExpanded(false);
       setExpandedBounds(null);
+      setIsNavigatingBack(false);
+      if (navigateBackTimerRef.current) {
+        clearTimeout(navigateBackTimerRef.current);
+        navigateBackTimerRef.current = null;
+      }
     }
   }, [open]);
+
+  useEffect(() => {
+    return () => {
+      if (navigateBackTimerRef.current) {
+        clearTimeout(navigateBackTimerRef.current);
+      }
+    };
+  }, []);
 
   useLayoutEffect(() => {
     const panel = chatPanelRef.current;
@@ -3339,6 +3354,51 @@ export default function SiBSChat({
   const isCustomTheme = isChatThemeCustom(conversationTheme);
   const isThemeDark = isChatThemeDark(conversationTheme, imageLuminanceIsDark);
 
+  const hasActiveMobileView = Boolean(
+    (activeConversation || newChatOpen) && !isNavigatingBack,
+  );
+
+  function handleBackToList() {
+    if (typeof window !== "undefined" && window.matchMedia?.("(max-width: 639px)")?.matches) {
+      setIsNavigatingBack(true);
+      if (navigateBackTimerRef.current) {
+        clearTimeout(navigateBackTimerRef.current);
+      }
+      navigateBackTimerRef.current = setTimeout(() => {
+        void chat?.selectConversation?.(null);
+        setIsNavigatingBack(false);
+        navigateBackTimerRef.current = null;
+      }, 300);
+    } else {
+      void chat?.selectConversation?.(null);
+    }
+  }
+
+  function handleCloseNewChat() {
+    if (typeof window !== "undefined" && window.matchMedia?.("(max-width: 639px)")?.matches) {
+      setIsNavigatingBack(true);
+      if (navigateBackTimerRef.current) {
+        clearTimeout(navigateBackTimerRef.current);
+      }
+      navigateBackTimerRef.current = setTimeout(() => {
+        setNewChatOpen(false);
+        setIsNavigatingBack(false);
+        navigateBackTimerRef.current = null;
+      }, 300);
+    } else {
+      setNewChatOpen(false);
+    }
+  }
+
+  function handleSelectConversation(conversationId) {
+    if (navigateBackTimerRef.current) {
+      clearTimeout(navigateBackTimerRef.current);
+      navigateBackTimerRef.current = null;
+    }
+    setIsNavigatingBack(false);
+    setConversationActionId(null);
+    void chat?.selectConversation?.(conversationId);
+  }
 
   const chatUi = (
     <>
@@ -3421,7 +3481,7 @@ export default function SiBSChat({
         } ${
           open
             ? "pointer-events-auto translate-y-0 scale-100 opacity-100"
-            : "pointer-events-none translate-y-3 scale-[0.98] opacity-0"
+            : "pointer-events-none max-sm:translate-y-full max-sm:scale-100 max-sm:opacity-0 sm:translate-y-3 sm:scale-[0.98] sm:opacity-0"
         }`}
         style={
           isExpanded && expandedBounds && !(typeof window !== "undefined" && window.matchMedia("(max-width: 639px)").matches)
@@ -3461,9 +3521,13 @@ export default function SiBSChat({
           </div>
         ) : null}
 
-        <aside className={`w-[300px] shrink-0 flex-col border-r border-sibs-border bg-white max-sm:w-full max-sm:border-r-0 ${
-          activeConversation || newChatOpen ? "max-sm:hidden sm:flex" : "flex"
-        }`}>
+        <aside
+          className={`w-[300px] shrink-0 flex flex-col border-r border-sibs-border bg-white max-sm:w-full max-sm:shrink-0 max-sm:border-r-0 max-sm:transition-transform max-sm:duration-300 max-sm:ease-[cubic-bezier(0.22,1,0.36,1)] max-sm:will-change-transform motion-reduce:transition-none sm:translate-x-0 ${
+            hasActiveMobileView
+              ? "max-sm:-translate-x-full max-sm:pointer-events-none"
+              : "max-sm:translate-x-0 max-sm:pointer-events-auto"
+          }`}
+        >
           <header className="border-b border-white/10 bg-sibs-navy px-3 py-3.5 text-white sm:px-4">
             <div className="flex items-center gap-2 sm:gap-3">
               <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sibs-orange text-white shadow-xs">
@@ -3605,10 +3669,7 @@ export default function SiBSChat({
                   >
                     <button
                       type="button"
-                      onClick={() => {
-                        setConversationActionId(null);
-                        void chat.selectConversation(conversation.id);
-                      }}
+                      onClick={() => handleSelectConversation(conversation.id)}
                       className="flex min-w-0 flex-1 items-center gap-3 px-3 py-2.5 text-left"
                     >
                       <ChatAvatar
@@ -3742,15 +3803,19 @@ export default function SiBSChat({
           </div>
         </aside>
 
-        <div className={`relative min-w-0 flex-1 flex-col max-sm:w-full ${
-          activeConversation || newChatOpen ? "flex" : "max-sm:hidden sm:flex"
-        }`}>
+        <div
+          className={`relative min-w-0 max-sm:flex-none sm:flex-1 flex flex-col max-sm:w-full max-sm:shrink-0 max-sm:transition-transform max-sm:duration-300 max-sm:ease-[cubic-bezier(0.22,1,0.36,1)] max-sm:will-change-transform motion-reduce:transition-none sm:translate-x-0 ${
+            hasActiveMobileView
+              ? "max-sm:-translate-x-full max-sm:pointer-events-auto"
+              : "max-sm:translate-x-0 max-sm:pointer-events-none"
+          }`}
+        >
           {activeConversation ? (
             <>
               <header className="flex h-[68px] shrink-0 items-center gap-1.5 border-b border-white/10 bg-sibs-navy px-2 text-white shadow-xs sm:gap-3 sm:px-4">
                 <button
                   type="button"
-                  onClick={() => void chat.selectConversation(null)}
+                  onClick={handleBackToList}
                   className="hidden h-9 w-9 items-center justify-center rounded-lg text-white/75 transition hover:bg-white/10 hover:text-white max-sm:inline-flex"
                 >
                   <ArrowLeft size={18} />
@@ -5076,7 +5141,7 @@ export default function SiBSChat({
           <NewChatOverlay
             open={newChatOpen}
             busy={actionBusy}
-            onClose={() => setNewChatOpen(false)}
+            onClose={handleCloseNewChat}
             onPrivateChat={(sibsId) =>
               runAction(() => chat.startPrivateConversation(sibsId))
             }

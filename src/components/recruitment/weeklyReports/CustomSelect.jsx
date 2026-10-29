@@ -44,7 +44,7 @@ export default function CustomSelect({
 
       <div className={`sibs-animated-dropdown absolute left-0 right-0 top-full mt-2 ${open ? "open" : "closed"}`}>
         <div className="sibs-animated-dropdown-inner">
-          <div className="sibs-animated-dropdown-box">
+          <div className="sibs-animated-dropdown-box overflow-hidden rounded-[10px] border border-sibs-border bg-white shadow-[0_18px_40px_rgba(15,23,42,0.16)]">
             <div className="max-h-64 overflow-y-auto py-1.5 sibs-scrollbar">
               {options.map((option) => {
                 const selected = value === option;
@@ -58,8 +58,8 @@ export default function CustomSelect({
                     }}
                     className={`block w-full px-3.5 py-2 text-left sibs-text-xs transition ${
                       selected
-                        ? "bg-sibs-surface font-extrabold text-sibs-navy"
-                        : "font-semibold text-sibs-muted hover:bg-sibs-surface"
+                        ? "bg-sibs-cream-light font-extrabold text-sibs-orange"
+                        : "font-semibold text-sibs-navy hover:bg-sibs-cream-light hover:text-sibs-orange"
                     }`}
                   >
                     <span className="block truncate">{option}</span>

@@ -80,7 +80,8 @@ export default function ApplicantLeadMobileCard({
           <a
             href={`tel:${phone}`}
             onClick={(e) => e.stopPropagation()}
-            className="inline-flex items-center gap-1.5 text-[10.5px] font-bold text-sibs-text-secondary hover:text-sibs-orange tabular-nums"
+            onKeyDown={(e) => e.stopPropagation()}
+            className="inline-flex items-center gap-1.5 py-1 px-1.5 -my-1 -mx-1.5 rounded-md text-[10.5px] font-bold text-sibs-text-secondary hover:text-sibs-orange tabular-nums"
           >
             <Phone size={11} strokeWidth={2} className="shrink-0 text-emerald-600" />
             <span className="truncate">{phone}</span>
@@ -90,7 +91,8 @@ export default function ApplicantLeadMobileCard({
           <a
             href={`mailto:${email}`}
             onClick={(e) => e.stopPropagation()}
-            className="inline-flex items-center gap-1.5 text-[10.5px] font-medium text-sibs-text-muted hover:text-sibs-orange"
+            onKeyDown={(e) => e.stopPropagation()}
+            className="inline-flex items-center gap-1.5 py-1 px-1.5 -my-1 -mx-1.5 rounded-md text-[10.5px] font-medium text-sibs-text-muted hover:text-sibs-orange"
           >
             <Mail size={11} strokeWidth={2} className="shrink-0 text-sibs-text-faint" />
             <span className="max-w-[200px] truncate">{email}</span>
@@ -127,8 +129,8 @@ export default function ApplicantLeadMobileCard({
 
       {activeLeadView !== "archive" && !isConvertedApplicant && (
         <DataCard.Footer>
-          <div className="flex w-full items-center justify-between gap-2">
-            <span className="text-[10px] font-medium text-sibs-muted">
+          <div className="flex w-full flex-wrap items-center justify-between gap-2">
+            <span className="min-w-0 truncate text-[10px] font-medium text-sibs-muted">
               {applicationLinkSent ? "Link email dispatched" : "Awaiting application link"}
             </span>
 
@@ -137,12 +139,13 @@ export default function ApplicantLeadMobileCard({
                 type="button"
                 disabled={isSendingApplicationLink}
                 onClick={(event) => onRequestSendEmail?.(event, lead)}
+                onKeyDown={(event) => event.stopPropagation()}
                 aria-label={
                   applicationLinkSent
                     ? `Resend application link email to ${fullName}`
                     : `Send application link email to ${fullName}`
                 }
-                className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-[10px] font-extrabold transition active:scale-95 disabled:cursor-not-allowed ${
+                className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 min-h-[36px] text-[10px] font-extrabold transition active:scale-95 disabled:cursor-not-allowed ${
                   applicationLinkSent
                     ? "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
                     : "border-purple-200 bg-purple-50 text-purple-700 hover:bg-purple-100"
@@ -163,10 +166,13 @@ export default function ApplicantLeadMobileCard({
 
               {applicationLinkSent ? (
                 <span
+                  role="status"
                   title="Application link email has been sent"
-                  className="inline-flex h-6.5 w-6.5 items-center justify-center rounded-lg border border-emerald-200 bg-white text-emerald-600"
+                  aria-label="Application link email has been sent"
+                  className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-emerald-200 bg-white text-emerald-600"
                 >
                   <CircleCheckBig size={12} strokeWidth={2.2} />
+                  <span className="sr-only">Application link sent</span>
                 </span>
               ) : null}
             </div>

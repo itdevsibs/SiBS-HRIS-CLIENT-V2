@@ -198,8 +198,9 @@ export default function ApplicantLeadsTable({
             )
           }
           desktopContent={
-            <div className="overflow-x-auto max-h-[480px] 2xl:max-h-[640px] overflow-y-auto sibs-scrollbar">
+            <div className="overflow-x-auto sibs-scrollbar">
               <table
+                aria-label="Applicant Leads Table"
                 className={`w-full border-collapse text-left ${
                   isConvertedApplicantTab ? "min-w-[720px]" : "min-w-[800px]"
                 }`}
@@ -266,27 +267,33 @@ export default function ApplicantLeadsTable({
                     <tr
                       key={lead.id || `lead-${index}`}
                       onClick={() => openEditModal(lead)}
-                      tabIndex={0}
-                      role="button"
-                      aria-label={`View or edit applicant lead details for ${fullName}`}
                       style={{
                         animationDelay: `${index * 30}ms`,
                         animationFillMode: "both",
                       }}
                       onKeyDown={(event) => {
+                        if (event.target !== event.currentTarget) return;
                         if (event.key === "Enter" || event.key === " ") {
                           event.preventDefault();
                           openEditModal(lead);
                         }
                       }}
-                      className="sibs-page-card-in group cursor-pointer bg-white text-xs transition-colors duration-150 hover:bg-sibs-cream-light focus:bg-sibs-cream-light focus:outline-none"
+                      className="sibs-page-card-in group cursor-pointer bg-white text-xs transition-colors duration-150 hover:bg-sibs-cream-light focus-within:bg-sibs-cream-light"
                     >
                       {/* REFERRAL CODE & NAME */}
                       <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle">
                         <div className="min-w-0">
-                          <p className="truncate sibs-text-xs font-extrabold leading-5 text-sibs-navy group-hover:text-sibs-orange transition-colors">
+                          <button
+                            type="button"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              openEditModal(lead);
+                            }}
+                            aria-label={`View or edit applicant lead details for ${fullName}`}
+                            className="block w-full truncate text-left sibs-text-xs font-extrabold leading-5 text-sibs-navy group-hover:text-sibs-orange focus-visible:text-sibs-orange focus-visible:underline outline-none transition-colors"
+                          >
                             {fullName}
-                          </p>
+                          </button>
                           <p className="mt-0.5 truncate font-mono text-[9.5px] 2xl:text-[10px] font-bold uppercase tracking-wide text-sibs-text-muted tabular-nums">
                             Referral Code: {referralCode || "—"}
                           </p>
@@ -320,7 +327,7 @@ export default function ApplicantLeadsTable({
                             />
                             <span
                               title={email}
-                              className="max-w-[200px] truncate text-[10px] 2xl:text-[11px] font-medium text-sibs-text-muted"
+                              className="max-w-[200px] xl:max-w-xs 2xl:max-w-sm truncate text-[10px] 2xl:text-[11px] font-medium text-sibs-text-muted"
                             >
                               {email}
                             </span>
@@ -347,7 +354,7 @@ export default function ApplicantLeadsTable({
                             <p className="truncate sibs-text-xs font-bold text-sibs-navy">
                               {inputtedBy}
                             </p>
-                            <p className="mt-0.5 truncate text-[9.5px] 2xl:text-[10px] font-medium text-sibs-text-faint tabular-nums">
+                            <p className="mt-0.5 truncate text-[9.5px] 2xl:text-[10px] font-medium text-sibs-muted tabular-nums">
                               Logged: {dateLogged}
                             </p>
                           </div>
@@ -368,6 +375,7 @@ export default function ApplicantLeadsTable({
                                   onClick={(event) =>
                                     requestSendApplicationLink(event, lead)
                                   }
+                                  onKeyDown={(event) => event.stopPropagation()}
                                   title={
                                     applicationLinkSent
                                       ? "Resend application link email"
@@ -393,10 +401,13 @@ export default function ApplicantLeadsTable({
 
                                 {applicationLinkSent ? (
                                   <span
+                                    role="status"
                                     title="Application link email has been sent"
+                                    aria-label="Application link email has been sent"
                                     className="inline-flex h-6.5 w-6.5 2xl:h-7 2xl:w-7 items-center justify-center rounded-lg border border-emerald-200 bg-white text-emerald-600"
                                   >
                                     <CircleCheckBig size={12} strokeWidth={2.2} />
+                                    <span className="sr-only">Application link sent</span>
                                   </span>
                                 ) : null}
                               </div>
