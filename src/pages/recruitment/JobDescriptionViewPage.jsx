@@ -1,4 +1,4 @@
-import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
+import React, { Suspense, lazy, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import {
   AlertTriangle,
@@ -13,7 +13,7 @@ import {
 
 import Details from "../../components/layout/tabs/JobDescriptionView/Details";
 import RevisionHistory from "../../components/layout/tabs/JobDescriptionView/RevisionHistory";
-import ReviseJobDescriptionModal from "../../components/modals/jobDescription/ReviseJobDescriptionModal";
+const ReviseJobDescriptionModal = lazy(() => import("../../components/modals/jobDescription/ReviseJobDescriptionModal"));
 
 import useJobDescriptionDeletion from "../../hooks/jobDescription/useJobDescriptionDeletion";
 import useApprovalRuleRevision from "../../hooks/useApprovalRuleRevision";
@@ -3189,15 +3189,19 @@ export default function JobDescriptionViewPage() {
           REVISION EDITOR
       ================================================= */}
 
-      <ReviseJobDescriptionModal
-        open={revisionEditorOpen}
-        item={item}
-        form={revisionForm}
-        setForm={setRevisionForm}
-        initialSection={selectedRevisionSection}
-        onClose={handleCloseRevisionEditor}
-        onSubmit={handleRevisionSaved}
-      />
+      {Boolean(revisionEditorOpen) ? (
+        <Suspense fallback={null}>
+          <ReviseJobDescriptionModal
+            open={revisionEditorOpen}
+            item={item}
+            form={revisionForm}
+            setForm={setRevisionForm}
+            initialSection={selectedRevisionSection}
+            onClose={handleCloseRevisionEditor}
+            onSubmit={handleRevisionSaved}
+          />
+        </Suspense>
+      ) : null}
 
       {/* =================================================
           NEW - STRICT PERMANENT DELETION MODAL

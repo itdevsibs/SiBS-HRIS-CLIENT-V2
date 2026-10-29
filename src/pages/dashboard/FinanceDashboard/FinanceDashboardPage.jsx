@@ -1,4 +1,6 @@
 import {
+  Suspense,
+  lazy,
   useCallback,
   useEffect,
   useMemo,
@@ -24,7 +26,7 @@ import {
 
 import Header from "../../../components/layout/Header";
 import FinanceDashboardSkeleton from "../../../components/Dashboard/FinanceDashboard/FinanceDashboardSkeleton";
-import StatutoryCoverageModal from "../../../components/Dashboard/FinanceDashboard/StatutoryCoverageModal";
+const StatutoryCoverageModal = lazy(() => import("../../../components/Dashboard/FinanceDashboard/StatutoryCoverageModal"));
 import { PageHeaderHero } from "../../../components/ui";
 import { getFinanceDashboardBootstrap } from "../../../lib/axios/getFinanceDashboard";
 
@@ -675,17 +677,21 @@ export default function FinanceDashboardPage() {
         </section>
       </main>
 
-      <StatutoryCoverageModal
-        open={Boolean(coverageModal)}
-        onClose={() => setCoverageModal(null)}
-        benefit={coverageModal?.benefit}
-        label={coverageModal?.label}
-        coverage={
-          coverageModal?.benefit
-            ? coverage?.[coverageModal.benefit]
-            : null
-        }
-      />
+      {coverageModal && (
+        <Suspense fallback={null}>
+          <StatutoryCoverageModal
+            open={Boolean(coverageModal)}
+            onClose={() => setCoverageModal(null)}
+            benefit={coverageModal?.benefit}
+            label={coverageModal?.label}
+            coverage={
+              coverageModal?.benefit
+                ? coverage?.[coverageModal.benefit]
+                : null
+            }
+          />
+        </Suspense>
+      )}
     </div>
   );
 }

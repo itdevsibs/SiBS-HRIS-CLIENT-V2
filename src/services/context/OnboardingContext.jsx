@@ -4,6 +4,7 @@ import React, {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 
@@ -446,7 +447,14 @@ export const OnboardingProvider = ({ children }) => {
     [filters.finalOutcome, filters.search, filters.showStatus],
   );
 
+  const hasInitialLoadedRef = useRef(false);
+
   useEffect(() => {
+    const isRouteActive =
+      typeof window !== "undefined" &&
+      window.location.pathname.startsWith("/recruitment/onboarding");
+    if (!isRouteActive || hasInitialLoadedRef.current) return;
+    hasInitialLoadedRef.current = true;
     fetchList();
   }, [fetchList]);
 
@@ -454,6 +462,10 @@ export const OnboardingProvider = ({ children }) => {
     let syncTimeout = null;
 
     function queueSync() {
+      const isRouteActive =
+        typeof window !== "undefined" &&
+        window.location.pathname.startsWith("/recruitment/onboarding");
+      if (!isRouteActive) return;
       window.clearTimeout(syncTimeout);
 
       syncTimeout = window.setTimeout(() => {

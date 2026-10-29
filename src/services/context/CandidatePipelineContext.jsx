@@ -1357,7 +1357,17 @@ export function CandidatePipelineProvider({ children }) {
       return;
     }
 
-    refreshCandidatePipeline();
+    const isPipelineRoute =
+      typeof window !== "undefined" &&
+      (window.location.pathname.startsWith("/recruitment/candidate-pipeline") ||
+       window.location.pathname.startsWith("/candidate-pipeline"));
+
+    if (isPipelineRoute) {
+      refreshCandidatePipeline();
+    } else {
+      setIsLoading(false);
+      setHasLoadedStorage(true);
+    }
   }, [isAuthenticated, refreshCandidatePipeline]);
 
   useEffect(() => {

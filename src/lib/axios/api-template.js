@@ -209,8 +209,30 @@ const logoutApi = axios.create({
 
 let isRedirecting = false;
 let logoutPromise = null;
+const inFlightRequests = new Map();
+
+function getInFlightKey(config) {
+  const method = config.method?.toLowerCase() || "get";
+  if (method !== "get") return null;
+  if (
+    config.params?.forceRefresh ||
+    config.params?.refresh ||
+    config.skipInFlightDeduplication
+  ) {
+    return null;
+  }
+  const url = config.url || "";
+  const params = config.params || {};
+  const stableParams = Object.keys(params)
+    .filter((k) => k !== "_t" && k !== "forceRefresh" && k !== "refresh")
+    .sort()
+    .map((k) => `${k}=${params[k]}`)
+    .join("&");
+  return `${url}?${stableParams}`;
+}
 
 function clearClientSession() {
+  inFlightRequests.clear();
   hrisQueryCache.invalidate();
   if (typeof sessionStorage !== "undefined") {
     /*
@@ -349,6 +371,24 @@ api.interceptors.request.use(
           };
           return withCancellation(execute(), adapterConfig);
         };
+      } else {
+        const inFlightKey = getInFlightKey(config);
+        if (inFlightKey) {
+          config.adapter = async (adapterConfig) => {
+            let pending = inFlightRequests.get(inFlightKey);
+            if (!pending) {
+              pending = networkAdapter({
+                ...adapterConfig,
+                adapter: networkAdapter,
+              }).finally(() => {
+                inFlightRequests.delete(inFlightKey);
+              });
+              inFlightRequests.set(inFlightKey, pending);
+            }
+            const response = await withCancellation(pending, adapterConfig);
+            return { ...response, config: adapterConfig };
+          };
+        }
       }
       config.params = {
         ...(config.params || {}),

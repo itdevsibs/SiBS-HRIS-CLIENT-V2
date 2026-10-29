@@ -1,15 +1,67 @@
-import { useCallback, useState } from "react";
+import { Suspense, lazy, useCallback, useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 
 import Providers from "@/services/providers";
 import ConditionalSidebar from "@/components/layout/ConditionalSidebar";
 import Header from "@/components/layout/Header";
-import AdminLoginModal from "@/components/modals/AdminLoginModal";
-import SiBSAIAssistant from "@/components/ai/SiBSAIAssistant";
-import SiBSChat from "@/components/chat/SiBSChat";
 import SiBSAssistantLauncher from "@/components/assistant/SiBSAssistantLauncher";
 import { isPublicPath } from "@/config/publicRoutes";
 import { PersistentHeaderProvider } from "@/services/context/PersistentHeaderContext";
+import { useHeader } from "@/services/context/HeaderContext";
+
+const AdminLoginModal = lazy(() => import("@/components/modals/AdminLoginModal"));
+const SiBSAIAssistant = lazy(() => import("@/components/ai/SiBSAIAssistant"));
+const SiBSChat = lazy(() => import("@/components/chat/SiBSChat"));
+
+function LazyAdminLoginModal() {
+  const { adminLogin } = useHeader() || {};
+  if (!adminLogin) return null;
+  return (
+    <Suspense fallback={null}>
+      <AdminLoginModal />
+    </Suspense>
+  );
+}
+
+function LazyChatSurface({ enabled, isOpen, onOpenChange }) {
+  const [hasMounted, setHasMounted] = useState(false);
+  useEffect(() => {
+    if (isOpen) setHasMounted(true);
+  }, [isOpen]);
+
+  if (!enabled || !hasMounted) return null;
+
+  return (
+    <Suspense fallback={null}>
+      <SiBSChat
+        enabled={enabled}
+        isOpen={isOpen}
+        onOpenChange={onOpenChange}
+        hideTrigger={true}
+      />
+    </Suspense>
+  );
+}
+
+function LazyAiAssistantSurface({ enabled, isOpen, onOpenChange }) {
+  const [hasMounted, setHasMounted] = useState(false);
+  useEffect(() => {
+    if (isOpen) setHasMounted(true);
+  }, [isOpen]);
+
+  if (!enabled || !hasMounted) return null;
+
+  return (
+    <Suspense fallback={null}>
+      <SiBSAIAssistant
+        enabled={enabled}
+        isOpen={isOpen}
+        onOpenChange={onOpenChange}
+        hideTrigger={true}
+      />
+    </Suspense>
+  );
+}
 
 export default function AppShell({ children }) {
   const location = useLocation();
@@ -88,17 +140,15 @@ export default function AppShell({ children }) {
         </PersistentHeaderProvider>
       )}
 
-      <SiBSChat
+      <LazyChatSurface
         enabled={!hideSidebar && !isFinalInterviewForm}
         isOpen={chatOpen}
         onOpenChange={handleChatOpenChange}
-        hideTrigger={true}
       />
-      <SiBSAIAssistant
+      <LazyAiAssistantSurface
         enabled={!hideSidebar && !isFinalInterviewForm}
         isOpen={aiOpen}
         onOpenChange={handleAiOpenChange}
-        hideTrigger={true}
       />
       <SiBSAssistantLauncher
         enabled={!hideSidebar && !isFinalInterviewForm}
@@ -109,7 +159,7 @@ export default function AppShell({ children }) {
         isAiOpen={aiOpen}
         isChatOpen={chatOpen}
       />
-      <AdminLoginModal />
+      <LazyAdminLoginModal />
     </Providers>
   );
 }

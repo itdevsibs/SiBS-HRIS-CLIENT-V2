@@ -21,10 +21,10 @@ import TalentPoolFilters from "../../../components/recruitment/talentPool/Talent
 import TalentPoolTable from "../../../components/recruitment/talentPool/TalentPoolTable";
 import TalentPoolTabs from "../../../components/recruitment/talentPool/TalentPoolTabs";
 import DropOffListSection from "../../../components/recruitment/shared/DropOffListSection";
-import AddCandidateModal from "../../../components/modals/talentPool/AddCandidateModal";
-import CandidateProfileModal from "../../../components/modals/talentPool/CandidateProfileModal";
-import UpdateStatusModal from "../../../components/modals/talentPool/UpdateStatusModal";
-import MoveToPipeLineModal from "../../../components/modals/talentPool/MoveToPipeLineModal";
+const AddCandidateModal = React.lazy(() => import("../../../components/modals/talentPool/AddCandidateModal"));
+const CandidateProfileModal = React.lazy(() => import("../../../components/modals/talentPool/CandidateProfileModal"));
+const UpdateStatusModal = React.lazy(() => import("../../../components/modals/talentPool/UpdateStatusModal"));
+const MoveToPipeLineModal = React.lazy(() => import("../../../components/modals/talentPool/MoveToPipeLineModal"));
 import useCombinedDropOffCandidates from "../../../hooks/useCombinedDropOffCandidates";
 import {
   filterTalentPoolCandidatesForTab,
@@ -478,10 +478,12 @@ function TalentPoolPageContent() {
         </div>
       </main>
 
-      <AddCandidateModal />
-      <CandidateProfileModal />
-      <UpdateStatusModal />
-      <MoveToPipeLineModal />
+      <React.Suspense fallback={null}>
+        <AddCandidateModal />
+        <CandidateProfileModal />
+        <UpdateStatusModal />
+        <MoveToPipeLineModal />
+      </React.Suspense>
     </div>
   );
 }
