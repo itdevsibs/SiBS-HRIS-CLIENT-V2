@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useLocation } from "react-router-dom";
 
 import { useHiringNeeds } from "./HiringNeedsContext";
 import { useUser } from "./UserContext";
@@ -100,216 +101,121 @@ function flattenWeekGroups(groups = []) {
     if (!rows.length) return [group];
 
     return rows.map((row) => ({
-      ...group,
       ...row,
-      weekStart: row.weekStart || row.week_start || getWeekStart(group),
-      weekEnd: row.weekEnd || row.week_end || getWeekEnd(group),
-      weekNumber: row.weekNumber || row.week_number || getWeekNumber(group),
-      reportingWeek:
-        row.reportingWeek ||
-        row.weekLabel ||
-        group.reportingWeek ||
-        group.weekLabel ||
-        group.label ||
-        "",
+      weekStart: getWeekStart(row) || getWeekStart(group),
+      weekEnd: getWeekEnd(row) || getWeekEnd(group),
+      weekNumber: getWeekNumber(row) || getWeekNumber(group),
     }));
   });
 }
 
-function getActiveWorkforceWeek(workforce = {}) {
-  const tables = workforce.tables || {};
-  const weeklyVersion = workforce.weeklyVersion || {};
+function extractWorkforceRecords(workforceHiring = {}) {
+  const tables = workforceHiring.tables || {};
+  const currentPlan =
+    workforceHiring.currentPlan ||
+    workforceHiring.hiringPlan ||
+    workforceHiring.plan ||
+    {};
 
-  return (
-    tables.activeWeek ||
-    weeklyVersion.activeWeek ||
-    weeklyVersion.selectedWeek ||
-    weeklyVersion.currentWeek ||
-    workforce.activeWeek ||
-    workforce.selectedWeek ||
-    {}
-  );
-}
-
-function selectRowsForActiveWeek(groups = [], activeWeek = {}) {
-  const safeGroups = cleanArray(groups);
-  if (!safeGroups.length) return [];
-
-  const targetStart = getWeekStart(activeWeek);
-  const targetEnd = getWeekEnd(activeWeek);
-  const targetNumber = getWeekNumber(activeWeek);
-
-  const matched = safeGroups.find((group) => {
-    const sameDates =
-      targetStart &&
-      targetEnd &&
-      getWeekStart(group) === targetStart &&
-      getWeekEnd(group) === targetEnd;
-
-    const sameNumber =
-      targetNumber && getWeekNumber(group) === targetNumber;
-
-    return sameDates || sameNumber;
-  });
-
-  return getNestedRows(matched || safeGroups[0]);
-}
-
-function extractWorkforceRecords(workforce = {}) {
-  const tables = workforce.tables || {};
-  const weeklyVersion = workforce.weeklyVersion || {};
-  const overview = workforce.overview || {};
-  const forecast = workforce.forecast || workforce.forecastData || {};
-
-  const weekGroups = firstArray(
-    workforce.accountRowsByWeek,
-    workforce.accountForecastRowsByWeek,
-    tables.accountRowsByWeek,
-    tables.accountForecastRowsByWeek,
-    weeklyVersion.accountRowsByWeek,
-    weeklyVersion.accountForecastRowsByWeek,
-    forecast.accountRowsByWeek,
-    forecast.accountForecastRowsByWeek,
-  );
-
-  const directWeeklyPlan = firstArray(
-    workforce.weeklyPlan,
-    workforce.plans,
-    workforce.rows,
-    workforce.accountRows,
-    workforce.forecastRows,
+  const weeklyPlanCandidates = [
+    workforceHiring.weeklyPlan,
     tables.weeklyPlan,
-    tables.rows,
-    tables.accountRows,
-    weeklyVersion.weeklyPlan,
-    weeklyVersion.rows,
-    weeklyVersion.accountRows,
-    overview.rows,
-    forecast.rows,
-    forecast.forecastRows,
-  );
+    currentPlan.weeklyPlan,
+    workforceHiring.planRows,
+    workforceHiring.weeklyRows,
+    workforceHiring.weeks,
+    currentPlan.weeks,
+    currentPlan.rows,
+  ];
 
-  const weeklyPlan = directWeeklyPlan.length
-    ? directWeeklyPlan
-    : selectRowsForActiveWeek(weekGroups, getActiveWorkforceWeek(workforce));
-
-  const directHistory = firstArray(
-    workforce.weeklyActionItems,
-    workforce.historicalRows,
-    workforce.historyRows,
+  const actionItemsCandidates = [
+    workforceHiring.weeklyActionItems,
+    workforceHiring.actionItems,
     tables.weeklyActionItems,
-    tables.historicalRows,
-    weeklyVersion.weeklyActionItems,
-    weeklyVersion.historicalRows,
+    currentPlan.actionItems,
+    currentPlan.weeklyActionItems,
+  ];
+
+  const weeklyPlan = flattenWeekGroups(firstArray(...weeklyPlanCandidates));
+  const weeklyActionItems = flattenWeekGroups(
+    firstArray(...actionItemsCandidates),
   );
 
   return {
     weeklyPlan,
-    weeklyActionItems: directHistory.length
-      ? directHistory
-      : flattenWeekGroups(weekGroups),
+    weeklyActionItems,
   };
 }
 
+function getFirstFunction(source, candidateNames = []) {
+  if (!source || typeof source !== "object") return null;
 
-function normalizeHiringNeedRecord(record = {}) {
-  const departmentAccount = String(
-    record.departmentAccount || record.department_account || "",
-  ).trim();
-  const departmentParts = departmentAccount
-    .split("/")
-    .map((part) => part.trim())
-    .filter(Boolean);
-
-  return {
-    ...record,
-    hiringNeedId:
-      record.hiringNeedId ||
-      record.hiring_need_id ||
-      record.rawId ||
-      record.raw_id ||
-      record.prfId ||
-      record.prf_id ||
-      record.id ||
-      "",
-    roleTitle:
-      record.roleTitle ||
-      record.role_title ||
-      record.positionTitle ||
-      record.position_title ||
-      record.jobDescriptionTitle ||
-      "",
-    account:
-      record.account ||
-      record.accountName ||
-      record.account_name ||
-      departmentParts.at(-1) ||
-      departmentAccount ||
-      "Recruitment",
-    cluster:
-      record.cluster ||
-      record.clusterName ||
-      record.department ||
-      (departmentParts.length > 1 ? departmentParts[0] : "") ||
-      "Unassigned Cluster",
-    requiredHeadcount:
-      record.requiredHeadcount ||
-      record.required_headcount ||
-      record.headcount ||
-      record.required_hc ||
-      0,
-    openDate:
-      record.openDate ||
-      record.createdDate ||
-      record.createdAt ||
-      record.created_at ||
-      "",
-    dueDate:
-      record.dueDate ||
-      record.dateNeeded ||
-      record.date_needed ||
-      record.requiredDate ||
-      "",
-    taOwner:
-      record.taOwner ||
-      record.owner ||
-      record.preparedBy ||
-      record.prepared_by ||
-      record.requestedBy ||
-      record.requested_by ||
-      "Unassigned",
-  };
-}
-
-function dedupeRecords(records = []) {
-  const map = new Map();
-
-  cleanArray(records).forEach((record, index) => {
-    const key = String(
-      record.id ||
-        record.dbId ||
-        record.rawId ||
-        record.candidatePipelineId ||
-        record.candidateApplicationId ||
-        record.candidateId ||
-        record.email ||
-        `record-${index}`,
-    );
-
-    map.set(key, { ...(map.get(key) || {}), ...record });
-  });
-
-  return Array.from(map.values());
-}
-
-function getFirstFunction(source = {}, names = []) {
-  for (const name of names) {
-    if (typeof source?.[name] === "function") return source[name];
+  for (const name of candidateNames) {
+    if (typeof source[name] === "function") {
+      return source[name];
+    }
   }
+
   return null;
 }
 
+function dedupeRecords(records = []) {
+  const seen = new Set();
+
+  return cleanArray(records).filter((record) => {
+    const key =
+      record?.id ??
+      record?.offerId ??
+      record?.offer_id ??
+      record?.candidateId ??
+      record?.candidate_id ??
+      record?.pipelineId ??
+      record?.candidatePipelineId ??
+      record?.name ??
+      JSON.stringify(record);
+
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function normalizeHiringNeedRecord(item = {}) {
+  return {
+    ...item,
+    id: item.id ?? item.hiringNeedId ?? item.hiring_need_id,
+    account: item.account || item.accountName || item.account_name || "",
+    roleTitle:
+      item.roleTitle || item.role_title || item.position || item.title || "",
+    headcount: Number(
+      item.headcount ??
+        item.requiredHeadcount ??
+        item.required_headcount ??
+        item.approvedRequirement ??
+        item.approved_requirement ??
+        0,
+    ),
+    hiringManager:
+      item.hiringManager || item.hiring_manager || item.manager || "",
+    targetDate:
+      item.targetDate ||
+      item.target_date ||
+      item.dueDate ||
+      item.due_date ||
+      item.requestedStartDate ||
+      item.requested_start_date ||
+      "",
+    status:
+      item.status || item.approvalStatus || item.approval_status || "Pending",
+  };
+}
+
 export default function ActionItemsDataBridge({ children }) {
+  const location = useLocation();
+  const isActionItemsRoute =
+    location.pathname.startsWith("/recruitment/action-item") ||
+    location.pathname.startsWith("/action-item");
+
   const { user, loading: userLoading } = useUser() || {};
   const hiringNeeds = useHiringNeeds();
   const candidatePipeline = useCandidatePipeline();
@@ -347,57 +253,68 @@ export default function ActionItemsDataBridge({ children }) {
     "reload",
   ]);
 
-  const refreshLiveSources = useCallback(async () => {
-    const isPublicRoute =
-      typeof window !== "undefined" &&
-      isPublicActionItemsPath(window.location.pathname);
+  const refreshLiveSources = useCallback(
+    async ({ force = false } = {}) => {
+      const pathname =
+        typeof window !== "undefined" ? window.location.pathname : "";
+      const isPublicRoute = isPublicActionItemsPath(pathname);
 
-    if (isPublicRoute || userLoading || !user || !canLoadActionItems) {
-      return;
-    }
+      if (isPublicRoute || userLoading || !user || !canLoadActionItems) {
+        return;
+      }
 
-    const refreshers = [
+      if (!isActionItemsRoute && !force) {
+        return;
+      }
+
+      const refreshers = [
+        fetchHiringNeeds,
+        refreshCandidatePipeline,
+        refreshOffers,
+        refreshOnboarding,
+        ...(canRefreshSourcing ? [refreshSourcing] : []),
+        refreshWorkforceHiring,
+      ].filter((callback) => typeof callback === "function");
+
+      await Promise.allSettled(refreshers.map((callback) => callback()));
+      setBridgeVersion((value) => value + 1);
+    },
+    [
+      canLoadActionItems,
+      canRefreshSourcing,
       fetchHiringNeeds,
+      isActionItemsRoute,
       refreshCandidatePipeline,
       refreshOffers,
       refreshOnboarding,
-      ...(canRefreshSourcing ? [refreshSourcing] : []),
+      refreshSourcing,
       refreshWorkforceHiring,
-    ].filter((callback) => typeof callback === "function");
-
-    await Promise.allSettled(refreshers.map((callback) => callback()));
-    setBridgeVersion((value) => value + 1);
-  }, [
-    canLoadActionItems,
-    fetchHiringNeeds,
-    refreshCandidatePipeline,
-    refreshOffers,
-    refreshOnboarding,
-    canRefreshSourcing,
-    refreshSourcing,
-    refreshWorkforceHiring,
-    user,
-    userLoading,
-  ]);
+      user,
+      userLoading,
+    ],
+  );
 
   useEffect(() => {
-    refreshLiveSources();
-  }, [refreshLiveSources]);
+    if (isActionItemsRoute) {
+      refreshLiveSources();
+    }
+  }, [isActionItemsRoute, refreshLiveSources]);
 
   useEffect(() => {
     function handleSourceRefresh() {
-      refreshLiveSources();
+      refreshLiveSources({ force: true });
     }
 
     function handleSourceUpdated() {
-      setBridgeVersion((value) => value + 1);
+      if (isActionItemsRoute) {
+        setBridgeVersion((value) => value + 1);
+      }
     }
 
     window.addEventListener(SOURCE_REFRESH_EVENT, handleSourceRefresh);
 
-    [
+    const refreshEvents = [
       "storage",
-      "focus",
       "ta-hiring-needs-updated",
       "ta-workforce-hiring-plan-updated",
       "ta-weekly-hiring-action-items-updated",
@@ -405,28 +322,20 @@ export default function ActionItemsDataBridge({ children }) {
       "ta-offers-updated",
       "ta-onboarding-updated",
       "ta-talent-pool-updated",
-    ].forEach((eventName) => {
+    ];
+
+    refreshEvents.forEach((eventName) => {
       window.addEventListener(eventName, handleSourceUpdated);
     });
 
     return () => {
       window.removeEventListener(SOURCE_REFRESH_EVENT, handleSourceRefresh);
 
-      [
-        "storage",
-        "focus",
-        "ta-hiring-needs-updated",
-        "ta-workforce-hiring-plan-updated",
-        "ta-weekly-hiring-action-items-updated",
-        "ta-pipeline-candidates-updated",
-        "ta-offers-updated",
-        "ta-onboarding-updated",
-        "ta-talent-pool-updated",
-      ].forEach((eventName) => {
+      refreshEvents.forEach((eventName) => {
         window.removeEventListener(eventName, handleSourceUpdated);
       });
     };
-  }, [refreshLiveSources]);
+  }, [isActionItemsRoute, refreshLiveSources]);
 
   const moduleRecords = useMemo(() => {
     const candidateList = cleanArray(

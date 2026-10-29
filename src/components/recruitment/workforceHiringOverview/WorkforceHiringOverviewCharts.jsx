@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Maximize2, X } from "lucide-react";
-import WorkforceHiringTrendDetailsModal from "../../modals/workforceHiringOverview/WorkforceHiringTrendDetailsModal";
+const WorkforceHiringTrendDetailsModal = React.lazy(() => import("../../modals/workforceHiringOverview/WorkforceHiringTrendDetailsModal"));
 import WorkforceReadNotice from "./shared/WorkforceReadNotice";
 import { useWorkforceHiringView } from "../../../services/context/WorkforceHiringContextAdapter";
 import { Skeleton } from "../../ui";
@@ -367,15 +367,19 @@ function SixWeekTrendsCard() {
         />
       </div>
 
-      <WorkforceHiringTrendDetailsModal
-        open={trendModalOpen}
-        onClose={() => setTrendModalOpen(false)}
-        trendWeeks={displayTrendWeeks}
-        trends={trends}
-        trendDetails={trendDetails}
-        trendSummary={footerSummary}
-        trendMeta={trendMeta}
-      />
+      {trendModalOpen && (
+        <React.Suspense fallback={null}>
+          <WorkforceHiringTrendDetailsModal
+            open={trendModalOpen}
+            onClose={() => setTrendModalOpen(false)}
+            trendWeeks={displayTrendWeeks}
+            trends={trends}
+            trendDetails={trendDetails}
+            trendSummary={footerSummary}
+            trendMeta={trendMeta}
+          />
+        </React.Suspense>
+      )}
     </section>
   );
 }

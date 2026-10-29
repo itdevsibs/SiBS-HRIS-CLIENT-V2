@@ -1,4 +1,11 @@
-import { heicTo } from "heic-to";
+let cachedHeicTo = null;
+
+async function getHeicConverter() {
+  if (cachedHeicTo) return cachedHeicTo;
+  const mod = await import("heic-to/csp");
+  cachedHeicTo = mod.heicTo || mod.default?.heicTo || mod.default;
+  return cachedHeicTo;
+}
 
 export function isHeicFileName(filename = "") {
   const cleanName = String(filename || "")
@@ -25,7 +32,7 @@ export async function convertHeicBlobToJpeg(
   }
 
   const convert =
-    converter || heicTo;
+    converter || (await getHeicConverter());
 
   if (typeof convert !== "function") {
     throw new Error(

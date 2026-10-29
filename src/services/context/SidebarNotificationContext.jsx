@@ -360,13 +360,35 @@ export function SidebarNotificationProvider({ children }) {
   useEffect(() => {
     let cancelled = false;
 
-    async function refreshOperationalNotifications() {
+    let lastOperationalFetchAt = 0;
+
+    async function refreshOperationalNotifications(isFromFocus = false) {
       if (!user) {
         if (!cancelled) {
           setOperationalNotifications([]);
         }
         return;
       }
+
+      const userAccessValue = Number(
+        user?.adminAccess ?? user?.admin_access ?? user?.access ?? 0
+      );
+      const userRoleClean = String(user?.role || "").trim().toLowerCase();
+      const hasRecruitmentAccess =
+        [1, 2, 3, 6, 7].includes(userAccessValue) ||
+        ["ta", "hr", "hr_admin", "super_admin", "admin", "executive"].includes(userRoleClean);
+
+      if (!hasRecruitmentAccess) {
+        if (!cancelled) {
+          setOperationalNotifications([]);
+        }
+        return;
+      }
+
+      if (isFromFocus && Date.now() - lastOperationalFetchAt < 30_000) {
+        return;
+      }
+      lastOperationalFetchAt = Date.now();
 
       const [pipelineResult, hiringNeedsResult] =
         await Promise.allSettled([
@@ -415,14 +437,18 @@ export function SidebarNotificationProvider({ children }) {
     ];
 
     const handleRefresh = () => {
-      refreshOperationalNotifications();
+      refreshOperationalNotifications(false);
+    };
+
+    const handleWindowFocus = () => {
+      refreshOperationalNotifications(true);
     };
 
     refreshEvents.forEach((eventName) => {
       window.addEventListener(eventName, handleRefresh);
     });
 
-    window.addEventListener("focus", handleRefresh);
+    window.addEventListener("focus", handleWindowFocus);
 
     return () => {
       cancelled = true;
@@ -432,7 +458,7 @@ export function SidebarNotificationProvider({ children }) {
         window.removeEventListener(eventName, handleRefresh);
       });
 
-      window.removeEventListener("focus", handleRefresh);
+      window.removeEventListener("focus", handleWindowFocus);
     };
   }, [user, userNotificationId]);
 

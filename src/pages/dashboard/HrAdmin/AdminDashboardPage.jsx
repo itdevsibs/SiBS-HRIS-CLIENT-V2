@@ -35,14 +35,14 @@ import {
 import AdminDashboardWelcome from "../../../components/Dashboard/HRAdminDashboard/AdminDashboardWelcome";
 import AdminDashboardStats from "../../../components/Dashboard/HRAdminDashboard/AdminDashboardStats";
 import AdminDashboardActivity from "../../../components/Dashboard/HRAdminDashboard/AdminDashboardActivity";
-import AdminDashboardActivityModal from "../../../components/Dashboard/HRAdminDashboard/AdminDashboardActivityModal";
+const AdminDashboardActivityModal = React.lazy(() => import("../../../components/Dashboard/HRAdminDashboard/AdminDashboardActivityModal"));
 import AdminDashboardNotifications from "../../../components/Dashboard/HRAdminDashboard/AdminDashboardNotifications";
 import AdminDashboardQuickActions from "../../../components/Dashboard/HRAdminDashboard/AdminDashboardQuickActions";
 import AdminDashboardWorkforceKpi from "../../../components/Dashboard/HRAdminDashboard/AdminDashboardWorkforceKpi";
 import AdminDashboardToast from "../../../components/Dashboard/HRAdminDashboard/AdminDashboardToast";
 import { resolveActivityNavigationTarget } from "../../../lib/utils/Dashboards/AdminDashboard/activityNavigation.js";
 import StatutoryCoveragePanel from "../../../components/Dashboard/shared/StatutoryCoveragePanel";
-import { DashboardModalManager } from "../../../components/modals/dashboard/AdminDashboardModals";
+const DashboardModalManager = React.lazy(() => import("../../../components/modals/dashboard/AdminDashboardModals").then((m) => ({ default: m.DashboardModalManager })));
 import {
   EMPTY_OVERVIEW,
   normalizeDashboardOverview,
@@ -713,7 +713,8 @@ export default function AdminDashboardPage() {
       </main>
 
       {activityHistoryOpen && (
-        <AdminDashboardActivityModal
+        <React.Suspense fallback={null}>
+          <AdminDashboardActivityModal
           activities={activityHistory.items}
           loading={activityHistory.loading}
           isSyncing={activityHistory.syncing}
@@ -734,18 +735,23 @@ export default function AdminDashboardPage() {
             navigate(target.pathname, target.state ? { state: target.state } : undefined);
           }}
         />
+        </React.Suspense>
       )}
 
-      <DashboardModalManager
-        activeModal={activeModal}
-        onClose={handleCloseModal}
-        detail={detailState.data}
-        loading={detailState.loading}
-        error={detailState.error}
-        onSearch={handleDetailSearch}
-        onPageChange={handleDetailPageChange}
-        generatedAt={overview.generatedAt}
-      />
+      {activeModal && (
+        <React.Suspense fallback={null}>
+          <DashboardModalManager
+            activeModal={activeModal}
+            onClose={handleCloseModal}
+            detail={detailState.data}
+            loading={detailState.loading}
+            error={detailState.error}
+            onSearch={handleDetailSearch}
+            onPageChange={handleDetailPageChange}
+            generatedAt={overview.generatedAt}
+          />
+        </React.Suspense>
+      )}
 
       <AdminDashboardToast toast={toast} onClose={() => setToast(null)} />
     </div>

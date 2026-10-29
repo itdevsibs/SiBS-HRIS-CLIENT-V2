@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Suspense, lazy, useCallback, useEffect, useRef, useState } from "react";
 import { AlertCircle, RefreshCw, ShieldCheck } from "lucide-react";
 
-import StatutoryCoverageModal from "../FinanceDashboard/StatutoryCoverageModal";
+const StatutoryCoverageModal = lazy(() => import("../FinanceDashboard/StatutoryCoverageModal"));
 import { getStatutoryCoverageSummary } from "../../../lib/axios/getFinanceDashboard";
 
 const EMPTY_COVERAGE = Object.freeze({
@@ -275,18 +275,22 @@ export default function StatutoryCoveragePanel({
         </div>
       </article>
 
-      <StatutoryCoverageModal
-        open={Boolean(coverageModal)}
-        onClose={() => setCoverageModal(null)}
-        benefit={coverageModal?.benefit}
-        label={coverageModal?.label}
-        coverage={
-          coverageModal?.benefit
-            ? coverage?.[coverageModal.benefit]
-            : null
-        }
-        badge={modalBadge}
-      />
+      {coverageModal && (
+        <Suspense fallback={null}>
+          <StatutoryCoverageModal
+            open={Boolean(coverageModal)}
+            onClose={() => setCoverageModal(null)}
+            benefit={coverageModal?.benefit}
+            label={coverageModal?.label}
+            coverage={
+              coverageModal?.benefit
+                ? coverage?.[coverageModal.benefit]
+                : null
+            }
+            badge={modalBadge}
+          />
+        </Suspense>
+      )}
     </>
   );
 }
