@@ -4093,41 +4093,47 @@ function TalentPoolStatusDropdown({
         />
       </button>
 
-      {open && !disabled && (
-        <div className="sibs-animated-dropdown-box absolute left-0 right-0 top-[calc(100%+6px)] z-[100060] overflow-hidden rounded-[10px] border border-sibs-border bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)]">
-          <div className="max-h-64 overflow-y-auto" role="listbox">
-            {options.length > 0 ? (
-              options.map((option) => {
-                const active =
-                  String(option.value) === String(value || "");
+      <div
+        className={`sibs-animated-dropdown absolute left-0 right-0 top-[calc(100%+6px)] z-[100060] ${
+          open && !disabled ? "open" : "closed"
+        }`}
+      >
+        <div className="sibs-animated-dropdown-inner">
+          <div className="sibs-animated-dropdown-box overflow-hidden rounded-[10px] border border-sibs-border bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)]">
+            <div className="max-h-64 overflow-y-auto sibs-scrollbar" role="listbox">
+              {options.length > 0 ? (
+                options.map((option) => {
+                  const active =
+                    String(option.value) === String(value || "");
 
-                return (
-                  <button
-                    key={option.value}
-                    type="button"
-                    role="option"
-                    aria-selected={active}
-                    onClick={() => handleSelect(option.value)}
-                    className={`block w-full px-3.5 py-2.5 text-left text-xs font-semibold transition ${
-                      active
-                        ? "bg-sibs-cream-light text-sibs-orange font-extrabold"
-                        : "bg-white text-sibs-navy hover:bg-sibs-cream-light hover:text-sibs-orange"
-                    }`}
-                  >
-                    <span className="block min-w-0 truncate">
-                      {option.label}
-                    </span>
-                  </button>
-                );
-              })
-            ) : (
-              <div className="px-3.5 py-2.5 text-xs font-semibold text-gray-400">
-                No status options found.
-              </div>
-            )}
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      role="option"
+                      aria-selected={active}
+                      onClick={() => handleSelect(option.value)}
+                      className={`block w-full px-3.5 py-2.5 text-left text-xs font-semibold transition ${
+                        active
+                          ? "bg-sibs-cream-light text-sibs-orange font-extrabold"
+                          : "bg-white text-sibs-navy hover:bg-sibs-cream-light hover:text-sibs-orange"
+                      }`}
+                    >
+                      <span className="block min-w-0 truncate">
+                        {option.label}
+                      </span>
+                    </button>
+                  );
+                })
+              ) : (
+                <div className="px-3.5 py-2.5 text-xs font-semibold text-gray-400">
+                  No status options found.
+                </div>
+              )}
+            </div>
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }

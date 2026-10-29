@@ -574,45 +574,51 @@ function EmployeeSearchDropdown({
         )}
       </div>
 
-      {open && !disabled && (
-        <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-[80] overflow-hidden rounded-xl border border-sibs-border bg-white shadow-lg">
-          <div className="max-h-72 overflow-y-auto py-2">
-            {loading ? (
-              <div className="px-4 py-3 text-xs font-bold text-sibs-primary-1">
-                Searching employees...
-              </div>
-            ) : candidates.length > 0 ? (
-              candidates.map((candidate) => (
-                <button
-                  key={`${candidate.sibsId}-${candidate.employeeName}`}
-                  type="button"
-                  onClick={() => {
-                    onSelect(candidate);
-                    setOpen(false);
-                  }}
-                  className="block w-full px-4 py-3 text-left transition hover:bg-sibs-surface"
-                >
-                  <span className="block text-xs font-extrabold text-sibs-navy">
-                    {candidate.label}
-                  </span>
+      <div
+        className={`sibs-animated-dropdown absolute left-0 right-0 top-[calc(100%+8px)] z-[80] ${
+          open && !disabled ? "open" : "closed"
+        }`}
+      >
+        <div className="sibs-animated-dropdown-inner">
+          <div className="sibs-animated-dropdown-box overflow-hidden rounded-[10px] border border-sibs-border bg-white shadow-[0_18px_40px_rgba(15,23,42,0.16)]">
+            <div className="max-h-72 overflow-y-auto py-2 sibs-scrollbar">
+              {loading ? (
+                <div className="px-4 py-3 text-xs font-bold text-sibs-navy">
+                  Searching employees...
+                </div>
+              ) : candidates.length > 0 ? (
+                candidates.map((candidate) => (
+                  <button
+                    key={`${candidate.sibsId}-${candidate.employeeName}`}
+                    type="button"
+                    onClick={() => {
+                      onSelect(candidate);
+                      setOpen(false);
+                    }}
+                    className="group block w-full px-4 py-3 text-left transition hover:bg-sibs-cream-light hover:text-sibs-orange"
+                  >
+                    <span className="block text-xs font-extrabold text-sibs-navy transition-colors group-hover:text-sibs-orange">
+                      {candidate.label}
+                    </span>
 
-                  <span className="mt-0.5 block text-xs font-semibold text-sibs-tertiary-5">
-                    Add as approval user
-                  </span>
-                </button>
-              ))
-            ) : cleanText(search).length >= 2 ? (
-              <div className="px-4 py-3 text-xs font-bold text-sibs-tertiary-5">
-                No matching employee found.
-              </div>
-            ) : (
-              <div className="px-4 py-3 text-xs font-bold text-sibs-tertiary-5">
-                Type at least 2 characters to search.
-              </div>
-            )}
+                    <span className="mt-0.5 block text-xs font-semibold text-sibs-muted transition-colors group-hover:text-sibs-orange/80">
+                      Add as approval user
+                    </span>
+                  </button>
+                ))
+              ) : cleanText(search).length >= 2 ? (
+                <div className="px-4 py-3 text-xs font-bold text-sibs-muted">
+                  No matching employee found.
+                </div>
+              ) : (
+                <div className="px-4 py-3 text-xs font-semibold text-sibs-muted">
+                  Type at least 2 characters to search.
+                </div>
+              )}
+            </div>
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }

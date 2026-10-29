@@ -490,46 +490,52 @@ export default function AddExperienceModal({
                 />
               </div>
 
-              {candidateMenuOpen ? (
-                <div className="absolute left-0 right-0 top-full z-[100] mt-1 max-h-52 overflow-y-auto rounded-[10px] border border-sibs-border bg-white p-1.5 shadow-xl">
-                  {candidatesLoading ? (
-                    <p className="px-3 py-4 text-center text-xs font-semibold text-sibs-faint">
-                      Loading Candidate Pipeline...
-                    </p>
-                  ) : candidateOptions.length ? (
-                    candidateOptions.slice(0, 80).map((candidate) => (
-                      <button
-                        key={
-                          candidate.candidatePipelineId ||
-                          candidate.candidateId ||
-                          candidate.candidateEmail
-                        }
-                        type="button"
-                        onClick={() => selectCandidate(candidate)}
-                        className={`mb-1 w-full rounded-[10px] px-3 py-2 text-left transition last:mb-0 ${
-                          form.candidatePipelineId === candidate.candidatePipelineId
-                            ? "bg-sibs-cream-light text-sibs-orange"
-                            : "hover:bg-sibs-surface"
-                        }`}
-                      >
-                        <p className="truncate text-xs font-black text-sibs-navy">
-                          {candidate.candidateName || "Unnamed Candidate"}
-                        </p>
-                        <p className="mt-0.5 truncate text-[10px] font-semibold text-sibs-muted">
-                          {candidate.roleTitle || "No role"} / {candidate.account || "No account"}
-                          {candidate.currentStage
-                            ? ` • ${candidate.currentStage}`
-                            : ""}
-                        </p>
-                      </button>
-                    ))
-                  ) : (
-                    <p className="px-3 py-4 text-center text-xs font-semibold text-sibs-faint">
-                      No Candidate Pipeline records found.
-                    </p>
-                  )}
+              <div
+                className={`sibs-animated-dropdown absolute left-0 right-0 top-full z-[100] mt-1 ${
+                  candidateMenuOpen ? "open" : "closed"
+                }`}
+              >
+                <div className="sibs-animated-dropdown-inner">
+                  <div className="sibs-animated-dropdown-box max-h-52 overflow-y-auto rounded-[10px] border border-sibs-border bg-white p-1.5 shadow-xl sibs-scrollbar">
+                    {candidatesLoading ? (
+                      <p className="px-3 py-4 text-center text-xs font-semibold text-sibs-faint">
+                        Loading Candidate Pipeline...
+                      </p>
+                    ) : candidateOptions.length ? (
+                      candidateOptions.slice(0, 80).map((candidate) => (
+                        <button
+                          key={
+                            candidate.candidatePipelineId ||
+                            candidate.candidateId ||
+                            candidate.candidateEmail
+                          }
+                          type="button"
+                          onClick={() => selectCandidate(candidate)}
+                          className={`mb-1 w-full rounded-[10px] px-3 py-2 text-left transition last:mb-0 ${
+                            form.candidatePipelineId === candidate.candidatePipelineId
+                              ? "bg-sibs-cream-light text-sibs-orange"
+                              : "hover:bg-sibs-surface"
+                          }`}
+                        >
+                          <p className="truncate text-xs font-black text-sibs-navy">
+                            {candidate.candidateName || "Unnamed Candidate"}
+                          </p>
+                          <p className="mt-0.5 truncate text-[10px] font-semibold text-sibs-muted">
+                            {candidate.roleTitle || "No role"} / {candidate.account || "No account"}
+                            {candidate.currentStage
+                              ? ` • ${candidate.currentStage}`
+                              : ""}
+                          </p>
+                        </button>
+                      ))
+                    ) : (
+                      <p className="px-3 py-4 text-center text-xs font-semibold text-sibs-faint">
+                        No Candidate Pipeline records found.
+                      </p>
+                    )}
+                  </div>
                 </div>
-              ) : null}
+              </div>
             </div>
 
             <Field label="CANDIDATE EMAIL" required>

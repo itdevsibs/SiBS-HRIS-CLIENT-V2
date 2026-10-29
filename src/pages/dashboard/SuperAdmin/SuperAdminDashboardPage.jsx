@@ -52,6 +52,7 @@ import {
   SuperAdminDashboardStatsSkeleton,
   SuperAdminTabPanelSkeleton,
 } from "../../../components/Dashboard/SuperAdminDashboard/SuperAdminDashboardSkeleton";
+import DashboardLoadingSkeleton from "../../../components/Dashboard/shared/DashboardLoadingSkeleton";
 import StatutoryCoveragePanel from "../../../components/Dashboard/shared/StatutoryCoveragePanel";
 
 const SUPER_ADMIN_ENTITY = "super-admin-dashboard";

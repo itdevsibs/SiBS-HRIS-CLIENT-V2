@@ -1,7 +1,6 @@
 import React, {
   useCallback,
   useEffect,
-  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -30,6 +29,7 @@ import {
 } from "lucide-react";
 
 import Header from "../../components/layout/Header";
+import DropdownPortal from "@/components/ui/DropdownPortal";
 import { useUser } from "../../services/context/UserContext";
 import {
   ConfirmModal,
@@ -322,114 +322,6 @@ function SummaryCard(props) {
     </article>
   );
 }
-
-function DropdownPortal({
-  open,
-  anchorRef,
-  children,
-  onClose,
-  maxHeight = 280,
-}) {
-  const dropdownRef = useRef(null);
-  const [position, setPosition] = useState({
-    top: 0,
-    bottom: null,
-    left: 0,
-    width: 0,
-    openUpward: false,
-  });
-
-  useLayoutEffect(() => {
-    if (!open || !anchorRef.current) return undefined;
-
-    function updatePosition() {
-      const rect = anchorRef.current.getBoundingClientRect();
-      const viewportHeight = window.innerHeight;
-      const estimatedDropdownHeight = maxHeight;
-      const spaceBelow = viewportHeight - rect.bottom;
-      const spaceAbove = rect.top;
-      const openUpward =
-        spaceBelow < estimatedDropdownHeight + 16 &&
-        spaceAbove > spaceBelow;
-
-      setPosition({
-        top: openUpward ? null : rect.bottom + 8,
-        bottom: openUpward
-          ? Math.max(viewportHeight - rect.top + 8, 8)
-          : null,
-        left: Math.max(rect.left, 8),
-        width: rect.width,
-        openUpward,
-      });
-    }
-
-    updatePosition();
-
-    window.addEventListener("resize", updatePosition);
-    window.addEventListener("scroll", updatePosition, true);
-
-    return () => {
-      window.removeEventListener("resize", updatePosition);
-      window.removeEventListener("scroll", updatePosition, true);
-    };
-  }, [anchorRef, maxHeight, open]);
-
-  useEffect(() => {
-    if (!open) return undefined;
-
-    function handleOutsideClick(event) {
-      const clickedAnchor = anchorRef.current?.contains(event.target);
-      const clickedDropdown = dropdownRef.current?.contains(event.target);
-
-      if (!clickedAnchor && !clickedDropdown) {
-        onClose?.();
-      }
-    }
-
-    function handleEscape(event) {
-      if (event.key === "Escape") {
-        onClose?.();
-      }
-    }
-
-    document.addEventListener("mousedown", handleOutsideClick);
-    document.addEventListener("touchstart", handleOutsideClick);
-    document.addEventListener("keydown", handleEscape);
-
-    return () => {
-      document.removeEventListener("mousedown", handleOutsideClick);
-      document.removeEventListener("touchstart", handleOutsideClick);
-      document.removeEventListener("keydown", handleEscape);
-    };
-  }, [anchorRef, onClose, open]);
-
-  if (!open || typeof document === "undefined") {
-    return null;
-  }
-
-  return createPortal(
-    <div
-      ref={dropdownRef}
-      className="fixed z-[999999] overflow-hidden rounded-xl border border-sibs-border-subtle bg-white shadow-2xl"
-      style={{
-        top: position.top == null ? "auto" : `${position.top}px`,
-        bottom: position.bottom == null ? "auto" : `${position.bottom}px`,
-        left: `${position.left}px`,
-        width: `${position.width}px`,
-      }}
-      data-open-upward={position.openUpward ? "true" : "false"}
-    >
-      <div
-        className="box-border overflow-x-hidden overflow-y-auto py-2 sibs-scrollbar"
-        style={{ maxHeight }}
-      >
-        {children}
-      </div>
-    </div>,
-    document.body,
-  );
-}
-
 
 function RolePill({ role, adminAccess }) {
   return (
@@ -742,31 +634,31 @@ function EmployeeSearchBox({
           </div>
 
           {search.trim().length >= 2 && (
-            <div className="mt-2 overflow-hidden rounded-xl border border-sibs-border bg-white">
+            <div className="mt-2 overflow-hidden rounded-[10px] border border-sibs-border bg-white shadow-[0_18px_40px_rgba(15,23,42,0.16)]">
               {loading ? (
-                <div className="flex items-center justify-center gap-2 px-4 py-6 text-sm font-bold text-sibs-tertiary-5">
-                  <Loader2 size={17} className="animate-spin" />
+                <div className="flex items-center justify-center gap-2 px-4 py-6 text-sm font-bold text-sibs-navy">
+                  <Loader2 size={17} className="animate-spin text-sibs-orange" />
                   Searching employees...
                 </div>
               ) : results.length ? (
-                <div className="max-h-64 overflow-y-auto sibs-scrollbar">
+                <div className="max-h-64 overflow-y-auto p-1.5 sibs-scrollbar">
                   {results.map((employee) => (
                     <button
                       key={`${employee.gyEmpId}-${employee.sibsId}`}
                       type="button"
                       onClick={() => onSelect(employee)}
-                      className="flex w-full items-start gap-3 border-b border-sibs-border-subtle px-4 py-3 text-left transition last:border-b-0 hover:bg-sibs-surface"
+                      className="group flex w-full items-start gap-3 rounded-[8px] p-2.5 text-left transition hover:bg-sibs-cream-light hover:text-sibs-orange"
                     >
                       <ProfileAvatar employee={employee} />
 
                       <span className="min-w-0 flex-1">
-                        <span className="block truncate text-sm font-extrabold text-sibs-primary-1">
+                        <span className="block truncate text-sm font-extrabold text-sibs-navy transition-colors group-hover:text-sibs-orange">
                           {formatEmployeeName(employee)}
                         </span>
-                        <span className="mt-1 block truncate text-xs font-semibold text-sibs-tertiary-5">
+                        <span className="mt-0.5 block truncate text-xs font-semibold text-sibs-muted">
                           SIBS ID: {employee.sibsId || "—"}
                         </span>
-                        <span className="mt-1 block truncate text-xs font-medium text-sibs-tertiary-5">
+                        <span className="mt-0.5 block truncate text-xs font-medium text-sibs-muted">
                           {employee.account || "No account"} ·{" "}
                           {employee.department || "No department"}
                         </span>
@@ -775,7 +667,7 @@ function EmployeeSearchBox({
                   ))}
                 </div>
               ) : (
-                <p className="px-4 py-6 text-center text-sm font-bold text-sibs-tertiary-5">
+                <p className="px-4 py-6 text-center text-sm font-bold text-sibs-muted">
                   No unassigned active employee found.
                 </p>
               )}
@@ -978,64 +870,66 @@ function AccountMultiSelect({
           onClose={closeDropdown}
           maxHeight={320}
         >
-          <div className="border-b border-sibs-border px-4 py-2.5">
-            <p className="text-xs font-bold text-sibs-tertiary-5">
+          <div className="border-b border-sibs-border bg-sibs-surface/50 px-4 py-2.5">
+            <p className="text-xs font-bold text-sibs-navy">
               {filteredAccounts.length} account
               {filteredAccounts.length === 1 ? "" : "s"} found
             </p>
           </div>
 
-          {filteredAccounts.length ? (
-            filteredAccounts.map((account) => {
-              const accountId = getAccountId(account);
-              const selected = selectedSet.has(accountId);
+          <div className="max-h-72 overflow-y-auto p-1.5 sibs-scrollbar">
+            {filteredAccounts.length ? (
+              filteredAccounts.map((account) => {
+                const accountId = getAccountId(account);
+                const selected = selectedSet.has(accountId);
 
-              return (
-                <button
-                  key={accountId}
-                  type="button"
-                  onClick={() => handleToggle(accountId)}
-                  className={`flex w-full items-start gap-3 border-b border-sibs-border-subtle px-4 py-3 text-left transition last:border-b-0 ${
-                    selected
-                      ? "bg-blue-50"
-                      : "bg-white hover:bg-sibs-surface"
-                  }`}
-                >
-                  <span
-                    className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border ${
+                return (
+                  <button
+                    key={accountId}
+                    type="button"
+                    onClick={() => handleToggle(accountId)}
+                    className={`flex w-full items-start gap-3 rounded-[8px] px-3.5 py-2.5 text-left transition ${
                       selected
-                        ? "border-sibs-primary-1 bg-sibs-primary-1 text-white"
-                        : "border-slate-300 bg-white text-transparent"
+                        ? "bg-sibs-cream-light font-extrabold text-sibs-orange"
+                        : "bg-white font-semibold text-sibs-navy hover:bg-sibs-cream-light hover:text-sibs-orange"
                     }`}
                   >
-                    <Check size={13} strokeWidth={3} />
-                  </span>
-
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-sm font-extrabold text-sibs-primary-1">
-                      {getAccountName(account) ||
-                        `Account ${accountId}`}
+                    <span
+                      className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border ${
+                        selected
+                          ? "border-sibs-orange bg-sibs-orange text-white"
+                          : "border-slate-300 bg-white text-transparent"
+                      }`}
+                    >
+                      <Check size={13} strokeWidth={3} />
                     </span>
 
-                    <span className="mt-1 block truncate text-xs font-semibold text-sibs-tertiary-5">
-                      ID {accountId} ·{" "}
-                      {getDepartmentName(account) || "No department"}
-                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm font-extrabold text-sibs-navy">
+                        {getAccountName(account) ||
+                          `Account ${accountId}`}
+                      </span>
 
-                    <span className="mt-1 block truncate text-[11px] font-medium text-sibs-tertiary-5">
-                      {account.clusterName || "Corporate"}
+                      <span className="mt-1 block truncate text-xs font-semibold text-sibs-muted">
+                        ID ${accountId} ·{" "}
+                        {getDepartmentName(account) || "No department"}
+                      </span>
+
+                      <span className="mt-1 block truncate text-[11px] font-medium text-sibs-muted">
+                        {account.clusterName || "Corporate"}
+                      </span>
                     </span>
-                  </span>
-                </button>
-              );
-            })
-          ) : (
-            <div className="px-4 py-8 text-center">
-              <p className="text-sm font-bold text-sibs-tertiary-5">
-                No active accounts match your search.
-              </p>
-            </div>
-          )}
+                  </button>
+                );
+              })
+            ) : (
+              <div className="px-4 py-8 text-center">
+                <p className="text-sm font-bold text-sibs-muted">
+                  No active accounts match your search.
+                </p>
+              </div>
+            )}
+          </div>
         </DropdownPortal>
       </div>
 

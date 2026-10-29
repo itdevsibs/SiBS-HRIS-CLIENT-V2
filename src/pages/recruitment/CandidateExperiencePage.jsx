@@ -231,18 +231,12 @@ function inputClass(extra = "") {
 function AnimatedDropdown({ open, children, className = "" }) {
   return (
     <div
-      className={`absolute left-0 right-0 top-full mt-2 grid transition-all duration-300 ease-out ${
-        open
-          ? "grid-rows-[1fr] opacity-100"
-          : "pointer-events-none grid-rows-[0fr] opacity-0"
+      className={`sibs-animated-dropdown absolute left-0 right-0 top-full mt-2 ${
+        open ? "open" : "closed"
       } ${className}`}
     >
-      <div className="min-h-0 overflow-hidden">
-        <div
-          className={`overflow-hidden rounded-xl border border-sibs-border-subtle bg-white shadow-2xl transition-all duration-300 ease-out ${
-            open ? "translate-y-0 scale-100" : "-translate-y-2 scale-[0.98]"
-          }`}
-        >
+      <div className="sibs-animated-dropdown-inner">
+        <div className="sibs-animated-dropdown-box overflow-hidden rounded-[10px] border border-sibs-border bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)]">
           {children}
         </div>
       </div>
