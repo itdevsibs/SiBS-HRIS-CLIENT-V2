@@ -193,6 +193,33 @@ function formatDashboardDateTime(value) {
   });
 }
 
+function EmployeeDashboardLiveClock() {
+  const [clockNow, setClockNow] = useState(() => new Date());
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setClockNow(new Date());
+    }, 1_000);
+
+    return () => window.clearInterval(timer);
+  }, []);
+
+  return (
+    <div className="w-full shrink-0 rounded-2xl border border-white/15 bg-white/10 px-4 py-2.5 text-center backdrop-blur-sm sm:w-[200px] 2xl:w-[220px] md:text-right">
+      <div className="flex items-center justify-center gap-1.5 sibs-text-xs font-medium text-slate-300 md:justify-end">
+        <Clock size={13} className="text-sibs-orange" />
+        Current Time (PHT)
+      </div>
+      <p className="font-heading mt-0.5 text-xl 2xl:text-2xl font-bold tabular-nums tracking-tight text-white">
+        {formatPhtTime(clockNow)}
+      </p>
+      <p className="mt-0.5 sibs-text-micro font-semibold text-slate-300">
+        {formatPhtDate(clockNow)}
+      </p>
+    </div>
+  );
+}
+
 export default function EmployeeDashboardPage() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -241,7 +268,7 @@ export default function EmployeeDashboardPage() {
   useEffect(() => {
     const timer = window.setInterval(() => {
       setNow(new Date());
-    }, 1_000);
+    }, 60_000);
 
     return () => window.clearInterval(timer);
   }, []);
@@ -672,18 +699,7 @@ export default function EmployeeDashboardPage() {
                 </div>
               </div>
 
-              <div className="w-full shrink-0 rounded-2xl border border-white/15 bg-white/10 px-4 py-2.5 text-center backdrop-blur-sm sm:w-[200px] 2xl:w-[220px] md:text-right">
-                <div className="flex items-center justify-center gap-1.5 sibs-text-xs font-medium text-slate-300 md:justify-end">
-                  <Clock size={13} className="text-sibs-orange" />
-                  Current Time (PHT)
-                </div>
-                <p className="font-heading mt-0.5 text-xl 2xl:text-2xl font-bold tabular-nums tracking-tight text-white">
-                  {formatPhtTime(now)}
-                </p>
-                <p className="mt-0.5 sibs-text-micro font-semibold text-slate-300">
-                  {formatPhtDate(now)}
-                </p>
-              </div>
+              <EmployeeDashboardLiveClock />
             </div>
           </section>
 

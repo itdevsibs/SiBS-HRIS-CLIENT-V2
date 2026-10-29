@@ -808,7 +808,16 @@ export function TalentPoolProvider({ children }) {
   const loginPage = isLoginPage(pathname);
   const publicApplicationPage =
     isPublicTalentPoolApplicationPage(pathname);
-  const canLoadPrivateTalentPool = Boolean(user) && !userLoading && !loginPage;
+  const userAccessValue = Number(
+    user?.adminAccess ?? user?.admin_access ?? user?.access ?? 0
+  );
+  const userRoleClean = String(user?.role || "").trim().toLowerCase();
+  const hasTalentPoolAccess =
+    [1, 2, 3, 6, 7].includes(userAccessValue) ||
+    ["ta", "hr", "hr_admin", "super_admin", "admin", "executive"].includes(userRoleClean);
+
+  const canLoadPrivateTalentPool =
+    Boolean(user) && !userLoading && !loginPage && hasTalentPoolAccess;
   const canLoadPublicApplicationData = publicApplicationPage;
 
   const currentTaOwner = getLoggedInUserName(user);

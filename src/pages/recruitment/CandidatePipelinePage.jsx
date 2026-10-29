@@ -21,12 +21,12 @@ import {
   RotateCcw,
 } from "lucide-react";
 
-import MoveStageModal from "../../components/modals/candidatePipeline/MoveStageModal";
-import ScheduleInterviewModal from "../../components/modals/candidatePipeline/ScheduleInterviewModal";
-import AssessmentModal from "../../components/modals/candidatePipeline/AssessmentModal";
-import DropOffModal from "../../components/modals/candidatePipeline/DropOffModal";
-import CandidateOfferDetailsModal from "../../components/modals/candidatePipeline/CandidateOfferDetailsModal";
-import CandidatePipelineModal from "../../components/modals/candidatePipeline/CandidatePipelineModal";
+const MoveStageModal = React.lazy(() => import("../../components/modals/candidatePipeline/MoveStageModal"));
+const ScheduleInterviewModal = React.lazy(() => import("../../components/modals/candidatePipeline/ScheduleInterviewModal"));
+const AssessmentModal = React.lazy(() => import("../../components/modals/candidatePipeline/AssessmentModal"));
+const DropOffModal = React.lazy(() => import("../../components/modals/candidatePipeline/DropOffModal"));
+const CandidateOfferDetailsModal = React.lazy(() => import("../../components/modals/candidatePipeline/CandidateOfferDetailsModal"));
+const CandidatePipelineModal = React.lazy(() => import("../../components/modals/candidatePipeline/CandidatePipelineModal"));
 import PipelineCardsBoard from "../../components/recruitment/candidatePipeline/PipelineCardBoard";
 import InterviewCalendar from "../../components/recruitment/candidatePipeline/InterviewCalendar";
 import useCombinedDropOffCandidates from "../../hooks/useCombinedDropOffCandidates";
@@ -318,6 +318,12 @@ export default function CandidatePipelinePage() {
 
   // Keep the selected candidate and form in context while the Google account
   // is connected/synced in SiBS Calendar. No route change or form reset.
+  useEffect(() => {
+    if (candidateList.length === 0 && !isLoading) {
+      void refreshCandidatePipeline?.();
+    }
+  }, [candidateList.length, isLoading, refreshCandidatePipeline]);
+
   useEffect(() => {
     const resumeInterview = () => setInterviewCalendarHandoff(false);
     window.addEventListener("sibs:return-to-interview", resumeInterview);
@@ -892,76 +898,90 @@ export default function CandidatePipelinePage() {
         </div>
       </main>
 
-      <CandidatePipelineModal
-        open={!!selectedCandidate}
-        candidate={selectedCandidate}
-        onClose={handleCloseCandidateModal}
-        onUpdatePrfStatus={handleUpdatePrfStatus}
-        onOpenScheduleModal={handleOpenScheduleInterview}
-        onOpenMoveModal={handleOpenMoveModal}
-        onOpenAssessmentModal={handleOpenAssessmentModal}
-        onOpenDropOffModal={
-          selectedCandidateIsDropOff ? undefined : handleOpenDropOffModal
-        }
-        onCompleteInterview={handleCompleteInterview}
-        onSendAssessmentEmail={handleSendAssessmentEmail}
-        onCancelInterview={handleCancelInterview}
-        onUpdateOfferApproval={handleUpdateOfferApproval}
-        onSendOfferEmail={handleSendOfferEmail}
-        onOfferDecision={handleOfferDecision}
-        onSaveInterviewNotes={handleSaveInterviewNotes}
-        onScheduleNhoAuto={handleScheduleNhoAuto}
-      />
+      <React.Suspense fallback={null}>
+        {selectedCandidate && (
+          <CandidatePipelineModal
+            open={!!selectedCandidate}
+            candidate={selectedCandidate}
+            onClose={handleCloseCandidateModal}
+            onUpdatePrfStatus={handleUpdatePrfStatus}
+            onOpenScheduleModal={handleOpenScheduleInterview}
+            onOpenMoveModal={handleOpenMoveModal}
+            onOpenAssessmentModal={handleOpenAssessmentModal}
+            onOpenDropOffModal={
+              selectedCandidateIsDropOff ? undefined : handleOpenDropOffModal
+            }
+            onCompleteInterview={handleCompleteInterview}
+            onSendAssessmentEmail={handleSendAssessmentEmail}
+            onCancelInterview={handleCancelInterview}
+            onUpdateOfferApproval={handleUpdateOfferApproval}
+            onSendOfferEmail={handleSendOfferEmail}
+            onOfferDecision={handleOfferDecision}
+            onSaveInterviewNotes={handleSaveInterviewNotes}
+            onScheduleNhoAuto={handleScheduleNhoAuto}
+          />
+        )}
 
-      <MoveStageModal
-        open={!!moveCandidate}
-        candidate={moveCandidate}
-        form={moveForm}
-        setForm={setMoveForm}
-        onClose={handleCloseMoveModal}
-        onSubmit={handleSubmitMove}
-      />
+        {moveCandidate && (
+          <MoveStageModal
+            open={!!moveCandidate}
+            candidate={moveCandidate}
+            form={moveForm}
+            setForm={setMoveForm}
+            onClose={handleCloseMoveModal}
+            onSubmit={handleSubmitMove}
+          />
+        )}
 
-      <ScheduleInterviewModal
-        open={!!scheduleCandidate && !interviewCalendarHandoff}
-        candidate={scheduleCandidate}
-        form={scheduleForm}
-        setForm={setScheduleForm}
-        onClose={handleCloseScheduleInterview}
-        onSubmit={handleSubmitScheduleInterview}
-        onOpenSibsCalendar={openCalendarForInterview}
-        onUpdateCandidateSchedule={handleUpdateFromCalendarEvent}
-      />
+        {scheduleCandidate && !interviewCalendarHandoff && (
+          <ScheduleInterviewModal
+            open={!!scheduleCandidate && !interviewCalendarHandoff}
+            candidate={scheduleCandidate}
+            form={scheduleForm}
+            setForm={setScheduleForm}
+            onClose={handleCloseScheduleInterview}
+            onSubmit={handleSubmitScheduleInterview}
+            onOpenSibsCalendar={openCalendarForInterview}
+            onUpdateCandidateSchedule={handleUpdateFromCalendarEvent}
+          />
+        )}
 
-      <AssessmentModal
-        open={!!assessmentCandidate}
-        candidate={assessmentCandidate}
-        form={assessmentForm}
-        setForm={setAssessmentForm}
-        onClose={handleCloseAssessmentModal}
-        onSubmit={handleSubmitAssessment}
-        onSendEmail={handleSendAssessmentEmail}
-      />
+        {assessmentCandidate && (
+          <AssessmentModal
+            open={!!assessmentCandidate}
+            candidate={assessmentCandidate}
+            form={assessmentForm}
+            setForm={setAssessmentForm}
+            onClose={handleCloseAssessmentModal}
+            onSubmit={handleSubmitAssessment}
+            onSendEmail={handleSendAssessmentEmail}
+          />
+        )}
 
-      <CandidateOfferDetailsModal
-        open={!!offerCandidate}
-        candidate={offerCandidate}
-        form={offerForm}
-        setForm={setOfferForm}
-        onClose={handleCloseOfferModal}
-        onReprofile={handleReprofileOfferAccount}
-        onSubmit={handleSubmitOfferDetails}
-        submitting={offerSubmitting}
-      />
+        {offerCandidate && (
+          <CandidateOfferDetailsModal
+            open={!!offerCandidate}
+            candidate={offerCandidate}
+            form={offerForm}
+            setForm={setOfferForm}
+            onClose={handleCloseOfferModal}
+            onReprofile={handleReprofileOfferAccount}
+            onSubmit={handleSubmitOfferDetails}
+            submitting={offerSubmitting}
+          />
+        )}
 
-      <DropOffModal
-        open={!!dropOffCandidate}
-        candidate={dropOffCandidate}
-        form={dropOffForm}
-        setForm={setDropOffForm}
-        onClose={handleCloseDropOffModal}
-        onSubmit={handleSubmitDropOff}
-      />
+        {dropOffCandidate && (
+          <DropOffModal
+            open={!!dropOffCandidate}
+            candidate={dropOffCandidate}
+            form={dropOffForm}
+            setForm={setDropOffForm}
+            onClose={handleCloseDropOffModal}
+            onSubmit={handleSubmitDropOff}
+          />
+        )}
+      </React.Suspense>
     </div>
   );
 }

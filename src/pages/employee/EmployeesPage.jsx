@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 
 import Header from "../../components/layout/Header";
-import ChwcpTable from "../../components/tables/employees/ChwcpTable";
+const ChwcpTable = React.lazy(() => import("../../components/tables/employees/ChwcpTable"));
 import EmployeeTable from "../../components/tables/employees/EmployeeTable";
 import { getChwcpRequests } from "../../lib/axios/getChwcp";
 import { usePagination } from "@/services/context/PaginationContext";
@@ -216,13 +216,15 @@ export default function EmployeesPage() {
 
     if (activeEmployeeTab === "CHWCP Requests") {
       return (
-        <ChwcpTable
-          key={chwcpReloadKey}
-          tabs={directoryTabs}
-          activeTab={activeEmployeeTab}
-          onTabChange={handleTabChange}
-          onTotalChange={setChwcpTotal}
-        />
+        <React.Suspense fallback={null}>
+          <ChwcpTable
+            key={chwcpReloadKey}
+            tabs={directoryTabs}
+            activeTab={activeEmployeeTab}
+            onTabChange={handleTabChange}
+            onTotalChange={setChwcpTotal}
+          />
+        </React.Suspense>
       );
     }
 

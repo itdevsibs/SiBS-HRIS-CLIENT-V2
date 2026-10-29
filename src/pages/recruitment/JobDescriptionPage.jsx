@@ -1,4 +1,6 @@
 import React, {
+  Suspense,
+  lazy,
   useEffect,
   useLayoutEffect,
   useMemo,
@@ -30,7 +32,7 @@ import {
 import JobDescriptionTable from "../../components/tables/jobDescription/JobDescriptionTable";
 import AddDescriptionModal from "../../components/modals/jobDescription/AddJobDescription";
 import ViewJobDescriptionModal from "../../components/modals/jobDescription/ViewJobDescriptionDetailsModal";
-import ReviseJobDescriptionModal from "../../components/modals/jobDescription/ReviseJobDescriptionModal";
+const ReviseJobDescriptionModal = lazy(() => import("../../components/modals/jobDescription/ReviseJobDescriptionModal"));
 import useApprovalRuleAccess from "../../hooks/useApprovalRuleAccess";
 
 const emptyRevisionForm = {
@@ -870,14 +872,18 @@ export default function JobDescriptionPage() {
         approvalPage={false}
       />
 
-      <ReviseJobDescriptionModal
-        open={!!revisionItem}
-        item={revisionItem}
-        form={revisionForm}
-        setForm={setRevisionForm}
-        onClose={handleCloseRevision}
-        onSubmit={handleSubmitRevision}
-      />
+      {Boolean(revisionItem) ? (
+        <Suspense fallback={null}>
+          <ReviseJobDescriptionModal
+            open={!!revisionItem}
+            item={revisionItem}
+            form={revisionForm}
+            setForm={setRevisionForm}
+            onClose={handleCloseRevision}
+            onSubmit={handleSubmitRevision}
+          />
+        </Suspense>
+      ) : null}
 
       <ConfirmModal
         open={Boolean(statusModal.open)}
