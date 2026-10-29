@@ -42,7 +42,8 @@ export default function SuperAdminDashboardHeader({
               onClick={onRefresh}
               disabled={isManualRefreshing}
               title="Refresh Dashboard Data"
-              className="sibs-btn-icon"
+              aria-label="Refresh Dashboard Data"
+              className="sibs-btn-icon min-h-[40px] min-w-[40px] sm:min-h-[34px] sm:min-w-[34px]"
             >
               <RefreshCw
                 className={`h-3.5 w-3.5 2xl:h-4 2xl:w-4 ${
@@ -55,7 +56,7 @@ export default function SuperAdminDashboardHeader({
           <button
             type="button"
             onClick={onOpenEmployees}
-            className="sibs-btn-primary max-sm:flex-1"
+            className="sibs-btn-primary min-h-[40px] max-sm:flex-1"
           >
             <Users className="h-3.5 w-3.5 2xl:h-4 2xl:w-4 text-white" />
             Launch Employee Directory

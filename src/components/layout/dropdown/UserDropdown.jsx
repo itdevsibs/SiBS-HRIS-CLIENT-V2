@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import {
@@ -45,6 +45,55 @@ function getAdminAccess(user = {}) {
   );
 }
 
+function MrSibsCrown({ className = "h-4 w-4" }) {
+  return (
+    <svg
+      viewBox="0 0 24 20"
+      className={`${className} drop-shadow-[0_2px_3px_rgba(180,83,9,0.45)]`}
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <defs>
+        <linearGradient id="mrSibsCrownGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#FDE047" />
+          <stop offset="45%" stopColor="#F59E0B" />
+          <stop offset="100%" stopColor="#D97706" />
+        </linearGradient>
+        <linearGradient id="mrSibsBaseGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#F59E0B" />
+          <stop offset="100%" stopColor="#B45309" />
+        </linearGradient>
+      </defs>
+
+      {/* Main Crown Body with 3 Peaks */}
+      <path
+        d="M2.5 15.5 C 7 14, 17 14, 21.5 15.5 L 20 6 L 14.5 11 L 12 2.5 L 9.5 11 L 4 6 Z"
+        fill="url(#mrSibsCrownGrad)"
+        stroke="#B45309"
+        strokeWidth="0.6"
+        strokeLinejoin="round"
+      />
+
+      {/* Crown Base Arc */}
+      <path
+        d="M2.5 15.5 C 7 14, 17 14, 21.5 15.5 L 21 17.5 C 17 16, 7 16, 3 17.5 Z"
+        fill="url(#mrSibsBaseGrad)"
+      />
+
+      {/* Golden Spheres on the 3 Peaks */}
+      <circle cx="4" cy="6" r="1.5" fill="#FEF08A" stroke="#B45309" strokeWidth="0.5" />
+      <circle cx="12" cy="2.5" r="1.8" fill="#FFFBEB" stroke="#B45309" strokeWidth="0.5" />
+      <circle cx="20" cy="6" r="1.5" fill="#FEF08A" stroke="#B45309" strokeWidth="0.5" />
+
+      {/* Center 4-Point Star Sparkle */}
+      <path
+        d="M12 8 C 12 10.2, 10.5 11.5, 8.5 11.5 C 10.5 11.5, 12 12.8, 12 15 C 12 12.8, 13.5 11.5, 15.5 11.5 C 13.5 11.5, 12 10.2, 12 8 Z"
+        fill="#FFFFFF"
+      />
+    </svg>
+  );
+}
+
 export default function UserDropdown({
   avatar,
   profilePictureUrl = "",
@@ -53,18 +102,29 @@ export default function UserDropdown({
   mobileCompact = false,
 }) {
   const [open, setOpen] = useState(false);
+  const [menuMounted, setMenuMounted] = useState(false);
+  const [menuActive, setMenuActive] = useState(false);
+
+  useEffect(() => {
+    let timer;
+    let frame;
+    if (open) {
+      setMenuMounted(true);
+      frame = requestAnimationFrame(() => setMenuActive(true));
+    } else {
+      setMenuActive(false);
+      timer = setTimeout(() => setMenuMounted(false), 200);
+    }
+    return () => {
+      if (frame) cancelAnimationFrame(frame);
+      if (timer) clearTimeout(timer);
+    };
+  }, [open]);
   const [actionLoading, setActionLoading] = useState("");
   const [profileImageFailed, setProfileImageFailed] = useState(false);
   const [avatarPreviewOpen, setAvatarPreviewOpen] = useState(false);
-  const [avatarPreviewPosition, setAvatarPreviewPosition] = useState({
-    top: 0,
-    left: 0,
-  });
-  const [dropdownPosition, setDropdownPosition] = useState({
-    top: 0,
-    left: 0,
-    width: 260,
-  });
+  const [avatarPreviewPosition, setAvatarPreviewPosition] = useState(null);
+  const [dropdownPosition, setDropdownPosition] = useState(null);
 
   const navigate = useNavigate();
   const ref = useRef(null);
@@ -75,40 +135,69 @@ export default function UserDropdown({
   const { setAdminLogin } = useHeader();
   const { getAccessLabel, ADMIN_ROLES = [] } = useAdmin();
 
+  const calculateAvatarPreviewPosition = () => {
+    const anchor = avatarPreviewAnchorRef.current;
+    if (!anchor || typeof window === "undefined") return null;
+
+    const rect = anchor.getBoundingClientRect();
+    const previewSize = 152;
+    const gap = 10;
+    const viewportPadding = 12;
+    const maxLeft = Math.max(
+      viewportPadding,
+      window.innerWidth - previewSize - viewportPadding,
+    );
+    const left = Math.min(
+      Math.max(
+        rect.left + rect.width / 2 - previewSize / 2,
+        viewportPadding,
+      ),
+      maxLeft,
+    );
+
+    let top = rect.bottom + gap;
+    if (top + previewSize > window.innerHeight - viewportPadding) {
+      top = Math.max(viewportPadding, rect.top - previewSize - gap);
+    }
+
+    return { top, left };
+  };
+
+  const calculateDropdownPosition = () => {
+    const anchor = ref.current;
+    if (!anchor || typeof window === "undefined") return null;
+
+    const rect = anchor.getBoundingClientRect();
+    const viewportPadding = 12;
+    const gap = 8;
+    const width = window.innerWidth >= 1536 ? 286 : 260;
+    const menuHeight = dropdownRef.current?.offsetHeight || 126;
+
+    let left = rect.right - width;
+    left = Math.max(
+      viewportPadding,
+      Math.min(left, window.innerWidth - width - viewportPadding),
+    );
+
+    let top = rect.bottom + gap;
+    if (top + menuHeight > window.innerHeight - viewportPadding) {
+      top = Math.max(viewportPadding, rect.top - menuHeight - gap);
+    }
+
+    return { top, left, width };
+  };
+
   useEffect(() => {
     setProfileImageFailed(false);
     setAvatarPreviewOpen(false);
   }, [profilePictureUrl]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!avatarPreviewOpen) return undefined;
 
     const updateAvatarPreviewPosition = () => {
-      const anchor = avatarPreviewAnchorRef.current;
-      if (!anchor) return;
-
-      const rect = anchor.getBoundingClientRect();
-      const previewSize = 152;
-      const gap = 10;
-      const viewportPadding = 12;
-      const maxLeft = Math.max(
-        viewportPadding,
-        window.innerWidth - previewSize - viewportPadding,
-      );
-      const left = Math.min(
-        Math.max(
-          rect.left + rect.width / 2 - previewSize / 2,
-          viewportPadding,
-        ),
-        maxLeft,
-      );
-
-      let top = rect.bottom + gap;
-      if (top + previewSize > window.innerHeight - viewportPadding) {
-        top = Math.max(viewportPadding, rect.top - previewSize - gap);
-      }
-
-      setAvatarPreviewPosition({ top, left });
+      const nextPos = calculateAvatarPreviewPosition();
+      if (nextPos) setAvatarPreviewPosition(nextPos);
     };
 
     updateAvatarPreviewPosition();
@@ -121,33 +210,14 @@ export default function UserDropdown({
     };
   }, [avatarPreviewOpen]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!open) return undefined;
 
     let frame = 0;
 
     const updateDropdownPosition = () => {
-      const anchor = ref.current;
-      if (!anchor || typeof window === "undefined") return;
-
-      const rect = anchor.getBoundingClientRect();
-      const viewportPadding = 12;
-      const gap = 8;
-      const width = window.innerWidth >= 1536 ? 286 : 260;
-      const menuHeight = dropdownRef.current?.offsetHeight || 126;
-
-      let left = rect.right - width;
-      left = Math.max(
-        viewportPadding,
-        Math.min(left, window.innerWidth - width - viewportPadding),
-      );
-
-      let top = rect.bottom + gap;
-      if (top + menuHeight > window.innerHeight - viewportPadding) {
-        top = Math.max(viewportPadding, rect.top - menuHeight - gap);
-      }
-
-      setDropdownPosition({ top, left, width });
+      const nextPos = calculateDropdownPosition();
+      if (nextPos) setDropdownPosition(nextPos);
     };
 
     updateDropdownPosition();
@@ -259,6 +329,34 @@ export default function UserDropdown({
   const role = normalizeRole(user?.role);
   const adminAccess = getAdminAccess(user);
 
+  const userAccountIdentifiers = [
+    user?.sibs_id,
+    user?.sibsId,
+    user?.gy_user_code,
+    user?.gy_emp_code,
+    user?.gy_emp_id,
+    user?.accountId,
+    user?.account,
+    user?.id,
+    user?.username,
+  ]
+    .filter((value) => value !== undefined && value !== null)
+    .map((value) => String(value).trim());
+
+  const isAccount6784 = userAccountIdentifiers.some((id) => id === "6784");
+
+  const isRalphDulla =
+    (/ralph/i.test(user?.firstName || "") && /dulla/i.test(user?.lastName || "")) ||
+    (/ralph/i.test(formattedName || "") && /dulla/i.test(formattedName || "")) ||
+    (/ralph/i.test(user?.email || "") && /dulla/i.test(user?.email || ""));
+
+  // Strictly limited to account 6784 RALPH DULLA
+  const isMrSibs = Boolean(
+    (isAccount6784 && isRalphDulla) ||
+      (isRalphDulla && !userAccountIdentifiers.length) ||
+      (isAccount6784 && !formattedName),
+  );
+
   const isAdminSide = normalizedAdminRoles.includes(role);
 
   const canSwitchToAdmin =
@@ -276,65 +374,85 @@ export default function UserDropdown({
 
   const showAvatarPreview = () => {
     if (open || !avatarPreviewAnchorRef.current) return;
-    setAvatarPreviewOpen(true);
+    const nextPos = calculateAvatarPreviewPosition();
+    if (nextPos) {
+      setAvatarPreviewPosition(nextPos);
+      setAvatarPreviewOpen(true);
+    }
   };
 
   const hideAvatarPreview = () => {
     setAvatarPreviewOpen(false);
   };
 
+  const handleToggleDropdown = (event) => {
+    event.stopPropagation();
+    hideAvatarPreview();
+    setOpen((previous) => {
+      if (!previous) {
+        const nextPos = calculateDropdownPosition();
+        if (nextPos) setDropdownPosition(nextPos);
+      }
+      return !previous;
+    });
+  };
+
   const dropdownMenu =
-    open && typeof document !== "undefined"
+    menuMounted && dropdownPosition && typeof document !== "undefined"
       ? createPortal(
           <div
             ref={dropdownRef}
             role="menu"
-            className="fixed z-[2147483000] origin-top-right overflow-hidden rounded-xl border border-sibs-border-subtle bg-white shadow-[0_18px_50px_rgba(4,44,81,0.20)] animate-[sibsUserDropdownOpen_180ms_ease-out_both]"
+            className={`sibs-animated-dropdown ${menuActive ? "open" : "closed"} fixed z-[2147483000]`}
             style={{
               top: dropdownPosition.top,
               left: dropdownPosition.left,
               width: dropdownPosition.width,
             }}
           >
-            <div className="p-1.5 2xl:p-2">
-              {!isAdminSide && canSwitchToAdmin && (
-                <DropdownItem
-                  icon={UserKey}
-                  title={switchToAdminLabel}
-                  subtitle="Current role: Employee"
-                  onClick={handleSwitchToAdmin}
-                  disabled={Boolean(actionLoading)}
-                />
-              )}
+            <div className="sibs-animated-dropdown-inner">
+              <div className="sibs-animated-dropdown-box overflow-hidden rounded-xl border border-sibs-border-subtle bg-white shadow-[0_18px_50px_rgba(4,44,81,0.20)]">
+                <div className="p-1.5 2xl:p-2">
+                  {!isAdminSide && canSwitchToAdmin && (
+                    <DropdownItem
+                      icon={UserKey}
+                      title={switchToAdminLabel}
+                      subtitle="Current role: Employee"
+                      onClick={handleSwitchToAdmin}
+                      disabled={Boolean(actionLoading)}
+                    />
+                  )}
 
-              {isAdminSide && (
-                <DropdownItem
-                  icon={UserRound}
-                  title="Switch to Employee"
-                  subtitle={`Current role: ${currentAdminRoleLabel}`}
-                  onClick={handleSwitchToEmployee}
-                  loading={actionLoading === "employee"}
-                  disabled={Boolean(actionLoading)}
-                />
-              )}
+                  {isAdminSide && (
+                    <DropdownItem
+                      icon={UserRound}
+                      title="Switch to Employee"
+                      subtitle={`Current role: ${currentAdminRoleLabel}`}
+                      onClick={handleSwitchToEmployee}
+                      loading={actionLoading === "employee"}
+                      disabled={Boolean(actionLoading)}
+                    />
+                  )}
 
-              <button
-                type="button"
-                role="menuitem"
-                onClick={onLogout}
-                disabled={Boolean(actionLoading)}
-                className="mt-0.5 flex min-h-[44px] 2xl:min-h-[50px] w-full items-center gap-2.5 2xl:gap-3 rounded-lg px-2.5 2xl:px-3 py-2 2xl:py-2.5 text-left text-red-500 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {actionLoading === "logout" ? (
-                  <Loader2 size={16} className="shrink-0 animate-spin" />
-                ) : (
-                  <LogOut size={16} className="shrink-0" />
-                )}
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={onLogout}
+                    disabled={Boolean(actionLoading)}
+                    className="mt-0.5 flex min-h-[44px] 2xl:min-h-[50px] w-full items-center gap-2.5 2xl:gap-3 rounded-lg px-2.5 2xl:px-3 py-2 2xl:py-2.5 text-left text-red-500 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {actionLoading === "logout" ? (
+                      <Loader2 size={16} className="shrink-0 animate-spin" />
+                    ) : (
+                      <LogOut size={16} className="shrink-0" />
+                    )}
 
-                <span className="text-[11px] 2xl:text-xs font-extrabold">
-                  {actionLoading === "logout" ? "Logging out..." : "Logout"}
-                </span>
-              </button>
+                    <span className="text-[11px] 2xl:text-xs font-extrabold">
+                      {actionLoading === "logout" ? "Logging out..." : "Logout"}
+                    </span>
+                  </button>
+                </div>
+              </div>
             </div>
           </div>,
           document.body,
@@ -345,13 +463,7 @@ export default function UserDropdown({
     <div className="relative z-[99999] min-w-0" ref={ref}>
       <button
         type="button"
-        onClick={(event) => {
-          event.stopPropagation();
-          hideAvatarPreview();
-          setOpen((previous) => !previous);
-        }}
-        onFocus={showAvatarPreview}
-        onBlur={hideAvatarPreview}
+        onClick={handleToggleDropdown}
         aria-expanded={open}
         aria-haspopup="menu"
         className={[
@@ -366,17 +478,45 @@ export default function UserDropdown({
           ref={avatarPreviewAnchorRef}
           onMouseEnter={showAvatarPreview}
           onMouseLeave={hideAvatarPreview}
-          className="flex h-8 w-8 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-sibs-primary-1 text-[11px] 2xl:text-xs font-extrabold uppercase text-white shadow-[0_6px_16px_rgba(0,48,142,0.24)] max-[360px]:h-7.5 max-[360px]:w-7.5"
+          className="relative flex shrink-0 items-center justify-center"
         >
-          {profilePictureUrl && !profileImageFailed ? (
-            <img
-              src={profilePictureUrl}
-              alt={`${formattedName || "User"} profile`}
-              className="h-full w-full object-cover"
-              onError={() => setProfileImageFailed(true)}
-            />
-          ) : (
-            avatar || "U"
+          <div
+            className={`flex h-8 w-8 2xl:h-9 2xl:w-9 items-center justify-center overflow-hidden rounded-full bg-sibs-primary-1 text-[11px] 2xl:text-xs font-extrabold uppercase text-white shadow-[0_6px_16px_rgba(0,48,142,0.24)] max-[360px]:h-7.5 max-[360px]:w-7.5 ${
+              isMrSibs
+                ? "ring-2 ring-amber-400 ring-offset-1 ring-offset-white shadow-[0_0_8px_rgba(245,158,11,0.35)]"
+                : ""
+            }`}
+          >
+            {profilePictureUrl && !profileImageFailed ? (
+              <img
+                src={profilePictureUrl}
+                alt={`${formattedName || "User"} profile`}
+                className="h-full w-full object-cover"
+                onError={() => setProfileImageFailed(true)}
+              />
+            ) : (
+              avatar || "U"
+            )}
+          </div>
+
+          {isMrSibs && (
+            <>
+              {/* Crown on top-right */}
+              <div
+                className="pointer-events-none absolute -top-2.5 -right-1.5 z-10 rotate-[22deg] transition-transform duration-200 group-hover:scale-110 group-hover:rotate-[26deg]"
+                aria-hidden="true"
+              >
+                <MrSibsCrown className="h-4 w-4 2xl:h-4.5 2xl:w-4.5" />
+              </div>
+
+              {/* MR. SiBS Pill Badge at bottom */}
+              <span
+                className="pointer-events-none absolute -bottom-1.5 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-full border-[1.5px] border-white bg-gradient-to-r from-amber-500 via-orange-500 to-amber-500 px-1.5 py-[0.5px] text-[6.5px] 2xl:text-[7px] font-black uppercase tracking-tight text-white shadow-[0_2px_4px_rgba(4,44,81,0.25)] select-none leading-none"
+                aria-label="MR. SiBS"
+              >
+                MR. SiBS
+              </span>
+            </>
           )}
         </div>
 
@@ -407,17 +547,24 @@ export default function UserDropdown({
       </button>
 
       {avatarPreviewOpen &&
+        avatarPreviewPosition &&
         typeof document !== "undefined" &&
         createPortal(
           <div
-            className="pointer-events-none fixed z-[2147483001] h-[152px] w-[152px] overflow-hidden rounded-2xl border border-sibs-border-subtle bg-white p-1.5 shadow-[0_18px_50px_rgba(4,44,81,0.28)]"
+            className="pointer-events-none fixed z-[2147483001] h-[152px] w-[152px] rounded-2xl border border-sibs-border-subtle bg-white p-1.5 shadow-[0_18px_50px_rgba(4,44,81,0.28)]"
             style={{
               top: avatarPreviewPosition.top,
               left: avatarPreviewPosition.left,
             }}
             aria-hidden="true"
           >
-            <div className="flex h-full w-full items-center justify-center overflow-hidden rounded-xl bg-sibs-primary-1 text-4xl font-extrabold uppercase text-white">
+            <div
+              className={`relative flex h-full w-full items-center justify-center overflow-hidden rounded-xl bg-sibs-primary-1 text-4xl font-extrabold uppercase text-white ${
+                isMrSibs
+                  ? "ring-2 ring-amber-400 ring-offset-2 ring-offset-white shadow-[0_0_12px_rgba(245,158,11,0.35)]"
+                  : ""
+              }`}
+            >
               {profilePictureUrl && !profileImageFailed ? (
                 <img
                   src={profilePictureUrl}
@@ -428,28 +575,24 @@ export default function UserDropdown({
               ) : (
                 avatar || "U"
               )}
+
+              {isMrSibs && (
+                <span className="absolute bottom-2 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full border-2 border-white bg-gradient-to-r from-amber-500 via-orange-500 to-amber-500 px-3 py-0.5 text-[9px] font-black uppercase tracking-wider text-white shadow-md">
+                  MR. SiBS
+                </span>
+              )}
             </div>
+
+            {isMrSibs && (
+              <div className="absolute -top-3.5 -right-2.5 z-20 rotate-[22deg]">
+                <MrSibsCrown className="h-8 w-8" />
+              </div>
+            )}
           </div>,
           document.body,
         )}
 
       {dropdownMenu}
-
-      <style>
-        {`
-          @keyframes sibsUserDropdownOpen {
-            from {
-              opacity: 0;
-              transform: translateY(-8px) scale(0.97);
-            }
-
-            to {
-              opacity: 1;
-              transform: translateY(0) scale(1);
-            }
-          }
-        `}
-      </style>
     </div>
   );
 }

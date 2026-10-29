@@ -111,6 +111,7 @@ export default function SuperAdminAddUserModal({ open, onClose, onSave }) {
         <div className="space-y-1">
           <SelectDropdown
             label="Grounded Access Level (1-7)"
+            labelClassName="sibs-modal-field-label"
             value={form.accessLevel}
             options={ACCESS_LEVELS}
             onChange={(value) => updateField("accessLevel", value)}
@@ -132,6 +133,7 @@ export default function SuperAdminAddUserModal({ open, onClose, onSave }) {
         <div className="space-y-1">
           <SelectDropdown
             label="Account Group"
+            labelClassName="sibs-modal-field-label"
             value={form.accountGroup}
             options={ACCOUNT_GROUPS}
             onChange={(value) => updateField("accountGroup", value)}

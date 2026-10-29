@@ -69,10 +69,29 @@ function DropdownPortal({
     left: 0,
     width: 0,
     maxHeight,
+    shouldOpenUp: false,
   });
+  const [mounted, setMounted] = useState(Boolean(open));
+  const [active, setActive] = useState(Boolean(open));
+
+  useEffect(() => {
+    let timer;
+    let frame;
+    if (open) {
+      setMounted(true);
+      frame = requestAnimationFrame(() => setActive(true));
+    } else {
+      setActive(false);
+      timer = setTimeout(() => setMounted(false), 200);
+    }
+    return () => {
+      if (frame) cancelAnimationFrame(frame);
+      if (timer) clearTimeout(timer);
+    };
+  }, [open]);
 
   useLayoutEffect(() => {
-    if (!open || !anchorRef?.current) return undefined;
+    if (!mounted || !anchorRef?.current) return undefined;
 
     function updatePosition() {
       const anchor = anchorRef.current;
@@ -116,6 +135,7 @@ function DropdownPortal({
         left,
         width: dropdownWidth,
         maxHeight: cleanMaxHeight,
+        shouldOpenUp,
       });
     }
 
@@ -159,7 +179,7 @@ function DropdownPortal({
     };
   }, [anchorRef, onClose, open]);
 
-  if (!open || typeof document === "undefined") return null;
+  if (!mounted || typeof document === "undefined") return null;
 
   return createPortal(
     <div
@@ -168,18 +188,26 @@ function DropdownPortal({
       onMouseDown={(e) => e.stopPropagation()}
       onTouchStartCapture={(e) => e.stopPropagation()}
       onTouchStart={(e) => e.stopPropagation()}
-      className={`fixed z-[999999] overflow-hidden ${EDGE} border border-sibs-border bg-white shadow-xl`}
+      className={`sibs-animated-dropdown ${active ? "open" : "closed"} ${
+        style.shouldOpenUp ? "sibs-animated-dropdown-up" : ""
+      } fixed z-[999999]`}
       style={{
         top: `${style.top}px`,
         left: `${style.left}px`,
         width: `${style.width}px`,
       }}
     >
-      <div
-        className="sibs-scrollbar overflow-y-auto py-2"
-        style={{ maxHeight: `${style.maxHeight}px` }}
-      >
-        {children}
+      <div className="sibs-animated-dropdown-inner">
+        <div
+          className={`sibs-animated-dropdown-box overflow-hidden ${EDGE} border border-sibs-border bg-white shadow-[0_18px_40px_rgba(15,23,42,0.16)]`}
+        >
+          <div
+            className="sibs-scrollbar overflow-y-auto py-2"
+            style={{ maxHeight: `${style.maxHeight}px` }}
+          >
+            {children}
+          </div>
+        </div>
       </div>
     </div>,
     document.body,
@@ -253,16 +281,20 @@ export default function FilterSelect({
           setOpen((prev) => !prev);
           setSearch("");
         }}
-        className={`flex h-11 w-full items-center justify-between ${EDGE} border border-sibs-border bg-white px-4 text-left text-sm font-bold text-slate-700 outline-none transition disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400 hover:border-sibs-orange/30 hover:bg-sibs-surface focus:border-sibs-orange focus:ring-4 focus:ring-sibs-orange/10`}
+        className={`flex h-11 w-full items-center justify-between ${EDGE} border px-4 text-left text-sm font-bold outline-none transition disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400 ${
+          open
+            ? "border-sibs-orange bg-white ring-4 ring-sibs-orange/10 text-sibs-navy"
+            : "border-sibs-border bg-sibs-surface text-slate-700 hover:border-sibs-orange/30 hover:bg-white focus:border-sibs-orange focus:ring-4 focus:ring-sibs-orange/10"
+        }`}
       >
         <span className="min-w-0 truncate">
           {loading ? "Loading..." : selectedOption?.label || placeholder}
         </span>
 
         <ChevronDown
-          size={18}
+          size={17}
           className={`ml-2 shrink-0 text-sibs-muted transition-transform duration-300 ${
-            open ? "rotate-180 text-sibs-orange" : ""
+            open ? "rotate-180" : ""
           }`}
         />
       </button>
@@ -302,8 +334,8 @@ export default function FilterSelect({
                 onClick={() => handleSelect(option)}
                 className={`block w-full px-4 py-3 text-left text-sm transition ${
                   selected
-                    ? "bg-blue-50 font-bold text-sibs-navy"
-                    : "font-semibold text-slate-700 hover:bg-sibs-surface"
+                    ? "bg-sibs-cream-light font-extrabold text-sibs-orange"
+                    : "font-semibold text-sibs-text-secondary hover:bg-sibs-cream-subtle hover:text-sibs-orange"
                 }`}
               >
                 <span className="block truncate">{option.label}</span>

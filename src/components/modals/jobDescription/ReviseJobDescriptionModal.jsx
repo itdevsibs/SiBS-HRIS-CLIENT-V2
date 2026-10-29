@@ -1793,8 +1793,13 @@ function ReportsToDraftSelect({
         />
       </button>
 
-      {open && (
-        <div className="absolute left-0 right-0 z-40 mt-2 overflow-hidden rounded-[10px] border border-sibs-tertiary-8 bg-white shadow-xl">
+      <div
+        className={`sibs-animated-dropdown absolute left-0 right-0 z-40 mt-2 ${
+          open ? "open" : "closed"
+        }`}
+      >
+        <div className="sibs-animated-dropdown-inner">
+          <div className="sibs-animated-dropdown-box overflow-hidden rounded-[10px] border border-sibs-tertiary-8 bg-white shadow-xl">
           {REPORTS_TO_OPTIONS.map((option) => {
             const selected =
               String(value || "")
@@ -1819,9 +1824,10 @@ function ReportsToDraftSelect({
               </button>
             );
           })}
+            </div>
+          </div>
         </div>
-      )}
-    </div>
+      </div>
   );
 }
 
@@ -2847,8 +2853,9 @@ function PersonalityDraftPicker({ form = {}, setForm }) {
         </div>
       </div>
 
-      {open && (
-        <div className="mt-2 max-h-[280px] overflow-y-auto rounded-[10px] border border-sibs-border bg-white shadow-sm">
+      <div className={`sibs-animated-dropdown mt-2 ${open ? "open" : "closed"}`}>
+        <div className="sibs-animated-dropdown-inner">
+          <div className="sibs-animated-dropdown-box max-h-[280px] overflow-y-auto rounded-[10px] border border-sibs-border bg-white shadow-sm">
           {PERSONALITY_TYPE_OPTIONS.map((option) => {
             const selected = selectedCodes.includes(option.code);
 
@@ -2879,9 +2886,10 @@ function PersonalityDraftPicker({ form = {}, setForm }) {
               </button>
             );
           })}
+            </div>
+          </div>
         </div>
-      )}
-    </div>
+      </div>
   );
 }
 

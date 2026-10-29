@@ -1115,18 +1115,22 @@ function DropdownPortal({
   return createPortal(
     <div
       ref={dropdownRef}
-      className={`sibs-dropdown-pop-in fixed z-[999999] overflow-hidden rounded-[10px] border border-sibs-border bg-white shadow-2xl ${className}`}
+      className={`sibs-animated-dropdown open fixed z-[999999] ${className}`}
       style={{
         top: `${style.top}px`,
         left: `${style.left}px`,
         width: `${style.width}px`,
       }}
     >
-      <div
-        className={`sibs-scrollbar ${innerClassName}`}
-        style={{ maxHeight: style.maxHeight }}
-      >
-        {children}
+      <div className="sibs-animated-dropdown-inner">
+        <div className="sibs-animated-dropdown-box overflow-hidden rounded-[10px] border border-sibs-border bg-white shadow-2xl">
+          <div
+            className={`sibs-scrollbar ${innerClassName}`}
+            style={{ maxHeight: style.maxHeight }}
+          >
+            {children}
+          </div>
+        </div>
       </div>
     </div>,
     document.body,
@@ -1507,8 +1511,13 @@ function CalendarHeaderDropdown({
         />
       </button>
 
-      {open && (
-        <div className="sibs-dropdown-pop-in sibs-scrollbar absolute left-0 top-[calc(100%+4px)] z-[10090] max-h-48 overflow-y-auto rounded-[10px] border border-sibs-border bg-white p-1 shadow-2xl">
+      <div
+        className={`sibs-animated-dropdown absolute left-0 top-[calc(100%+4px)] z-[10090] ${
+          open ? "open" : "closed"
+        }`}
+      >
+        <div className="sibs-animated-dropdown-inner">
+          <div className="sibs-animated-dropdown-box max-h-48 overflow-y-auto rounded-[10px] border border-sibs-border bg-white p-1 shadow-2xl sibs-scrollbar">
           {options.map((option) => {
             const active = String(option.value) === String(value);
 
@@ -1530,9 +1539,10 @@ function CalendarHeaderDropdown({
               </button>
             );
           })}
+            </div>
+          </div>
         </div>
-      )}
-    </div>
+      </div>
   );
 }
 
@@ -1816,6 +1826,7 @@ export default function AddHiringNeedsModal({ open, onClose, onStatus }) {
   const [weeklyAccountsLoading, setWeeklyAccountsLoading] = useState(false);
   const [downsizeFile, setDownsizeFile] = useState(null);
   const [downsizeFilePreviewUrl, setDownsizeFilePreviewUrl] = useState("");
+  const scrollBodyRef = useRef(null);
 
   useEffect(() => {
     if (!downsizeFile) {

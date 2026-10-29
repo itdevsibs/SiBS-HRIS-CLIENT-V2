@@ -519,18 +519,24 @@ function DropdownPortal({
       onMouseDown={(event) => event.stopPropagation()}
       onTouchStartCapture={(event) => event.stopPropagation()}
       onTouchStart={(event) => event.stopPropagation()}
-      className={`sibs-dropdown-pop-in fixed z-[999999] overflow-hidden ${EDGE} border border-sibs-border bg-white shadow-[0_18px_40px_rgba(15,23,42,0.16)]`}
+      className="sibs-animated-dropdown open fixed z-[999999]"
       style={{
         top: `${style.top}px`,
         left: `${style.left}px`,
         width: `${style.width}px`,
       }}
     >
-      <div
-        className="sibs-scrollbar overflow-y-auto py-1.5"
-        style={{ maxHeight: `${style.maxHeight}px` }}
-      >
-        {children}
+      <div className="sibs-animated-dropdown-inner">
+        <div
+          className={`sibs-animated-dropdown-box overflow-hidden ${EDGE} border border-sibs-border bg-white shadow-[0_18px_40px_rgba(15,23,42,0.16)]`}
+        >
+          <div
+            className="sibs-scrollbar overflow-y-auto py-1.5"
+            style={{ maxHeight: `${style.maxHeight}px` }}
+          >
+            {children}
+          </div>
+        </div>
       </div>
     </div>,
     document.body,

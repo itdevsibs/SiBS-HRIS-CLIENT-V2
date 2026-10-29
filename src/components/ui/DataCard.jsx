@@ -21,6 +21,7 @@ export default function DataCard({
 
   const handleKeyDown = isClickable
     ? (event) => {
+        if (event.target !== event.currentTarget) return;
         if (event.key === "Enter" || event.key === " ") {
           event.preventDefault();
           onClick(event);

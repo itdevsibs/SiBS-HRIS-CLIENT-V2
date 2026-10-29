@@ -707,7 +707,7 @@ export default function SOMDashboardPage() {
                 Candidate progression within your assigned SOM scope.
               </p>
 
-              <div className="mt-5 grid grid-cols-3 gap-2 sm:grid-cols-6">
+              <div className="mt-5 grid grid-cols-2 min-[360px]:grid-cols-3 sm:grid-cols-6 gap-2">
                 {funnelStages.map(([label, value, className]) => (
                   <button
                     key={label}

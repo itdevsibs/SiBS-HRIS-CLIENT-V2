@@ -75,6 +75,7 @@ export default function SuperAdminDashboardStats({
       {METRICS.map((metric, index) => {
         let val = metric.value;
         let desc = metric.description;
+        let badge = metric.badge;
 
         if (liveMetrics) {
           if (metric.key === "employees" && liveMetrics.employees) {
@@ -86,12 +87,17 @@ export default function SuperAdminDashboardStats({
             val = String(liveMetrics.admins || adminCount || 0);
           } else if (metric.key === "attendance" && liveMetrics.attendanceFlags !== undefined) {
             val = String(liveMetrics.attendanceFlags);
+            badge = Number(val) > 0 ? "Needs Review" : "All Clear";
           } else if (metric.key === "approvals" && liveMetrics.pendingApprovals !== undefined) {
             val = String(liveMetrics.pendingApprovals);
+            badge = Number(val) > 0 ? "Cross-Module" : "Queue Clear";
           } else if (metric.key === "leaves" && liveMetrics.leavesCount !== undefined) {
             val = String(liveMetrics.leavesCount);
+            badge = Number(val) > 0 ? `${val} Active` : "None Active";
           } else if (metric.key === "recruitment" && liveMetrics.recruitmentCount !== undefined) {
             val = String(liveMetrics.recruitmentCount);
+            badge = Number(val) > 0 ? `${val} In Pipeline` : "All Cleared";
+            desc = Number(val) > 0 ? `${val} active requisitions` : "No pending requisitions";
           }
         } else if (metric.key === "admins") {
           val = String(adminCount || 0);
@@ -103,7 +109,7 @@ export default function SuperAdminDashboardStats({
             label={metric.label}
             value={val}
             description={desc}
-            badge={metric.badge}
+            badge={badge}
             icon={metric.icon}
             tone={metric.tone}
             delay={index * 60}

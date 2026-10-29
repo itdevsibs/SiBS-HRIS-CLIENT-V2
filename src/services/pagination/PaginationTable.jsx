@@ -25,19 +25,13 @@ const INLINE_RIGHT_CONTENT_CLASS =
 function AnimatedDropdown({ open, children, className = "" }) {
   return (
     <div
-      className={`absolute left-0 right-0 top-full z-[9999] mt-2 grid transition-all duration-200 ease-out ${
-        open
-          ? "grid-rows-[1fr] opacity-100"
-          : "pointer-events-none grid-rows-[0fr] opacity-0"
+      className={`sibs-animated-dropdown absolute left-0 right-0 top-full z-[9999] mt-2 ${
+        open ? "open" : "closed"
       } ${className}`}
     >
-      <div className="min-h-0 overflow-hidden">
+      <div className="sibs-animated-dropdown-inner">
         <div
-          className={`overflow-hidden ${EDGE} border border-sibs-border bg-white shadow-[0_18px_40px_rgba(15,23,42,0.16)] transition-all duration-200 ease-out ${
-            open
-              ? "translate-y-0 scale-100"
-              : "-translate-y-1 scale-[0.99]"
-          }`}
+          className={`sibs-animated-dropdown-box overflow-hidden ${EDGE} border border-sibs-border bg-white shadow-[0_18px_40px_rgba(15,23,42,0.16)]`}
         >
           {children}
         </div>
@@ -509,7 +503,11 @@ export default function PaginationTable({
                     placeholder={filter.placeholder || "Search..."}
                     autoComplete="off"
                     disabled={filter.disabled}
-                    className={`w-full ${EDGE} border border-sibs-border bg-sibs-surface px-3 pr-10 font-jakarta sibs-text-xs font-bold text-sibs-navy outline-none transition placeholder:text-sibs-muted hover:border-sibs-orange/40 hover:bg-white focus:border-sibs-orange focus:bg-white focus:ring-4 focus:ring-sibs-orange/10 disabled:cursor-not-allowed disabled:opacity-50 ${
+                    className={`w-full ${EDGE} border px-3 pr-10 font-jakarta sibs-text-xs font-bold text-sibs-navy outline-none transition placeholder:text-sibs-muted disabled:cursor-not-allowed disabled:opacity-50 ${
+                      isOpen
+                        ? "border-sibs-orange bg-white ring-4 ring-sibs-orange/10"
+                        : "border-sibs-border bg-sibs-surface hover:border-sibs-orange/40 hover:bg-white focus:border-sibs-orange focus:bg-white focus:ring-4 focus:ring-sibs-orange/10"
+                    } ${
                       isTaInlineLayout ? "h-8.5 sm:h-9 2xl:h-10" : "h-9 2xl:h-11"
                     }`}
                   />
@@ -534,7 +532,11 @@ export default function PaginationTable({
                   type="button"
                   onClick={() => toggleDropdown(filter.key)}
                   disabled={filter.disabled}
-                  className={`flex w-full items-center justify-between ${EDGE} border border-sibs-border bg-sibs-surface px-3 text-left font-jakarta sibs-text-xs font-bold text-sibs-navy outline-none transition hover:border-sibs-orange/40 hover:bg-white focus:border-sibs-orange focus:bg-white focus:ring-4 focus:ring-sibs-orange/10 disabled:cursor-not-allowed disabled:opacity-50 ${
+                  className={`flex w-full items-center justify-between ${EDGE} border px-3 text-left font-jakarta sibs-text-xs font-bold text-sibs-navy outline-none transition disabled:cursor-not-allowed disabled:opacity-50 ${
+                    isOpen
+                      ? "border-sibs-orange bg-white ring-4 ring-sibs-orange/10"
+                      : "border-sibs-border bg-sibs-surface hover:border-sibs-orange/40 hover:bg-white focus:border-sibs-orange focus:bg-white focus:ring-4 focus:ring-sibs-orange/10"
+                  } ${
                     isTaInlineLayout ? "h-8.5 sm:h-9 2xl:h-10" : "h-9 2xl:h-11"
                   }`}
                   aria-expanded={isOpen}

@@ -29,7 +29,7 @@ export default function PageHeaderHero({
               {React.isValidElement(kicker) ? (
                 kicker
               ) : (
-                <span className="inline-flex items-center gap-1.5 rounded border border-blue-100 bg-blue-50/80 px-2 py-0.5 2xl:px-2.5 2xl:py-1 sibs-text-micro font-extrabold uppercase tracking-normal text-sibs-navy">
+                <span className="inline-flex items-center gap-1.5 rounded-md border border-sibs-border-subtle bg-sibs-surface px-2 py-0.5 2xl:px-2.5 2xl:py-1 sibs-text-micro font-extrabold uppercase tracking-wider text-sibs-navy shadow-xs">
                   {pulse ? (
                     <span className="h-1.5 w-1.5 animate-sibs-pulse rounded-full bg-sibs-orange" />
                   ) : null}

@@ -2766,36 +2766,38 @@ function FormDropdown({
           />
         </button>
 
-        {open && !disabled && (
-          <div
-            className={`absolute left-0 z-[99999] max-h-[260px] w-full overflow-hidden rounded-[10px] border border-sibs-border bg-white shadow-[0_18px_45px_rgba(15,23,42,0.16)] ${
-              openUpward
-                ? "bottom-[calc(100%+8px)]"
-                : "top-[calc(100%+8px)]"
-            }`}
-          >
-            <div className="max-h-[260px] overflow-y-auto py-1">
-              {options.map((option) => {
-                const active = option.value === value;
+        <div
+          className={`sibs-animated-dropdown absolute left-0 z-[99999] w-full ${
+            openUpward
+              ? "bottom-[calc(100%+8px)] sibs-animated-dropdown-up"
+              : "top-[calc(100%+8px)]"
+          } ${open && !disabled ? "open" : "closed"}`}
+        >
+          <div className="sibs-animated-dropdown-inner">
+            <div className="sibs-animated-dropdown-box max-h-[260px] overflow-hidden rounded-[10px] border border-sibs-border bg-white shadow-[0_18px_45px_rgba(15,23,42,0.16)]">
+              <div className="max-h-[260px] overflow-y-auto py-1 sibs-scrollbar">
+                {options.map((option) => {
+                  const active = option.value === value;
 
-                return (
-                  <button
-                    key={option.value}
-                    type="button"
-                    onClick={() => handleSelect(option)}
-                    className={`flex min-h-[44px] w-full items-center px-4 text-left text-sm font-semibold transition ${
-                      active
-                        ? "bg-sibs-cream-light text-sibs-orange"
-                        : "bg-white text-sibs-navy hover:bg-sibs-surface hover:text-sibs-orange"
-                    }`}
-                  >
-                    {option.label}
-                  </button>
-                );
-              })}
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => handleSelect(option)}
+                      className={`flex min-h-[44px] w-full items-center px-4 text-left text-sm font-semibold transition ${
+                        active
+                          ? "bg-sibs-cream-light text-sibs-orange"
+                          : "bg-white text-sibs-navy hover:bg-sibs-surface hover:text-sibs-orange"
+                      }`}
+                    >
+                      {option.label}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
-        )}
+        </div>
       </div>
     </label>
   );
@@ -4332,8 +4334,13 @@ function AssessmentDeadlineDatePicker({
         />
       </button>
 
-      {open && !disabled && (
-        <div className="absolute left-0 top-[calc(100%+8px)] z-[99999] w-[340px] overflow-hidden rounded-[10px] border border-sibs-border bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)]">
+      <div
+        className={`sibs-animated-dropdown absolute left-0 top-[calc(100%+8px)] z-[99999] w-[340px] ${
+          open && !disabled ? "open" : "closed"
+        }`}
+      >
+        <div className="sibs-animated-dropdown-inner">
+          <div className="sibs-animated-dropdown-box overflow-hidden rounded-[10px] border border-sibs-border bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)]">
           <div className="flex items-center justify-between border-b border-sibs-border px-4 py-3">
             <button
               type="button"
@@ -4418,7 +4425,8 @@ function AssessmentDeadlineDatePicker({
             </button>
           </div>
         </div>
-      )}
+      </div>
+    </div>
     </div>
   );
 }
@@ -4918,7 +4926,7 @@ function NhoTimeDropdown({
             <div
               ref={menuRef}
               role="listbox"
-              className="sibs-dropdown-pop-in fixed z-[13000] overflow-hidden rounded-[10px] border border-sibs-border bg-white shadow-[0_20px_25px_-5px_rgba(4,44,81,0.16),0_8px_10px_-6px_rgba(4,44,81,0.14)]"
+              className="sibs-animated-dropdown open fixed z-[13000]"
               style={{
                 left:
                   menuPosition?.left ??
@@ -4932,17 +4940,23 @@ function NhoTimeDropdown({
                     ?.getBoundingClientRect()
                     .width ??
                   0,
-                maxHeight:
-                  menuPosition?.maxHeight ??
-                  220,
                 visibility:
                   menuPosition
                     ? "visible"
                     : "hidden",
               }}
             >
-              <div
-                className="overflow-y-auto py-1 sibs-scrollbar"
+              <div className="sibs-animated-dropdown-inner">
+                <div
+                  className="sibs-animated-dropdown-box overflow-hidden rounded-[10px] border border-sibs-border bg-white shadow-[0_20px_25px_-5px_rgba(4,44,81,0.16),0_8px_10px_-6px_rgba(4,44,81,0.14)]"
+                  style={{
+                    maxHeight:
+                      menuPosition?.maxHeight ??
+                      220,
+                  }}
+                >
+                  <div
+                    className="overflow-y-auto py-1 sibs-scrollbar"
                 style={{
                   maxHeight:
                     menuPosition
@@ -4998,6 +5012,8 @@ function NhoTimeDropdown({
                     );
                   },
                 )}
+                  </div>
+                </div>
               </div>
             </div>,
             document.body,
@@ -6876,7 +6892,7 @@ function ManualCandidateResponseDropdown({
         ? Math.max(topBoundary, rect.top - maxHeight - menuOffset)
         : rect.bottom + menuOffset;
 
-      setMenuPosition({ left, top, width, maxHeight });
+      setMenuPosition({ left, top, width, maxHeight, isUpward: openUpward });
     };
 
     updatePosition();
@@ -6937,23 +6953,29 @@ function ManualCandidateResponseDropdown({
         ? createPortal(
             <div
               ref={menuRef}
-              className="fixed z-[12001] w-44 overflow-hidden rounded-[10px] border border-sibs-border bg-white p-1.5 shadow-xl"
+              className={`sibs-animated-dropdown open fixed z-[12001] w-44 ${menuPosition?.isUpward ? "sibs-animated-dropdown-up" : ""}`}
               style={{
                 left: menuPosition?.left ?? 0,
                 top: menuPosition?.top ?? 0,
                 width: menuPosition?.width ?? 176,
-                maxHeight: menuPosition?.maxHeight ?? undefined,
                 visibility: menuPosition ? "visible" : "hidden",
               }}
             >
-              <div
-                className="flex flex-col gap-1.5 overflow-y-auto"
-                style={{
-                  maxHeight: menuPosition
-                    ? Math.max(0, menuPosition.maxHeight - 14)
-                    : undefined,
-                }}
-              >
+              <div className="sibs-animated-dropdown-inner">
+                <div
+                  className="sibs-animated-dropdown-box overflow-hidden rounded-[10px] border border-sibs-border bg-white p-1.5 shadow-xl"
+                  style={{
+                    maxHeight: menuPosition?.maxHeight ?? undefined,
+                  }}
+                >
+                  <div
+                    className="flex flex-col gap-1.5 overflow-y-auto sibs-scrollbar"
+                    style={{
+                      maxHeight: menuPosition
+                        ? Math.max(0, menuPosition.maxHeight - 14)
+                        : undefined,
+                    }}
+                  >
                 {options.map((decision) => (
                   <button
                     key={decision}
@@ -6969,6 +6991,8 @@ function ManualCandidateResponseDropdown({
                     <span>{decision}</span>
                   </button>
                 ))}
+                  </div>
+                </div>
               </div>
             </div>,
             document.body,

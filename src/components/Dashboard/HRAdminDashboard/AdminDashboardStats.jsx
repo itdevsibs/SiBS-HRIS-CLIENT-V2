@@ -6,7 +6,7 @@ export default function AdminDashboardStats({
   onMetricClick,
 }) {
   return (
-    <MetricGrid>
+    <MetricGrid columns={5}>
       {metrics.map((metric, index) => (
         <MetricCard
           key={metric.id}

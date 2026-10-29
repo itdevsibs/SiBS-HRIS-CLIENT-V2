@@ -52,6 +52,7 @@ import {
   SuperAdminDashboardStatsSkeleton,
   SuperAdminTabPanelSkeleton,
 } from "../../../components/Dashboard/SuperAdminDashboard/SuperAdminDashboardSkeleton";
+import DashboardLoadingSkeleton from "../../../components/Dashboard/shared/DashboardLoadingSkeleton";
 import StatutoryCoveragePanel from "../../../components/Dashboard/shared/StatutoryCoveragePanel";
 
 const SUPER_ADMIN_ENTITY = "super-admin-dashboard";
@@ -511,12 +512,29 @@ export default function SuperAdminDashboardPage() {
     }
   }
 
+  if (isInitialLoading && !backendOverview) {
+    return (
+      <DashboardLoadingSkeleton
+        ariaLabel="Loading Super Admin Dashboard"
+        showStatutoryCoverage={true}
+        hero={
+          <SuperAdminDashboardHeader
+            displayName={getUserDisplayName(user)}
+            onOpenEmployees={() => navigate(SUPER_ADMIN_ROUTES.employees)}
+            onRefresh={handleManualRefresh}
+            isManualRefreshing={isManualRefreshing}
+          />
+        }
+      />
+    );
+  }
+
   return (
     <div className="sibs-dashboard-shell">
       <Header />
 
       <main
-        className="sibs-dashboard-main-wide"
+        className="sibs-dashboard-main-wide pb-20 sm:pb-6"
         aria-busy={isInitialLoading}
       >
         <div className="mx-auto flex min-h-full w-full max-w-[1700px] flex-1 flex-col space-y-4 2xl:space-y-5">

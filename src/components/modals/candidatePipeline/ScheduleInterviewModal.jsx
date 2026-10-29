@@ -387,11 +387,16 @@ function PickerDropdown({
         />
       </button>
 
-      {open && !disabled && (
-        <div
-          className={`sibs-dropdown-pop-in absolute left-0 top-[calc(100%+8px)] z-[99999] max-h-[260px] w-full overflow-hidden rounded-[10px] border border-sibs-border bg-white font-jakarta shadow-[0_20px_25px_-5px_rgba(4,44,81,0.16),0_8px_10px_-6px_rgba(4,44,81,0.14)] ${menuClassName}`}
-        >
-          <div className="max-h-[260px] overflow-y-auto py-1">
+      <div
+        className={`sibs-animated-dropdown absolute left-0 top-[calc(100%+8px)] z-[99999] w-full ${
+          open && !disabled ? "open" : "closed"
+        }`}
+      >
+        <div className="sibs-animated-dropdown-inner">
+          <div
+            className={`sibs-animated-dropdown-box max-h-[260px] overflow-hidden rounded-[10px] border border-sibs-border bg-white font-jakarta shadow-[0_20px_25px_-5px_rgba(4,44,81,0.16),0_8px_10px_-6px_rgba(4,44,81,0.14)] ${menuClassName}`}
+          >
+            <div className="max-h-[260px] overflow-y-auto py-1">
             {options.map((option) => {
               const active = String(option.value) === String(value);
 
@@ -414,9 +419,10 @@ function PickerDropdown({
                 </button>
               );
             })}
+            </div>
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }
@@ -711,8 +717,13 @@ function DateTimePicker({ value, onChange }) {
         <CalendarDays size={17} className="shrink-0 text-sibs-navy" />
       </button>
 
-      {open && (
-        <div className="sibs-dropdown-pop-in mt-3 overflow-visible rounded-[10px] border border-sibs-border bg-white font-jakarta shadow-[0_20px_25px_-5px_rgba(4,44,81,0.16),0_8px_10px_-6px_rgba(4,44,81,0.14)]">
+      <div
+        className={`sibs-animated-dropdown mt-3 ${
+          open ? "open" : "closed"
+        }`}
+      >
+        <div className="sibs-animated-dropdown-inner">
+          <div className="sibs-animated-dropdown-box overflow-visible rounded-[10px] border border-sibs-border bg-white font-jakarta shadow-[0_20px_25px_-5px_rgba(4,44,81,0.16),0_8px_10px_-6px_rgba(4,44,81,0.14)]">
           <div className="grid grid-cols-1 lg:grid-cols-[1.15fr_0.85fr]">
             <div className="border-b border-sibs-border p-4 lg:border-b-0 lg:border-r">
               <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -944,7 +955,8 @@ function DateTimePicker({ value, onChange }) {
             </div>
           </div>
         </div>
-      )}
+      </div>
+    </div>
     </div>
   );
 }

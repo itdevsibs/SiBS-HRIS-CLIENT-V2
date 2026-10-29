@@ -103,9 +103,14 @@ function PrfStatusDropdown({
         />
       </button>
 
-      {open && (
-        <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-[10090] overflow-hidden rounded-[10px] border border-sibs-border bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)]">
-          <div className="max-h-72 overflow-y-auto py-1">
+      <div
+        className={`sibs-animated-dropdown absolute left-0 right-0 top-[calc(100%+8px)] z-[10090] ${
+          open ? "open" : "closed"
+        }`}
+      >
+        <div className="sibs-animated-dropdown-inner">
+          <div className="sibs-animated-dropdown-box overflow-hidden rounded-[10px] border border-sibs-border bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)]">
+            <div className="max-h-72 overflow-y-auto py-1 sibs-scrollbar">
             {options.map((option) => {
               const active = String(option.value) === String(value);
 
@@ -144,9 +149,10 @@ function PrfStatusDropdown({
                 </button>
               );
             })}
+            </div>
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }

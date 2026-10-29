@@ -67,7 +67,7 @@ function UploadedFileCell({ filename, fileUrl }) {
       href={fileUrl}
       target="_blank"
       rel="noopener noreferrer"
-      className="flex min-w-[320px] items-center gap-3 rounded-lg p-1 transition hover:bg-gray-50"
+      className="flex min-w-0 max-w-[320px] items-center gap-3 rounded-lg p-1 transition hover:bg-gray-50"
       title={`Open ${filename}`}
     >
       <FileTypeIcon filename={filename} />
