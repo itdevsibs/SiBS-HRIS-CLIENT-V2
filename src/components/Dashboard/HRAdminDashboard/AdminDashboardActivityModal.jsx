@@ -14,6 +14,7 @@ const activityDotClass = {
 export default function AdminDashboardActivityModal({
   activities = [],
   loading = false,
+  isSyncing = false,
   error = "",
   onClose,
   onRefresh,
@@ -91,6 +92,11 @@ export default function AdminDashboardActivityModal({
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto px-5 py-2">
+          {isSyncing && (
+            <p role="status" className="my-2 rounded-lg bg-blue-50 px-3 py-2 text-xs text-blue-800">
+              Retrieving recent leave activity in the background. Available entries are already shown.
+            </p>
+          )}
           {error && (
             <p role="alert" className="my-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
               {error} {activities.length ? "Showing the last available entries." : "Try refreshing."}
@@ -114,7 +120,7 @@ export default function AdminDashboardActivityModal({
                       </p>
                       <p className="mt-0.5 text-xs text-sibs-text-muted">{formatLogDetails(entry.details)}</p>
                       {canOpen && (
-                        <button type="button" onClick={() => onNavigate?.(entry.path)} className="mt-1 inline-flex items-center gap-1 text-xs font-bold text-sibs-orange hover:underline">
+                        <button type="button" onClick={() => onNavigate?.(entry)} className="mt-1 inline-flex items-center gap-1 text-xs font-bold text-sibs-orange hover:underline">
                           Open related module <ExternalLink className="h-3 w-3" />
                         </button>
                       )}

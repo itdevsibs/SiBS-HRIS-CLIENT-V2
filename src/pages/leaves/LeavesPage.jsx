@@ -54,6 +54,8 @@ export default function LeavesPage() {
   const [recordScope, setRecordScope] = useState("all");
 
   const [statusFilter, setStatusFilter] = useState("All");
+  const [allDatesView, setAllDatesView] = useState(false);
+  const [notifiedPendingCount, setNotifiedPendingCount] = useState(null);
   const [departmentFilter, setDepartmentFilter] = useState("All");
   const [accountFilter, setAccountFilter] = useState("All");
   const [departmentOptions, setDepartmentOptions] = useState([]);
@@ -83,8 +85,10 @@ export default function LeavesPage() {
     () => getLeavesInitialDateRange(isEmployeeAccount),
     [isEmployeeAccount],
   );
-  const dateFrom = filterValues?.dateFrom || initialLeavesDateRange.dateFrom;
-  const dateTo = filterValues?.dateTo || initialLeavesDateRange.dateTo;
+  // A pending-leave notification represents ALL dates. Empty date values must
+  // stay empty, rather than being replaced by the default seven-day range.
+  const dateFrom = allDatesView ? "" : (filterValues?.dateFrom ?? initialLeavesDateRange.dateFrom);
+  const dateTo = allDatesView ? "" : (filterValues?.dateTo ?? initialLeavesDateRange.dateTo);
 
   const showDepartmentFilter = canViewLeaveFilters(user);
   const showAccountFilter = canViewLeaveFilters(user);
@@ -155,7 +159,9 @@ export default function LeavesPage() {
         dateTo: dateToValue,
         includeDepartments: showDepartmentFilter,
         includeAccounts: showAccountFilter,
-        useDefaultDateRange: !isEmployeeAccount,
+        // The page always supplies its explicit date bounds. Never silently
+        // reintroduce a seven-day range when a user clears either date.
+        useDefaultDateRange: false,
       });
 
       // Ignore stale responses from an older search/filter request.
@@ -221,13 +227,21 @@ export default function LeavesPage() {
   }
 
   useEffect(() => {
-    if (initializedRef.current) return;
-    initializedRef.current = true;
-
     const notificationState =
       location.state?.source === "pending-leave-notification"
         ? location.state
         : null;
+    if (initializedRef.current && !notificationState) return;
+    initializedRef.current = true;
+
+    const fromNotification = Boolean(notificationState?.allDates);
+    const count = Number(notificationState?.pendingCount);
+    setAllDatesView(fromNotification);
+    setNotifiedPendingCount(
+      fromNotification && notificationState?.pendingCount != null && Number.isFinite(count) && count >= 0
+        ? count
+        : null,
+    );
     const initialStatus =
       String(notificationState?.leaveStatus || "").trim() || "All";
 
@@ -241,7 +255,7 @@ export default function LeavesPage() {
     setAccountOptions([]);
 
     if (typeof setDateRange === "function") {
-      setDateRange(initialLeavesDateRange);
+      setDateRange(fromNotification ? { dateFrom: "", dateTo: "" } : initialLeavesDateRange);
     }
 
     setFiltersReady(true);
@@ -309,11 +323,17 @@ export default function LeavesPage() {
   }
 
   function handleStatusChange(nextStatus) {
+    setNotifiedPendingCount(null);
     setStatusFilter(nextStatus || "All");
     setPage(1);
   }
 
   function handleSetSearchKeyword(value) {
+    // LeavesTable clears its search on mount; that is not a user change and
+    // must not erase the notification's last verified overall count.
+    if (String(value ?? "") !== String(search ?? "")) {
+      setNotifiedPendingCount(null);
+    }
     setSearch(value);
     setPage(1);
   }
@@ -350,6 +370,19 @@ export default function LeavesPage() {
   const pageStats = useMemo(() => {
     return calculateLeavePageStats(paginatedLeaves);
   }, [paginatedLeaves]);
+
+  const showVerifiedPendingTotal =
+    allDatesView &&
+    statusFilter === "Pending" &&
+    !String(search || "").trim() &&
+    departmentFilter === "All" &&
+    accountFilter === "All" &&
+    Number.isFinite(notifiedPendingCount);
+
+  const handleDateFilterChange = () => {
+    setAllDatesView(false);
+    setNotifiedPendingCount(null);
+  };
 
   const isPersonalView = isEmployeeAccount || recordScope === "personal";
 
@@ -477,9 +510,9 @@ export default function LeavesPage() {
               />
 
               <MetricCard
-                label="Pending"
-                value={formatNumber(pageStats.pendingLeaves)}
-                description="Awaiting review"
+                label={showVerifiedPendingTotal ? "Pending (All Dates)" : "Pending"}
+                value={formatNumber(showVerifiedPendingTotal ? notifiedPendingCount : pageStats.pendingLeaves)}
+                description={showVerifiedPendingTotal ? "Last verified total from notification" : "Pending on this page"}
                 icon={Clock}
                 tone="amber"
                 delay={120}
@@ -554,6 +587,8 @@ export default function LeavesPage() {
               accountDropdownOptions={accountDropdownOptions}
               isPersonalView={isPersonalView}
               filterValues={filterValues}
+              allDatesView={allDatesView}
+              onDateFilterChange={handleDateFilterChange}
             />
           </section>
         </div>

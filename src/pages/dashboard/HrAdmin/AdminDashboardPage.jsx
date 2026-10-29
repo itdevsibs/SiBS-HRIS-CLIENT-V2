@@ -40,7 +40,7 @@ import AdminDashboardNotifications from "../../../components/Dashboard/HRAdminDa
 import AdminDashboardQuickActions from "../../../components/Dashboard/HRAdminDashboard/AdminDashboardQuickActions";
 import AdminDashboardWorkforceKpi from "../../../components/Dashboard/HRAdminDashboard/AdminDashboardWorkforceKpi";
 import AdminDashboardToast from "../../../components/Dashboard/HRAdminDashboard/AdminDashboardToast";
-import AdminDashboardSkeleton from "../../../components/Dashboard/HRAdminDashboard/AdminDashboardSkeleton";
+import { resolveActivityNavigationTarget } from "../../../lib/utils/Dashboards/AdminDashboard/activityNavigation.js";
 import StatutoryCoveragePanel from "../../../components/Dashboard/shared/StatutoryCoveragePanel";
 import { DashboardModalManager } from "../../../components/modals/dashboard/AdminDashboardModals";
 import {
@@ -143,7 +143,7 @@ export default function AdminDashboardPage() {
   const location = useLocation();
   const { user, loading } = useUser();
   const { ADMIN_ROLES } = useAdmin();
-  const { markNotificationSeen } = useSidebarNotifications() || {};
+  const { markNotificationSeen, notificationsList } = useSidebarNotifications() || {};
 
   const [activeModal, setActiveModal] = useState(null);
   const [activityHistoryOpen, setActivityHistoryOpen] = useState(false);
@@ -151,10 +151,11 @@ export default function AdminDashboardPage() {
     items: [], loading: false, error: "",
   });
   const activityHistoryRequestIdRef = useRef(0);
+  const activityHistoryCacheRef = useRef(null);
+  const [feedSourcesPending, setFeedSourcesPending] = useState(false);
 
   const [toast, setToast] = useState(null);
   const [overview, setOverview] = useState(EMPTY_OVERVIEW);
-  const [initialLoadFinished, setInitialLoadFinished] = useState(false);
   const initialLoadFinishedRef = useRef(false);
   const [overviewRefreshing, setOverviewRefreshing] = useState(false);
   const [feedRefreshing, setFeedRefreshing] = useState(false);
@@ -252,7 +253,6 @@ export default function AdminDashboardPage() {
         if (requestId === overviewRequestIdRef.current) {
           setOverviewRefreshing(false);
           initialLoadFinishedRef.current = true;
-          setInitialLoadFinished(true);
         }
         overviewLoadingRef.current = false;
       }
@@ -273,6 +273,7 @@ export default function AdminDashboardPage() {
       if (requestId !== feedRequestIdRef.current) return false;
 
       setOverview((previous) => mergeDashboardFeed(previous, payload));
+      setFeedSourcesPending(Boolean(payload?.dataStatus?.upstreamSyncing));
       return true;
     } catch (error) {
       if (requestId !== feedRequestIdRef.current) return false;
@@ -290,16 +291,17 @@ export default function AdminDashboardPage() {
     }
   }, []);
 
-  const loadActivityHistory = useCallback(async () => {
+  const loadActivityHistory = useCallback(async ({ forceRefresh = false } = {}) => {
     const requestId = ++activityHistoryRequestIdRef.current;
     setActivityHistory((previous) => ({ ...previous, loading: true, error: "" }));
     try {
-      const payload = await getHrDashboardActivities({ limit: 50 });
+      const payload = await getHrDashboardActivities({ limit: 50, forceRefresh });
       if (activityHistoryRequestIdRef.current !== requestId) return;
+      const items = Array.isArray(payload?.activities) ? payload.activities : [];
+      activityHistoryCacheRef.current = { items, loadedAt: Date.now() };
       setActivityHistory({
-        items: Array.isArray(payload?.activities) ? payload.activities : [],
-        loading: false,
-        error: "",
+        items, loading: false, error: "",
+        syncing: payload?.leaveActivityStatus === "loading",
       });
     } catch (error) {
       if (activityHistoryRequestIdRef.current !== requestId) return;
@@ -313,8 +315,18 @@ export default function AdminDashboardPage() {
 
   const openActivityHistory = useCallback(() => {
     setActivityHistoryOpen(true);
-    setActivityHistory({ items: overview.recentActivities || [], loading: false, error: "" });
-    loadActivityHistory();
+    const cached = activityHistoryCacheRef.current;
+    if (cached && Date.now() - cached.loadedAt < 45_000) {
+      setActivityHistory({ items: cached.items, loading: false, error: "", syncing: false });
+      return;
+    }
+    setActivityHistory({
+      items: cached?.items?.length ? cached.items : (overview.recentActivities || []),
+      loading: false,
+      error: "",
+      syncing: true,
+    });
+    void loadActivityHistory();
   }, [overview.recentActivities, loadActivityHistory]);
 
   const closeActivityHistory = useCallback(() => {
@@ -398,23 +410,33 @@ export default function AdminDashboardPage() {
     refreshOverview();
   }, [loading, user, isAdminSide, refreshOverview]);
 
+  // Feed and overview are independent; the feed must never wait for a slow
+  // attendance/overview response before starting its own fast data reads.
   useEffect(() => {
-    if (loading || !user || !isAdminSide || !initialLoadFinished) {
-      return undefined;
-    }
-
-    const timer = window.setTimeout(() => {
-      refreshFeed();
-    }, 150);
-
+    if (loading || !user || !isAdminSide) return undefined;
+    const timer = window.setTimeout(() => { void refreshFeed(); }, 150);
     return () => window.clearTimeout(timer);
-  }, [
-    loading,
-    user,
-    isAdminSide,
-    initialLoadFinished,
-    refreshFeed,
-  ]);
+  }, [loading, user, isAdminSide, refreshFeed]);
+
+  // Optional Kronos enrichment continues in the background. Only recheck
+  // while a verified upstream response is still in-flight.
+  useEffect(() => {
+    if (!feedSourcesPending || loading || !user || !isAdminSide) return undefined;
+    const interval = window.setInterval(() => {
+      if (document.visibilityState === "visible") void refreshFeed();
+    }, 5_000);
+    return () => window.clearInterval(interval);
+  }, [feedSourcesPending, loading, user, isAdminSide, refreshFeed]);
+
+  useEffect(() => {
+    if (!activityHistoryOpen || !activityHistory.syncing) return undefined;
+    const interval = window.setInterval(() => {
+      if (document.visibilityState === "visible") {
+        void loadActivityHistory();
+      }
+    }, 5_000);
+    return () => window.clearInterval(interval);
+  }, [activityHistoryOpen, activityHistory.syncing, loadActivityHistory]);
 
   useEffect(() => {
     if (loading || !user || !isAdminSide) return undefined;
@@ -422,11 +444,8 @@ export default function AdminDashboardPage() {
     const refreshVisibleDashboard = async () => {
       if (document.visibilityState !== "visible") return;
 
-      const overviewLoaded = await refreshOverview();
-
-      if (overviewLoaded) {
-        refreshFeed();
-      }
+      void refreshOverview();
+      void refreshFeed();
     };
 
     const refreshWhenVisible = () => {
@@ -473,11 +492,14 @@ export default function AdminDashboardPage() {
     [overview.notifications],
   );
 
+  const metricsReady = Boolean(overview.generatedAt);
+  const displayMetric = (number) => metricsReady ? formatNumber(number) : "—";
+
   const metricCards = [
     {
       id: "employees",
       label: "Employees",
-      value: formatNumber(overview.metrics.employees),
+      value: displayMetric(overview.metrics.employees),
       description: "Active employee records",
       icon: Users,
       tone: "orange",
@@ -485,7 +507,7 @@ export default function AdminDashboardPage() {
     {
       id: "departments",
       label: "Departments",
-      value: formatNumber(overview.metrics.departments),
+      value: displayMetric(overview.metrics.departments),
       description: "Departments with active staff",
       icon: Building2,
       tone: "navy",
@@ -493,16 +515,16 @@ export default function AdminDashboardPage() {
     {
       id: "attendance",
       label: "Attendance",
-      value: formatNumber(overview.metrics.attendancePresent),
+      value: displayMetric(overview.metrics.attendancePresent),
       description: "Present today",
       icon: UserCheck,
       tone: "green",
-      badge: formatPercent(overview.metrics.attendanceRate),
+      badge: metricsReady ? formatPercent(overview.metrics.attendanceRate) : undefined,
     },
     {
       id: "interviews",
       label: "Interviews Today",
-      value: formatNumber(overview.metrics.interviewsToday),
+      value: displayMetric(overview.metrics.interviewsToday),
       description: "Scheduled candidate interviews",
       icon: Calendar,
       tone: "indigo",
@@ -510,7 +532,7 @@ export default function AdminDashboardPage() {
     {
       id: "payroll",
       label: "Payroll",
-      value: formatNumber(overview.metrics.payrollEligible),
+      value: displayMetric(overview.metrics.payrollEligible),
       description: "Payroll-eligible employees",
       icon: CreditCard,
       tone: "amber",
@@ -614,25 +636,6 @@ export default function AdminDashboardPage() {
     setDetailState({ data: null, loading: false, error: "" });
   }, []);
 
-  if ((loading || !initialLoadFinished) && !overview.generatedAt) {
-    return (
-      <AdminDashboardSkeleton
-        hero={
-          user ? (
-            <AdminDashboardWelcome
-              title={dashboardTitle}
-              fullName={fullName}
-              badge={userRole === "super_admin" ? "Super Admin View" : "HR Admin View"}
-              onOpenEmployees={() => navigate(EXISTING_ADMIN_ROUTES.employees)}
-              onRefresh={() => refreshOverview({ manual: true, forceRefresh: true })}
-              isManualRefreshing
-            />
-          ) : null
-        }
-      />
-    );
-  }
-
   return (
     <div className="sibs-dashboard-shell">
       <div className="shrink-0">
@@ -671,6 +674,7 @@ export default function AdminDashboardPage() {
             <div className="space-y-5 lg:col-span-8">
               <AdminDashboardActivity
                 activities={overview.recentActivities}
+                loading={feedRefreshing || feedSourcesPending}
                 onSync={() => {
                   refreshOverview({ manual: true, forceRefresh: true });
                   refreshFeed({ forceRefresh: true });
@@ -708,14 +712,22 @@ export default function AdminDashboardPage() {
         <AdminDashboardActivityModal
           activities={activityHistory.items}
           loading={activityHistory.loading}
+          isSyncing={activityHistory.syncing}
           error={activityHistory.error}
-          onRefresh={loadActivityHistory}
+          onRefresh={() => loadActivityHistory({ forceRefresh: true })}
           onClose={closeActivityHistory}
-          onNavigate={(path) => {
+          onNavigate={(entry) => {
+            // The bell keeps the last verified all-dates pending total. Reuse
+            // that snapshot in the Leaves KPI rather than showing "15" from
+            // the first page when the user opens a pending leave activity.
+            const sidebarCount = notificationsList?.find(
+              (notification) => notification.id === "notif-leaves-pending",
+            )?.actionState?.pendingCount;
+            const pendingCount = sidebarCount ?? overview.notificationCounts?.pendingLeaves;
+            const target = resolveActivityNavigationTarget(entry, { pendingCount });
+            if (!target) return;
             closeActivityHistory();
-            if (typeof path === "string" && path.startsWith("/") && !path.startsWith("//")) {
-              navigate(path);
-            }
+            navigate(target.pathname, target.state ? { state: target.state } : undefined);
           }}
         />
       )}
