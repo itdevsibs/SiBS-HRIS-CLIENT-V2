@@ -447,9 +447,14 @@ function HrisDropdown({
         </button>
       )}
 
-      {open && !disabled && (
-        <div className="sibs-dropdown-pop-in absolute left-0 right-0 top-[calc(100%+8px)] z-[10080] overflow-hidden rounded-[10px] border border-sibs-border bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)]">
-          <div className="max-h-72 overflow-y-auto py-2">
+      <div
+        className={`sibs-animated-dropdown absolute left-0 right-0 top-[calc(100%+8px)] z-[10080] ${
+          open && !disabled ? "open" : "closed"
+        }`}
+      >
+        <div className="sibs-animated-dropdown-inner">
+          <div className="sibs-animated-dropdown-box overflow-hidden rounded-[10px] border border-sibs-border bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)]">
+            <div className="max-h-72 overflow-y-auto py-2">
             {filteredOptions.length > 0 ? (
               filteredOptions.map((option) => {
                 const active = String(option.value) === String(value);
@@ -491,9 +496,10 @@ function HrisDropdown({
                 {emptyText}
               </div>
             )}
+            </div>
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }
@@ -611,8 +617,13 @@ function StartDatePicker({ value, onChange, hasError = false, inputRef = null })
         <CalendarDays size={18} className="shrink-0" />
       </button>
 
-      {open && (
-        <div className="sibs-dropdown-pop-in absolute left-0 top-[calc(100%+8px)] z-[10150] w-full min-w-[310px] rounded-[10px] border border-sibs-border bg-white p-3.5 shadow-[0_18px_45px_rgba(15,23,42,0.18)]">
+      <div
+        className={`sibs-animated-dropdown absolute left-0 top-[calc(100%+8px)] z-[10150] w-full min-w-[310px] ${
+          open ? "open" : "closed"
+        }`}
+      >
+        <div className="sibs-animated-dropdown-inner">
+          <div className="sibs-animated-dropdown-box rounded-[10px] border border-sibs-border bg-white p-3.5 shadow-[0_18px_45px_rgba(15,23,42,0.18)]">
           <div className="mb-3 flex items-center justify-between">
             <button type="button" onClick={() => setViewDate(new Date(year, month - 1, 1))} className="rounded-[10px] p-2 hover:bg-gray-100"><ChevronLeft size={18} /></button>
             <span className="text-sm font-extrabold text-sibs-navy">{formatHrisDateLocalized(viewDate, "en-PH", { month: "long", year: "numeric" })}</span>
@@ -649,8 +660,9 @@ function StartDatePicker({ value, onChange, hasError = false, inputRef = null })
           <p className="mt-3 text-xs font-semibold text-sibs-tertiary-5">
             The Monday immediately after NHO is the suggested earliest start date. You may select that date or any later date.
           </p>
+          </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }

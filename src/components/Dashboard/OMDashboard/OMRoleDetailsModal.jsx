@@ -85,7 +85,7 @@ export default function OMRoleDetailsModal({ role, onClose }) {
         <p className="sibs-modal-section-title mb-1.5 uppercase">
           Movement Pipeline Stages
         </p>
-        <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-6">
+        <div className="grid grid-cols-2 min-[360px]:grid-cols-3 sm:grid-cols-6 gap-1.5">
           {Object.entries(role.movement || {}).map(([label, value]) => (
             <div key={label} className="sibs-info-tile rounded-lg border border-sibs-border bg-sibs-surface p-2 text-center">
               <span className="block truncate font-jakarta sibs-text-micro font-extrabold uppercase tracking-wider text-sibs-muted">

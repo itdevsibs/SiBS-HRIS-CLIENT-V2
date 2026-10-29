@@ -1067,7 +1067,6 @@ function HeaderContent() {
     });
     const mobileDateFormatter = createSystemDateTimeFormatter("en-PH", {
       timeZone: "Asia/Manila",
-      year: "numeric",
       month: "short",
       day: "numeric",
       weekday: "short",
@@ -1825,35 +1824,35 @@ function HeaderContent() {
         </div>
       </div>
 
-      {/* Separate the live PHT clock from the Calendar action on mobile. */}
-      <div className="flex w-full min-w-0 shrink-0 items-center sm:hidden">
-        <div className="flex min-h-[60px] w-full min-w-0 items-center justify-between gap-2 rounded-xl border border-sibs-border-subtle bg-white px-2.5 py-2 shadow-xs min-[390px]:gap-3 min-[390px]:px-3">
-          <div className="flex min-w-0 flex-1 flex-col gap-1" aria-label="Current Philippine date and time">
-            <div className="flex min-w-0 items-center gap-1.5">
-              <CalendarDays className="h-3.5 w-3.5 shrink-0 text-sibs-orange" aria-hidden="true" />
-              <span className="truncate text-[10px] font-semibold text-sibs-muted min-[390px]:text-[11px]">
-                {mobileDateStr || "Loading date..."}
-              </span>
-            </div>
-            <div className="flex min-w-0 items-center gap-1.5">
-              <Clock className="h-3.5 w-3.5 shrink-0 text-sibs-orange" aria-hidden="true" />
-              <time className="whitespace-nowrap text-[13px] font-extrabold tabular-nums leading-none text-sibs-navy min-[390px]:text-[14px]">
-                {timeStr || "--:--:--"}
-              </time>
-              <span className="shrink-0 rounded bg-sibs-surface px-1 py-0.5 text-[9px] font-bold leading-none text-sibs-muted">PHT</span>
-            </div>
+      {/* Integrated mobile status bar: seamlessly harmonized with the header without an isolated card box */}
+      <div className="flex w-full min-w-0 shrink-0 items-center justify-between gap-1.5 border-t border-sibs-border-subtle/70 pt-1.5 pb-1 sm:hidden">
+        <div className="flex min-w-0 items-center gap-1.5 min-[380px]:gap-2" aria-label="Current Philippine date and time">
+          <div className="flex shrink-0 items-center gap-1">
+            <CalendarDays className="h-3.5 w-3.5 shrink-0 text-sibs-orange" aria-hidden="true" />
+            <span className="whitespace-nowrap text-[10.5px] font-semibold text-sibs-muted">
+              {mobileDateStr || "Loading date..."}
+            </span>
           </div>
-          <button
-            type="button"
-            onClick={() => setCalendarOpen(true)}
-            className="group flex min-h-[42px] shrink-0 items-center justify-center gap-1.5 rounded-lg border border-sibs-orange/25 bg-sibs-cream-subtle px-2.5 text-sibs-navy transition hover:border-sibs-orange/50 hover:bg-sibs-orange/10 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sibs-orange min-[390px]:px-3"
-            aria-label="Open SiBS Calendar, powered by Google Calendar"
-          >
-            <CalendarDays className="h-4 w-4 shrink-0 text-sibs-orange" aria-hidden="true" />
-            <span className="flex flex-col text-left text-[10px] font-extrabold leading-[1.2]"><span>SiBS</span><span>Calendar</span></span>
-            <ChevronRight className="h-3.5 w-3.5 shrink-0 text-sibs-muted transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
-          </button>
+          <span className="text-sibs-border-subtle select-none text-[11px]" aria-hidden="true">•</span>
+          <div className="flex shrink-0 items-center gap-1">
+            <Clock className="h-3.5 w-3.5 shrink-0 text-sibs-orange" aria-hidden="true" />
+            <time className="whitespace-nowrap text-[12px] font-extrabold tabular-nums text-sibs-navy">
+              {timeStr || "--:--:--"}
+            </time>
+            <span className="rounded border border-sibs-border-subtle bg-white px-1 py-0.5 text-[8.5px] font-extrabold leading-none text-sibs-muted">PHT</span>
+          </div>
         </div>
+
+        <button
+          type="button"
+          onClick={() => setCalendarOpen(true)}
+          className="group inline-flex shrink-0 items-center gap-1 rounded-lg border border-sibs-orange/30 bg-sibs-cream-subtle px-2 py-1 text-[10.5px] font-extrabold text-sibs-navy transition hover:border-sibs-orange/60 hover:bg-sibs-orange/15 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sibs-orange"
+          aria-label="Open SiBS Calendar, powered by Google Calendar"
+        >
+          <CalendarDays className="h-3.5 w-3.5 shrink-0 text-sibs-orange" aria-hidden="true" />
+          <span><span className="hidden min-[360px]:inline">SiBS </span>Calendar</span>
+          <ChevronRight className="h-3 w-3 shrink-0 text-sibs-muted transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
+        </button>
       </div>
 
       <HeaderCalendarModal
@@ -1879,7 +1878,7 @@ export default function Header({ persistent = false }) {
   if (persistentHeaderActive && !persistent) {
     return (
       <div
-        className="h-[132px] shrink-0 sm:h-[74px] 2xl:h-[86px]"
+        className="h-[98px] shrink-0 sm:h-[74px] 2xl:h-[86px]"
         aria-hidden="true"
         data-sibs-header-spacer="true"
       />

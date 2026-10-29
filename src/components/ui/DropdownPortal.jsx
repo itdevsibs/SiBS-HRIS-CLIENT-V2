@@ -14,7 +14,34 @@ export default function DropdownPortal({
   align = "left",
 }) {
   const [style, setStyle] = useState(null);
+  const [mounted, setMounted] = useState(Boolean(open));
+  const [active, setActive] = useState(Boolean(open));
+  const [prevOpen, setPrevOpen] = useState(Boolean(open));
   const panelRef = useRef(null);
+
+  if (open !== prevOpen) {
+    setPrevOpen(open);
+    if (open) {
+      setMounted(true);
+      setActive(true);
+    } else {
+      setActive(false);
+    }
+  }
+
+  useEffect(() => {
+    let timer;
+
+    if (!open && mounted) {
+      timer = setTimeout(() => {
+        setMounted(false);
+      }, 200);
+    }
+
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
+  }, [open, mounted]);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -42,7 +69,7 @@ export default function DropdownPortal({
   }, [open, anchorRef, onClose]);
 
   useLayoutEffect(() => {
-    if (!open || !anchorRef.current) return undefined;
+    if (!mounted || !anchorRef.current) return undefined;
 
     function updatePosition() {
       const anchor = anchorRef.current;
@@ -83,6 +110,7 @@ export default function DropdownPortal({
         left,
         width: panelWidth,
         maxHeight: resolvedMaxHeight,
+        isUpward: shouldFlipUp,
       });
     }
 
@@ -97,22 +125,33 @@ export default function DropdownPortal({
       window.removeEventListener("resize", updatePosition);
       window.removeEventListener("scroll", updatePosition, true);
     };
-  }, [open, anchorRef, width, matchAnchorWidth, maxHeight, offset, align]);
+  }, [mounted, anchorRef, width, matchAnchorWidth, maxHeight, offset, align]);
 
-  if (!open || !style || typeof document === "undefined") return null;
+  if (!mounted || !style || typeof document === "undefined") return null;
 
   return createPortal(
     <div
       ref={panelRef}
-      className={`sibs-dropdown-pop-in fixed z-[999999] overflow-hidden rounded-xl border border-sibs-border-subtle bg-white font-jakarta shadow-[0_16px_36px_rgba(4,44,81,0.16)] ${className}`}
+      className={`sibs-animated-dropdown ${active ? "open" : "closed"} ${
+        style.isUpward ? "sibs-animated-dropdown-up" : ""
+      } fixed z-[999999] ${className}`}
       style={{
         top: `${style.top}px`,
         left: `${style.left}px`,
         width: `${style.width}px`,
-        maxHeight: `${style.maxHeight}px`,
       }}
     >
-      {children}
+      <div className="sibs-animated-dropdown-inner">
+        <div
+          className="sibs-animated-dropdown-box overflow-hidden rounded-[10px] border border-sibs-border bg-white font-jakarta shadow-[0_18px_40px_rgba(15,23,42,0.16)]"
+          style={{
+            maxHeight: `${style.maxHeight}px`,
+            "--dropdown-max-height": `${style.maxHeight}px`,
+          }}
+        >
+          {children}
+        </div>
+      </div>
     </div>,
     document.body,
   );

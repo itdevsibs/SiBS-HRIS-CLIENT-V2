@@ -213,20 +213,12 @@ function ReadField({ label, value, mono = false, className = "" }) {
 function AnimatedEmployeeDropdown({ open, children }) {
   return (
     <div
-      className={`absolute left-0 right-0 top-[calc(100%+8px)] z-[9999] grid origin-top transition-all duration-200 ease-out ${
-        open
-          ? "grid-rows-[1fr] opacity-100"
-          : "pointer-events-none grid-rows-[0fr] opacity-0"
+      className={`sibs-animated-dropdown absolute left-0 right-0 top-[calc(100%+8px)] z-[9999] ${
+        open ? "open" : "closed"
       }`}
     >
-      <div className="min-h-0 overflow-hidden">
-        <div
-          className={`origin-top overflow-hidden rounded-[10px] border border-sibs-border-subtle bg-white shadow-[0_18px_40px_rgba(15,23,42,0.16)] transition-all duration-200 ease-out ${
-            open
-              ? "translate-y-0 scale-100 opacity-100"
-              : "-translate-y-2 scale-[0.98] opacity-0"
-          }`}
-        >
+      <div className="sibs-animated-dropdown-inner">
+        <div className="sibs-animated-dropdown-box overflow-hidden rounded-[10px] border border-sibs-border bg-white shadow-[0_18px_40px_rgba(15,23,42,0.16)]">
           {children}
         </div>
       </div>

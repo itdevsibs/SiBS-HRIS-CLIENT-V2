@@ -23,6 +23,7 @@ export default function SelectDropdown({
   clearable = true,
   className = "",
   buttonClassName = "",
+  triggerClassName = "",
   menuClassName = "",
   multiple = false,
   optionValue = (opt) =>
@@ -139,7 +140,8 @@ export default function SelectDropdown({
 
   // Preserve per-page sizing overrides while keeping the shared SiBS dropdown
   // design as the default for new pages.
-  const customClasses = `${buttonClassName || ""} ${className || ""}`;
+  const resolvedTriggerClass = buttonClassName || triggerClassName || "";
+  const customClasses = `${resolvedTriggerClass} ${className || ""}`;
   const hasCustomHeight =
     /(?:^|\s)(?:[a-z0-9]+:)*!?(?:h-\S+|min-h-\S+)/.test(customClasses);
   const hasCustomRounded =
@@ -157,7 +159,7 @@ export default function SelectDropdown({
       : open
         ? "border-sibs-orange bg-white ring-4 ring-sibs-orange/10"
         : "border-sibs-border hover:border-sibs-orange/40 hover:bg-white"
-  } ${buttonClassName || ""} ${className || ""}`;
+  } ${resolvedTriggerClass} ${className || ""}`;
 
   return (
     <div ref={anchorRef} className="relative min-w-0 w-full font-jakarta">
@@ -204,12 +206,12 @@ export default function SelectDropdown({
                 openMenu();
               }
             }}
-            className={`min-w-0 flex-1 appearance-none border-0 bg-transparent p-0 shadow-none outline-none ring-0 placeholder:text-sibs-faint focus:border-0 focus:outline-none focus:ring-0 ${
+            className={`min-w-0 flex-1 appearance-none border-0 bg-transparent p-0 shadow-none outline-none ring-0 placeholder:text-sibs-muted focus:border-0 focus:outline-none focus:ring-0 ${
               open
-                ? "font-semibold text-sibs-navy"
+                ? "font-bold text-sibs-navy"
                 : displayLabel
-                  ? "font-semibold text-sibs-navy"
-                  : "font-normal text-sibs-faint"
+                  ? "font-bold text-sibs-navy"
+                  : "font-bold text-sibs-muted"
             }`}
             autoComplete="off"
           />
@@ -230,7 +232,7 @@ export default function SelectDropdown({
                 disabled
                   ? "text-sibs-faint"
                   : open
-                    ? "rotate-180 text-sibs-orange"
+                    ? "rotate-180 text-sibs-muted"
                     : "text-sibs-muted"
               }`}
             />
@@ -266,7 +268,7 @@ export default function SelectDropdown({
               disabled
                 ? "text-sibs-faint"
                 : open
-                  ? "rotate-180 text-sibs-orange"
+                  ? "rotate-180 text-sibs-muted"
                   : "text-sibs-muted"
             }`}
           />
@@ -280,7 +282,7 @@ export default function SelectDropdown({
         maxHeight={320}
         className={menuClassName}
       >
-        <div className="sibs-scrollbar max-h-[320px] overflow-y-auto overscroll-contain py-1">
+        <div className="sibs-scrollbar max-h-[var(--dropdown-max-height,320px)] overflow-y-auto overscroll-contain py-1">
           {clearable && !searchQuery ? (
             <button
               type="button"
@@ -289,8 +291,8 @@ export default function SelectDropdown({
               onClick={() => selectOption("", null)}
               className={`flex w-full items-center justify-between gap-2 px-3 py-2 text-left font-jakarta sibs-text-xs 2xl:sibs-text-sm transition ${
                 !value
-                  ? "bg-sibs-cream-subtle font-extrabold text-sibs-orange"
-                  : "font-semibold text-sibs-faint hover:bg-sibs-cream-light hover:text-sibs-orange"
+                  ? "bg-sibs-cream-light font-extrabold text-sibs-orange"
+                  : "font-semibold text-sibs-text-secondary hover:bg-sibs-cream-subtle hover:text-sibs-orange"
               }`}
             >
               <span className="truncate">{placeholder}</span>
@@ -320,8 +322,8 @@ export default function SelectDropdown({
                     option.disabled
                       ? "cursor-not-allowed text-sibs-faint opacity-50"
                       : selected
-                        ? "bg-sibs-cream-subtle font-extrabold text-sibs-orange"
-                        : "bg-white font-bold text-sibs-navy hover:bg-sibs-cream-light hover:text-sibs-orange"
+                        ? "bg-sibs-cream-light font-extrabold text-sibs-orange"
+                        : "bg-white font-semibold text-sibs-text-secondary hover:bg-sibs-cream-subtle hover:text-sibs-orange"
                   }`}
                 >
                   <span className="min-w-0 flex-1">

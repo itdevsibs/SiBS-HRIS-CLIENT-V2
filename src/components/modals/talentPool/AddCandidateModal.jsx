@@ -1233,17 +1233,22 @@ function HiringNeedsDropdown({
               ref={dropdownPanelRef}
               role="listbox"
               data-placement={panelPosition.placement}
-              className="fixed z-[100000] overflow-hidden rounded-[10px] border border-sibs-border bg-white shadow-xl"
+              className={`sibs-animated-dropdown open fixed z-[100000] ${panelPosition.placement === "above" ? "sibs-animated-dropdown-up" : ""}`}
               style={{
                 left: `${panelPosition.left}px`,
                 top: `${panelPosition.top}px`,
                 width: `${panelPosition.width}px`,
               }}
             >
-              <div
-                className="overflow-y-auto py-1 sibs-scrollbar"
-                style={{ maxHeight: `${panelPosition.maxHeight}px` }}
-              >
+              <div className="sibs-animated-dropdown-inner">
+                <div
+                  className="sibs-animated-dropdown-box overflow-hidden rounded-[10px] border border-sibs-border bg-white shadow-xl"
+                  style={{ maxHeight: `${panelPosition.maxHeight}px` }}
+                >
+                  <div
+                    className="overflow-y-auto py-1 sibs-scrollbar"
+                    style={{ maxHeight: `${panelPosition.maxHeight}px` }}
+                  >
                 {normalizedOptions.length > 0 ? (
                   normalizedOptions.map((option) => {
                     const active = String(option.value) === String(value || "");
@@ -1272,6 +1277,8 @@ function HiringNeedsDropdown({
                     No options found.
                   </div>
                 )}
+                  </div>
+                </div>
               </div>
             </div>,
             document.body,
@@ -1451,14 +1458,16 @@ function LocationPortalDropdown({
         ? createPortal(
             <div
               ref={dropdownPanelRef}
-              className="fixed z-[100000] overflow-hidden rounded-[10px] border border-sibs-border bg-white shadow-xl"
+              className={`sibs-animated-dropdown open fixed z-[100000] ${panelPosition.placement === "above" ? "sibs-animated-dropdown-up" : ""}`}
               style={{
                 left: `${panelPosition.left}px`,
                 top: `${panelPosition.top}px`,
                 width: `${panelPosition.width}px`,
               }}
             >
-              <div className="max-h-72 overflow-y-auto py-1">
+              <div className="sibs-animated-dropdown-inner">
+                <div className="sibs-animated-dropdown-box overflow-hidden rounded-[10px] border border-sibs-border bg-white shadow-xl">
+                  <div className="max-h-72 overflow-y-auto py-1 sibs-scrollbar">
                 {normalizedOptions.length > 0 ? (
                   normalizedOptions.map((option) => {
                     const active = String(option.value) === String(value || "");
@@ -1485,6 +1494,8 @@ function LocationPortalDropdown({
                     No locations found.
                   </div>
                 )}
+                  </div>
+                </div>
               </div>
             </div>,
             document.body,
@@ -2270,17 +2281,22 @@ function SchoolYearSearchableDropdown({
               ref={dropdownPanelRef}
               role="listbox"
               data-placement={panelPosition.placement}
-              className="fixed z-[100000] overflow-hidden rounded-[10px] border border-sibs-border bg-white shadow-xl"
+              className={`sibs-animated-dropdown open fixed z-[100000] ${panelPosition.placement === "above" ? "sibs-animated-dropdown-up" : ""}`}
               style={{
                 left: `${panelPosition.left}px`,
                 top: `${panelPosition.top}px`,
                 width: `${panelPosition.width}px`,
               }}
             >
-              <div
-                className="overflow-y-auto py-1 sibs-scrollbar"
-                style={{ maxHeight: `${panelPosition.maxHeight}px` }}
-              >
+              <div className="sibs-animated-dropdown-inner">
+                <div
+                  className="sibs-animated-dropdown-box overflow-hidden rounded-[10px] border border-sibs-border bg-white shadow-xl"
+                  style={{ maxHeight: `${panelPosition.maxHeight}px` }}
+                >
+                  <div
+                    className="overflow-y-auto py-1 sibs-scrollbar"
+                    style={{ maxHeight: `${panelPosition.maxHeight}px` }}
+                  >
                 {visibleOptions.length > 0 ? (
                   visibleOptions.map((option) => {
                     const active = option.value === normalizedValue;
@@ -2307,6 +2323,8 @@ function SchoolYearSearchableDropdown({
                     No school year found.
                   </div>
                 )}
+                  </div>
+                </div>
               </div>
             </div>,
             document.body,
@@ -3290,14 +3308,16 @@ function PositionJobDescriptionDropdown({
         ? createPortal(
             <div
               ref={dropdownPanelRef}
-              className="fixed z-[100000] overflow-hidden rounded-[10px] border border-sibs-border bg-white shadow-xl"
+              className={`sibs-animated-dropdown open fixed z-[100000] ${panelPosition.placement === "above" ? "sibs-animated-dropdown-up" : ""}`}
               style={{
                 left: `${panelPosition.left}px`,
                 top: `${panelPosition.top}px`,
                 width: `${panelPosition.width}px`,
               }}
             >
-              <div className="max-h-72 overflow-y-auto">
+              <div className="sibs-animated-dropdown-inner">
+                <div className="sibs-animated-dropdown-box overflow-hidden rounded-[10px] border border-sibs-border bg-white shadow-xl">
+                  <div className="max-h-72 overflow-y-auto sibs-scrollbar">
                 {cleanPositions.length > 0 ? (
                   cleanPositions.map((position) => {
                     const positionTitle = cleanText(position.positionTitle);
@@ -3351,6 +3371,8 @@ function PositionJobDescriptionDropdown({
                     No approved active positions found.
                   </div>
                 )}
+                  </div>
+                </div>
               </div>
             </div>,
             document.body,

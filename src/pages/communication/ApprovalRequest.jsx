@@ -2632,10 +2632,10 @@ export default function ApprovalRequest() {
   }, [page, totalFilteredPages]);
 
   return (
-    <div className={`flex h-screen flex-1 flex-col ${FLAT_BG} font-jakarta`}>
+    <div className={`flex min-h-0 h-dvh flex-1 flex-col ${FLAT_BG} font-jakarta`}>
       <Header />
 
-      <main className="min-w-0 flex-1 overflow-y-scroll overflow-x-hidden px-4 py-6 sm:px-6 lg:px-8">
+      <main className="min-w-0 flex-1 overflow-y-auto overflow-x-hidden px-4 py-6 sm:px-6 lg:px-8">
         <PageHeaderHero
           kicker="Communication & Governance"
           title="Approval Requests"
@@ -4001,8 +4001,8 @@ function ViewApprovalRequestModal({
   }
 
   return createPortal(
-    <div className="sibs-modal-blur fixed inset-0 z-[1100] flex items-center justify-center p-4">
-      <div className="flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-[14px] border border-sibs-border bg-white shadow-xl">
+    <div className="sibs-modal-blur fixed inset-0 z-[1100] flex items-center justify-center p-3 sm:p-4">
+      <div className="flex max-h-[92dvh] w-full max-w-5xl flex-col overflow-hidden rounded-[14px] border border-sibs-border bg-white shadow-xl">
         <div className="shrink-0 rounded-t-[14px] bg-sibs-navy px-6 py-5 text-white">
           <div className="flex items-start justify-between gap-4">
             <div className="flex min-w-0 items-start gap-3">
@@ -5421,11 +5421,11 @@ function DecisionModal({
   );
 
   return createPortal(
-    <div className="sibs-modal-blur fixed inset-0 z-[1200] flex items-center justify-center p-4">
+    <div className="sibs-modal-blur fixed inset-0 z-[1200] flex items-center justify-center p-3 sm:p-4">
       <form
         onSubmit={onSubmit}
         noValidate
-        className="flex max-h-[94vh] w-full max-w-6xl flex-col overflow-hidden rounded-[14px] border border-sibs-border bg-white shadow-xl"
+        className="flex max-h-[94dvh] w-full max-w-6xl flex-col overflow-hidden rounded-[14px] border border-sibs-border bg-white shadow-xl"
       >
         <div className="shrink-0 rounded-t-[14px] bg-sibs-navy px-6 py-5 text-white">
           <div className="flex items-start justify-between gap-4">

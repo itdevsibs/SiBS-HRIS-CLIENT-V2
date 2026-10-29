@@ -81,12 +81,17 @@ export default function MetricCard({
   const toneConfig = TONE_MAP[tone] || TONE_MAP.orange;
 
   const Tag = isInteractive ? "button" : "article";
+  const accessibleLabel = kickerText && value !== undefined
+    ? `${kickerText}: ${value}${badge ? `, ${badge}` : ""}`
+    : undefined;
 
   return (
     <Tag
       type={isInteractive ? "button" : undefined}
       onClick={onClick}
-      className={`group sibs-metric-card sibs-page-card-in font-jakarta relative flex h-[104px] 2xl:h-[116px] min-h-[96px] 2xl:min-h-[112px] flex-col justify-between overflow-hidden p-3 2xl:p-3.5 text-left active:translate-y-0 ${
+      title={kickerText}
+      aria-label={accessibleLabel}
+      className={`group sibs-metric-card sibs-page-card-in font-jakarta relative flex min-h-[104px] h-auto sm:h-[104px] 2xl:h-[116px] 2xl:min-h-[112px] flex-col justify-between overflow-hidden p-3 2xl:p-3.5 text-left active:translate-y-0 ${
         isInteractive ? "cursor-pointer" : ""
       } ${className}`.trim()}
       style={{
@@ -98,7 +103,10 @@ export default function MetricCard({
         <div className="flex min-w-0 flex-1 flex-col justify-between self-stretch">
           <div>
             {kickerText && (
-              <p className={`m-0 truncate sibs-kpi-kicker ${toneConfig.label}`}>
+              <p
+                title={kickerText}
+                className={`m-0 line-clamp-2 sm:truncate sibs-kpi-kicker leading-tight sm:leading-normal ${toneConfig.label}`}
+              >
                 {kickerText}
               </p>
             )}

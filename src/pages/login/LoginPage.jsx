@@ -161,7 +161,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="relative flex min-h-screen w-full items-center justify-center overflow-hidden bg-[#051733] p-6 font-jakarta">
+    <div className="relative flex min-h-screen w-full items-center justify-center overflow-hidden bg-sibs-auth-bg p-4 sm:p-6 font-jakarta">
       <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
         <div
           className="absolute inset-0"
@@ -177,7 +177,7 @@ export default function LoginPage() {
 
         <div className="sibs-drift-1 absolute -left-24 top-[8%] h-80 w-80 rounded-full bg-[#11438b]/35 blur-3xl" />
         <div className="sibs-drift-2 absolute left-[12%] bottom-[-9%] h-72 w-72 rounded-full bg-[#0b2f6f]/30 blur-3xl" />
-        <div className="sibs-drift-3 absolute right-[-7%] bottom-[-10%] h-[28rem] w-[28rem] rounded-full bg-[#ff6228]/25 blur-3xl" />
+        <div className="sibs-drift-3 absolute right-[-7%] bottom-[-10%] h-[28rem] w-[28rem] rounded-full bg-sibs-orange/25 blur-3xl" />
         <div className="sibs-drift-4 absolute right-[14%] top-[12%] h-64 w-64 rounded-full bg-white/6 blur-3xl" />
 
         <div
@@ -196,10 +196,10 @@ export default function LoginPage() {
         />
 
         <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/15 to-transparent" />
-        <div className="absolute bottom-0 left-0 right-0 h-[32vh] bg-gradient-to-t from-[#ff5b2e]/10 via-transparent to-transparent" />
+        <div className="absolute bottom-0 left-0 right-0 h-[32vh] bg-gradient-to-t from-sibs-orange/10 via-transparent to-transparent" />
       </div>
 
-      <div className="relative z-10 w-full max-w-md rounded-2xl border border-white/20 bg-white/10 p-8 shadow-2xl backdrop-blur-md">
+      <div className="relative z-10 w-full max-w-md rounded-2xl border border-white/20 bg-white/10 p-5 sm:p-8 shadow-2xl backdrop-blur-md">
         <div className="mb-6 flex items-center justify-center gap-3">
           <img
             src="/SiBS_Login_Logo.svg"

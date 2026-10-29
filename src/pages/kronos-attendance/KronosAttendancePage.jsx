@@ -489,8 +489,13 @@ function CustomCalendarPicker({
         />
       </button>
 
-      {isOpen ? (
-        <div className="absolute right-0 top-[calc(100%+8px)] z-[80] w-[310px] overflow-hidden rounded-[14px] border border-sibs-border bg-white shadow-[0_18px_40px_rgba(15,23,42,0.14)]">
+      <div
+        className={`sibs-animated-dropdown absolute right-0 top-[calc(100%+8px)] z-[80] w-[310px] ${
+          isOpen ? "open" : "closed"
+        }`}
+      >
+        <div className="sibs-animated-dropdown-inner">
+          <div className="sibs-animated-dropdown-box overflow-hidden rounded-[10px] border border-sibs-border bg-white shadow-[0_18px_40px_rgba(15,23,42,0.14)]">
           <div className="flex items-center justify-between px-4 py-4">
             <button
               type="button"
@@ -570,7 +575,8 @@ function CustomCalendarPicker({
             </button>
           </div>
         </div>
-      ) : null}
+      </div>
+    </div>
     </div>
   );
 }
@@ -710,9 +716,14 @@ function SearchableDropdown({
         </button>
       </div>
 
-      {isOpen ? (
-        <div className="absolute left-0 top-[calc(100%+8px)] z-[90] w-full min-w-[280px] overflow-hidden rounded-[14px] border border-sibs-border bg-white shadow-[0_18px_40px_rgba(15,23,42,0.14)]">
-          <div className="max-h-[255px] overflow-y-auto">
+      <div
+        className={`sibs-animated-dropdown absolute left-0 top-[calc(100%+8px)] z-[90] w-full min-w-[280px] ${
+          isOpen ? "open" : "closed"
+        }`}
+      >
+        <div className="sibs-animated-dropdown-inner">
+          <div className="sibs-animated-dropdown-box overflow-hidden rounded-[10px] border border-sibs-border bg-white shadow-[0_18px_40px_rgba(15,23,42,0.14)]">
+            <div className="max-h-[255px] overflow-y-auto sibs-scrollbar">
             <button
               type="button"
               onClick={() => handleSelect("All")}
@@ -745,9 +756,10 @@ function SearchableDropdown({
                 No options found.
               </div>
             )}
+            </div>
           </div>
         </div>
-      ) : null}
+      </div>
     </div>
   );
 }

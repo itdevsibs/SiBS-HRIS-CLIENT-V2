@@ -122,10 +122,15 @@ function DropOffCategoryDropdown({
         />
       </button>
 
-      {open && !disabled && (
-        <div className="sibs-dropdown-pop-in absolute left-0 top-[calc(100%+8px)] z-[99999] w-full overflow-hidden rounded-[10px] border border-sibs-border bg-white shadow-[0_18px_45px_rgba(15,23,42,0.16)]">
-          <div
-            role="listbox"
+      <div
+        className={`sibs-animated-dropdown absolute left-0 top-[calc(100%+8px)] z-[99999] w-full ${
+          open && !disabled ? "open" : "closed"
+        }`}
+      >
+        <div className="sibs-animated-dropdown-inner">
+          <div className="sibs-animated-dropdown-box overflow-hidden rounded-[10px] border border-sibs-border bg-white shadow-[0_18px_45px_rgba(15,23,42,0.16)]">
+            <div
+              role="listbox"
             aria-label="Drop-off reason category"
             className="max-h-[260px] overflow-y-auto py-1"
           >
@@ -158,9 +163,10 @@ function DropOffCategoryDropdown({
                 No categories available.
               </div>
             )}
+            </div>
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }

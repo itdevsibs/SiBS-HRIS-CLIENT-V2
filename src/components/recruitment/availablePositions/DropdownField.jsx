@@ -96,18 +96,14 @@ export default function DropdownField({
 
   const sharedControlClass = `flex h-9 2xl:h-10 w-full min-w-0 items-center justify-between gap-2 ${
     isSecondaryAction ? "rounded-lg px-3.5" : "rounded-[10px] px-3"
-  } border text-left sibs-text-xs outline-none transition ${
+  } border text-left font-jakarta sibs-text-xs font-bold outline-none transition ${
     open
-      ? "border-sibs-orange bg-white ring-2 ring-sibs-orange/15"
+      ? "border-sibs-orange bg-white ring-4 ring-sibs-orange/10 text-sibs-navy"
       : isSecondaryAction
-        ? "border-sibs-border bg-white hover:border-sibs-orange/35 hover:bg-orange-50/50 hover:text-sibs-orange"
-        : "border-sibs-border bg-slate-50 hover:border-sibs-orange/40 hover:bg-white"
+        ? "border-sibs-border bg-white text-sibs-navy hover:border-sibs-orange/35 hover:bg-orange-50/50 hover:text-sibs-orange"
+        : "border-sibs-border bg-sibs-surface text-sibs-navy hover:border-sibs-orange/40 hover:bg-white"
   } ${
-    disabled
-      ? "cursor-not-allowed bg-slate-100 text-sibs-muted opacity-70"
-      : isSecondaryAction
-        ? "font-extrabold text-sibs-navy"
-        : "font-semibold text-sibs-navy"
+    disabled ? "cursor-not-allowed bg-slate-100 text-sibs-muted opacity-70" : ""
   }`;
 
   return (
@@ -134,7 +130,8 @@ export default function DropdownField({
         </span>
 
         <ChevronDown
-          className={`h-3.5 w-3.5 2xl:h-4 2xl:w-4 shrink-0 text-sibs-navy transition-transform duration-200 ${
+          size={17}
+          className={`shrink-0 text-sibs-muted transition-transform duration-300 ${
             open ? "rotate-180" : ""
           }`}
         />
@@ -151,8 +148,7 @@ export default function DropdownField({
         className={zIndex}
       >
         <div
-          className={`overflow-y-auto rounded-[10px] border border-sibs-border bg-white p-1.5 shadow-xl font-jakarta ${menuClassName}`}
-          style={{ maxHeight: maxMenuHeight }}
+          className={`max-h-64 overflow-y-auto py-2 sibs-scrollbar font-jakarta ${menuClassName}`}
         >
           {searchable && (
             <div className="relative mb-1.5 p-1">
@@ -177,10 +173,10 @@ export default function DropdownField({
                   key={option.value || option.id}
                   type="button"
                   onClick={() => handleSelectOption(option)}
-                  className={`flex w-full flex-col items-start rounded-[8px] px-3 py-2 text-left text-xs transition ${
+                  className={`flex w-full flex-col items-start px-3 py-2 2xl:px-4 2xl:py-2.5 text-left sibs-text-xs transition ${
                     isSelected
-                      ? "bg-sibs-orange font-bold text-white shadow-sm"
-                      : "text-sibs-navy font-semibold hover:bg-sibs-orange/10 hover:text-sibs-orange"
+                      ? "bg-sibs-cream-light font-extrabold text-sibs-orange"
+                      : "font-semibold text-sibs-text-secondary hover:bg-sibs-cream-subtle hover:text-sibs-orange"
                   }`}
                 >
                   <span className="block min-w-0 truncate">{option.label}</span>
@@ -188,7 +184,7 @@ export default function DropdownField({
                   {option.description ? (
                     <span
                       className={`mt-0.5 block min-w-0 truncate text-[10px] ${
-                        isSelected ? "text-white/80" : "text-sibs-muted"
+                        isSelected ? "text-sibs-orange/80" : "text-sibs-muted"
                       }`}
                     >
                       {option.description}
