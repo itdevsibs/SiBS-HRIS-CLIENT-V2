@@ -324,6 +324,10 @@ export function SidebarNotificationProvider({ children }) {
         actionPath: "/leaves",
         actionState: {
           leaveStatus: "Pending",
+          allDates: true,
+          // The badge is the last VERIFIED total for the user’s full leave scope,
+          // not a count of records in the default seven-day table page.
+          pendingCount: pendingLeaves,
           source: "pending-leave-notification",
         },
         clickableCard: true,

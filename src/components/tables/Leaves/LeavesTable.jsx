@@ -25,7 +25,6 @@ import {
   TableSkeletonRows,
 } from "@/components/ui";
 import DropdownPortal from "@/components/ui/DropdownPortal.jsx";
-import api from "@/lib/axios/api-template";
 import {
   LEAVES_STATE_KEY,
   PAGE_LIMIT,
@@ -499,48 +498,6 @@ function LeaveDetailsModal({
   onRejectLeave,
 }) {
   const [decisionAction, setDecisionAction] = useState("");
-  const [attachmentDownloading, setAttachmentDownloading] = useState(false);
-  const [attachmentError, setAttachmentError] = useState("");
-
-  useEffect(() => {
-    setAttachmentDownloading(false);
-    setAttachmentError("");
-  }, [item?.gy_leave_id]);
-
-  async function downloadLeaveAttachment() {
-    const leaveId = item?.gy_leave_id;
-    if (!leaveId || attachmentDownloading) return;
-    setAttachmentDownloading(true);
-    setAttachmentError("");
-    try {
-      const response = await api.get(`/api/leaves/${encodeURIComponent(leaveId)}/attachment`, {
-        responseType: "blob",
-        timeout: 45000,
-      });
-      const objectUrl = window.URL.createObjectURL(response.data);
-      const link = document.createElement("a");
-      link.href = objectUrl;
-      link.download = String(item.gy_leave_attachment || item.leave_attachment || "leave-attachment")
-        .split(/[\\/]/).pop();
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.setTimeout(() => window.URL.revokeObjectURL(objectUrl), 30000);
-    } catch (error) {
-      let message = error?.response?.data?.message || "Unable to download this attachment.";
-      const responseBlob = error?.response?.data;
-      if (responseBlob instanceof Blob) {
-        try {
-          const parsed = JSON.parse(await responseBlob.text());
-          message = parsed?.message || message;
-        } catch { /* Leave the safe default error message. */ }
-      }
-      setAttachmentError(message);
-    } finally {
-      setAttachmentDownloading(false);
-    }
-  }
-
 
   const normalizedStatus = normalizeStatus(item?.gy_leave_status);
   const isPending = normalizedStatus === "Pending";
@@ -806,25 +763,14 @@ function LeaveDetailsModal({
                     {attachmentName}
                   </span>
 
-                  <button
-                    type="button"
-                    onClick={downloadLeaveAttachment}
-                    disabled={attachmentDownloading}
-                    aria-label={`Download leave attachment ${attachmentName}`}
-                    className="shrink-0 rounded px-1 text-[10px] font-extrabold text-blue-600 underline underline-offset-2 hover:text-blue-800 disabled:cursor-wait disabled:opacity-60"
-                  >
-                    {attachmentDownloading ? "Downloading…" : "Download"}
-                  </button>
+                  <span className="shrink-0 text-[9px] text-blue-500">
+                    Download
+                  </span>
                 </div>
               ) : (
                 <div className="mt-1 rounded-lg border border-sibs-border bg-sibs-surface px-2.5 py-2 sibs-text-xs font-semibold text-sibs-muted">
                   No attachments provided.
                 </div>
-              )}
-              {attachmentError && (
-                <p role="alert" className="mt-1 text-xs font-semibold text-red-600">
-                  {attachmentError}
-                </p>
               )}
             </CompactField>
           </div>
@@ -921,6 +867,8 @@ export default function LeavesTable({
   accountDropdownOptions = [],
   isPersonalView = false,
   filterValues = {},
+  allDatesView = false,
+  onDateFilterChange,
   canApproveLeave = false,
   approvalLoading = false,
   onApproveLeave,
@@ -949,10 +897,11 @@ export default function LeavesTable({
     () => getLeavesInitialDateRange(isPersonalView),
     [isPersonalView],
   );
-  const dateFrom = filterValues?.dateFrom || initialDateRange.dateFrom;
-  const dateTo = filterValues?.dateTo || initialDateRange.dateTo;
+  const dateFrom = allDatesView ? "" : (filterValues?.dateFrom ?? initialDateRange.dateFrom);
+  const dateTo = allDatesView ? "" : (filterValues?.dateTo ?? initialDateRange.dateTo);
 
   function handleLeavesDateFromChange(value) {
+    onDateFilterChange?.();
     setLeavesDateRange?.({
       dateFrom: value,
       dateTo: dateTo && value && dateTo < value ? value : dateTo,
@@ -960,6 +909,7 @@ export default function LeavesTable({
   }
 
   function handleLeavesDateToChange(value) {
+    onDateFilterChange?.();
     setLeavesDateRange?.({
       dateFrom,
       dateTo: value,
@@ -994,20 +944,21 @@ export default function LeavesTable({
     runSearch();
   }
 
-  const hasCustomDateRange = Boolean(
-    (filterValues?.dateFrom && filterValues.dateFrom !== initialDateRange.dateFrom) ||
-    (filterValues?.dateTo && filterValues.dateTo !== initialDateRange.dateTo)
-  );
+  const hasCustomDateRange =
+    dateFrom !== initialDateRange.dateFrom ||
+    dateTo !== initialDateRange.dateTo;
 
   const hasActiveFilters = Boolean(
     String(searchInput || "").trim() ||
     (statusFilter && statusFilter !== "All") ||
     (departmentFilter && departmentFilter !== "All") ||
     (accountFilter && accountFilter !== "All") ||
-    hasCustomDateRange
+    hasCustomDateRange ||
+    allDatesView
   );
 
   function handleClearLeavesFilters() {
+    onDateFilterChange?.();
     setSearchInput?.("");
     if (typeof setSearchKeyword === "function") setSearchKeyword("");
     if (typeof onStatusChange === "function") onStatusChange("All");
@@ -1034,6 +985,7 @@ export default function LeavesTable({
     accountFilter,
     dateFrom,
     dateTo,
+    allDatesView,
   ]);
 
   const currentPaginationPage = Number(pagination.currentPage || page || 1);

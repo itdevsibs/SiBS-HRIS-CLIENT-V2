@@ -13,6 +13,7 @@ const activityDotClass = {
 
 export default function AdminDashboardActivity({
   activities = [],
+  loading = false,
   onSync,
   onViewAll,
   isSyncing = false,
@@ -54,7 +55,7 @@ export default function AdminDashboardActivity({
           <div className="py-8 2xl:py-12 text-center">
             <Activity className="mx-auto h-6 w-6 2xl:h-7 2xl:w-7 text-sibs-muted" />
             <p className="mt-2 sibs-text-xs font-bold text-sibs-muted">
-              No activity yet
+              {loading ? "Loading recent activity..." : "No activity yet"}
             </p>
           </div>
         ) : (
