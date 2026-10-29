@@ -49,3 +49,11 @@ export async function getHrDashboardDetail(
 
   return response.data;
 }
+
+export async function getHrDashboardActivities({ limit = 50 } = {}) {
+  const response = await api.get("/api/hr-dashboard/activities", {
+    params: { limit },
+    withCredentials: true,
+  });
+  return response.data;
+}

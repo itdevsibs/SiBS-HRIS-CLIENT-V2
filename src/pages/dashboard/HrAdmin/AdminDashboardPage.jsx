@@ -26,6 +26,7 @@ import { useUser } from "../../../services/context/UserContext";
 import { useAdmin } from "../../../services/context/AdminContext";
 import { useSidebarNotifications } from "../../../services/context/SidebarNotificationContext";
 import {
+  getHrDashboardActivities,
   getHrDashboardDetail,
   getHrDashboardFeed,
   getHrDashboardOverview,
@@ -34,6 +35,7 @@ import {
 import AdminDashboardWelcome from "../../../components/Dashboard/HRAdminDashboard/AdminDashboardWelcome";
 import AdminDashboardStats from "../../../components/Dashboard/HRAdminDashboard/AdminDashboardStats";
 import AdminDashboardActivity from "../../../components/Dashboard/HRAdminDashboard/AdminDashboardActivity";
+import AdminDashboardActivityModal from "../../../components/Dashboard/HRAdminDashboard/AdminDashboardActivityModal";
 import AdminDashboardNotifications from "../../../components/Dashboard/HRAdminDashboard/AdminDashboardNotifications";
 import AdminDashboardQuickActions from "../../../components/Dashboard/HRAdminDashboard/AdminDashboardQuickActions";
 import AdminDashboardWorkforceKpi from "../../../components/Dashboard/HRAdminDashboard/AdminDashboardWorkforceKpi";
@@ -144,6 +146,12 @@ export default function AdminDashboardPage() {
   const { markNotificationSeen } = useSidebarNotifications() || {};
 
   const [activeModal, setActiveModal] = useState(null);
+  const [activityHistoryOpen, setActivityHistoryOpen] = useState(false);
+  const [activityHistory, setActivityHistory] = useState({
+    items: [], loading: false, error: "",
+  });
+  const activityHistoryRequestIdRef = useRef(0);
+
   const [toast, setToast] = useState(null);
   const [overview, setOverview] = useState(EMPTY_OVERVIEW);
   const [initialLoadFinished, setInitialLoadFinished] = useState(false);
@@ -280,6 +288,39 @@ export default function AdminDashboardPage() {
       }
       feedLoadingRef.current = false;
     }
+  }, []);
+
+  const loadActivityHistory = useCallback(async () => {
+    const requestId = ++activityHistoryRequestIdRef.current;
+    setActivityHistory((previous) => ({ ...previous, loading: true, error: "" }));
+    try {
+      const payload = await getHrDashboardActivities({ limit: 50 });
+      if (activityHistoryRequestIdRef.current !== requestId) return;
+      setActivityHistory({
+        items: Array.isArray(payload?.activities) ? payload.activities : [],
+        loading: false,
+        error: "",
+      });
+    } catch (error) {
+      if (activityHistoryRequestIdRef.current !== requestId) return;
+      setActivityHistory((previous) => ({
+        ...previous,
+        loading: false,
+        error: getErrorMessage(error, "Unable to load recent activity."),
+      }));
+    }
+  }, []);
+
+  const openActivityHistory = useCallback(() => {
+    setActivityHistoryOpen(true);
+    setActivityHistory({ items: overview.recentActivities || [], loading: false, error: "" });
+    loadActivityHistory();
+  }, [overview.recentActivities, loadActivityHistory]);
+
+  const closeActivityHistory = useCallback(() => {
+    // Disregard any late response after closing the activity panel.
+    activityHistoryRequestIdRef.current += 1;
+    setActivityHistoryOpen(false);
   }, []);
 
   const loadDetail = useCallback(async (modalId, nextQuery = {}) => {
@@ -636,7 +677,7 @@ export default function AdminDashboardPage() {
                 }}
                 isSyncing={overviewRefreshing || feedRefreshing}
                 delay={120}
-                onViewAll={() => navigate(EXISTING_ADMIN_ROUTES.approvals)}
+                onViewAll={openActivityHistory}
               />
 
               <AdminDashboardNotifications
@@ -662,6 +703,22 @@ export default function AdminDashboardPage() {
           </section>
         </div>
       </main>
+
+      {activityHistoryOpen && (
+        <AdminDashboardActivityModal
+          activities={activityHistory.items}
+          loading={activityHistory.loading}
+          error={activityHistory.error}
+          onRefresh={loadActivityHistory}
+          onClose={closeActivityHistory}
+          onNavigate={(path) => {
+            closeActivityHistory();
+            if (typeof path === "string" && path.startsWith("/") && !path.startsWith("//")) {
+              navigate(path);
+            }
+          }}
+        />
+      )}
 
       <DashboardModalManager
         activeModal={activeModal}
