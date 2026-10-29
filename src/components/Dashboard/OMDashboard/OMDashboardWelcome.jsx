@@ -11,7 +11,7 @@ export default function OMDashboardWelcome({
   return (
     <PageHeaderHero
       kicker="Operations Manager View"
-      title="Operations Dashboard"
+      title="Operations Manager Dashboard"
       description={
         <>
           Hiring overview filtered by your department and assigned accounts:{" "}

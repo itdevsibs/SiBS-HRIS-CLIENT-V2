@@ -2410,7 +2410,7 @@ export default function UserSettingsPage() {
                     searchPlaceholder="Search account..."
                     placeholder="All Accounts"
                     clearable={false}
-                    className="h-10 text-xs bg-white rounded-lg border-sibs-border-subtle"
+                    className="sibs-user-settings-account-filter h-10 text-xs bg-white rounded-lg border-sibs-border-subtle"
                   />
 
                   <button
