@@ -1142,7 +1142,7 @@ export default function Sidebar() {
       notificationKey: "leaves",
     },
     {
-      name: "Resignee",
+      name: "Resignees",
       icon: UserRoundMinus,
       path: "/resignee",
       allowedUsers: [1, 2, 3, 4, 6, 7, 10],
