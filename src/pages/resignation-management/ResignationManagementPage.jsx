@@ -50,10 +50,16 @@ import {
 } from "@/components/ui";
 import PaginationTable from "@/services/pagination/PaginationTable";
 import { useUser } from "../../services/context/UserContext";
-import {
-  ResignationManagementModal,
-  ViewResignationModal,
-} from "../../components/modals/resignation-management/ResignationManagementModal";
+const ResignationManagementModal = React.lazy(() =>
+  import("../../components/modals/resignation-management/ResignationManagementModal").then((m) => ({
+    default: m.ResignationManagementModal,
+  }))
+);
+const ViewResignationModal = React.lazy(() =>
+  import("../../components/modals/resignation-management/ResignationManagementModal").then((m) => ({
+    default: m.ViewResignationModal,
+  }))
+);
 import {
   getManagedEmployees,
   getResignationCase,
@@ -2568,31 +2574,39 @@ export default function ResignationManagementPage() {
         </div>
       </main>
 
-      <ResignationManagementModal
-        open={openResignationForm}
-        form={resignationForm}
-        submitting={resignationSubmitting}
-        managedEmployees={managedEmployees}
-        employeePickerLoading={employeePickerLoading}
-        employeePickerError={employeePickerError}
-        employeePickerSearch={employeePickerSearch}
-        employeePickerOpen={employeePickerOpen}
-        onEmployeePickerOpenChange={setEmployeePickerOpen}
-        onEmployeePickerSearchChange={handleEmployeePickerSearchChange}
-        onSelectManagedEmployee={handleSelectManagedEmployee}
-        onClose={closeResignationFormModal}
-        onChange={handleResignationChange}
-        onSubmit={handleSubmitResignation}
-        showOperationsManagerApprovalFields={isOperationsManagerFiler}
-      />
+      {openResignationForm && (
+        <React.Suspense fallback={null}>
+          <ResignationManagementModal
+            open={openResignationForm}
+            form={resignationForm}
+            submitting={resignationSubmitting}
+            managedEmployees={managedEmployees}
+            employeePickerLoading={employeePickerLoading}
+            employeePickerError={employeePickerError}
+            employeePickerSearch={employeePickerSearch}
+            employeePickerOpen={employeePickerOpen}
+            onEmployeePickerOpenChange={setEmployeePickerOpen}
+            onEmployeePickerSearchChange={handleEmployeePickerSearchChange}
+            onSelectManagedEmployee={handleSelectManagedEmployee}
+            onClose={closeResignationFormModal}
+            onChange={handleResignationChange}
+            onSubmit={handleSubmitResignation}
+            showOperationsManagerApprovalFields={isOperationsManagerFiler}
+          />
+        </React.Suspense>
+      )}
 
-      <ViewResignationModal
-        open={!!selectedResignation}
-        item={selectedResignation}
-        currentUser={user}
-        onApprovalUpdated={handleResignationApprovalUpdated}
-        onClose={() => setSelectedResignation(null)}
-      />
+      {selectedResignation && (
+        <React.Suspense fallback={null}>
+          <ViewResignationModal
+            open={!!selectedResignation}
+            item={selectedResignation}
+            currentUser={user}
+            onApprovalUpdated={handleResignationApprovalUpdated}
+            onClose={() => setSelectedResignation(null)}
+          />
+        </React.Suspense>
+      )}
 
       <ConfirmModal
         open={Boolean(statusModal.open)}

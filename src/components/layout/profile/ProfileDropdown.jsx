@@ -82,6 +82,16 @@ const ProfileDropdown = ({ openModal, openDropdown, onViewResignation }) => {
     };
   }, []);
 
+  useEffect(() => {
+    function handleKeyDown(event) {
+      if (event.key === "Escape") {
+        openDropdown?.(false);
+      }
+    }
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [openDropdown]);
+
   const activeResignation = resignationState.item;
   const resignationStatusLabel = useMemo(
     () => getResignationStatusLabel(activeResignation),
@@ -103,7 +113,9 @@ const ProfileDropdown = ({ openModal, openDropdown, onViewResignation }) => {
 
   return (
     <div
-        className="w-[260px] max-w-[calc(100vw-32px)] overflow-hidden rounded-2xl border border-sibs-border bg-white p-2 shadow-xl"
+        role="menu"
+        aria-label="Additional actions"
+        className="sibs-profile-dropdown-panel w-[260px] max-w-[calc(100vw-32px)] overflow-hidden rounded-2xl border border-sibs-border bg-white p-2 shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
       <div className="px-3 pb-2 pt-1">
@@ -130,6 +142,7 @@ const ProfileDropdown = ({ openModal, openDropdown, onViewResignation }) => {
       ) : activeResignation ? (
         <button
           type="button"
+          role="menuitem"
           onClick={openResignationStatus}
           className="group flex w-full items-start gap-3 rounded-xl px-4 py-3 text-left transition hover:bg-amber-50"
         >
@@ -150,6 +163,7 @@ const ProfileDropdown = ({ openModal, openDropdown, onViewResignation }) => {
       ) : (
         <button
           type="button"
+          role="menuitem"
           onClick={submitResignation}
           className="group flex w-full items-start gap-3 rounded-xl px-4 py-3 text-left transition hover:bg-sibs-tertiary-10"
         >
