@@ -112,6 +112,7 @@ export default function UserDropdown({
 
   const navigate = useNavigate();
   const ref = useRef(null);
+  const triggerRef = useRef(null);
   const dropdownRef = useRef(null);
   const avatarPreviewAnchorRef = useRef(null);
 
@@ -229,14 +230,17 @@ export default function UserDropdown({
     const handleEscape = (event) => {
       if (event.key === "Escape") {
         setOpen(false);
+        triggerRef.current?.focus();
       }
     };
 
     document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("touchstart", handleClickOutside, { passive: true });
     document.addEventListener("keydown", handleEscape);
 
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
       document.removeEventListener("keydown", handleEscape);
     };
   }, []);
@@ -369,6 +373,32 @@ export default function UserDropdown({
     setAvatarPreviewOpen(false);
   };
 
+  const handleMenuKeyDown = (event) => {
+    if (!dropdownRef.current) return;
+    const items = Array.from(
+      dropdownRef.current.querySelectorAll('[role="menuitem"]:not([disabled])')
+    );
+    if (!items.length) return;
+
+    const currentIndex = items.indexOf(document.activeElement);
+
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      const nextIndex = currentIndex < items.length - 1 ? currentIndex + 1 : 0;
+      items[nextIndex]?.focus();
+    } else if (event.key === "ArrowUp") {
+      event.preventDefault();
+      const prevIndex = currentIndex > 0 ? currentIndex - 1 : items.length - 1;
+      items[prevIndex]?.focus();
+    } else if (event.key === "Home") {
+      event.preventDefault();
+      items[0]?.focus();
+    } else if (event.key === "End") {
+      event.preventDefault();
+      items[items.length - 1]?.focus();
+    }
+  };
+
   const handleToggleDropdown = (event) => {
     event.stopPropagation();
     hideAvatarPreview();
@@ -385,6 +415,8 @@ export default function UserDropdown({
           <div
             ref={dropdownRef}
             role="menu"
+            aria-label="User actions"
+            onKeyDown={handleMenuKeyDown}
             className="sibs-animated-dropdown open fixed z-[2147483000]"
             style={{
               top: dropdownPosition.top,
@@ -444,10 +476,12 @@ export default function UserDropdown({
   return (
     <div className="relative z-[99999] min-w-0" ref={ref}>
       <button
+        ref={triggerRef}
         type="button"
         onClick={handleToggleDropdown}
         aria-expanded={open}
         aria-haspopup="menu"
+        aria-label={`User menu: ${formattedName || "User"}`}
         className={[
           // The profile itself is the trigger; do not turn it into a second
           // bordered dropdown-style card while its menu is open.

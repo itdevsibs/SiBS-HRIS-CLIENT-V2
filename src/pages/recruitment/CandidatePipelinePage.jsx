@@ -318,8 +318,11 @@ export default function CandidatePipelinePage() {
 
   // Keep the selected candidate and form in context while the Google account
   // is connected/synced in SiBS Calendar. No route change or form reset.
+  const hasLoadedInitialCandidatesRef = useRef(false);
   useEffect(() => {
+    if (hasLoadedInitialCandidatesRef.current) return;
     if (candidateList.length === 0 && !isLoading) {
+      hasLoadedInitialCandidatesRef.current = true;
       void refreshCandidatePipeline?.();
     }
   }, [candidateList.length, isLoading, refreshCandidatePipeline]);
