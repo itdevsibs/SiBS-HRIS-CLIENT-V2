@@ -53,6 +53,7 @@ const ProfileUserPage = lazyWithRetry(() => import("./pages/profile/UserProfileP
 const AttendancePage = lazyWithRetry(() => import("./pages/attendance/AttendancePage"));
 const LeavesPage = lazyWithRetry(() => import("./pages/leaves/LeavesPage"));
 const ResignationManagementPage = lazyWithRetry(() => import("./pages/resignation-management/ResignationManagementPage"));
+const ResigneePage = lazyWithRetry(() => import("./pages/resignee/ResigneePage"));
 const RequisitionsPage = lazyWithRetry(() => import("./pages/requisitions/RequisitionPage"));
 const SchedulePage = lazyWithRetry(() => import("./pages/schedule/SchedulePage"));
 const KronosDatasPage = lazyWithRetry(() => import("./pages/kronos-datas/KronosDatasPage"));
@@ -343,6 +344,15 @@ function MainApplicationRoutes() {
         element={
           <PrivateRoute>
             <LeavesPage />
+          </PrivateRoute>
+        }
+      />
+
+      <Route
+        path="/resignee"
+        element={
+          <PrivateRoute>
+            <ResigneePage />
           </PrivateRoute>
         }
       />
