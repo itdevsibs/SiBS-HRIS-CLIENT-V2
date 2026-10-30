@@ -28,6 +28,7 @@ import {
   PieChart,
   Table2,
   UserCog,
+  UserRoundMinus,
   UserRoundPlus,
   Users,
   X,
@@ -1139,6 +1140,13 @@ export default function Sidebar() {
       path: "/leaves",
       allowedUsers: [1, 2, 3, 4, 5, 6, 7, 10],
       notificationKey: "leaves",
+    },
+    {
+      name: "Resignee",
+      icon: UserRoundMinus,
+      path: "/resignee",
+      allowedUsers: [1, 2, 3, 4, 6, 7, 10],
+      useRawAdminAccess: true,
     },
     {
       name: "Resignation Management",

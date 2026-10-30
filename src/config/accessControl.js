@@ -189,6 +189,11 @@ export const ACCESS_RULES = [
     ],
   },
   {
+    paths: ["/resignee"],
+    roles: ["ta", "talent_acquisition", "hr", "hr_admin", "finance", "finance_admin", "som", "senior_operations_manager", "executive", "super_admin"],
+    adminAccess: [1, 2, 3, 4, 6, 7, 10],
+  },
+  {
     paths: ["/employee", "/employee/employee-data"],
     roles: [
       "ta",
