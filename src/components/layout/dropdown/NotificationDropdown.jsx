@@ -179,6 +179,7 @@ export default function NotificationDropdown() {
     function handleKeyDown(event) {
       if (event.key === "Escape") {
         setOpen(false);
+        buttonRef.current?.focus();
       }
     }
 
@@ -195,10 +196,12 @@ export default function NotificationDropdown() {
 
     document.addEventListener("keydown", handleKeyDown);
     document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("touchstart", handleClickOutside, { passive: true });
 
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
       document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
     };
   }, [open]);
 
@@ -260,6 +263,26 @@ export default function NotificationDropdown() {
     loadMoreAuditNotificationHistory,
   ]);
 
+  const handleTabKeyDown = (event, currentTabId) => {
+    const currentIndex = CATEGORY_TABS.findIndex((t) => t.id === currentTabId);
+    if (currentIndex === -1) return;
+
+    let nextIndex = null;
+    if (event.key === "ArrowRight") {
+      event.preventDefault();
+      nextIndex = (currentIndex + 1) % CATEGORY_TABS.length;
+    } else if (event.key === "ArrowLeft") {
+      event.preventDefault();
+      nextIndex = (currentIndex - 1 + CATEGORY_TABS.length) % CATEGORY_TABS.length;
+    }
+
+    if (nextIndex !== null) {
+      setActiveCategory(CATEGORY_TABS[nextIndex].id);
+      const tabButtons = dropdownRef.current?.querySelectorAll('[role="tab"]');
+      tabButtons?.[nextIndex]?.focus();
+    }
+  };
+
   const handleActionClick = (notification) => {
     markAsRead?.(notification.id);
     setOpen(false);
@@ -278,7 +301,7 @@ export default function NotificationDropdown() {
         type="button"
         onClick={toggleDropdown}
         aria-expanded={open}
-        aria-haspopup="true"
+        aria-haspopup="dialog"
         aria-label="Notifications"
         className={`relative flex h-8.5 w-8.5 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-xl border transition-all duration-150 outline-none cursor-pointer ${
           open
@@ -309,7 +332,6 @@ export default function NotificationDropdown() {
             <div
               ref={dropdownRef}
               role="dialog"
-              aria-modal="true"
               aria-label="Notifications"
               style={{
                 position: "fixed",
@@ -355,7 +377,10 @@ export default function NotificationDropdown() {
                   {/* Explicit Close Button */}
                   <button
                     type="button"
-                    onClick={() => setOpen(false)}
+                    onClick={() => {
+                      setOpen(false);
+                      buttonRef.current?.focus();
+                    }}
                     aria-label="Close notifications"
                     className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-200/60 hover:text-sibs-navy active:bg-slate-200 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sibs-orange/30 cursor-pointer"
                   >
@@ -365,7 +390,7 @@ export default function NotificationDropdown() {
               </div>
 
               {/* Category Tabs */}
-              <div className="flex border-b border-sibs-border bg-white px-2.5 sm:px-3 pt-1.5 gap-1 overflow-x-auto sibs-no-scrollbar">
+              <div role="tablist" aria-label="Notification categories" className="flex border-b border-sibs-border bg-white px-2.5 sm:px-3 pt-1.5 gap-1 overflow-x-auto sibs-no-scrollbar">
                 {CATEGORY_TABS.map((tab) => {
                   const active = activeCategory === tab.id;
                   const count =
@@ -376,7 +401,11 @@ export default function NotificationDropdown() {
                   return (
                     <button
                       key={tab.id}
+                      role="tab"
+                      aria-selected={active}
+                      tabIndex={active ? 0 : -1}
                       type="button"
+                      onKeyDown={(e) => handleTabKeyDown(e, tab.id)}
                       onClick={() => setActiveCategory(tab.id)}
                       className={`flex min-h-[36px] sm:min-h-[32px] items-center gap-1.5 border-b-2 px-2.5 sm:px-3 py-1.5 sibs-text-micro font-extrabold transition-all whitespace-nowrap ${
                         active

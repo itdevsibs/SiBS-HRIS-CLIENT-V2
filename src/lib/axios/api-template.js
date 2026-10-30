@@ -1,5 +1,5 @@
 import axios from "axios";
-import { hrisQueryCache } from "./hrisQueryCache";
+import { currentHrisCacheScope, hrisQueryCache } from "./hrisQueryCache";
 
 function getBaseURL() {
   const rawBaseURL =
@@ -107,8 +107,17 @@ const api = axios.create({
   },
   withCredentials: true,
 });
-const networkAdapter = axios.getAdapter(api.defaults.adapter);
-export { isCancellation } from "./cancellation";
+import { isCancellation } from "./cancellation";
+export { isCancellation };
+
+const defaultNetworkAdapter = axios.getAdapter(api.defaults.adapter);
+function getNetworkAdapter(config) {
+  if (config?.networkAdapter) return config.networkAdapter;
+  if (api.defaults.adapter && api.defaults.adapter !== defaultNetworkAdapter) {
+    return axios.getAdapter(api.defaults.adapter);
+  }
+  return defaultNetworkAdapter;
+}
 
 function withCancellation(promise, adapterConfig) {
   const signal = adapterConfig.signal;
@@ -209,30 +218,136 @@ const logoutApi = axios.create({
 
 let isRedirecting = false;
 let logoutPromise = null;
-const inFlightRequests = new Map();
+export const inFlightRequests = new Map();
+const authCredentialRegistry = new Map();
+let authCredentialCounter = 0;
+const MAX_CREDENTIAL_REGISTRY_SIZE = 100;
 
-function getInFlightKey(config) {
-  const method = config.method?.toLowerCase() || "get";
+export function clearAuthCredentialRegistry() {
+  authCredentialRegistry.clear();
+  authCredentialCounter = 0;
+}
+
+function getEffectiveAuthHeader(config) {
+  const reqHeaders = config?.headers;
+  let requestAuth =
+    reqHeaders?.Authorization ||
+    reqHeaders?.authorization ||
+    (typeof reqHeaders?.get === "function" ? reqHeaders.get("Authorization") : null);
+
+  if (requestAuth !== undefined && requestAuth !== null) {
+    if (typeof requestAuth !== "string") {
+      return null;
+    }
+    return requestAuth;
+  }
+
+  if (config?.auth && typeof config.auth === "object") {
+    const username = config.auth.username || "";
+    const password = config.auth.password || "";
+    if (username || password) {
+      return `Basic ${username}:${password}`;
+    }
+  }
+
+  const defaults = api?.defaults?.headers;
+  const defaultAuth =
+    defaults?.common?.Authorization ||
+    defaults?.common?.authorization ||
+    defaults?.get?.Authorization ||
+    defaults?.get?.authorization ||
+    defaults?.Authorization ||
+    defaults?.authorization ||
+    (typeof defaults?.get === "function" ? defaults.get("Authorization") : null);
+
+  if (defaultAuth !== undefined && defaultAuth !== null) {
+    return typeof defaultAuth === "string" ? defaultAuth : String(defaultAuth);
+  }
+
+  return "";
+}
+
+function getSafeCredentialId(authHeader) {
+  if (authHeader === null) return null;
+  if (authHeader === undefined || authHeader === "") return "none";
+  if (typeof authHeader !== "string") return null;
+
+  const normalized = authHeader.trim();
+  if (!normalized) return "none";
+
+  let id = authCredentialRegistry.get(normalized);
+  if (!id) {
+    if (authCredentialRegistry.size >= MAX_CREDENTIAL_REGISTRY_SIZE) {
+      authCredentialRegistry.clear();
+    }
+    authCredentialCounter += 1;
+    id = `auth_${authCredentialCounter}`;
+    authCredentialRegistry.set(normalized, id);
+  }
+  return id;
+}
+
+export function getInFlightKey(config) {
+  const method = config?.method?.toLowerCase() || "get";
   if (method !== "get") return null;
   if (
-    config.params?.forceRefresh ||
-    config.params?.refresh ||
-    config.skipInFlightDeduplication
+    config?.params?.forceRefresh ||
+    config?.params?.refresh ||
+    config?.skipInFlightDeduplication
   ) {
     return null;
   }
-  const url = config.url || "";
-  const params = config.params || {};
-  const stableParams = Object.keys(params)
-    .filter((k) => k !== "_t" && k !== "forceRefresh" && k !== "refresh")
-    .sort()
-    .map((k) => `${k}=${params[k]}`)
-    .join("&");
-  return `${url}?${stableParams}`;
+  const rawUrl = config?.url || "";
+  const [pathname, queryString] = rawUrl.split("?");
+  const searchParams = new URLSearchParams(queryString || "");
+
+  if (config?.params && typeof config.params === "object") {
+    Object.entries(config.params).forEach(([k, v]) => {
+      if (k === "_t" || k === "forceRefresh" || k === "refresh" || v === undefined) return;
+      if (Array.isArray(v)) {
+        searchParams.delete(k);
+        [...v].map(String).sort().forEach((item) => searchParams.append(k, item));
+      } else if (v !== null) {
+        searchParams.set(k, String(v));
+      }
+    });
+  }
+
+  const entries = [];
+  searchParams.forEach((value, key) => {
+    if (key !== "_t" && key !== "forceRefresh" && key !== "refresh") {
+      entries.push([key, value]);
+    }
+  });
+
+  entries.sort(([k1, v1], [k2, v2]) => {
+    const keyCompare = k1.localeCompare(k2);
+    if (keyCompare !== 0) return keyCompare;
+    return v1.localeCompare(v2);
+  });
+
+  const canonicalParams = new URLSearchParams();
+  entries.forEach(([k, v]) => canonicalParams.append(k, v));
+  const serialized = canonicalParams.toString();
+
+  const rawAuthHeader = getEffectiveAuthHeader(config);
+  const safeCredentialId = getSafeCredentialId(rawAuthHeader);
+  // If safe credential identity cannot be established, bypass request coalescing
+  if (safeCredentialId === null) {
+    return null;
+  }
+
+  const scope = typeof currentHrisCacheScope === "function" ? currentHrisCacheScope() : "";
+  // Safe composite authentication context: opaque credential identifier and session scope.
+  // Raw bearer tokens are NEVER embedded in generated request keys.
+  const authContext = `[auth:${safeCredentialId}#scope:${scope}]#`;
+
+  return authContext + (serialized ? `${pathname}?${serialized}` : pathname);
 }
 
 function clearClientSession() {
   inFlightRequests.clear();
+  clearAuthCredentialRegistry();
   hrisQueryCache.invalidate();
   if (typeof sessionStorage !== "undefined") {
     /*
@@ -354,11 +469,12 @@ api.interceptors.request.use(
       if (policy && !config.skipHrisCache) {
         const forceRefresh = Boolean(config.params?.refresh || config.params?.forceRefresh);
         config.adapter = async (adapterConfig) => {
+          const currentNetworkAdapter = getNetworkAdapter(config);
           const execute = async () => {
             const cached = await hrisQueryCache.get(
               { path: adapterConfig.url, params: adapterConfig.params, ...policy, forceRefresh },
               async (networkSignal) => {
-                const response = await networkAdapter({ ...adapterConfig, adapter: networkAdapter, signal: networkSignal });
+                const response = await currentNetworkAdapter({ ...adapterConfig, adapter: currentNetworkAdapter, signal: networkSignal });
                 return {
                   data: response.data,
                   status: response.status,
@@ -374,19 +490,56 @@ api.interceptors.request.use(
       } else {
         const inFlightKey = getInFlightKey(config);
         if (inFlightKey) {
+          const currentNetworkAdapter = getNetworkAdapter(config);
           config.adapter = async (adapterConfig) => {
-            let pending = inFlightRequests.get(inFlightKey);
-            if (!pending) {
-              pending = networkAdapter({
+            let entry = inFlightRequests.get(inFlightKey);
+            if (!entry) {
+              const controller = typeof AbortController !== "undefined" ? new AbortController() : null;
+              const networkConfig = {
                 ...adapterConfig,
-                adapter: networkAdapter,
-              }).finally(() => {
-                inFlightRequests.delete(inFlightKey);
+                signal: controller ? controller.signal : undefined,
+                cancelToken: undefined,
+                adapter: currentNetworkAdapter,
+              };
+              entry = {
+                promise: null,
+                controller,
+                activeCount: 0,
+              };
+              entry.promise = currentNetworkAdapter(networkConfig).finally(() => {
+                if (inFlightRequests.get(inFlightKey) === entry) {
+                  inFlightRequests.delete(inFlightKey);
+                }
+                if (inFlightRequests.size === 0) {
+                  clearAuthCredentialRegistry();
+                }
               });
-              inFlightRequests.set(inFlightKey, pending);
+              inFlightRequests.set(inFlightKey, entry);
             }
-            const response = await withCancellation(pending, adapterConfig);
-            return { ...response, config: adapterConfig };
+
+            entry.activeCount += 1;
+            try {
+              const response = await withCancellation(entry.promise, adapterConfig);
+              entry.activeCount = Math.max(0, entry.activeCount - 1);
+              return { ...response, config: adapterConfig };
+            } catch (error) {
+              entry.activeCount = Math.max(0, entry.activeCount - 1);
+              if (
+                entry.activeCount === 0 &&
+                (isCancellation(error) || adapterConfig.signal?.aborted || adapterConfig.cancelToken?.reason)
+              ) {
+                if (entry.controller && !entry.controller.signal?.aborted) {
+                  entry.controller.abort();
+                }
+                if (inFlightRequests.get(inFlightKey) === entry) {
+                  inFlightRequests.delete(inFlightKey);
+                }
+                if (inFlightRequests.size === 0) {
+                  clearAuthCredentialRegistry();
+                }
+              }
+              throw error;
+            }
           };
         }
       }

@@ -64,6 +64,7 @@ src/test/
 tests/
 *.test.*
 !src/lib/axios/hrisQueryCache.test.jsx
+!src/lib/axios/apiTemplateCoalescing.test.jsx
 !src/pages/recruitment/JobDescriptionPage.test.jsx
 !src/pages/recruitment/HiringNeedsPage.test.jsx
 !src/pages/recruitment/AvailablePositionsPage.test.jsx
@@ -84,6 +85,7 @@ tests/
 !src/components/ui/ModalButtonRadiusHarmonization.test.jsx
 !src/components/ui/ModalFooterAndFontHarmonization.test.jsx
 !src/lib/axios/getApplicantLeads.test.jsx
+!src/components/layout/dropdown/DropdownAccessibility.test.jsx
 
 # Temporary migration & scratch scripts
 *.cjs

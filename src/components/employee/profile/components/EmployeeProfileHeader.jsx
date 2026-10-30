@@ -284,6 +284,7 @@ export default function EmployeeProfileHeader({
               className="flex h-8 2xl:h-9 w-full items-center justify-center rounded-lg bg-slate-100 px-2 text-slate-600 transition hover:bg-slate-200 sm:w-8 2xl:sm:w-9"
               aria-label="More employee actions"
               aria-expanded={moreOpen}
+              aria-haspopup="menu"
             >
               <MoreHorizontal size={16} className="2xl:h-[17px] 2xl:w-[17px]" />
             </button>
