@@ -36,6 +36,7 @@ import {
   formatNumber,
   getLeaveTypeLabel,
   getLeavesInitialDateRange,
+  sanitizeLeavesDateRange,
   normalizeStatus,
 } from "@/lib/utils/leaves/leaveHelpers";
 
@@ -87,8 +88,21 @@ export default function LeavesPage() {
   );
   // A pending-leave notification represents ALL dates. Empty date values must
   // stay empty, rather than being replaced by the default seven-day range.
-  const dateFrom = allDatesView ? "" : (filterValues?.dateFrom ?? initialLeavesDateRange.dateFrom);
-  const dateTo = allDatesView ? "" : (filterValues?.dateTo ?? initialLeavesDateRange.dateTo);
+  const storedDateFrom = filterValues?.dateFrom ?? initialLeavesDateRange.dateFrom;
+  const storedDateTo = filterValues?.dateTo ?? initialLeavesDateRange.dateTo;
+  const safeDateRange = sanitizeLeavesDateRange(
+    { dateFrom: storedDateFrom, dateTo: storedDateTo },
+    { allowEmpty: isEmployeeAccount || allDatesView },
+  );
+  const dateFrom = allDatesView ? "" : safeDateRange.dateFrom;
+  const dateTo = allDatesView ? "" : safeDateRange.dateTo;
+
+  useEffect(() => {
+    if (allDatesView) return;
+    if (storedDateFrom !== dateFrom || storedDateTo !== dateTo) {
+      setDateRange({ dateFrom, dateTo });
+    }
+  }, [allDatesView, storedDateFrom, storedDateTo, dateFrom, dateTo, setDateRange]);
 
   const showDepartmentFilter = canViewLeaveFilters(user);
   const showAccountFilter = canViewLeaveFilters(user);

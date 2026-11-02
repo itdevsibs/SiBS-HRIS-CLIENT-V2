@@ -29,6 +29,66 @@ export function getLeavesInitialDateRange(
   };
 }
 
+// Bound the interactive Leaves filters so previously saved dates cannot cause
+// unexpected historical requests. The separate pending-notification all-dates
+// view is intentionally kept intact.
+export const LEAVES_MIN_DATE = "2011-01-01";
+export const LEAVES_MAX_RANGE_DAYS = 31;
+
+function leavesShiftDate(isoDate, days) {
+  const date = new Date(`${isoDate}T12:00:00`);
+  date.setDate(date.getDate() + days);
+  return toLocalDateKey(date);
+}
+
+function isValidLeavesDate(value, today) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(value || ""))) return false;
+  const parsed = new Date(`${value}T12:00:00`);
+  return !Number.isNaN(parsed.getTime()) &&
+    toLocalDateKey(parsed) === value &&
+    value >= LEAVES_MIN_DATE && value <= today;
+}
+
+export function sanitizeLeavesDateRange(range = {}, { changed = "", allowEmpty = false } = {}) {
+  const today = toLocalDateKey(new Date());
+  const fallback = getLeavesInitialDateRange(false);
+  const rawFrom = String(range?.dateFrom || "");
+  const rawTo = String(range?.dateTo || "");
+
+  // Preserve the existing personal and pending-notification all-dates flows.
+  if (allowEmpty && !rawFrom && !rawTo) return { dateFrom: "", dateTo: "" };
+
+  // Reset legacy 1990 filters and invalid/cleared values to a safe short range.
+  if (changed === "from" && isValidLeavesDate(rawFrom, today) && !rawTo) {
+    return { dateFrom: rawFrom, dateTo: leavesShiftDate(rawFrom, LEAVES_MAX_RANGE_DAYS - 1) > today
+      ? today : leavesShiftDate(rawFrom, LEAVES_MAX_RANGE_DAYS - 1) };
+  }
+  if (changed === "to" && isValidLeavesDate(rawTo, today) && !rawFrom) {
+    const start = leavesShiftDate(rawTo, -(LEAVES_MAX_RANGE_DAYS - 1));
+    return { dateFrom: start < LEAVES_MIN_DATE ? LEAVES_MIN_DATE : start, dateTo: rawTo };
+  }
+  if (!isValidLeavesDate(rawFrom, today) || !isValidLeavesDate(rawTo, today)) {
+    return fallback;
+  }
+
+  let dateFrom = rawFrom;
+  let dateTo = rawTo;
+  if (dateFrom > dateTo) {
+    if (changed === "to") dateFrom = dateTo;
+    else dateTo = dateFrom;
+  }
+
+  if (leavesShiftDate(dateFrom, LEAVES_MAX_RANGE_DAYS - 1) < dateTo) {
+    if (changed === "from") {
+      dateTo = leavesShiftDate(dateFrom, LEAVES_MAX_RANGE_DAYS - 1);
+    } else {
+      dateFrom = leavesShiftDate(dateTo, -(LEAVES_MAX_RANGE_DAYS - 1));
+    }
+  }
+  if (dateFrom < LEAVES_MIN_DATE) dateFrom = LEAVES_MIN_DATE;
+  return { dateFrom, dateTo };
+}
+
 export function formatNumber(value) {
   if (value === "..." || value === null || value === undefined) return "...";
 

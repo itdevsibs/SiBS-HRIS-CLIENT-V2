@@ -31,9 +31,8 @@ export async function getAttendance(
         fast: options?.fast ? 1 : 0,
       },
       withCredentials: true,
-      // Axios timeout: 0 disables the client-side deadline for Attendance.
-      // Slow Kronos responses should not abort a legitimate request.
-      timeout: 0,
+      // Allow up to 30 seconds for Attendance requests.
+      timeout: 30000,
     });
 
     return res.data;

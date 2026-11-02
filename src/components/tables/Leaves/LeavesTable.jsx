@@ -38,6 +38,8 @@ import {
   getEmployeeName,
   getInitials,
   getLeavesInitialDateRange,
+  LEAVES_MIN_DATE,
+  sanitizeLeavesDateRange,
   getLeaveTypeLabel,
   getPaidLeaveLabel,
   getStatusClass,
@@ -691,23 +693,30 @@ export default function LeavesTable({
     () => getLeavesInitialDateRange(isPersonalView),
     [isPersonalView],
   );
-  const dateFrom = allDatesView ? "" : (filterValues?.dateFrom ?? initialDateRange.dateFrom);
-  const dateTo = allDatesView ? "" : (filterValues?.dateTo ?? initialDateRange.dateTo);
+  const now = new Date();
+  const todayDateKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  const safeRange = sanitizeLeavesDateRange(
+    { dateFrom: filterValues?.dateFrom ?? initialDateRange.dateFrom,
+      dateTo: filterValues?.dateTo ?? initialDateRange.dateTo },
+    { allowEmpty: allDatesView || isPersonalView },
+  );
+  const dateFrom = allDatesView ? "" : safeRange.dateFrom;
+  const dateTo = allDatesView ? "" : safeRange.dateTo;
 
   function handleLeavesDateFromChange(value) {
     onDateFilterChange?.();
-    setLeavesDateRange?.({
-      dateFrom: value,
-      dateTo: dateTo && value && dateTo < value ? value : dateTo,
-    });
+    setLeavesDateRange?.(sanitizeLeavesDateRange(
+      { dateFrom: value, dateTo },
+      { changed: "from" },
+    ));
   }
 
   function handleLeavesDateToChange(value) {
     onDateFilterChange?.();
-    setLeavesDateRange?.({
-      dateFrom,
-      dateTo: value,
-    });
+    setLeavesDateRange?.(sanitizeLeavesDateRange(
+      { dateFrom, dateTo: value },
+      { changed: "to" },
+    ));
   }
 
   function runSearch() {
@@ -888,6 +897,8 @@ export default function LeavesTable({
               </label>
               <DatePicker
                 value={dateFrom || ""}
+                min={LEAVES_MIN_DATE}
+                max={todayDateKey}
                 onChange={(val) => handleLeavesDateFromChange(val)}
                 disabled={loading}
                 hideLabel
@@ -903,7 +914,8 @@ export default function LeavesTable({
               </label>
               <DatePicker
                 value={dateTo || ""}
-                min={dateFrom || undefined}
+                min={dateFrom && dateFrom >= LEAVES_MIN_DATE ? dateFrom : LEAVES_MIN_DATE}
+                max={todayDateKey}
                 onChange={(val) => handleLeavesDateToChange(val)}
                 disabled={loading}
                 hideLabel

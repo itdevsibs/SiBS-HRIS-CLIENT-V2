@@ -2,7 +2,7 @@
  * The Finance summary cards and grouped table must describe the same snapshot.
  * Never show inconsistent cached or freshly returned aggregates as facts.
  */
-export const FINANCE_RECONCILED_DATA_VERSION = "finance-reconciled-v3";
+export const FINANCE_RECONCILED_DATA_VERSION = "finance-statutory-presence-v4";
 
 const keys = ["sss", "philHealth", "pagIbig", "tin"];
 const numeric = (value) => Number.isSafeInteger(Number(value)) && Number(value) >= 0;
@@ -12,7 +12,7 @@ export function validateFinanceDashboardPayload(payload) {
   const rows = payload?.accounts;
   if (payload?.dataVersion !== FINANCE_RECONCILED_DATA_VERSION ||
       !metrics || !Array.isArray(rows)) {
-    throw new Error("Finance dashboard requires the updated reconciled Server response. Restart HRIS Server.");
+    throw new Error("Finance dashboard response version is not supported by this client. Update the HRIS Client to match the HRIS Server.");
   }
 
   const fields = ["activeEmployees", "payrollReady", "incompleteProfiles"];

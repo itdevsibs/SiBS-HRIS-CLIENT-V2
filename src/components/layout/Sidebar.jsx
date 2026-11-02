@@ -1144,7 +1144,7 @@ export default function Sidebar() {
     {
       name: "Resignees",
       icon: UserRoundMinus,
-      path: "/resignee",
+      path: "/resignees",
       allowedUsers: [1, 2, 3, 4, 6, 7, 10],
       useRawAdminAccess: true,
     },

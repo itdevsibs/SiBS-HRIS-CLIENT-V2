@@ -34,7 +34,7 @@ import { validateFinanceDashboardPayload } from "../../../lib/utils/finance/vali
 const PAGE_SHELL_CLASS = "sibs-dashboard-shell";
 const MAIN_SHELL_CLASS = "sibs-dashboard-main-wide";
 const AUTO_REFRESH_INTERVAL_MS = 60_000;
-const CACHE_KEY = "sibs.finance-dashboard.bootstrap.v3.reconciled";
+const CACHE_KEY = "sibs.finance-dashboard.bootstrap.v4.statutory-presence";
 const CACHE_TTL_MS = 45_000;
 const PAGE_SIZE = 10;
 

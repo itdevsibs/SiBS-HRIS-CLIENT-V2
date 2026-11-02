@@ -349,10 +349,19 @@ function MainApplicationRoutes() {
       />
 
       <Route
-        path="/resignee"
+        path="/resignees"
         element={
           <PrivateRoute>
             <ResigneePage />
+          </PrivateRoute>
+        }
+      />
+      {/* Redirect existing bookmarks to the canonical Resignees URL. */}
+      <Route
+        path="/resignee"
+        element={
+          <PrivateRoute>
+            <Navigate to="/resignees" replace />
           </PrivateRoute>
         }
       />
