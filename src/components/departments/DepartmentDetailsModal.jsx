@@ -492,6 +492,21 @@ function isBodAccount(account = {}) {
   );
 }
 
+// Software Management (ACC-042) excludes Joburt Pelipas Ducao (SIBS ID 2342)
+// from the Operations Manager display only. This does not modify the
+// relationship data or his visibility in any other account.
+function getVisibleOperationsManagers(account) {
+  const managers = Array.isArray(account?.operationsManagers)
+    ? account.operationsManagers
+    : [];
+
+  if (Number(account?.id) !== 42) return managers;
+
+  return managers.filter(
+    (person) => String(person?.sibsId ?? "").trim().replace(/^0+(?=\d)/, "") !== "2342",
+  );
+}
+
 function AccountCard({
   account,
   onViewEmployees,
@@ -505,9 +520,7 @@ function AccountCard({
   bodLoading = false,
 }) {
   const active = account.status === "active";
-  const operationsManagers = Array.isArray(account.operationsManagers)
-    ? account.operationsManagers
-    : [];
+  const operationsManagers = getVisibleOperationsManagers(account);
   const teamLeaders = Array.isArray(account.teamLeaders)
     ? account.teamLeaders
     : [];
