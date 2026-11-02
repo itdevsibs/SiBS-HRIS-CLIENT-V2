@@ -1,9 +1,9 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { CalendarCheck2, CheckCircle2, Clock3, FileText, RefreshCw, UsersRound } from "lucide-react";
 import Header from "../../components/layout/Header";
 import {
-  MetricCard, MetricGrid, PageHeaderHero, SearchInput, TablePagination,
+  DataCard, MetricCard, MetricGrid, PageHeaderHero, ResponsiveTableShell, SearchInput, TablePagination, TableSkeletonRows,
 } from "@/components/ui";
 import { getResignees } from "@/lib/axios/getResignees";
 import ResigneeAvatar from "./ResigneeAvatar";
@@ -25,6 +25,7 @@ function formatDate(value) {
 
 export default function ResigneePage() {
   const navigate = useNavigate();
+  const tableScrollRef = useRef(null);
   const [draft, setDraft] = useState("");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
@@ -68,6 +69,18 @@ export default function ResigneePage() {
 
   const refresh = useCallback(() => setRefreshKey((value) => value + 1), []);
 
+  const handlePageChange = useCallback((nextPage) => {
+    const target = Number(nextPage);
+    if (!Number.isInteger(target) || target < 1 || target > pagination.totalPages || target === page) return;
+
+    setPage(target);
+    // Match Employee Directory: reset the records table’s internal scroll.
+    if (tableScrollRef.current) {
+      tableScrollRef.current.scrollTop = 0;
+      tableScrollRef.current.scrollLeft = 0;
+    }
+  }, [page, pagination.totalPages]);
+
   return (
     <div className="sibs-dashboard-shell">
       <div className="shrink-0"><Header /></div>
@@ -110,43 +123,99 @@ export default function ResigneePage() {
                 <span>{error}</span><button type="button" onClick={refresh} className="shrink-0 rounded-lg border border-red-200 bg-white px-3 py-1.5">Retry</button>
               </div>
             ) : null}
-            <div className="p-4 2xl:p-5">
-              <div className="overflow-x-auto rounded-xl border border-sibs-border-subtle">
-                <table className="w-full min-w-[960px] border-collapse text-left font-jakarta text-xs text-sibs-navy">
-                  <thead className="bg-sibs-surface text-[10px] font-extrabold uppercase tracking-wide text-sibs-muted">
-                    <tr>{["SIBS ID", "Employee Name", "Department", "Account", "Hire Date", "Last Working Day", "Kronos Status"].map((item) => (
-                      <th key={item} scope="col" className="whitespace-nowrap border-b border-sibs-border-subtle px-4 py-3">{item}</th>
-                    ))}</tr>
-                  </thead>
-                  <tbody>
-                    {rows.map((record) => (
-                      <tr key={record.employeeId || record.sibsId} className="border-b border-sibs-border-subtle last:border-b-0 hover:bg-sibs-surface/70">
-                        <td className="px-4 py-3 font-extrabold text-sibs-orange">{record.sibsId}</td>
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-3">
-                            <ResigneeAvatar record={record} />
-                            <span className="font-bold text-sibs-navy">{record.employeeName}</span>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3">{record.department || "—"}</td>
-                        <td className="px-4 py-3">{record.account || "—"}</td>
-                        <td className="px-4 py-3">{formatDate(record.hireDate)}</td>
-                        <td className="whitespace-nowrap px-4 py-3 font-semibold">{formatDate(record.lastWorkingDate)}</td>
-                        <td className="px-4 py-3"><span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[10px] font-bold text-emerald-700"><CheckCircle2 className="h-3 w-3" /> {record.statusLabel || "Inactive"}</span></td>
-                      </tr>
-                    ))}
-                    {!error && rows.length === 0 ? (
-                      <tr><td colSpan={7} className="py-12 text-center text-xs font-semibold text-sibs-muted">{loading ? "Loading Resignee records..." : "No inactive Kronos employees with an elapsed last working day found."}</td></tr>
-                    ) : null}
-                    {error && rows.length === 0 ? (
-                      <tr><td colSpan={7} className="py-12 text-center text-xs font-semibold text-sibs-muted">Resignee records could not be loaded. Use Retry after resolving the API error.</td></tr>
-                    ) : null}
-                  </tbody>
-                </table>
+            <div className="p-4 sm:p-5 2xl:p-6">
+              <div className="overflow-hidden rounded-xl border border-sibs-border bg-white shadow-xs">
+                <ResponsiveTableShell
+                  desktopContent={
+                    <div className="overflow-hidden bg-white">
+                      <div ref={tableScrollRef} className="max-h-[480px] 2xl:max-h-[640px] overflow-auto sibs-scrollbar">
+                        <table className="w-full min-w-[1100px] table-fixed border-collapse text-left">
+                          <thead className="sticky top-0 z-10 bg-sibs-surface">
+                            <tr className="border-b border-sibs-border">
+                              {[
+                                ["SIBS ID", "w-[9%]"],
+                                ["EMPLOYEE NAME", "w-[23%]"],
+                                ["DEPARTMENT", "w-[14%]"],
+                                ["ACCOUNT", "w-[15%]"],
+                                ["HIRE DATE", "w-[13%]"],
+                                ["LAST WORKING DAY", "w-[15%]"],
+                                ["KRONOS STATUS", "w-[11%]"],
+                              ].map(([label, width]) => (
+                                <th key={label} scope="col" className={`${width} px-3 2xl:px-4 py-2.5 2xl:py-3 sibs-text-micro font-extrabold uppercase tracking-wider text-sibs-muted`}>
+                                  {label}
+                                </th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-sibs-border" aria-busy={loading}>
+                            {loading && rows.length === 0 ? (
+                              <TableSkeletonRows count={PAGE_SIZE} columns={7} cellClassName="px-3 2xl:px-4 py-3 align-middle" />
+                            ) : rows.length === 0 ? (
+                              <tr>
+                                <td colSpan={7} className="py-12 text-center sibs-text-xs font-semibold text-sibs-muted">
+                                  {error ? "Resignee records could not be loaded. Use Retry after resolving the API error." : "No inactive Kronos employees with an elapsed last working day found."}
+                                </td>
+                              </tr>
+                            ) : rows.map((record) => (
+                              <tr key={record.employeeId || record.sibsId} className="group transition-colors hover:bg-sibs-cream-light">
+                                <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle sibs-text-xs font-extrabold text-sibs-orange">{record.sibsId}</td>
+                                <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle">
+                                  <div className="flex min-w-[200px] items-center gap-2.5 2xl:gap-3">
+                                    <ResigneeAvatar record={record} />
+                                    <span className="break-words sibs-text-xs font-extrabold leading-tight text-sibs-navy transition-colors group-hover:text-sibs-orange">{record.employeeName}</span>
+                                  </div>
+                                </td>
+                                <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle sibs-text-xs text-sibs-navy">{record.department || "—"}</td>
+                                <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle sibs-text-xs text-sibs-navy">{record.account || "—"}</td>
+                                <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle sibs-text-xs text-sibs-navy">{formatDate(record.hireDate)}</td>
+                                <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle sibs-text-xs font-semibold text-sibs-navy">{formatDate(record.lastWorkingDate)}</td>
+                                <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle">
+                                  <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 sibs-text-micro font-bold text-emerald-700">
+                                    <CheckCircle2 className="h-3 w-3" /> {record.statusLabel || "Inactive"}
+                                  </span>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  }
+                  mobileContent={
+                    <div className="p-3.5 sm:p-4">
+                      {loading && rows.length === 0 ? (
+                        <DataCard.Skeleton count={5} lines={3} />
+                      ) : rows.length === 0 ? (
+                        <DataCard.Empty title="No resignees found" description={error || "Try adjusting your search."} />
+                      ) : (
+                        <div className="space-y-3">
+                          {rows.map((record, index) => (
+                            <DataCard key={record.employeeId || record.sibsId} index={index}>
+                              <DataCard.Header
+                                avatar={<ResigneeAvatar record={record} />}
+                                kicker={`SIBS ID ${record.sibsId || "—"}`}
+                                title={record.employeeName}
+                                subtitle={record.account || "Unassigned"}
+                              />
+                              <DataCard.ContextRow>
+                                <span>Department: <strong>{record.department || "—"}</strong></span>
+                              </DataCard.ContextRow>
+                              <DataCard.Metrics cols={2}>
+                                <DataCard.MetricItem label="Hire Date" value={formatDate(record.hireDate)} />
+                                <DataCard.MetricItem label="Last Working Day" value={formatDate(record.lastWorkingDate)} />
+                              </DataCard.Metrics>
+                              <DataCard.Footer actionLabel={null} metadata={record.statusLabel || "Inactive (Kronos)"} />
+                            </DataCard>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  }
+                />
               </div>
-              <div className="mt-3">
-                <TablePagination currentPage={pagination.currentPage} totalPages={pagination.totalPages} totalRecords={pagination.total} limit={PAGE_SIZE} loadedCount={rows.length} recordLabel="resignee records" onPageChange={setPage} loading={loading} />
-              </div>
+            </div>
+            <div className="px-4 pb-4 sm:px-5 sm:pb-5">
+              <TablePagination currentPage={pagination.currentPage} totalPages={pagination.totalPages} totalRecords={pagination.total} limit={PAGE_SIZE} loadedCount={rows.length} recordLabel="resignee records" onPageChange={handlePageChange} loading={loading} />
             </div>
           </section>
         </div>
