@@ -549,6 +549,33 @@ function getEmployeeInitials(employee) {
   );
 }
 
+// Header avatar: first word of the given name, then first word of the surname.
+// "MISA, KATHRINA JONES NAMATA" displays "KM", not "KJ".
+function getHeaderAvatarInitials(employee) {
+  const firstName = String(
+    firstValue(employee?.firstName, employee?.first_name, employee?.gy_emp_fname),
+  ).trim();
+  const lastName = String(
+    firstValue(employee?.lastName, employee?.last_name, employee?.gy_emp_lname),
+  ).trim();
+
+  // Allow accounts with a combined "LASTNAME, FIRSTNAME MIDDLENAME" value.
+  const combinedName = firstValue(
+    employee?.fullName,
+    employee?.full_name,
+    employee?.gy_emp_fullname,
+    employee?.name,
+  );
+  const displayName = combinedName ? formatEmployeeName(employee) : "";
+  const commaIndex = displayName.indexOf(",");
+  const fallbackLastName = commaIndex >= 0 ? displayName.slice(0, commaIndex).trim() : "";
+  const fallbackFirstName = commaIndex >= 0 ? displayName.slice(commaIndex + 1).trim() : displayName;
+
+  const firstInitial = (firstName || fallbackFirstName).split(/\s+/)[0]?.[0] || "";
+  const lastInitial = (lastName || fallbackLastName).split(/\s+/)[0]?.[0] || "";
+  return `${firstInitial}${lastInitial}`.toUpperCase() || "U";
+}
+
 function getEmployeeDetails(employee) {
   const position = firstValue(
     employee?.position,
@@ -1403,13 +1430,7 @@ function HeaderContent() {
     );
   }
 
-  const avatar =
-    user?.firstName
-      ?.trim()
-      .split(/\s+/)
-      .map((word) => word[0])
-      .join("")
-      .toUpperCase() || "U";
+  const avatar = getHeaderAvatarInitials(user);
 
   const formattedName = formatEmployeeName(user || {}) || "USER";
 

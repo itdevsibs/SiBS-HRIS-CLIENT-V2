@@ -451,7 +451,7 @@ export default function UserDropdown({
         className={[
           // The profile itself is the trigger; do not turn it into a second
           // bordered dropdown-style card while its menu is open.
-          "group flex max-w-[360px] cursor-pointer items-center gap-2 2xl:gap-2.5 rounded-xl border border-transparent bg-transparent px-2 py-1 2xl:py-1.5 text-left transition-colors duration-150 hover:bg-sibs-tertiary-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sibs-primary-1/30",
+          "group flex min-w-0 max-w-[290px] cursor-pointer items-center gap-2 rounded-xl border border-transparent bg-transparent px-2 py-1 text-left transition-colors duration-150 hover:bg-sibs-tertiary-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sibs-primary-1/30 xl:max-w-[320px] 2xl:max-w-[360px] 2xl:gap-2.5 2xl:py-1.5",
           mobileCompact ? "max-[430px]:gap-0 max-[430px]:px-0 max-[430px]:py-0" : "",
         ].join(" ")}
       >
@@ -503,15 +503,23 @@ export default function UserDropdown({
 
         <div
           className={[
-            "min-w-0 flex-1 flex-col text-left leading-tight",
+            "min-w-0 flex-1 flex-col overflow-hidden text-left leading-tight",
             mobileCompact ? "hidden lg:flex" : "flex",
           ].join(" ")}
         >
-          <span className="max-w-[220px] truncate text-[11px] 2xl:text-xs font-extrabold text-sibs-primary-1">
+          {/* Keep long employee names/emails within the header. The full values
+              remain accessible via the native hover tooltip. */}
+          <span
+            className="block w-full min-w-0 truncate text-[11px] font-extrabold text-sibs-primary-1 2xl:text-xs"
+            title={formattedName || "USER"}
+          >
             {formattedName || "USER"}
           </span>
 
-          <span className="mt-0.5 max-w-[220px] truncate text-[9px] 2xl:text-[10px] font-semibold text-sibs-primary-2">
+          <span
+            className="mt-0.5 block w-full min-w-0 truncate text-[9px] font-semibold text-sibs-primary-2 2xl:text-[10px]"
+            title={email || "no-email@sibs.com"}
+          >
             {email || "no-email@sibs.com"}
           </span>
         </div>

@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 
 import { useUser } from "../../services/context/UserContext";
+import AttendanceEmployeeDetailsModal from "./AttendanceEmployeeDetailsModal";
 import { getAttendance, getAttendanceCount, getAttendanceOptions } from "../../lib/axios/getAttendance";
 import { socket } from "../../lib/axios/socket";
 import {
@@ -728,6 +729,7 @@ function InlineDateRangeFilter({ visible }) {
 
 export default function AttendanceTable() {
   const [attendance, setAttendance] = useState([]);
+  const [selectedEmployeeAttendance, setSelectedEmployeeAttendance] = useState(null);
 
   const [departmentFilter, setDepartmentFilter] = useState("All");
   const [accountFilters, setAccountFilters] = useState([]);
@@ -1797,7 +1799,18 @@ export default function AttendanceTable() {
                         return (
                           <tr
                             key={attendanceRowKeys[index]}
-                            className="sibs-data-table-row sibs-attendance-row-reveal hover:bg-sibs-cream-light transition-colors"
+                            className={`sibs-data-table-row sibs-attendance-row-reveal transition-colors ${adminView ? "cursor-pointer hover:bg-sibs-cream-light focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-sibs-orange" : "hover:bg-sibs-cream-light"}`}
+                            role={adminView ? "button" : undefined}
+                            tabIndex={adminView ? 0 : undefined}
+                            aria-label={adminView ? `View schedule and employee information for ${employeeName} on ${formatDate(item.gy_tracker_date)}` : undefined}
+                            onClick={adminView ? () => setSelectedEmployeeAttendance(item) : undefined}
+                            onKeyDown={adminView ? (event) => {
+                              if (event.target !== event.currentTarget) return;
+                              if (event.key === "Enter" || event.key === " ") {
+                                event.preventDefault();
+                                setSelectedEmployeeAttendance(item);
+                              }
+                            } : undefined}
                             style={{
                               animationDelay: `${Math.min(index, 10) * 36}ms`,
                             }}
@@ -1815,9 +1828,9 @@ export default function AttendanceTable() {
                                     item={item}
                                     employeeName={employeeName}
                                   />
-                                  <p className="max-w-[190px] min-w-0 break-words sibs-text-xs font-extrabold leading-tight text-sibs-navy">
+                                  <span className="max-w-[190px] min-w-0 break-words text-left sibs-text-xs font-extrabold leading-tight text-sibs-navy">
                                     {employeeName}
-                                  </p>
+                                  </span>
                                 </div>
                               </td>
                             ) : null}
@@ -1940,6 +1953,8 @@ export default function AttendanceTable() {
                     <DataCard
                       key={attendanceRowKeys[index]}
                       index={index}
+                      onClick={adminView ? () => setSelectedEmployeeAttendance(item) : undefined}
+                      aria-label={adminView ? `View schedule and employee information for ${employeeDisplayName} on ${formatDate(item.gy_tracker_date)}` : undefined}
                     >
                       <DataCard.Header
                         avatar={
@@ -2045,6 +2060,10 @@ export default function AttendanceTable() {
           </div>
         </div>
       </section>
+      <AttendanceEmployeeDetailsModal
+        row={selectedEmployeeAttendance}
+        onClose={() => setSelectedEmployeeAttendance(null)}
+      />
     </div>
   );
 }

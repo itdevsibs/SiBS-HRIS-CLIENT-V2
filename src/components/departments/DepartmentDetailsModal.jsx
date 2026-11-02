@@ -530,6 +530,36 @@ function AccountCard({
       : accountBoardOfDirectors;
   const employeeCount = Number(account.employeeCount) || 0;
 
+  // Only show leadership levels with actual assignments. Managers and Senior
+  // Managers retain their dedicated hierarchy without repeating employees
+  // who are already listed under their own account.
+  const leadershipGroups = bodAccount
+    ? [{ title: "Board of Directors", icon: UsersRound, people: boardOfDirectors }]
+    : seniorManagersAccount
+      ? [{ title: "BOD", icon: UsersRound, people: boardOfDirectors }]
+      : managersAccount
+        ? [
+            { title: "Senior Operations Manager", icon: ShieldCheck, people: seniorOperationsManagers },
+            { title: "BOD", icon: UsersRound, people: boardOfDirectors },
+          ]
+        : [
+            { title: "Team Leaders", icon: UsersRound, people: teamLeaders },
+            { title: "Operations Manager", icon: UserRoundCog, people: operationsManagers },
+            { title: "Senior Operations Manager", icon: ShieldCheck, people: seniorOperationsManagers },
+          ];
+
+  // Retain a loading indicator for BOD while the Departments lookup resolves.
+  const visibleLeadershipGroups = leadershipGroups.filter(
+    ({ title, people }) =>
+      people.length > 0 || (bodLoading && (title === "BOD" || title === "Board of Directors")),
+  );
+  const leadershipGridColumns =
+    visibleLeadershipGroups.length === 1
+      ? "lg:grid-cols-1"
+      : visibleLeadershipGroups.length === 2
+        ? "lg:grid-cols-2"
+        : "lg:grid-cols-3";
+
   return (
     <article className="overflow-hidden rounded-[10px] border border-sibs-border bg-sibs-surface transition hover:border-sibs-orange/50 hover:shadow-xs">
       <div
@@ -656,160 +686,20 @@ function AccountCard({
         </div>
       </div>
 
-      <div
-        className={`grid items-start gap-4 p-4 ${
-          seniorManagersAccount ? "lg:grid-cols-2" : "lg:grid-cols-3"
-        }`}
-      >
-        {bodAccount ? (
-          <div className="lg:col-span-3">
-            <LeadershipGroup
-              title="Board of Directors"
-              icon={UsersRound}
-              people={boardOfDirectors}
-              emptyText={
-                bodLoading
-                  ? "Loading Board of Directors..."
-                  : "No BOD owner resolved for this account."
-              }
-              onClick={() =>
-                onViewLeadership?.(
-                  account,
-                  "Board of Directors",
-                  boardOfDirectors,
-                  UsersRound,
-                )
-              }
-            />
-          </div>
-        ) : seniorManagersAccount ? (
-          <>
-            <LeadershipGroup
-              title="Senior Operations Manager"
-              icon={ShieldCheck}
-              people={seniorOperationsManagers}
-              emptyText="No Senior Operations Manager resolved for this account."
-              onClick={() =>
-                onViewLeadership?.(
-                  account,
-                  "Senior Operations Manager",
-                  seniorOperationsManagers,
-                  ShieldCheck,
-                )
-              }
-            />
-
-            <LeadershipGroup
-              title="BOD"
-              icon={UsersRound}
-              people={boardOfDirectors}
-              emptyText="No BOD owner resolved for this account."
-              onClick={() =>
-                onViewLeadership?.(
-                  account,
-                  "BOD",
-                  boardOfDirectors,
-                  UsersRound,
-                )
-              }
-            />
-          </>
-        ) : managersAccount ? (
-          <>
-            <LeadershipGroup
-              title="Operations Manager"
-              icon={UserRoundCog}
-              people={operationsManagers}
-              emptyText="No Operations Manager resolved for this account."
-              onClick={() =>
-                onViewLeadership?.(
-                  account,
-                  "Operations Manager",
-                  operationsManagers,
-                  UserRoundCog,
-                )
-              }
-            />
-
-            <LeadershipGroup
-              title="Senior Operations Manager"
-              icon={ShieldCheck}
-              people={seniorOperationsManagers}
-              emptyText="No Senior Operations Manager resolved for this account."
-              onClick={() =>
-                onViewLeadership?.(
-                  account,
-                  "Senior Operations Manager",
-                  seniorOperationsManagers,
-                  ShieldCheck,
-                )
-              }
-            />
-
-            <LeadershipGroup
-              title="BOD"
-              icon={UsersRound}
-              people={boardOfDirectors}
-              emptyText="No BOD owner resolved for this account."
-              onClick={() =>
-                onViewLeadership?.(
-                  account,
-                  "BOD",
-                  boardOfDirectors,
-                  UsersRound,
-                )
-              }
-            />
-          </>
-        ) : (
-          <>
-            <LeadershipGroup
-              title="Team Leaders"
-              icon={UsersRound}
-              people={teamLeaders}
-              emptyText="No Team Leader resolved for this account."
-              onClick={() =>
-                onViewLeadership?.(
-                  account,
-                  "Team Leaders",
-                  teamLeaders,
-                  UsersRound,
-                )
-              }
-            />
-
-            <LeadershipGroup
-              title="Operations Manager"
-              icon={UserRoundCog}
-              people={operationsManagers}
-              emptyText="No Operations Manager resolved for this account."
-              onClick={() =>
-                onViewLeadership?.(
-                  account,
-                  "Operations Manager",
-                  operationsManagers,
-                  UserRoundCog,
-                )
-              }
-            />
-
-            <LeadershipGroup
-              title="Senior Operations Manager"
-              icon={ShieldCheck}
-              people={seniorOperationsManagers}
-              emptyText="No Senior Operations Manager resolved for this account."
-              onClick={() =>
-                onViewLeadership?.(
-                  account,
-                  "Senior Operations Manager",
-                  seniorOperationsManagers,
-                  ShieldCheck,
-                )
-              }
-            />
-          </>
-        )}
-      </div>
+       {visibleLeadershipGroups.length > 0 ? (
+         <div className={`grid items-start gap-4 p-4 ${leadershipGridColumns}`}>
+           {visibleLeadershipGroups.map(({ title, icon, people }) => (
+             <LeadershipGroup
+               key={title}
+               title={title}
+               icon={icon}
+               people={people}
+               emptyText="Loading Board of Directors..."
+               onClick={() => onViewLeadership?.(account, title, people, icon)}
+             />
+           ))}
+         </div>
+       ) : null}
     </article>
   );
 }
