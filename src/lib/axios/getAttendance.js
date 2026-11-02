@@ -64,6 +64,7 @@ export async function getAttendanceCount(search = "", account = "All", options =
         department: options?.department || "All",
       },
       withCredentials: true,
+      timeout: 30000,
     });
     return res.data;
   } catch (err) {

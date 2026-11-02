@@ -8,3 +8,13 @@ export async function getResignees({ page = 1, limit = 15, search = "" } = {}, s
   });
   return response.data;
 }
+
+// Summary counts are deliberately NOT requested when changing table pages.
+export async function getResigneeStats({ search = "", revision = 0 } = {}, signal) {
+  const response = await api.get("/api/resignees/stats", {
+    params: { search, revision },
+    signal,
+    timeout: 30_000,
+  });
+  return response.data;
+}
