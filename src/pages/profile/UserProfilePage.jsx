@@ -1,6 +1,6 @@
 import { createSystemDateTimeFormatter } from "@/lib/axios/dateFormatter";
 import React, { Suspense, lazy, useEffect, useMemo, useState } from "react";
-import { History } from "lucide-react";
+import { HeartPulse, History } from "lucide-react";
 
 import Header from "../../components/layout/Header";
 import ProfileDropdown from "../../components/layout/profile/ProfileDropdown";
@@ -17,6 +17,7 @@ import MyEmployeeProfileHeader from "../../components/employee/profile/component
 import EmployeeProfileNavigation from "../../components/employee/profile/components/EmployeeProfileNavigation.jsx";
 import MyEmployeeProfilePictureModal from "../../components/employee/profile/components/EmployeeProfilePictureModal.jsx";
 import EmployeeProfileSkeleton from "../../components/employee/profile/components/EmployeeProfileSkeleton.jsx";
+import ChwcpCoverageSection from "../../components/employee/profile/components/ChwcpCoverageSection.jsx";
 import { TableSkeletonRows, DataCard } from "@/components/ui";
 
 import { useUser } from "../../services/context/UserContext";
@@ -55,7 +56,14 @@ function buildEditableEmployee(employee) {
 
 const HEADER_PROFILE_PICTURE_UPDATED_EVENT = "sibs:profile-picture-updated";
 
-const EMPLOYEE_PROFILE_TABS = PROFILE_TABS.filter((tab) => tab.key !== "notes");
+const CHWCP_PROFILE_TAB = {
+  key: "chwcp",
+  label: "CHWCP",
+  icon: HeartPulse,
+};
+
+const EMPLOYEE_PROFILE_TABS = PROFILE_TABS.filter((tab) => tab.key !== "notes")
+  .flatMap((tab) => tab.key === "documents" ? [tab, CHWCP_PROFILE_TAB] : [tab]);
 
 const RESIGNATION_HISTORY_TAB = {
   key: "resignation-history",
@@ -425,7 +433,9 @@ export default function UserProfilePage() {
   const activeProfileLabel =
     activePrimary === "resignation-history"
       ? { primary: "Resignation History", secondary: "Application Records" }
-      : getActiveProfileLabel(activeTab);
+      : activePrimary === "chwcp"
+        ? { primary: "CHWCP", secondary: "Coverage" }
+        : getActiveProfileLabel(activeTab);
   const activeSectionSupportsSave =
     activePrimary === "personal" ||
     Boolean(getStructuredProfileSection(activePrimary));
@@ -1064,7 +1074,9 @@ export default function UserProfilePage() {
                       <p className="mt-0.5 text-[10px] font-semibold text-slate-400">
                         {activePrimary === "resignation-history"
                           ? "Read-only resignation application history from the existing resignation workflow."
-                          : isEditing
+                          : activePrimary === "chwcp"
+                            ? "Read-only CHWCP shared and personal coverage for your profile."
+                            : isEditing
                             ? "Editable input mode. Save the profile to lock the current updates."
                             : "Official record values are shown from the existing employee data source."}
                       </p>
@@ -1079,7 +1091,7 @@ export default function UserProfilePage() {
                         }`}
                       />
                       <span className="text-[10px] font-bold uppercase text-slate-500">
-                        {activePrimary === "resignation-history"
+                        {activePrimary === "resignation-history" || activePrimary === "chwcp"
                           ? "View Only"
                           : isEditing
                             ? "Modified Draft"
@@ -1094,6 +1106,8 @@ export default function UserProfilePage() {
                       loading={resignationHistoryLoading}
                       onView={openResignationDetails}
                     />
+                  ) : activePrimary === "chwcp" ? (
+                    <ChwcpCoverageSection />
                   ) : (
                     <EmployeeProfileContent
                       activePrimary={activePrimary}

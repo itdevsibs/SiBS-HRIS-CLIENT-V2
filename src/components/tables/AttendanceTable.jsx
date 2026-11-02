@@ -60,7 +60,7 @@ import {
 // historical edits, and instances without a working Socket.IO connection.
 const ATTENDANCE_LIVE_REFRESH_MS = 5_000;
 const ATTENDANCE_SOCKET_FALLBACK_MS = 30_000;
-const ATTENDANCE_COUNT_REFRESH_MS = 30_000;
+const ATTENDANCE_COUNT_REFRESH_MS = 60_000;
 
 // Keep historical Attendance requests bounded in the HRIS table itself. This
 // protects against old saved filters and manually manipulated picker values.
@@ -808,7 +808,11 @@ export default function AttendanceTable() {
     financeView;
 
   const employeeAttendanceView =
-    String(user?.role || "").trim().toLowerCase() === "employee";
+    String(user?.role || "").trim().toLowerCase() === "employee" ||
+    isEmployeeAttendanceSession(user);
+  // Both admin and self-service Attendance reuse the same employee details modal.
+  // The server already limits employee sessions to their own attendance rows.
+  const canOpenAttendanceDetails = adminView || employeeAttendanceView;
 
   const initialDateRange = useMemo(
     () => getAttendanceInitialDateRange(employeeAttendanceView),
@@ -1196,7 +1200,7 @@ export default function AttendanceTable() {
       }
       if (recentlyChecked && typeof cached === "number") return;
 
-      // Count only once per 30 seconds, not on every 5-second row update.
+      // Count only once per minute, not on every 5-second row update.
       countCheckedAtRef.current.set(countKey, Date.now());
       const countPromise = getAttendanceCount(search, currentAccountFilter, {
         dateFrom,
@@ -1799,12 +1803,12 @@ export default function AttendanceTable() {
                         return (
                           <tr
                             key={attendanceRowKeys[index]}
-                            className={`sibs-data-table-row sibs-attendance-row-reveal transition-colors ${adminView ? "cursor-pointer hover:bg-sibs-cream-light focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-sibs-orange" : "hover:bg-sibs-cream-light"}`}
-                            role={adminView ? "button" : undefined}
-                            tabIndex={adminView ? 0 : undefined}
-                            aria-label={adminView ? `View schedule and employee information for ${employeeName} on ${formatDate(item.gy_tracker_date)}` : undefined}
-                            onClick={adminView ? () => setSelectedEmployeeAttendance(item) : undefined}
-                            onKeyDown={adminView ? (event) => {
+                            className={`sibs-data-table-row sibs-attendance-row-reveal transition-colors ${canOpenAttendanceDetails ? "cursor-pointer hover:bg-sibs-cream-light focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-sibs-orange" : "hover:bg-sibs-cream-light"}`}
+                            role={canOpenAttendanceDetails ? "button" : undefined}
+                            tabIndex={canOpenAttendanceDetails ? 0 : undefined}
+                            aria-label={canOpenAttendanceDetails ? `View schedule and employee information for ${employeeName} on ${formatDate(item.gy_tracker_date)}` : undefined}
+                            onClick={canOpenAttendanceDetails ? () => setSelectedEmployeeAttendance(item) : undefined}
+                            onKeyDown={canOpenAttendanceDetails ? (event) => {
                               if (event.target !== event.currentTarget) return;
                               if (event.key === "Enter" || event.key === " ") {
                                 event.preventDefault();
@@ -1953,8 +1957,8 @@ export default function AttendanceTable() {
                     <DataCard
                       key={attendanceRowKeys[index]}
                       index={index}
-                      onClick={adminView ? () => setSelectedEmployeeAttendance(item) : undefined}
-                      aria-label={adminView ? `View schedule and employee information for ${employeeDisplayName} on ${formatDate(item.gy_tracker_date)}` : undefined}
+                      onClick={canOpenAttendanceDetails ? () => setSelectedEmployeeAttendance(item) : undefined}
+                      aria-label={canOpenAttendanceDetails ? `View schedule and employee information for ${employeeDisplayName} on ${formatDate(item.gy_tracker_date)}` : undefined}
                     >
                       <DataCard.Header
                         avatar={

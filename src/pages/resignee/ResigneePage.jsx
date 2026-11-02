@@ -5,11 +5,10 @@ import Header from "../../components/layout/Header";
 import {
   DataCard, MetricCard, MetricGrid, PageHeaderHero, ResponsiveTableShell, SearchInput, TablePagination, TableSkeletonRows,
 } from "@/components/ui";
-import { getResignees } from "@/lib/axios/getResignees";
+import { getResignees, getResigneeStats } from "@/lib/axios/getResignees";
 import ResigneeAvatar from "./ResigneeAvatar";
 
 const PAGE_SIZE = 15;
-const EMPTY = { total: 0, thisMonth: 0, last30Days: 0, accounts: 0 };
 
 function formatDate(value) {
   if (!value) return "—";
@@ -31,7 +30,11 @@ export default function ResigneePage() {
   const [page, setPage] = useState(1);
   const [refreshKey, setRefreshKey] = useState(0);
   const [rows, setRows] = useState([]);
-  const [stats, setStats] = useState(EMPTY);
+  const [stats, setStats] = useState(null);
+  const [statsLoading, setStatsLoading] = useState(true);
+  const [statsError, setStatsError] = useState("");
+  const [loadedQueryKey, setLoadedQueryKey] = useState(null);
+  const queryKey = `${search}\u0001${refreshKey}`;
   const [pagination, setPagination] = useState({ currentPage: 1, totalPages: 1, total: 0, limit: PAGE_SIZE });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -56,7 +59,8 @@ export default function ResigneePage() {
           throw new Error(result?.message || "Unable to load Resignee records.");
         }
         setRows(result.data);
-        setStats(result.stats || EMPTY);
+        // Counts are retrieved separately. Page changes only load 15 records.
+        setLoadedQueryKey(queryKey);
         setPagination(result.pagination || { currentPage: page, totalPages: 1, total: 0, limit: PAGE_SIZE });
       })
       .catch((requestError) => {
@@ -65,7 +69,38 @@ export default function ResigneePage() {
       })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; controller.abort(); };
-  }, [page, search, refreshKey]);
+  }, [page, search, refreshKey, queryKey]);
+
+  // Wait until the first page has loaded before running the summary SELECT;
+  // avoid overlapping heavyweight counts with the initial page request.
+  useEffect(() => {
+    if (loadedQueryKey !== queryKey) return undefined;
+    const controller = new AbortController();
+    let active = true;
+    setStatsLoading(true);
+    setStatsError("");
+    getResigneeStats({ search, revision: refreshKey }, controller.signal)
+      .then((result) => {
+        if (!active) return;
+        if (result?.success !== true || !result.stats) {
+          throw new Error(result?.message || "Unable to load Resignee counts.");
+        }
+        setStats(result.stats);
+      })
+      .catch((requestError) => {
+        if (!active || controller.signal.aborted) return;
+        setStats(null);
+        setStatsError(requestError?.response?.data?.message || "Resignee summary counts are unavailable.");
+      })
+      .finally(() => { if (active) setStatsLoading(false); });
+    return () => { active = false; controller.abort(); };
+  }, [loadedQueryKey, queryKey, search, refreshKey]);
+
+  useEffect(() => {
+    setStats(null);
+    setStatsLoading(true);
+    setStatsError("");
+  }, [queryKey]);
 
   const refresh = useCallback(() => setRefreshKey((value) => value + 1), []);
 
@@ -102,11 +137,12 @@ export default function ResigneePage() {
           />
 
           <MetricGrid columns={4}>
-            <MetricCard label="TOTAL RESIGNEES" value={stats.total.toLocaleString()} description="Inactive Kronos users with an elapsed last working day" icon={UsersRound} tone="orange" loading={loading && !rows.length} />
-            <MetricCard label="THIS MONTH" value={stats.thisMonth.toLocaleString()} description="Last working date this month" icon={CalendarCheck2} tone="green" loading={loading && !rows.length} />
-            <MetricCard label="LAST 30 DAYS" value={stats.last30Days.toLocaleString()} description="Last working date in past 30 days" icon={Clock3} tone="amber" loading={loading && !rows.length} />
-            <MetricCard label="ACCOUNTS" value={stats.accounts.toLocaleString()} description="Accounts with inactive employees" icon={CheckCircle2} tone="navy" loading={loading && !rows.length} />
+            <MetricCard label="TOTAL RESIGNEES" value={stats?.total?.toLocaleString() ?? "—"} description="Inactive Kronos users with an elapsed last working day" icon={UsersRound} tone="orange" loading={statsLoading} />
+            <MetricCard label="THIS MONTH" value={stats?.thisMonth?.toLocaleString() ?? "—"} description="Last working date this month" icon={CalendarCheck2} tone="green" loading={statsLoading} />
+            <MetricCard label="LAST 30 DAYS" value={stats?.last30Days?.toLocaleString() ?? "—"} description="Last working date in past 30 days" icon={Clock3} tone="amber" loading={statsLoading} />
+            <MetricCard label="ACCOUNTS" value={stats?.accounts?.toLocaleString() ?? "—"} description="Accounts with inactive employees" icon={CheckCircle2} tone="navy" loading={statsLoading} />
           </MetricGrid>
+          {statsError ? <p role="status" className="text-xs font-semibold text-amber-700">{statsError} Employee records remain available.</p> : null}
 
           <section className="overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-sm">
             <div className="flex flex-col gap-3 border-b border-sibs-border-subtle p-4 2xl:p-5 md:flex-row md:items-end md:justify-between">
