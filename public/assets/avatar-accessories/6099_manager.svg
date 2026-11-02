@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="The Queen Manager avatar accessory">
+    <defs>
+      <linearGradient id="bg" x1=".1" y1="0" x2=".9" y2="1"><stop stop-color="#6F3DA7"/><stop offset="1" stop-color="#35195E"/></linearGradient>
+      <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#FFF5CE"/><stop offset=".55" stop-color="#F0CF8D"/><stop offset="1" stop-color="#B87528"/></linearGradient>
+    </defs>
+    <circle cx="32" cy="32" r="28.8" fill="url(#bg)" stroke="url(#gold)" stroke-width="3.8"/>
+    <circle cx="32" cy="32" r="24.4" fill="none" stroke="white" stroke-opacity=".22" stroke-width=".9"/>
+    <path d="M15 12 Q32 4 49 13" fill="none" stroke="white" stroke-opacity=".20" stroke-width="2" stroke-linecap="round"/>
+    
+    <path d="M32 11 L48 18 V33 Q47 43 32 52 Q17 43 16 33 V18Z" fill="#7140AB" stroke="#F7D48C" stroke-width="2.4"/>
+    <path d="M32 17 L42 21 V33 Q41 40 32 45 Q23 40 22 33 V21Z" fill="#A277CD" fill-opacity=".27" stroke="#DAB8F8" stroke-width="1"/>
+    <path d="M25 32 L30 37 L40 26" fill="none" stroke="#FFF3C5" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="32" cy="17" r="2.2" fill="#F7D48C"/>
+    
+  </svg>

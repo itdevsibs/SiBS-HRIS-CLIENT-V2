@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import {
@@ -13,6 +13,9 @@ import api, { handleLogout } from "../../../lib/axios/api-template";
 import { useUser } from "../../../services/context/UserContext";
 import { useHeader } from "../../../services/context/HeaderContext";
 import { useAdmin } from "../../../services/context/AdminContext";
+import { getActiveCollectibleProfile } from "../../../config/developerBorders";
+import CollectibleAvatarFrame from "./CollectibleAvatarFrame.jsx";
+import { DeveloperAccessory } from "./DeveloperAccessories.jsx";
 
 const ADMIN_ACCESS_LABELS = {
   1: "Talent Acquisition",
@@ -31,7 +34,7 @@ function normalizeRole(value = "") {
   return String(value || "")
     .trim()
     .toLowerCase()
-    .replace(/[\\s-]+/g, "_");
+    .replace(/[\s-]+/g, "_");
 }
 
 function getAdminAccess(user = {}) {
@@ -45,54 +48,7 @@ function getAdminAccess(user = {}) {
   );
 }
 
-function MrSibsCrown({ className = "h-4 w-4" }) {
-  return (
-    <svg
-      viewBox="0 0 24 20"
-      className={`${className} drop-shadow-[0_2px_3px_rgba(180,83,9,0.45)]`}
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <defs>
-        <linearGradient id="mrSibsCrownGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#FDE047" />
-          <stop offset="45%" stopColor="#F59E0B" />
-          <stop offset="100%" stopColor="#D97706" />
-        </linearGradient>
-        <linearGradient id="mrSibsBaseGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#F59E0B" />
-          <stop offset="100%" stopColor="#B45309" />
-        </linearGradient>
-      </defs>
 
-      {/* Main Crown Body with 3 Peaks */}
-      <path
-        d="M2.5 15.5 C 7 14, 17 14, 21.5 15.5 L 20 6 L 14.5 11 L 12 2.5 L 9.5 11 L 4 6 Z"
-        fill="url(#mrSibsCrownGrad)"
-        stroke="#B45309"
-        strokeWidth="0.6"
-        strokeLinejoin="round"
-      />
-
-      {/* Crown Base Arc */}
-      <path
-        d="M2.5 15.5 C 7 14, 17 14, 21.5 15.5 L 21 17.5 C 17 16, 7 16, 3 17.5 Z"
-        fill="url(#mrSibsBaseGrad)"
-      />
-
-      {/* Golden Spheres on the 3 Peaks */}
-      <circle cx="4" cy="6" r="1.5" fill="#FEF08A" stroke="#B45309" strokeWidth="0.5" />
-      <circle cx="12" cy="2.5" r="1.8" fill="#FFFBEB" stroke="#B45309" strokeWidth="0.5" />
-      <circle cx="20" cy="6" r="1.5" fill="#FEF08A" stroke="#B45309" strokeWidth="0.5" />
-
-      {/* Center 4-Point Star Sparkle */}
-      <path
-        d="M12 8 C 12 10.2, 10.5 11.5, 8.5 11.5 C 10.5 11.5, 12 12.8, 12 15 C 12 12.8, 13.5 11.5, 15.5 11.5 C 13.5 11.5, 12 10.2, 12 8 Z"
-        fill="#FFFFFF"
-      />
-    </svg>
-  );
-}
 
 export default function UserDropdown({
   avatar,
@@ -112,14 +68,16 @@ export default function UserDropdown({
 
   const navigate = useNavigate();
   const ref = useRef(null);
+  const triggerRef = useRef(null);
   const dropdownRef = useRef(null);
   const avatarPreviewAnchorRef = useRef(null);
 
   const { user, setUser, refetchUser } = useUser();
   const { setAdminLogin } = useHeader();
   const { getAccessLabel, ADMIN_ROLES = [] } = useAdmin();
+  const collectible = getActiveCollectibleProfile(user, formattedName);
 
-  const calculateAvatarPreviewPosition = () => {
+  const calculateAvatarPreviewPosition = useCallback(() => {
     const anchor = avatarPreviewAnchorRef.current;
     if (!anchor || typeof window === "undefined") return null;
 
@@ -145,7 +103,7 @@ export default function UserDropdown({
     }
 
     return { top, left };
-  };
+  }, []);
 
   const calculateDropdownPosition = () => {
     const anchor = ref.current;
@@ -192,7 +150,7 @@ export default function UserDropdown({
       window.removeEventListener("resize", updateAvatarPreviewPosition);
       window.removeEventListener("scroll", updateAvatarPreviewPosition, true);
     };
-  }, [avatarPreviewOpen]);
+  }, [avatarPreviewOpen, calculateAvatarPreviewPosition]);
 
   useLayoutEffect(() => {
     if (!open) return undefined;
@@ -229,14 +187,17 @@ export default function UserDropdown({
     const handleEscape = (event) => {
       if (event.key === "Escape") {
         setOpen(false);
+        triggerRef.current?.focus();
       }
     };
 
     document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("touchstart", handleClickOutside, { passive: true });
     document.addEventListener("keydown", handleEscape);
 
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
       document.removeEventListener("keydown", handleEscape);
     };
   }, []);
@@ -313,34 +274,6 @@ export default function UserDropdown({
   const role = normalizeRole(user?.role);
   const adminAccess = getAdminAccess(user);
 
-  const userAccountIdentifiers = [
-    user?.sibs_id,
-    user?.sibsId,
-    user?.gy_user_code,
-    user?.gy_emp_code,
-    user?.gy_emp_id,
-    user?.accountId,
-    user?.account,
-    user?.id,
-    user?.username,
-  ]
-    .filter((value) => value !== undefined && value !== null)
-    .map((value) => String(value).trim());
-
-  const isAccount6784 = userAccountIdentifiers.some((id) => id === "6784");
-
-  const isRalphDulla =
-    (/ralph/i.test(user?.firstName || "") && /dulla/i.test(user?.lastName || "")) ||
-    (/ralph/i.test(formattedName || "") && /dulla/i.test(formattedName || "")) ||
-    (/ralph/i.test(user?.email || "") && /dulla/i.test(user?.email || ""));
-
-  // Strictly limited to account 6784 RALPH DULLA
-  const isMrSibs = Boolean(
-    (isAccount6784 && isRalphDulla) ||
-      (isRalphDulla && !userAccountIdentifiers.length) ||
-      (isAccount6784 && !formattedName),
-  );
-
   const isAdminSide = normalizedAdminRoles.includes(role);
 
   const canSwitchToAdmin =
@@ -369,6 +302,32 @@ export default function UserDropdown({
     setAvatarPreviewOpen(false);
   };
 
+  const handleMenuKeyDown = (event) => {
+    if (!dropdownRef.current) return;
+    const items = Array.from(
+      dropdownRef.current.querySelectorAll('[role="menuitem"]:not([disabled])')
+    );
+    if (!items.length) return;
+
+    const currentIndex = items.indexOf(document.activeElement);
+
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      const nextIndex = currentIndex < items.length - 1 ? currentIndex + 1 : 0;
+      items[nextIndex]?.focus();
+    } else if (event.key === "ArrowUp") {
+      event.preventDefault();
+      const prevIndex = currentIndex > 0 ? currentIndex - 1 : items.length - 1;
+      items[prevIndex]?.focus();
+    } else if (event.key === "Home") {
+      event.preventDefault();
+      items[0]?.focus();
+    } else if (event.key === "End") {
+      event.preventDefault();
+      items[items.length - 1]?.focus();
+    }
+  };
+
   const handleToggleDropdown = (event) => {
     event.stopPropagation();
     hideAvatarPreview();
@@ -385,6 +344,8 @@ export default function UserDropdown({
           <div
             ref={dropdownRef}
             role="menu"
+            aria-label="User actions"
+            onKeyDown={handleMenuKeyDown}
             className="sibs-animated-dropdown open fixed z-[2147483000]"
             style={{
               top: dropdownPosition.top,
@@ -444,10 +405,14 @@ export default function UserDropdown({
   return (
     <div className="relative z-[99999] min-w-0" ref={ref}>
       <button
+        ref={triggerRef}
         type="button"
         onClick={handleToggleDropdown}
         aria-expanded={open}
         aria-haspopup="menu"
+        aria-label={`User menu: ${formattedName || "User"}${
+          collectible ? ` (${collectible.title})` : ""
+        }`}
         className={[
           // The profile itself is the trigger; do not turn it into a second
           // bordered dropdown-style card while its menu is open.
@@ -461,13 +426,16 @@ export default function UserDropdown({
           onMouseLeave={hideAvatarPreview}
           className="relative flex shrink-0 items-center justify-center"
         >
-          <div
-            className={`flex h-8 w-8 2xl:h-9 2xl:w-9 items-center justify-center overflow-hidden rounded-full bg-sibs-primary-1 text-[11px] 2xl:text-xs font-extrabold uppercase text-white shadow-[0_6px_16px_rgba(0,48,142,0.24)] max-[360px]:h-7.5 max-[360px]:w-7.5 ${
-              isMrSibs
-                ? "ring-2 ring-amber-400 ring-offset-1 ring-offset-white shadow-[0_0_8px_rgba(245,158,11,0.35)]"
-                : ""
-            }`}
-          >
+          {collectible ? (
+            <CollectibleAvatarFrame
+              collectible={collectible}
+              photoUrl={profilePictureUrl && !profileImageFailed ? profilePictureUrl : ""}
+              fallback={avatar || "U"}
+              variant="header"
+              onPhotoError={() => setProfileImageFailed(true)}
+            />
+          ) : (
+          <div className="flex h-8 w-8 2xl:h-9 2xl:w-9 items-center justify-center overflow-hidden rounded-full bg-sibs-primary-1 text-[11px] 2xl:text-xs font-extrabold uppercase text-white shadow-[0_6px_16px_rgba(0,48,142,0.24)] max-[360px]:h-7.5 max-[360px]:w-7.5">
             {profilePictureUrl && !profileImageFailed ? (
               <img
                 src={profilePictureUrl}
@@ -479,25 +447,6 @@ export default function UserDropdown({
               avatar || "U"
             )}
           </div>
-
-          {isMrSibs && (
-            <>
-              {/* Crown on top-right */}
-              <div
-                className="pointer-events-none absolute -top-2.5 -right-1.5 z-10 rotate-[22deg] transition-transform duration-200 group-hover:scale-110 group-hover:rotate-[26deg]"
-                aria-hidden="true"
-              >
-                <MrSibsCrown className="h-4 w-4 2xl:h-4.5 2xl:w-4.5" />
-              </div>
-
-              {/* MR. SiBS Pill Badge at bottom */}
-              <span
-                className="pointer-events-none absolute -bottom-1.5 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-full border-[1.5px] border-white bg-gradient-to-r from-amber-500 via-orange-500 to-amber-500 px-1.5 py-[0.5px] text-[6.5px] 2xl:text-[7px] font-black uppercase tracking-tight text-white shadow-[0_2px_4px_rgba(4,44,81,0.25)] select-none leading-none"
-                aria-label="MR. SiBS"
-              >
-                MR. SiBS
-              </span>
-            </>
           )}
         </div>
 
@@ -549,9 +498,7 @@ export default function UserDropdown({
           >
             <div
               className={`relative flex h-full w-full items-center justify-center overflow-hidden rounded-xl bg-sibs-primary-1 text-4xl font-extrabold uppercase text-white ${
-                isMrSibs
-                  ? "ring-2 ring-amber-400 ring-offset-2 ring-offset-white shadow-[0_0_12px_rgba(245,158,11,0.35)]"
-                  : ""
+                collectible ? collectible.previewRingClass : ""
               }`}
             >
               {profilePictureUrl && !profileImageFailed ? (
@@ -565,16 +512,21 @@ export default function UserDropdown({
                 avatar || "U"
               )}
 
-              {isMrSibs && (
-                <span className="absolute bottom-2 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full border-2 border-white bg-gradient-to-r from-amber-500 via-orange-500 to-amber-500 px-3 py-0.5 text-[9px] font-black uppercase tracking-wider text-white shadow-md">
-                  MR. SiBS
+              {collectible && (
+                <span
+                  className={`absolute bottom-2 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full border-2 border-white bg-gradient-to-r ${collectible.badgeGradient} px-3 py-0.5 text-[9px] font-black uppercase tracking-wider text-white shadow-md`}
+                >
+                  {collectible.title}
                 </span>
               )}
             </div>
 
-            {isMrSibs && (
+            {collectible && (
               <div className="absolute -top-3.5 -right-2.5 z-20 rotate-[22deg]">
-                <MrSibsCrown className="h-8 w-8" />
+                <DeveloperAccessory
+                  accessoryKey={collectible.accessoryKey}
+                  className="h-8 w-8"
+                />
               </div>
             )}
           </div>,

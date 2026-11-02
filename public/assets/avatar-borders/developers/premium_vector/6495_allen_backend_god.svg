@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="BACKEND GOD avatar border">
+<title>BACKEND GOD · SiBS developer avatar</title>
+<desc>Premium layered vector avatar overlay with transparent portrait opening; matching collectible border collection. Title text renders separately in HRIS.</desc>
+<defs>
+ <linearGradient id="ring" x1=".08" y1=".05" x2=".9" y2=".93" gradientUnits="objectBoundingBox"><stop stop-color="#24AD79"/><stop offset=".38" stop-color="#10634A"/><stop offset="1" stop-color="#092823"/></linearGradient>
+ <linearGradient id="metal" x1=".1" y1="0" x2=".85" y2="1" gradientUnits="objectBoundingBox"><stop stop-color="#D3FDEB"/><stop offset=".39" stop-color="#4EE0A6"/><stop offset=".72" stop-color="#4EE0A6"/><stop offset="1" stop-color="#092823"/></linearGradient>
+ <linearGradient id="shine" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#FFFFFF"/><stop offset=".55" stop-color="#D3FDEB"/><stop offset="1" stop-color="#4EE0A6"/></linearGradient>
+ <linearGradient id="brand" x1="0" y1="1" x2="1" y2="0"><stop stop-color="#38388C"/><stop offset=".48" stop-color="#157BC6"/><stop offset="1" stop-color="#00AADE"/></linearGradient>
+ <filter id="softShadow" x="-25%" y="-25%" width="150%" height="150%"><feGaussianBlur stdDeviation="3"/></filter>
+</defs>
+<!-- Thin perimeter offset shadow and layered ring: the entire center is transparent. -->
+<circle cx="256" cy="226" r="177" fill="none" stroke="#092823" stroke-opacity=".28" stroke-width="34" filter="url(#softShadow)"/>
+<circle cx="256" cy="226" r="171.5" fill="none" stroke="#4EE0A6" stroke-width="32"/>
+<circle cx="256" cy="226" r="171.5" fill="none" stroke="url(#ring)" stroke-width="24"/>
+<circle cx="256" cy="226" r="186" fill="none" stroke="#4EE0A6" stroke-width="5"/>
+<circle cx="256" cy="226" r="158" fill="none" stroke="#D3FDEB" stroke-width="5"/>
+<circle cx="256" cy="226" r="176" fill="none" stroke="white" stroke-opacity=".46" stroke-width="4" stroke-dasharray="200 910" stroke-linecap="round" transform="rotate(196 256 226)"/>
+<circle cx="256" cy="226" r="170" fill="none" stroke="#D3FDEB" stroke-opacity=".64" stroke-width="3" stroke-dasharray="142 964" stroke-linecap="round" transform="rotate(50 256 226)"/>
+<!-- Short inset segmentation marks convey hand-crafted detail without clutter. -->
+<g stroke="#D3FDEB" stroke-width="3" opacity=".85"><path d="M82 155 L98 162 M430 155 L414 162 M88 305 L104 299 M424 305 L408 299"/></g>
+<g stroke="url(#metal)" stroke-width="5" fill="none"><path d="M77 202 H62 V222 H75 M435 202 H450 V222 H437"/><path d="M83 284 H65 V303 H86 M429 284 H448 V303 H426"/></g><g fill="url(#metal)"><circle cx="61" cy="222" r="5"/><circle cx="450" cy="222" r="5"/><circle cx="65" cy="303" r="5"/><circle cx="448" cy="303" r="5"/></g>
+<!-- Main custom medallion with diamond tabs rather than a generic circular icon -->
+<g data-avatar-emblem="true" transform="translate(391 80) scale(1.2) translate(-391 -75)">
+<path d="M391 13 L441 45 L447 95 L391 130 L338 96 L343 47Z" fill="#092823" fill-opacity=".28" filter="url(#softShadow)"/>
+<path d="M391 15 L442 45 L448 94 L391 132 L338 95 L343 46Z" fill="url(#metal)" stroke="#D3FDEB" stroke-width="4"/>
+<path d="M391 26 L431 51 L435 88 L391 118 L351 89 L354 51Z" fill="url(#ring)" stroke="#D3FDEB" stroke-opacity=".9" stroke-width="3"/>
+<g transform="translate(392 75) scale(.9)"><rect x="-30" y="-34" width="60" height="19" rx="5" fill="#102A26" stroke="#B8FFE5" stroke-width="3"/><rect x="-30" y="-10" width="60" height="19" rx="5" fill="#102A26" stroke="#B8FFE5" stroke-width="3"/><rect x="-30" y="14" width="60" height="19" rx="5" fill="#102A26" stroke="#B8FFE5" stroke-width="3"/><g fill="#47F2AB"><circle cx="-19" cy="-24" r="3.4"/><circle cx="-9" cy="-24" r="3.4"/><circle cx="-19" cy="0" r="3.4"/><circle cx="-9" cy="0" r="3.4"/><circle cx="-19" cy="24" r="3.4"/><circle cx="-9" cy="24" r="3.4"/></g><path d="M8 -24 H22 M8 0 H22 M8 24 H22" stroke="#75E6B1" stroke-width="4" stroke-linecap="round"/></g>
+</g>
+<!-- Small corner rivets and diamond base point, no copied crown elements. -->
+<g fill="#D3FDEB" stroke="#092823" stroke-width="2"><circle cx="74" cy="227" r="5"/><circle cx="439" cy="227" r="5"/></g>
+<path d="M239 393 L256 376 L273 393 L256 410Z" fill="url(#metal)" stroke="#D3FDEB" stroke-width="3"/>
+<!-- Bottom plaque is HTML for legibility at 72-78px; no raster or duplicated SVG text. -->
+</svg>

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useId, useMemo, useRef, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import {
   getThemedDropdownOptionLabel,
@@ -44,8 +44,14 @@ export default function ThemedDropdown({
   onChange,
 }) {
   const dropdownRef = useRef(null);
+  const inputRef = useRef(null);
+  const buttonRef = useRef(null);
+  const ignoreNextFocusRef = useRef(false);
+  const rawId = useId();
+  const listboxId = `themed-dropdown-listbox-${rawId.replace(/:/g, "")}`;
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
 
   const selectedLabel = useMemo(() => {
     const selectedOption = options.find(
@@ -67,21 +73,61 @@ export default function ThemedDropdown({
   }, [options, search, searchable]);
 
   useEffect(() => {
+    setHighlightedIndex(-1);
+  }, [search, filteredOptions.length]);
+
+  useEffect(() => {
     function handleClickOutside(event) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setOpen(false);
         setSearch("");
+        setHighlightedIndex(-1);
+      }
+    }
+
+    function handleKeyDown(event) {
+      if (event.key === "Escape") {
+        setOpen(false);
+        setSearch("");
+        setHighlightedIndex(-1);
+        ignoreNextFocusRef.current = true;
+        if (searchable) {
+          inputRef.current?.focus();
+        } else {
+          buttonRef.current?.focus();
+        }
+      } else if (open && filteredOptions.length > 0) {
+        if (event.key === "ArrowDown") {
+          event.preventDefault();
+          setHighlightedIndex((prev) => (prev < filteredOptions.length - 1 ? prev + 1 : 0));
+        } else if (event.key === "ArrowUp") {
+          event.preventDefault();
+          setHighlightedIndex((prev) => (prev > 0 ? prev - 1 : filteredOptions.length - 1));
+        } else if (event.key === "Enter" && highlightedIndex >= 0 && highlightedIndex < filteredOptions.length) {
+          event.preventDefault();
+          const targetOption = filteredOptions[highlightedIndex];
+          const optionValue = String(getThemedDropdownOptionValue(targetOption) || "");
+          selectValue(optionValue, targetOption);
+        }
       }
     }
 
     document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("touchstart", handleClickOutside, { passive: true });
+    document.addEventListener("keydown", handleKeyDown);
 
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
+      document.removeEventListener("keydown", handleKeyDown);
     };
-  }, []);
+  }, [searchable, open, filteredOptions, highlightedIndex]);
 
   function openDropdown() {
+    if (ignoreNextFocusRef.current) {
+      ignoreNextFocusRef.current = false;
+      return;
+    }
     onBeforeOpen?.();
     setOpen(true);
   }
@@ -90,6 +136,7 @@ export default function ThemedDropdown({
     if (open) {
       setOpen(false);
       setSearch("");
+      setHighlightedIndex(-1);
       return;
     }
 
@@ -100,12 +147,19 @@ export default function ThemedDropdown({
     onChange?.(nextValue, option);
     setOpen(false);
     setSearch("");
+    setHighlightedIndex(-1);
+    ignoreNextFocusRef.current = true;
+    if (searchable) {
+      inputRef.current?.focus();
+    } else {
+      buttonRef.current?.focus();
+    }
   }
 
   return (
     <div ref={dropdownRef} className={`relative block min-w-0 ${zIndex} ${className}`}>
       {label ? (
-        <span className={labelClass}>
+        <label className={labelClass}>
           <span>
             {label} {required && <span className="text-red-500">*</span>}
           </span>
@@ -114,13 +168,21 @@ export default function ThemedDropdown({
               {helper}
             </span>
           ) : null}
-        </span>
+        </label>
       ) : null}
 
       <div className="group relative">
         {searchable ? (
           <input
+            ref={inputRef}
             type="text"
+            role="combobox"
+            aria-expanded={open}
+            aria-haspopup="listbox"
+            aria-controls={listboxId}
+            aria-autocomplete="list"
+            aria-activedescendant={open && highlightedIndex >= 0 ? `${listboxId}-option-${highlightedIndex}` : undefined}
+            aria-label={label || placeholder}
             value={open ? search : selectedLabel}
             disabled={disabled}
             placeholder={placeholder}
@@ -130,15 +192,33 @@ export default function ThemedDropdown({
               setSearch(event.target.value);
               openDropdown();
             }}
+            onKeyDown={(event) => {
+              if (event.key === "ArrowDown" && !open) {
+                event.preventDefault();
+                openDropdown();
+              }
+            }}
             className={`${inputClass} pr-10 ${open ? "border-sibs-orange bg-white ring-4 ring-sibs-orange/10" : "border-sibs-border bg-sibs-surface hover:border-sibs-orange/40 hover:bg-white focus:border-sibs-orange focus:bg-white focus:ring-4 focus:ring-sibs-orange/10"}`}
           />
         ) : (
           <button
+            ref={buttonRef}
             type="button"
+            role="combobox"
+            aria-expanded={open}
+            aria-haspopup="listbox"
+            aria-controls={listboxId}
+            aria-activedescendant={open && highlightedIndex >= 0 ? `${listboxId}-option-${highlightedIndex}` : undefined}
+            aria-label={label || placeholder}
             disabled={disabled}
             onClick={toggleDropdown}
+            onKeyDown={(event) => {
+              if ((event.key === "ArrowDown" || event.key === "Enter" || event.key === " ") && !open) {
+                event.preventDefault();
+                openDropdown();
+              }
+            }}
             className={`${inputClass} flex items-center justify-between pr-10 text-left ${open ? "border-sibs-orange bg-white ring-4 ring-sibs-orange/10" : "border-sibs-border bg-sibs-surface hover:border-sibs-orange/40 hover:bg-white focus:border-sibs-orange focus:bg-white focus:ring-4 focus:ring-sibs-orange/10"}`}
-            aria-expanded={open}
           >
             <span
               className={`block min-w-0 truncate ${
@@ -152,6 +232,7 @@ export default function ThemedDropdown({
 
         <button
           type="button"
+          tabIndex={-1}
           disabled={disabled}
           onClick={toggleDropdown}
           className="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-sibs-text-muted transition hover:bg-sibs-cream-subtle hover:text-sibs-orange disabled:cursor-not-allowed disabled:opacity-50"
@@ -166,10 +247,17 @@ export default function ThemedDropdown({
         </button>
 
         <AnimatedDropdown open={open && !disabled}>
-          <div className="max-h-64 overflow-y-auto py-2 sibs-scrollbar">
+          <div
+            id={listboxId}
+            role="listbox"
+            aria-label={label || placeholder || "Options"}
+            className="max-h-64 overflow-y-auto py-2 sibs-scrollbar"
+          >
             {showPlaceholderOption && placeholder ? (
               <button
                 type="button"
+                role="option"
+                aria-selected={!value}
                 onClick={() => selectValue("", null)}
                 className={`block w-full px-4 py-2.5 text-left text-xs transition ${
                   !value
@@ -188,15 +276,21 @@ export default function ThemedDropdown({
                 );
                 const optionLabel = getThemedDropdownOptionLabel(option);
                 const checked = String(value || "") === optionValue;
+                const isHighlighted = highlightedIndex === index;
 
                 return (
                   <button
                     key={`${optionValue || optionLabel}-${index}`}
+                    id={`${listboxId}-option-${index}`}
                     type="button"
+                    role="option"
+                    aria-selected={checked}
                     onClick={() => selectValue(optionValue, option)}
                     className={`block w-full px-4 py-2.5 text-left text-xs transition ${
                       checked
                         ? "bg-sibs-cream-light font-extrabold text-sibs-orange"
+                        : isHighlighted
+                        ? "bg-slate-100 font-bold text-sibs-navy ring-1 ring-inset ring-sibs-orange/30"
                         : "font-semibold text-sibs-text-secondary hover:bg-sibs-cream-subtle hover:text-sibs-orange"
                     }`}
                   >
