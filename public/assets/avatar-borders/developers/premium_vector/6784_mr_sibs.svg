@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="MR. SIBS avatar border">
+<title>MR. SIBS · SiBS developer avatar</title>
+<desc>Premium layered vector avatar overlay with transparent portrait opening; matching collectible border collection. Title text renders separately in HRIS.</desc>
+<defs>
+ <linearGradient id="ring" x1=".08" y1=".05" x2=".9" y2=".93" gradientUnits="objectBoundingBox"><stop stop-color="#32A8D7"/><stop offset=".38" stop-color="#0E5D9D"/><stop offset="1" stop-color="#073058"/></linearGradient>
+ <linearGradient id="metal" x1=".1" y1="0" x2=".85" y2="1" gradientUnits="objectBoundingBox"><stop stop-color="#FDE4A0"/><stop offset=".39" stop-color="#F29E32"/><stop offset=".72" stop-color="#F29E32"/><stop offset="1" stop-color="#073058"/></linearGradient>
+ <linearGradient id="shine" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#FFFFFF"/><stop offset=".55" stop-color="#FDE4A0"/><stop offset="1" stop-color="#F29E32"/></linearGradient>
+ <linearGradient id="brand" x1="0" y1="1" x2="1" y2="0"><stop stop-color="#38388C"/><stop offset=".48" stop-color="#157BC6"/><stop offset="1" stop-color="#00AADE"/></linearGradient>
+ <filter id="softShadow" x="-25%" y="-25%" width="150%" height="150%"><feGaussianBlur stdDeviation="3"/></filter>
+</defs>
+<!-- Thin perimeter offset shadow and layered ring: the entire center is transparent. -->
+<circle cx="256" cy="226" r="177" fill="none" stroke="#073058" stroke-opacity=".28" stroke-width="34" filter="url(#softShadow)"/>
+<circle cx="256" cy="226" r="171.5" fill="none" stroke="#F29E32" stroke-width="32"/>
+<circle cx="256" cy="226" r="171.5" fill="none" stroke="url(#ring)" stroke-width="24"/>
+<circle cx="256" cy="226" r="186" fill="none" stroke="#F29E32" stroke-width="5"/>
+<circle cx="256" cy="226" r="158" fill="none" stroke="#FDE4A0" stroke-width="5"/>
+<circle cx="256" cy="226" r="176" fill="none" stroke="white" stroke-opacity=".46" stroke-width="4" stroke-dasharray="200 910" stroke-linecap="round" transform="rotate(196 256 226)"/>
+<circle cx="256" cy="226" r="170" fill="none" stroke="#FDE4A0" stroke-opacity=".64" stroke-width="3" stroke-dasharray="142 964" stroke-linecap="round" transform="rotate(50 256 226)"/>
+<!-- Short inset segmentation marks convey hand-crafted detail without clutter. -->
+<g stroke="#FDE4A0" stroke-width="3" opacity=".85"><path d="M82 155 L98 162 M430 155 L414 162 M88 305 L104 299 M424 305 L408 299"/></g>
+<path d="M97 299 L105 311 L120 315 L110 326 L110 340 L98 332 L84 337 L88 323 L78 314 L93 311Z" fill="url(#metal)"/><path d="M415 299 L407 311 L392 315 L402 326 L402 340 L414 332 L428 337 L424 323 L434 314 L419 311Z" fill="url(#metal)"/>
+<!-- Main custom medallion with diamond tabs rather than a generic circular icon -->
+<g data-avatar-emblem="true" transform="translate(391 80) scale(1.2) translate(-391 -75)">
+<path d="M391 13 L441 45 L447 95 L391 130 L338 96 L343 47Z" fill="#073058" fill-opacity=".28" filter="url(#softShadow)"/>
+<path d="M391 15 L442 45 L448 94 L391 132 L338 95 L343 46Z" fill="url(#metal)" stroke="#FDE4A0" stroke-width="4"/>
+<path d="M391 26 L431 51 L435 88 L391 118 L351 89 L354 51Z" fill="url(#ring)" stroke="#FDE4A0" stroke-opacity=".9" stroke-width="3"/>
+<g transform="translate(392 75) scale(.9)"><path d="M-41 18 L-49 -21 L-22 -5 L-2 -42 L19 -7 L47 -22 L40 18Z" fill="url(#metal)" stroke="url(#shine)" stroke-width="4" stroke-linejoin="round"/><path d="M-38 19 H39 V30 H-38Z" fill="url(#metal)" stroke="#FFF7D8" stroke-width="3"/><path d="M-33 1 L-24 9 L-16 -7" fill="none" stroke="#FFF5C7" stroke-width="4"/><path d="M3 -24 L8 -15 L-2 -6 L-12 -15Z" fill="#1D93D5" stroke="#FDF2BF" stroke-width="2.5"/><circle cx="-46" cy="-20" r="6" fill="#FFE9A4"/><circle cx="0" cy="-43" r="7" fill="#FFE9A4"/><circle cx="47" cy="-21" r="6" fill="#FFE9A4"/></g>
+</g>
+<!-- Small corner rivets and diamond base point, no copied crown elements. -->
+<g fill="#FDE4A0" stroke="#073058" stroke-width="2"><circle cx="74" cy="227" r="5"/><circle cx="439" cy="227" r="5"/></g>
+<path d="M239 393 L256 376 L273 393 L256 410Z" fill="url(#metal)" stroke="#FDE4A0" stroke-width="3"/>
+<!-- Bottom plaque is HTML for legibility at 72-78px; no raster or duplicated SVG text. -->
+</svg>
