@@ -75,7 +75,7 @@ export default function ResigneePage() {
         <div className="mx-auto w-full max-w-[1700px] space-y-4 sm:space-y-5">
           <PageHeaderHero
             kicker="Core HR View"
-            title="Resignee"
+            title="Resignees"
             description="View inactive Kronos employees whose recorded last working day has passed."
             actions={<div className="flex flex-wrap items-center gap-2">
               <button type="button" aria-label="Refresh resignee records" onClick={refresh}
@@ -149,9 +149,6 @@ export default function ResigneePage() {
               </div>
             </div>
           </section>
-          <p className="px-1 pb-3 text-[11px] font-medium text-sibs-muted">
-            Data comes from Kronos gy_employee and gy_user. It identifies inactive users with a past recorded last working day; these tables do not confirm whether the separation was a voluntary resignation. HRIS resignation approvals are not used for this list.
-          </p>
         </div>
       </main>
     </div>

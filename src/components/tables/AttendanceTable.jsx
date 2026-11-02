@@ -61,6 +61,41 @@ const ATTENDANCE_LIVE_REFRESH_MS = 5_000;
 const ATTENDANCE_SOCKET_FALLBACK_MS = 30_000;
 const ATTENDANCE_COUNT_REFRESH_MS = 30_000;
 
+// Keep historical Attendance requests bounded in the HRIS table itself. This
+// protects against old saved filters and manually manipulated picker values.
+const ATTENDANCE_MIN_DATE = "2011-01-01";
+const ATTENDANCE_MAX_DAYS = 31;
+
+function localDateKey(date = new Date()) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+function addCalendarDays(dateKey, amount) {
+  const date = new Date(`${dateKey}T12:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + amount);
+  return date.toISOString().slice(0, 10);
+}
+
+function validAttendanceDate(dateKey, todayKey) {
+  if (typeof dateKey !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(dateKey)) return false;
+  const parsed = new Date(`${dateKey}T12:00:00Z`);
+  return !Number.isNaN(parsed.getTime()) &&
+    parsed.toISOString().slice(0, 10) === dateKey &&
+    dateKey >= ATTENDANCE_MIN_DATE && dateKey <= todayKey;
+}
+
+function safeAttendanceDateRange(range, fallback, todayKey) {
+  const from = range?.dateFrom;
+  const to = range?.dateTo;
+  if (
+    !validAttendanceDate(from, todayKey) ||
+    !validAttendanceDate(to, todayKey) ||
+    to < from ||
+    to > addCalendarDays(from, ATTENDANCE_MAX_DAYS - 1)
+  ) return fallback;
+  return { dateFrom: from, dateTo: to };
+}
+
 function sameAttendanceRows(previous, next) {
   // Max 15 rows: a content comparison avoids re-rendering (and reloading GIF
   // avatars) when the server returned an unchanged page.
@@ -778,8 +813,20 @@ export default function AttendanceTable() {
     [employeeAttendanceView],
   );
 
-  const dateFrom = filterValues?.dateFrom || initialDateRange.dateFrom;
-  const dateTo = filterValues?.dateTo || initialDateRange.dateTo;
+  const todayDateKey = localDateKey();
+  const safeDateRange = safeAttendanceDateRange(
+    {
+      dateFrom: filterValues?.dateFrom || initialDateRange.dateFrom,
+      dateTo: filterValues?.dateTo || initialDateRange.dateTo,
+    },
+    initialDateRange,
+    todayDateKey,
+  );
+  const { dateFrom, dateTo } = safeDateRange;
+  const maximumToDate = [
+    todayDateKey,
+    addCalendarDays(dateFrom, ATTENDANCE_MAX_DAYS - 1),
+  ].sort()[0];
 
   useEffect(() => {
     setLoadingRef.current = setLoading;
@@ -928,17 +975,25 @@ export default function AttendanceTable() {
   );
 
   function handleAttendanceDateFromChange(value) {
+    if (!value) {
+      paginationContext.setDateRange?.(initialDateRange);
+      return;
+    }
+    if (!validAttendanceDate(value, todayDateKey)) return;
+    const maximumEnd = addCalendarDays(value, ATTENDANCE_MAX_DAYS - 1);
     paginationContext.setDateRange?.({
       dateFrom: value,
-      dateTo: dateTo && value && dateTo < value ? value : dateTo,
+      dateTo: dateTo < value || dateTo > maximumEnd ? value : dateTo,
     });
   }
 
   function handleAttendanceDateToChange(value) {
-    paginationContext.setDateRange?.({
-      dateFrom,
-      dateTo: value,
-    });
+    if (!value) {
+      paginationContext.setDateRange?.(initialDateRange);
+      return;
+    }
+    if (!validAttendanceDate(value, todayDateKey) || value < dateFrom || value > maximumToDate) return;
+    paginationContext.setDateRange?.({ dateFrom, dateTo: value });
   }
 
   function handleClearAttendanceFilters() {
@@ -1563,6 +1618,8 @@ export default function AttendanceTable() {
                   </label>
                   <DatePicker
                     value={dateFrom || ""}
+                    min={ATTENDANCE_MIN_DATE}
+                    max={todayDateKey}
                     onChange={(val) => handleAttendanceDateFromChange(val)}
                     disabled={loading}
                     hideLabel
@@ -1578,7 +1635,8 @@ export default function AttendanceTable() {
                   </label>
                   <DatePicker
                     value={dateTo || ""}
-                    min={dateFrom || undefined}
+                    min={dateFrom || ATTENDANCE_MIN_DATE}
+                    max={maximumToDate}
                     onChange={(val) => handleAttendanceDateToChange(val)}
                     disabled={loading}
                     hideLabel
