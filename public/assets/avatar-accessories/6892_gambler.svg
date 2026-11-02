@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="The Gambler avatar accessory">
+    <defs>
+      <linearGradient id="bg" x1=".1" y1="0" x2=".9" y2="1"><stop stop-color="#9F252B"/><stop offset="1" stop-color="#4A111B"/></linearGradient>
+      <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#FFF5CE"/><stop offset=".55" stop-color="#F8CD86"/><stop offset="1" stop-color="#B87528"/></linearGradient>
+    </defs>
+    <circle cx="32" cy="32" r="28.8" fill="url(#bg)" stroke="url(#gold)" stroke-width="3.8"/>
+    <circle cx="32" cy="32" r="24.4" fill="none" stroke="white" stroke-opacity=".22" stroke-width=".9"/>
+    <path d="M15 12 Q32 4 49 13" fill="none" stroke="white" stroke-opacity=".20" stroke-width="2" stroke-linecap="round"/>
+    
+    <g transform="rotate(-13 31 31)">
+      <rect x="16" y="16" width="20" height="29" rx="2.5" fill="#FFFDF2" stroke="#EAB8A0" stroke-width="1.6"/>
+      <rect x="28" y="14" width="20" height="29" rx="2.5" fill="#FFFBF3" stroke="#EAB8A0" stroke-width="1.6"/>
+      <text x="19" y="25" fill="#B52335" font-size="10" font-weight="800">A</text>
+      <path d="M35 26 C31 21 26 26 35 34 C44 26 39 21 35 26Z" fill="#C52637"/>
+    </g>
+    <g><circle cx="41" cy="43" r="11" fill="#BB2436" stroke="#FFE4B4" stroke-width="3"/><circle cx="41" cy="43" r="6.4" fill="#661420" stroke="#F1BA71" stroke-width="1.8"/><path d="M41 33v4M41 49v4M31 43h4M47 43h4" stroke="#FFF7DF" stroke-width="2"/></g>
+    
+  </svg>

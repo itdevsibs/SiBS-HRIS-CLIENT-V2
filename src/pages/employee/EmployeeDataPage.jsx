@@ -1,13 +1,17 @@
 import { createSystemDateTimeFormatter } from "@/lib/axios/dateFormatter";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { Suspense, lazy, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { BriefcaseBusiness, ChevronLeft, HeartPulse, History } from "lucide-react";
 
 import Header from "../../components/layout/Header";
 import ProfileDropdown from "../../components/layout/profile/ProfileDropdown";
 import ConfirmModal from "@/components/ui/ConfirmModal";
-import ResignationModal from "../../components/modals/resignation/ResignationModal";
-import { ViewResignationModal } from "../../components/modals/resignation-management/ResignationManagementModal";
+const ResignationModal = lazy(() => import("../../components/modals/resignation/ResignationModal"));
+const ViewResignationModal = lazy(() =>
+  import("../../components/modals/resignation-management/ResignationManagementModal").then((m) => ({
+    default: m.ViewResignationModal,
+  }))
+);
 import EmployeeProfileContent from "../../components/employee/profile/components/EmployeeProfileContent.jsx";
 import EmployeeProfileContextPanel from "../../components/employee/profile/components/EmployeeProfileContextPanel.jsx";
 import EmployeeProfileHeader from "../../components/employee/profile/components/EmployeeProfileHeader.jsx";
@@ -1270,19 +1274,27 @@ export default function EmployeeDataPage() {
         onClose={() => setOpenProfilePictureModal(false)}
       />
 
-      <ResignationModal
-        open={Boolean(openAddResignation)}
-        onClose={() => setOpenAddResignation(false)}
-        onSuccess={() => setOpenAddResignation(false)}
-        setStatusModal={setStatusModal}
-      />
+      {Boolean(openAddResignation) && (
+        <Suspense fallback={null}>
+          <ResignationModal
+            open={Boolean(openAddResignation)}
+            onClose={() => setOpenAddResignation(false)}
+            onSuccess={() => setOpenAddResignation(false)}
+            setStatusModal={setStatusModal}
+          />
+        </Suspense>
+      )}
 
-      <ViewResignationModal
-        open={Boolean(selectedResignation)}
-        item={selectedResignation}
-        currentUser={currentUser}
-        onClose={() => setSelectedResignation(null)}
-      />
+      {Boolean(selectedResignation) && (
+        <Suspense fallback={null}>
+          <ViewResignationModal
+            open={Boolean(selectedResignation)}
+            item={selectedResignation}
+            currentUser={currentUser}
+            onClose={() => setSelectedResignation(null)}
+          />
+        </Suspense>
+      )}
 
       <ConfirmModal
         open={Boolean(statusModal.open)}

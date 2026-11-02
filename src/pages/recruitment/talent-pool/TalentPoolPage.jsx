@@ -25,6 +25,62 @@ const AddCandidateModal = React.lazy(() => import("../../../components/modals/ta
 const CandidateProfileModal = React.lazy(() => import("../../../components/modals/talentPool/CandidateProfileModal"));
 const UpdateStatusModal = React.lazy(() => import("../../../components/modals/talentPool/UpdateStatusModal"));
 const MoveToPipeLineModal = React.lazy(() => import("../../../components/modals/talentPool/MoveToPipeLineModal"));
+
+function LazyAddCandidateModal() {
+  const { showAddModal } = useTalentPool();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    if (showAddModal) setMounted(true);
+  }, [showAddModal]);
+  if (!mounted) return null;
+  return (
+    <React.Suspense fallback={null}>
+      <AddCandidateModal />
+    </React.Suspense>
+  );
+}
+
+function LazyCandidateProfileModal() {
+  const { selectedCandidate } = useTalentPool();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    if (selectedCandidate) setMounted(true);
+  }, [selectedCandidate]);
+  if (!mounted) return null;
+  return (
+    <React.Suspense fallback={null}>
+      <CandidateProfileModal />
+    </React.Suspense>
+  );
+}
+
+function LazyUpdateStatusModal() {
+  const { statusTarget } = useTalentPool();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    if (statusTarget) setMounted(true);
+  }, [statusTarget]);
+  if (!mounted) return null;
+  return (
+    <React.Suspense fallback={null}>
+      <UpdateStatusModal />
+    </React.Suspense>
+  );
+}
+
+function LazyMoveToPipeLineModal() {
+  const { pipelineTarget } = useTalentPool();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    if (pipelineTarget) setMounted(true);
+  }, [pipelineTarget]);
+  if (!mounted) return null;
+  return (
+    <React.Suspense fallback={null}>
+      <MoveToPipeLineModal />
+    </React.Suspense>
+  );
+}
 import useCombinedDropOffCandidates from "../../../hooks/useCombinedDropOffCandidates";
 import {
   filterTalentPoolCandidatesForTab,
@@ -478,12 +534,10 @@ function TalentPoolPageContent() {
         </div>
       </main>
 
-      <React.Suspense fallback={null}>
-        <AddCandidateModal />
-        <CandidateProfileModal />
-        <UpdateStatusModal />
-        <MoveToPipeLineModal />
-      </React.Suspense>
+      <LazyAddCandidateModal />
+      <LazyCandidateProfileModal />
+      <LazyUpdateStatusModal />
+      <LazyMoveToPipeLineModal />
     </div>
   );
 }

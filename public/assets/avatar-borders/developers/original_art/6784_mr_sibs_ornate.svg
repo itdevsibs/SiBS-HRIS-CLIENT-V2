@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1254" height="1254" viewBox="0 0 1254 1254" role="img" aria-labelledby="title desc" data-sibs-id="6784">
+<title id="title">MR. SIBS — Ornate Avatar Border</title><desc id="desc">Transparent-center, orange-and-gold royal collectible avatar border with a gold crown and MR. SIBS nameplate, designed to match the detailed developer badge collection.</desc>
+<defs>
+  <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fffbd2"/><stop offset=".14" stop-color="#ffd05c"/><stop offset=".36" stop-color="#f8a91c"/><stop offset=".56" stop-color="#b56b10"/><stop offset=".77" stop-color="#ffea86"/><stop offset="1" stop-color="#cc7109"/></linearGradient>
+  <linearGradient id="navy" x1="0" y1="0" x2="1" y2=".8"><stop stop-color="#0f68b8"/><stop offset=".28" stop-color="#062b66"/><stop offset=".55" stop-color="#121e52"/><stop offset=".81" stop-color="#155db2"/><stop offset="1" stop-color="#04142f"/></linearGradient>
+  <linearGradient id="ruby" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ffc54a"/><stop offset=".18" stop-color="#ff8c16"/><stop offset=".48" stop-color="#e34b02"/><stop offset=".76" stop-color="#a92d00"/><stop offset="1" stop-color="#ffaf28"/></linearGradient>
+  <linearGradient id="crown" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#fff8c0"/><stop offset=".32" stop-color="#ffdf67"/><stop offset=".62" stop-color="#ea9f10"/><stop offset="1" stop-color="#a45c08"/></linearGradient>
+  <radialGradient id="shine"><stop stop-color="#fff"/><stop offset=".25" stop-color="#ffedaa" stop-opacity=".95"/><stop offset="1" stop-color="#ffe0a3" stop-opacity="0"/></radialGradient>
+  <filter id="glow" x="-35%" y="-35%" width="170%" height="170%"><feGaussianBlur stdDeviation="12"/></filter>
+  <filter id="shadow" x="-35%" y="-35%" width="170%" height="170%"><feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#200b06" flood-opacity=".48"/></filter>
+</defs>
+<!-- Halo / royal navy and amber metal rim. The entire interior is transparent. -->
+<circle cx="627" cy="636" r="479" fill="none" stroke="#ff910d" stroke-width="25" opacity=".47" filter="url(#glow)"/>
+<circle cx="627" cy="636" r="467" fill="none" stroke="#452507" stroke-width="55" filter="url(#shadow)"/>
+<circle cx="627" cy="636" r="466" fill="none" stroke="url(#gold)" stroke-width="46"/>
+<circle cx="627" cy="636" r="438" fill="none" stroke="url(#navy)" stroke-width="49"/>
+<circle cx="627" cy="636" r="413" fill="none" stroke="#ec9a21" stroke-width="9"/>
+<circle cx="627" cy="636" r="408" fill="none" stroke="#fff0a4" stroke-width="4" opacity=".9"/>
+<circle cx="627" cy="636" r="487" fill="none" stroke="#fff3bb" stroke-width="3" opacity=".9"/>
+<!-- Repeating polished studs and golden ornamentation -->
+<g>
+  <g fill="url(#gold)" stroke="#6c3503" stroke-width="4">
+    <circle cx="627" cy="167" r="9"/><circle cx="333" cy="271" r="10"/><circle cx="921" cy="271" r="10"/>
+    <circle cx="166" cy="636" r="9"/><circle cx="1088" cy="636" r="9"/>
+    <circle cx="333" cy="1001" r="10"/><circle cx="921" cy="1001" r="10"/>
+    <circle cx="627" cy="1104" r="9"/>
+  </g>
+  <g fill="none" stroke="#ffe3a0" stroke-width="4" opacity=".75">
+    <path d="M235 416Q300 275 442 208"/><path d="M819 209Q960 272 1020 416"/>
+    <path d="M225 842Q283 991 437 1056"/><path d="M817 1056Q972 990 1029 842"/>
+  </g>
+</g>
+<!-- Side floral motifs and jewel crests -->
+<g fill="url(#gold)" stroke="#7b430b" stroke-width="5" filter="url(#shadow)">
+ <path d="M175 930 C110 895 83 850 101 801 C142 815 174 846 175 930Z"/>
+ <path d="M185 942 C118 956 74 934 64 897 C119 876 169 888 185 942Z"/>
+ <path d="M182 981 C132 1027 99 1032 70 1008 C110 969 147 957 182 981Z"/>
+ <path d="M1079 930 C1144 895 1171 850 1153 801 C1112 815 1080 846 1079 930Z"/>
+ <path d="M1069 942 C1136 956 1180 934 1190 897 C1135 876 1085 888 1069 942Z"/>
+ <path d="M1072 981 C1122 1027 1155 1032 1184 1008 C1144 969 1107 957 1072 981Z"/>
+</g>
+<g fill="#ffe3a6" stroke="#d46a00" stroke-width="4"><path d="M164 585L174 610L202 620L174 630L164 657L154 630L126 620L154 610Z"/><path d="M1090 585L1100 610L1128 620L1100 630L1090 657L1080 630L1052 620L1080 610Z"/></g>
+<!-- Top sculpted crown and enamel laurel medallion -->
+<g filter="url(#shadow)">
+ <path d="M395 185 Q490 150 627 170 Q764 150 859 185 L817 272Q627 314 437 272Z" fill="url(#navy)" stroke="url(#gold)" stroke-width="16"/>
+ <path d="M433 199L489 253L533 118L603 221L627 66L651 221L721 118L765 253L821 199L799 319Q627 347 455 319Z" fill="url(#crown)" stroke="#8c4a07" stroke-width="9" stroke-linejoin="round"/>
+ <path d="M456 294Q627 320 798 294L795 341Q627 362 459 341Z" fill="url(#ruby)" stroke="#ffdd69" stroke-width="11"/>
+ <ellipse cx="627" cy="318" rx="30" ry="22" fill="#243b9e" stroke="#fff5c2" stroke-width="8"/>
+ <g fill="#fff3b1" stroke="#c07803" stroke-width="6"><circle cx="433" cy="197" r="23"/><circle cx="533" cy="118" r="20"/><circle cx="627" cy="63" r="27"/><circle cx="721" cy="118" r="20"/><circle cx="821" cy="197" r="23"/></g>
+ <path d="M627 266L637 287L660 296L637 305L627 328L616 305L595 296L616 287Z" fill="#fff"/>
+</g>
+<!-- Gold title plate below the portrait (should sit over image, not inside face). -->
+<g filter="url(#shadow)">
+ <path d="M160 1045 L211 1001 Q627 971 1043 1001 L1094 1045 L1069 1162 Q627 1219 185 1162Z" fill="#69350b" stroke="#eaa934" stroke-width="18"/>
+ <path d="M169 1041L211 1008Q627 989 1043 1008L1085 1041L1056 1148Q627 1205 198 1148Z" fill="url(#ruby)" stroke="#ffde75" stroke-width="12"/>
+ <path d="M199 1051Q627 1025 1055 1051" fill="none" stroke="#fff6bb" stroke-width="5" opacity=".75"/>
+ <text x="627" y="1127" font-family="Arial,DejaVu Sans,sans-serif" font-size="105" font-weight="900" text-anchor="middle" letter-spacing="2" fill="#542304" stroke="#542304" stroke-width="14" paint-order="stroke">MR. SIBS</text>
+ <text x="627" y="1127" font-family="Arial,DejaVu Sans,sans-serif" font-size="105" font-weight="900" text-anchor="middle" letter-spacing="2" fill="#fff7c1" stroke="#e28c17" stroke-width="3" paint-order="stroke">MR. SIBS</text>
+ <path d="M627 1189L657 1218L627 1244L597 1218Z" fill="#2061b1" stroke="#ffda70" stroke-width="10"/>
+</g>
+<!-- Jewelled light flares -->
+<g opacity=".95"><circle cx="246" cy="325" r="49" fill="url(#shine)"/><circle cx="997" cy="322" r="49" fill="url(#shine)"/><circle cx="110" cy="909" r="39" fill="url(#shine)"/><circle cx="1142" cy="906" r="39" fill="url(#shine)"/><circle cx="627" cy="1001" r="55" fill="url(#shine)"/></g>
+</svg>

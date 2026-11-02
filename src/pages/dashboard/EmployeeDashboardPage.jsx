@@ -1,5 +1,5 @@
 import { createSystemDateTimeFormatter, formatHrisDateTimeLocalized } from "@/lib/axios/dateFormatter";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { Suspense, lazy, useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   AlertCircle,
@@ -25,8 +25,12 @@ import Header from "../../components/layout/Header";
 import EmployeeDashboardSkeleton from "../../components/Dashboard/EmployeeDashboard/EmployeeDashboardSkeleton";
 import { ModalShell } from "../../components/ui";
 import AdminLoginModal from "../../components/modals/AdminLoginModal";
-import ResignationModal from "../../components/modals/resignation/ResignationModal";
-import { ViewResignationModal } from "../../components/modals/resignation-management/ResignationManagementModal";
+const ResignationModal = lazy(() => import("../../components/modals/resignation/ResignationModal"));
+const ViewResignationModal = lazy(() =>
+  import("../../components/modals/resignation-management/ResignationManagementModal").then((m) => ({
+    default: m.ViewResignationModal,
+  }))
+);
 import StatusModal from "../../components/modals/StatusModal";
 import { getMyEmployeeProfilePicture } from "../../lib/axios/employeeProfile";
 import { getEmployeeDashboardSources } from "../../lib/axios/getEmployeeDashboardData.js";
@@ -1338,22 +1342,30 @@ export default function EmployeeDashboardPage() {
         ) : null}
       </ModalShell>
 
-      <ResignationModal
-        open={openResignation}
-        onClose={() => setOpenResignation(false)}
-        onSuccess={async () => {
-          setOpenResignation(false);
-          await refreshMyResignationStatus({ showLoading: false });
-        }}
-        setStatusModal={setStatusModal}
-      />
+      {openResignation && (
+        <Suspense fallback={null}>
+          <ResignationModal
+            open={openResignation}
+            onClose={() => setOpenResignation(false)}
+            onSuccess={async () => {
+              setOpenResignation(false);
+              await refreshMyResignationStatus({ showLoading: false });
+            }}
+            setStatusModal={setStatusModal}
+          />
+        </Suspense>
+      )}
 
-      <ViewResignationModal
-        open={openResignationDetails}
-        item={resignationRecord}
-        currentUser={user}
-        onClose={() => setOpenResignationDetails(false)}
-      />
+      {openResignationDetails && (
+        <Suspense fallback={null}>
+          <ViewResignationModal
+            open={openResignationDetails}
+            item={resignationRecord}
+            currentUser={user}
+            onClose={() => setOpenResignationDetails(false)}
+          />
+        </Suspense>
+      )}
 
       <StatusModal
         open={statusModal.open}
