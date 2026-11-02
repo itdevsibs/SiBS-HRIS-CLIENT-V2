@@ -1,6 +1,6 @@
 import { createSystemDateTimeFormatter } from "@/lib/axios/dateFormatter";
 import React, { Suspense, lazy, useEffect, useMemo, useState } from "react";
-import { History } from "lucide-react";
+import { HeartPulse, History } from "lucide-react";
 
 import Header from "../../components/layout/Header";
 import ProfileDropdown from "../../components/layout/profile/ProfileDropdown";
