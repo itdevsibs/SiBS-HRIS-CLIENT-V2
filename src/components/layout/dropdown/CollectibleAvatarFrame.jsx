@@ -39,15 +39,17 @@ export default function CollectibleAvatarFrame({
       className={`relative inline-block shrink-0 overflow-visible align-middle ${style.frame}`}
       data-collectible-avatar={collectible.id}
       data-collectible-variant={variant}
-      title={collectible.title}
       aria-label={`${collectible.title} avatar`}
+      style={{ "--sibs-collectible-ring": collectible.ringColor || "#34d399" }}
     >
-      <span className={`relative flex h-full w-full items-center justify-center overflow-hidden bg-sibs-primary-1 font-extrabold uppercase text-white ${style.picture} ${isHeader ? collectible.ringClass : collectible.previewRingClass}`}>
-        {photoUrl ? (
-          <img src={photoUrl} alt="Employee profile" onError={onPhotoError} className="h-full w-full object-cover" />
-        ) : (
-          <span aria-hidden="true">{fallback}</span>
-        )}
+      <span className={`sibs-collectible-photo relative flex h-full w-full items-center justify-center font-extrabold uppercase text-white ${style.picture}`}>
+        <span className="sibs-collectible-photo-content flex items-center justify-center">
+          {photoUrl ? (
+            <img src={photoUrl} alt="Employee profile" onError={onPhotoError} className="h-full w-full object-cover" />
+          ) : (
+            <span aria-hidden="true">{fallback}</span>
+          )}
+        </span>
       </span>
       <span className={`pointer-events-none absolute z-20 rotate-[22deg] ${style.accessory}`} aria-hidden="true">
         <DeveloperAccessory accessoryKey={collectible.accessoryKey} className="h-full w-full" />

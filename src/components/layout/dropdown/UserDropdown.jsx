@@ -15,7 +15,6 @@ import { useHeader } from "../../../services/context/HeaderContext";
 import { useAdmin } from "../../../services/context/AdminContext";
 import { getActiveCollectibleProfile } from "../../../config/developerBorders";
 import CollectibleAvatarFrame from "./CollectibleAvatarFrame.jsx";
-import { DeveloperAccessory } from "./DeveloperAccessories.jsx";
 
 const ADMIN_ACCESS_LABELS = {
   1: "Talent Acquisition",
@@ -496,37 +495,26 @@ export default function UserDropdown({
             }}
             aria-hidden="true"
           >
-            <div
-              className={`relative flex h-full w-full items-center justify-center overflow-hidden rounded-xl bg-sibs-primary-1 text-4xl font-extrabold uppercase text-white ${
-                collectible ? collectible.previewRingClass : ""
-              }`}
-            >
-              {profilePictureUrl && !profileImageFailed ? (
-                <img
-                  src={profilePictureUrl}
-                  alt=""
-                  className="h-full w-full object-cover"
-                  onError={() => setProfileImageFailed(true)}
-                />
-              ) : (
-                avatar || "U"
-              )}
-
-              {collectible && (
-                <span
-                  className={`absolute bottom-2 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full border-2 border-white bg-gradient-to-r ${collectible.badgeGradient} px-3 py-0.5 text-[9px] font-black uppercase tracking-wider text-white shadow-md`}
-                >
-                  {collectible.title}
-                </span>
-              )}
-            </div>
-
-            {collectible && (
-              <div className="absolute -top-3.5 -right-2.5 z-20 rotate-[22deg]">
-                <DeveloperAccessory
-                  accessoryKey={collectible.accessoryKey}
-                  className="h-8 w-8"
-                />
+            {collectible ? (
+              <CollectibleAvatarFrame
+                collectible={collectible}
+                photoUrl={profilePictureUrl && !profileImageFailed ? profilePictureUrl : ""}
+                fallback={avatar || "U"}
+                variant="preview"
+                onPhotoError={() => setProfileImageFailed(true)}
+              />
+            ) : (
+              <div className="relative flex h-full w-full items-center justify-center overflow-hidden rounded-xl bg-sibs-primary-1 text-4xl font-extrabold uppercase text-white">
+                {profilePictureUrl && !profileImageFailed ? (
+                  <img
+                    src={profilePictureUrl}
+                    alt=""
+                    className="h-full w-full object-cover"
+                    onError={() => setProfileImageFailed(true)}
+                  />
+                ) : (
+                  avatar || "U"
+                )}
               </div>
             )}
           </div>,

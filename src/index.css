@@ -2334,3 +2334,93 @@
     --tw-ring-shadow: 0 0 #0000 !important;
   }
 }
+
+/* =========================================================
+   COLLECTIBLE PROFILE BORDER ANIMATION (GLOBAL)
+   Shared by the header avatar, profile avatar, and hover preview.
+   ========================================================= */
+/* Shared animated collectible border — header, employee profile and hover preview.
+   Uses the CSS conic-gradient technique in the user's Coding2GO reference.
+   Never animates the employee photo, icon, or title badge. */
+@property --sibs-collectible-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes sibs-collectible-border-spin {
+  to { --sibs-collectible-angle: 360deg; }
+}
+
+.sibs-collectible-photo {
+  position: relative;
+  isolation: isolate;
+  background: #042c51;
+}
+
+.sibs-collectible-photo::before,
+.sibs-collectible-photo::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  pointer-events: none;
+  background: conic-gradient(
+    from var(--sibs-collectible-angle),
+    var(--sibs-collectible-ring) 0deg,
+    transparent 32deg,
+    transparent 93deg,
+    var(--sibs-collectible-ring) 131deg,
+    #ffffff 151deg,
+    var(--sibs-collectible-ring) 171deg,
+    transparent 204deg,
+    transparent 274deg,
+    var(--sibs-collectible-ring) 314deg,
+    #ffffff 335deg,
+    var(--sibs-collectible-ring) 360deg
+  );
+  animation: sibs-collectible-border-spin 3s linear infinite;
+}
+
+/* Diffuse glow sits underneath the actual photo. */
+.sibs-collectible-photo::before {
+  z-index: 0;
+  filter: blur(5px);
+  opacity: .68;
+}
+
+/* Mask the middle so only a crisp moving border is visible. */
+.sibs-collectible-photo::after {
+  z-index: 3;
+  padding: 2px;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+}
+
+.sibs-collectible-photo-content {
+  position: absolute;
+  inset: 2px;
+  z-index: 1;
+  overflow: hidden;
+  border-radius: inherit;
+  background: #042c51;
+}
+
+/* The larger preview gets a slightly stronger glowing ring. */
+[data-collectible-variant="preview"] .sibs-collectible-photo::before {
+  filter: blur(8px);
+  opacity: .8;
+}
+[data-collectible-variant="preview"] .sibs-collectible-photo::after {
+  padding: 3px;
+}
+[data-collectible-variant="preview"] .sibs-collectible-photo-content {
+  inset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sibs-collectible-photo::before,
+  .sibs-collectible-photo::after { animation: none !important; }
+}
