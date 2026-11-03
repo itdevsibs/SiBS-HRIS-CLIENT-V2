@@ -385,42 +385,33 @@ function SibsLogo({ collapsed = false, isMobile = false }) {
       <MotionDiv
         whileHover={{ rotate: -3, scale: 1.05 }}
         transition={{ type: "spring", stiffness: 260, damping: 18 }}
-        className="relative flex h-10 w-10 2xl:h-11 2xl:w-11 shrink-0 items-center justify-center rounded-[13px] 2xl:rounded-[15px] bg-sibs-primary-2 shadow-[0_8px_20px_rgba(255,92,40,0.22)]"
+        className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-[13px] shadow-[0_8px_20px_rgba(0,25,55,0.25)] 2xl:h-11 2xl:w-11 2xl:rounded-[15px]"
       >
-        <MotionDiv
-          className="absolute -right-1 -top-1 h-3 w-3 2xl:h-3.5 2xl:w-3.5 rounded-full border-2 border-sibs-primary-1"
+        <img
+          src="/sibs-hris-icon-192.png"
+          alt="SiBS HRIS logo"
+          width={44}
+          height={44}
+          draggable={false}
+          className="block h-full w-full rounded-[13px] object-contain 2xl:rounded-[15px]"
+        />
+        <MotionSpan
+          aria-hidden="true"
+          className="pointer-events-none absolute -right-1 -top-1 z-10 h-3 w-3 rounded-full border-2 border-sibs-primary-1 shadow-sm 2xl:h-3.5 2xl:w-3.5"
           animate={{
-            backgroundColor: ["rgb(255, 255, 255)", "var(--color-sibs-cream)", "rgb(255, 255, 255)"],
-            boxShadow: [
-              "0 0 0px rgba(255,255,255,0)",
-              "0 0 14px rgba(255,255,255,0.45)",
-              "0 0 0px rgba(255,255,255,0)",
+            backgroundColor: [
+              "rgb(255, 255, 255)",
+              "var(--color-sibs-orange)",
+              "rgb(255, 255, 255)",
             ],
           }}
           transition={{
-            duration: 5,
+            duration: 6,
             repeat: Infinity,
             ease: "easeInOut",
+            times: [0, 0.5, 1],
           }}
         />
-
-        <MotionSpan
-          className="relative text-[18px] 2xl:text-[20px] font-semibold leading-none tracking-[-0.04em] text-white"
-          animate={{
-            textShadow: [
-              "0 0 0px rgba(255,255,255,0)",
-              "0 0 10px rgba(255,255,255,0.38)",
-              "0 0 0px rgba(255,255,255,0)",
-            ],
-          }}
-          transition={{
-            duration: 5,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-        >
-          S
-        </MotionSpan>
       </MotionDiv>
 
       <div

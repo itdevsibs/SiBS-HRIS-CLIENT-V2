@@ -11,6 +11,7 @@ import App from "./App.jsx";
 import PublicRouteFallback from "./components/ui/PublicRouteFallback.jsx";
 import { isStandalonePublicRoute } from "./config/publicRoutes";
 import "./index.css";
+import { startAnimatedHrisFavicon } from "./lib/utils/animatedFavicon.js";
 
 function lazyWithRetry(componentImport) {
   return lazy(async () => {
@@ -226,6 +227,12 @@ const isStandalonePublic = isStandalonePublicRoute(
   pathname,
   hostname,
 );
+
+// Browser-tab accent for private HRIS routes only. Public application routes
+// continue using the favicon in index.html unchanged.
+if (!isStandalonePublic) {
+  startAnimatedHrisFavicon();
+}
 
 createRoot(document.getElementById("root")).render(
   <React.StrictMode>
