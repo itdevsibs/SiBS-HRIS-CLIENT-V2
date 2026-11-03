@@ -9,7 +9,6 @@ import {
   IdCard,
   Loader2,
   MapPin,
-  ShieldCheck,
   UsersRound,
 } from "lucide-react";
 import { ModalShell } from "@/components/ui";
@@ -97,6 +96,28 @@ export function formatAttendanceModalTime(value) {
 
 function normalizeMatch(value) {
   return String(value ?? "").toLowerCase().replace(/&/g, "and").replace(/[^a-z0-9]+/g, " ").trim().replace(/\s+/g, " ");
+}
+
+// Display-only exception from the Departments page. Do not alter Kronos
+// reporting relationships or hide this person from any other account.
+export function hideSoftwareManagementJoburt(account, manager) {
+  const accountId = account?.id ?? account?.accountId ?? account?.gy_acc_id;
+  const isSoftwareManagement = [account?.name, account?.longName].some(
+    (name) => normalizeMatch(name) === "software management",
+  );
+  if (!isSoftwareManagement || (accountId != null && accountId !== "" && Number(accountId) !== 42)) {
+    return false;
+  }
+
+  const sibsId = String(
+    manager?.sibsId ?? manager?.sibs_id ?? manager?.employeeSibsId ?? manager?.gy_emp_code ?? "",
+  ).trim();
+  const name = normalizeMatch(
+    manager?.name || manager?.fullName ||
+      [manager?.firstName ?? manager?.gy_emp_fname, manager?.middleName ?? manager?.gy_emp_mname, manager?.lastName ?? manager?.gy_emp_lname].filter(Boolean).join(" "),
+  );
+  const parts = name.split(" ");
+  return sibsId === "2342" || (parts.includes("joburt") && parts.includes("ducao"));
 }
 
 async function cachedDirectory() {
@@ -187,7 +208,7 @@ export async function getDepartmentAccountOperationsManagers(row) {
     ? account.seniorOperationsManagers
     : account.operationsManagers;
   const managers = (Array.isArray(assignedManagers) ? assignedManagers : []).filter(
-    (manager) => clean(manager?.name) !== UNKNOWN,
+    (manager) => clean(manager?.name) !== UNKNOWN && !hideSoftwareManagementJoburt(account, manager),
   );
   return { managers, leadershipRole, reason: managers.length ? "found" : "unassigned" };
 }
@@ -387,10 +408,6 @@ export default function AttendanceEmployeeDetailsModal({ row, onClose }) {
     );
   }, [omState]);
 
-  const operationsManagerHint = omState.managers.length > 1 && leadershipLabel !== "BOD"
-    ? `Account-level ${leadershipLabel}s; individual reporting assignment is not confirmed.`
-    : undefined;
-
   return (
     <ModalShell
       open={Boolean(row)}
@@ -433,7 +450,7 @@ export default function AttendanceEmployeeDetailsModal({ row, onClose }) {
               <Detail icon={Building2} label="Department" value={department} />
               <Detail icon={BriefcaseBusiness} label="Account" value={account} />
               <Detail icon={MapPin} label="Site" value={site} />
-              <Detail icon={UsersRound} label={leadershipLabel} value={omState.loading ? <span className="inline-flex items-center gap-2"><Loader2 size={13} className="animate-spin" /> Loading…</span> : operationsManagerValue} hint={operationsManagerHint} />
+              <Detail icon={UsersRound} label={leadershipLabel} value={omState.loading ? <span className="inline-flex items-center gap-2"><Loader2 size={13} className="animate-spin" /> Loading…</span> : operationsManagerValue} />
             </div>
           </SectionCard>
 
@@ -468,7 +485,6 @@ export default function AttendanceEmployeeDetailsModal({ row, onClose }) {
               <span className="rounded-lg border border-sibs-border bg-white px-3 py-1.5">Break Hours: {clean(row.gy_tracker_bh)}</span>
             </div>
           </SectionCard>
-          <p className="flex items-start gap-2 px-1 text-[11px] text-sibs-muted"><ShieldCheck size={14} className="shrink-0" /> Schedule and attendance values come from the selected Kronos record. Leadership names come from the HRIS Departments account hierarchy; missing data is not estimated.</p>
         </div>
       )}
     </ModalShell>
