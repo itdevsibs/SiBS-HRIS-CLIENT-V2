@@ -17,7 +17,7 @@ export default function EmployeeProfileAvatar({ employee, apiUrl, onClick }) {
     <button
       type="button"
       onClick={onClick}
-      className="group relative flex h-13 w-13 2xl:h-16 2xl:w-16 shrink-0 items-center justify-center overflow-visible rounded-2xl bg-transparent text-lg 2xl:text-xl font-extrabold text-white transition hover:-translate-y-0.5 active:scale-[0.98]"
+      className={`group relative flex shrink-0 items-center justify-center overflow-visible rounded-2xl bg-transparent text-lg 2xl:text-xl font-extrabold text-white transition hover:-translate-y-0.5 active:scale-[0.98] ${collectible ? "h-[88px] w-[88px] 2xl:h-[104px] 2xl:w-[104px]" : "h-13 w-13 2xl:h-16 2xl:w-16"}`}
       title={`View profile picture${collectible ? ` (${collectible.title})` : ""}`}
     >
       {collectible ? (

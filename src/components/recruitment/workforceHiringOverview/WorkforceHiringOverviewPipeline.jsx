@@ -46,7 +46,10 @@ export function WorkforceHiringOverviewPipelineStrip() {
   }
 
   return (
-    <section className="sibs-page-card-in sibs-card overflow-hidden rounded-2xl border border-sibs-border bg-white p-3.5 shadow-sm 2xl:p-5">
+    <section
+      className="sibs-page-card-in sibs-card overflow-hidden rounded-2xl border border-sibs-border bg-white p-3.5 shadow-sm 2xl:p-5 font-jakarta"
+      style={{ animationDelay: "120ms", animationFillMode: "both" }}
+    >
       <div className="flex flex-col gap-3 2xl:gap-4 2xl:flex-row 2xl:items-center">
         <div className="grid min-w-0 flex-1 grid-cols-1 items-center gap-2 sm:grid-cols-2 xl:grid-cols-[1fr_20px_1fr_20px_1fr_20px_1fr_20px_1fr] 2xl:grid-cols-[1fr_26px_1fr_26px_1fr_26px_1fr_26px_1fr]">
           {pipeline.map((stage, index) => {

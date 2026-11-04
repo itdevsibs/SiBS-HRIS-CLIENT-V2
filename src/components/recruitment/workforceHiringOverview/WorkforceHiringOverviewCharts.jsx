@@ -165,7 +165,10 @@ function AttritionBetweenStagesCard() {
   }
 
   return (
-    <section className="sibs-page-card-in sibs-card flex h-full min-h-[520px] flex-col rounded-2xl border border-sibs-border bg-white p-4 shadow-sm">
+    <section
+      className="sibs-page-card-in sibs-card flex h-full min-h-[520px] flex-col rounded-2xl border border-sibs-border bg-white p-4 shadow-sm font-jakarta"
+      style={{ animationDelay: "180ms", animationFillMode: "both" }}
+    >
       <div>
         <h3 className="font-heading text-sm 2xl:text-base font-bold text-sibs-navy tracking-tight">
           Attrition Between Stages
@@ -277,7 +280,10 @@ function SixWeekTrendsCard() {
   const summaryLoading = Boolean(trendsLoading);
 
   return (
-    <section className="sibs-page-card-in sibs-card flex h-full min-h-0 flex-col rounded-2xl border border-sibs-border bg-white p-4 shadow-sm xl:min-h-[520px]">
+    <section
+      className="sibs-page-card-in sibs-card flex h-full min-h-0 flex-col rounded-2xl border border-sibs-border bg-white p-4 shadow-sm xl:min-h-[520px] font-jakarta"
+      style={{ animationDelay: "180ms", animationFillMode: "both" }}
+    >
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h3 className="font-heading text-sm 2xl:text-base font-bold text-sibs-navy tracking-tight">

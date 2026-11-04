@@ -50,6 +50,7 @@ export default function ResigneePage() {
   useEffect(() => {
     const controller = new AbortController();
     let active = true;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     setError("");
     getResignees({ page, limit: PAGE_SIZE, search }, controller.signal)
@@ -61,11 +62,19 @@ export default function ResigneePage() {
         setRows(result.data);
         // Counts are retrieved separately. Page changes only load 15 records.
         setLoadedQueryKey(queryKey);
-        setPagination(result.pagination || { currentPage: page, totalPages: 1, total: 0, limit: PAGE_SIZE });
+        const rawPagination = result.pagination || {};
+        const total = Math.max(0, Number(rawPagination.total) || 0);
+        const limit = Math.max(1, Number(rawPagination.limit) || PAGE_SIZE);
+        const totalPages = Math.max(1, Number(rawPagination.totalPages) || Math.ceil(total / limit) || 1);
+        const currentPage = Math.max(1, Number(rawPagination.currentPage || page) || 1);
+        setPagination({ currentPage, totalPages, total, limit });
       })
       .catch((requestError) => {
         if (!active || controller.signal.aborted) return;
         setError(requestError?.response?.data?.message || requestError?.message || "Unable to load Resignee records.");
+        setStats(null);
+        setStatsLoading(false);
+        setStatsError("Resignee summary counts are unavailable while records cannot be loaded.");
       })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; controller.abort(); };
@@ -77,6 +86,7 @@ export default function ResigneePage() {
     if (loadedQueryKey !== queryKey) return undefined;
     const controller = new AbortController();
     let active = true;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setStatsLoading(true);
     setStatsError("");
     getResigneeStats({ search, revision: refreshKey }, controller.signal)
@@ -97,7 +107,9 @@ export default function ResigneePage() {
   }, [loadedQueryKey, queryKey, search, refreshKey]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setStats(null);
+     
     setStatsLoading(true);
     setStatsError("");
   }, [queryKey]);
@@ -106,7 +118,8 @@ export default function ResigneePage() {
 
   const handlePageChange = useCallback((nextPage) => {
     const target = Number(nextPage);
-    if (!Number.isInteger(target) || target < 1 || target > pagination.totalPages || target === page) return;
+    const maxPages = pagination.totalPages || 1;
+    if (!Number.isInteger(target) || target < 1 || target > maxPages || target === page) return;
 
     setPage(target);
     // Match Employee Directory: reset the records table’s internal scroll.
@@ -126,9 +139,9 @@ export default function ResigneePage() {
             title="Resignees"
             description="View inactive Kronos employees whose recorded last working day has passed."
             actions={<div className="flex flex-wrap items-center gap-2">
-              <button type="button" aria-label="Refresh resignee records" onClick={refresh}
-                className="flex h-9 w-9 items-center justify-center rounded-lg border border-sibs-border bg-white text-sibs-navy hover:text-sibs-orange"
-                title="Refresh"><RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} /></button>
+              <button type="button" aria-label="Refresh resignee records" onClick={refresh} disabled={loading || statsLoading}
+                className="flex h-9 w-9 items-center justify-center rounded-lg border border-sibs-border bg-white text-sibs-navy hover:text-sibs-orange transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+                title="Refresh"><RefreshCw className={`h-4 w-4 ${loading || statsLoading ? "animate-spin" : ""}`} /></button>
               <button type="button" onClick={() => navigate("/resignation")}
                 className="inline-flex h-9 items-center gap-2 rounded-lg bg-sibs-orange px-4 text-xs font-bold text-white hover:opacity-90">
                 <FileText className="h-4 w-4" /> Resignation Management
@@ -136,15 +149,15 @@ export default function ResigneePage() {
             </div>}
           />
 
-          <MetricGrid columns={4}>
-            <MetricCard label="TOTAL RESIGNEES" value={stats?.total?.toLocaleString() ?? "—"} description="Inactive Kronos users with an elapsed last working day" icon={UsersRound} tone="orange" loading={statsLoading} />
-            <MetricCard label="THIS MONTH" value={stats?.thisMonth?.toLocaleString() ?? "—"} description="Last working date this month" icon={CalendarCheck2} tone="green" loading={statsLoading} />
-            <MetricCard label="LAST 30 DAYS" value={stats?.last30Days?.toLocaleString() ?? "—"} description="Last working date in past 30 days" icon={Clock3} tone="amber" loading={statsLoading} />
-            <MetricCard label="ACCOUNTS" value={stats?.accounts?.toLocaleString() ?? "—"} description="Accounts with inactive employees" icon={CheckCircle2} tone="navy" loading={statsLoading} />
+          <MetricGrid columns={4} style={{ animationDelay: "60ms", animationFillMode: "both" }}>
+            <MetricCard label="TOTAL RESIGNEES" value={stats?.total?.toLocaleString() ?? "—"} description="Inactive Kronos users with an elapsed last working day" icon={UsersRound} tone="orange" loading={statsLoading} delay={0} />
+            <MetricCard label="THIS MONTH" value={stats?.thisMonth?.toLocaleString() ?? "—"} description="Last working date this month" icon={CalendarCheck2} tone="green" loading={statsLoading} delay={60} />
+            <MetricCard label="LAST 30 DAYS" value={stats?.last30Days?.toLocaleString() ?? "—"} description="Last working date in past 30 days" icon={Clock3} tone="amber" loading={statsLoading} delay={120} />
+            <MetricCard label="ACCOUNTS" value={stats?.accounts?.toLocaleString() ?? "—"} description="Accounts with inactive employees" icon={CheckCircle2} tone="navy" loading={statsLoading} delay={180} />
           </MetricGrid>
-          {statsError ? <p role="status" className="text-xs font-semibold text-amber-700">{statsError} Employee records remain available.</p> : null}
+          {statsError ? <p role="status" className="sibs-page-card-in text-xs font-semibold text-amber-700">{statsError} Employee records remain available.</p> : null}
 
-          <section className="overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-sm">
+          <section className="sibs-page-card-in sibs-card overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-xs font-jakarta" style={{ animationDelay: "240ms", animationFillMode: "both" }}>
             <div className="flex flex-col gap-3 border-b border-sibs-border-subtle p-4 2xl:p-5 md:flex-row md:items-end md:justify-between">
               <div>
                 <h2 className="font-heading text-sm font-bold text-sibs-navy 2xl:text-base">Resignee Records</h2>
@@ -155,7 +168,7 @@ export default function ResigneePage() {
               </div>
             </div>
             {error ? (
-              <div role="alert" className="m-4 flex items-center justify-between gap-3 rounded-xl border border-red-200 bg-red-50 p-3 text-xs font-semibold text-red-700">
+              <div role="alert" className="sibs-page-card-in m-4 flex items-center justify-between gap-3 rounded-xl border border-red-200 bg-red-50 p-3 text-xs font-semibold text-red-700">
                 <span>{error}</span><button type="button" onClick={refresh} className="shrink-0 rounded-lg border border-red-200 bg-white px-3 py-1.5">Retry</button>
               </div>
             ) : null}
@@ -192,8 +205,8 @@ export default function ResigneePage() {
                                   {error ? "Resignee records could not be loaded. Use Retry after resolving the API error." : "No inactive Kronos employees with an elapsed last working day found."}
                                 </td>
                               </tr>
-                            ) : rows.map((record) => (
-                              <tr key={record.employeeId || record.sibsId} className="group transition-colors hover:bg-sibs-cream-light">
+                            ) : rows.map((record, index) => (
+                              <tr key={record.employeeId ? `emp-${record.employeeId}` : (record.sibsId ? `sibs-${record.sibsId}` : `row-${index}`)} className="group transition-colors hover:bg-sibs-cream-light">
                                 <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle sibs-text-xs font-extrabold text-sibs-orange">{record.sibsId}</td>
                                 <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle">
                                   <div className="flex min-w-[200px] items-center gap-2.5 2xl:gap-3">
@@ -203,11 +216,11 @@ export default function ResigneePage() {
                                 </td>
                                 <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle sibs-text-xs text-sibs-navy">{record.department || "—"}</td>
                                 <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle sibs-text-xs text-sibs-navy">{record.account || "—"}</td>
-                                <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle sibs-text-xs text-sibs-navy">{formatDate(record.hireDate)}</td>
-                                <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle sibs-text-xs font-semibold text-sibs-navy">{formatDate(record.lastWorkingDate)}</td>
+                                <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle sibs-text-xs text-sibs-navy">{formatDate(record.hireDate)}</td>
+                                <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle sibs-text-xs font-semibold text-sibs-navy">{formatDate(record.lastWorkingDate)}</td>
                                 <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle">
-                                  <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 sibs-text-micro font-bold text-emerald-700">
-                                    <CheckCircle2 className="h-3 w-3" /> {record.statusLabel || "Inactive"}
+                                  <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 sibs-text-micro font-extrabold uppercase tracking-wide text-slate-700">
+                                    <span className="h-1.5 w-1.5 rounded-full bg-slate-400" aria-hidden="true" /> {record.statusLabel || "Inactive"}
                                   </span>
                                 </td>
                               </tr>
@@ -226,7 +239,7 @@ export default function ResigneePage() {
                       ) : (
                         <div className="space-y-3">
                           {rows.map((record, index) => (
-                            <DataCard key={record.employeeId || record.sibsId} index={index}>
+                            <DataCard key={record.employeeId ? `emp-${record.employeeId}` : (record.sibsId ? `sibs-${record.sibsId}` : `card-${index}`)} index={index}>
                               <DataCard.Header
                                 avatar={<ResigneeAvatar record={record} />}
                                 kicker={`SIBS ID ${record.sibsId || "—"}`}
@@ -240,7 +253,7 @@ export default function ResigneePage() {
                                 <DataCard.MetricItem label="Hire Date" value={formatDate(record.hireDate)} />
                                 <DataCard.MetricItem label="Last Working Day" value={formatDate(record.lastWorkingDate)} />
                               </DataCard.Metrics>
-                              <DataCard.Footer actionLabel={null} metadata={record.statusLabel || "Inactive (Kronos)"} />
+                              <DataCard.Footer actionLabel={null} metadata={<span className="inline-flex items-center gap-1.5 text-slate-600 font-bold"><span className="h-1.5 w-1.5 rounded-full bg-slate-400" aria-hidden="true" />{record.statusLabel || "Inactive (Kronos)"}</span>} />
                             </DataCard>
                           ))}
                         </div>

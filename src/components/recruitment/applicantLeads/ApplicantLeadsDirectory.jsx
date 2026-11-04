@@ -24,7 +24,10 @@ export default function ApplicantLeadsDirectory() {
         : "Search and filter pre-applicant inquiries by status, department, account, site, and recruiter account.";
 
   return (
-    <section className="sibs-page-card-in overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-xs font-jakarta">
+    <section
+      className="sibs-page-card-in sibs-card overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-xs font-jakarta"
+      style={{ animationDelay: "240ms", animationFillMode: "both" }}
+    >
       <div className="border-b border-sibs-border p-4 sm:p-5 2xl:p-6 font-jakarta">
         <div className="flex flex-col gap-0.5">
           <h2 className="sibs-card-title">

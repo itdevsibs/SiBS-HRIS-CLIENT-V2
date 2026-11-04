@@ -3,13 +3,13 @@ import { DeveloperAccessory } from "./DeveloperAccessories.jsx";
 
 const VARIANTS = Object.freeze({
   header: {
-    frame: "h-8 w-8 2xl:h-9 2xl:w-9 max-[360px]:h-7.5 max-[360px]:w-7.5",
+    frame: "h-[54px] w-[54px] 2xl:h-[60px] 2xl:w-[60px] max-sm:h-12 max-sm:w-12",
     picture: "rounded-full text-[11px] 2xl:text-xs",
     accessory: "-top-2.5 -right-1.5 h-4 w-4 2xl:h-4.5 2xl:w-4.5",
     badge: "-bottom-1.5 px-1.5 py-[0.5px] text-[6.5px] 2xl:text-[7px]",
   },
   profile: {
-    frame: "h-13 w-13 2xl:h-16 2xl:w-16",
+    frame: "h-[88px] w-[88px] 2xl:h-[104px] 2xl:w-[104px]",
     picture: "rounded-2xl text-lg 2xl:text-xl",
     accessory: "-top-2.5 -right-2 h-5 w-5 2xl:h-6 2xl:w-6",
     badge: "-bottom-2 px-1.5 py-[0.5px] text-[7px] 2xl:text-[7.5px]",
@@ -22,7 +22,7 @@ const VARIANTS = Object.freeze({
   },
 });
 
-/** Compact photo, ring, accessory, and text labels shared by collectible avatars. */
+/** Original ornate header/profile artwork with the existing square hover preview. */
 export default function CollectibleAvatarFrame({
   collectible,
   photoUrl,
@@ -33,6 +33,36 @@ export default function CollectibleAvatarFrame({
   if (!collectible) return null;
   const style = VARIANTS[variant] || VARIANTS.header;
   const isHeader = variant === "header";
+
+  if (variant !== "preview") {
+    return (
+      <span
+        className={`relative inline-block shrink-0 overflow-visible align-middle ${style.frame}`}
+        data-collectible-avatar={collectible.id}
+        data-collectible-variant={variant}
+        aria-label={`${collectible.title} avatar`}
+      >
+        <span
+          className="absolute flex items-center justify-center overflow-hidden rounded-full bg-sibs-primary-1 text-xs font-extrabold uppercase text-white"
+          style={collectible.portrait}
+        >
+          {photoUrl ? (
+            <img src={photoUrl} alt="Employee profile" onError={onPhotoError} className="h-full w-full object-cover" />
+          ) : (
+            <span aria-hidden="true">{fallback}</span>
+          )}
+        </span>
+        <img
+          data-collectible-artwork="true"
+          src={collectible.asset}
+          alt=""
+          aria-hidden="true"
+          draggable={false}
+          className="pointer-events-none absolute inset-0 z-10 h-full w-full select-none object-contain"
+        />
+      </span>
+    );
+  }
 
   return (
     <span
