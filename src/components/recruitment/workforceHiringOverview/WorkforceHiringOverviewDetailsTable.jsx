@@ -1665,7 +1665,10 @@ export default function WorkforceHiringOverviewDetailsTable() {
   }
 
   return (
-    <section className="sibs-page-card-in sibs-card overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-sm">
+    <section
+      className="sibs-page-card-in sibs-card overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-sm font-jakarta"
+      style={{ animationDelay: "240ms", animationFillMode: "both" }}
+    >
       <div className="border-b border-sibs-border px-3 py-2 2xl:px-5 2xl:py-4">
         <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(320px,1fr)_minmax(680px,860px)] xl:items-start">
           <div className="min-w-0">

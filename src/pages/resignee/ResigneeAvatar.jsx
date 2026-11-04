@@ -25,11 +25,12 @@ function getInitials(record) {
   const first = String(record?.firstName || "").trim();
   const last = String(record?.lastName || "").trim();
   if (first || last) return `${first[0] || ""}${last[0] || ""}`.toUpperCase();
-  const words = String(record?.employeeName || "")
-    .replace(",", " ")
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean);
+  const rawName = String(record?.employeeName || "").trim();
+  if (rawName.includes(",")) {
+    const [lastPart, firstPart] = rawName.split(",").map((s) => s.trim());
+    return `${(lastPart || "")[0] || ""}${(firstPart || "")[0] || ""}`.toUpperCase() || "E";
+  }
+  const words = rawName.split(/\s+/).filter(Boolean);
   return `${words[0]?.[0] || "E"}${words[1]?.[0] || ""}`.toUpperCase();
 }
 
@@ -109,14 +110,19 @@ export default function ResigneeAvatar({ record }) {
     <>
       <span
         ref={anchor}
-        className="relative inline-flex shrink-0 outline-none"
+        className="relative inline-flex shrink-0 rounded-full outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sibs-orange focus-visible:ring-offset-2"
         tabIndex={0}
         aria-label={`${name} profile picture`}
         onMouseEnter={showPreview}
         onMouseLeave={hidePreview}
         onFocus={showPreview}
         onBlur={hidePreview}
-        onKeyDown={(event) => event.stopPropagation()}
+        onKeyDown={(event) => {
+          if (event.key === "Escape") {
+            hidePreview();
+          }
+          event.stopPropagation();
+        }}
       >
         {picture()}
       </span>

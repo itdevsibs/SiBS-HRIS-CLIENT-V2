@@ -2,7 +2,6 @@ import { createSystemDateTimeFormatter } from "@/lib/axios/dateFormatter";
 import React, {
   useCallback,
   useEffect,
-  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -2667,7 +2666,10 @@ export default function ApprovalRequest() {
             />
           </div> */}
 
-          <div className="relative z-[10] sibs-profile-tab-panel">
+          <div
+            className="relative z-[10] sibs-page-card-in font-jakarta"
+            style={{ animationDelay: "60ms", animationFillMode: "both" }}
+          >
             <ApprovalPaginationToolbar
               loading={loading}
               searchInput={searchInput}
@@ -2684,7 +2686,10 @@ export default function ApprovalRequest() {
             />
           </div>
 
-          <div className="relative z-[0] sibs-profile-tab-panel">
+          <div
+            className="relative z-[0] sibs-page-card-in font-jakarta"
+            style={{ animationDelay: "120ms", animationFillMode: "both" }}
+          >
             <ApprovalRequestTable
               activeModule={activeModule}
               requestModules={visibleRequestModules}

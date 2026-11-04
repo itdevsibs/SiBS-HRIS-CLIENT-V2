@@ -214,7 +214,7 @@ function WfmDashboardErrorState({ message, onRetry }) {
   );
 }
 
-function MetricCard({ label, value, description, icon, tone = "navy" }) {
+function MetricCard({ label, value, description, icon, tone = "navy", delay = 0 }) {
   const Icon = icon;
   const tones = {
     navy: {
@@ -252,7 +252,7 @@ function MetricCard({ label, value, description, icon, tone = "navy" }) {
   const classes = tones[tone] || tones.navy;
 
   return (
-    <article className="sibs-metric-card flex min-h-[112px] flex-col justify-between overflow-hidden p-3.5">
+    <article className="sibs-metric-card sibs-page-card-in font-jakarta flex min-h-[112px] flex-col justify-between overflow-hidden p-3.5" style={{ animationDelay: `${delay}ms`, animationFillMode: "both" }}>
       <div className="flex items-start justify-between gap-3">
         <span className={`text-[10px] font-extrabold uppercase tracking-normal ${classes.label}`}>
           {label}
@@ -568,14 +568,14 @@ export default function WFMDashboardPage() {
             </section>
           ) : null}
 
-          <section className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-7">
-            {metricCards.map((item) => (
-              <MetricCard key={item.label} {...item} />
+          <section className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-7" style={{ animationDelay: "60ms", animationFillMode: "both" }}>
+            {metricCards.map((item, index) => (
+              <MetricCard key={item.label} {...item} delay={index * 30} />
             ))}
           </section>
 
           <section className="grid grid-cols-1 gap-5 xl:grid-cols-2">
-            <article className="sibs-card p-5 sm:p-6">
+            <article className="sibs-page-card-in sibs-card p-5 sm:p-6 font-jakarta" style={{ animationDelay: "240ms", animationFillMode: "both" }}>
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <h2 className="sibs-section-title">Requirement vs Filled Progress</h2>
@@ -632,7 +632,7 @@ export default function WFMDashboardPage() {
               </div>
             </article>
 
-            <article className="sibs-card p-5 sm:p-6">
+            <article className="sibs-page-card-in sibs-card p-5 sm:p-6 font-jakarta" style={{ animationDelay: "240ms", animationFillMode: "both" }}>
               <h2 className="sibs-section-title">Weekly Movement Pipeline</h2>
               <p className="sibs-section-subtitle">
                 Company-wide candidate progression through the hiring pipeline.
@@ -661,7 +661,7 @@ export default function WFMDashboardPage() {
             </article>
           </section>
 
-          <section className="sibs-card p-5 sm:p-6">
+          <section className="sibs-page-card-in sibs-card p-5 sm:p-6 font-jakarta" style={{ animationDelay: "320ms", animationFillMode: "both" }}>
             <div className="flex items-start justify-between gap-3">
               <div>
                 <h2 className="sibs-section-title">WFM Quick Access</h2>
@@ -702,7 +702,7 @@ export default function WFMDashboardPage() {
           </section>
 
           <section className="grid grid-cols-1 items-start gap-5 2xl:grid-cols-12">
-            <article className="sibs-card p-5 sm:p-6 2xl:col-span-8">
+            <article className="sibs-page-card-in sibs-card p-5 sm:p-6 2xl:col-span-8 font-jakarta" style={{ animationDelay: "360ms", animationFillMode: "both" }}>
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <h2 className="sibs-section-title">Company-Wide Role Hiring Status</h2>
@@ -767,7 +767,7 @@ export default function WFMDashboardPage() {
               </div>
             </article>
 
-            <aside className="sibs-card p-5 sm:p-6 2xl:col-span-4">
+            <aside className="sibs-page-card-in sibs-card p-5 sm:p-6 2xl:col-span-4 font-jakarta" style={{ animationDelay: "400ms", animationFillMode: "both" }}>
               <h2 className="sibs-section-title">Recruiter Load</h2>
               <p className="sibs-section-subtitle">
                 Company-wide active roles versus recruiter output.
@@ -824,7 +824,7 @@ export default function WFMDashboardPage() {
             </aside>
           </section>
 
-          <footer className="rounded-[10px] border border-sibs-border bg-sibs-surface px-4 py-3 text-center text-[10px] font-black uppercase tracking-wide text-sibs-muted">
+          <footer className="sibs-page-card-in rounded-[10px] border border-sibs-border bg-sibs-surface px-4 py-3 text-center text-[10px] font-black uppercase tracking-wide text-sibs-muted" style={{ animationDelay: "440ms", animationFillMode: "both" }}>
             WFM Dashboard: company-wide visibility for workforce monitoring and planning.
           </footer>
         </div>

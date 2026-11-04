@@ -224,6 +224,7 @@ function MetricCard({
   tone = "navy",
   onClick,
   actionLabel = "Open related records",
+  delay = 0,
 }) {
   const Icon = icon;
   const tones = {
@@ -265,7 +266,8 @@ function MetricCard({
     <button
       type="button"
       onClick={onClick}
-      className="sibs-metric-card group flex min-h-[112px] w-full flex-col justify-between overflow-hidden p-3.5 text-left transition hover:-translate-y-0.5 hover:border-sibs-orange/35 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-sibs-orange/20"
+      className="sibs-metric-card sibs-page-card-in font-jakarta group flex min-h-[112px] w-full flex-col justify-between overflow-hidden p-3.5 text-left transition hover:-translate-y-0.5 hover:border-sibs-orange/35 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-sibs-orange/20"
+      style={{ animationDelay: `${delay}ms`, animationFillMode: "both" }}
       title={actionLabel}
       aria-label={`${label}: ${actionLabel}`}
     >
@@ -615,18 +617,19 @@ export default function SOMDashboardPage() {
             </section>
           ) : null}
 
-          <section className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-7">
-            {metricCards.map((item) => (
+          <section className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-7" style={{ animationDelay: "60ms", animationFillMode: "both" }}>
+            {metricCards.map((item, index) => (
               <MetricCard
                 key={item.label}
                 {...item}
+                delay={index * 30}
                 onClick={() => navigate(item.path)}
               />
             ))}
           </section>
 
           <section className="grid grid-cols-1 gap-5 xl:grid-cols-2">
-            <article className="sibs-card p-5 sm:p-6">
+            <article className="sibs-page-card-in sibs-card p-5 sm:p-6 font-jakarta" style={{ animationDelay: "240ms", animationFillMode: "both" }}>
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <h2 className="sibs-section-title">Requirement vs Filled Progress</h2>
@@ -701,7 +704,7 @@ export default function SOMDashboardPage() {
               </div>
             </article>
 
-            <article className="sibs-card p-5 sm:p-6">
+            <article className="sibs-page-card-in sibs-card p-5 sm:p-6 font-jakarta" style={{ animationDelay: "240ms", animationFillMode: "both" }}>
               <h2 className="sibs-section-title">Weekly Movement Pipeline</h2>
               <p className="sibs-section-subtitle">
                 Candidate progression within your assigned SOM scope.
@@ -745,7 +748,7 @@ export default function SOMDashboardPage() {
             </article>
           </section>
 
-          <section className="sibs-card p-5 sm:p-6">
+          <section className="sibs-page-card-in sibs-card p-5 sm:p-6 font-jakarta" style={{ animationDelay: "320ms", animationFillMode: "both" }}>
             <div className="flex items-start justify-between gap-3">
               <div>
                 <h2 className="sibs-section-title">SOM Quick Access</h2>
@@ -786,7 +789,7 @@ export default function SOMDashboardPage() {
           </section>
 
           <section className="grid grid-cols-1 items-start gap-5 2xl:grid-cols-12">
-            <article className="sibs-card p-5 sm:p-6 2xl:col-span-8">
+            <article className="sibs-page-card-in sibs-card p-5 sm:p-6 2xl:col-span-8 font-jakarta" style={{ animationDelay: "360ms", animationFillMode: "both" }}>
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <h2 className="sibs-section-title">Role Hiring Status</h2>
@@ -864,7 +867,7 @@ export default function SOMDashboardPage() {
               </div>
             </article>
 
-            <aside className="sibs-card p-5 sm:p-6 2xl:col-span-4">
+            <aside className="sibs-page-card-in sibs-card p-5 sm:p-6 2xl:col-span-4 font-jakarta" style={{ animationDelay: "400ms", animationFillMode: "both" }}>
               <h2 className="sibs-section-title">Recruiter Load</h2>
               <p className="sibs-section-subtitle">
                 Active roles versus recruiter output within your assigned SOM scope.
@@ -930,7 +933,7 @@ export default function SOMDashboardPage() {
             </aside>
           </section>
 
-          <footer className="rounded-[10px] border border-sibs-border bg-sibs-surface px-4 py-3 text-center text-[10px] font-black uppercase tracking-wide text-sibs-muted">
+          <footer className="sibs-page-card-in rounded-[10px] border border-sibs-border bg-sibs-surface px-4 py-3 text-center text-[10px] font-black uppercase tracking-wide text-sibs-muted" style={{ animationDelay: "440ms", animationFillMode: "both" }}>
             Senior Operations Dashboard: assigned-scope visibility for operational workforce and hiring oversight.
           </footer>
         </div>

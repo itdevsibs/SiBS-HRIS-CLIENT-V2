@@ -4,7 +4,7 @@ export async function getResignees({ page = 1, limit = 15, search = "" } = {}, s
   const response = await api.get("/api/resignees", {
     params: { page, limit, search },
     signal,
-    timeout: 20000,
+    timeout: 25000,
   });
   return response.data;
 }
@@ -14,7 +14,7 @@ export async function getResigneeStats({ search = "", revision = 0 } = {}, signa
   const response = await api.get("/api/resignees/stats", {
     params: { search, revision },
     signal,
-    timeout: 30_000,
+    timeout: 35000,
   });
   return response.data;
 }

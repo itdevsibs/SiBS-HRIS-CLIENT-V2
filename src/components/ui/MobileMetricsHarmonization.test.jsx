@@ -136,6 +136,6 @@ describe("Ticket SIBS-UIUX-MOBILE-METRICS-HARMONIZATION-01: Mobile Metrics 2-Col
     const financeContent = fs.readFileSync(financeDashboardPath, "utf-8");
 
     expect(skeletonContent).toMatch(/grid\s+grid-cols-2\s+gap-2\.5\s+sm:grid-cols-2\s+lg:grid-cols-3/);
-    expect(financeContent).toMatch(/section\s+className="grid\s+grid-cols-2\s+gap-2\.5\s+sm:grid-cols-2\s+xl:grid-cols-3/);
+    expect(financeContent).toMatch(/(?:section\s+className="grid\s+grid-cols-2\s+gap-2\.5\s+sm:grid-cols-2\s+xl:grid-cols-3"|MetricGrid\s+columns=\{6\})/);
   });
 });

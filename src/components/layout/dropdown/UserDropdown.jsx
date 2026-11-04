@@ -15,6 +15,7 @@ import { useHeader } from "../../../services/context/HeaderContext";
 import { useAdmin } from "../../../services/context/AdminContext";
 import { getActiveCollectibleProfile } from "../../../config/developerBorders";
 import CollectibleAvatarFrame from "./CollectibleAvatarFrame.jsx";
+import DeveloperEasterEgg from "./DeveloperEasterEgg.jsx";
 
 const ADMIN_ACCESS_LABELS = {
   1: "Talent Acquisition",
@@ -64,12 +65,14 @@ export default function UserDropdown({
   const [avatarPreviewOpen, setAvatarPreviewOpen] = useState(false);
   const [avatarPreviewPosition, setAvatarPreviewPosition] = useState(null);
   const [dropdownPosition, setDropdownPosition] = useState(null);
+  const [easterEggProfile, setEasterEggProfile] = useState(null);
 
   const navigate = useNavigate();
   const ref = useRef(null);
   const triggerRef = useRef(null);
   const dropdownRef = useRef(null);
   const avatarPreviewAnchorRef = useRef(null);
+  const easterEggClicksRef = useRef({ count: 0, startedAt: 0, account: null });
 
   const { user, setUser, refetchUser } = useUser();
   const { setAdminLogin } = useHeader();
@@ -301,6 +304,28 @@ export default function UserDropdown({
     setAvatarPreviewOpen(false);
   };
 
+  const closeEasterEgg = useCallback(() => setEasterEggProfile(null), []);
+
+  const handleAvatarClick = (event) => {
+    if (!collectible?.easterEgg?.src) return;
+    const now = Date.now();
+    const clicks = easterEggClicksRef.current;
+    const continueSequence = clicks.account === user && now - clicks.startedAt <= 1000;
+    const count = continueSequence ? clicks.count + 1 : 1;
+    easterEggClicksRef.current = {
+      count,
+      startedAt: continueSequence ? clicks.startedAt : now,
+      account: user,
+    };
+    if (count < 3) return;
+
+    easterEggClicksRef.current = { count: 0, startedAt: 0, account: null };
+    event.stopPropagation();
+    setOpen(false);
+    setAvatarPreviewOpen(false);
+    setEasterEggProfile(collectible);
+  };
+
   const handleMenuKeyDown = (event) => {
     if (!dropdownRef.current) return;
     const items = Array.from(
@@ -423,6 +448,7 @@ export default function UserDropdown({
           ref={avatarPreviewAnchorRef}
           onMouseEnter={showAvatarPreview}
           onMouseLeave={hideAvatarPreview}
+          onClick={handleAvatarClick}
           className="relative flex shrink-0 items-center justify-center"
         >
           {collectible ? (
@@ -522,6 +548,9 @@ export default function UserDropdown({
         )}
 
       {dropdownMenu}
+      {easterEggProfile && easterEggProfile.id === collectible?.id && (
+        <DeveloperEasterEgg key={easterEggProfile.id} collectible={easterEggProfile} onClose={closeEasterEgg} />
+      )}
     </div>
   );
 }

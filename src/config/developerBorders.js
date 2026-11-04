@@ -1,7 +1,7 @@
 /**
  * SiBS HRIS — Developer Collectible Avatar Border & Accessory Registry
  *
- * Mappings for the collectible developer avatar titles, accessories, and glowing rings.
+ * Original ornate artwork for header/profile avatars and square hover themes.
  * Adapts the Mr. Sibs accessory architecture while preserving each developer's thematic crest.
  * Strictly keyed to the canonical SiBS IDs.
  */
@@ -9,6 +9,11 @@
 export const DEVELOPER_BORDERS = Object.freeze({
   "6496": {
     id: "6496",
+    easterEgg: {"src":"/assets/easter-eggs/6496_crister_the_engineer_alpha.webm","subtitle":"THE DIVINE FORGE","titleColor":"#eaa03b"},
+
+    asset: "/assets/avatar-borders/developers/original_art/6496_crister_engineer.svg",
+
+    portrait: { left: "16%", top: "17%", width: "68%", height: "68%" },
     developer: "Crister",
     title: "THE ENGINEER",
     headerTitle: "ENGINEER",
@@ -21,6 +26,11 @@ export const DEVELOPER_BORDERS = Object.freeze({
   },
   "6495": {
     id: "6495",
+    easterEgg: {"src":"/assets/easter-eggs/6495_allen_backend_god_alpha.webm","subtitle":"DIGITAL ASCENSION","titleColor":"#4bdf91"},
+
+    asset: "/assets/avatar-borders/developers/original_art/6495_allen_backend_god.svg",
+
+    portrait: { left: "16%", top: "17%", width: "68%", height: "68%" },
     developer: "Allen",
     title: "BACKEND GOD",
     headerTitle: "BACKEND",
@@ -33,6 +43,11 @@ export const DEVELOPER_BORDERS = Object.freeze({
   },
   "6099": {
     id: "6099",
+    easterEgg: {"src":"/assets/easter-eggs/6099_miss_the_queen_manager_alpha.webm","subtitle":"ROYAL ASCENSION","titleColor":"#ca96ff"},
+
+    asset: "/assets/avatar-borders/developers/original_art/6099_miss_queen_manager.svg",
+
+    portrait: { left: "16%", top: "17%", width: "68%", height: "68%" },
     developer: "Miss",
     title: "THE QUEEN MANAGER",
     headerTitle: "QUEEN MGR",
@@ -45,6 +60,11 @@ export const DEVELOPER_BORDERS = Object.freeze({
   },
   "6892": {
     id: "6892",
+    easterEgg: {"src":"/assets/easter-eggs/6892_dwight_the_gambler_alpha.webm","subtitle":"ROYAL FLUSH JACKPOT","titleColor":"#ff7777"},
+
+    asset: "/assets/avatar-borders/developers/original_art/6892_dwight_gambler.svg",
+
+    portrait: { left: "19%", top: "20%", width: "62%", height: "62%" },
     developer: "Dwight",
     title: "THE GAMBLER",
     headerTitle: "GAMBLER",
@@ -57,6 +77,11 @@ export const DEVELOPER_BORDERS = Object.freeze({
   },
   "6890": {
     id: "6890",
+    easterEgg: {"src":"/assets/easter-eggs/6890_paul_the_sleeper_alpha.webm","subtitle":"DREAM REALM","titleColor":"#84bbff"},
+
+    asset: "/assets/avatar-borders/developers/original_art/6890_paul_sleeper.svg",
+
+    portrait: { left: "16%", top: "17%", width: "68%", height: "68%" },
     developer: "Paul",
     title: "THE SLEEPER",
     headerTitle: "SLEEPER",
@@ -69,6 +94,11 @@ export const DEVELOPER_BORDERS = Object.freeze({
   },
   "6891": {
     id: "6891",
+    easterEgg: {"src":"/assets/easter-eggs/6891_mars_carziqo_donater_alpha.webm","subtitle":"DONATION RUN","titleColor":"#48d0f5"},
+
+    asset: "/assets/avatar-borders/developers/original_art/6891_mars_carziqo_donater.svg",
+
+    portrait: { left: "16%", top: "17%", width: "68%", height: "68%" },
     developer: "Mars",
     title: "CARZIQO DONATER",
     headerTitle: "CARZIQO",
@@ -86,6 +116,11 @@ export const DEVELOPER_BORDERS = Object.freeze({
  */
 export const MR_SIBS_BORDER = Object.freeze({
   id: "6784",
+  easterEgg: {"src":"/assets/easter-eggs/mr-sibs-crowning-alpha.webm","subtitle":"THE CELESTIAL CROWNING","titleColor":"#f5dca5","revealAt":6.85,"endDelay":2200},
+
+  asset: "/assets/avatar-borders/developers/original_art/6784_mr_sibs_ornate.svg",
+
+  portrait: { left: "17%", top: "18%", width: "66%", height: "66%" },
   developer: "Ralph Dulla",
   title: "MR. SIBS",
   accessoryKey: "mrsibs",
