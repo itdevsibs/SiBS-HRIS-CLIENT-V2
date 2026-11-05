@@ -14,7 +14,7 @@ import DatePicker from "@/components/ui/DatePicker";
 
 const EDGE = "rounded-[10px]";
 const INLINE_CONTROLS_CLASS =
-  "flex flex-col gap-3 overflow-visible xl:flex-row xl:items-end";
+  "flex flex-col gap-3 overflow-visible xl:flex-row xl:flex-wrap xl:items-end";
 const INLINE_SEARCH_CLASS =
   "relative w-full min-w-0 xl:min-w-[180px] xl:flex-[1_1_220px] 2xl:min-w-[280px] 2xl:flex-[1_1_360px]";
 const INLINE_FILTER_CLASS = "w-full xl:w-[135px] 2xl:w-[180px] xl:flex-none";

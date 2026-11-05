@@ -89,18 +89,20 @@ export default function OnboardingJourneyRoster({ records, journeys, loading, on
       <div className="relative z-[90] mt-3.5 overflow-visible 2xl:mt-4">
         <PaginationTable
           filterLayout="ta-inline"
+          controlsClassName="flex flex-col gap-3 overflow-visible xl:flex-row xl:items-end"
+          searchClassName="relative w-full min-w-0 xl:flex-[2_1_0%]"
           showFilterPanel={false}
           showFilterHeader={false}
           showPagination={false}
           loading={loading}
           searchValue={filters.search || ""}
           onSearchChange={(value) => updateFilter("search", value)}
-          searchPlaceholder="Search candidate, SIBS ID, role, account, trainer…"
+          searchPlaceholder="Name, SIBS ID, role…"
           className="border-0 bg-transparent p-0 shadow-none font-jakarta"
           dropdownFilters={[
-            ["stage", "Onboarding Stage", "All Onboarding Stages", options("stage")],
+            ["stage", "Stage", "All Stages", options("stage")],
             ["outcome", "Outcome", "All Outcomes", ["Pending Start", "True Hire", "No Show", "Pre-start Withdrawal"]],
-            ["phase", "Journey Phase", "All Journey Phases", options("phase")],
+            ["phase", "Phase", "All Phases", options("phase")],
             ["account", "Account", "All Accounts", options("account")],
             ["site", "Site", "All Sites", options("site")],
             ["trainer", "Trainer", "All Trainers", options("trainer")],
@@ -114,6 +116,7 @@ export default function OnboardingJourneyRoster({ records, journeys, loading, on
           ].map(([key, label, allLabel, values]) => ({
             key,
             label,
+            className: "w-full min-w-0 xl:flex-1",
             allLabel,
             placeholder: allLabel,
             value: filters[key] || "",
