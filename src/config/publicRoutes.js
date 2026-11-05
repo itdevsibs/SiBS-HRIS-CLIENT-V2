@@ -57,6 +57,10 @@ export const STANDALONE_PUBLIC_PATHS = [
 
   // 7. Online Assessment
   "/online-assessment",
+
+  // 8. Applicant Onboarding Portal
+  "/applicant-portal",
+  "/public/applicant-portal",
 ];
 
 export const PUBLIC_EXTERNAL_PATHS = [

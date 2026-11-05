@@ -5,6 +5,7 @@ import {
   ClipboardCheck,
   ClipboardList,
   FileCheck2,
+  GraduationCap,
   ListChecks,
   Mail,
   ShieldCheck,
@@ -50,6 +51,14 @@ const SETTINGS_GROUPS = [
         icon: ClipboardCheck,
         available: true,
         metaKey: "finalInterview",
+      },
+      {
+        key: "Orientation Deck & Knowledge Check",
+        title: "Orientation Deck & Knowledge Check PPT",
+        description:
+          "Upload PPTX/PDF orientation decks, edit slides in real-time, and configure staged knowledge check quizzes.",
+        icon: GraduationCap,
+        available: true,
       },
       {
         key: "Assessment Settings",

@@ -21,6 +21,8 @@ import { WorkforceHiringProvider } from "./context/WorkforceHiringContext";
 import ActionItemsDataBridge from "./context/ActionItemsDataBridgeContext";
 
 import { ResignationListProvider } from "./context/ResignationListContext";
+import { JourneyProvider } from "../components/recruitment/journey/JourneyContext";
+import { NHOProvider } from "../components/recruitment/nho/NHOContext";
 
 export default function Providers({ children }) {
   return (
@@ -43,7 +45,11 @@ export default function Providers({ children }) {
                                 <WorkforceHiringProvider>
                                   <ActionItemsDataBridge>
                                     <ResignationListProvider>
-                                      {children}
+                                      <JourneyProvider>
+                                        <NHOProvider>
+                                          {children}
+                                        </NHOProvider>
+                                      </JourneyProvider>
                                     </ResignationListProvider>
                                   </ActionItemsDataBridge>
                                 </WorkforceHiringProvider>

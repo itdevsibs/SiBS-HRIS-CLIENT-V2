@@ -22,6 +22,10 @@ import {
   FileCog,
   FileText,
   Gift,
+  GraduationCap,
+  ShieldCheck,
+  Sparkles,
+  ExternalLink,
   LayoutDashboard,
   MapPin,
   Menu,
@@ -923,6 +927,7 @@ export default function Sidebar() {
         "/profile/user",
         "/schedule",
         "/resignation",
+        "/trainee-learning",
       ];
 
       const ok = allowed.some(
@@ -1090,6 +1095,11 @@ export default function Sidebar() {
       path: "/leaves",
       notificationKey: "leaves",
     },
+    {
+      name: "Trainee Learning",
+      icon: GraduationCap,
+      path: "/trainee-learning",
+    },
   ];
 
   const adminCoreMenu = [
@@ -1139,6 +1149,19 @@ export default function Sidebar() {
       path: "/dashboard/som",
       allowedUsers: DASHBOARD_ACCESS.SOM,
       useRawAdminAccess: true,
+    },
+    {
+      name: "Dashboard",
+      icon: LayoutDashboard,
+      path: "/dashboard/qds",
+      allowedRoles: ["qds", "quality_development_specialist"],
+    },
+    {
+      name: "QDS Dashboard",
+      icon: LayoutDashboard,
+      path: "/dashboard/qds",
+      allowedUsers: DASHBOARD_ACCESS.QDS || [1, 2, 3, 5, 6, 7, 10],
+      excludeRoles: ["qds", "quality_development_specialist"],
     },
     {
       name: "Employee Directory",
@@ -1246,9 +1269,39 @@ export default function Sidebar() {
       allowedUsers: [1, 2, 3, 6, 7],
     },
     {
+      name: "New Hire Orientation",
+      icon: Sparkles,
+      path: "/recruitment/new-hire-orientation",
+      allowedUsers: [1, 2, 3, 6, 7, 8, 9, 10],
+    },
+    {
+      name: "Applicant Portal",
+      icon: ExternalLink,
+      path: "/public/applicant-portal",
+      allowedUsers: [1, 2, 3, 6, 7, 8, 9, 10],
+    },
+    {
       name: "Onboarding",
-      icon: ClipboardList,
+      icon: ClipboardCheck,
       path: "/recruitment/onboarding",
+      allowedUsers: [1, 2, 3, 6, 7],
+    },
+    {
+      name: "ESEP Coaching",
+      icon: ShieldCheck,
+      path: "/recruitment/esep-coaching",
+      allowedUsers: [1, 2, 3, 5, 6, 7, 8, 9, 10],
+    },
+    {
+      name: "Trainer Monitoring",
+      icon: Users,
+      path: "/recruitment/trainer-monitoring",
+      allowedUsers: [1, 2, 3, 5, 6, 7, 8, 10],
+    },
+    {
+      name: "Candidate Experience",
+      icon: BookOpen,
+      path: "/recruitment/candidate-experience",
       allowedUsers: [1, 2, 3, 6, 7],
     },
     {
@@ -1270,10 +1323,10 @@ export default function Sidebar() {
       allowedUsers: [1, 2, 3, 5, 6, 7, 10],
     },
     {
-      name: "Candidate Experience",
-      icon: BookOpen,
-      path: "/recruitment/candidate-experience",
-      allowedUsers: [1, 2, 3, 6, 7],
+      name: "Trainee Learning",
+      icon: GraduationCap,
+      path: "/trainee-learning",
+      allowedUsers: [1, 2, 3, 5, 6, 7, 8, 9, 10],
     },
   ];
 
@@ -1362,18 +1415,30 @@ export default function Sidebar() {
       id: "recruitment-pipeline",
       name: "Recruitment Pipeline",
       icon: Users,
-      items: recruitmentMenu.slice(6, 11).concat(recruitmentMenu.slice(14)),
+      items: [
+        recruitmentMenu.find((item) => item.path === "/recruitment/applicant-leads"),
+        recruitmentMenu.find((item) => item.path === "/recruitment/talent-pool"),
+        recruitmentMenu.find((item) => item.path === "/recruitment/candidate-pipeline"),
+        recruitmentMenu.find((item) => item.path === "/recruitment/offers"),
+        recruitmentMenu.find((item) => item.path === "/recruitment/new-hire-orientation"),
+        recruitmentMenu.find((item) => item.path === "/public/applicant-portal"),
+        recruitmentMenu.find((item) => item.path === "/recruitment/onboarding"),
+        recruitmentMenu.find((item) => item.path === "/recruitment/esep-coaching"),
+        recruitmentMenu.find((item) => item.path === "/recruitment/trainer-monitoring"),
+        recruitmentMenu.find((item) => item.path === "/recruitment/candidate-experience"),
+      ].filter(Boolean),
     },
     {
       id: "recruitment-operations",
       name: "Recruitment Operations",
       icon: Activity,
       items: [
-        recruitmentMenu[5],
-        recruitmentMenu[11],
-        recruitmentMenu[12],
-        recruitmentMenu[13],
-      ],
+        recruitmentMenu.find((item) => item.path === "/recruitment/sourcing-analytics"),
+        recruitmentMenu.find((item) => item.path === "/recruitment/action-items"),
+        recruitmentMenu.find((item) => item.path === "/recruitment/attrition-reports"),
+        recruitmentMenu.find((item) => item.path === "/recruitment/weekly-reports"),
+        recruitmentMenu.find((item) => item.path === "/trainee-learning"),
+      ].filter(Boolean),
     },
     {
       id: "insights-finance",
@@ -1413,6 +1478,12 @@ export default function Sidebar() {
   const getVisibleItems = (items) =>
     items.filter((item) => {
       if (item.excludeRawAdminAccess?.includes(rawAdminAccess)) return false;
+
+      const userRole = normalizeRole(user?.role);
+      if (item.excludeRoles?.includes(userRole)) return false;
+      if (item.allowedRoles) {
+        if (!item.allowedRoles.includes(userRole)) return false;
+      }
 
       if (!item.allowedUsers) return true;
 
@@ -1464,7 +1535,9 @@ export default function Sidebar() {
       const badgeTone = sidebarNotification?.tone || "info";
       const badgeClass = isActive
         ? "bg-white text-sibs-primary-2"
-        : staticBadge
+        : item.badgeClass
+          ? item.badgeClass
+          : staticBadge
           ? sidebarBadgeToneClass.info
           : sidebarBadgeToneClass[badgeTone] || sidebarBadgeToneClass.info;
       const badgeTitle = sidebarNotification?.title || badgeText;
@@ -1562,7 +1635,7 @@ export default function Sidebar() {
             <div className="ml-auto flex shrink-0 items-center gap-1.5">
               {badgeText ? (
                 <span
-                  className={`inline-flex h-5 max-w-[70px] items-center justify-center rounded px-1.5 sibs-text-micro font-bold uppercase leading-none tracking-wide transition-all duration-300 opacity-100 2xl:px-2 ${badgeClass}`}
+                  className={`inline-flex h-5 max-w-fit items-center justify-center rounded px-1.5 sibs-text-micro font-bold uppercase leading-none tracking-wide transition-all duration-300 opacity-100 2xl:px-2 ${badgeClass}`}
                 >
                   {badgeText}
                 </span>

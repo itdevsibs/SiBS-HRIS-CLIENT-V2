@@ -75,7 +75,7 @@ export default function ResigneeAvatar({ record }) {
   }, [previewVisible]);
 
   const picture = (preview = false) => (
-    <span className={`relative inline-flex ${preview ? "h-40 w-40 rounded-xl text-[24px]" : "h-9 w-9 rounded-full text-xs shadow-inner"} shrink-0 items-center justify-center overflow-hidden border font-extrabold ${tone}`}>
+    <span className={`relative inline-flex ${preview ? "h-40 w-40 rounded-xl font-heading text-2xl" : "h-9 w-9 rounded-full font-heading text-[11px] 2xl:text-xs shadow-inner"} shrink-0 items-center justify-center overflow-hidden border font-extrabold ${tone}`}>
       <span aria-hidden="true">{initials}</span>
       {canShowPicture ? (
         <img

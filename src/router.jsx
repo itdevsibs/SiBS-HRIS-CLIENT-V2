@@ -90,6 +90,14 @@ const FinalInterviewForms = lazyWithRetry(() => import("./components/recruitment
 const RecruitmentSettingsPage = lazyWithRetry(() => import("./pages/Settings/RecruitmentSettingsPage"));
 const UserSettingsPage = lazyWithRetry(() => import("./pages/Settings/UserSettingsPage"));
 
+// New Integrated Modules
+const PublicApplicantPortalPage = lazyWithRetry(() => import("./pages/public/PublicApplicantPortalPage"));
+const NewHireOrientationPage = lazyWithRetry(() => import("./pages/recruitment/NewHireOrientationPage"));
+const QDSDashboardPage = lazyWithRetry(() => import("./pages/dashboard/QDSDashboard/QDSDashboardPage"));
+const ESEPCoachingPage = lazyWithRetry(() => import("./pages/recruitment/ESEPCoachingPage"));
+const TrainerMonitoringPage = lazyWithRetry(() => import("./pages/recruitment/TrainerMonitoringPage"));
+const TraineeLearningPage = lazyWithRetry(() => import("./pages/learning/TraineeLearningPage"));
+
 // Administration
 const DepartmentsPage = lazyWithRetry(() => import("./pages/administration/DepartmentsPage"));
 const OfficeLocationsPage = lazyWithRetry(() => import("./pages/administration/OfficeLocationsPage"));
@@ -126,6 +134,10 @@ function PublicApplicationRoutes() {
         element={<Navigate to="/" replace />}
       />
 
+      {/* PUBLIC APPLICANT ONBOARDING PORTAL */}
+      <Route path="/applicant-portal" element={<PublicApplicantPortalPage />} />
+      <Route path="/public/applicant-portal" element={<PublicApplicantPortalPage />} />
+
       {/* Keep old public application links working. */}
       <Route path="/apply" element={<Navigate to="/" replace />} />
       <Route
@@ -146,6 +158,10 @@ function PublicApplicationRoutes() {
 function MainApplicationRoutes() {
   return (
     <Routes>
+      {/* PUBLIC APPLICANT ONBOARDING PORTAL */}
+      <Route path="/applicant-portal" element={<PublicApplicantPortalPage />} />
+      <Route path="/public/applicant-portal" element={<PublicApplicantPortalPage />} />
+
       {/* AUTH / PUBLIC */}
       <Route path="/" element={<LoginPage />} />
       <Route path="/login" element={<LoginPage />} />
@@ -500,6 +516,64 @@ function MainApplicationRoutes() {
         element={
           <PrivateRoute>
             <EmploymentOfferDocumentPage />
+          </PrivateRoute>
+        }
+      />
+
+      {/* NEW HIRE ORIENTATION */}
+      <Route
+        path="/recruitment/new-hire-orientation"
+        element={
+          <PrivateRoute>
+            <NewHireOrientationPage />
+          </PrivateRoute>
+        }
+      />
+
+      {/* QDS DASHBOARD */}
+      <Route
+        path="/recruitment/qds-dashboard"
+        element={
+          <PrivateRoute>
+            <QDSDashboardPage />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/dashboard/qds"
+        element={
+          <PrivateRoute>
+            <QDSDashboardPage />
+          </PrivateRoute>
+        }
+      />
+
+      {/* ESEP COACHING */}
+      <Route
+        path="/recruitment/esep-coaching"
+        element={
+          <PrivateRoute>
+            <ESEPCoachingPage />
+          </PrivateRoute>
+        }
+      />
+
+      {/* TRAINER MONITORING */}
+      <Route
+        path="/recruitment/trainer-monitoring"
+        element={
+          <PrivateRoute>
+            <TrainerMonitoringPage />
+          </PrivateRoute>
+        }
+      />
+
+      {/* TRAINEE LEARNING */}
+      <Route
+        path="/trainee-learning"
+        element={
+          <PrivateRoute>
+            <TraineeLearningPage />
           </PrivateRoute>
         }
       />

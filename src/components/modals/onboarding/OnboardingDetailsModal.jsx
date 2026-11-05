@@ -125,7 +125,7 @@ export default function OnboardingDetailsModal({
           <button
             type="button"
             onClick={onClose}
-            className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-[10px] border border-sibs-border bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-muted transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange"
+            className="sibs-modal-btn-secondary"
           >
             Close Details
           </button>

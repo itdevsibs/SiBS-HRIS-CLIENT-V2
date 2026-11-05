@@ -1,7 +1,6 @@
 import React from "react";
 import {
   AlertTriangle,
-  CheckCircle2,
   Clock3,
   TrendingUp,
   UserCheck,
@@ -31,13 +30,6 @@ const cards = [
     description: "Awaiting start date",
     icon: Clock3,
     tone: "amber",
-  },
-  {
-    key: "noShow",
-    title: "No Show",
-    description: "Did not report",
-    icon: AlertTriangle,
-    tone: "red",
   },
   {
     key: "withdrawals",
@@ -107,16 +99,15 @@ export default function OnboardingStats({ loading: propLoading }) {
   if (loading) {
     return (
       <MetricGridSkeleton
-        count={6}
+        count={5}
         labels={[
           "Total Records",
           "True Hires",
           "Pending Start",
-          "No Show",
           "Withdrawal",
           "Show Rate",
         ]}
-        className="grid grid-cols-2 gap-2.5 2xl:gap-3 md:grid-cols-3 xl:grid-cols-6"
+        className="grid grid-cols-2 gap-2.5 2xl:gap-3 md:grid-cols-3 xl:grid-cols-5"
         ariaLabel="Loading onboarding metrics"
       />
     );
@@ -125,7 +116,7 @@ export default function OnboardingStats({ loading: propLoading }) {
   return (
     <section
       aria-label="Onboarding Summary"
-      className="grid grid-cols-2 gap-2.5 2xl:gap-3 md:grid-cols-3 xl:grid-cols-6"
+      className="grid grid-cols-2 gap-2.5 2xl:gap-3 md:grid-cols-3 xl:grid-cols-5"
     >
       {cards.map((card, index) => (
         <StatCard

@@ -60,6 +60,8 @@ const PUBLIC_PATHS = [
   "/public/candidate-experience-survey",
   "/recruitment/candidate-experience/survey",
   "/recruitment/talent-pool/apply",
+  "/applicant-portal",
+  "/public/applicant-portal",
 ];
 
 const ACTIVITY_EVENTS = [

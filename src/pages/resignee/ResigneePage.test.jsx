@@ -1,4 +1,9 @@
 import { describe, it, expect } from "vitest";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // Replicate and test pure date formatting behavior
 function formatDate(value) {
@@ -86,5 +91,29 @@ describe("ResigneePage - Formatting & Data Helpers", () => {
     const emptyNormalized = normalizePagination({ total: 0 }, 1, 15);
     expect(emptyNormalized.totalPages).toBe(1);
     expect(emptyNormalized.total).toBe(0);
+  });
+});
+
+describe("ResigneePage - Global Standard Table Layout Conformance", () => {
+  const resigneePagePath = path.resolve(__dirname, "./ResigneePage.jsx");
+  const content = fs.readFileSync(resigneePagePath, "utf-8");
+
+  it("conforms to standard table header and decoupled filter controls", () => {
+    expect(content).toContain("<SearchInput");
+    expect(content).toContain("<SelectDropdown");
+    expect(content).toContain("<TablePagination");
+    expect(content).toContain("sibs-data-table-th");
+    expect(content).toContain("ResponsiveTableShell");
+  });
+
+  it("places filters on dedicated row beneath section title instead of cramped header inline", () => {
+    // Dedicated filter row pattern
+    expect(content).toContain("relative z-[90] mt-3.5 2xl:mt-4 flex flex-col gap-3 overflow-visible xl:flex-row xl:items-end");
+    // Does not push Search to the right of the title in md:flex-row md:items-end md:justify-between
+    expect(content).not.toMatch(/md:items-end\s+md:justify-between[\s\S]*?<SearchInput/);
+  });
+
+  it("places TablePagination directly below the table shell without double nested container", () => {
+    expect(content).toContain('<div className="mt-4 2xl:mt-5">');
   });
 });

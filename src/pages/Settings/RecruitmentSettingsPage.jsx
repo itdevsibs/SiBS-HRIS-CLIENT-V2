@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 
 import RecruitmentSettingsHero from "../../components/recruitment/settings/RecruitmentSettingsHero";
@@ -18,6 +19,11 @@ const SETTING_META = {
     title: "Final Interview Forms",
     description:
       "Manage position-based interview forms, scoring criteria, and passing thresholds.",
+  },
+  "Orientation Deck & Knowledge Check": {
+    title: "Orientation Deck & Knowledge Check PPT",
+    description:
+      "Upload PPTX/PDF orientation decks, edit slides in real-time, configure staged quiz checkpoints, and preview the applicant portal.",
   },
   "Application Screening Questionnaires": {
     title: "Application Screening Forms",
@@ -86,12 +92,22 @@ function RecruitmentSettingsDetailHeader({ activeTab, onBack }) {
 }
 
 export default function RecruitmentSettingsPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const {
     activeTab,
     handleBackToOverview,
     handleOpenSetting,
     mainRef,
   } = useRecruitmentSettingsPage();
+
+  const panelParam = searchParams.get("panel");
+
+  useEffect(() => {
+    if (panelParam && SETTING_META[panelParam] && activeTab !== panelParam) {
+      handleOpenSetting(panelParam);
+      setSearchParams({}, { replace: true });
+    }
+  }, [panelParam, activeTab, handleOpenSetting, setSearchParams]);
 
   const isOverview = activeTab === "Overview";
 

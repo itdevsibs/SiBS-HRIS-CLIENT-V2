@@ -1,5 +1,10 @@
+import { buildOnboardingRoster } from "@/lib/utils/journey/onboardingRoster";
 import { formatHrisDateLocalized } from "@/lib/axios/dateFormatter";
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
+import EmployeeJourneyModule from "@/components/recruitment/journey/EmployeeJourneyModule";
+import { canAccessJourneyTab, useDemoAuth, useHrisModuleNavigation } from "@/lib/utils/journey/hrisRoleAdapter";
+import { useJourney } from "@/components/recruitment/journey/JourneyContext";
 import Header from "../../components/layout/Header";
 import { useOnboarding } from "../../services/context/OnboardingContext";
 import { CreateOnboardingModal } from "../../components/modals/onboarding/OnboardingModal.jsx";
@@ -7,8 +12,8 @@ import OnboardingDetailsModal from "../../components/modals/onboarding/Onboardin
 import OutcomeModal from "../../components/modals/onboarding/OnboardingOutcomeModal";
 import OnboardingStats from "../../components/recruitment/onboarding/OnboardingStats";
 import OnboardingOutcomeOverview from "../../components/recruitment/onboarding/OnboardingOutcomeOverview";
-import OnboardingFilters from "../../components/recruitment/onboarding/OnboardingFilters";
-import OnboardingTable from "../../components/recruitment/onboarding/OnboardingTable";
+import OnboardingJourneyRoster from "../../components/recruitment/onboarding/OnboardingJourneyRoster";
+import OnboardingProcessNote from "../../components/recruitment/onboarding/OnboardingProcessNote";
 import { getAcceptedOffers } from "../../lib/axios/onboarding";
 import { Plus, RefreshCw } from "lucide-react";
 import { PageHeaderHero } from "@/components/ui";
@@ -63,6 +68,18 @@ const emptyOnboardingForm = {
 
 export default function OnboardingPage() {
   const { fetchList, createRecord, updateOutcome, list, loading = false } = useOnboarding();
+  const [searchParams] = useSearchParams();
+  const handleSwitchModule = useHrisModuleNavigation();
+  const { journeys, setSelectedJourney, coachingActions } = useJourney();
+  const { user } = useDemoAuth();
+  const canViewBenchmarks = canAccessJourneyTab(user.role, "benchmark");
+  const tabParam = searchParams.get("tab");
+  const journeyIdParam = searchParams.get("journeyId");
+  useEffect(() => {
+    if (tabParam === "journey" || tabParam === "employee-journey") {
+      document.getElementById("section-benchmarks")?.scrollIntoView({ block: "start" });
+    }
+  }, [tabParam]);
 
   const refreshTimerRef = useRef(null);
   const loadingDataRef = useRef(false);
@@ -223,58 +240,54 @@ export default function OnboardingPage() {
       <main className="sibs-dashboard-main-wide">
         <div className="mx-auto w-full max-w-[1700px] space-y-3.5 sm:space-y-4 2xl:space-y-5">
           <PageHeaderHero
-            kicker="Recruitment View"
-            title="Onboarding"
-            description="Track accepted offers through expected start, actual start, Show / No Show, pre-start withdrawal, and final True Hire conversion."
+            kicker="Recruitment & Employee Lifecycle"
+            title="Onboarding & Employee Journey"
+            description="Manage employee onboarding, True Hire conversion, training progression, 30/60/90 performance reviews, and HR handoffs."
             actions={
-              <>
-                <button
-                  type="button"
-                  onClick={handleManualRefresh}
-                  disabled={isManualRefreshing}
-                  title="Refresh onboarding data"
-                  aria-label="Refresh onboarding data"
-                  className="sibs-btn-icon"
-                >
-                  <RefreshCw className={`h-3.5 w-3.5 2xl:h-4 2xl:w-4 ${isManualRefreshing ? "animate-spin text-sibs-orange" : ""}`} />
-                </button>
+                <>
+                  <button
+                    type="button"
+                    onClick={handleManualRefresh}
+                    disabled={isManualRefreshing}
+                    title="Refresh onboarding data"
+                    aria-label="Refresh onboarding data"
+                    className="sibs-btn-icon"
+                  >
+                    <RefreshCw className={`h-3.5 w-3.5 2xl:h-4 2xl:w-4 ${isManualRefreshing ? "animate-spin text-sibs-orange" : ""}`} />
+                  </button>
 
-                <button
-                  type="button"
-                  onClick={setShowCreateModal}
-                  className="sibs-btn-primary max-sm:flex-1"
-                >
-                  <Plus size={15} />
-                  Add Onboarding Record
-                </button>
-              </>
+                  <button
+                    type="button"
+                    onClick={() => setShowCreateModal(true)}
+                    className="sibs-btn-primary max-sm:flex-1"
+                  >
+                    <Plus size={15} />
+                    Add Onboarding Record
+                  </button>
+                </>
             }
           />
-
-          <OnboardingStats loading={loading} />
-          <OnboardingOutcomeOverview loading={loading} />
-
-          <section
-            className="sibs-page-card-in overflow-hidden rounded-[14px] border border-sibs-border bg-white font-jakarta shadow-sm"
-            style={{ animationDelay: "240ms", animationFillMode: "both" }}
-          >
-            <header className="border-b border-sibs-border bg-white p-4 sm:p-5 2xl:p-6 font-jakarta">
-              <h2 className="sibs-card-title">
-                Onboarding Records
-              </h2>
-              <p className="sibs-card-subtitle">
-                Select a row or mobile card to review and resolve candidate start outcomes.
-              </p>
-
-              <div className="relative z-[90] mt-3.5 2xl:mt-4 overflow-visible">
-                <OnboardingFilters />
-              </div>
-            </header>
-
-            <div className="min-h-0 flex-1 p-4 sm:p-5 2xl:p-6 font-jakarta">
-              <OnboardingTable onView={setSelectedRecord} loading={loading} />
-            </div>
+          <section id="section-overview" aria-label="Candidate onboarding and True Hire conversion" className="scroll-mt-6">
+              <OnboardingStats loading={loading} />
           </section>
+          <section id="section-actions" aria-label="Outcome and governance" className="scroll-mt-6">
+              <OnboardingOutcomeOverview loading={loading} />
+          </section>
+          {canViewBenchmarks && <section id="section-benchmarks" aria-label="30/60/90 probationary journey benchmarks" className="scroll-mt-6">
+              <EmployeeJourneyModule
+                summaryOnly
+                canUpdateStage={(journey) => buildOnboardingRoster(list, journeys).some((row) => row.journey?.id === journey.id && row.record)}
+                onUpdateStage={(journey) => {
+                  const row = buildOnboardingRoster(list, journeys).find((item) => item.journey?.id === journey.id && item.record);
+                  if (row) { setSelectedJourney(null); setSelectedRecord(row.record); }
+                }}
+                defaultView="benchmark"
+                initialFocusedJourneyId={journeyIdParam || undefined}
+                onSwitchModule={handleSwitchModule}
+              />
+          </section>}
+          <OnboardingJourneyRoster coachingActions={coachingActions} records={list} journeys={canViewBenchmarks ? journeys : []} loading={loading} onViewRecord={setSelectedRecord} onViewJourney={setSelectedJourney} />
+          <OnboardingProcessNote />
         </div>
       </main>
 

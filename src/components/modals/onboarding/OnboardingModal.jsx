@@ -192,7 +192,7 @@ export function CreateOnboardingModal({
             type="button"
             onClick={handleResetClick}
             disabled={isSubmitting}
-            className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-[10px] border border-sibs-border bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-muted transition hover:border-sibs-orange/35 hover:bg-sibs-cream-light hover:text-sibs-orange disabled:cursor-not-allowed disabled:opacity-50"
+            className="sibs-modal-btn-secondary"
           >
             <RotateCcw size={14} />
             Reset
@@ -203,7 +203,7 @@ export function CreateOnboardingModal({
               type="button"
               onClick={onClose}
               disabled={isSubmitting}
-              className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-[10px] border border-sibs-border bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-muted transition hover:border-sibs-orange/35 hover:bg-sibs-cream-light hover:text-sibs-orange disabled:cursor-not-allowed disabled:opacity-50"
+              className="sibs-modal-btn-secondary"
             >
               Cancel
             </button>
@@ -211,7 +211,7 @@ export function CreateOnboardingModal({
               type="submit"
               form="create-onboarding-form"
               disabled={saveDisabled}
-              className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-[10px] bg-sibs-orange px-3.5 2xl:px-5 font-jakarta sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-sibs-orange/90 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+              className="sibs-modal-btn-primary"
             >
               <Plus size={14} />
               {isSubmitting ? "Saving..." : "Save Onboarding Record"}

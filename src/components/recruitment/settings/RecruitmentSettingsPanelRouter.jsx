@@ -3,6 +3,7 @@ import React from "react";
 import ApplicationQuestionsFormSettings from "./ApplicationQuestionsFormSettings";
 import ApprovalRulesSettings from "./ApprovalRulesSettings";
 import FormBuilderCard from "./FormBuilderCard";
+import OrientationDeckSettingsPanel from "./OrientationDeckSettingsPanel";
 import PlaceholderSettingsPanel from "./PlaceholderSettingsPanel";
 import RecruitmentHolidayCalendar from "./RecruitmentHolidayCalendar";
 
@@ -12,6 +13,10 @@ export default function RecruitmentSettingsPanelRouter({
 }) {
   if (activeTab === "Update Headcounts") {
     return React.createElement(updateHeadcountsPanel);
+  }
+
+  if (activeTab === "Orientation Deck & Knowledge Check") {
+    return <OrientationDeckSettingsPanel />;
   }
 
   if (activeTab === "Final Interview Form") {
