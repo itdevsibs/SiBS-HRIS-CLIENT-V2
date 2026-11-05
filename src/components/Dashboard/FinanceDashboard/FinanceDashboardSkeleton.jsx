@@ -6,6 +6,7 @@ export default function FinanceDashboardSkeleton({ hero = null }) {
     <DashboardLoadingSkeleton
       ariaLabel="Loading Finance Dashboard"
       hero={hero}
+      metricCount={3}
     />
   );
 }

@@ -17,7 +17,6 @@ import {
   Clock3,
   RefreshCw,
   Target,
-  TrendingDown,
   Users,
 } from "lucide-react";
 
@@ -453,32 +452,11 @@ export default function WFMDashboardPage() {
 
   const metricCards = [
     {
-      label: "Open Hiring Roles",
-      value: formatNumber(metrics.totalOpenRoles),
-      description: "Company-wide roles needing staff",
-      icon: BriefcaseBusiness,
-      tone: "navy",
-    },
-    {
-      label: "Requirement vs Filled",
+      label: "Staffing Requirement vs Filled",
       value: `${formatNumber(metrics.totalFilled)} / ${formatNumber(metrics.totalRequirement)}`,
       description: `${Math.round(metrics.filledPercentage)}% filled`,
       icon: Target,
       tone: "navy",
-    },
-    {
-      label: "At-Risk Roles",
-      value: formatNumber(metrics.atRiskRoles),
-      description: "Require WFM attention",
-      icon: AlertCircle,
-      tone: "amber",
-    },
-    {
-      label: "Delayed Roles",
-      value: formatNumber(metrics.delayedRoles),
-      description: "Due dates already missed",
-      icon: Clock3,
-      tone: "red",
     },
     {
       label: "Weekly Hires",
@@ -488,18 +466,18 @@ export default function WFMDashboardPage() {
       tone: "indigo",
     },
     {
-      label: "Drop-Offs",
-      value: formatNumber(metrics.dropOffs),
-      description: "Candidate attrition",
-      icon: TrendingDown,
-      tone: "orange",
+      label: "Unfilled Staffing Gaps",
+      value: formatNumber(Math.max(0, metrics.totalRequirement - metrics.totalFilled)),
+      description: "Open approved staffing slots",
+      icon: BriefcaseBusiness,
+      tone: "navy",
     },
     {
-      label: "Aging Roles",
-      value: formatNumber(metrics.agingRoles),
-      description: "15 days or older",
-      icon: Clock3,
-      tone: "slate",
+      label: "At-Risk Hiring Roles",
+      value: formatNumber(metrics.atRiskRoles),
+      description: `${formatNumber(metrics.delayedRoles)} delayed · ${formatNumber(metrics.agingRoles)} aging (may overlap)`,
+      icon: AlertCircle,
+      tone: "amber",
     },
   ];
 
@@ -568,7 +546,7 @@ export default function WFMDashboardPage() {
             </section>
           ) : null}
 
-          <section className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-7" style={{ animationDelay: "60ms", animationFillMode: "both" }}>
+          <section className="grid grid-cols-2 gap-3 md:grid-cols-4" style={{ animationDelay: "60ms", animationFillMode: "both" }}>
             {metricCards.map((item, index) => (
               <MetricCard key={item.label} {...item} delay={index * 30} />
             ))}
@@ -637,6 +615,7 @@ export default function WFMDashboardPage() {
               <p className="sibs-section-subtitle">
                 Company-wide candidate progression through the hiring pipeline.
               </p>
+              <p className="mt-2 text-xs font-semibold text-sibs-muted">Candidate drop-offs: {formatNumber(metrics.dropOffs)}</p>
 
               <div className="mt-5 grid grid-cols-2 min-[360px]:grid-cols-3 sm:grid-cols-6 gap-2">
                 {funnelStages.map(([label, value, className]) => (

@@ -40,6 +40,7 @@ export default function DashboardLoadingSkeleton({
   ariaLabel = "Loading dashboard",
   hero = null,
   showStatutoryCoverage = false,
+  metricCount = METRIC_COUNT,
 }) {
   return (
     <div className="sibs-dashboard-shell font-jakarta">
@@ -60,9 +61,9 @@ export default function DashboardLoadingSkeleton({
           >
             <section
               data-testid="dashboard-loading-metrics"
-              className="grid grid-cols-2 gap-2.5 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6"
+              className={`grid grid-cols-2 gap-2.5 sm:grid-cols-2 lg:grid-cols-3 ${metricCount === 3 ? "2xl:grid-cols-3" : metricCount === 4 ? "2xl:grid-cols-4" : metricCount === 5 ? "2xl:grid-cols-5" : "2xl:grid-cols-6"}`}
             >
-              {Array.from({ length: METRIC_COUNT }, (_, index) => (
+              {Array.from({ length: metricCount }, (_, index) => (
                 <MetricCardSkeleton key={index} index={index} />
               ))}
             </section>

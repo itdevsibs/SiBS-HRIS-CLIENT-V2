@@ -18,6 +18,7 @@ export default function RoleDashboardSkeleton({
       ariaLabel={ROLE_LABELS[kind] || ROLE_LABELS.om}
       hero={hero}
       showStatutoryCoverage={kind === "ta" ? true : showStatutoryCoverage}
+      metricCount={kind === "ta" ? 5 : 4}
     />
   );
 }

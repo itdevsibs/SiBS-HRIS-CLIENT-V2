@@ -7,14 +7,12 @@ import {
 } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  Activity,
   AlertCircle,
   BriefcaseBusiness,
   Clock3,
   LoaderCircle,
   RefreshCw,
   Target,
-  TrendingDown,
 } from "lucide-react";
 
 import Header from "../../../components/layout/Header";
@@ -162,13 +160,10 @@ export default function OMDashboardPage() {
     .join(" · ");
 
   const metricCards = [
-    { label: "Total Open Roles", value: formatNumber(metrics.totalOpenRoles), description: "Accessible roles needing staff", icon: BriefcaseBusiness, tone: "navy" },
-    { label: "Requirement vs Filled", value: `${formatNumber(metrics.totalFilled)} / ${formatNumber(metrics.totalRequirement)}`, description: `${Math.round(metrics.filledPercentage)}% filled`, icon: Target, tone: "navy" },
-    { label: "At-Risk Roles", value: formatNumber(metrics.atRiskRoles), description: "Require intervention", icon: AlertCircle, tone: "amber" },
+    { label: "Staffing Requirement vs Filled", value: `${formatNumber(metrics.totalFilled)} / ${formatNumber(metrics.totalRequirement)}`, description: `${Math.round(metrics.filledPercentage)}% filled`, icon: Target, tone: "navy" },
+    { label: "Open Staffing Gaps", value: formatNumber(Math.max(0, metrics.totalRequirement - metrics.totalFilled)), description: "Unfilled slots in assigned scope", icon: BriefcaseBusiness, tone: "navy" },
+    { label: "At-Risk Hiring Roles", value: formatNumber(metrics.atRiskRoles), description: "Require intervention", icon: AlertCircle, tone: "amber" },
     { label: "Delayed Roles", value: formatNumber(metrics.delayedRoles), description: "Due dates missed", icon: Clock3, tone: "red" },
-    { label: "Weekly Movement", value: `+${formatNumber(metrics.weeklyHired)}`, description: "Hired this cycle", icon: Activity, tone: "indigo" },
-    { label: "Drop-Offs", value: formatNumber(metrics.dropOffs), description: "Candidate attrition", icon: TrendingDown, tone: "orange" },
-    { label: "Aging Roles", value: formatNumber(metrics.agingRoles), description: "15 days or older", icon: Clock3, tone: "slate" },
   ];
 
   const hasActiveRoleFilters = Boolean(search.trim() || (statusFilter && statusFilter !== "All"));

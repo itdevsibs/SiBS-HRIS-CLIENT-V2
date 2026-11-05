@@ -9,7 +9,7 @@ function mapTone(tone = "navy") {
 
 export default function OMDashboardStats({ metrics = [] }) {
   return (
-    <MetricGrid columns={7}>
+    <MetricGrid columns={4}>
       {metrics.map((item, index) => (
         <MetricCard
           key={item.id || item.label}

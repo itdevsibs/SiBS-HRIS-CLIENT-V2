@@ -439,38 +439,3 @@ export function getApprovalResultFailed(result) {
 
   return false;
 }
-
-export function calculateLeavePageStats(paginatedLeaves = []) {
-  const totalLeaves = paginatedLeaves.length;
-
-  const approvedLeaves = paginatedLeaves.filter(
-    (item) => item.normalizedStatus === "Approved",
-  ).length;
-
-  const pendingLeaves = paginatedLeaves.filter(
-    (item) => item.normalizedStatus === "Pending",
-  ).length;
-
-  const rejectedLeaves = paginatedLeaves.filter(
-    (item) => item.normalizedStatus === "Rejected",
-  ).length;
-
-  const totalLeaveDays = paginatedLeaves.reduce(
-    (sum, item) => sum + Number(item.gy_leave_day || 0),
-    0,
-  );
-
-  const totalRemaining = paginatedLeaves.reduce(
-    (sum, item) => sum + Number(item.leave_remaining || 0),
-    0,
-  );
-
-  return {
-    totalLeaves,
-    approvedLeaves,
-    pendingLeaves,
-    rejectedLeaves,
-    totalLeaveDays,
-    totalRemaining,
-  };
-}

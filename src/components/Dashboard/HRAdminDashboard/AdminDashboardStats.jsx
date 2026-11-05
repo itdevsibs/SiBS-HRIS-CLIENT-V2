@@ -6,8 +6,8 @@ export default function AdminDashboardStats({
   onMetricClick,
 }) {
   return (
-    <MetricGrid columns={5}>
-      {metrics.map((metric, index) => (
+    <MetricGrid columns={3}>
+      {metrics.filter((metric) => metric.id !== "payroll").map((metric, index) => (
         <MetricCard
           key={metric.id}
           label={metric.label}

@@ -7,6 +7,7 @@ export default function PageHeaderHero({
   description: descriptionProp,
   subtitle,
   actions = null,
+  footer = null,
   className = "",
   pulse: pulseProp,
   badgePulse,
@@ -58,6 +59,7 @@ export default function PageHeaderHero({
           </div>
         ) : null}
       </div>
+      {footer ? <div className="mt-3 sm:mt-4">{footer}</div> : null}
     </section>
   );
 }

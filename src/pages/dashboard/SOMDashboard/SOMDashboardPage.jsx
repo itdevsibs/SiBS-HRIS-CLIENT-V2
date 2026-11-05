@@ -11,13 +11,11 @@ import {
   Activity,
   AlertCircle,
   ArrowRight,
-  BriefcaseBusiness,
   Building2,
   CalendarDays,
   Clock3,
   RefreshCw,
   Target,
-  TrendingDown,
   Users,
 } from "lucide-react";
 
@@ -488,43 +486,25 @@ export default function SOMDashboardPage() {
 
   const metricCards = [
     {
-      label: "Open Hiring Roles",
-      value: formatNumber(metrics.totalOpenRoles),
-      description: "Assigned-scope roles needing staff",
-      icon: BriefcaseBusiness,
-      tone: "navy",
-      path: HIRING_OVERVIEW_ROUTE,
-      actionLabel: "Open Workforce & Hiring Overview",
-    },
-    {
-      label: "Requirement vs Filled",
-      value: `${formatNumber(metrics.totalFilled)} / ${formatNumber(metrics.totalRequirement)}`,
-      description: `${Math.round(metrics.filledPercentage)}% filled`,
+      label: "Hiring Requirement Coverage",
+      value: `${Math.round(metrics.filledPercentage)}%`,
+      description: `${formatNumber(metrics.totalFilled)} of ${formatNumber(metrics.totalRequirement)} filled`,
       icon: Target,
       tone: "navy",
       path: HIRING_OVERVIEW_ROUTE,
-      actionLabel: "Review requirement versus filled details",
+      actionLabel: "Review staffing coverage",
     },
     {
-      label: "At-Risk Roles",
+      label: "At-Risk Hiring Roles",
       value: formatNumber(metrics.atRiskRoles),
-      description: "Require senior operations attention",
+      description: "Roles requiring attention in assigned scope",
       icon: AlertCircle,
       tone: "amber",
       path: HIRING_OVERVIEW_ROUTE,
       actionLabel: "Review at-risk hiring roles",
     },
     {
-      label: "Delayed Roles",
-      value: formatNumber(metrics.delayedRoles),
-      description: "Due dates already missed",
-      icon: Clock3,
-      tone: "red",
-      path: HIRING_OVERVIEW_ROUTE,
-      actionLabel: "Review delayed hiring roles",
-    },
-    {
-      label: "Weekly Hires",
+      label: "Weekly Hiring Progress",
       value: `+${formatNumber(metrics.weeklyHired)}`,
       description: "Hired in the current cycle",
       icon: Activity,
@@ -533,22 +513,13 @@ export default function SOMDashboardPage() {
       actionLabel: "Open Weekly Reports",
     },
     {
-      label: "Drop-Offs",
-      value: formatNumber(metrics.dropOffs),
-      description: "Candidate attrition",
-      icon: TrendingDown,
-      tone: "orange",
-      path: WEEKLY_REPORTS_ROUTE,
-      actionLabel: "Review weekly candidate drop-offs",
-    },
-    {
-      label: "Aging Roles",
-      value: formatNumber(metrics.agingRoles),
-      description: "15 days or older",
+      label: "Delayed Roles",
+      value: formatNumber(metrics.delayedRoles),
+      description: "Hiring role due dates already missed",
       icon: Clock3,
-      tone: "slate",
+      tone: "red",
       path: HIRING_OVERVIEW_ROUTE,
-      actionLabel: "Review aging hiring roles",
+      actionLabel: "Review delayed hiring roles",
     },
   ];
 
@@ -617,7 +588,7 @@ export default function SOMDashboardPage() {
             </section>
           ) : null}
 
-          <section className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-7" style={{ animationDelay: "60ms", animationFillMode: "both" }}>
+          <section className="grid grid-cols-2 gap-3 md:grid-cols-4" style={{ animationDelay: "60ms", animationFillMode: "both" }}>
             {metricCards.map((item, index) => (
               <MetricCard
                 key={item.label}
@@ -709,6 +680,7 @@ export default function SOMDashboardPage() {
               <p className="sibs-section-subtitle">
                 Candidate progression within your assigned SOM scope.
               </p>
+              <p className="mt-2 text-xs font-semibold text-sibs-muted">Candidate drop-offs: {formatNumber(metrics.dropOffs)}</p>
 
               <div className="mt-5 grid grid-cols-2 min-[360px]:grid-cols-3 sm:grid-cols-6 gap-2">
                 {funnelStages.map(([label, value, className]) => (

@@ -11,7 +11,6 @@ import {
   Building2,
   Calendar,
   Clock,
-  CreditCard,
   FileText,
   Info,
   MapPin,
@@ -95,11 +94,6 @@ function formatNumber(value) {
   return Number(value || 0).toLocaleString("en-PH", {
     maximumFractionDigits: 0,
   });
-}
-
-function formatPercent(value) {
-  const number = Number(value || 0);
-  return `${Number.isFinite(number) ? number.toFixed(1) : "0.0"}%`;
 }
 
 function getErrorMessage(error, fallback) {
@@ -495,32 +489,25 @@ export default function AdminDashboardPage() {
   // as verified counts until the first overview response has completed.
   const metricsReady = Boolean(overview.generatedAt);
   const displayMetric = (number) => metricsReady ? formatNumber(number) : "—";
+  const isExecutiveDashboard = userRole === "executive" || Number(user?.adminAccess ?? user?.admin_access) === 6;
+  const attendanceExceptions = overview.attendance.late + overview.attendance.absent;
 
   const metricCards = [
     {
       id: "employees",
-      label: "Employees",
+      label: isExecutiveDashboard ? "Workforce Headcount" : "Active Employees",
       value: displayMetric(overview.metrics.employees),
       description: "Active employee records",
       icon: Users,
       tone: "orange",
     },
     {
-      id: "departments",
-      label: "Departments",
-      value: displayMetric(overview.metrics.departments),
-      description: "Departments with active staff",
-      icon: Building2,
-      tone: "navy",
-    },
-    {
       id: "attendance",
-      label: "Attendance",
-      value: displayMetric(overview.metrics.attendancePresent),
-      description: "Present today",
+      label: "Attendance Exceptions",
+      value: displayMetric(attendanceExceptions),
+      description: "Late or absent today",
       icon: UserCheck,
       tone: "green",
-      badge: metricsReady ? formatPercent(overview.metrics.attendanceRate) : undefined,
     },
     {
       id: "interviews",
@@ -529,14 +516,6 @@ export default function AdminDashboardPage() {
       description: "Scheduled candidate interviews",
       icon: Calendar,
       tone: "indigo",
-    },
-    {
-      id: "payroll",
-      label: "Payroll",
-      value: displayMetric(overview.metrics.payrollEligible),
-      description: "Payroll-eligible employees",
-      icon: CreditCard,
-      tone: "amber",
     },
   ];
 
@@ -551,7 +530,9 @@ export default function AdminDashboardPage() {
     {
       id: "create-department",
       title: "Departments",
-      description: "Manage departments, accounts, and Lines of Business",
+      description: metricsReady
+        ? `${formatNumber(overview.metrics.departments)} departments with active staff`
+        : "Manage departments, accounts, and Lines of Business",
       icon: Building2,
       path: EXISTING_ADMIN_ROUTES.departments,
     },

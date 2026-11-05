@@ -2,12 +2,10 @@ import React from "react";
 import { Skeleton, MetricGridSkeleton } from "@/components/ui";
 
 const SUPER_ADMIN_METRIC_LABELS = [
-  "Employees",
-  "Departments",
-  "Attendance Rate",
-  "Present Today",
+  "Active Employees",
+  "Attendance Flags",
   "Pending Approvals",
-  "Active Requisitions",
+  "Pending Leaves",
 ];
 const TABLE_ROW_COUNT = 6;
 
@@ -20,10 +18,10 @@ function SkeletonLines({ widths = ["w-full", "w-4/5"] }) {
 export function SuperAdminDashboardStatsSkeleton() {
   return (
     <MetricGridSkeleton
-      count={6}
+      count={4}
       labels={SUPER_ADMIN_METRIC_LABELS}
       ariaLabel="Loading super admin metrics"
-      className="grid grid-cols-2 gap-2.5 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-6 2xl:gap-3"
+      className="grid grid-cols-2 gap-2.5 sm:grid-cols-2 md:grid-cols-4 2xl:gap-3"
     />
   );
 }

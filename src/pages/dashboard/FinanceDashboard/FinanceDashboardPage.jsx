@@ -16,8 +16,6 @@ import {
   CheckCircle2,
   ClipboardCheck,
   Clock3,
-  Layers3,
-  Percent,
   RefreshCw,
   ShieldCheck,
   Users,
@@ -419,7 +417,7 @@ export default function FinanceDashboardPage() {
         <div className="mx-auto w-full max-w-[1600px] space-y-5 pb-8 sm:space-y-6 font-jakarta">
         {financeHero}
 
-        <MetricGrid columns={6} className="w-full">
+        <MetricGrid columns={3} className="w-full">
           <MetricCard
             delay={animationTiming.summary + 0 * animationTiming.summaryCardStagger}
             label="Active Employees"
@@ -437,33 +435,11 @@ export default function FinanceDashboardPage() {
           />
           <MetricCard
             delay={animationTiming.summary + 2 * animationTiming.summaryCardStagger}
-            label="Incomplete Profiles"
+            label="Incomplete Payroll Profiles"
             value={formatNumber(metrics.incompleteProfiles)}
             description="Missing at least one statutory record"
             icon={AlertCircle}
             tone="amber"
-          />
-          <MetricCard
-            delay={animationTiming.summary + 3 * animationTiming.summaryCardStagger}
-            label="Readiness Rate"
-            value={formatPercent(metrics.readinessPercentage)}
-            description="Company-wide statutory readiness"
-            icon={Percent}
-            tone="purple"
-          />
-          <MetricCard
-            delay={animationTiming.summary + 4 * animationTiming.summaryCardStagger}
-            label="Active Accounts"
-            value={formatNumber(metrics.activeAccounts)}
-            description="Accounts represented by active employees"
-            icon={Building2}
-          />
-          <MetricCard
-            delay={animationTiming.summary + 5 * animationTiming.summaryCardStagger}
-            label="Departments"
-            value={formatNumber(metrics.activeDepartments)}
-            description="Departments represented in the workforce"
-            icon={Layers3}
           />
         </MetricGrid>
 
@@ -482,6 +458,9 @@ export default function FinanceDashboardPage() {
                 </h2>
                 <p className="mt-1 sibs-text-xs font-semibold text-sibs-muted">
                   Completion counts only. Government ID values are not displayed on this dashboard.
+                </p>
+                <p className="mt-1 sibs-text-xs font-semibold text-sibs-muted">
+                  {formatNumber(metrics.activeAccounts)} active accounts · {formatNumber(metrics.activeDepartments)} departments
                 </p>
               </div>
             </div>

@@ -10,6 +10,7 @@ export default function AdminDashboardSkeleton({
       ariaLabel="Loading HR Dashboard"
       hero={hero}
       showStatutoryCoverage={showStatutoryCoverage}
+      metricCount={3}
     />
   );
 }

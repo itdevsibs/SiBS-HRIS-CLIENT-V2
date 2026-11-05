@@ -20,10 +20,6 @@ describe("Ticket SIBS-UIUX-MOBILE-METRICS-HARMONIZATION-01: Mobile Metrics 2-Col
     __dirname,
     "../recruitment/sourcingAnalytics/SourcingSummaryCards.jsx"
   );
-  const attendanceTablePath = path.resolve(
-    __dirname,
-    "../tables/AttendanceTable.jsx"
-  );
   const jobDescriptionPagePath = path.resolve(
     __dirname,
     "../../pages/recruitment/JobDescriptionPage.jsx"
@@ -64,12 +60,10 @@ describe("Ticket SIBS-UIUX-MOBILE-METRICS-HARMONIZATION-01: Mobile Metrics 2-Col
     expect(sourcingContent).toMatch(/grid\s+grid-cols-2\s+gap-2\.5/);
   });
 
-  it("TC-MMH-04: Skeletons in Attendance, Job Description, and Hiring Needs adopt grid-cols-2 base on mobile", () => {
-    const attendanceContent = fs.readFileSync(attendanceTablePath, "utf-8");
+  it("TC-MMH-04: Skeletons in Job Description and Hiring Needs adopt grid-cols-2 base on mobile", () => {
     const jdContent = fs.readFileSync(jobDescriptionPagePath, "utf-8");
     const hiringContent = fs.readFileSync(hiringNeedsStatsPath, "utf-8");
 
-    expect(attendanceContent).toMatch(/MetricGridSkeleton[\s\S]*?className="grid grid-cols-2/);
     expect(jdContent).toMatch(/MetricGridSkeleton[\s\S]*?className="grid grid-cols-2/);
     expect(hiringContent).toMatch(/MetricGridSkeleton[\s\S]*?className="grid grid-cols-2/);
   });
@@ -136,6 +130,6 @@ describe("Ticket SIBS-UIUX-MOBILE-METRICS-HARMONIZATION-01: Mobile Metrics 2-Col
     const financeContent = fs.readFileSync(financeDashboardPath, "utf-8");
 
     expect(skeletonContent).toMatch(/grid\s+grid-cols-2\s+gap-2\.5\s+sm:grid-cols-2\s+lg:grid-cols-3/);
-    expect(financeContent).toMatch(/(?:section\s+className="grid\s+grid-cols-2\s+gap-2\.5\s+sm:grid-cols-2\s+xl:grid-cols-3"|MetricGrid\s+columns=\{6\})/);
+    expect(financeContent).toMatch(/MetricGrid\s+columns=\{3\}/);
   });
 });

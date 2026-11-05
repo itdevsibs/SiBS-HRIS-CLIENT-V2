@@ -747,9 +747,8 @@ export default function EmployeeDashboardPage() {
                 ) : null}
 
                 <div className="grid grid-cols-1 gap-3 rounded-xl border border-sibs-border bg-sibs-surface p-3 sm:p-3.5 2xl:p-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
-                  <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
-                    <MetricBox label="Clock In" value={attendance.clockIn} />
-                    <MetricBox label="Clock Out" value={attendance.clockOut} />
+                  <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+                    <MetricBox label="Today's Attendance" value={`In ${attendance.clockIn || "—"} · Out ${attendance.clockOut || "—"}`} />
                     <MetricBox
                       label="Rendered Hours"
                       value={attendance.renderedHours}
@@ -862,25 +861,13 @@ export default function EmployeeDashboardPage() {
                   />
                 ) : null}
 
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                <div className="grid grid-cols-1 gap-3">
                   <SummaryTile
                     tone="navy"
                     label="Today's Shift"
                     value={todaySchedule?.shift || "Schedule not loaded"}
                     detail={todaySchedule?.hours || todaySchedule?.status || "—"}
                     icon={Clock}
-                  />
-                  <SummaryTile
-                    label="Work Setup / Location"
-                    value={profile.workSetup || profile.location || "Not recorded"}
-                    detail={profile.account || profile.department || "—"}
-                    icon={Building2}
-                  />
-                  <SummaryTile
-                    label="Immediate Supervisor"
-                    value={profile.manager || "Not recorded"}
-                    detail={profile.managerPosition || "—"}
-                    icon={User}
                   />
                 </div>
 
@@ -991,6 +978,10 @@ export default function EmployeeDashboardPage() {
                   <ProfileSummaryRow
                     label="Work Location"
                     value={profile.location}
+                  />
+                  <ProfileSummaryRow
+                    label="Work Setup"
+                    value={profile.workSetup}
                   />
                   <ProfileSummaryRow
                     label="Immediate Manager"
