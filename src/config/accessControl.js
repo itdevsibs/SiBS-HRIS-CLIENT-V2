@@ -44,6 +44,15 @@ export const DASHBOARD_ACCESS = {
   OM: [ADMIN_ACCESS.MANAGER],
   WFM: [ADMIN_ACCESS.WFM],
   SOM: [ADMIN_ACCESS.SOM],
+  QDS: [
+    ADMIN_ACCESS.TA,
+    ADMIN_ACCESS.HR,
+    ADMIN_ACCESS.HR_ADMIN,
+    ADMIN_ACCESS.MANAGER,
+    ADMIN_ACCESS.EXECUTIVE,
+    ADMIN_ACCESS.SUPER_ADMIN,
+    ADMIN_ACCESS.SOM,
+  ],
 };
 
 export function getRawAdminAccess(user = {}) {
@@ -84,6 +93,9 @@ export function getDefaultDashboardPath(user = {}) {
   }
 
   const rawAccess = getRawAdminAccess(user);
+  if (role === "qds" || role === "quality_development_specialist") {
+    return "/dashboard/qds";
+  }
   if (rawAccess === ADMIN_ACCESS.WFM || role === "wfm" || role === "workforce_management") {
     return "/dashboard/wfm";
   }
@@ -138,6 +150,7 @@ export const EMPLOYEE_ALLOWED_PATHS = [
   "/profile/user",
   "/schedule",
   "/resignation",
+  "/trainee-learning",
 ];
 
 export const ACCESS_RULES = [
@@ -274,12 +287,18 @@ export const ACCESS_RULES = [
       "/recruitment/candidate-pipeline",
       "/recruitment/offers",
       "/recruitment/onboarding",
+      "/recruitment/new-hire-orientation",
+      "/recruitment/qds-dashboard",
+      "/dashboard/qds",
+      "/recruitment/esep-coaching",
+      "/recruitment/trainer-monitoring",
+      "/trainee-learning",
       "/recruitment/action-items",
       "/recruitment/candidate-experience",
       "/recruitment/final-interview-form",
       "/settings/recruitment-settings",
     ],
-    roles: ["ta", "hr", "hr_admin", "executive", "super_admin"],
+    roles: ["ta", "hr", "hr_admin", "executive", "super_admin", "qds", "quality_development_specialist"],
   },
   {
     paths: ["/email-logs", "/reports", "/analytics"],

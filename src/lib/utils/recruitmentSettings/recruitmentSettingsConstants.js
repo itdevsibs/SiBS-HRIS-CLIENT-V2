@@ -4,6 +4,7 @@ export const RECRUITMENT_SETTINGS_STORAGE_KEY =
 export const recruitmentTabs = [
   "Final Interview Form",
   "Application Screening Questionnaires",
+  "Orientation Deck & Knowledge Check",
   "Pipeline Settings",
   "Assessment Settings",
   "Email Templates",

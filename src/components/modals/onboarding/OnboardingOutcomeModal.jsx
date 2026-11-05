@@ -1,4 +1,5 @@
 import React from "react";
+import { formatHrisDateLocalized } from "@/lib/axios/dateFormatter";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -101,14 +102,14 @@ export default function OutcomeModal({
           <button
             type="button"
             onClick={onClose}
-            className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-[10px] border border-sibs-border bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-muted transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange"
+            className="sibs-modal-btn-secondary"
           >
             Cancel
           </button>
           <button
             type="submit"
             form="outcome-form"
-            className={`inline-flex h-8.5 2xl:h-10 items-center justify-center gap-2 rounded-[10px] px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-white shadow-sm transition active:scale-[0.98] ${theme.button}`}
+            className={`sibs-modal-btn-primary ${theme.button}`}
           >
             {isShow ? <CheckCircle2 size={14} /> : <AlertTriangle size={14} />}
             Confirm Outcome
