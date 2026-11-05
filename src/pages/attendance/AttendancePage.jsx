@@ -5,7 +5,7 @@ import Header from "../../components/layout/Header";
 import { useUser } from "../../services/context/UserContext";
 import AttendanceTable from "../../components/tables/AttendanceTable";
 import { usePagination } from "../../services/context/PaginationContext";
-import { MetricGridSkeleton, PageHeaderHero } from "@/components/ui";
+import { PageHeaderHero } from "@/components/ui";
 
 function getAnimationStyle(delay = 0) {
   return {
@@ -155,17 +155,6 @@ export default function AttendancePage() {
               aria-label="Loading attendance view"
               className="space-y-5 sm:space-y-6"
             >
-              <MetricGridSkeleton
-                count={4}
-                labels={[
-                  "Loaded Attendance",
-                  "Approved",
-                  "Pending Review",
-                  "Computed Work Hours",
-                ]}
-                ariaLabel="Loading attendance metrics"
-                className="grid grid-cols-2 gap-2.5 2xl:gap-3 sm:grid-cols-2 lg:grid-cols-4"
-              />
               <section
                 className="sibs-page-card-in sibs-card overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-xs font-jakarta"
                 style={getAnimationStyle(80)}

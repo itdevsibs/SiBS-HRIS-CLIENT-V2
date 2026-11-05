@@ -1,9 +1,7 @@
 import React from "react";
 import {
   AlertTriangle,
-  Briefcase,
   Clock,
-  ShieldCheck,
   Users,
   UserX,
 } from "lucide-react";
@@ -12,26 +10,16 @@ import { MetricCard, MetricGrid } from "@/components/ui";
 const METRICS = [
   {
     key: "employees",
-    label: "Employees",
-    value: "2,840",
-    badge: "+12% MoM",
-    description: "Across 18 active depts",
+    label: "Active Employees",
+    value: "—",
+    description: "Active employee records",
     icon: Users,
     tone: "orange",
   },
   {
-    key: "admins",
-    label: "Users with Access",
-    badge: "10 Access Tiers",
-    description: "TA, HR, Finance & Execs",
-    icon: ShieldCheck,
-    tone: "navy",
-  },
-  {
     key: "attendance",
     label: "Attendance Flags",
-    value: "14",
-    badge: "Needs Review",
+    value: "—",
     description: "Biometric timecard check",
     icon: AlertTriangle,
     tone: "green",
@@ -39,52 +27,38 @@ const METRICS = [
   {
     key: "approvals",
     label: "Pending Approvals",
-    value: "18",
-    badge: "Cross-Module",
+    value: "—",
     description: "Leaves, offers & reqs",
     icon: Clock,
     tone: "amber",
   },
   {
     key: "leaves",
-    label: "Leaves & Resignations",
-    value: "18",
-    badge: "14 Leave • 4 Resig",
-    description: "Active clearance pipelines",
+    label: "Pending Leaves",
+    value: "—",
+    description: "Leave requests awaiting review",
     icon: UserX,
     tone: "red",
-  },
-  {
-    key: "recruitment",
-    label: "Recruitment Funnel",
-    value: "142",
-    badge: "8 Offers Pending",
-    description: "18 open requisitions",
-    icon: Briefcase,
-    tone: "indigo",
   },
 ];
 
 export default function SuperAdminDashboardStats({
-  adminCount,
   liveMetrics = null,
   onMetricClick,
 }) {
   return (
-    <MetricGrid columns={6}>
+    <MetricGrid columns={4}>
       {METRICS.map((metric, index) => {
         let val = metric.value;
         let desc = metric.description;
         let badge = metric.badge;
 
         if (liveMetrics) {
-          if (metric.key === "employees" && liveMetrics.employees) {
+          if (metric.key === "employees" && liveMetrics.employees !== undefined) {
             val = liveMetrics.employees;
             if (liveMetrics.departmentsCount) {
               desc = `Across ${liveMetrics.departmentsCount} active depts`;
             }
-          } else if (metric.key === "admins") {
-            val = String(liveMetrics.admins || adminCount || 0);
           } else if (metric.key === "attendance" && liveMetrics.attendanceFlags !== undefined) {
             val = String(liveMetrics.attendanceFlags);
             badge = Number(val) > 0 ? "Needs Review" : "All Clear";
@@ -94,13 +68,7 @@ export default function SuperAdminDashboardStats({
           } else if (metric.key === "leaves" && liveMetrics.leavesCount !== undefined) {
             val = String(liveMetrics.leavesCount);
             badge = Number(val) > 0 ? `${val} Active` : "None Active";
-          } else if (metric.key === "recruitment" && liveMetrics.recruitmentCount !== undefined) {
-            val = String(liveMetrics.recruitmentCount);
-            badge = Number(val) > 0 ? `${val} In Pipeline` : "All Cleared";
-            desc = Number(val) > 0 ? `${val} active requisitions` : "No pending requisitions";
           }
-        } else if (metric.key === "admins") {
-          val = String(adminCount || 0);
         }
 
         return (

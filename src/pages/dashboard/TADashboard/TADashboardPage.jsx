@@ -7,10 +7,8 @@ import {
 } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  Activity,
   AlertCircle,
   Briefcase,
-  Clock,
   LoaderCircle,
   RefreshCw,
   Target,
@@ -287,7 +285,7 @@ export default function TADashboardPage() {
   const metricCards = [
     {
       id: "total-open",
-      label: "Total Open Roles",
+      label: "Open Hiring Roles",
       value: formatNumber(summaryMetrics.totalOpenRoles),
       description: "Roles with remaining open slots",
       icon: Briefcase,
@@ -305,31 +303,15 @@ export default function TADashboardPage() {
     },
     {
       id: "at-risk",
-      label: "At-Risk Roles",
+      label: "At-Risk Hiring Roles",
       value: formatNumber(summaryMetrics.atRisk),
-      description: "Roles that may miss due date",
+      description: `${formatNumber(summaryMetrics.delayed)} delayed · ${formatNumber(summaryMetrics.agingRoles)} aging (may overlap)`,
       icon: AlertCircle,
       tone: "amber",
     },
     {
-      id: "delayed",
-      label: "Delayed Roles",
-      value: formatNumber(summaryMetrics.delayed),
-      description: "Roles already behind plan",
-      icon: Clock,
-      tone: "rose",
-    },
-    {
-      id: "weekly-movement",
-      label: "Weekly Movement",
-      value: `+${formatNumber(summaryMetrics.weeklyHired)}`,
-      description: "Total hired this week",
-      icon: Activity,
-      tone: "indigo",
-    },
-    {
       id: "drop-offs",
-      label: "Drop-Offs",
+      label: "Candidate Drop-Offs",
       value: formatNumber(summaryMetrics.dropOffs),
       description: "Candidate exits across stages",
       icon: TrendingDown,
@@ -337,19 +319,11 @@ export default function TADashboardPage() {
     },
     {
       id: "recruiter-load",
-      label: "Recruiter Load",
+      label: "Recruiter Workload",
       value: formatNumber(summaryMetrics.recruiterLoad),
       description: "Active TA owners",
       icon: UsersRound,
       tone: "navy",
-    },
-    {
-      id: "aging-roles",
-      label: "Aging Roles",
-      value: formatNumber(summaryMetrics.agingRoles),
-      description: "Roles aging 15+ days",
-      icon: Clock,
-      tone: "slate",
     },
   ];
 

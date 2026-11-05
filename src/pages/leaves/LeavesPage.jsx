@@ -8,14 +8,9 @@ import React, {
 import Header from "../../components/layout/Header";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
-  CalendarDays,
   AlertCircle,
-  CheckCircle2,
-  Clock,
-  FileText,
   RefreshCw,
   UserRound,
-  XCircle,
 } from "lucide-react";
 
 import { getLeaves } from "@/lib/axios/getLeaves";
@@ -23,17 +18,10 @@ import { useUser } from "../../services/context/UserContext";
 import { useSidebarNotifications } from "../../services/context/SidebarNotificationContext";
 import { usePagination } from "@/services/context/PaginationContext";
 import LeavesTable from "@/components/tables/Leaves/LeavesTable";
-import {
-  MetricCard,
-  MetricGrid,
-  MetricGridSkeleton,
-  PageHeaderHero,
-} from "@/components/ui";
+import { PageHeaderHero } from "@/components/ui";
 import {
   PAGE_LIMIT,
-  calculateLeavePageStats,
   canViewLeaveFilters,
-  formatNumber,
   getLeaveTypeLabel,
   getLeavesInitialDateRange,
   sanitizeLeavesDateRange,
@@ -56,7 +44,6 @@ export default function LeavesPage() {
 
   const [statusFilter, setStatusFilter] = useState("All");
   const [allDatesView, setAllDatesView] = useState(false);
-  const [notifiedPendingCount, setNotifiedPendingCount] = useState(null);
   const [departmentFilter, setDepartmentFilter] = useState("All");
   const [accountFilter, setAccountFilter] = useState("All");
   const [departmentOptions, setDepartmentOptions] = useState([]);
@@ -249,13 +236,7 @@ export default function LeavesPage() {
     initializedRef.current = true;
 
     const fromNotification = Boolean(notificationState?.allDates);
-    const count = Number(notificationState?.pendingCount);
     setAllDatesView(fromNotification);
-    setNotifiedPendingCount(
-      fromNotification && notificationState?.pendingCount != null && Number.isFinite(count) && count >= 0
-        ? count
-        : null,
-    );
     const initialStatus =
       String(notificationState?.leaveStatus || "").trim() || "All";
 
@@ -337,17 +318,11 @@ export default function LeavesPage() {
   }
 
   function handleStatusChange(nextStatus) {
-    setNotifiedPendingCount(null);
     setStatusFilter(nextStatus || "All");
     setPage(1);
   }
 
   function handleSetSearchKeyword(value) {
-    // LeavesTable clears its search on mount; that is not a user change and
-    // must not erase the notification's last verified overall count.
-    if (String(value ?? "") !== String(search ?? "")) {
-      setNotifiedPendingCount(null);
-    }
     setSearch(value);
     setPage(1);
   }
@@ -381,21 +356,8 @@ export default function LeavesPage() {
     });
   }, [leaves]);
 
-  const pageStats = useMemo(() => {
-    return calculateLeavePageStats(paginatedLeaves);
-  }, [paginatedLeaves]);
-
-  const showVerifiedPendingTotal =
-    allDatesView &&
-    statusFilter === "Pending" &&
-    !String(search || "").trim() &&
-    departmentFilter === "All" &&
-    accountFilter === "All" &&
-    Number.isFinite(notifiedPendingCount);
-
   const handleDateFilterChange = () => {
     setAllDatesView(false);
-    setNotifiedPendingCount(null);
   };
 
   const isPersonalView = isEmployeeAccount || recordScope === "personal";
@@ -488,78 +450,6 @@ export default function LeavesPage() {
               </div>
             }
           />
-
-          {loading ? (
-            <MetricGridSkeleton
-              columns={6}
-              count={6}
-              labels={[
-                "Loaded Leaves",
-                "Approved",
-                "Pending",
-                "Rejected",
-                "Page Leave Days",
-                "Page Remaining",
-              ]}
-              ariaLabel="Loading leaves metrics"
-            />
-          ) : (
-            <MetricGrid columns={6}>
-              <MetricCard
-                label="Loaded Leaves"
-                value={formatNumber(pageStats.totalLeaves)}
-                description="Records loaded on this page"
-                icon={FileText}
-                tone="navy"
-                delay={0}
-              />
-
-              <MetricCard
-                label="Approved"
-                value={formatNumber(pageStats.approvedLeaves)}
-                description="Approved leave requests"
-                icon={CheckCircle2}
-                tone="emerald"
-                delay={60}
-              />
-
-              <MetricCard
-                label={showVerifiedPendingTotal ? "Pending (All Dates)" : "Pending"}
-                value={formatNumber(showVerifiedPendingTotal ? notifiedPendingCount : pageStats.pendingLeaves)}
-                description={showVerifiedPendingTotal ? "Last verified total from notification" : "Pending on this page"}
-                icon={Clock}
-                tone="amber"
-                delay={120}
-              />
-
-              <MetricCard
-                label="Rejected"
-                value={formatNumber(pageStats.rejectedLeaves)}
-                description="Rejected leave requests"
-                icon={XCircle}
-                tone="rose"
-                delay={180}
-              />
-
-              <MetricCard
-                label="Page Leave Days"
-                value={formatNumber(pageStats.totalLeaveDays)}
-                description="Leave days on this page"
-                icon={CalendarDays}
-                tone="orange"
-                delay={240}
-              />
-
-              <MetricCard
-                label="Page Remaining"
-                value={formatNumber(pageStats.totalRemaining)}
-                description="Remaining leave balance"
-                icon={UserRound}
-                tone="emerald"
-                delay={300}
-              />
-            </MetricGrid>
-          )}
 
           {loadError ? (
             <div role="alert" className="flex items-center justify-between gap-3 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-rose-800">

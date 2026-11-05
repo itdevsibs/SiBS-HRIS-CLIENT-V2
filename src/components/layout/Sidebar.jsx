@@ -27,6 +27,7 @@ import {
   Menu,
   PieChart,
   Table2,
+  TrendingDown,
   UserCog,
   UserRoundMinus,
   UserRoundPlus,
@@ -425,7 +426,11 @@ function SibsLogo({ collapsed = false, isMobile = false }) {
           <MotionSpan
             className="text-[18px] 2xl:text-[20px] font-bold tracking-[-0.035em]"
             animate={{
-              color: ["rgb(255, 255, 255)", "var(--color-sibs-orange)", "rgb(255, 255, 255)"],
+              color: [
+                "rgb(255, 255, 255)",
+                "var(--color-sibs-orange)",
+                "rgb(255, 255, 255)",
+              ],
             }}
             transition={{
               duration: 6,
@@ -440,7 +445,11 @@ function SibsLogo({ collapsed = false, isMobile = false }) {
           <MotionSpan
             className="text-[18px] 2xl:text-[20px] font-bold tracking-[-0.035em]"
             animate={{
-              color: ["var(--color-sibs-orange)", "rgb(255, 255, 255)", "var(--color-sibs-orange)"],
+              color: [
+                "var(--color-sibs-orange)",
+                "rgb(255, 255, 255)",
+                "var(--color-sibs-orange)",
+              ],
             }}
             transition={{
               duration: 6,
@@ -504,7 +513,8 @@ export default function Sidebar() {
   );
   const { mobileSidebarOpen, setMobileSidebarOpen } = useHeader();
   const [localMobileOpen, setLocalMobileOpen] = useState(false);
-  const mobileOpen = mobileSidebarOpen !== undefined ? mobileSidebarOpen : localMobileOpen;
+  const mobileOpen =
+    mobileSidebarOpen !== undefined ? mobileSidebarOpen : localMobileOpen;
   const setMobileOpen = setMobileSidebarOpen || setLocalMobileOpen;
 
   const [, setApprovalRequestNotificationCount] = useState(0);
@@ -555,7 +565,9 @@ export default function Sidebar() {
   // Read only COUNT(*) from HRIS: the full candidate list/offer history can be
   // large, and the sidebar is mounted even on unrelated dashboard pages.
   const candidatePipelineAccess =
-    !loading && Boolean(user) && normalizeRole(user?.role) !== "employee" &&
+    !loading &&
+    Boolean(user) &&
+    normalizeRole(user?.role) !== "employee" &&
     [1, 2, 3, 6, 7].includes(getAdminAccess(user));
   const candidatePipelineUserId = getCurrentUserSibsId(user);
 
@@ -573,7 +585,8 @@ export default function Sidebar() {
       const revision = ++requestRevision;
       try {
         const result = await getActiveCandidatePipelineCount();
-        if (disposed || revision !== requestRevision || !result?.success) return;
+        if (disposed || revision !== requestRevision || !result?.success)
+          return;
 
         const count = Number(result.activeCandidates);
         if (!Number.isSafeInteger(count) || count < 0) return;
@@ -592,7 +605,10 @@ export default function Sidebar() {
         );
       } catch (error) {
         // Preserve the last successful count on transient network failures.
-        console.warn("Candidate Pipeline sidebar count unavailable:", error?.message);
+        console.warn(
+          "Candidate Pipeline sidebar count unavailable:",
+          error?.message,
+        );
       }
     };
 
@@ -615,12 +631,19 @@ export default function Sidebar() {
       window.clearInterval(pollTimer);
       socket.off("candidate-pipeline:changed", refreshCount);
       socket.off("candidate-pipeline:stage-committed", refreshCount);
-      window.removeEventListener("ta-pipeline-candidates-updated", refreshCount);
+      window.removeEventListener(
+        "ta-pipeline-candidates-updated",
+        refreshCount,
+      );
       window.removeEventListener("ta-talent-pool-updated", refreshCount);
       window.removeEventListener("focus", refreshCount);
       document.removeEventListener("visibilitychange", refreshOnVisibility);
     };
-  }, [candidatePipelineAccess, candidatePipelineUserId, setSidebarNotification]);
+  }, [
+    candidatePipelineAccess,
+    candidatePipelineUserId,
+    setSidebarNotification,
+  ]);
 
   // The Applicant Leads endpoint is recruitment-only. Sidebar remains mounted
   // for Finance, OM, WFM, and employee accounts, which must never poll it.
@@ -651,7 +674,10 @@ export default function Sidebar() {
           : null,
       );
     } catch (error) {
-      console.error("Failed to load Applicant Leads notification count:", error);
+      console.error(
+        "Failed to load Applicant Leads notification count:",
+        error,
+      );
     }
   }, [canReadApplicantLeads, setSidebarNotification]);
 
@@ -963,7 +989,8 @@ export default function Sidebar() {
     };
 
     document.addEventListener("pointerdown", dismissOnOutsidePointer);
-    return () => document.removeEventListener("pointerdown", dismissOnOutsidePointer);
+    return () =>
+      document.removeEventListener("pointerdown", dismissOnOutsidePointer);
   }, [flyoutGroupId]);
 
   useEffect(() => {
@@ -1231,6 +1258,12 @@ export default function Sidebar() {
       allowedUsers: [1, 2, 3, 6, 7],
     },
     {
+      name: "Attrition Reports",
+      icon: TrendingDown,
+      path: "/recruitment/attrition-reports",
+      allowedUsers: [1, 2, 3, 5, 6, 7, 10],
+    },
+    {
       name: "Weekly Reports",
       icon: FileClock,
       path: "/recruitment/weekly-reports",
@@ -1329,13 +1362,18 @@ export default function Sidebar() {
       id: "recruitment-pipeline",
       name: "Recruitment Pipeline",
       icon: Users,
-      items: recruitmentMenu.slice(6, 11).concat(recruitmentMenu.slice(13)),
+      items: recruitmentMenu.slice(6, 11).concat(recruitmentMenu.slice(14)),
     },
     {
       id: "recruitment-operations",
       name: "Recruitment Operations",
       icon: Activity,
-      items: [recruitmentMenu[5], recruitmentMenu[11], recruitmentMenu[12]],
+      items: [
+        recruitmentMenu[5],
+        recruitmentMenu[11],
+        recruitmentMenu[12],
+        recruitmentMenu[13],
+      ],
     },
     {
       id: "insights-finance",
@@ -1431,8 +1469,7 @@ export default function Sidebar() {
           : sidebarBadgeToneClass[badgeTone] || sidebarBadgeToneClass.info;
       const badgeTitle = sidebarNotification?.title || badgeText;
       const alertBadgeText = buildSidebarBadgeText(alertSidebarNotification);
-      const alertBadgeTitle =
-        alertSidebarNotification?.title || alertBadgeText;
+      const alertBadgeTitle = alertSidebarNotification?.title || alertBadgeText;
       const combinedBadgeTitle = [badgeTitle, alertBadgeTitle]
         .filter(Boolean)
         .join(". ");
@@ -1603,9 +1640,7 @@ export default function Sidebar() {
 
     const toggleGroup = () => {
       if (isCollapsedMode) {
-        setFlyoutGroupId((current) =>
-          current === group.id ? null : group.id,
-        );
+        setFlyoutGroupId((current) => (current === group.id ? null : group.id));
         return;
       }
 
@@ -1634,10 +1669,7 @@ export default function Sidebar() {
         event.preventDefault();
         if (!isOpen) toggleGroup();
         window.setTimeout(() => {
-          document
-            .getElementById(groupContentId)
-            ?.querySelector("a")
-            ?.focus();
+          document.getElementById(groupContentId)?.querySelector("a")?.focus();
         }, 0);
       }
     };
@@ -1670,7 +1702,9 @@ export default function Sidebar() {
             {hasAttention && (
               <span className="absolute -right-1.5 -top-1.5 h-2.5 w-2.5 rounded-full bg-sibs-orange ring-2 ring-sibs-primary-1" />
             )}
-            {!isCollapsedMode && <span className="ml-3 truncate">{group.name}</span>}
+            {!isCollapsedMode && (
+              <span className="ml-3 truncate">{group.name}</span>
+            )}
           </span>
           {!isCollapsedMode && (
             <ChevronDown
@@ -1686,7 +1720,9 @@ export default function Sidebar() {
             aria-hidden={!isOpen}
             inert={!isOpen}
             className={`grid overflow-hidden transition-[grid-template-rows,opacity] duration-200 ease-out motion-reduce:transition-none ${
-              isOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+              isOpen
+                ? "grid-rows-[1fr] opacity-100"
+                : "grid-rows-[0fr] opacity-0"
             }`}
           >
             <div className="min-h-0 overflow-hidden">
@@ -1706,7 +1742,9 @@ export default function Sidebar() {
               if (event.key === "Escape") {
                 event.preventDefault();
                 setFlyoutGroupId(null);
-                event.currentTarget.parentElement?.querySelector("button")?.focus();
+                event.currentTarget.parentElement
+                  ?.querySelector("button")
+                  ?.focus();
               }
             }}
           >
@@ -1739,7 +1777,9 @@ export default function Sidebar() {
         onDragStart={(event) => event.preventDefault()}
         className={[
           "fixed left-0 top-0 z-[100005] flex h-dvh shrink-0 select-none flex-col border-r border-sibs-tertiary-2 bg-sibs-primary-1 font-jakarta text-white shadow-xl transition-transform duration-300 ease-in-out",
-          collapsed ? "lg:w-[84px] 2xl:lg:w-[90px]" : "lg:w-[245px] 2xl:lg:w-[260px]",
+          collapsed
+            ? "lg:w-[84px] 2xl:lg:w-[90px]"
+            : "lg:w-[245px] 2xl:lg:w-[260px]",
           "w-[245px] 2xl:w-[260px]",
           mobileOpen
             ? "translate-x-0 shadow-2xl"
@@ -1756,8 +1796,14 @@ export default function Sidebar() {
           ].join(" ")}
         >
           <div
-            onClick={!isMobile && collapsed ? () => setCollapsed(false) : undefined}
-            className={!isMobile && collapsed ? "cursor-pointer select-none" : "min-w-0 select-none flex-1"}
+            onClick={
+              !isMobile && collapsed ? () => setCollapsed(false) : undefined
+            }
+            className={
+              !isMobile && collapsed
+                ? "cursor-pointer select-none"
+                : "min-w-0 select-none flex-1"
+            }
             title={!isMobile && collapsed ? "Expand sidebar" : undefined}
           >
             <SibsLogo collapsed={!isMobile && collapsed} isMobile={isMobile} />
@@ -1831,7 +1877,10 @@ function Section({ title, collapsed, children }) {
     <section className="select-none">
       <div className="overflow-hidden whitespace-nowrap transition-all duration-300">
         {collapsed ? (
-          <div className="my-2 flex items-center justify-center" aria-hidden="true">
+          <div
+            className="my-2 flex items-center justify-center"
+            aria-hidden="true"
+          >
             <div className="h-[1px] w-6 rounded-full bg-sibs-tertiary-2/80" />
           </div>
         ) : (
@@ -1841,7 +1890,13 @@ function Section({ title, collapsed, children }) {
         )}
       </div>
 
-      <nav className={collapsed ? "flex flex-col items-center space-y-1.5" : "space-y-1"}>{children}</nav>
+      <nav
+        className={
+          collapsed ? "flex flex-col items-center space-y-1.5" : "space-y-1"
+        }
+      >
+        {children}
+      </nav>
     </section>
   );
 }

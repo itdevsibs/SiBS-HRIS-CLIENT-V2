@@ -5,10 +5,7 @@ import {
   Check,
   ChevronDown,
   CalendarDays,
-  CircleCheckBig,
-  CircleX,
   RotateCcw,
-  Timer,
   Loader2,
   AlertCircle,
 } from "lucide-react";
@@ -25,9 +22,6 @@ import { formatDate } from "@/components/layout/FormatDateTime";
 import {
   DataCard,
   DatePicker,
-  MetricCard,
-  MetricGrid,
-  MetricGridSkeleton,
   ResponsiveTableShell,
   SearchInput,
   SelectDropdown,
@@ -44,7 +38,6 @@ import {
   formatNumber,
   getNumberValue,
   getComputedWorkHours,
-  capWorkHoursFromItem,
   displayCappedWorkHours,
   getLoginIndicator,
   getLogoutIndicator,
@@ -1405,35 +1398,6 @@ export default function AttendanceTable() {
     });
   }, [attendance]);
 
-  const pageStats = useMemo(() => {
-    const totalLoaded = attendance.length;
-
-    const approvedCount = attendance.filter(
-      (item) => item.gy_tracker_status === "Approved",
-    ).length;
-
-    const pendingCount = attendance.filter(
-      (item) => item.gy_tracker_status !== "Approved",
-    ).length;
-
-    const escalatingCount = attendance.filter(
-      (item) => item.gy_tracker_status === "Escalating",
-    ).length;
-
-    const totalWorkHours = attendance.reduce(
-      (sum, item) => sum + capWorkHoursFromItem(item),
-      0,
-    );
-
-    return {
-      totalLoaded,
-      approvedCount,
-      pendingCount,
-      escalatingCount,
-      totalWorkHours,
-    };
-  }, [attendance]);
-
   const emptyColSpan = adminView
     ? attendanceFiltersView
       ? 15
@@ -1485,64 +1449,6 @@ export default function AttendanceTable() {
           </button>
         </div>
       ) : null}
-      <section
-        style={getAnimationStyle(60)}
-      >
-        {loading ? (
-          <MetricGridSkeleton
-            count={4}
-            labels={[
-              "Loaded Attendance",
-              "Approved",
-              "Pending Review",
-              "Computed Work Hours",
-            ]}
-            ariaLabel="Loading attendance metrics"
-            className="grid grid-cols-2 gap-2.5 2xl:gap-3 sm:grid-cols-2 lg:grid-cols-4"
-          />
-        ) : (
-          <MetricGrid columns={4}>
-            <MetricCard
-              label="Loaded Attendance"
-              value={formatNumber(pageStats.totalLoaded)}
-              description="Records loaded on the current page"
-              icon={CalendarDays}
-              tone="navy"
-              delay={0}
-            />
-
-            <MetricCard
-              label="Approved"
-              value={formatNumber(pageStats.approvedCount)}
-              description="Ready for payroll processing"
-              icon={CircleCheckBig}
-              tone="emerald"
-              delay={60}
-            />
-
-            <MetricCard
-              label="Pending Review"
-              value={formatNumber(pageStats.pendingCount)}
-              description={pageStats.escalatingCount
-                ? `${pageStats.escalatingCount} escalating · awaiting validation`
-                : "Awaiting attendance validation"}
-              icon={CircleX}
-              tone="amber"
-              delay={120}
-            />
-
-            <MetricCard
-              label="Computed Work Hours"
-              value={`${formatNumber(pageStats.totalWorkHours)} hrs`}
-              description="Capped work hours from this page"
-              icon={Timer}
-              tone="orange"
-              delay={180}
-            />
-          </MetricGrid>
-        )}
-      </section>
-
       <section
         className="sibs-page-card-in sibs-card overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-xs font-jakarta"
         style={getAnimationStyle(120)}

@@ -3,7 +3,7 @@ import { MetricCard, MetricGrid } from "@/components/ui";
 
 export default function TADashboardStats({ metrics = [] }) {
   return (
-    <MetricGrid>
+    <MetricGrid columns={5}>
       {metrics.map((item, index) => (
         <MetricCard
           key={item.id || item.label}

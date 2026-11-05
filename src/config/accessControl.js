@@ -253,6 +253,7 @@ export const ACCESS_RULES = [
     paths: [
       "/recruitment/hiring-needs",
       "/recruitment/weekly-reports",
+      "/recruitment/attrition-reports",
     ],
     roles: [
       "ta",

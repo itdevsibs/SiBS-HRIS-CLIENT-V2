@@ -236,10 +236,6 @@ export function getComputedWorkHours(item) {
   return savedWh;
 }
 
-export function capWorkHoursFromItem(item) {
-  return Math.min(getComputedWorkHours(item), 8);
-}
-
 export function displayCappedWorkHours(item) {
   const computedHours = getComputedWorkHours(item);
 

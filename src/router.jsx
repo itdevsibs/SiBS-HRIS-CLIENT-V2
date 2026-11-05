@@ -80,6 +80,7 @@ const CandidateExperienceSurveyPage = lazyWithRetry(() => import("./pages/recrui
 const SourcingAnalyticsPage = lazyWithRetry(() => import("./pages/recruitment/SourcingAnalyticsPage"));
 const ActionItemsPage = lazyWithRetry(() => import("./pages/recruitment/ActionItemsPage"));
 const WeeklyReportsPage = lazyWithRetry(() => import("./pages/recruitment/WeeklyReportsPage"));
+const AttritionReportsPage = lazyWithRetry(() => import("./pages/recruitment/AttritionReportsPage"));
 const AvailablePositionsPage = lazyWithRetry(() => import("./pages/recruitment/AvailablePositionsPage"));
 const ApplicantLeadsPage = lazyWithRetry(() => import("./pages/recruitment/ApplicantLeadsPage"));
 const PublicJobDescriptionPage = lazyWithRetry(() => import("./pages/recruitment/talent-pool/PublicJobDescriptionPage"));
@@ -544,6 +545,15 @@ function MainApplicationRoutes() {
         element={
           <PrivateRoute>
             <WeeklyReportsPage />
+          </PrivateRoute>
+        }
+      />
+
+      <Route
+        path="/recruitment/attrition-reports"
+        element={
+          <PrivateRoute>
+            <AttritionReportsPage />
           </PrivateRoute>
         }
       />
