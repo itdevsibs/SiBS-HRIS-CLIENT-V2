@@ -362,6 +362,7 @@ export default function UserDropdown({
     setOpen((previous) => !previous);
   };
 
+  // Keep the header profile menu/hover preview above SiBS Chat (panel z-2147483600, previews z-2147483625).
   const dropdownMenu =
     open && dropdownPosition && typeof document !== "undefined"
       ? createPortal(
@@ -370,7 +371,7 @@ export default function UserDropdown({
             role="menu"
             aria-label="User actions"
             onKeyDown={handleMenuKeyDown}
-            className="sibs-animated-dropdown open fixed z-[2147483000]"
+            className="sibs-animated-dropdown open fixed z-[2147483630]"
             style={{
               top: dropdownPosition.top,
               left: dropdownPosition.left,
@@ -514,7 +515,7 @@ export default function UserDropdown({
         typeof document !== "undefined" &&
         createPortal(
           <div
-            className="pointer-events-none fixed z-[2147483001] h-[152px] w-[152px] rounded-2xl border border-sibs-border-subtle bg-white p-1.5 shadow-[0_18px_50px_rgba(4,44,81,0.28)]"
+            className="pointer-events-none fixed z-[2147483631] h-[152px] w-[152px] rounded-2xl border border-sibs-border-subtle bg-white p-1.5 shadow-[0_18px_50px_rgba(4,44,81,0.28)]"
             style={{
               top: avatarPreviewPosition.top,
               left: avatarPreviewPosition.left,

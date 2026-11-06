@@ -11,6 +11,7 @@ import {
   FileDown,
   Loader2,
   MapPin,
+  Layers3,
   MoreHorizontal,
   RefreshCw,
 } from "lucide-react";
@@ -135,13 +136,16 @@ export default function EmployeeProfileHeader({
     employee?.department,
     employee?.departmentName,
     employee?.department_name,
-    employee?.gy_department,
   );
   const account = firstValue(
     employee?.account,
     employee?.accountName,
     employee?.account_name,
-    employee?.gy_account,
+  );
+  const cluster = firstValue(
+    employee?.cluster,
+    employee?.clusterName,
+    employee?.cluster_name,
   );
   const location = firstValue(
     employee?.location,
@@ -196,6 +200,9 @@ export default function EmployeeProfileHeader({
               </HeaderFact>
               <HeaderFact icon={FileCheck2}>
                 {account ? `Account: ${account}` : ""}
+              </HeaderFact>
+              <HeaderFact icon={Layers3}>
+                {cluster ? `Cluster: ${cluster}` : ""}
               </HeaderFact>
               <HeaderFact icon={MapPin}>{location}</HeaderFact>
               <HeaderFact icon={RefreshCw}>{employee?.workSetup}</HeaderFact>

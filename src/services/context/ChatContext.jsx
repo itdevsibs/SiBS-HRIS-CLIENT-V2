@@ -12,6 +12,7 @@ import {
 import {
   addGroupChatMembers,
   createGroupChat,
+  createHelpdeskChat,
   createPrivateChat,
   deletePrivateChat,
   getChatConversations,
@@ -212,6 +213,65 @@ function sortConversations(items = []) {
   });
 }
 
+// Cross-instance presence heartbeats update every active employee's
+// last_seen_at every 10 seconds on the server. The chat UI displays these
+// values with *minute* precision; comparing raw timestamps caused the entire
+// message list to repaint on virtually every 2-second safety poll whenever
+// several employees were online. Expiry timestamps similarly do not affect
+// the displayed typing indicator (the separate isTyping value does).
+function chatUiSnapshotValue(key, value) {
+  if (key === "typingExpiresAt") return undefined;
+  if (key === "lastSeenAt" || key === "last_seen_at") {
+    return typeof value === "string" ? value.slice(0, 16) : value;
+  }
+  return value;
+}
+
+function sameChatSnapshot(previous, incoming) {
+  if (previous === incoming) return true;
+  if (!Array.isArray(previous) || !Array.isArray(incoming)) return false;
+  if (previous.length !== incoming.length) return false;
+  return JSON.stringify(previous, chatUiSnapshotValue) ===
+    JSON.stringify(incoming, chatUiSnapshotValue);
+}
+
+// Presence timestamps and the calculated online flag can also appear in
+// message sender / reaction / reply profile objects. Those volatile fields
+// must not make an otherwise unchanged message timeline look new. All message
+// content, attachments, reactions, reply data, and profile display fields
+// remain part of the comparison.
+function messageUiSnapshotValue(key, value) {
+  if (
+    key === "online" ||
+    key === "lastSeenAt" ||
+    key === "last_seen_at" ||
+    key === "isTyping" ||
+    key === "typingExpiresAt"
+  ) return undefined;
+  return value;
+}
+
+function sameMessageTimeline(previous, incoming) {
+  if (previous === incoming) return true;
+  if (!Array.isArray(previous) || !Array.isArray(incoming)) return false;
+  if (previous.length !== incoming.length) return false;
+  return JSON.stringify(previous, messageUiSnapshotValue) ===
+    JSON.stringify(incoming, messageUiSnapshotValue);
+}
+
+// Keep a lightweight cross-instance check every 2 seconds so new messages
+// appear promptly. Full message data is only required when the conversation
+// changed or for a slower reconciliation of reactions/unsends on different
+// Socket.IO processes (which do not always bump conversation.updatedAt).
+const CHAT_TIMELINE_RECONCILE_MS = 20_000;
+function timelineVersion(conversation) {
+  return [
+    Number(conversation?.lastMessageId || 0),
+    String(conversation?.lastMessageUnsentAt || ""),
+    String(conversation?.updatedAt || ""),
+  ].join("|");
+}
+
 export function ChatProvider({ children }) {
   const { user, loading: userLoading } = useUser() || {};
   const currentSibsId = useMemo(() => getCurrentSibsId(user), [user]);
@@ -240,12 +300,19 @@ export function ChatProvider({ children }) {
   const chatWindowOpenRef = useRef(false);
   const messagesRef = useRef([]);
   const conversationsRef = useRef([]);
+  // A departed/removed member must not keep polling a forbidden thread.
+  const revokedConversationIdsRef = useRef(new Set());
+  // Avoid another read-write every two seconds for an unchanged timeline.
+  const acknowledgedReadIdsRef = useRef(new Map());
   const fallbackSyncBusyRef = useRef(false);
   const typingSyncBusyRef = useRef(false);
   const typingExpiryTimersRef = useRef(new Map());
   const notifiedMessageIdsRef = useRef(new Set());
   const conversationLastMessageIdsRef = useRef(new Map());
   const conversationToneBaselineReadyRef = useRef(false);
+  // Tracks when the visible timeline was last fetched successfully. Resetting
+  // this on a thread switch avoids showing stale data from a previous chat.
+  const timelineSyncRef = useRef({ conversationId: 0, version: "", at: 0 });
 
   useEffect(() => {
     activeConversationIdRef.current = activeConversationId;
@@ -328,6 +395,65 @@ export function ChatProvider({ children }) {
     setMembershipNotice(null);
   }, []);
 
+  const handleConversationAccessRevoked = useCallback((conversationId) => {
+    const id = Number(conversationId || 0);
+    if (!id) return;
+
+    revokedConversationIdsRef.current.add(id);
+    acknowledgedReadIdsRef.current.delete(id);
+    conversationLastMessageIdsRef.current.delete(id);
+    conversationsRef.current = conversationsRef.current.filter(
+      (item) => Number(item?.id || 0) !== id,
+    );
+    setConversations((current) => {
+      const next = current.filter((item) => Number(item?.id || 0) !== id);
+      return next.length === current.length ? current : next;
+    });
+    setTypingByConversation((current) => {
+      if (!Object.prototype.hasOwnProperty.call(current, id)) return current;
+      const next = { ...current };
+      delete next[id];
+      return next;
+    });
+
+    if (Number(activeConversationIdRef.current || 0) === id) {
+      activeConversationIdRef.current = null;
+      messagesRef.current = [];
+      setActiveConversationId(null);
+      timelineSyncRef.current = { conversationId: 0, version: "", at: 0 };
+      setMessages([]);
+      setMessagesLoading(false);
+      setHasMoreMessages(false);
+      setError("");
+    }
+  }, []);
+
+  const handleForbiddenConversationError = useCallback((conversationId, error) => {
+    if (Number(error?.response?.status) !== 403) return false;
+    handleConversationAccessRevoked(conversationId);
+    return true;
+  }, [handleConversationAccessRevoked]);
+
+  const markReadOnce = useCallback(async (conversationId, messageId) => {
+    const id = Number(conversationId || 0);
+    const latest = Number(messageId || 0);
+    if (!id || !latest || revokedConversationIdsRef.current.has(id)) return;
+
+    if (latest <= Number(acknowledgedReadIdsRef.current.get(id) || 0)) return;
+    // Mark optimistically while the request is in flight to deduplicate
+    // overlapping socket events and the DB-backed 2-second safety poll.
+    acknowledgedReadIdsRef.current.set(id, latest);
+    try {
+      await markChatRead(id, latest);
+    } catch (error) {
+      if (acknowledgedReadIdsRef.current.get(id) === latest) {
+        acknowledgedReadIdsRef.current.delete(id);
+      }
+      handleForbiddenConversationError(id, error);
+      throw error;
+    }
+  }, [handleForbiddenConversationError]);
+
   const refreshPresence = useCallback((items = []) => {
     if (!chatSocket.connected) return;
 
@@ -345,10 +471,12 @@ export function ChatProvider({ children }) {
     chatSocket.emit("chat:presence:request", ids, (result) => {
       if (!mountedRef.current || !result || typeof result !== "object") return;
 
-      setPresence((current) => ({
-        ...current,
-        ...result,
-      }));
+      setPresence((current) => {
+        const changed = Object.entries(result).some(
+          ([id, value]) => current[id] !== value,
+        );
+        return changed ? { ...current, ...result } : current;
+      });
     });
   }, []);
 
@@ -442,6 +570,18 @@ export function ChatProvider({ children }) {
       const nextConversations = sortConversations(await getChatConversations());
       conversationsRef.current = nextConversations;
 
+      const allowedIds = new Set(
+        nextConversations.map((item) => Number(item?.id || 0)),
+      );
+      // A successfully fetched list is the authoritative membership snapshot.
+      // Do not mistake a network error for revoked access (the catch below
+      // retains the existing list).
+      for (const id of allowedIds) revokedConversationIdsRef.current.delete(id);
+      const activeId = Number(activeConversationIdRef.current || 0);
+      if (activeId && !allowedIds.has(activeId)) {
+        handleConversationAccessRevoked(activeId);
+      }
+
       // Local and production can be connected to separate Socket.IO processes.
       // Use the shared DB-backed conversation list as a change detector. When a
       // conversation's last message advances, fetch that conversation and play
@@ -508,24 +648,33 @@ export function ChatProvider({ children }) {
                 .forEach((message) => {
                   notifyIncomingMessage(conversationId, message);
                 });
-            } catch {
-              // The next 2-second refresh can retry without breaking chat.
+            } catch (error) {
+              handleForbiddenConversationError(conversationId, error);
+              // A temporary network issue can retry on the next sync.
             }
           }),
         );
       }
 
+      // A 403 may have arrived while the snapshot was being processed.
+      // Never reinsert those threads into the visible list during this sync.
+      const visibleConversations = nextConversations.filter(
+        (item) => !revokedConversationIdsRef.current.has(Number(item?.id || 0)),
+      );
+      conversationsRef.current = visibleConversations;
       if (mountedRef.current) {
-        setConversations(nextConversations);
+        setConversations((current) =>
+          sameChatSnapshot(current, visibleConversations) ? current : visibleConversations,
+        );
 
         // Cross-instance fallback: the conversations endpoint also carries the
         // current DB-backed typing state. This makes local <-> production
         // typing work even when each environment is connected to a different
         // Socket.IO process or the dedicated typing poll misses a request.
         setTypingByConversation((current) => {
-          const next = { ...current };
+          const next = {};
 
-          nextConversations.forEach((conversation) => {
+          visibleConversations.forEach((conversation) => {
             const conversationId = Number(conversation?.id || 0);
             if (!conversationId) return;
 
@@ -550,21 +699,29 @@ export function ChatProvider({ children }) {
               ),
             ];
 
-            if (typingIds.length) {
-              next[conversationId] = typingIds;
-            } else {
-              delete next[conversationId];
-            }
+            if (typingIds.length) next[conversationId] = typingIds;
           });
 
+          const keys = Object.keys(next);
+          const oldKeys = Object.keys(current);
+          if (
+            keys.length === oldKeys.length &&
+            keys.every((id) =>
+              Array.isArray(current[id]) &&
+              current[id].length === next[id].length &&
+              current[id].every((member, index) => member === next[id][index]),
+            )
+          ) {
+            return current;
+          }
           return next;
         });
 
         setError("");
       }
 
-      refreshPresence(nextConversations);
-      return nextConversations;
+      refreshPresence(visibleConversations);
+      return visibleConversations;
     } catch (requestError) {
       if (mountedRef.current) {
         setError(
@@ -579,7 +736,14 @@ export function ChatProvider({ children }) {
         setConversationsLoading(false);
       }
     }
-  }, [chatAllowed, currentSibsId, notifyIncomingMessage, refreshPresence]);
+  }, [
+    chatAllowed,
+    currentSibsId,
+    handleConversationAccessRevoked,
+    handleForbiddenConversationError,
+    notifyIncomingMessage,
+    refreshPresence,
+  ]);
 
   const loadConversationMessages = useCallback(
     async (conversationId) => {
@@ -597,8 +761,15 @@ export function ChatProvider({ children }) {
 
         if (mountedRef.current && Number(activeConversationIdRef.current) === Number(conversationId)) {
           messagesRef.current = nextMessages;
-          setMessages(nextMessages);
+          setMessages((current) => sameMessageTimeline(current, nextMessages) ? current : nextMessages);
           setHasMoreMessages(nextMessages.length >= 75);
+          timelineSyncRef.current = {
+            conversationId: Number(conversationId),
+            version: timelineVersion(conversationsRef.current.find(
+              (item) => Number(item?.id || 0) === Number(conversationId),
+            )),
+            at: Date.now(),
+          };
           setError("");
         }
 
@@ -613,21 +784,27 @@ export function ChatProvider({ children }) {
         // its unread badge. A conversation becomes read only after SiBS Chat
         // is actually open and that conversation is the one being viewed.
         if (isActivelyViewed) {
-          await markChatRead(conversationId, latestId || null).catch(() => {});
+          await markReadOnce(conversationId, latestId).catch(() => {});
 
           if (mountedRef.current) {
-            setConversations((current) =>
-              current.map((conversation) =>
+            setConversations((current) => {
+              if (!current.some((item) =>
+                Number(item.id) === Number(conversationId) && Number(item.unreadCount || 0) > 0
+              )) return current;
+              return current.map((conversation) =>
                 Number(conversation.id) === Number(conversationId)
                   ? { ...conversation, unreadCount: 0 }
                   : conversation,
-              ),
-            );
+              );
+            });
           }
         }
 
         return nextMessages;
       } catch (requestError) {
+        if (handleForbiddenConversationError(conversationId, requestError)) {
+          return [];
+        }
         if (mountedRef.current) {
           setError(
             requestError?.response?.data?.message ||
@@ -642,13 +819,17 @@ export function ChatProvider({ children }) {
         }
       }
     },
-    [currentSibsId],
+    [currentSibsId, handleForbiddenConversationError, markReadOnce],
   );
 
   const selectConversation = useCallback(
     async (conversationId) => {
       const id = Number(conversationId || 0) || null;
+      // Only a newly selected conversation can undo a prior local revocation;
+      // its server-side membership will still be checked by the messages API.
+      if (id) revokedConversationIdsRef.current.delete(id);
       activeConversationIdRef.current = id;
+      timelineSyncRef.current = { conversationId: 0, version: "", at: 0 };
       setActiveConversationId(id);
       messagesRef.current = [];
       setMessages([]);
@@ -730,6 +911,17 @@ export function ChatProvider({ children }) {
         await selectConversation(id);
       }
 
+      return conversation;
+    },
+    [refreshConversations, selectConversation],
+  );
+
+  const startHelpdeskConversation = useCallback(
+    async (category) => {
+      const conversation = await createHelpdeskChat(category);
+      const id = Number(conversation?.id || 0);
+      await refreshConversations();
+      if (id) await selectConversation(id);
       return conversation;
     },
     [refreshConversations, selectConversation],
@@ -886,16 +1078,10 @@ export function ChatProvider({ children }) {
     async (conversationId) => {
       await leaveGroupChat(conversationId);
 
-      if (Number(activeConversationIdRef.current) === Number(conversationId)) {
-        activeConversationIdRef.current = null;
-        setActiveConversationId(null);
-        setMessages([]);
-        setHasMoreMessages(false);
-      }
-
+      handleConversationAccessRevoked(conversationId);
       await refreshConversations();
     },
-    [refreshConversations],
+    [handleConversationAccessRevoked, refreshConversations],
   );
 
   const hidePrivateConversation = useCallback(
@@ -1055,15 +1241,19 @@ export function ChatProvider({ children }) {
   const setTypingStatus = useCallback(
     async (conversationId, isTyping) => {
       const id = Number(conversationId || 0);
-      if (!id || !chatAllowed || !currentSibsId) return null;
+      if (
+        !id || !chatAllowed || !currentSibsId ||
+        revokedConversationIdsRef.current.has(id)
+      ) return null;
 
       try {
         return await sendChatTypingStatus(id, Boolean(isTyping));
-      } catch {
+      } catch (error) {
+        handleForbiddenConversationError(id, error);
         return null;
       }
     },
-    [chatAllowed, currentSibsId],
+    [chatAllowed, currentSibsId, handleForbiddenConversationError],
   );
 
   const syncTypingWithoutRefresh = useCallback(async () => {
@@ -1075,7 +1265,8 @@ export function ChatProvider({ children }) {
       !currentSibsId ||
       !chatAllowed ||
       !chatWindowOpenRef.current ||
-      !conversationId
+      !conversationId ||
+      revokedConversationIdsRef.current.has(conversationId)
     ) {
       return;
     }
@@ -1120,12 +1311,14 @@ export function ChatProvider({ children }) {
 
         return next;
       });
-    } catch {
-      // Socket.IO remains primary. The next lightweight typing poll retries.
+    } catch (error) {
+      if (!handleForbiddenConversationError(conversationId, error)) {
+        // Socket.IO remains primary. Temporary network failures can retry.
+      }
     } finally {
       typingSyncBusyRef.current = false;
     }
-  }, [chatAllowed, currentSibsId]);
+  }, [chatAllowed, currentSibsId, handleForbiddenConversationError]);
 
   const syncChatWithoutRefresh = useCallback(async () => {
     if (
@@ -1138,14 +1331,33 @@ export function ChatProvider({ children }) {
     }
 
     fallbackSyncBusyRef.current = true;
+    let polledConversationId = 0;
 
     try {
       await refreshConversations({ silent: true });
 
       const conversationId = Number(activeConversationIdRef.current || 0);
-      if (!conversationId || !chatWindowUiOpenRef.current) return;
+      polledConversationId = conversationId;
+      const visibleConversation = conversationsRef.current.find(
+        (item) => Number(item?.id || 0) === conversationId,
+      );
+      if (
+        !conversationId || !chatWindowUiOpenRef.current ||
+        revokedConversationIdsRef.current.has(conversationId) ||
+        !visibleConversation
+      ) return;
 
-      void syncTypingWithoutRefresh();
+      // Typing is polled independently every 1.2 seconds; don't start a
+      // second request here every 2 seconds as well.
+      const syncVersion = timelineVersion(visibleConversation);
+      const previousSync = timelineSyncRef.current;
+      if (
+        previousSync.conversationId === conversationId &&
+        previousSync.version === syncVersion &&
+        Date.now() - previousSync.at < CHAT_TIMELINE_RECONCILE_MS
+      ) {
+        return;
+      }
 
       const nextMessages = await getChatMessages(conversationId, {
         limit: 75,
@@ -1201,36 +1413,19 @@ export function ChatProvider({ children }) {
         (first, second) => Number(first?.id || 0) - Number(second?.id || 0),
       );
 
-      const currentFingerprint = currentMessages
-        .map((item) =>
-          [
-            Number(item?.id || 0),
-            cleanText(item?.messageText),
-            cleanText(item?.messageType),
-            cleanText(item?.unsentAt || item?.unsent_at),
-            JSON.stringify(item?.reactions || []),
-            JSON.stringify(item?.replyTo || null),
-          ].join(":"),
-        )
-        .join("|");
-
-      const nextFingerprint = reconciledMessages
-        .map((item) =>
-          [
-            Number(item?.id || 0),
-            cleanText(item?.messageText),
-            cleanText(item?.messageType),
-            cleanText(item?.unsentAt || item?.unsent_at),
-            JSON.stringify(item?.reactions || []),
-            JSON.stringify(item?.replyTo || null),
-          ].join(":"),
-        )
-        .join("|");
-
-      if (currentFingerprint !== nextFingerprint) {
+      // The server reconstructs sender/reaction objects for every response.
+      // Compare the full meaningful timeline rather than forcing an update
+      // from freshly allocated objects or periodically refreshed presence.
+      if (!sameMessageTimeline(currentMessages, reconciledMessages)) {
         messagesRef.current = reconciledMessages;
         setMessages(reconciledMessages);
       }
+
+      timelineSyncRef.current = {
+        conversationId,
+        version: syncVersion,
+        at: Date.now(),
+      };
 
       const latestMessageId = Number(nextMessages?.at(-1)?.id || 0);
       const isStillActivelyViewed =
@@ -1240,35 +1435,45 @@ export function ChatProvider({ children }) {
         Number(activeConversationIdRef.current) === conversationId;
 
       if (latestMessageId && isStillActivelyViewed) {
-        await markChatRead(conversationId, latestMessageId).catch(() => {});
+        await markReadOnce(conversationId, latestMessageId).catch(() => {});
 
         if (mountedRef.current) {
-          setConversations((current) =>
-            current.map((conversation) =>
+          setConversations((current) => {
+            if (!current.some((item) =>
+              Number(item.id) === conversationId && Number(item.unreadCount || 0) > 0
+            )) return current;
+            return current.map((conversation) =>
               Number(conversation.id) === conversationId
                 ? { ...conversation, unreadCount: 0 }
                 : conversation,
-            ),
-          );
+            );
+          });
         }
       }
-    } catch {
-      // The next Socket.IO event / fallback sync will retry automatically.
+    } catch (error) {
+      // A reply for an old thread must never revoke a newly selected thread.
+      handleForbiddenConversationError(polledConversationId, error);
+      // The next Socket.IO event / fallback sync retries transient failures.
     } finally {
       fallbackSyncBusyRef.current = false;
     }
   }, [
     chatAllowed,
     currentSibsId,
+    handleForbiddenConversationError,
+    markReadOnce,
     notifyIncomingMessage,
     refreshConversations,
-    syncTypingWithoutRefresh,
   ]);
 
   useEffect(() => {
     if (userLoading || !currentSibsId || !chatAllowed) {
       setConversations([]);
+      conversationsRef.current = [];
+      revokedConversationIdsRef.current.clear();
+      acknowledgedReadIdsRef.current.clear();
       setMessages([]);
+      messagesRef.current = [];
       setHasMoreMessages(false);
       setActiveConversationId(null);
       activeConversationIdRef.current = null;
@@ -1281,6 +1486,7 @@ export function ChatProvider({ children }) {
       notifiedMessageIdsRef.current.clear();
       conversationLastMessageIdsRef.current.clear();
       conversationToneBaselineReadyRef.current = false;
+      timelineSyncRef.current = { conversationId: 0, version: "", at: 0 };
       setMembershipNotice(null);
       chatSocket.disconnect();
       return undefined;
@@ -1302,10 +1508,11 @@ export function ChatProvider({ children }) {
       const id = cleanText(sibsId);
       if (!id) return;
 
-      setPresence((current) => ({
-        ...current,
-        [id]: Boolean(online),
-      }));
+      setPresence((current) =>
+        current[id] === Boolean(online)
+          ? current
+          : { ...current, [id]: Boolean(online) },
+      );
     };
 
     const handleTyping = ({ conversationId, sibsId, isTyping } = {}) => {
@@ -1355,11 +1562,15 @@ export function ChatProvider({ children }) {
       const targetId = Number(conversationId || 0);
       if (!targetId || !theme) return;
 
-      setConversations((current) =>
-        current.map((c) =>
-          Number(c.id) === targetId ? { ...c, theme } : c
-        )
-      );
+      setConversations((current) => {
+        const target = current.find((c) => Number(c.id) === targetId);
+        if (!target || JSON.stringify(target.theme) === JSON.stringify(theme)) {
+          return current;
+        }
+        return current.map((c) =>
+          Number(c.id) === targetId ? { ...c, theme } : c,
+        );
+      });
     };
 
     const handleMembershipNotification = (payload = {}) => {
@@ -1387,14 +1598,8 @@ export function ChatProvider({ children }) {
 
       playChatReceiveSound();
 
-      if (
-        action === "removed" &&
-        Number(activeConversationIdRef.current) === conversationId
-      ) {
-        activeConversationIdRef.current = null;
-        setActiveConversationId(null);
-        setMessages([]);
-        setHasMoreMessages(false);
+      if (action === "removed") {
+        handleConversationAccessRevoked(conversationId);
       }
 
       void syncChatWithoutRefresh();
@@ -1434,16 +1639,19 @@ export function ChatProvider({ children }) {
         appendMessageToTimeline(message);
 
         if (isActivelyViewed) {
-          setConversations((current) =>
-            current.map((conversation) =>
+          setConversations((current) => {
+            if (!current.some((conversation) =>
+              Number(conversation.id) === id && Number(conversation.unreadCount || 0) > 0
+            )) return current;
+            return current.map((conversation) =>
               Number(conversation.id) === id
                 ? { ...conversation, unreadCount: 0 }
                 : conversation,
-            ),
-          );
+            );
+          });
 
-          void markChatRead(id, message.id)
-            .then(() => refreshConversations())
+          void markReadOnce(id, message.id)
+            .then(() => refreshConversations({ silent: true }))
             .catch(() => {});
         } else {
           // Keep the message visible in the selected conversation, but don't
@@ -1483,33 +1691,34 @@ export function ChatProvider({ children }) {
 
       if (!id || !readerSibsId || !lastReadMessageId) return;
 
-      setConversations((current) =>
-        current.map((conversation) => {
+      setConversations((current) => {
+        let changed = false;
+        const next = current.map((conversation) => {
           if (Number(conversation?.id || 0) !== id) return conversation;
 
           const updateMemberReadState = (member) => {
             if (cleanText(member?.sibsId) !== readerSibsId) return member;
-
-            return {
-              ...member,
-              lastReadMessageId: Math.max(
-                Number(member?.lastReadMessageId || 0),
-                lastReadMessageId,
-              ),
-            };
+            if (Number(member?.lastReadMessageId || 0) >= lastReadMessageId) {
+              return member;
+            }
+            return { ...member, lastReadMessageId };
           };
 
-          return {
-            ...conversation,
-            members: Array.isArray(conversation?.members)
-              ? conversation.members.map(updateMemberReadState)
-              : [],
-            otherMember: conversation?.otherMember
-              ? updateMemberReadState(conversation.otherMember)
-              : conversation?.otherMember,
-          };
-        }),
-      );
+          const oldMembers = Array.isArray(conversation?.members) ? conversation.members : [];
+          const nextMembers = oldMembers.map(updateMemberReadState);
+          const nextOtherMember = conversation?.otherMember
+            ? updateMemberReadState(conversation.otherMember)
+            : conversation?.otherMember;
+          if (
+            nextOtherMember === conversation?.otherMember &&
+            nextMembers.every((member, index) => member === oldMembers[index])
+          ) return conversation;
+
+          changed = true;
+          return { ...conversation, members: nextMembers, otherMember: nextOtherMember };
+        });
+        return changed ? next : current;
+      });
     };
 
     const handleReaction = ({ conversationId, messageId } = {}) => {
@@ -1596,12 +1805,11 @@ export function ChatProvider({ children }) {
     }, 2000);
 
     // Typing status is also persisted briefly in the shared HRIS database.
-    // Polling it once per second lets a local/dev HRIS instance and the
-    // production HRIS instance see each other's typing indicator even when
-    // they are connected to different Socket.IO server processes.
+    // The 1.2-second fallback catches cross-instance typing activity while
+    // limiting database/network pressure; local Socket.IO stays immediate.
     const typingFallbackInterval = window.setInterval(() => {
       void syncTypingWithoutRefresh();
-    }, 600);
+    }, 1200);
 
     if (!chatSocket.connected) {
       chatSocket.connect();
@@ -1642,6 +1850,8 @@ export function ChatProvider({ children }) {
     chatAllowed,
     clearTypingMember,
     currentSibsId,
+    handleConversationAccessRevoked,
+    markReadOnce,
     notifyIncomingMessage,
     refreshConversations,
     syncChatWithoutRefresh,
@@ -1694,6 +1904,7 @@ export function ChatProvider({ children }) {
       loadOlderMessages,
       startPrivateConversation,
       startGroupConversation,
+      startHelpdeskConversation,
       sendMessage,
       unsendMessage,
       reactToMessage,
@@ -1744,6 +1955,7 @@ export function ChatProvider({ children }) {
       unsendMessage,
       reactToMessage,
       startGroupConversation,
+      startHelpdeskConversation,
       startPrivateConversation,
       totalUnread,
     ],
