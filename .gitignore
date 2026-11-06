@@ -90,6 +90,14 @@ tests/
 !src/components/layout/dropdown/DeveloperEasterEgg.test.jsx
 !src/config/developerBorders.test.jsx
 !src/pages/resignee/ResigneePage.test.jsx
+!src/components/Dashboard/QDSDashboard/QDSDashboard.test.jsx
+!src/components/recruitment/journey/ESEPCoachingHarmonization.test.jsx
+!src/components/recruitment/nho/NHOHarmonization.test.mjs
+!src/components/recruitment/onboarding/OnboardingJourneyRoster.interaction.test.mjs
+!src/lib/utils/journey/coachingWeek.test.mjs
+!src/lib/utils/journey/onboardingRoster.test.mjs
+!src/lib/utils/journey/trainerMonitoringValidation.test.mjs
+!src/pages/dashboard/QDSDashboard/QDSDashboardPage.test.jsx
 
 
 # Temporary migration & scratch scripts

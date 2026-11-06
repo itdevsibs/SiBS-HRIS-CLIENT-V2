@@ -73,7 +73,10 @@ function NHOITDashboard({ subTab = "queue", onSubTabChange }) {
     <div className="space-y-6 font-jakarta">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column: Requests Queue List */}
-        <div className="lg:col-span-1 bg-white rounded-2xl border border-sibs-border shadow-xs overflow-hidden flex flex-col">
+        <div
+          className="sibs-page-card-in lg:col-span-1 bg-white rounded-2xl border border-sibs-border shadow-xs overflow-hidden flex flex-col"
+          style={{ animationDelay: "180ms", animationFillMode: "both" }}
+        >
           <div className="p-4 border-b border-sibs-border flex items-center justify-between bg-sibs-surface">
             <span className="sibs-text-xs font-extrabold text-sibs-navy uppercase tracking-wider flex items-center gap-1.5">
               <Server className="h-4 w-4 text-sibs-orange" />
@@ -134,7 +137,10 @@ function NHOITDashboard({ subTab = "queue", onSubTabChange }) {
         </div>
 
         {/* Right Column: ID Creation Request Details & Provisioning Form */}
-        <div className="lg:col-span-2 space-y-6">
+        <div
+          className="sibs-page-card-in lg:col-span-2 space-y-6"
+          style={{ animationDelay: "240ms", animationFillMode: "both" }}
+        >
           <div className="bg-white rounded-2xl border border-sibs-border shadow-xs p-5 sm:p-6 space-y-6 text-xs">
             {/* Header Info */}
             <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-sibs-border">

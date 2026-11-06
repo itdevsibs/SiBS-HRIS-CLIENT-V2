@@ -232,7 +232,10 @@ export default function TrainerMonitoringView({ onSwitchModule }) {
 
 
       {/* TABLE 1: TRAINER DIRECTORY MASTER TABLE */}
-      <div className="sibs-card bg-white overflow-hidden shadow-xs">
+      <div
+        className="sibs-page-card-in sibs-card bg-white overflow-hidden shadow-xs"
+        style={{ animationDelay: "200ms", animationFillMode: "both" }}
+      >
         <div className="p-4 border-b border-sibs-border flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <h2 className="sibs-section-title font-extrabold text-sibs-navy">Trainer Directory &amp; Cohort Overview</h2>
@@ -388,7 +391,11 @@ export default function TrainerMonitoringView({ onSwitchModule }) {
       </div>
 
       {/* TABLE 2: COHORT TRAINEE AUDIT MATRIX TABLE */}
-      <div ref={cohortTableRef} className="sibs-card bg-white overflow-hidden shadow-xs">
+      <div
+        ref={cohortTableRef}
+        className="sibs-page-card-in sibs-card bg-white overflow-hidden shadow-xs"
+        style={{ animationDelay: "260ms", animationFillMode: "both" }}
+      >
         <div className="p-4 border-b border-sibs-border flex flex-col md:flex-row md:items-center justify-between gap-3">
           <div>
             <div className="flex items-center gap-2">
@@ -615,7 +622,10 @@ export default function TrainerMonitoringView({ onSwitchModule }) {
       </div>
 
       {/* SECTION 3: QUALITY & COACHING FOLLOW-UP QUEUE */}
-      <div className="sibs-card bg-white p-4 sm:p-5 space-y-4 shadow-xs">
+      <div
+        className="sibs-page-card-in sibs-card bg-white p-4 sm:p-5 space-y-4 shadow-xs"
+        style={{ animationDelay: "320ms", animationFillMode: "both" }}
+      >
         <div className="flex items-center justify-between border-b border-sibs-border pb-3">
           <div>
             <div className="flex items-center gap-2">

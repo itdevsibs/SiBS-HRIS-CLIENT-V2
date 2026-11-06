@@ -77,7 +77,12 @@ export default function OnboardingJourneyRoster({ records, journeys, loading, on
     {row.record && row.journey && <button type="button" onClick={() => onViewJourney(row.journey)} className="sibs-text-xs font-bold text-sibs-navy underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-sibs-orange">Review journey<span className="sr-only"> for {row.name}</span></button>}
   </div>;
   const empty = <EmptyStatePanel icon={Users} title="No onboarding or journey records found" description="No candidates or trainees match the current search and filters." />;
-  return <section id="section-roster" aria-labelledby="onboarding-roster-title" className="scroll-mt-6 rounded-2xl border border-sibs-border bg-white font-jakarta shadow-sm">
+  return <section
+    id="section-roster"
+    aria-labelledby="onboarding-roster-title"
+    className="sibs-page-card-in scroll-mt-6 rounded-2xl border border-sibs-border bg-white font-jakarta shadow-sm"
+    style={{ animationDelay: "260ms", animationFillMode: "both" }}
+  >
     <header className="border-b border-sibs-border p-4 sm:p-5 2xl:p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>

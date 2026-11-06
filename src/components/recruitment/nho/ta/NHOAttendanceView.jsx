@@ -74,7 +74,10 @@ function NHOAttendanceView({ onOpenAttendanceModal, onOpenDetails }) {
       </MetricGrid>
 
       {/* Main Table Section */}
-      <section className="min-w-0 rounded-2xl border border-sibs-border bg-white p-4 sm:p-5 shadow-xs">
+      <section
+        className="sibs-page-card-in min-w-0 rounded-2xl border border-sibs-border bg-white p-4 sm:p-5 shadow-xs"
+        style={{ animationDelay: "220ms", animationFillMode: "both" }}
+      >
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="sibs-section-title font-extrabold text-sibs-navy">

@@ -273,7 +273,12 @@ export default function OnboardingPage() {
           <section id="section-actions" aria-label="Outcome and governance" className="scroll-mt-6">
               <OnboardingOutcomeOverview loading={loading} />
           </section>
-          {canViewBenchmarks && <section id="section-benchmarks" aria-label="30/60/90 probationary journey benchmarks" className="scroll-mt-6">
+          {canViewBenchmarks && <section
+              id="section-benchmarks"
+              aria-label="30/60/90 probationary journey benchmarks"
+              className="sibs-page-card-in scroll-mt-6"
+              style={{ animationDelay: "200ms", animationFillMode: "both" }}
+            >
               <EmployeeJourneyModule
                 summaryOnly
                 canUpdateStage={(journey) => buildOnboardingRoster(list, journeys).some((row) => row.journey?.id === journey.id && row.record)}
@@ -287,7 +292,7 @@ export default function OnboardingPage() {
               />
           </section>}
           <OnboardingJourneyRoster coachingActions={coachingActions} records={list} journeys={canViewBenchmarks ? journeys : []} loading={loading} onViewRecord={setSelectedRecord} onViewJourney={setSelectedJourney} />
-          <OnboardingProcessNote />
+          <OnboardingProcessNote delay={320} />
         </div>
       </main>
 

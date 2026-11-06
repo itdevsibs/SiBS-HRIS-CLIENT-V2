@@ -88,7 +88,10 @@ function NHOWFMDashboard({ subTab = "queue", onSubTabChange }) {
       </div>
 
       {/* Sequential Workflow Indicator Banner */}
-      <div className="p-3.5 bg-sibs-surface border border-sibs-border rounded-xl flex items-center justify-between gap-3 sibs-text-xs">
+      <div
+        className="sibs-page-card-in p-3.5 bg-sibs-surface border border-sibs-border rounded-xl flex items-center justify-between gap-3 sibs-text-xs"
+        style={{ animationDelay: "120ms", animationFillMode: "both" }}
+      >
         <div className="flex flex-wrap items-center gap-2">
           <span className="font-extrabold text-sibs-navy">Workflow Progression:</span>
           <span className="flex items-center gap-1.5 font-semibold text-sibs-muted">
@@ -113,7 +116,10 @@ function NHOWFMDashboard({ subTab = "queue", onSubTabChange }) {
       {/* Main Grid: Queue on Left, Form on Right */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left Column: Queue Table */}
-        <div className="lg:col-span-7 bg-white rounded-2xl border border-sibs-border shadow-xs overflow-hidden flex flex-col">
+        <div
+          className="sibs-page-card-in lg:col-span-7 bg-white rounded-2xl border border-sibs-border shadow-xs overflow-hidden flex flex-col"
+          style={{ animationDelay: "180ms", animationFillMode: "both" }}
+        >
           {/* Table Header & Controls */}
           <div className="p-4 border-b border-sibs-border space-y-3 bg-sibs-surface/50">
             <div className="flex items-center justify-between">
@@ -274,7 +280,10 @@ function NHOWFMDashboard({ subTab = "queue", onSubTabChange }) {
         </div>
 
         {/* Right Column: WFM Seat Assignment Form & Details */}
-        <div className="lg:col-span-5 bg-white rounded-2xl border border-sibs-border shadow-xs overflow-hidden flex flex-col">
+        <div
+          className="sibs-page-card-in lg:col-span-5 bg-white rounded-2xl border border-sibs-border shadow-xs overflow-hidden flex flex-col"
+          style={{ animationDelay: "240ms", animationFillMode: "both" }}
+        >
           <div className="p-4 bg-sibs-surface border-b border-sibs-border flex items-center justify-between">
             <div className="flex items-center gap-2">
               <MapPin className="w-4 h-4 text-sibs-orange" />

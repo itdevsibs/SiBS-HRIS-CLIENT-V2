@@ -121,7 +121,10 @@ function NHOHRDashboard({ subTab = "handoffs", onSubTabChange }) {
   return (
     <div className="space-y-6 font-jakarta">
       {/* Main Tabs Container */}
-      <div className="bg-white rounded-2xl border border-sibs-border shadow-xs overflow-hidden">
+      <div
+        className="sibs-page-card-in bg-white rounded-2xl border border-sibs-border shadow-xs overflow-hidden"
+        style={{ animationDelay: "180ms", animationFillMode: "both" }}
+      >
         <div className="flex items-center gap-2 border-b border-sibs-border px-4 overflow-x-auto text-xs bg-sibs-surface/50">
           <button
             type="button"
