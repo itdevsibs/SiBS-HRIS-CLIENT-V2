@@ -56,6 +56,38 @@ export async function getChatParticipants(query = "", limit = 0) {
   return response.data?.data || [];
 }
 
+export async function getChatHelpdeskSupportAccess({ signal } = {}) {
+  const response = await api.get("/chat/helpdesk/support-access", { signal });
+  const categories = response.data?.data?.categories;
+  return Array.isArray(categories) ? categories : [];
+}
+
+// Helpdesk workflow metadata extends the existing chat conversations.
+export async function getHelpdeskTicketSummaries(category, { signal } = {}) {
+  const response = await api.get("/chat/helpdesk/requests", { params: { category }, signal });
+  return Array.isArray(response.data?.data) ? response.data.data : [];
+}
+
+export async function getHelpdeskTicketDetails(conversationId, { signal } = {}) {
+  const response = await api.get(`/chat/helpdesk/requests/${encodeURIComponent(conversationId)}`, { signal });
+  return response.data?.data || null;
+}
+
+export async function getHelpdeskTicketEligibility(conversationId, { signal } = {}) {
+  const response = await api.get(`/chat/helpdesk/requests/${encodeURIComponent(conversationId)}/eligibility`, { signal, timeout: 20000 });
+  return response.data?.data || null;
+}
+
+export async function acceptHelpdeskTicket(conversationId) {
+  const response = await api.post(`/chat/helpdesk/requests/${encodeURIComponent(conversationId)}/accept`);
+  return response.data?.data || null;
+}
+
+export async function updateHelpdeskTicketStatus(conversationId, status) {
+  const response = await api.patch(`/chat/helpdesk/requests/${encodeURIComponent(conversationId)}/status`, { status });
+  return response.data?.data || null;
+}
+
 export async function getChatConversations() {
   const response = await api.get("/chat/conversations");
   return response.data?.data || [];
@@ -69,6 +101,7 @@ export async function createPrivateChat(sibsId) {
   return response.data?.data || null;
 }
 
+/** Open or create a Helpdesk thread for the selected support category. */
 export async function createHelpdeskChat(category) {
   const response = await api.post("/chat/helpdesk/conversations", { category });
   return response.data?.data || null;
@@ -83,11 +116,11 @@ export async function createGroupChat({ name, memberSibsIds }) {
   return response.data?.data || null;
 }
 
-/** Attendance-based daily support coverage; chat online status is independent. */
+/** Attendance-based support coverage; independent from Chat online status. */
 export async function getChatHelpdeskDuty(conversationId, signal) {
   const response = await api.get(
     `/chat/conversations/${encodeURIComponent(conversationId)}/helpdesk-duty`,
-    {signal, timeout: 60_000},
+    { signal, timeout: 60_000 },
   );
   return response.data?.data || null;
 }

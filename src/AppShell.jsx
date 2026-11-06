@@ -107,6 +107,17 @@ export default function AppShell({ children }) {
     };
   }, [chatOpen, hideSidebar, isFinalInterviewForm]);
 
+  // Pages can select a conversation through ChatContext and then request
+  // the existing chat surface without creating another message renderer.
+  useEffect(() => {
+    const openSelectedChat = () => {
+      setAiOpen(false);
+      setChatOpen(true);
+    };
+    window.addEventListener("sibs:chat:open-selected", openSelectedChat);
+    return () => window.removeEventListener("sibs:chat:open-selected", openSelectedChat);
+  }, []);
+
   const handleOpenAi = useCallback(() => {
     setChatOpen(false);
     setAiOpen(true);

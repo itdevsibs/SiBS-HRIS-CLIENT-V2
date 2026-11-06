@@ -21,6 +21,8 @@ import {
   FileClock,
   FileCog,
   FileText,
+  Headset,
+  HeartHandshake,
   Gift,
   GraduationCap,
   ShieldCheck,
@@ -40,6 +42,7 @@ import {
 } from "lucide-react";
 
 import { useUser } from "../../services/context/UserContext";
+import { useChat } from "../../services/context/ChatContext";
 import { useHeader } from "../../services/context/HeaderContext";
 import { useSidebarNotifications } from "../../services/context/SidebarNotificationContext";
 import { getApprovalRequestsByModule } from "../../lib/axios/getApprovalRequest";
@@ -52,6 +55,7 @@ import { getAvailablePositions } from "../../lib/axios/getAvailablePosition";
 import { getApplicantLeads } from "../../lib/axios/getApplicantLeads";
 import { hasApplicantLeadsPermission } from "../../lib/utils/applicantLeads/applicantLeadAccess";
 import { getActiveCandidatePipelineCount } from "../../lib/axios/getCandidatePipeline";
+import { getChatHelpdeskSupportAccess } from "../../lib/axios/sibsChat";
 import { socket } from "../../lib/axios/socket";
 import { useTalentPool } from "../../services/context/TalentPoolContext";
 import {
@@ -70,6 +74,7 @@ import {
 import {
   DASHBOARD_ACCESS,
   getDefaultDashboardPath,
+  isEmployeeAllowedPath,
 } from "../../config/accessControl";
 
 const APPROVAL_MODULES = [
@@ -92,6 +97,68 @@ const sidebarBadgeToneClass = {
   urgent: "bg-red-500 text-white",
   warning: "bg-amber-500 text-white",
 };
+
+// Reuse the synchronized SiBS Chat case statuses rather than creating extra
+// Helpdesk polling requests. A sidebar badge means ACTIVE CASES (not unread
+// messages): Open, In Progress, and Pending are counted; Closed/Resolved and
+// empty composer drafts are excluded. Keep this in a child component so chat
+// refreshes do not re-render the entire HRIS sidebar.
+const ACTIVE_HELPDESK_CASE_STATUSES = new Set(["OPEN", "IN_PROGRESS", "PENDING"]);
+
+function HelpdeskOpenCaseBadge({ category, isActive, variant = "expanded" }) {
+  const chat = useChat();
+  const conversations = chat?.conversations;
+  const activeCount = useMemo(() => {
+    if (!Array.isArray(conversations)) return 0;
+    const counted = new Set();
+    return conversations.reduce((total, conversation) => {
+      const isHelpdesk =
+        conversation?.isHelpdesk ||
+        String(conversation?.conversationType || "").toUpperCase() === "HELPDESK";
+      if (!isHelpdesk || String(conversation?.helpdeskCategory || "").toUpperCase() !== category) {
+        return total;
+      }
+      // Only the first message creates a case. Ignore draft conversations and
+      // closed tickets even if they contain unread messages.
+      const caseId = String(conversation?.caseCode || "").trim();
+      const status = String(conversation?.caseStatus || "").trim().toUpperCase();
+      if (!caseId || !ACTIVE_HELPDESK_CASE_STATUSES.has(status)) return total;
+      const uniqueCase = String(conversation?.caseId || caseId);
+      if (counted.has(uniqueCase)) return total;
+      counted.add(uniqueCase);
+      return total + 1;
+    }, 0);
+  }, [conversations, category]);
+
+  if (activeCount <= 0) return null;
+
+  const label = `${activeCount} ${category === "IT" ? "IT Support" : "TA/HR Concerns"} case${activeCount === 1 ? "" : "s"} not yet closed`;
+  const text = activeCount > 99 ? "99+" : String(activeCount);
+  if (variant === "collapsed") {
+    return (
+      <span
+        aria-label={label}
+        title={label}
+        className={`absolute -right-2 -top-2 flex h-4 min-w-4 items-center justify-center rounded-full px-1 font-heading text-[8px] font-bold leading-none ring-2 ring-sibs-primary-1 shadow-sm ${
+          isActive ? "bg-white text-sibs-primary-2" : "bg-sibs-orange text-white"
+        }`}
+      >
+        {text}
+      </span>
+    );
+  }
+  return (
+    <span
+      aria-label={label}
+      title={label}
+      className={`inline-flex h-5 shrink-0 items-center justify-center rounded px-1.5 sibs-text-micro font-bold leading-none transition-all duration-300 ${
+        isActive ? "bg-white text-sibs-primary-2" : "bg-sibs-orange text-white"
+      }`}
+    >
+      {text}
+    </span>
+  );
+}
 
 const APPROVAL_MODULE_ACCESS = {
   Attrition: [1, 2, 3, 4, 5, 6, 7, 10],
@@ -476,6 +543,28 @@ function SibsLogo({ collapsed = false, isMobile = false }) {
 
 export default function Sidebar() {
   const { user, loading } = useUser();
+  const [helpdeskSupportCategories, setHelpdeskSupportCategories] = useState([]);
+  const helpdeskUserSibsId = getCurrentUserSibsId(user);
+  const helpdeskEmployeeView = normalizeRole(user?.role) === "employee";
+
+  // Hide support-only links until the authenticated server roster confirms
+  // membership. The same authority is enforced on the pages and chat APIs.
+  useEffect(() => {
+    if (!helpdeskUserSibsId) {
+      setHelpdeskSupportCategories([]);
+      return undefined;
+    }
+    const controller = new AbortController();
+    setHelpdeskSupportCategories([]);
+    getChatHelpdeskSupportAccess({ signal: controller.signal })
+      .then((categories) => {
+        if (!controller.signal.aborted) setHelpdeskSupportCategories(categories);
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) setHelpdeskSupportCategories([]);
+      });
+    return () => controller.abort();
+  }, [helpdeskUserSibsId, helpdeskEmployeeView]);
   const sidebarNotifications = useSidebarNotifications();
   const getNotification = sidebarNotifications?.getNotification;
   const setSidebarNotification = sidebarNotifications?.setSidebarNotification;
@@ -919,22 +1008,11 @@ export default function Sidebar() {
     if (!mounted || loading || !user) return;
 
     if (normalizeRole(user.role) === "employee") {
-      const allowed = [
-        "/dashboard/employee",
-        "/attendance",
-        "/leaves",
-        "/profile",
-        "/profile/user",
-        "/schedule",
-        "/resignation",
-        "/trainee-learning",
-      ];
-
-      const ok = allowed.some(
-        (path) => pathname === path || pathname.startsWith(`${path}/`),
-      );
-
-      if (!ok) {
+      // Use the same central Employee portal allowlist as ProtectedRoute.
+      // A separate list here previously redirected authorized IT and TA/HR
+      // employees from /helpdesk/* back to their dashboard on navigation.
+      // Department-specific Helpdesk access remains verified by the backend.
+      if (!isEmployeeAllowedPath(pathname)) {
         navigate("/dashboard/employee", { replace: true });
       }
 
@@ -1074,6 +1152,20 @@ export default function Sidebar() {
       icon: LayoutDashboard,
       path: "/dashboard/employee",
     },
+    // Employees assigned to a support department can work their Helpdesk
+    // requests even while using the employee portal (not admin mode).
+    {
+      name: "IT Support",
+      icon: Headset,
+      path: "/helpdesk/it-support",
+      helpdeskCategory: "IT",
+    },
+    {
+      name: "TA/HR Concerns",
+      icon: HeartHandshake,
+      path: "/helpdesk/ta-hr-concerns",
+      helpdeskCategory: "TA_HR",
+    },
     {
       name: "My Profile",
       icon: CircleUser,
@@ -1162,6 +1254,18 @@ export default function Sidebar() {
       path: "/dashboard/qds",
       allowedUsers: DASHBOARD_ACCESS.QDS || [1, 2, 3, 5, 6, 7, 10],
       excludeRoles: ["qds", "quality_development_specialist"],
+    },
+    {
+      name: "IT Support",
+      icon: Headset,
+      path: "/helpdesk/it-support",
+      helpdeskCategory: "IT",
+    },
+    {
+      name: "TA/HR Concerns",
+      icon: HeartHandshake,
+      path: "/helpdesk/ta-hr-concerns",
+      helpdeskCategory: "TA_HR",
     },
     {
       name: "Employee Directory",
@@ -1477,6 +1581,9 @@ export default function Sidebar() {
 
   const getVisibleItems = (items) =>
     items.filter((item) => {
+      if (item.helpdeskCategory && !helpdeskSupportCategories.includes(item.helpdeskCategory)) {
+        return false;
+      }
       if (item.excludeRawAdminAccess?.includes(rawAdminAccess)) return false;
 
       const userRole = normalizeRole(user?.role);
@@ -1599,6 +1706,15 @@ export default function Sidebar() {
                 ].join(" ")}
               />
 
+              {/* Active Helpdesk case counts for the collapsed sidebar. */}
+              {item.helpdeskCategory && isCollapsedMode && (
+                <HelpdeskOpenCaseBadge
+                  category={item.helpdeskCategory}
+                  isActive={isActive}
+                  variant="collapsed"
+                />
+              )}
+
               {/* Folded Badge */}
               {badgeText && isCollapsedMode && (
                 <span
@@ -1629,6 +1745,15 @@ export default function Sidebar() {
               </div>
             )}
           </div>
+
+          {/* Open-case count uses synchronized SiBS Chat case status.
+              Only the authorized IT/TA-HR link is rendered by getVisibleItems. */}
+          {item.helpdeskCategory && !isCollapsedMode && (
+            <HelpdeskOpenCaseBadge
+              category={item.helpdeskCategory}
+              isActive={isActive}
+            />
+          )}
 
           {/* Expanded Badge */}
           {(badgeText || alertBadgeText) && !isCollapsedMode && (

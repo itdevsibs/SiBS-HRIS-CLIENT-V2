@@ -52,6 +52,7 @@ const ProfileUserPage = lazyWithRetry(() => import("./pages/profile/UserProfileP
 // Core HR & Operations
 const AttendancePage = lazyWithRetry(() => import("./pages/attendance/AttendancePage"));
 const LeavesPage = lazyWithRetry(() => import("./pages/leaves/LeavesPage"));
+const HelpdeskSupportPage = lazyWithRetry(() => import("./pages/helpdesk/HelpdeskSupportPage"));
 const ResignationManagementPage = lazyWithRetry(() => import("./pages/resignation-management/ResignationManagementPage"));
 const ResigneePage = lazyWithRetry(() => import("./pages/resignee/ResigneePage"));
 const RequisitionsPage = lazyWithRetry(() => import("./pages/requisitions/RequisitionPage"));
@@ -325,6 +326,17 @@ function MainApplicationRoutes() {
             <SOMDashboardPage />
           </PrivateRoute>
         }
+      />
+
+      {/* Department-scoped Helpdesk support queues. The API independently
+          enforces access for both direct URL access and navigation. */}
+      <Route
+        path="/helpdesk/it-support"
+        element={<PrivateRoute><HelpdeskSupportPage category="IT" /></PrivateRoute>}
+      />
+      <Route
+        path="/helpdesk/ta-hr-concerns"
+        element={<PrivateRoute><HelpdeskSupportPage category="TA_HR" /></PrivateRoute>}
       />
 
       {/* EMPLOYEE */}
