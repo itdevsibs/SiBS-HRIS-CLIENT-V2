@@ -151,7 +151,10 @@ function PublicApplicantPortalInner({ onBackToWorkspace }) {
       </header>
 
       <main className="mx-auto w-full max-w-[1640px] flex-1 px-4 pb-12 pt-6 sm:px-6 lg:px-8">
-        <div className="mb-5 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+        <div
+          className="sibs-page-header-in sibs-page-card-in mb-5 flex flex-col justify-between gap-4 sm:flex-row sm:items-end"
+          style={{ animationDelay: "0ms", animationFillMode: "both" }}
+        >
           <div>
             <div className="flex items-center gap-2 mb-1.5">
               <span className="inline-flex items-center gap-1.5 rounded-full border border-blue-100 bg-[#E9F0FC] px-2.5 py-1 text-[9px] font-extrabold uppercase tracking-wide text-sibs-navy">
@@ -171,7 +174,10 @@ function PublicApplicantPortalInner({ onBackToWorkspace }) {
           </div>
         </div>
 
-        <div className="mb-5 rounded-2xl border border-sibs-border bg-white p-5 shadow-xs relative overflow-hidden">
+        <div
+          className="sibs-page-card-in mb-5 rounded-2xl border border-sibs-border bg-white p-5 shadow-xs relative overflow-hidden"
+          style={{ animationDelay: "80ms", animationFillMode: "both" }}
+        >
           <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-sibs-navy via-sibs-tertiary-2 to-sibs-orange" />
           <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
             <div className="min-w-0">
@@ -188,7 +194,10 @@ function PublicApplicantPortalInner({ onBackToWorkspace }) {
         {
     /* When viewing orientation presentation, show whole-screen with no sidebar distraction */
   }
-        {activeSection === "orientation" ? <div className="w-full space-y-4">
+        {activeSection === "orientation" ? <div
+            className="sibs-page-card-in w-full space-y-4"
+            style={{ animationDelay: "160ms", animationFillMode: "both" }}
+          >
             <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-sibs-border bg-white px-5 py-3.5 shadow-xs">
               <button
     type="button"
@@ -224,7 +233,12 @@ function PublicApplicantPortalInner({ onBackToWorkspace }) {
                 {mobileChecklistOpen ? <X size={17} /> : <ChevronDown size={17} />}
               </button>
             </div>
-            <aside id="applicant-checklist" aria-label="Onboarding checklist" className={`${mobileChecklistOpen ? "block" : "hidden"} rounded-2xl border border-sibs-border bg-white p-3 shadow-[0_3px_14px_rgba(4,44,81,0.025)] lg:sticky lg:top-24 lg:block`}>
+            <aside
+              id="applicant-checklist"
+              aria-label="Onboarding checklist"
+              className={`sibs-page-card-in ${mobileChecklistOpen ? "block" : "hidden"} rounded-2xl border border-sibs-border bg-white p-3 shadow-[0_3px_14px_rgba(4,44,81,0.025)] lg:sticky lg:top-24 lg:block`}
+              style={{ animationDelay: "160ms", animationFillMode: "both" }}
+            >
               <button
     type="button"
     onClick={() => selectSection("overview")}
@@ -246,7 +260,11 @@ function PublicApplicantPortalInner({ onBackToWorkspace }) {
               </div>
             </aside>
 
-            <section className="min-w-0 space-y-4" aria-label="Selected NHO task">
+            <section
+              className="sibs-page-card-in min-w-0 space-y-4"
+              aria-label="Selected NHO task"
+              style={{ animationDelay: "240ms", animationFillMode: "both" }}
+            >
               {activeSection !== "overview" && activeSection !== "profile" && activeSection !== "login-sim" && <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-sibs-border bg-white px-5 py-4">
                   <div>
                     <p className="text-[10px] font-bold uppercase tracking-wide text-[#7A8B9C]">NHO task</p>

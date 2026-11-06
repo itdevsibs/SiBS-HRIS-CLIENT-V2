@@ -208,44 +208,69 @@ export default function QDSDashboardPage() {
 
               {/* Tier 3: Strategic Analytics Gateway (Dual-Column) */}
               <div className="grid grid-cols-1 gap-4 sm:gap-5 xl:grid-cols-2">
-                <QDSTrainerCalibration
-                  trainerSummaries={trainerSummaries}
-                  loading={loading}
-                  selectedTrainer={selectedTrainer}
-                  onTrainerSelect={setSelectedTrainer}
-                />
+                <div
+                  className="sibs-page-card-in min-w-0"
+                  style={{ animationDelay: "200ms", animationFillMode: "both" }}
+                >
+                  <QDSTrainerCalibration
+                    trainerSummaries={trainerSummaries}
+                    loading={loading}
+                    selectedTrainer={selectedTrainer}
+                    onTrainerSelect={setSelectedTrainer}
+                  />
+                </div>
 
-                <QDSTrainingFunnel
-                  funnel={funnel}
-                  loading={loading}
-                />
+                <div
+                  className="sibs-page-card-in min-w-0"
+                  style={{ animationDelay: "240ms", animationFillMode: "both" }}
+                >
+                  <QDSTrainingFunnel
+                    funnel={funnel}
+                    loading={loading}
+                  />
+                </div>
               </div>
 
               {/* Tier 4: Tactical Ground Level Audit Matrix Table */}
-              <QDSTraineeAuditTable
-                trainees={trainees}
-                loading={loading}
-                trainerSummaries={trainerSummaries}
-                initialTrainer={selectedTrainer}
-              />
+              <div
+                className="sibs-page-card-in min-w-0"
+                style={{ animationDelay: "280ms", animationFillMode: "both" }}
+              >
+                <QDSTraineeAuditTable
+                  trainees={trainees}
+                  loading={loading}
+                  trainerSummaries={trainerSummaries}
+                  initialTrainer={selectedTrainer}
+                />
+              </div>
 
               {/* Tier 5: Quality & Coaching Follow-Up Queue */}
-              <QDSFollowUpQueue
-                requests={qdsRequests}
-                journeys={activeTraineesList}
-                canManage={canManageQdsRequests}
-                onCreateRequest={() => setShowNewRequestModal(true)}
-                onResolveRequest={handleResolveRequest}
-              />
+              <div
+                className="sibs-page-card-in min-w-0"
+                style={{ animationDelay: "340ms", animationFillMode: "both" }}
+              >
+                <QDSFollowUpQueue
+                  requests={qdsRequests}
+                  journeys={activeTraineesList}
+                  canManage={canManageQdsRequests}
+                  onCreateRequest={() => setShowNewRequestModal(true)}
+                  onResolveRequest={handleResolveRequest}
+                />
+              </div>
 
               {/* Tier 6: ESEP · Development Evidence (Trainee Coaching Results) */}
-              <QDSEsepEvidence
-                trainees={activeTraineesList}
-                sessions={esepSessions}
-                evaluations={esepEvaluations}
-                simulatedCurrentDate={simulatedCurrentDate}
-                onViewCoachingDetails={(trainee) => setCoachingEmployee(trainee)}
-              />
+              <div
+                className="sibs-page-card-in min-w-0"
+                style={{ animationDelay: "400ms", animationFillMode: "both" }}
+              >
+                <QDSEsepEvidence
+                  trainees={activeTraineesList}
+                  sessions={esepSessions}
+                  evaluations={esepEvaluations}
+                  simulatedCurrentDate={simulatedCurrentDate}
+                  onViewCoachingDetails={(trainee) => setCoachingEmployee(trainee)}
+                />
+              </div>
             </div>
           )}
 

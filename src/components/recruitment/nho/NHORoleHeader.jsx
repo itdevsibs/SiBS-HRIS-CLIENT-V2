@@ -15,6 +15,7 @@ function NHORoleHeader({
   onSubTabChange,
   sectionHeader,
   onOpenStandalonePortal,
+  onSwitchModule,
 }) {
   const {
     role,
@@ -65,10 +66,10 @@ function NHORoleHeader({
         actions={
           <div className="flex max-w-full flex-wrap items-center gap-2">
             {/* Standalone Employee View */}
-            {onOpenStandalonePortal && (
+            {(onOpenStandalonePortal || onSwitchModule) && (
               <button
                 type="button"
-                onClick={onOpenStandalonePortal}
+                onClick={onOpenStandalonePortal || (() => onSwitchModule?.("Employee Public Portal"))}
                 className="sibs-btn-primary h-8.5 px-3 text-xs font-bold gap-1.5 cursor-pointer shadow-xs"
                 title="Open clean standalone public portal without staff sidebar and header"
               >
@@ -81,7 +82,10 @@ function NHORoleHeader({
       />
 
       {/* Workflow Navigation Card (Role Switcher & Subtabs) */}
-      <section className="overflow-visible rounded-xl border border-sibs-border bg-white shadow-xs mt-3.5 sm:mt-4 2xl:mt-5">
+      <section
+        className="sibs-page-card-in overflow-visible rounded-xl border border-sibs-border bg-white shadow-xs mt-3.5 sm:mt-4 2xl:mt-5"
+        style={{ animationDelay: "60ms", animationFillMode: "both" }}
+      >
         {/* Workflow Role Switcher Bar */}
         <div className="flex flex-wrap items-center justify-between gap-3 px-4 sm:px-5 py-2.5 bg-sibs-surface">
           <div className="flex items-center gap-1.5 flex-wrap">

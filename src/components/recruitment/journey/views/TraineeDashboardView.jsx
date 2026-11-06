@@ -241,7 +241,10 @@ function TraineeDashboardView({ onSwitchModule }) {
       {
     /* SiBS HRIS Standard Header: White card with top accent gradient bar */
   }
-      <section className="relative overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-sm">
+      <section
+        className="sibs-page-card-in relative overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-sm"
+        style={{ animationDelay: "60ms", animationFillMode: "both" }}
+      >
         <span className="sibs-top-accent" aria-hidden="true" />
         <div className="flex flex-wrap items-center justify-between gap-4 p-4 sm:p-5">
           <div className="space-y-1">
@@ -327,7 +330,11 @@ function TraineeDashboardView({ onSwitchModule }) {
       {
     /* Employee's primary action is immediately visible, even if the selected day has no work. */
   }
-      <section aria-label="My training on the selected day" className="rounded-xl border border-sibs-border bg-white shadow-xs overflow-hidden">
+      <section
+        aria-label="My training on the selected day"
+        className="sibs-page-card-in rounded-xl border border-sibs-border bg-white shadow-xs overflow-hidden"
+        style={{ animationDelay: "140ms", animationFillMode: "both" }}
+      >
         <div className="p-4 sm:p-5 space-y-3">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
@@ -360,7 +367,11 @@ function TraineeDashboardView({ onSwitchModule }) {
       {
     /* Published FST/PST scores stay above the training calendar. Missing scores are not zero. */
   }
-      <section className="rounded-xl border border-sibs-border bg-white p-4 sm:p-5 shadow-xs" aria-label="Published FST and PST score summary">
+      <section
+        className="sibs-page-card-in rounded-xl border border-sibs-border bg-white p-4 sm:p-5 shadow-xs"
+        aria-label="Published FST and PST score summary"
+        style={{ animationDelay: "200ms", animationFillMode: "both" }}
+      >
         <div className="flex flex-wrap items-center justify-between gap-2 mb-3 pb-3 border-b border-sibs-border">
           <div>
             <h2 className="sibs-section-title">My Training Scores</h2>
@@ -383,7 +394,11 @@ function TraineeDashboardView({ onSwitchModule }) {
       {
     /* Employee-friendly week by default; full monthly calendar is preserved. */
   }
-      <section className="bg-white rounded-xl border border-sibs-border shadow-xs p-4 sm:p-5 space-y-4" aria-label="Training calendar with week and month layouts">
+      <section
+        className="sibs-page-card-in bg-white rounded-xl border border-sibs-border shadow-xs p-4 sm:p-5 space-y-4"
+        aria-label="Training calendar with week and month layouts"
+        style={{ animationDelay: "260ms", animationFillMode: "both" }}
+      >
         <div className="flex flex-wrap justify-between items-center gap-3 border-b border-slate-100 pb-3">
           <div><h2 className="sibs-section-title">My Training Calendar</h2><p className="text-xs text-slate-500 mt-1">Choose a date to see scheduled work and recorded attendance. Switch to Month for the full calendar.</p></div>
           <div className="flex flex-wrap items-center gap-2">
@@ -437,7 +452,11 @@ function TraineeDashboardView({ onSwitchModule }) {
       {
     /* Trainer assignment can differ by task; staff owner and trainer are separate roles. */
   }
-      <section className="rounded-xl border border-sibs-border bg-white p-4 sm:p-5 flex flex-wrap items-center justify-between gap-4 shadow-xs" aria-label="Selected-day trainers and phase owner">
+      <section
+        className="sibs-page-card-in rounded-xl border border-sibs-border bg-white p-4 sm:p-5 flex flex-wrap items-center justify-between gap-4 shadow-xs"
+        aria-label="Selected-day trainers and phase owner"
+        style={{ animationDelay: "320ms", animationFillMode: "both" }}
+      >
         <div className="flex gap-3 items-center min-w-0">
           <div className="h-10 w-10 rounded-xl bg-blue-50 border border-blue-100 text-sibs-navy flex items-center justify-center shrink-0"><User className="w-5 h-5 text-sibs-navy" /></div>
           <div className="min-w-0"><p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500">Training contact · {dateLabel(trainingDate)}</p>
@@ -539,7 +558,11 @@ function TraineeDashboardView({ onSwitchModule }) {
         </div>
       </div>
 
-      <section className="space-y-2" aria-label="Training progress and recorded attendance">
+      <section
+        className="sibs-page-card-in space-y-2"
+        aria-label="Training progress and recorded attendance"
+        style={{ animationDelay: "380ms", animationFillMode: "both" }}
+      >
         <div><h2 className="sibs-section-title">My Progress & Attendance</h2><p className="text-xs text-slate-600 mt-1">Submission totals are not the same as trainer verification. Attendance figures use recorded days only.</p></div>
       {
     /* 3 Compact SiBS HRIS Metric Cards */
@@ -639,7 +662,11 @@ function TraineeDashboardView({ onSwitchModule }) {
       {
     /* Complete scorecards remain accessible without crowding the daily tasks. */
   }
-      <section id="trainee-assessment-details" className="bg-white rounded-xl border border-sibs-border shadow-xs p-4 sm:p-5 space-y-4 scroll-mt-24">
+      <section
+        id="trainee-assessment-details"
+        className="sibs-page-card-in bg-white rounded-xl border border-sibs-border shadow-xs p-4 sm:p-5 space-y-4 scroll-mt-24"
+        style={{ animationDelay: "440ms", animationFillMode: "both" }}
+      >
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-sibs-border pb-3">
           <div>
             <h2 className="sibs-section-title">Detailed FST & PST Assessment Results</h2>

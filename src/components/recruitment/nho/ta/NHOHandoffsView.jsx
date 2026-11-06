@@ -74,7 +74,10 @@ function NHOHandoffsView({ onOpenApplicantDetails }) {
       </MetricGrid>
 
       {/* Main Handoff Section */}
-      <section className="min-w-0 rounded-2xl border border-sibs-border bg-white p-4 sm:p-5 shadow-xs">
+      <section
+        className="sibs-page-card-in min-w-0 rounded-2xl border border-sibs-border bg-white p-4 sm:p-5 shadow-xs"
+        style={{ animationDelay: "220ms", animationFillMode: "both" }}
+      >
         <div className="mb-4">
           <h2 className="sibs-section-title font-extrabold text-sibs-navy">Handoff Records</h2>
           <p className="sibs-section-subtitle text-sibs-muted mt-0.5">

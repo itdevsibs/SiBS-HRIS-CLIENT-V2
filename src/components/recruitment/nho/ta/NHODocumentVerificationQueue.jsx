@@ -117,7 +117,10 @@ function NHODocumentVerificationQueue() {
       </div>
 
       {/* Filters and records */}
-      <section className="min-w-0 rounded-2xl border border-sibs-border bg-white p-4 shadow-xs sm:p-5">
+      <section
+        className="sibs-page-card-in min-w-0 rounded-2xl border border-sibs-border bg-white p-4 shadow-xs sm:p-5"
+        style={{ animationDelay: "220ms", animationFillMode: "both" }}
+      >
         <div className="mb-4">
           <h2 className="text-base font-extrabold tracking-tight text-sibs-navy">Document Verification Records</h2>
           <p className="mt-0.5 sibs-text-micro font-medium text-sibs-muted">
