@@ -154,7 +154,10 @@ function NHOTADashboard({
       </MetricGrid>
 
       {/* Main NHO Candidate Records Section */}
-      <section className="min-w-0 space-y-4 rounded-2xl border border-sibs-border bg-white p-4 sm:p-5 shadow-xs">
+      <section
+        className="sibs-page-card-in min-w-0 space-y-4 rounded-2xl border border-sibs-border bg-white p-4 sm:p-5 shadow-xs"
+        style={{ animationDelay: "360ms", animationFillMode: "both" }}
+      >
         <div>
           <h2 className="sibs-card-title">
             NHO Candidate Records

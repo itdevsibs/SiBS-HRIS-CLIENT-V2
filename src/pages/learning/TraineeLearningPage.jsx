@@ -20,7 +20,10 @@ export default function TraineeLearningPage() {
             description="Review assigned training modules, daily/weekly/monthly learning calendars, assessments, and probationary milestones."
           />
 
-          <div className="sibs-page-card-in">
+          <div
+            className="sibs-page-card-in"
+            style={{ animationDelay: "100ms", animationFillMode: "both" }}
+          >
             <EmployeeJourneyModule
               defaultView="trainee-dashboard"
               onSwitchModule={handleSwitchModule}

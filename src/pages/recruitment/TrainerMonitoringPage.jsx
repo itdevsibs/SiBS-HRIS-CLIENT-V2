@@ -168,10 +168,15 @@ export default function TrainerMonitoringPage() {
           </MetricGrid>
 
           {/* 3. CORE TRAINER MONITORING MODULE */}
-          <EmployeeJourneyModule
-            defaultView="trainer-monitoring"
-            onSwitchModule={handleSwitchModule}
-          />
+          <div
+            className="sibs-page-card-in"
+            style={{ animationDelay: "200ms", animationFillMode: "both" }}
+          >
+            <EmployeeJourneyModule
+              defaultView="trainer-monitoring"
+              onSwitchModule={handleSwitchModule}
+            />
+          </div>
         </div>
       </main>
 

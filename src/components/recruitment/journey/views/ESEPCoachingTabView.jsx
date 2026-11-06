@@ -290,7 +290,10 @@ export default function ESEPCoachingTabView({
       {/* ======================================================== */}
       {/* SECTION 1: COACHING RESULTS OVERVIEW & OUTCOMES         */}
       {/* ======================================================== */}
-      <section className="sibs-card min-w-0 overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-xs font-jakarta">
+      <section
+        className="sibs-page-card-in sibs-card min-w-0 overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-xs font-jakarta"
+        style={{ animationDelay: "200ms", animationFillMode: "both" }}
+      >
         {/* Card Header & QDS Dashboard Dedicated Filter Bar */}
         <div className="border-b border-sibs-border p-4 sm:p-5 2xl:p-6 font-jakarta">
           <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
@@ -530,7 +533,10 @@ export default function ESEPCoachingTabView({
       {/* ======================================================== */}
       {/* SECTION 2: COACH ACCOUNTABILITY & WEEKLY COVERAGE        */}
       {/* ======================================================== */}
-      <section className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <section
+        className="sibs-page-card-in grid grid-cols-1 lg:grid-cols-2 gap-4"
+        style={{ animationDelay: "260ms", animationFillMode: "both" }}
+      >
         {/* Left Table: Daily Coaching Accountability */}
         <div className="sibs-card p-5 space-y-3 shadow-xs bg-white">
           <div className="flex items-center justify-between border-b border-sibs-border pb-3">
@@ -666,7 +672,10 @@ export default function ESEPCoachingTabView({
       {/* ======================================================== */}
       {/* SECTION 3: GROW COACHING HISTORY & EVIDENCE LEDGER       */}
       {/* ======================================================== */}
-      <section className="sibs-card min-w-0 overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-xs font-jakarta">
+      <section
+        className="sibs-page-card-in sibs-card min-w-0 overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-xs font-jakarta"
+        style={{ animationDelay: "320ms", animationFillMode: "both" }}
+      >
         {/* Card Header & QDS Dashboard Dedicated Filter Bar */}
         <div className="border-b border-sibs-border p-4 sm:p-5 2xl:p-6 font-jakarta">
           <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">

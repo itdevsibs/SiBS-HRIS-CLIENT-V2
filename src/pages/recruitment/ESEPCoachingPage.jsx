@@ -192,10 +192,15 @@ export default function ESEPCoachingPage() {
           </MetricGrid>
 
           {/* 3. CORE ESEP COACHING DASHBOARD MODULE */}
-          <EmployeeJourneyModule
-            defaultView="esep-coaching"
-            onSwitchModule={handleSwitchModule}
-          />
+          <div
+            className="sibs-page-card-in"
+            style={{ animationDelay: "200ms", animationFillMode: "both" }}
+          >
+            <EmployeeJourneyModule
+              defaultView="esep-coaching"
+              onSwitchModule={handleSwitchModule}
+            />
+          </div>
         </div>
       </main>
 
