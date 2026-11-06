@@ -2248,6 +2248,116 @@
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.65);
 }
 
+/* ========================================================
+   CHAT WALLPAPER READABILITY
+   The image luminance already determines data-chat-theme-dark. The text
+   surface keeps a safe contrast even when a GIF changes brightness mid-frame.
+   Applied only inside the themed message canvas, not the chat header/sidebar.
+   ======================================================== */
+[data-chat-custom-theme="true"][data-chat-theme-dark="false"] {
+  --sibs-wallpaper-label: #0b2c4d;
+  --sibs-wallpaper-label-muted: #35445a;
+  --sibs-wallpaper-label-surface: rgba(255, 255, 255, 0.94);
+  --sibs-wallpaper-label-border: rgba(15, 44, 78, 0.13);
+  --sibs-wallpaper-label-shadow: 0 2px 14px rgba(10, 30, 50, 0.12);
+}
+
+[data-chat-custom-theme="true"][data-chat-theme-dark="true"] {
+  --sibs-wallpaper-label: #ffffff;
+  --sibs-wallpaper-label-muted: #e8edf5;
+  --sibs-wallpaper-label-surface: rgba(8, 24, 45, 0.92);
+  --sibs-wallpaper-label-border: rgba(255, 255, 255, 0.22);
+  --sibs-wallpaper-label-shadow: 0 2px 14px rgba(0, 0, 0, 0.35);
+}
+
+/* Central empty-state title and subtitle live together on one subtle plate.
+   A near-opaque surface protects both colors against moving GIF backgrounds. */
+[data-chat-custom-theme="true"] .chat-theme-empty-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: calc(100% - 1rem);
+  padding: 1rem 1.4rem;
+  border: 1px solid var(--sibs-wallpaper-label-border);
+  border-radius: 1rem;
+  background: var(--sibs-wallpaper-label-surface);
+  box-shadow: var(--sibs-wallpaper-label-shadow);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+
+[data-chat-custom-theme="true"][data-chat-theme-dark] .chat-theme-empty-title {
+  color: var(--sibs-wallpaper-label);
+  text-shadow: none;
+  overflow-wrap: anywhere;
+}
+
+[data-chat-custom-theme="true"][data-chat-theme-dark] .chat-theme-empty-subtitle {
+  color: var(--sibs-wallpaper-label-muted);
+  text-shadow: none;
+}
+
+/* Keep timestamps as pills, but NEVER style sender names as message bubbles.
+   Sender labels are plain text above the actual message bubble. */
+[data-chat-custom-theme="true"][data-chat-theme-dark] .chat-theme-date-pill {
+  background: var(--sibs-wallpaper-label-surface);
+  color: var(--sibs-wallpaper-label);
+  border: 1px solid var(--sibs-wallpaper-label-border);
+  box-shadow: var(--sibs-wallpaper-label-shadow);
+  text-shadow: none;
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+
+[data-chat-custom-theme="true"] .chat-theme-date-pill {
+  font-weight: 700;
+}
+
+/* Keep sender names visually distinct from actual chat bubbles, including
+   over moving GIFs. A text halo provides contrast without an opaque plate. */
+[data-chat-custom-theme="true"] .chat-theme-sender-name {
+  width: auto;
+  max-width: 100%;
+  margin: 0 0 0.25rem 0.35rem;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  font-size: 0.6875rem;
+  font-weight: 800;
+  line-height: 1rem;
+  letter-spacing: 0.015em;
+}
+
+[data-chat-custom-theme="true"][data-chat-theme-dark="false"] .chat-theme-sender-name {
+  color: #062e53;
+  text-shadow:
+    0 1px 2px #fff,
+    0 0 4px #fff,
+    0 0 7px rgba(255, 255, 255, 0.95);
+}
+
+[data-chat-custom-theme="true"][data-chat-theme-dark="true"] .chat-theme-sender-name {
+  color: #fff;
+  text-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.95),
+    0 0 4px rgba(0, 0, 0, 0.95),
+    0 0 7px rgba(0, 0, 0, 0.85);
+}
+
+/* The typing label otherwise stays muted gray directly on the wallpaper. */
+[data-chat-custom-theme="true"][data-chat-theme-dark] [data-testid="typing-label"] {
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--sibs-wallpaper-label-border);
+  background: var(--sibs-wallpaper-label-surface);
+  color: var(--sibs-wallpaper-label);
+  box-shadow: var(--sibs-wallpaper-label-shadow);
+}
+
 /* Calendar: one orange border on the SELECT BOX only.
    IMPORTANT: the global :focus-visible !important rule is in @layer base, so
    the override must be in that same layer (an unlayered important rule loses). */

@@ -4,6 +4,11 @@ import { readCachedAuthSession } from "../../services/auth/auth-session-cache";
 const MAX_QUERIES = 100;
 const MAX_ENTRY_BYTES = 2 * 1024 * 1024;
 const SLOW_READ_MS = 750;
+// Chrome DevTools reports its own performance violations separately.
+// Application-level slow read diagnostics are opt-in so normal HRIS use
+// does not flood the console. Set VITE_HRIS_CACHE_DIAGNOSTICS=true in the
+// client environment when diagnosing slow API calls.
+const REPORT_SLOW_READS = import.meta.env.VITE_HRIS_CACHE_DIAGNOSTICS === "true";
 
 function canonical(value) {
   if (Array.isArray(value)) return value.map(canonical);
@@ -69,7 +74,7 @@ export function createHrisQueryCache({
         try {
           const value = await loader(signal);
           const durationMs = now() - startedAt;
-          if (durationMs >= SLOW_READ_MS) {
+          if (REPORT_SLOW_READS && durationMs >= SLOW_READ_MS) {
             console.warn(`[HRIS read cache] Slow ${path}: ${Math.round(durationMs)} ms`);
           }
           return { value, storedAt: now() };

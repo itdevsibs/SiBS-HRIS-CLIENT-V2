@@ -12,6 +12,39 @@ import {
 const VIEWPORT_PADDING = 16;
 const DRAG_THRESHOLD = 6;
 
+// Detect genuine visible HRIS dialog surfaces, including portal-based modals.
+// This does not depend on individual module names or pages.
+const HRIS_MODAL_SELECTOR = [
+  '[aria-modal="true"]',
+  'dialog[open]',
+  '.sibs-modal-blur',
+  '.sibs-modal-backdrop-in',
+  '.fixed.inset-0',
+].join(', ');
+
+function hasModalSurface(node) {
+  return node?.nodeType === 1 && (
+    node.matches(HRIS_MODAL_SELECTOR) || Boolean(node.querySelector(HRIS_MODAL_SELECTOR))
+  );
+}
+
+function isVisibleModalSurface(element) {
+  if (element.closest('[data-sibs-chat-backdrop="true"]')) return false;
+  const style = window.getComputedStyle(element);
+  if (style.display === 'none' || style.visibility === 'hidden' ||
+      style.pointerEvents === 'none') return false;
+  // Ignore full-viewport decorative layers behind the page. Unlabeled
+  // modal backdrops have a positive stacking level; semantic dialogs and
+  // the shared HRIS modal classes are handled regardless of their own z-index.
+  if (element.matches('.fixed.inset-0') &&
+      !element.matches('[aria-modal="true"], dialog[open], .sibs-modal-blur, .sibs-modal-backdrop-in')) {
+    const zIndex = Number.parseInt(style.zIndex, 10);
+    if (!Number.isFinite(zIndex) || zIndex < 10) return false;
+  }
+  const rect = element.getBoundingClientRect();
+  return rect.width > 0 && rect.height > 0;
+}
+
 export default function SiBSAssistantLauncher({
   enabled = true,
   onOpenAi,
@@ -25,6 +58,7 @@ export default function SiBSAssistantLauncher({
   const chat = useChat();
 
   const [menuOpen, setMenuOpen] = useState(false);
+  const [externalModalOpen, setExternalModalOpen] = useState(false);
   const [triggerPosition, setTriggerPosition] = useState(null);
   const [triggerDragging, setTriggerDragging] = useState(false);
   const [chatSurfaceOpen, setChatSurfaceOpen] = useState(() =>
@@ -44,7 +78,7 @@ export default function SiBSAssistantLauncher({
   );
 
   const isDrawerOpen = Boolean(isAiOpen || effectiveChatOpen);
-  const isVisible = isAssistantLauncherVisible({
+  const isVisible = !externalModalOpen && isAssistantLauncherVisible({
     enabled,
     userLoading,
     user,
@@ -53,6 +87,52 @@ export default function SiBSAssistantLauncher({
     chatSurfaceOpen,
     isChatWindowOpen: chat?.isChatWindowOpen,
   });
+
+  // HRIS modals must never be covered by, or allow clicks through to, the
+  // floating Assistant launcher. Observe portal mounts and modal visibility
+  // changes without polling or attaching listeners to every modal component.
+  useEffect(() => {
+    if (!enabled || isAiOpen || effectiveChatOpen) {
+      setExternalModalOpen(false);
+      setMenuOpen(false);
+      return undefined;
+    }
+
+    let frame = null;
+    const checkModals = () => {
+      frame = null;
+      const hasOpenModal = Array.from(document.querySelectorAll(HRIS_MODAL_SELECTOR))
+        .some(isVisibleModalSurface);
+      setExternalModalOpen((current) => current === hasOpenModal ? current : hasOpenModal);
+      if (hasOpenModal) setMenuOpen(false);
+    };
+
+    const scheduleCheck = () => {
+      if (frame === null) frame = window.requestAnimationFrame(checkModals);
+    };
+    const observer = new MutationObserver((changes) => {
+      const affectsModal = changes.some((change) => {
+        if (change.type === 'attributes') {
+          return hasModalSurface(change.target) ||
+            Boolean(change.target?.closest?.(HRIS_MODAL_SELECTOR));
+        }
+        return [...change.addedNodes, ...change.removedNodes].some(hasModalSurface);
+      });
+      if (affectsModal) scheduleCheck();
+    });
+
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['class', 'style', 'hidden', 'open', 'aria-modal', 'data-state'],
+    });
+    scheduleCheck();
+    return () => {
+      observer.disconnect();
+      if (frame !== null) window.cancelAnimationFrame(frame);
+    };
+  }, [enabled, isAiOpen, effectiveChatOpen]);
 
   // Close menu when an assistant drawer transitions to open
   const prevAiOpenRef = useRef(isAiOpen);
@@ -298,8 +378,8 @@ export default function SiBSAssistantLauncher({
       : "bottom-[calc(100%+0.75rem)]"
   } ${isLeftHalf ? "left-0" : "right-0"}`;
 
-  // Mount outside AppShell stacking contexts so the launcher remains above
-  // calendar, candidate and other modal backdrops even when they use portals.
+  // Portaled to the document body for positioning, but never above HRIS
+  // dialogs. The visibility observer also hides this launcher for open modals.
   const launcher = (
     <aside
       ref={containerRef}
@@ -310,7 +390,7 @@ export default function SiBSAssistantLauncher({
       style={
         triggerPosition
           ? {
-              zIndex: 2147483647,
+              zIndex: 15,
               left: `${triggerPosition.left}px`,
               top: `${triggerPosition.top}px`,
               right: "auto",
@@ -318,7 +398,7 @@ export default function SiBSAssistantLauncher({
               touchAction: "none",
             }
           : {
-              zIndex: 2147483647,
+              zIndex: 15,
               bottom: "calc(1.25rem + env(safe-area-inset-bottom, 0px))",
               touchAction: "none",
             }

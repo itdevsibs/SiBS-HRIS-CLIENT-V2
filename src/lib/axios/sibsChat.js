@@ -69,12 +69,26 @@ export async function createPrivateChat(sibsId) {
   return response.data?.data || null;
 }
 
+export async function createHelpdeskChat(category) {
+  const response = await api.post("/chat/helpdesk/conversations", { category });
+  return response.data?.data || null;
+}
+
 export async function createGroupChat({ name, memberSibsIds }) {
   const response = await api.post("/chat/conversations/group", {
     name,
     memberSibsIds,
   });
 
+  return response.data?.data || null;
+}
+
+/** Attendance-based daily support coverage; chat online status is independent. */
+export async function getChatHelpdeskDuty(conversationId, signal) {
+  const response = await api.get(
+    `/chat/conversations/${encodeURIComponent(conversationId)}/helpdesk-duty`,
+    {signal, timeout: 60_000},
+  );
   return response.data?.data || null;
 }
 

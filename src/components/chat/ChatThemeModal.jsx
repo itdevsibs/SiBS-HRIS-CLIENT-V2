@@ -81,9 +81,9 @@ export default function ChatThemeModal({
       return;
     }
 
-    const validTypes = ["image/jpeg", "image/png", "image/webp"];
+    const validTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
     if (!validTypes.includes(file.type)) {
-      setError("Only JPG, PNG, and WEBP images are supported.");
+      setError("Only JPG, PNG, WEBP, and GIF images are supported.");
       return;
     }
 
@@ -92,6 +92,8 @@ export default function ChatThemeModal({
     const objectUrl = URL.createObjectURL(file);
     setPreviewUrl(objectUrl);
   };
+
+  const isAnimatedGif = customFile?.type === "image/gif";
 
   const handleUploadCustomWallpaper = async (croppedFile) => {
     const fileToUpload = croppedFile || customFile;
@@ -167,7 +169,7 @@ export default function ChatThemeModal({
         </div>
 
         {/* Live Preview Card (hidden during active crop adjustment to keep controls fully visible) */}
-        {!(activeTab === "custom" && customFile) ? (
+        {!(activeTab === "custom" && customFile && !isAnimatedGif) ? (
           <div className="p-4 sm:p-5 border-b border-sibs-border bg-slate-100/50">
             <div className="text-[10px] font-bold uppercase tracking-wider text-sibs-muted mb-2 flex items-center gap-1.5">
               <Sparkles size={12} className="text-sibs-orange" />
@@ -351,18 +353,57 @@ export default function ChatThemeModal({
           {activeTab === "custom" && (
             <div className="space-y-4">
               <p className="text-xs text-sibs-muted">
-                Upload your own photo or custom background image (JPG, PNG, WEBP up to 5 MB):
+                Upload your own photo or custom background image (JPG, PNG, WEBP, or animated GIF up to 5 MB):
               </p>
 
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/jpeg,image/png,image/webp"
+                accept="image/jpeg,image/png,image/webp,image/gif,.gif"
                 onChange={handleFileChange}
                 className="hidden"
               />
 
-              {customFile ? (
+              {customFile && isAnimatedGif ? (
+                <div className="space-y-3 rounded-xl border border-sibs-border bg-slate-50 p-3.5">
+                  <div className="overflow-hidden rounded-lg border border-sibs-border bg-slate-200">
+                    <img
+                      src={previewUrl}
+                      alt="Animated GIF wallpaper preview"
+                      className="h-40 w-full object-cover"
+                    />
+                  </div>
+                  <p className="truncate text-xs font-bold text-sibs-navy" title={customFile.name}>
+                    {customFile.name}
+                  </p>
+                  <p className="text-[11px] text-sibs-muted">
+                    Animated GIFs are uploaded without cropping so their animation is preserved.
+                  </p>
+                  <div className="flex justify-end gap-2">
+                    <button
+                      type="button"
+                      disabled={loading}
+                      onClick={() => {
+                        setCustomFile(null);
+                        if (previewUrl) URL.revokeObjectURL(previewUrl);
+                        setPreviewUrl("");
+                      }}
+                      className="rounded-lg border border-sibs-border bg-white px-3 py-1.5 text-xs font-bold text-sibs-muted hover:text-sibs-navy"
+                    >
+                      Choose Different
+                    </button>
+                    <button
+                      type="button"
+                      disabled={loading}
+                      onClick={() => void handleUploadCustomWallpaper(customFile)}
+                      className="inline-flex items-center gap-1.5 rounded-lg bg-sibs-navy px-4 py-1.5 text-xs font-bold text-white hover:bg-sibs-navy/90 disabled:opacity-50"
+                    >
+                      {loading ? <Loader2 size={13} className="animate-spin" /> : <UploadCloud size={14} />}
+                      Apply GIF Wallpaper
+                    </button>
+                  </div>
+                </div>
+              ) : customFile ? (
                 <ImageCropAdjuster
                   file={customFile}
                   loading={loading}
@@ -386,7 +427,7 @@ export default function ChatThemeModal({
                     Click to select an image from your device
                   </p>
                   <p className="text-[10px] text-sibs-muted mt-1">
-                    Supports JPG, PNG, or WEBP up to 5 MB
+                    Supports JPG, PNG, WEBP, or animated GIF up to 5 MB
                   </p>
                 </button>
               )}

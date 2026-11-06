@@ -3,6 +3,7 @@ import {
   useCallback,
   useEffect,
   useLayoutEffect,
+  memo,
   useMemo,
   useRef,
   useState,
@@ -21,8 +22,12 @@ import {
   Loader2,
   Maximize2,
   MessageCircleMore,
+  Headset,
+  MonitorCog,
+  HeartHandshake,
   Minimize2,
   MoreHorizontal,
+  MapPin,
   Music,
   Pencil,
   Plus,
@@ -42,6 +47,7 @@ import {
   getChatAttachmentUrl,
   getChatAttachmentPreview,
   getChatParticipants,
+  getChatHelpdeskDuty,
   getChatThemeImageBlob,
 } from "@/lib/axios/sibsChat";
 import {
@@ -75,6 +81,32 @@ import {
   checkIsNearBottom,
   shouldSnapToBottom,
 } from "@/lib/utils/chat/chatScroll";
+
+// These formatters are used for every message row. Constructing a new Intl
+// DateTimeFormat for every timestamp on every React render is expensive,
+// especially in group chats with many messages. Keep the HRIS Manila display
+// policy while reusing the same immutable formatter instances.
+const chatClockFormatter = createSystemDateTimeFormatter("en-PH", {
+  timeZone: "Asia/Manila", hour: "numeric", minute: "2-digit", hour12: true,
+});
+const chatDayKeyFormatter = createSystemDateTimeFormatter("en-CA", {
+  timeZone: "Asia/Manila", year: "numeric", month: "2-digit", day: "2-digit",
+});
+const chatConversationDateFormatter = createSystemDateTimeFormatter("en-PH", {
+  timeZone: "Asia/Manila", month: "long", day: "numeric", year: "numeric",
+});
+const chatMessageDayFormatter = createSystemDateTimeFormatter("en-PH", {
+  timeZone: "Asia/Manila", weekday: "short", month: "long", day: "numeric", year: "numeric",
+});
+const chatWeekdayFormatter = createSystemDateTimeFormatter("en-PH", {
+  timeZone: "Asia/Manila", weekday: "short",
+});
+const chatCenterDateFormatter = createSystemDateTimeFormatter("en-PH", {
+  timeZone: "Asia/Manila", month: "long", day: "numeric",
+});
+const chatCenterDateWithYearFormatter = createSystemDateTimeFormatter("en-PH", {
+  timeZone: "Asia/Manila", month: "long", day: "numeric", year: "numeric",
+});
 
 const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024;
 const MAX_ATTACHMENTS_PER_MESSAGE = 5;
@@ -372,6 +404,31 @@ function getChatMemberFullName(member = {}) {
   );
 }
 
+// Helpdesk conversations belong to their original requester. Always show the
+// requester (never the first support-team member), including older threads
+// where the requester is no longer present in the active membership list.
+function getHelpdeskRequester(conversation = {}) {
+  const requesterId = cleanText(
+    conversation?.createdBySibsId || conversation?.requester?.sibsId,
+  );
+  const members = Array.isArray(conversation?.members) ? conversation.members : [];
+  const member = members.find((entry) => cleanText(entry?.sibsId) === requesterId);
+  const profile = conversation?.requester || member || {};
+  const savedName = cleanText(conversation?.name || conversation?.title)
+    .split(" · ").slice(1).join(" · ").trim();
+  return {
+    ...profile,
+    sibsId: requesterId,
+    displayName: cleanText(profile?.displayName) || savedName ||
+      (requesterId ? `SIBS ID ${requesterId}` : "Unknown employee"),
+    initials: cleanText(profile?.initials) || "EMP",
+  };
+}
+
+function getHelpdeskCategoryLabel(category) {
+  return cleanText(category).toUpperCase() === "IT" ? "IT Support" : "TA/HR Concerns";
+}
+
 function getReplySenderName(message = {}, currentSibsId = "") {
   if (!message || message?.unavailable) return "Original message";
 
@@ -435,27 +492,40 @@ function escapeRegExp(value) {
   return String(value || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+// Build each conversation's mention matcher once per member-list identity,
+// rather than rebuilding/sorting a large regular expression for each bubble.
+// Group membership lists are immutable snapshots from ChatContext.
+const chatMentionMatcherCache = new WeakMap();
+
+function getChatMentionMatcher(members) {
+  if (!Array.isArray(members) || !members.length) return null;
+  const cached = chatMentionMatcherCache.get(members);
+  if (cached) return cached;
+
+  const mentionLabels = [...new Set(
+    ["everyone", ...members.map((member) => getChatMentionLabel(member))].filter(Boolean),
+  )].sort((first, second) => second.length - first.length);
+  const matcher = mentionLabels.length
+    ? {
+        mentionLookup: new Set(mentionLabels.map((label) => `@${label}`.toLowerCase())),
+        pattern: new RegExp(
+          `(@(?:${mentionLabels.map(escapeRegExp).join("|")}))(?=$|\\s|[.,!?;:()\\[\\]{}])`,
+          "gi",
+        ),
+      }
+    : null;
+  if (matcher) chatMentionMatcherCache.set(members, matcher);
+  return matcher;
+}
+
 function renderChatMessageText(value, members = [], mine = false) {
   const text = String(value ?? "");
   if (!text) return null;
 
-  const groupMembers = Array.isArray(members) ? members : [];
-  const mentionLabels = [...new Set(
-    [
-      ...(groupMembers.length ? ["everyone"] : []),
-      ...groupMembers.map((member) => getChatMentionLabel(member)),
-    ].filter(Boolean),
-  )].sort((first, second) => second.length - first.length);
-
-  if (!mentionLabels.length) return text;
-
-  const mentionLookup = new Set(
-    mentionLabels.map((label) => `@${label}`.toLowerCase()),
-  );
-  const pattern = mentionLabels.map(escapeRegExp).join("|");
-  const parts = text.split(
-    new RegExp(`(@(?:${pattern}))(?=$|\\s|[.,!?;:()\\[\\]{}])`, "gi"),
-  );
+  const matcher = getChatMentionMatcher(members);
+  if (!matcher) return text;
+  const { mentionLookup, pattern } = matcher;
+  const parts = text.split(pattern);
 
   return parts.map((part, index) => {
     if (!mentionLookup.has(part.toLowerCase())) {
@@ -552,12 +622,7 @@ function formatClock(value) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "";
 
-  return createSystemDateTimeFormatter("en-PH", {
-    timeZone: "Asia/Manila",
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: true,
-  }).format(date);
+  return chatClockFormatter.format(date);
 }
 
 function isFreshChatTimestamp(value, nowMs = Date.now()) {
@@ -577,12 +642,7 @@ function getManilaDateKey(value) {
   const date = value instanceof Date ? value : new Date(value);
   if (Number.isNaN(date.getTime())) return "";
 
-  const parts = createSystemDateTimeFormatter("en-CA", {
-    timeZone: "Asia/Manila",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).formatToParts(date);
+  const parts = chatDayKeyFormatter.formatToParts(date);
 
   const get = (type) => parts.find((part) => part.type === type)?.value || "";
   return `${get("year")}-${get("month")}-${get("day")}`;
@@ -648,12 +708,7 @@ function formatConversationTime(value, nowMs = Date.now()) {
 
   if (sameDate) return formatClock(value);
 
-  return createSystemDateTimeFormatter("en-PH", {
-    timeZone: "Asia/Manila",
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-  }).format(date);
+  return chatConversationDateFormatter.format(date);
 }
 
 function formatMessageDay(value) {
@@ -661,13 +716,7 @@ function formatMessageDay(value) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "";
 
-  return createSystemDateTimeFormatter("en-PH", {
-    timeZone: "Asia/Manila",
-    weekday: "short",
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-  }).format(date);
+  return chatMessageDayFormatter.format(date);
 }
 
 function getUserSibsId(user = {}) {
@@ -720,20 +769,12 @@ function formatMessengerCenterTimestamp(currentValue, previousValue) {
 
   const elapsedDays = Math.floor((now.getTime() - date.getTime()) / 86_400_000);
   if (elapsedDays >= 0 && elapsedDays < 7) {
-    const weekday = createSystemDateTimeFormatter("en-PH", {
-      timeZone: "Asia/Manila",
-      weekday: "short",
-    }).format(date);
+    const weekday = chatWeekdayFormatter.format(date);
     return `${weekday} · ${clock}`;
   }
 
   const sameYear = date.getFullYear() === now.getFullYear();
-  const dateStr = createSystemDateTimeFormatter("en-PH", {
-    timeZone: "Asia/Manila",
-    month: "long",
-    day: "numeric",
-    ...(sameYear ? {} : { year: "numeric" }),
-  }).format(date);
+  const dateStr = (sameYear ? chatCenterDateFormatter : chatCenterDateWithYearFormatter).format(date);
 
   return `${dateStr} · ${clock}`;
 }
@@ -849,7 +890,7 @@ function ChatAvatar({
     typeof document !== "undefined"
       ? createPortal(
           <span
-            className="pointer-events-none fixed z-[2147483625] rounded-2xl border border-sibs-border bg-white p-2 shadow-2xl"
+            className="pointer-events-none fixed z-[38] rounded-2xl border border-sibs-border bg-white p-2 shadow-2xl"
             style={{
               left: previewPosition.left,
               top: previewPosition.top,
@@ -945,6 +986,7 @@ function NewChatOverlay({
   onClose,
   onPrivateChat,
   onCreateGroup,
+  onHelpdeskChat,
   busy,
 }) {
   const [mode, setMode] = useState("private");
@@ -956,7 +998,7 @@ function NewChatOverlay({
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (!open) return undefined;
+    if (!open || mode === "helpdesk") return undefined;
 
     let active = true;
     const timer = window.setTimeout(async () => {
@@ -985,7 +1027,7 @@ function NewChatOverlay({
       active = false;
       window.clearTimeout(timer);
     };
-  }, [open, query]);
+  }, [open, query, mode]);
 
   useEffect(() => {
     if (!open) {
@@ -1049,13 +1091,13 @@ function NewChatOverlay({
             New Chat
           </h3>
           <p className="text-[11px] font-semibold text-sibs-muted">
-            Private message or group conversation
+            Private message, group chat, or helpdesk
           </p>
         </div>
       </header>
 
       <div className="border-b border-sibs-border px-4 py-3">
-        <div className="grid grid-cols-2 rounded-xl bg-sibs-surface p-1">
+        <div className="grid grid-cols-3 rounded-xl bg-sibs-surface p-1">
           <button
             type="button"
             onClick={() => setMode("private")}
@@ -1078,6 +1120,15 @@ function NewChatOverlay({
           >
             Group Chat
           </button>
+          <button
+            type="button"
+            onClick={() => { setMode("helpdesk"); setError(""); }}
+            className={`rounded-lg px-2 py-2 text-xs font-extrabold transition ${
+              mode === "helpdesk" ? "bg-white text-sibs-navy shadow-sm" : "text-sibs-muted"
+            }`}
+          >
+            Helpdesk
+          </button>
         </div>
 
         {mode === "group" ? (
@@ -1091,7 +1142,7 @@ function NewChatOverlay({
           />
         ) : null}
 
-        <label className="relative mt-3 block">
+        {mode !== "helpdesk" ? <label className="relative mt-3 block">
           <Search
             size={16}
             className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sibs-faint"
@@ -1103,7 +1154,7 @@ function NewChatOverlay({
             placeholder="Search name, SIBS ID, or email..."
             className="h-10 w-full rounded-xl border border-sibs-border bg-sibs-surface pl-9 pr-3 text-sm font-semibold text-sibs-navy outline-none transition focus:border-sibs-orange focus:bg-white focus:ring-2 focus:ring-sibs-orange/10"
           />
-        </label>
+        </label> : null}
       </div>
 
       {error ? (
@@ -1113,7 +1164,47 @@ function NewChatOverlay({
       ) : null}
 
       <div className="sibs-scrollbar min-h-0 flex-1 overflow-y-auto px-2 py-2">
-        {loading ? (
+        {mode === "helpdesk" ? (
+          <div className="space-y-3 px-2 pt-3">
+            <p className="px-1 text-xs font-semibold leading-5 text-sibs-muted">
+              Select the team for your concern. Your conversation stays visible to you and all active members of that support team.
+            </p>
+            {[
+              { key: "TA_HR", title: "TA/HR Concerns", description: "Recruitment, employment, HR and people concerns", Icon: HeartHandshake },
+              { key: "IT", title: "IT Support", description: "Account access, devices, systems and technical concerns", Icon: MonitorCog },
+            ].map(({ key, title, description, Icon }) => (
+              <button
+                key={key}
+                type="button"
+                disabled={busy}
+                onClick={() => {
+                  void (async () => {
+                    try {
+                      setError("");
+                      await onHelpdeskChat(key);
+                      onClose();
+                    } catch (requestError) {
+                      setError(requestError?.response?.data?.message || requestError?.message || "Unable to open the helpdesk conversation.");
+                    }
+                  })();
+                }}
+                className="flex w-full items-center gap-3 rounded-xl border border-sibs-border bg-white px-4 py-4 text-left transition hover:border-sibs-orange/40 hover:bg-sibs-surface disabled:opacity-50"
+              >
+                <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-sibs-orange/10 text-sibs-orange">
+                  <Icon size={23} />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-sm font-extrabold text-sibs-navy">{title}</span>
+                  <span className="mt-1 block text-[11px] font-semibold leading-5 text-sibs-muted">{description}</span>
+                </span>
+                <Headset size={18} className="shrink-0 text-sibs-muted" />
+              </button>
+            ))}
+            <p className="px-1 text-[11px] font-medium leading-5 text-sibs-muted">
+              Team members can view and respond to all requests routed to their helpdesk. Other employees cannot access those conversations.
+            </p>
+          </div>
+        ) : loading ? (
           <div className="flex h-full items-center justify-center text-sibs-muted">
             <Loader2 className="h-5 w-5 animate-spin" />
           </div>
@@ -1206,6 +1297,9 @@ function GroupInfoOverlay({
   conversation,
   currentSibsId,
   presence,
+  helpdeskDuty,
+  helpdeskDutyLoading,
+  helpdeskDutyError,
   open,
   onClose,
   onRename,
@@ -1225,8 +1319,27 @@ function GroupInfoOverlay({
     () => conversation?.members || [],
     [conversation?.members],
   );
-  const isAdmin = cleanText(conversation?.currentUserRole).toUpperCase() === "ADMIN";
-  const isCreator =
+  const isHelpdesk = Boolean(conversation?.isHelpdesk);
+  // This is computed by the server from the current department/account roster.
+  // All helpdesk members have MEMBER as their conversation role, so that alone
+  // cannot distinguish support staff from the original requester.
+  const isHelpdeskSupportMember = isHelpdesk && Boolean(conversation?.isHelpdeskSupportMember);
+  const dutyStatusById = useMemo(() => new Map(
+    (helpdeskDuty?.members || []).map((entry) => [cleanText(entry.sibsId), entry]),
+  ), [helpdeskDuty]);
+  const sortedMembers = useMemo(() => {
+    if (!isHelpdesk) return members;
+    const rank = {CLOCKED_IN: 0, CLOCKED_OUT: 1, NO_CLOCK_IN: 2, UNAVAILABLE: 3};
+    return [...members].sort((a, b) => {
+      const aState = dutyStatusById.get(cleanText(a.sibsId));
+      const bState = dutyStatusById.get(cleanText(b.sibsId));
+      const aRank = aState ? rank[aState.status] ?? 3 : 4;
+      const bRank = bState ? rank[bState.status] ?? 3 : 4;
+      return aRank - bRank || getChatMemberDisplayName(a).localeCompare(getChatMemberDisplayName(b));
+    });
+  }, [members, isHelpdesk, dutyStatusById]);
+  const isAdmin = !isHelpdesk && cleanText(conversation?.currentUserRole).toUpperCase() === "ADMIN";
+  const isCreator = !isHelpdesk &&
     cleanText(conversation?.createdBySibsId) === cleanText(currentSibsId);
 
   useEffect(() => {
@@ -1321,6 +1434,7 @@ function GroupInfoOverlay({
   }
 
   async function leaveGroup() {
+    if (isHelpdeskSupportMember) return;
     try {
       setBusy(true);
       setError("");
@@ -1348,7 +1462,7 @@ function GroupInfoOverlay({
         </button>
         <div>
           <h3 className="font-heading text-base font-extrabold text-sibs-navy">
-            Group Info
+            {isHelpdesk ? "Helpdesk Info" : "Group Info"}
           </h3>
           <p className="text-[11px] font-semibold text-sibs-muted">
             {members.length} member{members.length === 1 ? "" : "s"}
@@ -1365,7 +1479,7 @@ function GroupInfoOverlay({
 
         <section className="rounded-2xl border border-sibs-border bg-sibs-surface p-4">
           <label className="text-[10px] font-extrabold uppercase tracking-[0.1em] text-sibs-faint">
-            Group Name
+            {isHelpdesk ? "Helpdesk Conversation" : "Group Name"}
           </label>
           <div className="mt-2 flex gap-2">
             <input
@@ -1389,9 +1503,42 @@ function GroupInfoOverlay({
           </div>
         </section>
 
+        {isHelpdesk ? (
+          <div className="mt-4 rounded-2xl border border-sibs-border bg-white p-3">
+            <p className="text-xs font-extrabold text-sibs-navy">Today's Helpdesk coverage</p>
+            <p className="mt-0.5 text-[10px] font-semibold text-sibs-muted">Kronos attendance · Philippine time</p>
+            {helpdeskDutyLoading && !helpdeskDuty ? (
+              <p className="mt-3 text-xs font-semibold text-sibs-muted">Checking today's attendance…</p>
+            ) : helpdeskDuty ? (
+              <div className="mt-3 flex flex-wrap gap-2">
+                <span className="rounded-lg bg-emerald-50 px-2.5 py-1.5 text-[11px] font-bold text-emerald-700">
+                  {helpdeskDuty.clockedInCount} clocked in / no clock-out
+                </span>
+                <span className="rounded-lg bg-sky-50 px-2.5 py-1.5 text-[11px] font-bold text-sky-700">
+                  {helpdeskDuty.presentCount} present today
+                </span>
+                <span className="rounded-lg bg-sibs-surface px-2.5 py-1.5 text-[11px] font-bold text-sibs-muted">
+                  {helpdeskDuty.supportCount} support members
+                </span>
+              </div>
+            ) : null}
+            {helpdeskDutyError ? (
+              <p className="mt-2 text-[11px] font-semibold text-amber-700">Attendance is temporarily unavailable. Chat continues working.</p>
+            ) : null}
+            {helpdeskDuty?.unavailableCount > 0 ? (
+              <p className="mt-2 text-[10px] font-semibold text-amber-700">
+                Attendance could not be verified for {helpdeskDuty.unavailableCount} member(s).
+              </p>
+            ) : null}
+            <p className="mt-2 text-[10px] leading-relaxed text-sibs-muted">
+              Clocked in / no clock-out reflects the latest recorded attendance, not guaranteed availability. Presence in chat is separate.
+            </p>
+          </div>
+        ) : null}
+
         <section className="mt-4">
           <div className="mb-2 flex items-center justify-between">
-            <p className="text-xs font-extrabold text-sibs-navy">Members</p>
+            <p className="text-xs font-extrabold text-sibs-navy">{isHelpdesk ? 'Support team & requester' : 'Members'}</p>
             {isCreator ? (
               <button
                 type="button"
@@ -1467,9 +1614,19 @@ function GroupInfoOverlay({
           ) : null}
 
           <div className="space-y-1">
-            {members.map((member) => {
+            {sortedMembers.map((member) => {
               const online = presence?.[member.sibsId] ?? member.online;
               const isCurrent = member.sibsId === currentSibsId;
+              const duty = isHelpdesk ? dutyStatusById.get(cleanText(member.sibsId)) : null;
+              const dutyLabel = duty?.status === 'CLOCKED_IN'
+                ? 'Clocked in · No clock-out'
+                : duty?.status === 'CLOCKED_OUT'
+                  ? 'Present today · Clocked out'
+                  : duty?.status === 'NO_CLOCK_IN'
+                    ? 'No clock-in recorded today'
+                    : duty?.status === 'UNAVAILABLE'
+                      ? 'Attendance unavailable'
+                      : 'Requester';
 
               return (
                 <div
@@ -1491,6 +1648,21 @@ function GroupInfoOverlay({
                       SIBS ID {member.sibsId}
                       {member.memberRole === "ADMIN" ? " · Admin" : ""}
                     </p>
+                    {isHelpdesk ? (
+                      <p className="mt-0.5 inline-flex items-center gap-1 text-[10px] font-semibold text-sibs-muted">
+                        <MapPin size={11} className="shrink-0" />
+                        Assigned site: {member.assignedLocationLabel || "Not assigned"}
+                      </p>
+                    ) : null}
+                    {isHelpdesk ? (
+                      <p className={`mt-1 text-[10px] font-extrabold ${
+                        duty?.status === 'CLOCKED_IN' ? 'text-emerald-700'
+                          : duty?.status === 'CLOCKED_OUT' ? 'text-sky-700'
+                            : duty?.status === 'UNAVAILABLE' ? 'text-amber-700' : 'text-sibs-muted'
+                      }`}>
+                        {helpdeskDutyLoading && !helpdeskDuty ? 'Checking attendance…' : dutyLabel}
+                      </p>
+                    ) : null}
                   </div>
 
                   {isCreator && !isCurrent && member.memberRole !== "ADMIN" ? (
@@ -1513,14 +1685,27 @@ function GroupInfoOverlay({
       </div>
 
       <footer className="border-t border-sibs-border px-4 py-3">
-        <button
-          type="button"
-          onClick={() => void leaveGroup()}
-          disabled={busy}
-          className="h-10 w-full rounded-xl border border-red-200 bg-red-50 text-xs font-extrabold text-red-700 transition hover:bg-red-100 disabled:opacity-50"
-        >
-          Leave Group
-        </button>
+        {isHelpdeskSupportMember ? (
+          <p className="text-center text-[10px] font-semibold text-sibs-muted">
+            You are assigned to this Helpdesk team. Support members stay in the team's conversations.
+          </p>
+        ) : (
+          <>
+            <button
+              type="button"
+              onClick={() => void leaveGroup()}
+              disabled={busy}
+              className="h-10 w-full rounded-xl border border-red-200 bg-red-50 text-xs font-extrabold text-red-700 transition hover:bg-red-100 disabled:opacity-50"
+            >
+              {isHelpdesk ? "Leave Helpdesk" : "Leave Group"}
+            </button>
+            {isHelpdesk ? (
+              <p className="mt-2 text-center text-[10px] font-semibold text-sibs-muted">
+                Leave this conversation without deleting its messages. You can reopen your request from Helpdesk.
+              </p>
+            ) : null}
+          </>
+        )}
       </footer>
     </div>
   );
@@ -1580,6 +1765,31 @@ function MembershipNoticeCard({ notice, onOpenGroup, onDismiss }) {
   );
 }
 
+// A chat refresh can update presence, typing, unread counts, or sidebar data
+// without changing the messages. Keep the expensive timeline (attachments,
+// reactions, avatars and receipts) out of those unrelated React updates.
+//
+// The callback deliberately is NOT part of the equality check: it is created
+// by the parent on each render, but is only executed when a value that affects
+// the message rows actually changes. Do not memoize the typing indicator here.
+const MemoizedChatMessageRows = memo(
+  function MemoizedChatMessageRows({ renderRows }) {
+    return renderRows();
+  },
+  (previous, next) =>
+    previous.messages === next.messages &&
+    previous.currentSibsId === next.currentSibsId &&
+    previous.conversationId === next.conversationId &&
+    previous.isGroup === next.isGroup &&
+    previous.membersBySibsId === next.membersBySibsId &&
+    previous.seenMembersByMessageId === next.seenMembersByMessageId &&
+    previous.chatClockMs === next.chatClockMs &&
+    previous.messageActionId === next.messageActionId &&
+    previous.reactionPickerMessageId === next.reactionPickerMessageId &&
+    previous.reactingMessageId === next.reactingMessageId &&
+    previous.unsendingMessageId === next.unsendingMessageId,
+);
+
 export default function SiBSChat({
   enabled = true,
   isOpen: controlledOpen,
@@ -1628,7 +1838,6 @@ export default function SiBSChat({
   const [attachmentNotice, setAttachmentNotice] = useState("");
   const [documentPreview, setDocumentPreview] = useState(null);
   const closeDocumentPreview = useCallback(() => setDocumentPreview(null), []);
-  const [presenceClockMs, setPresenceClockMs] = useState(() => Date.now());
   const [emojiPickerOpen, setEmojiPickerOpen] = useState(false);
   const [gifPickerOpen, setGifPickerOpen] = useState(false);
   const [gifSearch, setGifSearch] = useState("");
@@ -2111,11 +2320,27 @@ export default function SiBSChat({
 
     setChatClockMs(Date.now());
 
-    const timer = window.setInterval(() => {
-      setChatClockMs(Date.now());
-    }, 1000);
+    // Timestamp labels have minute-level precision. A one-second clock was
+    // repainting the entire conversation + all message bubbles 60 times per
+    // minute even if there were no new messages. Update only on minute
+    // boundaries. New incoming messages still repaint immediately through
+    // ChatContext, independent of this display-only clock.
+    let timerId;
+    let stopped = false;
+    const scheduleNextMinute = () => {
+      const delay = 60_000 - (Date.now() % 60_000) + 20;
+      timerId = window.setTimeout(() => {
+        if (stopped) return;
+        setChatClockMs(Date.now());
+        scheduleNextMinute();
+      }, delay);
+    };
+    scheduleNextMinute();
 
-    return () => window.clearInterval(timer);
+    return () => {
+      stopped = true;
+      window.clearTimeout(timerId);
+    };
   }, [open]);
 
   useEffect(() => {
@@ -2342,6 +2567,8 @@ export default function SiBSChat({
       const haystack = [
         conversation.title,
         conversation.name,
+        conversation.requester?.displayName,
+        conversation.requester?.sibsId,
         ...(conversation.members || []).flatMap((member) => [
           member.displayName,
           member.sibsId,
@@ -2356,6 +2583,73 @@ export default function SiBSChat({
   }, [chat?.conversations, conversationSearch]);
 
   const activeConversation = chat?.activeConversation || null;
+  const activeHelpdeskId = open && activeConversation?.isHelpdesk
+    ? Number(activeConversation.id || 0) : 0;
+  const [helpdeskDuty, setHelpdeskDuty] = useState(null);
+  const [helpdeskDutyLoading, setHelpdeskDutyLoading] = useState(false);
+  const [helpdeskDutyError, setHelpdeskDutyError] = useState(false);
+  const visibleHelpdeskDuty = helpdeskDuty?.conversationId === activeHelpdeskId
+    ? helpdeskDuty : null;
+
+  useEffect(() => {
+    if (!activeHelpdeskId) {
+      setHelpdeskDuty(null);
+      setHelpdeskDutyLoading(false);
+      setHelpdeskDutyError(false);
+      return undefined;
+    }
+    let active = true;
+    let inProgress = false;
+    let controller = null;
+    setHelpdeskDuty(null);
+    setHelpdeskDutyLoading(true);
+    setHelpdeskDutyError(false);
+    async function refreshAttendance() {
+      if (inProgress) return;
+      inProgress = true;
+      controller = new AbortController();
+      try {
+        const result = await getChatHelpdeskDuty(activeHelpdeskId, controller.signal);
+        if (active) {
+          setHelpdeskDuty(result);
+          setHelpdeskDutyError(!result);
+        }
+      } catch (error) {
+        if (active && error?.name !== 'CanceledError' && error?.name !== 'AbortError') {
+          setHelpdeskDutyError(true);
+        }
+      } finally {
+        inProgress = false;
+        if (active) setHelpdeskDutyLoading(false);
+      }
+    }
+    void refreshAttendance();
+    // Avoid adding this to SiBS Chat's two-second message/presence poll.
+    const interval = window.setInterval(() => void refreshAttendance(), 120_000);
+    return () => {
+      active = false;
+      window.clearInterval(interval);
+      controller?.abort();
+    };
+  }, [activeHelpdeskId]);
+
+  const onDutySupportMembers = useMemo(() => {
+    if (!visibleHelpdeskDuty) return [];
+    const chatMembersById = new Map((activeConversation?.members || [])
+      .map((member) => [cleanText(member.sibsId), member]));
+    // Use the attendance roster as the source of truth. Every clocked-in
+    // support employee must appear, even if their chat profile is still loading.
+    return (visibleHelpdeskDuty.members || [])
+      .filter((member) => member.onDutyNow === true)
+      .map((member) => {
+        const sibsId = cleanText(member.sibsId);
+        return {
+          ...member,
+          ...chatMembersById.get(sibsId),
+          sibsId,
+        };
+      });
+  }, [activeConversation?.members, visibleHelpdeskDuty]);
 
   const activeTypingMembers = useMemo(() => {
     const conversationId = Number(activeConversation?.id || 0);
@@ -2477,8 +2771,11 @@ export default function SiBSChat({
     return map;
   }, [activeConversation?.members, activeConversation?.otherMember]);
 
+  // Selecting another chat is only needed when the selected ID or first
+  // available conversation changes, not after every presence/typing update.
+  const firstAvailableConversationId = Number(chat?.conversations?.[0]?.id || 0);
   useEffect(() => {
-    if (!open || chat?.activeConversationId || !chat?.conversations?.length) return;
+    if (!open || chat?.activeConversationId || !firstAvailableConversationId) return;
 
     // On mobile, keep the conversation list visible until the user chooses a chat.
     // Without this guard, pressing the mobile Back button clears the active chat,
@@ -2490,8 +2787,14 @@ export default function SiBSChat({
       return;
     }
 
-    void chat.selectConversation(chat.conversations[0].id);
-  }, [chat, open]);
+    void chat?.selectConversation?.(firstAvailableConversationId);
+  }, [chat?.activeConversationId, chat?.selectConversation, firstAvailableConversationId, open]);
+
+  // When the selected chat is revoked on the server, also dismiss its info
+  // overlay instead of leaving a stale Helpdesk/Group membership screen open.
+  useEffect(() => {
+    if (!chat?.activeConversationId) setGroupInfoOpen(false);
+  }, [chat?.activeConversationId]);
 
   const scrollToLatest = useCallback(() => {
     const scroller = messageScrollRef.current;
@@ -2657,13 +2960,6 @@ export default function SiBSChat({
     return () => window.clearTimeout(timer);
   }, [attachmentNotice]);
 
-  useEffect(() => {
-    const timer = window.setInterval(() => {
-      setPresenceClockMs(Date.now());
-    }, 30_000);
-
-    return () => window.clearInterval(timer);
-  }, []);
 
   if (!visible) return null;
 
@@ -3343,7 +3639,7 @@ export default function SiBSChat({
     : "";
   const activePrivateLastSeen = formatChatLastSeen(
     activeOtherMember?.lastSeenAt || activeOtherMember?.last_seen_at,
-    presenceClockMs,
+    chatClockMs,
   );
   const activePrivateStatus = activePrivateOnline
     ? "Active now"
@@ -3404,7 +3700,7 @@ export default function SiBSChat({
     <>
       {chat?.membershipNotice && !open ? (
         <div
-          className="fixed right-4 z-[88] w-[min(340px,calc(100vw-2rem))] sm:right-6"
+          className="fixed right-4 z-[35] w-[min(340px,calc(100vw-2rem))] sm:right-6"
           style={{
             bottom: hideTrigger
               ? "calc(4.75rem + env(safe-area-inset-bottom, 0px))"
@@ -3430,7 +3726,7 @@ export default function SiBSChat({
           onPointerCancel={finishLauncherDrag}
           aria-label={chat.totalUnread > 0 ? `Open SiBS Chat, ${chat.totalUnread} unread message${chat.totalUnread === 1 ? "" : "s"}` : "Open SiBS Chat"}
           aria-expanded={open}
-          className={`fixed z-[88] inline-flex select-none items-center gap-2 rounded-2xl border border-white/10 bg-sibs-navy px-3 py-2.5 font-jakarta text-sm font-extrabold text-white shadow-xl transition hover:bg-sibs-tertiary-2 ${
+          className={`fixed z-[35] inline-flex select-none items-center gap-2 rounded-2xl border border-white/10 bg-sibs-navy px-3 py-2.5 font-jakarta text-sm font-extrabold text-white shadow-xl transition hover:bg-sibs-tertiary-2 ${
             launcherPosition ? "" : "right-4 sm:right-6"
           } ${launcherDragging ? "cursor-grabbing" : "cursor-grab"} ${
             open ? "opacity-0 pointer-events-none" : "opacity-100"
@@ -3465,6 +3761,8 @@ export default function SiBSChat({
       <section
         ref={chatPanelRef}
         id="sibs-chat-panel"
+        role={open ? "dialog" : undefined}
+        aria-modal={open ? "false" : undefined}
         aria-label="SiBS Chat"
         data-expanded={isExpanded}
         onDragEnter={handleChatDragOver}
@@ -3472,7 +3770,7 @@ export default function SiBSChat({
         onDragLeave={handleChatDragLeave}
         onDrop={handleChatDrop}
         onDragEnd={() => setDraggingAttachments(false)}
-        className={`font-jakarta t-resize fixed right-4 z-[2147483600] flex max-sm:!inset-0 max-sm:!h-[100dvh] max-sm:!w-screen max-sm:!rounded-none max-sm:!border-0 ${
+        className={`font-jakarta t-resize fixed right-4 z-[35] flex max-sm:!inset-0 max-sm:!h-[100dvh] max-sm:!w-screen max-sm:!rounded-none max-sm:!border-0 ${
           hideTrigger
             ? "h-[min(720px,calc(100dvh-3rem))]"
             : "h-[min(720px,calc(100dvh-9rem))]"
@@ -3600,6 +3898,12 @@ export default function SiBSChat({
                 const selected = Number(chat.activeConversationId) === Number(conversation.id);
                 const otherMember = conversation.otherMember;
                 const online = otherMember ? isMemberOnline(otherMember) : false;
+                const isHelpdeskThread = Boolean(conversation.isHelpdesk);
+                const requester = isHelpdeskThread ? getHelpdeskRequester(conversation) : null;
+                const requesterName = requester ? getChatMemberFullName(requester) : "";
+                const requesterId = cleanText(requester?.sibsId);
+                const helpdeskLabel = isHelpdeskThread
+                  ? getHelpdeskCategoryLabel(conversation.helpdeskCategory) : "";
                 const conversationTypingIds = Array.isArray(
                   chat?.typingByConversation?.[Number(conversation.id)],
                 )
@@ -3673,13 +3977,47 @@ export default function SiBSChat({
                       className="flex min-w-0 flex-1 items-center gap-3 px-3 py-2.5 text-left"
                     >
                       <ChatAvatar
-                        employee={conversation.isGroup ? null : otherMember}
-                        initials={conversation.initials}
-                        online={online}
-                        group={conversation.isGroup}
+                        employee={isHelpdeskThread ? requester : conversation.isGroup ? null : otherMember}
+                        initials={isHelpdeskThread ? requester?.initials : conversation.initials}
+                        online={isHelpdeskThread ? false : online}
+                        group={conversation.isGroup && !isHelpdeskThread}
                         size="md"
                       />
                       <span className="min-w-0 flex-1">
+                        {isHelpdeskThread ? (
+                          <>
+                            <span className="flex min-w-0 items-center justify-between gap-2">
+                              <span className="truncate text-[10px] font-extrabold text-sibs-orange">
+                                {helpdeskLabel}
+                              </span>
+                              <span className="shrink-0 text-[10px] font-medium text-sibs-faint">
+                                {formatConversationTime(conversation.lastMessageAt || conversation.updatedAt, chatClockMs)}
+                              </span>
+                            </span>
+                            <span
+                              className="mt-0.5 block line-clamp-2 break-words text-[12px] font-extrabold leading-4 text-sibs-navy"
+                              title={`${requesterName}${requesterId ? ` (SIBS ID ${requesterId})` : ""}`}
+                            >
+                              {requesterName}
+                            </span>
+                            <span className="mt-1 flex min-w-0 items-center gap-2">
+                              {requesterId ? (
+                                <span className="min-w-0 shrink text-[10px] font-bold text-sibs-muted truncate">
+                                  {`SiBS ID: ${requesterId}${cleanText(requester?.assignedLocationLabel) ? ` - ${cleanText(requester.assignedLocationLabel)}` : ""}`}
+                                </span>
+                              ) : null}
+                              <span className={`min-w-0 flex-1 truncate text-[10px] ${conversationTypingLabel ? "font-bold text-sibs-orange" : "text-sibs-muted"}`}>
+                                {preview}
+                              </span>
+                              {conversation.unreadCount > 0 ? (
+                                <span className="inline-flex min-w-5 shrink-0 items-center justify-center rounded-full bg-sibs-orange px-1.5 py-0.5 text-[9px] font-black text-white">
+                                  {conversation.unreadCount > 99 ? "99+" : conversation.unreadCount}
+                                </span>
+                              ) : null}
+                            </span>
+                          </>
+                        ) : (
+                          <>
                         <span className="flex items-center justify-between gap-2">
                           <span className="truncate text-sm font-bold text-sibs-navy">
                             {!conversation.isGroup
@@ -3713,6 +4051,8 @@ export default function SiBSChat({
                             </span>
                           ) : null}
                         </span>
+                          </>
+                        )}
                       </span>
                     </button>
 
@@ -3841,6 +4181,9 @@ export default function SiBSChat({
                       <span>
                         {activeConversation.members?.length || 0} member
                         {(activeConversation.members?.length || 0) === 1 ? "" : "s"}
+                        {activeConversation.isHelpdesk && visibleHelpdeskDuty
+                          ? ` · ${visibleHelpdeskDuty.presentCount} present today · ${visibleHelpdeskDuty.clockedInCount} clocked in`
+                          : ''}
                       </span>
                     </button>
                   ) : (
@@ -3857,7 +4200,7 @@ export default function SiBSChat({
                 >
                   <Palette size={17} />
                 </button>
-                {activeConversation.isGroup ? (
+                {activeConversation.isGroup && !activeConversation.isHelpdesk ? (
                   <button
                     type="button"
                     onClick={() => setGroupInfoOpen(true)}
@@ -3879,6 +4222,54 @@ export default function SiBSChat({
                   <X size={17} />
                 </button>
               </header>
+
+              {activeConversation.isHelpdesk ? (
+                <div className="shrink-0 border-b border-emerald-100 bg-emerald-50 px-3 py-2 text-[11px] sm:px-4">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-extrabold text-emerald-800">Support on duty</span>
+                    <button
+                      type="button"
+                      onClick={() => setGroupInfoOpen(true)}
+                      className="shrink-0 rounded-lg px-2 py-1 font-extrabold text-emerald-800 hover:bg-emerald-100"
+                    >
+                      All members
+                    </button>
+                  </div>
+                  <div className="mt-1.5 grid grid-cols-3 items-stretch gap-2">
+                    {helpdeskDutyLoading && !visibleHelpdeskDuty ? (
+                      <span className="col-span-3 font-semibold text-sibs-muted">Checking Kronos attendance…</span>
+                    ) : helpdeskDutyError && !visibleHelpdeskDuty ? (
+                      <span className="col-span-3 font-semibold text-sibs-muted">Attendance temporarily unavailable</span>
+                    ) : onDutySupportMembers.length ? (
+                      <>
+                        {onDutySupportMembers.map((member) => (
+                          <span
+                            key={member.sibsId}
+                            className="flex min-w-0 items-start gap-1.5 rounded-lg border border-emerald-100 bg-white/80 px-2 py-1.5"
+                          >
+                            <ChatAvatar
+                              employee={member}
+                              initials={member.initials || cleanText(member.sibsId).slice(0, 2)}
+                              size="chat"
+                            />
+                            <span className="flex min-w-0 flex-1 flex-col gap-1">
+                              <span className="min-w-0 break-words text-[10px] font-semibold leading-snug text-sibs-navy">
+                                {getChatMemberDisplayName(member)}
+                              </span>
+                              <span className="flex min-w-0 items-start gap-1 break-words text-[10px] font-semibold leading-tight text-sibs-muted">
+                                <MapPin size={11} className="mt-px shrink-0" />
+                                <span>Assigned: {member.assignedLocationLabel || "Not assigned"}</span>
+                              </span>
+                            </span>
+                          </span>
+                        ))}
+                      </>
+                    ) : (
+                      <span className="col-span-3 font-semibold text-sibs-muted">No clocked-in support staff confirmed</span>
+                    )}
+                  </div>
+                </div>
+              ) : null}
 
               {(localError || chat.error) ? (
                 <div className="border-b border-red-100 bg-red-50 px-4 py-2 text-[11px] font-semibold text-red-700">
@@ -3934,7 +4325,19 @@ export default function SiBSChat({
                         </button>
                       </div>
                     ) : null}
-                    {chat.messages.map((message, index) => {
+                    <MemoizedChatMessageRows
+                      messages={chat.messages}
+                      currentSibsId={currentSibsId}
+                      conversationId={activeConversation?.id}
+                      isGroup={activeConversation?.isGroup}
+                      membersBySibsId={membersBySibsId}
+                      seenMembersByMessageId={seenMembersByMessageId}
+                      chatClockMs={chatClockMs}
+                      messageActionId={messageActionId}
+                      reactionPickerMessageId={reactionPickerMessageId}
+                      reactingMessageId={reactingMessageId}
+                      unsendingMessageId={unsendingMessageId}
+                      renderRows={() => chat.messages.map((message, index) => {
                       const mine = cleanText(message.senderSibsId) === currentSibsId;
                       const previous = chat.messages[index - 1];
                       const next = chat.messages[index + 1];
@@ -4619,6 +5022,7 @@ export default function SiBSChat({
                         </div>
                       );
                     })}
+                    />
                     <ChatTypingIndicator
                       activeTypingMembers={activeTypingMembers}
                       typingLabel={typingLabel}
@@ -4644,7 +5048,7 @@ export default function SiBSChat({
                   </div>
                 ) : (
                   <div className="flex h-full items-center justify-center text-center">
-                    <div>
+                    <div className="chat-theme-empty-content mx-auto">
                       <ChatAvatar
                         employee={activeConversation.isGroup ? null : activeOtherMember}
                         initials={activeConversation.initials}
@@ -5148,12 +5552,18 @@ export default function SiBSChat({
             onCreateGroup={(payload) =>
               runAction(() => chat.startGroupConversation(payload))
             }
+            onHelpdeskChat={(category) =>
+              runAction(() => chat.startHelpdeskConversation(category))
+            }
           />
 
           <GroupInfoOverlay
             conversation={activeConversation}
             currentSibsId={currentSibsId}
             presence={chat.presence}
+            helpdeskDuty={visibleHelpdeskDuty}
+            helpdeskDutyLoading={helpdeskDutyLoading}
+            helpdeskDutyError={helpdeskDutyError}
             open={groupInfoOpen}
             onClose={() => setGroupInfoOpen(false)}
             onRename={(conversationId, name) =>
@@ -5192,7 +5602,7 @@ export default function SiBSChat({
       {nicknameConversation && typeof document !== "undefined"
         ? createPortal(
             <div
-              className="fixed inset-0 z-[2147483620] flex items-center justify-center bg-slate-950/45 px-4 backdrop-blur-[1px]"
+              className="fixed inset-0 z-[39] flex items-center justify-center bg-slate-950/45 px-4 backdrop-blur-[1px]"
               role="presentation"
               onMouseDown={(event) => {
                 if (event.target === event.currentTarget && !nicknameSaving) {
@@ -5288,7 +5698,7 @@ export default function SiBSChat({
       {deleteConversationConfirm && typeof document !== "undefined"
         ? createPortal(
             <div
-              className="fixed inset-0 z-[2147483620] flex items-center justify-center bg-slate-950/45 px-4 backdrop-blur-[1px]"
+              className="fixed inset-0 z-[39] flex items-center justify-center bg-slate-950/45 px-4 backdrop-blur-[1px]"
               role="presentation"
               onMouseDown={(event) => {
                 if (
@@ -5359,7 +5769,7 @@ export default function SiBSChat({
       {unsendConfirmMessage && typeof document !== "undefined"
         ? createPortal(
             <div
-              className="fixed inset-0 z-[2147483620] flex items-center justify-center bg-slate-950/45 px-4 backdrop-blur-[1px]"
+              className="fixed inset-0 z-[39] flex items-center justify-center bg-slate-950/45 px-4 backdrop-blur-[1px]"
               role="presentation"
               onMouseDown={(event) => {
                 if (
@@ -5430,9 +5840,9 @@ export default function SiBSChat({
     </>
   );
 
-  // The Calendar and Recruitment modals portal to document.body at a higher
-  // stacking layer than AppShell. Render the chat window at the same root so
-  // it remains usable above those modals on phones and desktops.
+  // Keep the floating chat beneath HRIS dialogs and page overlays.
+  // Its photo hover and confirmations sit just above the chat panel, not over
+  // other modules. A body portal still avoids accidental clipping in AppShell.
   return typeof document !== "undefined"
     ? createPortal(chatUi, document.body)
     : chatUi;
