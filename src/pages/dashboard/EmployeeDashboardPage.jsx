@@ -24,7 +24,6 @@ import {
 import Header from "../../components/layout/Header";
 import EmployeeDashboardSkeleton from "../../components/Dashboard/EmployeeDashboard/EmployeeDashboardSkeleton";
 import { ModalShell } from "../../components/ui";
-import AdminLoginModal from "../../components/modals/AdminLoginModal";
 const ResignationModal = lazy(() => import("../../components/modals/resignation/ResignationModal"));
 const ViewResignationModal = lazy(() =>
   import("../../components/modals/resignation-management/ResignationManagementModal").then((m) => ({
@@ -1373,7 +1372,6 @@ export default function EmployeeDashboardPage() {
         }
       />
 
-      <AdminLoginModal />
     </div>
   );
 }

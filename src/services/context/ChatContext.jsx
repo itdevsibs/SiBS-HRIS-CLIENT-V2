@@ -939,16 +939,22 @@ export function ChatProvider({ children }) {
         replyToMessageId,
       });
 
-      if (sentMessage && mountedRef.current) {
-        appendMessageToTimeline(sentMessage);
+      const resultingConversationId = Number(sentMessage?.conversationId || conversationId);
+      if (resultingConversationId !== conversationId) {
+        // A message in a CLOSED Helpdesk case starts a NEW case. Do not add
+        // its first message to the previous case's local timeline.
+        await refreshConversations({ silent: true });
+        if (mountedRef.current && Number(activeConversationIdRef.current) === conversationId) {
+          await selectConversation(resultingConversationId);
+        }
+      } else {
+        if (sentMessage && mountedRef.current) appendMessageToTimeline(sentMessage);
+        // Keep sending snappy; background list refresh does not block composer.
+        void refreshConversations({ silent: true });
       }
-
-      // The conversation list can refresh independently; don't keep the
-      // sender's text in the composer while an unrelated list request runs.
-      void refreshConversations({ silent: true });
       return sentMessage;
     },
-    [appendMessageToTimeline, refreshConversations],
+    [appendMessageToTimeline, refreshConversations, selectConversation],
   );
 
   const unsendMessage = useCallback(

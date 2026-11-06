@@ -14,7 +14,6 @@ import {
 } from "lucide-react";
 
 import Header from "../../components/layout/Header";
-import AdminLoginModal from "../../components/modals/AdminLoginModal";
 import UserModal from "../../components/modals/users/UserModal";
 import StatusModal from "../../components/modals/StatusModal";
 import { useUser } from "../../services/context/UserContext";
@@ -906,7 +905,6 @@ export default function UserManagementPage() {
           <div className="h-5 w-80 max-w-full animate-pulse rounded bg-gray-200" />
         </main>
 
-        <AdminLoginModal />
       </div>
     );
   }
@@ -1101,7 +1099,6 @@ export default function UserManagementPage() {
           </div>
         </main>
 
-        <AdminLoginModal />
       </div>
 
       {actionDropdown.open &&

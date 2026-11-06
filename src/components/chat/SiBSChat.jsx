@@ -13,6 +13,9 @@ import { useLocation } from "react-router-dom";
 import {
   ArrowLeft,
   Check,
+  ChevronDown,
+  ChevronRight,
+  ChevronUp,
   Eye,
   EyeOff,
   FileText,
@@ -94,6 +97,9 @@ const chatDayKeyFormatter = createSystemDateTimeFormatter("en-CA", {
 });
 const chatConversationDateFormatter = createSystemDateTimeFormatter("en-PH", {
   timeZone: "Asia/Manila", month: "long", day: "numeric", year: "numeric",
+});
+const chatCaseDateFormatter = createSystemDateTimeFormatter("en-PH", {
+  timeZone: "Asia/Manila", month: "short", day: "numeric", year: "numeric",
 });
 const chatMessageDayFormatter = createSystemDateTimeFormatter("en-PH", {
   timeZone: "Asia/Manila", weekday: "short", month: "long", day: "numeric", year: "numeric",
@@ -429,6 +435,28 @@ function getHelpdeskCategoryLabel(category) {
   return cleanText(category).toUpperCase() === "IT" ? "IT Support" : "TA/HR Concerns";
 }
 
+// The database keeps globally unique codes (IT-1 / THR-1). The chat UI shows
+// the employee-friendly case number within its own Helpdesk category.
+function getHelpdeskCaseLabel(conversation = {}) {
+  const caseCode = cleanText(conversation?.caseCode);
+  if (!caseCode) return "New concern";
+  const match = caseCode.match(/^(?:IT|THR)-(\d+)$/i);
+  const caseNumber = match ? String(Number(match[1])) : caseCode;
+  const isResolved = cleanText(conversation?.caseStatus).toUpperCase() === "RESOLVED";
+  return `Case ${isResolved ? "Closed" : "Opened"} #${caseNumber}`;
+}
+
+// Department and account labels come from the requester profile, populated by
+// the HRIS sibs_departments / sibs_accounts organization mapping. A missing
+// department means we cannot safely assert an HRIS account assignment.
+function getHelpdeskRequesterOrganizationLabel(conversation = {}) {
+  const requester = getHelpdeskRequester(conversation);
+  const department = cleanText(requester?.department);
+  const account = cleanText(requester?.account);
+  if (!department) return "Department / Account not mapped in HRIS";
+  return account ? `${department} - ${account}` : `${department} - Account not mapped`;
+}
+
 function getReplySenderName(message = {}, currentSibsId = "") {
   if (!message || message?.unavailable) return "Original message";
 
@@ -709,6 +737,22 @@ function formatConversationTime(value, nowMs = Date.now()) {
   if (sameDate) return formatClock(value);
 
   return chatConversationDateFormatter.format(date);
+}
+
+// The case starts at its first chat message, shown in Philippine time.
+// Use a relative date only for the current Manila calendar day; older cases
+// retain an absolute date so "Today" never mislabels a previous-day case.
+function formatHelpdeskCaseOpenedAt(value, nowMs = Date.now()) {
+  if (!value) return "";
+  const timestamp = new Date(value);
+  if (Number.isNaN(timestamp.getTime())) return "";
+
+  const clock = formatClock(value);
+  if (getManilaDateKey(timestamp) === getManilaDateKey(new Date(nowMs))) {
+    return `Today at ${clock}`;
+  }
+
+  return `${chatCaseDateFormatter.format(timestamp)} at ${clock}`;
 }
 
 function formatMessageDay(value) {
@@ -1780,6 +1824,8 @@ const MemoizedChatMessageRows = memo(
     previous.messages === next.messages &&
     previous.currentSibsId === next.currentSibsId &&
     previous.conversationId === next.conversationId &&
+    previous.caseFirstMessageId === next.caseFirstMessageId &&
+    previous.caseCode === next.caseCode &&
     previous.isGroup === next.isGroup &&
     previous.membersBySibsId === next.membersBySibsId &&
     previous.seenMembersByMessageId === next.seenMembersByMessageId &&
@@ -1828,6 +1874,32 @@ export default function SiBSChat({
   const [groupInfoOpen, setGroupInfoOpen] = useState(false);
   const [themeModalOpen, setThemeModalOpen] = useState(false);
   const [conversationSearch, setConversationSearch] = useState("");
+  // Start with all folders closed. Once the chat is opened, reveal only the
+  // folder containing the conversation currently displayed on the right.
+  const [expandedChatFolders, setExpandedChatFolders] = useState({
+    private: false,
+    groups: false,
+    helpdesk: false,
+    it: false,
+    taHr: false,
+  });
+  const toggleChatFolder = useCallback((folder) => {
+    setExpandedChatFolders((previous) => ({
+      ...previous,
+      [folder]: !previous[folder],
+    }));
+  }, []);
+  const chatSearchActive = Boolean(cleanText(conversationSearch));
+
+  // Reveal matching folders when a search starts, but let employees freely
+  // collapse/expand them afterward even while search remains active.
+  useEffect(() => {
+    if (!chatSearchActive) return;
+    setExpandedChatFolders((previous) => {
+      if (Object.values(previous).every(Boolean)) return previous;
+      return { private: true, groups: true, helpdesk: true, it: true, taHr: true };
+    });
+  }, [chatSearchActive]);
   const [draft, setDraft] = useState("");
   const [selectedImages, setSelectedImages] = useState([]);
   const [draggingAttachments, setDraggingAttachments] = useState(false);
@@ -2582,12 +2654,108 @@ export default function SiBSChat({
     });
   }, [chat?.conversations, conversationSearch]);
 
+  // Display existing conversations in sidebar-style folders, without moving
+  // threads or changing their server-side memberships. A search temporarily
+  // expands matching folders so results stay discoverable even if collapsed.
+  const chatSidebarEntries = useMemo(() => {
+    const folders = { private: [], groups: [], it: [], taHr: [] };
+    for (const conversation of filteredConversations) {
+      const type = cleanText(conversation?.conversationType).toUpperCase();
+      if (conversation?.isHelpdesk || type === "HELPDESK") {
+        const category = cleanText(conversation?.helpdeskCategory).toUpperCase();
+        folders[category === "IT" ? "it" : "taHr"].push(conversation);
+      } else if (conversation?.isGroup || type === "GROUP") {
+        folders.groups.push(conversation);
+      } else {
+        folders.private.push(conversation);
+      }
+    }
+
+    const searching = chatSearchActive;
+    const expanded = (key) => expandedChatFolders[key] !== false;
+    const unread = (items) => items.reduce((total, conversation) =>
+      total + Math.max(0, Number(conversation?.unreadCount) || 0), 0);
+    const entries = [];
+
+    const addConversationRows = (items, parent) => {
+      for (const conversation of items) {
+        entries.push({ kind: "conversation", key: `chat-${conversation.id}`, conversation, parent });
+      }
+    };
+    const addSection = (key, label, items) => {
+      if (searching && !items.length) return;
+      entries.push({ kind: "section", key, label, count: items.length,
+        unread: unread(items), expanded: expanded(key) });
+      if (expanded(key)) addConversationRows(items, key);
+    };
+
+    addSection("private", "Private Messages", folders.private);
+    addSection("groups", "Group Chats", folders.groups);
+
+    const helpdeskItems = [...folders.it, ...folders.taHr];
+    if (!searching || helpdeskItems.length) {
+      entries.push({ kind: "section", key: "helpdesk", label: "Helpdesk",
+        count: helpdeskItems.length, unread: unread(helpdeskItems),
+        expanded: expanded("helpdesk") });
+      if (expanded("helpdesk")) {
+        for (const [key, label] of [["it", "IT Support"], ["taHr", "TA/HR Concerns"]]) {
+          const items = folders[key];
+          if (searching && !items.length) continue;
+          entries.push({ kind: "subsection", key, label, count: items.length,
+            unread: unread(items), expanded: expanded(key) });
+          if (expanded(key)) addConversationRows(items, key);
+        }
+      }
+    }
+    return entries;
+  }, [filteredConversations, chatSearchActive, expandedChatFolders]);
+
   const activeConversation = chat?.activeConversation || null;
+
+  // The selected conversation can arrive before/after the refreshed list.
+  // Compare IDs instead of depending on the entire conversation object so
+  // two-second presence/unread updates never reopen or collapse folders.
+  const selectedConversationId = Number(
+    chat?.activeConversationId || activeConversation?.id || 0,
+  );
+  const selectedFolderConversation = (chat?.conversations || []).find(
+    (conversation) => Number(conversation?.id) === selectedConversationId,
+  ) || (Number(activeConversation?.id) === selectedConversationId ? activeConversation : null);
+  const selectedFolderType = cleanText(selectedFolderConversation?.conversationType).toUpperCase();
+  const selectedFolder = selectedFolderConversation?.isHelpdesk || selectedFolderType === "HELPDESK"
+    ? cleanText(selectedFolderConversation.helpdeskCategory).toUpperCase() === "IT" ? "it" : "taHr"
+    : selectedFolderConversation?.isGroup || selectedFolderType === "GROUP"
+      ? "groups"
+      : selectedFolderConversation ? "private" : "";
+
+  useEffect(() => {
+    if (!open || chatSearchActive) return;
+    setExpandedChatFolders((previous) => {
+      const next = {
+        private: selectedFolder === "private",
+        groups: selectedFolder === "groups",
+        helpdesk: selectedFolder === "it" || selectedFolder === "taHr",
+        it: selectedFolder === "it",
+        taHr: selectedFolder === "taHr",
+      };
+      return Object.keys(next).every((key) => previous[key] === next[key])
+        ? previous
+        : next;
+    });
+  }, [open, chatSearchActive, selectedConversationId, selectedFolder]);
+
+  // Keep the compact three-person duty preview independent from incoming chat
+  // messages and two-minute Kronos refreshes. Reset only when the thread changes.
+  const [dutyRosterExpanded, setDutyRosterExpanded] = useState(false);
   const activeHelpdeskId = open && activeConversation?.isHelpdesk
     ? Number(activeConversation.id || 0) : 0;
   const [helpdeskDuty, setHelpdeskDuty] = useState(null);
   const [helpdeskDutyLoading, setHelpdeskDutyLoading] = useState(false);
   const [helpdeskDutyError, setHelpdeskDutyError] = useState(false);
+  useEffect(() => {
+    setDutyRosterExpanded(false);
+  }, [activeHelpdeskId]);
+
   const visibleHelpdeskDuty = helpdeskDuty?.conversationId === activeHelpdeskId
     ? helpdeskDuty : null;
 
@@ -3221,6 +3389,11 @@ export default function SiBSChat({
   async function submitGif(gif) {
     const gifUrl = cleanText(gif?.gifUrl);
     if (!gifUrl || sending || !activeConversation) return;
+    if (activeConversation?.isHelpdesk && activeConversation.caseStatus === "RESOLVED" &&
+        cleanText(activeConversation.createdBySibsId) !== currentSibsId) {
+      setLocalError("This Helpdesk case is closed. Support replies are disabled.");
+      return;
+    }
 
     try {
       setSending(true);
@@ -3251,6 +3424,11 @@ export default function SiBSChat({
 
   async function submitMessage() {
     const text = cleanText(draft);
+    if (activeConversation?.isHelpdesk && activeConversation.caseStatus === "RESOLVED" &&
+        cleanText(activeConversation.createdBySibsId) !== currentSibsId) {
+      setLocalError("This case is closed. Support replies are disabled. The requester can open a new case.");
+      return;
+    }
     if ((!text && !selectedImages.length) || sending || attachmentJobsRef.current > 0 || !activeConversation) return;
 
     try {
@@ -3894,7 +4072,45 @@ export default function SiBSChat({
                 <Loader2 size={20} className="animate-spin" />
               </div>
             ) : filteredConversations.length ? (
-              filteredConversations.map((conversation) => {
+              chatSidebarEntries.map((entry) => {
+                if (entry.kind === "section" || entry.kind === "subsection") {
+                  const isSubsection = entry.kind === "subsection";
+                  const FolderIcon = entry.key === "private" ? MessageCircleMore
+                    : entry.key === "groups" ? UsersRound
+                    : entry.key === "helpdesk" ? Headset
+                    : entry.key === "it" ? MonitorCog : HeartHandshake;
+                  return (
+                    <button
+                      key={`folder-${entry.key}`}
+                      type="button"
+                      aria-expanded={entry.expanded}
+                      onClick={() => toggleChatFolder(entry.key)}
+                      className={`group/folder mb-1 flex w-full items-center gap-2 rounded-lg text-left transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-sibs-orange ${
+                        isSubsection
+                          ? "py-2 pl-5 pr-2 text-[11px] font-bold text-sibs-navy hover:bg-sibs-surface"
+                          : "px-2.5 py-2.5 text-xs font-extrabold text-sibs-navy hover:bg-sibs-surface"
+                      }`}
+                    >
+                      <FolderIcon size={isSubsection ? 14 : 16} className="shrink-0 text-sibs-orange" />
+                      <span className="min-w-0 flex-1 truncate">{entry.label}</span>
+                      {entry.unread > 0 ? (
+                        <span
+                          title={`${entry.unread} unread message${entry.unread === 1 ? "" : "s"}`}
+                          className="inline-flex min-w-5 items-center justify-center rounded-full bg-sibs-orange px-1 py-0.5 text-[9px] font-extrabold text-white"
+                        >
+                          {entry.unread > 99 ? "99+" : entry.unread}
+                        </span>
+                      ) : null}
+                      <span className="rounded-md bg-sibs-surface px-1.5 py-0.5 text-[10px] font-bold text-sibs-muted">
+                        {entry.count}
+                      </span>
+                      {entry.expanded
+                        ? <ChevronDown size={14} className="shrink-0 text-sibs-muted" />
+                        : <ChevronRight size={14} className="shrink-0 text-sibs-muted" />}
+                    </button>
+                  );
+                }
+                const conversation = entry.conversation;
                 const selected = Number(chat.activeConversationId) === Number(conversation.id);
                 const otherMember = conversation.otherMember;
                 const online = otherMember ? isMemberOnline(otherMember) : false;
@@ -3966,6 +4182,8 @@ export default function SiBSChat({
                   <div
                     key={conversation.id}
                     className={`group relative mb-1 flex w-full items-center rounded-xl border-l-[3px] transition ${
+                      entry.parent === "it" || entry.parent === "taHr" ? "ml-2 w-[calc(100%-0.5rem)] " : ""
+                    }${
                       selected
                         ? "border-l-sibs-orange bg-sibs-cream-subtle border-y border-r border-sibs-border/60"
                         : "border-l-transparent hover:bg-sibs-surface"
@@ -3988,7 +4206,7 @@ export default function SiBSChat({
                           <>
                             <span className="flex min-w-0 items-center justify-between gap-2">
                               <span className="truncate text-[10px] font-extrabold text-sibs-orange">
-                                {helpdeskLabel}
+                                {helpdeskLabel} · {getHelpdeskCaseLabel(conversation)}
                               </span>
                               <span className="shrink-0 text-[10px] font-medium text-sibs-faint">
                                 {formatConversationTime(conversation.lastMessageAt || conversation.updatedAt, chatClockMs)}
@@ -4129,7 +4347,9 @@ export default function SiBSChat({
               <div className="flex h-full items-center justify-center px-5 text-center">
                 <div>
                   <MessageCircleMore size={24} className="mx-auto text-sibs-faint" />
-                  <p className="mt-2 text-xs font-extrabold text-sibs-navy">No chats yet</p>
+                  <p className="mt-2 text-xs font-extrabold text-sibs-navy">
+                    {cleanText(conversationSearch) ? "No matching conversations" : "No chats yet"}
+                  </p>
                   <button
                     type="button"
                     onClick={() => setNewChatOpen(true)}
@@ -4152,7 +4372,7 @@ export default function SiBSChat({
         >
           {activeConversation ? (
             <>
-              <header className="flex h-[68px] shrink-0 items-center gap-1.5 border-b border-white/10 bg-sibs-navy px-2 text-white shadow-xs sm:gap-3 sm:px-4">
+              <header className={`flex ${activeConversation.isHelpdesk ? "h-[82px]" : "h-[68px]"} shrink-0 items-center gap-1.5 border-b border-white/10 bg-sibs-navy px-2 text-white shadow-xs sm:gap-3 sm:px-4`}>
                 <button
                   type="button"
                   onClick={handleBackToList}
@@ -4171,6 +4391,14 @@ export default function SiBSChat({
                   <h3 className="truncate font-heading text-sm sm:text-base font-extrabold text-white">
                     {activeConversation.title}
                   </h3>
+                  {activeConversation.isHelpdesk ? (
+                    <p
+                      className="mt-0.5 truncate text-[10px] font-semibold text-white/90"
+                      title={getHelpdeskRequesterOrganizationLabel(activeConversation)}
+                    >
+                      {getHelpdeskRequesterOrganizationLabel(activeConversation)}
+                    </p>
+                  ) : null}
                   {activeConversation.isGroup ? (
                     <button
                       type="button"
@@ -4179,6 +4407,9 @@ export default function SiBSChat({
                       className="mt-0.5 inline-flex items-center gap-1 text-left text-[10px] font-semibold text-white/75 transition hover:text-white"
                     >
                       <span>
+                        {activeConversation.isHelpdesk
+                          ? `${getHelpdeskCaseLabel(activeConversation)} · `
+                          : ""}
                         {activeConversation.members?.length || 0} member
                         {(activeConversation.members?.length || 0) === 1 ? "" : "s"}
                         {activeConversation.isHelpdesk && visibleHelpdeskDuty
@@ -4223,6 +4454,7 @@ export default function SiBSChat({
                 </button>
               </header>
 
+
               {activeConversation.isHelpdesk ? (
                 <div className="shrink-0 border-b border-emerald-100 bg-emerald-50 px-3 py-2 text-[11px] sm:px-4">
                   <div className="flex items-center justify-between gap-2">
@@ -4235,14 +4467,14 @@ export default function SiBSChat({
                       All members
                     </button>
                   </div>
-                  <div className="mt-1.5 grid grid-cols-3 items-stretch gap-2">
+                  <div id="sibs-chat-helpdesk-duty-grid" className="mt-1.5 grid grid-cols-3 items-stretch gap-2">
                     {helpdeskDutyLoading && !visibleHelpdeskDuty ? (
                       <span className="col-span-3 font-semibold text-sibs-muted">Checking Kronos attendance…</span>
                     ) : helpdeskDutyError && !visibleHelpdeskDuty ? (
                       <span className="col-span-3 font-semibold text-sibs-muted">Attendance temporarily unavailable</span>
                     ) : onDutySupportMembers.length ? (
                       <>
-                        {onDutySupportMembers.map((member) => (
+                        {(dutyRosterExpanded ? onDutySupportMembers : onDutySupportMembers.slice(0, 3)).map((member) => (
                           <span
                             key={member.sibsId}
                             className="flex min-w-0 items-start gap-1.5 rounded-lg border border-emerald-100 bg-white/80 px-2 py-1.5"
@@ -4268,6 +4500,18 @@ export default function SiBSChat({
                       <span className="col-span-3 font-semibold text-sibs-muted">No clocked-in support staff confirmed</span>
                     )}
                   </div>
+                  {onDutySupportMembers.length > 3 ? (
+                    <button
+                      type="button"
+                      onClick={() => setDutyRosterExpanded((expanded) => !expanded)}
+                      aria-expanded={dutyRosterExpanded}
+                      aria-controls="sibs-chat-helpdesk-duty-grid"
+                      className="mx-auto mt-1.5 flex min-h-7 items-center justify-center gap-1.5 rounded-lg px-3 py-1 text-[11px] font-bold text-emerald-800 transition-colors hover:bg-emerald-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600"
+                    >
+                      {dutyRosterExpanded ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
+                      {dutyRosterExpanded ? "Show less" : `Show ${onDutySupportMembers.length - 3} more`}
+                    </button>
+                  ) : null}
                 </div>
               ) : null}
 
@@ -4329,6 +4573,8 @@ export default function SiBSChat({
                       messages={chat.messages}
                       currentSibsId={currentSibsId}
                       conversationId={activeConversation?.id}
+                      caseFirstMessageId={activeConversation?.caseFirstMessageId}
+                      caseCode={activeConversation?.caseCode}
                       isGroup={activeConversation?.isGroup}
                       membersBySibsId={membersBySibsId}
                       seenMembersByMessageId={seenMembersByMessageId}
@@ -4351,6 +4597,12 @@ export default function SiBSChat({
                           : 0;
                       const isSignificantGap = timeGapMs >= 15 * 60 * 1000;
                       const shouldShowCenterTime = showDate || isSignificantGap;
+                      const isCaseOpeningMessage = Boolean(
+                        activeConversation?.isHelpdesk &&
+                        activeConversation?.caseCode &&
+                        Number(activeConversation?.caseFirstMessageId) > 0 &&
+                        Number(activeConversation.caseFirstMessageId) === Number(message.id)
+                      );
                       const normalizedMessageType = cleanText(
                         message.messageType,
                       ).toUpperCase();
@@ -4454,10 +4706,12 @@ export default function SiBSChat({
                                 : "mt-0.5"
                           }
                         >
-                          {shouldShowCenterTime ? (
+                          {shouldShowCenterTime || isCaseOpeningMessage ? (
                             <div className="my-2.5 flex items-center justify-center">
                               <span className="chat-theme-date-pill">
-                                {formatMessengerCenterTimestamp(message.createdAt, previous?.createdAt)}
+                                {isCaseOpeningMessage
+                                  ? `Case Opened #${activeConversation.caseCode.split("-").at(-1)} (${formatHelpdeskCaseOpenedAt(activeConversation.caseOpenedAt || message.createdAt).replace("Today at ", "Today ")})`
+                                  : formatMessengerCenterTimestamp(message.createdAt, previous?.createdAt)}
                               </span>
                             </div>
                           ) : null}
@@ -5023,6 +5277,25 @@ export default function SiBSChat({
                       );
                     })}
                     />
+                    {/* Derived from the authoritative ticket resolution record. Do not
+                        create a chat message: that would alter unread counts and case
+                        history. The existing conversation sync updates this event for
+                        both the requester and support staff automatically. */}
+                    {activeConversation?.isHelpdesk &&
+                    activeConversation?.caseCode &&
+                    cleanText(activeConversation?.caseStatus).toUpperCase() === "RESOLVED" ? (
+                      <div
+                        role="status"
+                        aria-live="polite"
+                        data-helpdesk-case-closed={activeConversation.caseCode}
+                        className="my-3 flex items-center justify-center px-3 [overflow-anchor:none]"
+                      >
+                        <span className="chat-theme-date-pill inline-flex items-center gap-1.5 text-center">
+                          <Check size={12} aria-hidden="true" />
+                          {`Case #${Number(activeConversation.caseCode.split("-").at(-1)) || activeConversation.caseCode} Closed${activeConversation.caseResolvedAt ? ` (${formatHelpdeskCaseOpenedAt(activeConversation.caseResolvedAt).replace("Today at ", "Today ")})` : ""}`}
+                        </span>
+                      </div>
+                    ) : null}
                     <ChatTypingIndicator
                       activeTypingMembers={activeTypingMembers}
                       typingLabel={typingLabel}
@@ -5489,6 +5762,7 @@ export default function SiBSChat({
                     <textarea
                       ref={textareaRef}
                       value={draft}
+                      disabled={activeConversation?.isHelpdesk && activeConversation.caseStatus === "RESOLVED" && cleanText(activeConversation.createdBySibsId) !== currentSibsId}
                       onChange={(event) => {
                         const nextValue = event.target.value.slice(0, 5000);
                         setDraft(nextValue);
@@ -5529,7 +5803,7 @@ export default function SiBSChat({
                   <button
                     type="button"
                     onClick={submitMessage}
-                    disabled={sending || attachmentsLoading || (!cleanText(draft) && !selectedImages.length)}
+                    disabled={sending || attachmentsLoading || (!cleanText(draft) && !selectedImages.length) || (activeConversation?.isHelpdesk && activeConversation.caseStatus === "RESOLVED" && cleanText(activeConversation.createdBySibsId) !== currentSibsId)}
                     aria-label={attachmentsLoading ? "Preparing attachments" : "Send message"}
                     className="relative z-[1] inline-flex h-10 w-10 shrink-0 self-end items-center justify-center rounded-xl bg-sibs-orange text-white shadow-xs transition hover:bg-sibs-button-hover active:scale-[0.96] disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-sibs-faint disabled:shadow-none disabled:opacity-100"
                   >

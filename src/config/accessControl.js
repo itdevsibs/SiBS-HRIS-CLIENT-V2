@@ -144,6 +144,11 @@ export function getDefaultDashboardPath(user = {}) {
 
 export const EMPLOYEE_ALLOWED_PATHS = [
   "/dashboard/employee",
+  // IT and TA/HR employees may access their assigned support queues while
+  // signed in to the Employee portal. HelpdeskSupportPage and the backend
+  // support-access endpoint enforce category-specific authorization.
+  "/helpdesk/it-support",
+  "/helpdesk/ta-hr-concerns",
   "/attendance",
   "/leaves",
   "/profile",
