@@ -3,6 +3,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { motion as Motion } from "framer-motion";
 import { createPortal } from "react-dom";
 import {
+  AlertCircle,
   CalendarDays,
   FileDown,
   Loader2,
@@ -699,7 +700,33 @@ function EmployeeAvatar({ employee, size = "md" }) {
   );
 }
 
-function EmptyState({ loading, message }) {
+function EmptyState({ loading, message, error = "", onRetry, disabled = false }) {
+  if (!loading && error) {
+    return (
+      <div role="alert" className="flex flex-col items-center justify-center px-5 py-12 text-center">
+        <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-rose-50 text-rose-600">
+          <AlertCircle size={22} aria-hidden="true" />
+        </div>
+        <h3 className="mt-3 text-sm font-extrabold text-rose-700">
+          Unable to load employee records
+        </h3>
+        <p className="mt-1 max-w-xl text-xs font-bold leading-4 text-rose-600">
+          {error}
+        </p>
+        {typeof onRetry === "function" ? (
+          <button
+            type="button"
+            onClick={onRetry}
+            disabled={disabled}
+            className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-rose-200 bg-white px-3 py-1.5 text-xs font-extrabold text-rose-700 shadow-2xs transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            Retry
+          </button>
+        ) : null}
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col items-center justify-center px-5 py-12 text-center">
       <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-sibs-surface text-sibs-navy">
@@ -832,6 +859,7 @@ export default function EmployeeTable({
   const loadedAccountOptionsKeyRef = useRef("");
 
   const [employees, setEmployees] = useState([]);
+  const [loadError, setLoadError] = useState("");
   const [departmentFilter, setDepartmentFilter] = useState("All");
   const [accountFilters, setAccountFilters] = useState([]);
   const [departmentOptions, setDepartmentOptions] = useState([]);
@@ -994,6 +1022,7 @@ export default function EmployeeTable({
     let cancelled = false;
 
     async function loadEmployees() {
+      setLoadError("");
       try {
         setLoading?.(true);
 
@@ -1018,6 +1047,7 @@ export default function EmployeeTable({
         if (cancelled) return;
 
         if (!result?.success) {
+          setLoadError(result?.message || "Unable to load employee records. Please try again.");
           setEmployees([]);
           setPagination?.({
             currentPage: 1,
@@ -1075,6 +1105,7 @@ export default function EmployeeTable({
         if (cancelled) return;
 
         console.error("Employee directory load error:", error);
+        setLoadError(error?.message || "Unable to load employee records. Please try again.");
         setEmployees([]);
         setEmployeeAccess(null);
         setPagination?.({
@@ -1282,6 +1313,25 @@ export default function EmployeeTable({
       </div>
 
       <div className="min-h-0 flex-1 p-4 sm:p-5 2xl:p-6">
+        {loadError ? (
+          <div
+            role="alert"
+            className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-rose-700"
+          >
+            <div className="flex items-center gap-2 text-xs font-bold">
+              <AlertCircle size={16} aria-hidden="true" className="shrink-0 text-rose-600" />
+              <span>{loadError}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setSearchRequestKey((c) => c + 1)}
+              disabled={loading}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-rose-200 bg-white px-3 py-1.5 text-xs font-extrabold text-rose-700 shadow-2xs transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              Retry
+            </button>
+          </div>
+        ) : null}
         <div className="overflow-hidden rounded-xl border border-sibs-border bg-white shadow-xs">
           {tabs.length > 1 ? (
             <StatusFilterTabs
@@ -1304,8 +1354,8 @@ export default function EmployeeTable({
                   <DataCard.Skeleton count={5} lines={3} />
                 ) : employees.length === 0 ? (
                   <DataCard.Empty
-                    title="No employees found"
-                    description="Try adjusting your search or filters."
+                    title={loadError ? "Unable to load employee records" : "No employees found"}
+                    description={loadError || "Try adjusting your search or filters."}
                   />
                 ) : (
                   <div className="space-y-3">
@@ -1365,7 +1415,12 @@ export default function EmployeeTable({
                     ) : employees.length === 0 ? (
                       <tr>
                         <td colSpan={columns.length}>
-                          <EmptyState loading={false} />
+                          <EmptyState
+                            loading={false}
+                            error={loadError}
+                            onRetry={() => setSearchRequestKey((c) => c + 1)}
+                            disabled={loading}
+                          />
                         </td>
                       </tr>
                     ) : (

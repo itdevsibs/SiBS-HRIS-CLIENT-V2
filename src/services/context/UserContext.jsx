@@ -18,6 +18,7 @@ import { createBirthdayLoginEvent } from "../../lib/utils/birthdayCelebration.js
 
 import {
   clearCachedAuthSession,
+  PERSISTENT_EXPIRY_KEY,
   normalizeExpiry,
   readCachedAuthSession,
   readStoredExpiry,
@@ -716,10 +717,27 @@ export function UserProvider({ children }) {
       clearLocalAuthState();
     };
 
+    const handleStorageLogout = (event) => {
+      if (isPublicPath(window.location.pathname)) {
+        return;
+      }
+
+      if (
+        (event.key === PERSISTENT_EXPIRY_KEY ||
+          event.key === SERVER_TOKEN_EXPIRY_LOCAL_KEY ||
+          event.key === null) &&
+        !event.newValue
+      ) {
+        clearLocalAuthState();
+      }
+    };
+
     window.addEventListener(AUTH_LOGOUT_START_EVENT, handleLogoutStart);
+    window.addEventListener("storage", handleStorageLogout);
 
     return () => {
       window.removeEventListener(AUTH_LOGOUT_START_EVENT, handleLogoutStart);
+      window.removeEventListener("storage", handleStorageLogout);
     };
   }, [clearLocalAuthState]);
 

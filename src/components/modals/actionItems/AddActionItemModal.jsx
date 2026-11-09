@@ -20,6 +20,7 @@ import DatePicker from "../../ui/DatePicker";
 const STATUS_OPTIONS = ["Planned", "Ongoing", "Completed"];
 
 function FieldLabel({ children, required = false }) {
+
   return (
     <label className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-sibs-muted">
       {children}
@@ -35,6 +36,7 @@ const textAreaClass =
   "w-full resize-none rounded-[10px] border border-sibs-border bg-sibs-surface px-3 2xl:px-3.5 py-2.5 sibs-text-xs font-semibold leading-5 text-sibs-navy outline-none transition placeholder:text-sibs-muted focus:border-sibs-orange focus:bg-white focus:ring-4 focus:ring-sibs-orange/10";
 
 function ContextValue({ label, value, mono = false }) {
+
   return (
     <div>
       <FieldLabel>{label}</FieldLabel>
@@ -51,6 +53,7 @@ function ContextValue({ label, value, mono = false }) {
 }
 
 function MetricCell({ label, value, valueClass = "text-sibs-navy" }) {
+
   return (
     <div className="flex min-h-[50px] 2xl:min-h-[54px] flex-col items-center justify-center px-2 text-center">
       <span className="text-[8.5px] 2xl:text-[9px] font-extrabold uppercase leading-3 tracking-wide text-sibs-muted">
@@ -166,10 +169,25 @@ export default function AddActionItemModal() {
     resetActionForm();
   }
 
+  const isDirty = Boolean(
+    selectedKey ||
+      String(actionForm?.actionItem || "").trim() ||
+      String(actionForm?.owner || "").trim() ||
+      String(actionForm?.deadline || "").trim() ||
+      String(actionForm?.linkedGap || "").trim() ||
+      String(actionForm?.remarks || "").trim()
+  );
+
+  if (isDirty) {
+    void isDirty;
+  }
+
+
   return (
     <ModalShell
       open={showAddModal}
       onClose={closeAddModal}
+      isDirty={isDirty}
       variant="navy"
       maxWidth="max-w-5xl 2xl:max-w-6xl"
       className="rounded-[14px] text-sibs-navy"

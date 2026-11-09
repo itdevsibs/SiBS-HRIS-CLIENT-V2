@@ -58,12 +58,12 @@
   --color-sibs-text-primary: #042c51;
   --color-sibs-text-secondary: #344054;
   --color-sibs-text-muted: #667085;
-  --color-sibs-text-faint: #98a2b3;
+  --color-sibs-text-faint: #667085;
 
   /* Shorthand Token Aliases for Clean Tailwind Utility Classes */
   --color-sibs-muted: #667085;
   --color-sibs-secondary: #344054;
-  --color-sibs-faint: #98a2b3;
+  --color-sibs-faint: #667085;
   --color-sibs-surface: #f8fafc;
   --color-sibs-surface-subtle: #f4f7fa;
 
@@ -188,7 +188,7 @@
   }
 
   button {
-    transition: all 0.2s ease;
+    transition: color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease, transform 0.15s ease;
   }
 
   :focus-visible {
@@ -867,8 +867,20 @@
   }
 
   .thin-scroll {
-    scrollbar-width: thin;
-    scrollbar-color: #c1d1e2 transparent;
+    
+  }
+
+  @supports not selector(::-webkit-scrollbar) {
+    .thin-scroll {
+      scrollbar-width: thin;
+      scrollbar-color: #c1d1e2 transparent;
+    }
+  }
+
+  .thin-scroll::-webkit-scrollbar-button {
+    display: none;
+    width: 0;
+    height: 0;
   }
 
   .thin-scroll::-webkit-scrollbar {
@@ -878,6 +890,7 @@
 
   .thin-scroll::-webkit-scrollbar-track {
     background: transparent;
+  margin-block: 4px;
   }
 
   .thin-scroll::-webkit-scrollbar-thumb {
@@ -1175,11 +1188,29 @@
   .sibs-page-card-in,
   [style*="sibsLogoGlow"],
   .sibs-toast-in,
-  .sibs-dropdown-pop-in {
-    animation-duration: 1ms;
-    filter: none;
-    transform: none;
-    will-change: auto;
+  .sibs-dropdown-pop-in,
+  .sibs-modal-backdrop-in,
+  .sibs-modal-backdrop-out,
+  .sibs-modal-pop-in,
+  .sibs-modal-pop-out,
+  .sibs-inner-modal-backdrop-in,
+  .sibs-inner-modal-backdrop-out,
+  .sibs-inner-modal-pop-in,
+  .sibs-inner-modal-pop-out,
+  .sibs-action-backdrop-in,
+  .sibs-action-backdrop-out,
+  .sibs-action-drawer-in,
+  .sibs-action-drawer-out,
+  .sibs-profile-tab-panel,
+  .sibs-profile-tab-indicator,
+  .sibs-profile-dropdown-panel,
+  .animate-slide-in,
+  .animate-sibs-pulse {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    filter: none !important;
+    transform: none !important;
+    will-change: auto !important;
   }
 
   .sibs-animated-dropdown,
@@ -1204,6 +1235,7 @@
 
 ::-webkit-scrollbar-track {
   background: transparent;
+  margin-block: 4px;
 }
 
 /* =========================
@@ -1437,7 +1469,7 @@
   }
 
   .sibs-data-table-row {
-    @apply cursor-pointer transition-colors hover:bg-[#FFF9F6] focus-visible:bg-[#FFF9F6] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sibs-orange/30;
+    @apply cursor-pointer transition-colors hover:bg-sibs-cream-light focus-visible:bg-sibs-cream-light focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sibs-orange/30;
   }
 
   .sibs-icon-box {
@@ -1749,8 +1781,20 @@
 
   .sibs-sidebar-scroll {
     @apply min-h-0 flex-1 overflow-y-auto overflow-x-hidden py-3.5 pl-4 pr-2.5;
-    scrollbar-width: thin;
-    scrollbar-color: var(--sibs-tertiary-8) transparent;
+    
+  }
+
+  @supports not selector(::-webkit-scrollbar) {
+    .sibs-sidebar-scroll {
+      scrollbar-width: thin;
+      scrollbar-color: var(--sibs-tertiary-8) transparent;
+    }
+  }
+
+  .sibs-sidebar-scroll::-webkit-scrollbar-button {
+    display: none;
+    width: 0;
+    height: 0;
   }
 
   .sibs-sidebar-scroll::-webkit-scrollbar {
@@ -1759,6 +1803,7 @@
 
   .sibs-sidebar-scroll::-webkit-scrollbar-track {
     background: transparent;
+  margin-block: 4px;
   }
 
   .sibs-sidebar-scroll::-webkit-scrollbar-thumb {
@@ -1925,8 +1970,20 @@
 }
 
 .sibs-scrollbar {
-  scrollbar-width: thin;
-  scrollbar-color: #cbd5e1 transparent;
+  
+}
+
+@supports not selector(::-webkit-scrollbar) {
+  .sibs-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 transparent;
+  }
+}
+
+.sibs-scrollbar::-webkit-scrollbar-button {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
 }
 
 .sibs-scrollbar::-webkit-scrollbar {
@@ -1936,6 +1993,7 @@
 
 .sibs-scrollbar::-webkit-scrollbar-track {
   background: transparent;
+  margin-block: 4px;
 }
 
 .sibs-scrollbar::-webkit-scrollbar-thumb {
@@ -2321,6 +2379,7 @@
   margin: 0 0 0.25rem 0.35rem;
   padding: 0;
   background: transparent;
+  margin-block: 4px;
   border: 0;
   border-radius: 0;
   box-shadow: none;

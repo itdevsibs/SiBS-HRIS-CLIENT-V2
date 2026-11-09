@@ -280,7 +280,7 @@ function TrainingProcessDetailModal({
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-sibs-border bg-white">
-                    {fullCurriculum.map((m) => <tr key={m.id} className="hover:bg-sibs-surface/80 transition-colors">
+                    {fullCurriculum.map((m) => <tr key={m.id} className="hover:bg-sibs-cream-light transition-colors">
                         <td className="py-3 px-3">
                           <strong className="text-sibs-navy block text-[12px]">{m.title}</strong>
                           <span className="text-[10px] text-sibs-faint block">{m.module}</span>

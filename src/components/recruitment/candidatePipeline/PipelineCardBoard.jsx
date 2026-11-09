@@ -193,7 +193,7 @@ export default function PipelineCardsBoard({
           return (
             <div
               key={stage}
-              style={{ animationDelay: `${stageIndex * 60}ms`, animationFillMode: "both" }}
+              style={{ animationDelay: `${300 + stageIndex * 40}ms`, animationFillMode: "both" }}
               className="sibs-page-card-in flex h-[520px] 2xl:h-[720px] w-[275px] 2xl:w-[292px] shrink-0 flex-col overflow-hidden rounded-[14px] border border-sibs-border bg-slate-100/70 shadow-[0_7px_18px_rgba(4,44,81,0.035)] transition"
             >
               <div
@@ -233,11 +233,6 @@ export default function PipelineCardsBoard({
                     <div
                       key={getCandidateKey(candidate, index)}
                       data-no-board-drag="true"
-                      className="sibs-page-card-in"
-                      style={{
-                        animationDelay: `${stageIndex * 50 + index * 40}ms`,
-                        animationFillMode: "both",
-                      }}
                     >
                       <PipelineCandidateCard
                         candidate={candidate}

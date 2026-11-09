@@ -220,7 +220,10 @@ const InterviewCalendar = ({ candidates, onViewCandidate }) => {
   }
 
   return (
-    <section className="sibs-page-card-in sibs-card overflow-hidden font-jakarta">
+    <section
+      className="sibs-page-card-in sibs-card overflow-hidden font-jakarta"
+      style={{ animationDelay: "300ms", animationFillMode: "both" }}
+    >
       <div className="border-b border-sibs-border bg-white px-4 py-4 sm:px-5">
         <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
           <div className="flex min-w-0 items-start gap-3">

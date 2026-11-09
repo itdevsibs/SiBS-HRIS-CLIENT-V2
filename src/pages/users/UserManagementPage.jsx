@@ -482,7 +482,7 @@ export default function UserManagementPage() {
     </button>
   );
 
-  const renderPagination = () => {
+  const _renderPagination = () => {
     const totalPages = pagination.totalPages || 1;
     const pages = [];
 
@@ -988,7 +988,10 @@ export default function UserManagementPage() {
               />
             </section>
 
-          <div className="sibs-table-shell">
+          <div
+            className="sibs-page-card-in sibs-table-shell"
+            style={{ animationDelay: "240ms", animationFillMode: "both" }}
+          >
             <div className="border-b border-sibs-border p-3 sm:p-4">
               <div className="relative w-full sm:max-w-sm">
                 <Search

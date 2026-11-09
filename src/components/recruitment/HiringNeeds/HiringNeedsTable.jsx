@@ -186,7 +186,7 @@ export default function HiringNeedsTable({
     }
   }, [page, safeCurrentPage, setPage]);
 
-  function handlePreviousPage() {
+  function _handlePreviousPage() {
     if (loading || safeCurrentPage <= 1) {
       return;
     }
@@ -194,7 +194,7 @@ export default function HiringNeedsTable({
     setPage(Math.max(safeCurrentPage - 1, 1));
   }
 
-  function handleNextPage() {
+  function _handleNextPage() {
     if (loading || safeCurrentPage >= totalPages) {
       return;
     }
@@ -319,15 +319,11 @@ export default function HiringNeedsTable({
                           tabIndex={0}
                           onClick={() => onView?.(item)}
                           onKeyDown={(event) => handleRowKeyDown(event, item)}
-                          className={`sibs-data-table-row sibs-page-card-in cursor-pointer outline-none transition focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sibs-orange/40 ${
+                          className={`sibs-data-table-row cursor-pointer outline-none transition focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sibs-orange/40 ${
                             unlinked
                               ? "bg-orange-50 hover:bg-orange-100/60 focus-visible:bg-orange-100/60"
-                              : "hover:bg-slate-50/50 focus-visible:bg-slate-50/50"
+                              : "hover:bg-sibs-cream-light focus-visible:bg-sibs-cream-light"
                           }`}
-                          style={{
-                            animationDelay: `${index * 30}ms`,
-                            animationFillMode: "both",
-                          }}
                           aria-label={`View Hiring Needs request ${item.id || ""}`}
                         >
                           <td className="px-2.5 py-2 2xl:px-4 2xl:py-2.5 align-middle">

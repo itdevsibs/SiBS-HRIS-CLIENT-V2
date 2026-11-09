@@ -4,8 +4,13 @@ export default function TADashboardToast({ toast, onClose }) {
   if (!toast) return null;
 
   return (
-    <div className="sibs-toast-in fixed right-4 top-20 z-[1200] flex max-w-[370px] items-start gap-3 rounded-xl border border-sibs-orange/40 bg-sibs-navy px-4 py-3 text-white shadow-2xl sm:right-6">
-      <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-sibs-orange" />
+    <div
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
+      className="sibs-toast-in fixed right-4 top-20 z-[1200] flex max-w-[370px] items-start gap-3 rounded-xl border border-sibs-orange/40 bg-sibs-navy px-4 py-3 text-white shadow-2xl sm:right-6"
+    >
+      <Sparkles aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-sibs-orange" />
 
       <div className="min-w-0 flex-1">
         <p className="text-xs font-extrabold">
@@ -24,7 +29,7 @@ export default function TADashboardToast({ toast, onClose }) {
         className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-sibs-border-subtle transition hover:bg-white/10 hover:text-white"
         aria-label="Close toast"
       >
-        <X className="h-3.5 w-3.5" />
+        <X aria-hidden="true" className="h-3.5 w-3.5" />
       </button>
     </div>
   );

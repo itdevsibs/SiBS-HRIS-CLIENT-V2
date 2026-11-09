@@ -1315,7 +1315,7 @@ export default function WorkforceHiringAccountsTable({
         onKeyDown={(event) => handleRowKeyDown(event, item)}
         className={[
           index % 2 === 0 ? "bg-white" : "bg-slate-50/50",
-          "cursor-pointer transition hover:bg-blue-50/50 focus:bg-blue-50/50 focus:outline-none",
+          "cursor-pointer transition hover:bg-sibs-cream-light focus:bg-sibs-cream-light focus:outline-none",
         ].join(" ")}
       >
         <BodyTd className="text-left font-semibold text-sibs-primary-90">

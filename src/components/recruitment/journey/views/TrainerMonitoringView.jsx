@@ -31,7 +31,6 @@ import {
   Plus,
   Search,
   Send,
-  ShieldCheck,
   TrendingDown,
   TrendingUp,
   UserCheck,
@@ -485,7 +484,7 @@ export default function TrainerMonitoringView({ onSwitchModule }) {
                     : "TR";
 
                   return (
-                    <tr key={j.id} className="hover:bg-sibs-surface/60 transition-colors">
+                    <tr key={j.id} className="hover:bg-sibs-cream-light transition-colors">
                       <td className="py-3.5 px-4 font-bold text-sibs-navy">
                         <div className="flex items-center gap-2.5">
                           <div className="h-7 w-7 rounded-full bg-sibs-surface border border-sibs-border text-sibs-navy text-[11px] font-extrabold flex items-center justify-center shrink-0">
@@ -628,10 +627,7 @@ export default function TrainerMonitoringView({ onSwitchModule }) {
       >
         <div className="flex items-center justify-between border-b border-sibs-border pb-3">
           <div>
-            <div className="flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4 text-sibs-orange" />
-              <h2 className="sibs-section-title font-extrabold text-sibs-navy">Quality &amp; Coaching Escalations</h2>
-            </div>
+            <h2 className="sibs-section-title font-extrabold text-sibs-navy">Quality &amp; Coaching Escalations</h2>
             <p className="sibs-section-subtitle text-sibs-muted">
               Independent Quality Development (QDS) review tickets and calibration follow-ups for {activeTrainer}.
             </p>

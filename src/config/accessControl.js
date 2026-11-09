@@ -44,15 +44,7 @@ export const DASHBOARD_ACCESS = {
   OM: [ADMIN_ACCESS.MANAGER],
   WFM: [ADMIN_ACCESS.WFM],
   SOM: [ADMIN_ACCESS.SOM],
-  QDS: [
-    ADMIN_ACCESS.TA,
-    ADMIN_ACCESS.HR,
-    ADMIN_ACCESS.HR_ADMIN,
-    ADMIN_ACCESS.MANAGER,
-    ADMIN_ACCESS.EXECUTIVE,
-    ADMIN_ACCESS.SUPER_ADMIN,
-    ADMIN_ACCESS.SOM,
-  ],
+  QDS: [],
 };
 
 export function getRawAdminAccess(user = {}) {
@@ -159,6 +151,13 @@ export const EMPLOYEE_ALLOWED_PATHS = [
 ];
 
 export const ACCESS_RULES = [
+  {
+    paths: [
+      "/recruitment/qds-dashboard",
+      "/dashboard/qds",
+    ],
+    roles: ["qds", "quality_development_specialist"],
+  },
   {
     paths: ["/dashboard/finance"],
     roles: ["finance", "finance_admin"],
@@ -293,8 +292,6 @@ export const ACCESS_RULES = [
       "/recruitment/offers",
       "/recruitment/onboarding",
       "/recruitment/new-hire-orientation",
-      "/recruitment/qds-dashboard",
-      "/dashboard/qds",
       "/recruitment/esep-coaching",
       "/recruitment/trainer-monitoring",
       "/trainee-learning",
@@ -386,6 +383,13 @@ export function canAccessPath(user, pathname) {
       rawAccess === ADMIN_ACCESS.SOM ||
       ["som", "senior_operations_manager"].includes(role)
     );
+  }
+
+  if (
+    pathMatches(pathname, "/dashboard/qds") ||
+    pathMatches(pathname, "/recruitment/qds-dashboard")
+  ) {
+    return ["qds", "quality_development_specialist"].includes(role);
   }
 
   // Finance (canonical admin_access = 4) can view organization and office

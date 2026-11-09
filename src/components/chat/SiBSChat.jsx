@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect, no-unused-vars */
 import { createSystemDateTimeFormatter } from "@/lib/axios/dateFormatter";
 import {
   useCallback,
@@ -68,6 +69,12 @@ import ChatVideoPlayer from "@/components/chat/ChatVideoPlayer";
 import ChatAudioPlayer from "@/components/chat/ChatAudioPlayer";
 import ChatTypingIndicator from "@/components/chat/ChatTypingIndicator";
 import ChatThemeModal from "@/components/chat/ChatThemeModal";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { useChat } from "@/services/context/ChatContext";
 import { useUser } from "@/services/context/UserContext";
 import { ensureSibsChatSystemNotifications } from "@/lib/sibsChatSystemNotifications";
@@ -1043,6 +1050,61 @@ function ChatAvatar({
   );
 }
 
+function ChatFolderList({ folders, expandedFolders, onFoldersChange, children, nested = false }) {
+  return (
+    <Accordion
+      multiple
+      value={folders.filter(({ key }) => expandedFolders[key]).map(({ key }) => key)}
+      onValueChange={(openKeys) => onFoldersChange(folders, openKeys)}
+    >
+      {folders.map((folder) => {
+        const { key, label, conversations, unread, subfolders, Icon } = folder;
+        return (
+          <AccordionItem key={key} value={key} className="border-0!">
+            <AccordionTrigger
+              className={`mb-1 gap-2! rounded-lg! hover:bg-sibs-surface hover:no-underline focus-visible:outline-offset-[-2px]! focus-visible:outline-sibs-orange! ${
+                nested ? "py-2! pl-5 pr-2 text-[11px]! font-bold!" : "px-2.5 py-2.5! text-xs! font-extrabold!"
+              }`}
+              indicator={(
+                <ChevronRight
+                  aria-hidden="true"
+                  className="size-3.5 shrink-0 text-sibs-muted transition-transform duration-200 group-aria-expanded/accordion-trigger:rotate-90 motion-reduce:transition-none"
+                />
+              )}
+            >
+              <Icon size={nested ? 14 : 16} className="shrink-0 text-sibs-orange" />
+              <span className="min-w-0 flex-1 truncate">{label}</span>
+              {unread > 0 ? (
+                <span
+                  title={`${unread} unread message${unread === 1 ? "" : "s"}`}
+                  className="inline-flex min-w-5 items-center justify-center rounded-full bg-sibs-orange px-1 py-0.5 text-[9px] font-bold text-white"
+                >
+                  {unread > 99 ? "99+" : unread}
+                </span>
+              ) : null}
+              <span className="rounded-md bg-sibs-surface px-1.5 py-0.5 text-[10px] font-bold text-sibs-muted">
+                {conversations.length}
+              </span>
+            </AccordionTrigger>
+            <AccordionContent className="pb-0!" panelClassName="data-open:has-[[role=menu]]:overflow-visible">
+              {subfolders ? (
+                <ChatFolderList
+                  folders={subfolders}
+                  expandedFolders={expandedFolders}
+                  onFoldersChange={onFoldersChange}
+                  nested
+                >
+                  {children}
+                </ChatFolderList>
+              ) : conversations.map((conversation) => children(conversation, nested))}
+            </AccordionContent>
+          </AccordionItem>
+        );
+      })}
+    </Accordion>
+  );
+}
+
 function EmptyChatState({ onNewChat }) {
   return (
     <div className="flex min-h-0 flex-1 items-center justify-center bg-sibs-canvas px-8 text-center">
@@ -1951,11 +2013,12 @@ export default function SiBSChat({
     it: false,
     taHr: false,
   });
-  const toggleChatFolder = useCallback((folder) => {
-    setExpandedChatFolders((previous) => ({
-      ...previous,
-      [folder]: !previous[folder],
-    }));
+  const updateChatFolders = useCallback((folders, openKeys) => {
+    setExpandedChatFolders((previous) => {
+      const next = { ...previous };
+      for (const { key } of folders) next[key] = openKeys.includes(key);
+      return next;
+    });
   }, []);
   const chatSearchActive = Boolean(cleanText(conversationSearch));
 
@@ -2728,10 +2791,7 @@ export default function SiBSChat({
     });
   }, [chat?.conversations, conversationSearch, chatClockMs]);
 
-  // Display existing conversations in sidebar-style folders, without moving
-  // threads or changing their server-side memberships. A search temporarily
-  // expands matching folders so results stay discoverable even if collapsed.
-  const chatSidebarEntries = useMemo(() => {
+  const chatSidebarFolders = useMemo(() => {
     const folders = { private: [], groups: [], it: [], taHr: [] };
     for (const conversation of filteredConversations) {
       const type = cleanText(conversation?.conversationType).toUpperCase();
@@ -2745,44 +2805,23 @@ export default function SiBSChat({
       }
     }
 
-    const searching = chatSearchActive;
-    const expanded = (key) => expandedChatFolders[key] !== false;
-    const unread = (items) => items.reduce((total, conversation) =>
-      total + Math.max(0, Number(conversation?.unreadCount) || 0), 0);
-    const entries = [];
+    const makeFolder = (key, label, Icon, conversations, subfolders) => ({
+      key, label, Icon, conversations, subfolders,
+      unread: conversations.reduce((total, conversation) =>
+        total + Math.max(0, Number(conversation?.unreadCount) || 0), 0),
+    });
+    const isVisible = ({ conversations }) => !chatSearchActive || conversations.length > 0;
+    const helpdeskSubfolders = [
+      makeFolder("it", "IT Support", MonitorCog, folders.it),
+      makeFolder("taHr", "TA/HR Concerns", HeartHandshake, folders.taHr),
+    ].filter(isVisible);
 
-    const addConversationRows = (items, parent) => {
-      for (const conversation of items) {
-        entries.push({ kind: "conversation", key: `chat-${conversation.id}`, conversation, parent });
-      }
-    };
-    const addSection = (key, label, items) => {
-      if (searching && !items.length) return;
-      entries.push({ kind: "section", key, label, count: items.length,
-        unread: unread(items), expanded: expanded(key) });
-      if (expanded(key)) addConversationRows(items, key);
-    };
-
-    addSection("private", "Private Messages", folders.private);
-    addSection("groups", "Group Chats", folders.groups);
-
-    const helpdeskItems = [...folders.it, ...folders.taHr];
-    if (!searching || helpdeskItems.length) {
-      entries.push({ kind: "section", key: "helpdesk", label: "Helpdesk",
-        count: helpdeskItems.length, unread: unread(helpdeskItems),
-        expanded: expanded("helpdesk") });
-      if (expanded("helpdesk")) {
-        for (const [key, label] of [["it", "IT Support"], ["taHr", "TA/HR Concerns"]]) {
-          const items = folders[key];
-          if (searching && !items.length) continue;
-          entries.push({ kind: "subsection", key, label, count: items.length,
-            unread: unread(items), expanded: expanded(key) });
-          if (expanded(key)) addConversationRows(items, key);
-        }
-      }
-    }
-    return entries;
-  }, [filteredConversations, chatSearchActive, expandedChatFolders]);
+    return [
+      makeFolder("private", "Private Messages", MessageCircleMore, folders.private),
+      makeFolder("groups", "Group Chats", UsersRound, folders.groups),
+      makeFolder("helpdesk", "Helpdesk", Headset, [...folders.it, ...folders.taHr], helpdeskSubfolders),
+    ].filter(isVisible);
+  }, [filteredConversations, chatSearchActive]);
 
   const activeConversation = chat?.activeConversation || null;
 
@@ -4310,45 +4349,11 @@ export default function SiBSChat({
                 <Loader2 size={20} className="animate-spin" />
               </div>
             ) : filteredConversations.length ? (
-              chatSidebarEntries.map((entry) => {
-                if (entry.kind === "section" || entry.kind === "subsection") {
-                  const isSubsection = entry.kind === "subsection";
-                  const FolderIcon = entry.key === "private" ? MessageCircleMore
-                    : entry.key === "groups" ? UsersRound
-                    : entry.key === "helpdesk" ? Headset
-                    : entry.key === "it" ? MonitorCog : HeartHandshake;
-                  return (
-                    <button
-                      key={`folder-${entry.key}`}
-                      type="button"
-                      aria-expanded={entry.expanded}
-                      onClick={() => toggleChatFolder(entry.key)}
-                      className={`group/folder mb-1 flex w-full items-center gap-2 rounded-lg text-left transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-sibs-orange ${
-                        isSubsection
-                          ? "py-2 pl-5 pr-2 text-[11px] font-bold text-sibs-navy hover:bg-sibs-surface"
-                          : "px-2.5 py-2.5 text-xs font-extrabold text-sibs-navy hover:bg-sibs-surface"
-                      }`}
-                    >
-                      <FolderIcon size={isSubsection ? 14 : 16} className="shrink-0 text-sibs-orange" />
-                      <span className="min-w-0 flex-1 truncate">{entry.label}</span>
-                      {entry.unread > 0 ? (
-                        <span
-                          title={`${entry.unread} unread message${entry.unread === 1 ? "" : "s"}`}
-                          className="inline-flex min-w-5 items-center justify-center rounded-full bg-sibs-orange px-1 py-0.5 text-[9px] font-extrabold text-white"
-                        >
-                          {entry.unread > 99 ? "99+" : entry.unread}
-                        </span>
-                      ) : null}
-                      <span className="rounded-md bg-sibs-surface px-1.5 py-0.5 text-[10px] font-bold text-sibs-muted">
-                        {entry.count}
-                      </span>
-                      {entry.expanded
-                        ? <ChevronDown size={14} className="shrink-0 text-sibs-muted" />
-                        : <ChevronRight size={14} className="shrink-0 text-sibs-muted" />}
-                    </button>
-                  );
-                }
-                const conversation = entry.conversation;
+              <ChatFolderList
+                folders={chatSidebarFolders}
+                expandedFolders={expandedChatFolders}
+                onFoldersChange={updateChatFolders}
+              >{(conversation, nested) => {
                 const selected = Number(chat.activeConversationId) === Number(conversation.id);
                 const otherMember = conversation.otherMember;
                 const online = otherMember ? isMemberOnline(otherMember) : false;
@@ -4419,9 +4424,9 @@ export default function SiBSChat({
                 return (
                   <div
                     key={conversation.id}
-                    className={`group relative mb-1 flex w-full items-center rounded-xl border-l-[3px] transition ${
-                      entry.parent === "it" || entry.parent === "taHr" ? "ml-2 w-[calc(100%-0.5rem)] " : ""
-                    }${
+                    className={`group relative mb-1 flex items-center rounded-xl border-l-[3px] transition ${
+                      nested ? "ml-2 w-[calc(100%-0.5rem)]" : "w-full"
+                    } ${
                       selected
                         ? "border-l-sibs-orange bg-sibs-cream-subtle border-y border-r border-sibs-border/60"
                         : "border-l-transparent hover:bg-sibs-surface"
@@ -4587,7 +4592,7 @@ export default function SiBSChat({
                     ) : null}
                   </div>
                 );
-              })
+              }}</ChatFolderList>
             ) : (
               <div className="flex h-full items-center justify-center px-5 text-center">
                 <div>

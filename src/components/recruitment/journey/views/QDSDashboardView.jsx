@@ -387,7 +387,7 @@ function QDSDashboardView({ onSwitchModule }) {
                       .join("")
                   : "TR";
                 return (
-                  <tr key={j.id} className="hover:bg-sibs-surface/60 transition-colors">
+                  <tr key={j.id} className="hover:bg-sibs-cream-light transition-colors">
                     <td className="py-3 px-4 font-bold text-sibs-navy">
                       <div className="flex items-center gap-2.5">
                         <div className="h-7 w-7 rounded-full bg-sibs-navy/10 text-sibs-navy text-[11px] font-extrabold flex items-center justify-center shrink-0">

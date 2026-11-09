@@ -1,12 +1,9 @@
 import React, { useEffect, useRef, useState } from "react";
 import {
   AlertCircle,
-  BarChart3,
-  Building2,
   CalendarDays,
   Info,
-  TrendingDown,
-} from "lucide-react";
+  } from "lucide-react";
 import { Skeleton } from "@/components/ui";
 import { getVisibleTrendLabelIndexes, shortTrendLabel } from "./attritionTrendAxis.js";
 
@@ -182,6 +179,7 @@ function TrendsChart({ trends = [] }) {
 export default function AttritionReportsAnalytics({
   data,
   loading = false,
+  selectedAccount = "All",
   onSelectAccount,
 }) {
   if (loading) {
@@ -212,11 +210,10 @@ export default function AttritionReportsAnalytics({
   return (
     <section className="grid grid-cols-1 gap-4 lg:grid-cols-12 font-jakarta">
       {/* LEFT — ATTRITION TRENDS (5 cols) */}
-      <article className="sibs-page-card-in flex flex-col justify-between rounded-[14px] border border-sibs-border bg-white p-4 shadow-sm lg:col-span-5">
+      <article className="sibs-page-card-in flex flex-col justify-between rounded-[14px] border border-sibs-border bg-white p-4 shadow-sm lg:col-span-5" style={{ animationDelay: "180ms", animationFillMode: "both" }}>
         <div>
           <div className="flex items-center justify-between">
-            <h3 className="font-heading text-sm 2xl:text-base font-bold text-sibs-navy tracking-tight flex items-center gap-2">
-              <TrendingDown className="h-4 w-4 text-sibs-orange" />
+            <h3 className="font-heading text-sm 2xl:text-base font-bold text-sibs-navy tracking-tight">
               Attrition Trends
             </h3>
             <span className="text-[10px] font-bold text-sibs-muted">
@@ -242,11 +239,10 @@ export default function AttritionReportsAnalytics({
       </article>
 
       {/* CENTER — ATTRITION BY ACCOUNT (4 cols) */}
-      <article className="sibs-page-card-in flex flex-col justify-between rounded-[14px] border border-sibs-border bg-white p-4 shadow-sm lg:col-span-4">
+      <article className="sibs-page-card-in flex flex-col justify-between rounded-[14px] border border-sibs-border bg-white p-4 shadow-sm lg:col-span-4" style={{ animationDelay: "220ms", animationFillMode: "both" }}>
         <div>
           <div className="flex items-center justify-between">
-            <h3 className="font-heading text-sm 2xl:text-base font-bold text-sibs-navy tracking-tight flex items-center gap-2">
-              <Building2 className="h-4 w-4 text-sibs-navy" />
+            <h3 className="font-heading text-sm 2xl:text-base font-bold text-sibs-navy tracking-tight">
               Attrition by Account
             </h3>
             <span className="text-[10px] font-bold text-sibs-muted">
@@ -256,6 +252,22 @@ export default function AttritionReportsAnalytics({
           <p className="mt-0.5 sibs-text-xs font-semibold text-sibs-muted">
             Accounts with highest recorded attrition. Click an account to filter records.
           </p>
+          {selectedAccount && selectedAccount !== "All" ? (
+            <div className="mt-2 flex items-center justify-between gap-1.5 rounded-lg border border-sibs-orange/30 bg-orange-50/50 px-2.5 py-1 text-xs">
+              <span className="text-[11px] font-bold text-sibs-navy">
+                Filtered: <span className="font-extrabold text-sibs-orange">{selectedAccount}</span>
+              </span>
+              <button
+                type="button"
+                onClick={() => onSelectAccount?.("All")}
+                aria-label="Clear account filter"
+                className="inline-flex items-center gap-1 text-[10px] font-extrabold text-sibs-orange hover:text-sibs-navy transition"
+              >
+                <X className="h-3 w-3" />
+                Clear
+              </button>
+            </div>
+          ) : null}
         </div>
 
         <div className="mt-3 flex-1 space-y-2.5 overflow-y-auto max-h-[220px] pr-1">
@@ -301,10 +313,9 @@ export default function AttritionReportsAnalytics({
       </article>
 
       {/* RIGHT — ATTRITION BREAKDOWN (3 cols) */}
-      <article className="sibs-page-card-in flex flex-col justify-between rounded-[14px] border border-sibs-border bg-white p-4 shadow-sm lg:col-span-3">
+      <article className="sibs-page-card-in flex flex-col justify-between rounded-[14px] border border-sibs-border bg-white p-4 shadow-sm lg:col-span-3" style={{ animationDelay: "260ms", animationFillMode: "both" }}>
         <div>
-          <h3 className="font-heading text-sm 2xl:text-base font-bold text-sibs-navy tracking-tight flex items-center gap-2">
-            <BarChart3 className="h-4 w-4 text-sibs-navy" />
+          <h3 className="font-heading text-sm 2xl:text-base font-bold text-sibs-navy tracking-tight">
             Attrition Breakdown
           </h3>
           <p className="mt-0.5 sibs-text-xs font-semibold text-sibs-muted">

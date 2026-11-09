@@ -1054,7 +1054,7 @@ export default function Sidebar() {
     }
 
     return undefined;
-  }, [pathname, isMobile]);
+  }, [pathname, isMobile, setMobileOpen]);
 
   useEffect(() => {
     if (!mounted) return;
@@ -1262,13 +1262,6 @@ export default function Sidebar() {
       icon: LayoutDashboard,
       path: "/dashboard/qds",
       allowedRoles: ["qds", "quality_development_specialist"],
-    },
-    {
-      name: "QDS Dashboard",
-      icon: LayoutDashboard,
-      path: "/dashboard/qds",
-      allowedUsers: DASHBOARD_ACCESS.QDS || [1, 2, 3, 5, 6, 7, 10],
-      excludeRoles: ["qds", "quality_development_specialist"],
     },
     {
       name: "IT Support",
@@ -2113,3 +2106,4 @@ function Section({ title, collapsed, children }) {
     </section>
   );
 }
+

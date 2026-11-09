@@ -1,4 +1,5 @@
 import { QueryClientProvider } from "@tanstack/react-query";
+import { ToastProvider } from "../components/ui/Toast";
 import { hrisQueryCache } from "../lib/axios/hrisQueryCache";
 
 import { UserProvider } from "./context/UserContext";
@@ -27,7 +28,8 @@ import { NHOProvider } from "../components/recruitment/nho/NHOContext";
 export default function Providers({ children }) {
   return (
     <QueryClientProvider client={hrisQueryCache.queryClient}>
-      <PaginationProvider>
+      <ToastProvider>
+        <PaginationProvider>
         <HeaderProvider>
           <UserProvider>
             <BirthdayCelebrationGate />
@@ -67,6 +69,7 @@ export default function Providers({ children }) {
           </UserProvider>
         </HeaderProvider>
       </PaginationProvider>
+      </ToastProvider>
     </QueryClientProvider>
   );
 }

@@ -1,6 +1,7 @@
 import { Navigate, useLocation } from "react-router-dom";
 import { useUser } from "../../services/context/UserContext";
 import { canAccessPath, getDefaultDashboardPath } from "../../config/accessControl";
+import ForbiddenPage from "../../pages/ForbiddenPage";
 
 const PUBLIC_PATHS = [
   "/",
@@ -48,12 +49,18 @@ export default function ProtectedRoute({ children }) {
   const allowed = canAccessPath(user, location.pathname);
 
   if (!allowed) {
-    return (
-      <Navigate
-        to={getDefaultDashboardPath(user)}
-        replace
-      />
-    );
+    // For root or generic dashboard landing, redirect smoothly to authorized dashboard
+    if (location.pathname === "/" || location.pathname === "/dashboard") {
+      return (
+        <Navigate
+          to={getDefaultDashboardPath(user)}
+          replace
+        />
+      );
+    }
+
+    // For specific deep links/pages where access is forbidden, render branded 403 page
+    return <ForbiddenPage attemptedPath={location.pathname} />;
   }
 
   return children;

@@ -68,14 +68,10 @@ export default function SuperAdminExceptions({
 
       {items.length > 0 ? (
         <div className="space-y-2.5 2xl:space-y-3">
-          {items.map((item, index) => (
+          {items.map((item) => (
             <article
               key={item.id}
-              className="sibs-page-card-in rounded-xl border border-sibs-border bg-white p-3.5 2xl:p-4 transition hover:border-sibs-orange/40 hover:shadow-xs"
-              style={{
-                animationDelay: `${index * 45}ms`,
-                animationFillMode: "both",
-              }}
+              className="rounded-xl border border-sibs-border bg-white p-3.5 2xl:p-4 transition hover:border-sibs-orange/40 hover:shadow-xs"
             >
               <div className="flex flex-col gap-2.5 lg:flex-row lg:items-start lg:justify-between">
                 <div className="min-w-0">

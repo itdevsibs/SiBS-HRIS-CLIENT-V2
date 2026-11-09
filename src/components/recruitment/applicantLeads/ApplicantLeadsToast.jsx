@@ -14,8 +14,13 @@ export default function ApplicantLeadsToast() {
   return (
     <>
       {toastMessage ? (
-        <div className="fixed right-8 top-20 z-[1001] flex items-center gap-3 rounded-xl border border-blue-400 bg-sibs-navy px-5 py-3 text-xs font-extrabold text-white shadow-xl">
-          <Sparkles size={16} className="text-sibs-orange" />
+        <div
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+          className="sibs-toast-in fixed right-8 top-20 z-[1001] flex items-center gap-3 rounded-xl border border-blue-400 bg-sibs-navy px-5 py-3 text-xs font-extrabold text-white shadow-xl"
+        >
+          <Sparkles aria-hidden="true" size={16} className="text-sibs-orange" />
           {toastMessage}
         </div>
       ) : null}

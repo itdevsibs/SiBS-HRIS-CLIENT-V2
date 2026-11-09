@@ -410,11 +410,11 @@ export default function TADashboardPage() {
 
           <TADashboardStats metrics={metricCards} />
 
-          <StatutoryCoveragePanel />
+          <StatutoryCoveragePanel delay={240} />
 
           <section className="grid grid-cols-1 items-stretch gap-5 xl:grid-cols-2">
-            <TARequirementProgress roles={rolesData} delay={120} />
-            <TAWeeklyMovement funnel={summaryMetrics.funnel} delay={180} />
+            <TARequirementProgress roles={rolesData} delay={300} />
+            <TAWeeklyMovement funnel={summaryMetrics.funnel} delay={360} />
           </section>
 
           <section className="grid grid-cols-1 items-stretch gap-5 2xl:grid-cols-12">
@@ -436,12 +436,12 @@ export default function TADashboardPage() {
                 onPageChange={(nextPage) =>
                   setPage(Math.min(Math.max(nextPage, 1), totalPages))
                 }
-                delay={240}
+                delay={420}
               />
             </div>
 
             <aside className="2xl:col-span-4">
-              <TARecruiterLoad recruiters={recruiters} delay={300} />
+              <TARecruiterLoad recruiters={recruiters} delay={480} />
             </aside>
           </section>
         </div>

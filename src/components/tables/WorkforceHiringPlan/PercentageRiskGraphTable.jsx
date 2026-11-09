@@ -723,7 +723,7 @@ function SummaryTable({ planRows = [] }) {
 
           <tbody>
             {planRows.map((item, index) => (
-              <tr key={index} className="transition hover:bg-sibs-surface">
+              <tr key={index} className="transition hover:bg-sibs-cream-light">
                 <td className="border-b border-sibs-surface-subtle px-4 py-3 text-sm font-bold text-sibs-primary-1">
                   {formatWeekDate(item.weekDate)}
                 </td>

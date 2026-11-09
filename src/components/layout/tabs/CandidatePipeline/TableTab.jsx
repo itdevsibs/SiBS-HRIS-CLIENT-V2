@@ -194,7 +194,7 @@ export default function TableTab({
                   return (
                     <tr
                       key={candidate.id}
-                      className="transition hover:bg-sibs-surface"
+                      className="transition hover:bg-sibs-cream-light"
                     >
                       <td className="px-5 py-4">
                         <p className="text-sm font-bold text-sibs-navy">

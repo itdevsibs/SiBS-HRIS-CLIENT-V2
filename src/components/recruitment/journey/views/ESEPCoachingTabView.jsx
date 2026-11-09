@@ -298,12 +298,7 @@ export default function ESEPCoachingTabView({
         <div className="border-b border-sibs-border p-4 sm:p-5 2xl:p-6 font-jakarta">
           <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <div className="flex items-center gap-2">
-                <span className="inline-flex items-center rounded-md border border-sibs-orange/20 bg-sibs-orange/10 px-2 py-0.5 sibs-text-micro font-extrabold text-sibs-orange">
-                  ESEP Framework
-                </span>
-              </div>
-              <h3 className="sibs-section-title font-extrabold text-sibs-navy mt-0.5">
+              <h3 className="sibs-section-title font-extrabold text-sibs-navy">
                 Coaching Results &amp; Performance Outcomes
               </h3>
               <p className="sibs-section-subtitle text-sibs-muted">
@@ -581,7 +576,7 @@ export default function ESEPCoachingTabView({
                   const weeklyCount = coachSessions.filter((s) => s.type === "Weekly 1:1").length;
 
                   return (
-                    <tr key={coach.name} className="hover:bg-sibs-surface/40 transition-colors">
+                    <tr key={coach.name} className="hover:bg-sibs-cream-light transition-colors">
                       <td className="py-2.5 px-3">
                         <strong className="font-extrabold text-sibs-navy sibs-text-xs leading-tight block">
                           {coach.name}
@@ -797,7 +792,7 @@ export default function ESEPCoachingTabView({
                     : "CS";
 
                   return (
-                    <tr key={session.id} className="sibs-data-table-row hover:bg-sibs-surface/60 transition-colors">
+                    <tr key={session.id} className="sibs-data-table-row hover:bg-sibs-cream-light transition-colors">
                       <td className="px-3 2xl:px-4 py-2.5 2xl:py-3 whitespace-nowrap font-bold tabular-nums text-sibs-navy sibs-text-xs">
                         {session.date}
                       </td>
