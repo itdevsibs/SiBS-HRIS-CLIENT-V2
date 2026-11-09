@@ -167,7 +167,7 @@ export default function EmployeeAttritionTable({ data = [], loading = false }) {
               </tr>
             ) : (
               data.map((item) => (
-                <tr key={item.id} className="transition hover:bg-slate-50">
+                <tr key={item.id} className="transition hover:bg-sibs-cream-light">
                   <td className="h-14 whitespace-nowrap border-t border-sibs-border px-3 text-sm text-sibs-primary-1">
                     {item.id || "N/A"}
                   </td>

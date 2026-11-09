@@ -269,7 +269,7 @@ function MainApplicationRoutes() {
         path="/dashboard/super-admin"
         element={
           <PrivateRoute>
-            <SuperAdminDashboardPage />
+            <SuperAdminDashboardPage key="super-admin-dashboard" />
           </PrivateRoute>
         }
       />

@@ -52,7 +52,6 @@ import {
   SuperAdminDashboardStatsSkeleton,
   SuperAdminTabPanelSkeleton,
 } from "../../../components/Dashboard/SuperAdminDashboard/SuperAdminDashboardSkeleton";
-import DashboardLoadingSkeleton from "../../../components/Dashboard/shared/DashboardLoadingSkeleton";
 import StatutoryCoveragePanel from "../../../components/Dashboard/shared/StatutoryCoveragePanel";
 
 const SUPER_ADMIN_ENTITY = "super-admin-dashboard";
@@ -512,23 +511,6 @@ export default function SuperAdminDashboardPage() {
     }
   }
 
-  if (isInitialLoading && !backendOverview) {
-    return (
-      <DashboardLoadingSkeleton
-        ariaLabel="Loading Super Admin Dashboard"
-        showStatutoryCoverage={true}
-        hero={
-          <SuperAdminDashboardHeader
-            displayName={getUserDisplayName(user)}
-            onOpenEmployees={() => navigate(SUPER_ADMIN_ROUTES.employees)}
-            onRefresh={handleManualRefresh}
-            isManualRefreshing={isManualRefreshing}
-          />
-        }
-      />
-    );
-  }
-
   return (
     <div className="sibs-dashboard-shell">
       <Header />
@@ -561,14 +543,18 @@ export default function SuperAdminDashboardPage() {
             />
           )}
 
-          <StatutoryCoveragePanel />
+          <StatutoryCoveragePanel delay={240} />
 
           <SuperAdminQuickActions
             onNavigate={navigate}
             onTabChange={handleTabChange}
+            delay={300}
           />
 
-          <section className="sibs-page-card-in sibs-card relative overflow-hidden">
+          <section
+            className="sibs-page-card-in sibs-card relative overflow-hidden"
+            style={{ animationDelay: "360ms", animationFillMode: "both" }}
+          >
             <span className="sibs-top-accent" aria-hidden="true" />
             <SuperAdminTabs
               activeTab={activeTab}
@@ -579,7 +565,7 @@ export default function SuperAdminDashboardPage() {
             <div
               key={activeTab}
               role="tabpanel"
-              className="sibs-page-card-in min-w-0 p-4 sm:p-5 lg:p-6"
+              className="sibs-profile-tab-panel min-w-0 p-4 sm:p-5 lg:p-6"
             >
               {activeSectionLoading ? (
                 <SuperAdminTabPanelSkeleton activeTab={activeTab} />

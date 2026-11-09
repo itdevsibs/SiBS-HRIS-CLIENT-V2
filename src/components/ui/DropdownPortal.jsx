@@ -12,12 +12,17 @@ export default function DropdownPortal({
   maxHeight = 320,
   offset = 6,
   align = "left",
+  topLayer = false,
 }) {
   const [style, setStyle] = useState(null);
   const [mounted, setMounted] = useState(Boolean(open));
   const [active, setActive] = useState(Boolean(open));
   const [prevOpen, setPrevOpen] = useState(Boolean(open));
   const panelRef = useRef(null);
+  const useNativePopover =
+    topLayer && typeof HTMLElement !== "undefined" &&
+    typeof HTMLElement.prototype.showPopover === "function";
+  const positioned = Boolean(style);
 
   if (open !== prevOpen) {
     setPrevOpen(open);
@@ -54,19 +59,30 @@ export default function DropdownPortal({
     }
 
     function handleKeyDown(event) {
-      if (event.key === "Escape") onClose?.();
+      if (event.key !== "Escape") return;
+      if (topLayer) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+      }
+      onClose?.(event);
     }
 
     document.addEventListener("mousedown", handlePointerDown);
     document.addEventListener("touchstart", handlePointerDown, { passive: true });
-    document.addEventListener("keydown", handleKeyDown);
+    document.addEventListener("keydown", handleKeyDown, topLayer);
 
     return () => {
       document.removeEventListener("mousedown", handlePointerDown);
       document.removeEventListener("touchstart", handlePointerDown);
-      document.removeEventListener("keydown", handleKeyDown);
+      document.removeEventListener("keydown", handleKeyDown, topLayer);
     };
-  }, [open, anchorRef, onClose]);
+  }, [open, anchorRef, onClose, topLayer]);
+
+  useLayoutEffect(() => {
+    if (useNativePopover && open && positioned) {
+      panelRef.current?.showPopover();
+    }
+  }, [useNativePopover, open, positioned]);
 
   useLayoutEffect(() => {
     if (!mounted || !anchorRef.current) return undefined;
@@ -79,13 +95,30 @@ export default function DropdownPortal({
       const viewportPadding = 10;
       const panelWidth = Math.min(
         Number(width) || (matchAnchorWidth ? rect.width : Math.max(rect.width, 280)),
-        Math.max(220, window.innerWidth - viewportPadding * 2),
+        Math.max(topLayer ? 0 : 220, window.innerWidth - viewportPadding * 2),
       );
 
-      const spaceBelow = window.innerHeight - rect.bottom - offset - viewportPadding;
-      const spaceAbove = rect.top - offset - viewportPadding;
-      const shouldFlipUp = spaceBelow < 200 && spaceAbove > spaceBelow;
-      const availableHeight = Math.max(140, shouldFlipUp ? spaceAbove : spaceBelow);
+      // Modal/dialog boundary awareness
+      const dialog = anchor.closest?.('[role="dialog"], .sibs-modal-shell, .sibs-modal-blur > div');
+      const dialogRect = dialog ? dialog.getBoundingClientRect() : null;
+      const footer = dialog ? dialog.querySelector?.('[class*="border-t"], .sibs-modal-footer, footer') : null;
+      const footerRect = footer ? footer.getBoundingClientRect() : null;
+
+      const bottomBoundary = footerRect
+        ? Math.min(window.innerHeight - viewportPadding, footerRect.top - offset)
+        : dialogRect
+          ? Math.min(window.innerHeight - viewportPadding, dialogRect.bottom - offset)
+          : window.innerHeight - viewportPadding;
+
+      const topBoundary = dialogRect
+        ? Math.max(viewportPadding, dialogRect.top + offset)
+        : viewportPadding;
+
+      const spaceBelow = Math.max(0, bottomBoundary - rect.bottom - offset);
+      const spaceAbove = Math.max(0, rect.top - topBoundary - offset);
+      const requiredHeight = Math.min(maxHeight, 260);
+      const shouldFlipUp = spaceBelow < requiredHeight && spaceAbove > spaceBelow;
+      const availableHeight = Math.max(topLayer ? 0 : 140, shouldFlipUp ? spaceAbove : spaceBelow);
       const resolvedMaxHeight = Math.min(maxHeight, availableHeight);
       const renderedHeight = Math.min(
         panelRef.current?.offsetHeight || resolvedMaxHeight,
@@ -102,11 +135,12 @@ export default function DropdownPortal({
       );
 
       const top = shouldFlipUp
-        ? Math.max(viewportPadding, rect.top - renderedHeight - offset)
+        ? Math.max(topBoundary, rect.top - renderedHeight - offset)
         : rect.bottom + offset;
 
       setStyle({
         top,
+        bottom: window.innerHeight - rect.top + offset,
         left,
         width: panelWidth,
         maxHeight: resolvedMaxHeight,
@@ -125,20 +159,23 @@ export default function DropdownPortal({
       window.removeEventListener("resize", updatePosition);
       window.removeEventListener("scroll", updatePosition, true);
     };
-  }, [mounted, anchorRef, width, matchAnchorWidth, maxHeight, offset, align]);
+  }, [mounted, anchorRef, width, matchAnchorWidth, maxHeight, offset, align, topLayer]);
 
-  if (!mounted || !style || typeof document === "undefined") return null;
+  if (!mounted || !style || (topLayer && !open) || typeof document === "undefined") return null;
 
-  return createPortal(
+  const panel = (
     <div
       ref={panelRef}
+      popover={useNativePopover ? "manual" : undefined}
       className={`sibs-animated-dropdown ${active ? "open" : "closed"} ${
         style.isUpward ? "sibs-animated-dropdown-up" : ""
-      } fixed z-[999999] ${className}`}
+      } fixed z-[999999] ${useNativePopover ? "m-0 overflow-visible border-0 bg-transparent p-0 text-inherit" : ""} ${className}`}
       style={{
-        top: `${style.top}px`,
-        left: `${style.left}px`,
-        width: `${style.width}px`,
+        top: topLayer && style.isUpward ? "auto" : style.top,
+        bottom: topLayer && style.isUpward ? style.bottom : "auto",
+        left: style.left,
+        right: "auto",
+        width: style.width,
       }}
     >
       <div className="sibs-animated-dropdown-inner">
@@ -146,13 +183,14 @@ export default function DropdownPortal({
           className="sibs-animated-dropdown-box overflow-hidden rounded-[10px] border border-sibs-border bg-white font-jakarta shadow-[0_18px_40px_rgba(15,23,42,0.16)]"
           style={{
             maxHeight: `${style.maxHeight}px`,
-            "--dropdown-max-height": `${style.maxHeight}px`,
+            "--dropdown-max-height": `${Math.max(0, style.maxHeight - (topLayer ? 2 : 0))}px`,
           }}
         >
           {children}
         </div>
       </div>
-    </div>,
-    document.body,
+    </div>
   );
+
+  return useNativePopover ? panel : createPortal(panel, document.body);
 }

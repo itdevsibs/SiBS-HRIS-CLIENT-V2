@@ -48,33 +48,8 @@ import {
 
 const SidebarNotificationContext = createContext(null);
 
-const SEEDED_SIDEBAR_NOTIFICATIONS = [
-  {
-    key: "hrDashboard",
-    name: "HR Dashboard",
-    count: 4,
-    label: "NEW",
-    tone: "info",
-    title: "4 new HR dashboard activities",
-    updatedAt: "2026-07-21T12:10:00.000+08:00",
-  },
-  {
-    key: "leaves",
-    name: "Leaves",
-    count: 4,
-    label: "NEW",
-    tone: "info",
-    title: "4 new leave updates",
-    updatedAt: "2026-07-21T12:10:00.000+08:00",
-  },
-  {
-    key: "workforceHiringOverview",
-    name: "Workforce & Hiring Overview",
-    label: "RAMPS",
-    tone: "info",
-    title: "Hiring ramp planning signal",
-  },
-];
+// Live notifications are populated dynamically from backend data.
+export const SEEDED_SIDEBAR_NOTIFICATIONS = [];
 
 export const DEFAULT_SYSTEM_NOTIFICATIONS = [];
 
@@ -948,10 +923,7 @@ export function SidebarNotificationProvider({ children }) {
   const notifications = useMemo(
     () =>
       createSidebarNotificationState({
-        definitions: [
-          ...SEEDED_SIDEBAR_NOTIFICATIONS,
-          ...Object.values(liveNotifications),
-        ],
+        definitions: Object.values(liveNotifications),
         lastSeen,
       }),
     [lastSeen, liveNotifications],

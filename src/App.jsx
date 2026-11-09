@@ -3,6 +3,7 @@ import { useLocation } from "react-router-dom";
 import { isStandalonePublicRoute } from "./config/publicRoutes";
 import AppShell from "./AppShell";
 import Router from "./router";
+import AppErrorBoundary from "./components/ui/AppErrorBoundary";
 import "./index.css";
 
 export default function App() {
@@ -15,12 +16,18 @@ export default function App() {
    * user-session checks, admin login overlays, and sidebar logic are never mounted for candidates.
    */
   if (isStandalonePublicRoute(location.pathname, hostname)) {
-    return <Router />;
+    return (
+      <AppErrorBoundary resetKey={location.pathname}>
+        <Router />
+      </AppErrorBoundary>
+    );
   }
 
   return (
-    <AppShell>
-      <Router />
-    </AppShell>
+    <AppErrorBoundary resetKey={location.pathname}>
+      <AppShell>
+        <Router />
+      </AppShell>
+    </AppErrorBoundary>
   );
 }

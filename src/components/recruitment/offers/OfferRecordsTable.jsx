@@ -201,7 +201,7 @@ export default function OfferRecordsTable({
               {isLoading ? (
                 <TableSkeletonRows count={5} columns={7} />
               ) : displayedOffers.length > 0 ? (
-                displayedOffers.map((offer, index) => {
+                displayedOffers.map((offer) => {
                   const approvalStatus = getApprovalStatus(offer);
                   const displayStatus = getDisplayStatus(offer);
                   const isAuthorizedApprover =
@@ -223,8 +223,7 @@ export default function OfferRecordsTable({
                           openOffer(offer);
                         }
                       }}
-                      className="sibs-page-card-in cursor-pointer transition hover:bg-sibs-cream-light/40 focus-visible:bg-sibs-cream-light/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sibs-orange/25"
-                      style={{ animationDelay: `${index * 35}ms`, animationFillMode: "both" }}
+                      className="cursor-pointer transition hover:bg-sibs-cream-light/40 focus-visible:bg-sibs-cream-light/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sibs-orange/25"
                     >
                       <td className="border-b border-sibs-border px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle">
                         <div className="min-w-0">

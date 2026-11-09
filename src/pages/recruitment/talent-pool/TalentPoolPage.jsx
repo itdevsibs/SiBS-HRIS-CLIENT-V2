@@ -478,7 +478,7 @@ function TalentPoolPageContent() {
 
           <section
             className="sibs-page-card-in sibs-card relative z-[10] overflow-hidden rounded-[14px] border border-sibs-border bg-white shadow-xs font-jakarta"
-            style={{ animationDelay: "240ms", animationFillMode: "both" }}
+            style={{ animationDelay: "360ms", animationFillMode: "both" }}
           >
             <div className="border-b border-sibs-border p-4 sm:p-5 2xl:p-6 font-jakarta">
               <div className="flex flex-col gap-0.5">

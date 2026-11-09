@@ -80,7 +80,7 @@ export default function SuperAdminDashboardStats({
             badge={badge}
             icon={metric.icon}
             tone={metric.tone}
-            delay={index * 60}
+            delay={60 + index * 60}
             onClick={() => onMetricClick?.(metric)}
           />
         );

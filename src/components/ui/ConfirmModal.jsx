@@ -25,6 +25,11 @@ export default function ConfirmModal({
   children = null,
   maxWidth = "max-w-md",
   closeOnEscape = false,
+  // Optional notes slot for action confirmation workflows
+  showNotes = false,
+  notes = "",
+  onNotesChange = null,
+  notesPlaceholder = "Add notes for this action...",
   // Preserved public API; backdrop dismissal is intentionally disabled globally.
   closeOnBackdrop = false,
   mobileBottomSheet = false,
@@ -48,6 +53,20 @@ export default function ConfirmModal({
       maxWidth={maxWidth}
       closeOnEscape={closeOnEscape}
     >
+      {showNotes ? (
+        <label className="mt-3.5 block">
+          <span className="mb-1.5 block text-[10px] font-extrabold uppercase tracking-wide text-sibs-muted">
+            Notes <span className="font-semibold normal-case">(Optional)</span>
+          </span>
+          <textarea
+            rows={3}
+            value={notes}
+            onChange={(event) => onNotesChange?.(event.target.value)}
+            placeholder={notesPlaceholder}
+            className="sibs-input min-h-20 w-full resize-none py-2.5"
+          />
+        </label>
+      ) : null}
       {children}
     </StatusModal>
   );

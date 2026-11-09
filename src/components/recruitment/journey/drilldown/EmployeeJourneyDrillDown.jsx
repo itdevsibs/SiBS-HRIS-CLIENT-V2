@@ -841,7 +841,7 @@ function EmployeeJourneyDrillDown({
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {employeeAttendance.map((a) => <tr key={a.id} className="hover:bg-sibs-surface">
+                    {employeeAttendance.map((a) => <tr key={a.id} className="hover:bg-sibs-cream-light transition-colors">
                         <td className="py-2.5 px-3 font-bold text-sibs-navy">{a.date}</td>
                         <td className="py-2.5 px-3">
                           <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${a.status === "Present" ? "sibs-tone-green-bg sibs-tone-green-text border sibs-tone-green-border" : a.status === "Late" ? "sibs-tone-amber-bg sibs-tone-amber-text border sibs-tone-amber-border" : "sibs-tone-red-bg sibs-tone-red-text border sibs-tone-red-border"}`}>

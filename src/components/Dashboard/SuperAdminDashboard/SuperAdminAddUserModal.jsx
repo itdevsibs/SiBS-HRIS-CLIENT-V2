@@ -20,6 +20,13 @@ export default function SuperAdminAddUserModal({ open, onClose, onSave }) {
 
   if (!open) return null;
 
+  const isDirty =
+    Boolean(form.name.trim()) ||
+    Boolean(form.email.trim()) ||
+    form.accessLevel !== EMPTY_FORM.accessLevel ||
+    form.department !== EMPTY_FORM.department ||
+    form.accountGroup !== EMPTY_FORM.accountGroup;
+
   function handleClose() {
     setForm(EMPTY_FORM);
     onClose?.();
@@ -52,6 +59,7 @@ export default function SuperAdminAddUserModal({ open, onClose, onSave }) {
     <ModalShell
       open={open}
       onClose={handleClose}
+      isDirty={isDirty}
       title="Add Admin User"
       subtitle="Frontend account setup and access tier preview"
       icon={UserPlus}

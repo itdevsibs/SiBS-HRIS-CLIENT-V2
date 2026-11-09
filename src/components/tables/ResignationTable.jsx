@@ -94,6 +94,7 @@ function EditResignationModal({
   setForm,
   readOnly = false,
   onOpenAttachments,
+
 }) {
   const [commentSpokenOpen, setCommentSpokenOpen] = useState(false);
   const [employeeRetainedOpen, setEmployeeRetainedOpen] = useState(false);
@@ -493,6 +494,7 @@ function MobileResignationCard({
   onOpen,
   canOpen,
   onOpenAttachments,
+
 }) {
   const attachmentCount = getAttachmentCount(item);
 
@@ -549,7 +551,10 @@ export default function ResignationTable({
   data = [],
   loading = false,
   onUpdateSupervisor,
+  loadError = "",
+  onRetry,
   onOpenAttachments,
+
 }) {
   const { user } = useUser();
 
@@ -1052,7 +1057,21 @@ export default function ResignationTable({
                         colSpan={8}
                         className="border-t border-sibs-border p-10 text-center sibs-text-sm font-bold text-sibs-text-secondary"
                       >
-                        No resignation records found.
+                        <div role={loadError ? "alert" : undefined} className="flex flex-col items-center justify-center gap-2">
+                          <span className={loadError ? "text-rose-700" : ""}>
+                            {loadError || "No resignation records found."}
+                          </span>
+                          {loadError && typeof onRetry === "function" ? (
+                            <button
+                              type="button"
+                              onClick={onRetry}
+                              disabled={loading}
+                              className="inline-flex items-center gap-1.5 rounded-lg border border-rose-200 bg-white px-3 py-1.5 text-xs font-extrabold text-rose-700 shadow-2xs transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              Retry
+                            </button>
+                          ) : null}
+                        </div>
                       </td>
                     </tr>
                   ) : (
@@ -1065,7 +1084,7 @@ export default function ResignationTable({
                         <tr
                           key={item.id}
                           onClick={() => handleOpenEdit(item)}
-                          className={`transition-all duration-200 hover:bg-sibs-orange-light ${
+                          className={`transition-all duration-200 hover:bg-sibs-cream-light ${
                             isAssignedSupervisor
                               ? "cursor-pointer"
                               : "cursor-not-allowed opacity-80"
@@ -1138,7 +1157,21 @@ export default function ResignationTable({
                 </div>
               ) : paginatedData.length === 0 ? (
                 <div className="rounded-xl border border-sibs-border bg-white p-6 text-center text-sm font-bold text-gray-500">
-                  No resignation records found.
+                  <div role={loadError ? "alert" : undefined} className="flex flex-col items-center justify-center gap-2">
+                    <span className={loadError ? "text-rose-700" : ""}>
+                      {loadError || "No resignation records found."}
+                    </span>
+                    {loadError && typeof onRetry === "function" ? (
+                      <button
+                        type="button"
+                        onClick={onRetry}
+                        disabled={loading}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-rose-200 bg-white px-3 py-1.5 text-xs font-extrabold text-rose-700 shadow-2xs transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        Retry
+                      </button>
+                    ) : null}
+                  </div>
                 </div>
               ) : (
                 <div

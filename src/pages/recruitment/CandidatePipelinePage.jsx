@@ -384,8 +384,8 @@ export default function CandidatePipelinePage() {
 
   const {
     candidates: combinedDropOffCandidates,
-    isLoading: dropOffListLoading,
-    loadError: dropOffListError,
+    isLoading: _dropOffListLoading,
+    loadError: _dropOffListError,
     refresh: refreshDropOffCandidates,
   } = useCombinedDropOffCandidates();
 
@@ -696,7 +696,7 @@ export default function CandidatePipelinePage() {
                 icon={ClipboardCheck}
                 description="Matched candidates"
                 tone="indigo"
-                delay={60}
+                delay={40}
               />
               <MetricCard
                 label="Interview Scheduled"
@@ -704,7 +704,7 @@ export default function CandidatePipelinePage() {
                 icon={CalendarDays}
                 description="Booked sessions"
                 tone="blue"
-                delay={120}
+                delay={80}
               />
               <MetricCard
                 label="Interviewed"
@@ -712,7 +712,7 @@ export default function CandidatePipelinePage() {
                 icon={ShieldCheck}
                 description="Evaluations complete"
                 tone="green"
-                delay={180}
+                delay={120}
               />
               <MetricCard
                 label="Offered"
@@ -720,7 +720,7 @@ export default function CandidatePipelinePage() {
                 icon={BriefcaseBusiness}
                 description="Offers processing"
                 tone="amber"
-                delay={240}
+                delay={160}
               />
               <MetricCard
                 label="Accepted"
@@ -728,14 +728,14 @@ export default function CandidatePipelinePage() {
                 icon={UserCheck}
                 description="Ready for NHO"
                 tone="orange"
-                delay={300}
+                delay={200}
               />
             </MetricGrid>
           )}
 
           <section
             className="sibs-page-card-in sibs-card relative z-[40] overflow-visible p-3 sm:p-4 2xl:p-5"
-            style={{ animationDelay: "120ms", animationFillMode: "both" }}
+            style={{ animationDelay: "240ms", animationFillMode: "both" }}
           >
             <div className="flex flex-col justify-between gap-3 lg:flex-row lg:items-center">
               <div className="flex flex-wrap items-center gap-2">

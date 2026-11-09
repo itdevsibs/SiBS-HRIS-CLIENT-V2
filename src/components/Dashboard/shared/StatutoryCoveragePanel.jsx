@@ -100,12 +100,17 @@ function CoverageSkeleton() {
   );
 }
 
-export function StatutoryCoverageSkeleton({ className = "" }) {
+export function StatutoryCoverageSkeleton({ className = "", delay = 240, style = {} }) {
   return (
     <article
       data-testid="statutory-coverage-skeleton"
       aria-hidden="true"
       className={`sibs-card sibs-page-card-in rounded-[14px] border border-sibs-border bg-white p-4 sm:p-5 shadow-xs font-jakarta ${className}`}
+      style={{
+        animationDelay: `${delay}ms`,
+        animationFillMode: "both",
+        ...style,
+      }}
     >
       <div className="flex items-start justify-between gap-3 border-b border-sibs-border pb-4">
         <div className="flex items-start gap-3">
@@ -128,6 +133,8 @@ export function StatutoryCoverageSkeleton({ className = "" }) {
 export default function StatutoryCoveragePanel({
   className = "",
   modalBadge = "HRIS · Active Employees",
+  delay = 240,
+  style = {},
 }) {
   const [coverage, setCoverage] = useState(EMPTY_COVERAGE);
   const [activeEmployees, setActiveEmployees] = useState(0);
@@ -184,6 +191,11 @@ export default function StatutoryCoveragePanel({
     <>
       <article
         className={`sibs-card sibs-page-card-in rounded-[14px] border border-sibs-border bg-white p-4 sm:p-5 shadow-xs font-jakarta ${className}`}
+        style={{
+          animationDelay: `${delay}ms`,
+          animationFillMode: "both",
+          ...style,
+        }}
       >
         <div className="flex items-start justify-between gap-3 border-b border-sibs-border pb-4">
           <div className="flex items-start gap-3">

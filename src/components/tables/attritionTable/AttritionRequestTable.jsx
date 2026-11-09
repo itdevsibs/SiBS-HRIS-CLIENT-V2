@@ -591,7 +591,7 @@ const JobDescriptionTable = ({ jobDescriptionList = [], onView }) => {
                     return (
                       <tr
                         key={item.id}
-                        className="transition hover:bg-sibs-canvas"
+                        className="transition hover:bg-sibs-cream-light"
                       >
                         <td className="border-b border-sibs-border px-5 py-4 text-[13px] font-semibold text-sibs-text-secondary">
                           {item.roleTitle || "—"}

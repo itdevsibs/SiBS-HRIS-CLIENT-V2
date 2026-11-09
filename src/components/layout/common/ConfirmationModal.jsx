@@ -1,6 +1,10 @@
 import React, { useState } from "react";
-import StatusModal from "@/components/modals/StatusModal";
+import ConfirmModal from "@/components/ui/ConfirmModal";
 
+/**
+ * Compatibility wrapper delegating to canonical ConfirmModal.
+ * Preserves useConfirmDialog() hook for candidate pipeline and position workflows.
+ */
 function ConfirmationModal({
   open,
   title = "Confirm Action",
@@ -12,35 +16,22 @@ function ConfirmationModal({
   showNotes = false,
   notes = "",
   onNotesChange,
+  variant = "warning",
 }) {
   return (
-    <StatusModal
+    <ConfirmModal
       open={open}
-      type="confirm"
-      subtitle="SiBS HRIS"
       title={title}
-      message={message}
+      description={message}
       confirmLabel={confirmLabel}
       cancelLabel={cancelLabel}
-      onCancel={onCancel}
       onClose={onCancel}
       onConfirm={onConfirm}
-    >
-      {showNotes ? (
-        <label className="mt-3.5 block">
-          <span className="mb-1.5 block text-[10px] font-extrabold uppercase tracking-wide text-sibs-muted">
-            Notes <span className="font-semibold normal-case">(Optional)</span>
-          </span>
-          <textarea
-            rows={3}
-            value={notes}
-            onChange={(event) => onNotesChange?.(event.target.value)}
-            placeholder="Add notes for this action..."
-            className="sibs-input min-h-20 w-full resize-none py-2.5"
-          />
-        </label>
-      ) : null}
-    </StatusModal>
+      showNotes={showNotes}
+      notes={notes}
+      onNotesChange={onNotesChange}
+      variant={variant}
+    />
   );
 }
 

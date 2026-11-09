@@ -79,31 +79,24 @@ export default function SuperAdminAccessGovernance({
   }, [statusOptions]);
   return (
     <div className="space-y-4 2xl:space-y-5 font-jakarta">
-      <section
-        className="sibs-page-card-in rounded-xl border border-sibs-border bg-sibs-surface p-3 2xl:p-3.5"
-        style={{ animationDelay: "240ms", animationFillMode: "both" }}
-      >
+      <section className="rounded-xl border border-sibs-border bg-sibs-surface p-3 2xl:p-3.5">
         <h2 className="sibs-section-title flex items-center gap-1.5 2xl:gap-2">
           <Lock size={14} className="text-sibs-orange" />
           User Access Levels Hierarchy
         </h2>
 
         <div className="mt-2 2xl:mt-2.5 grid grid-cols-2 gap-1.5 2xl:gap-2 sm:grid-cols-5 xl:grid-cols-10">
-          {ACCESS_HIERARCHY.map(([level, description], index) => {
+          {ACCESS_HIERARCHY.map(([level, description]) => {
             const superAdmin = String(level).startsWith("7");
 
             return (
               <div
                 key={level}
-                className={`sibs-page-card-in rounded-lg border p-1.5 2xl:p-2 text-center ${
+                className={`rounded-lg border p-1.5 2xl:p-2 text-center ${
                   superAdmin
                     ? "border-sibs-navy bg-sibs-navy text-white"
                     : "border-sibs-border bg-white text-sibs-navy"
                 }`}
-                style={{
-                  animationDelay: `${index * 35}ms`,
-                  animationFillMode: "both",
-                }}
               >
                 <span
                   className={`block text-[9px] 2xl:text-[10px] font-extrabold whitespace-nowrap truncate ${
@@ -193,14 +186,10 @@ export default function SuperAdminAccessGovernance({
       <ResponsiveTableShell
         mobileView={
           admins.length > 0 ? (
-            admins.map((item, index) => (
+            admins.map((item) => (
               <DataCard
                 key={item.id}
                 interactive={false}
-                style={{
-                  animationDelay: `${index * 40}ms`,
-                  animationFillMode: "both",
-                }}
               >
                 <DataCard.Header
                   title={item.name}
@@ -272,14 +261,10 @@ export default function SuperAdminAccessGovernance({
                 </thead>
                 <tbody className="divide-y divide-sibs-border">
                   {admins.length > 0 ? (
-                    admins.map((item, index) => (
+                    admins.map((item) => (
                       <tr
                         key={item.id}
-                        className="sibs-data-table-row sibs-page-card-in hover:bg-sibs-cream-light/60 transition-colors"
-                        style={{
-                          animationDelay: `${index * 35}ms`,
-                          animationFillMode: "both",
-                        }}
+                        className="sibs-data-table-row hover:bg-sibs-cream-light/60 transition-colors"
                       >
                         <td className="px-3 2xl:px-4 py-2 2xl:py-2.5">
                           <p className="font-extrabold text-sibs-navy truncate">{item.name}</p>

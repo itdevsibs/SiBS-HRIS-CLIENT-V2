@@ -270,7 +270,7 @@ export default function AvailablePositionsTable({
                     {isLoading ? (
                       <TableSkeletonRows count={10} columns={8} />
                     ) : paginatedPositions.length > 0 ? (
-                      paginatedPositions.map((position, index) => {
+                      paginatedPositions.map((position) => {
                         const linkedJd = getAvailablePositionLinkedJd(position);
 
                         const department =
@@ -307,11 +307,11 @@ export default function AvailablePositionsTable({
                                 : undefined
                             }
                             className={[
-                              "sibs-page-card-in align-middle transition-colors duration-150",
+                              "align-middle transition-colors duration-150",
 
                               unlinked
                                 ? "bg-orange-50/60 hover:bg-orange-100/50"
-                                : "bg-white hover:bg-slate-50/80",
+                                : "bg-white hover:bg-sibs-cream-light",
 
                               rowClickable
                                 ? `cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sibs-orange/25 ${
@@ -321,9 +321,6 @@ export default function AvailablePositionsTable({
                                   }`
                                 : "cursor-wait",
                             ].join(" ")}
-                            style={{
-                              animationDelay: `${index * 30}ms`,
-                            }}
                             aria-label={
                               rowClickable
                                 ? `Open available position ${

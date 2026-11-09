@@ -121,6 +121,16 @@ const STATUS_CONFIGS = {
     dotClassName: "bg-rose-500",
     label: "Resigned",
   },
+  inactive: {
+    className: "sibs-badge-danger",
+    dotClassName: "bg-rose-500",
+    label: "Inactive",
+  },
+  "inactive (kronos)": {
+    className: "sibs-badge-danger",
+    dotClassName: "bg-rose-500",
+    label: "Inactive (Kronos)",
+  },
   "drop off": {
     className: "sibs-badge-danger",
     dotClassName: "bg-rose-500",

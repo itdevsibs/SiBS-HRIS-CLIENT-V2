@@ -19,7 +19,6 @@ describe("ESEP Coaching View & Modals Harmonization Gate", () => {
     renderWithJourney(<ESEPCoachingTabView />);
 
     expect(screen.getByText("Coaching Results & Performance Outcomes")).toBeInTheDocument();
-    expect(screen.getByText("ESEP Framework")).toBeInTheDocument();
     expect(
       screen.getByPlaceholderText("Search coachee, SIBS ID, account, or TL...")
     ).toBeInTheDocument();

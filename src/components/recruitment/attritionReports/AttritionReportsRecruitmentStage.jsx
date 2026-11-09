@@ -1,5 +1,5 @@
 import React from "react";
-import { AlertCircle, ArrowRight, GitCommit, Layers, X } from "lucide-react";
+import { AlertCircle, ArrowRight, GitCommit, X } from "lucide-react";
 import { Skeleton } from "@/components/ui";
 
 export default function AttritionReportsRecruitmentStage({ data, loading = false }) {
@@ -27,12 +27,11 @@ export default function AttritionReportsRecruitmentStage({ data, loading = false
   return (
     <section
       className="sibs-page-card-in rounded-[14px] border border-sibs-border bg-white p-4 sm:p-5 shadow-sm font-jakarta"
-      style={{ animationDelay: "180ms", animationFillMode: "both" }}
+      style={{ animationDelay: "300ms", animationFillMode: "both" }}
     >
       <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h3 className="font-heading text-sm 2xl:text-base font-bold text-sibs-navy tracking-tight flex items-center gap-2">
-            <Layers className="h-4 w-4 text-sibs-orange" />
+          <h3 className="font-heading text-sm 2xl:text-base font-bold text-sibs-navy tracking-tight">
             Attrition Between Recruitment Stages
           </h3>
           <p className="mt-0.5 sibs-text-xs font-semibold text-sibs-muted">

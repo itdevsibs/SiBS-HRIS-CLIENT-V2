@@ -127,6 +127,8 @@ export default function ScheduleTable({
     limit: PAGE_LIMIT,
   },
   filterValues = {},
+  loadError = "",
+  onRetry,
 }) {
   const tableScrollRef = useRef(null);
   const [searchSubmitVersion, setSearchSubmitVersion] = useState(0);
@@ -283,7 +285,7 @@ export default function ScheduleTable({
         </section>
 
         <section
-          className="sibs-profile-tab-panel sibs-page-card-in sibs-card overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-xs"
+          className="sibs-page-card-in sibs-card overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-xs"
           style={getAnimationStyle(120)}
         >
           <div className="border-b border-sibs-border p-4 sm:p-5 2xl:p-6 font-jakarta">
@@ -351,11 +353,20 @@ export default function ScheduleTable({
                             <td colSpan={7} className="p-8 2xl:p-12 text-center">
                               <div className="mx-auto flex max-w-sm flex-col items-center gap-2 text-sibs-muted">
                                 <CalendarDays size={30} className="text-sibs-faint" />
+                                {loadError && typeof onRetry === "function" ? (
+                                  <button
+                                    type="button"
+                                    onClick={onRetry}
+                                    className="inline-flex items-center gap-1.5 rounded-lg border border-rose-200 bg-white px-3 py-1.5 text-xs font-extrabold text-rose-700 shadow-2xs transition hover:bg-rose-100"
+                                  >
+                                    Retry
+                                  </button>
+                                ) : null}
                                 <p className="text-xs 2xl:text-sm font-extrabold text-sibs-navy">
-                                  No schedule records found
+                                  {loadError ? "Unable to load schedule records" : "No schedule records found"}
                                 </p>
                                 <p className="text-[11px] 2xl:text-xs font-semibold">
-                                  Adjust the search or date range filters and try again.
+                                  {loadError || "Adjust the search or date range filters and try again."}
                                 </p>
                               </div>
                             </td>
@@ -364,11 +375,7 @@ export default function ScheduleTable({
                           schedule.map((item, index) => (
                             <tr
                               key={item.gy_sched_id || index}
-                              className="sibs-data-table-row sibs-schedule-row-reveal"
-                              style={{
-                                animationDelay: `${Math.min(index, 10) * 35}ms`,
-                                animationFillMode: "both",
-                              }}
+                              className="sibs-data-table-row"
                             >
                               <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-semibold text-sibs-text-secondary">
                                 {formatDate(item.gy_sched_day)}
@@ -414,8 +421,8 @@ export default function ScheduleTable({
                   ) : schedule.length === 0 ? (
                     <DataCard.Empty
                       icon={<CalendarDays size={22} />}
-                      title="No schedule records found"
-                      description="Adjust the search or date range filters and try again."
+                      title={loadError ? "Unable to load schedule records" : "No schedule records found"}
+                      description={loadError || "Adjust the search or date range filters and try again."}
                     />
                   ) : (
                     schedule.map((item, index) => (

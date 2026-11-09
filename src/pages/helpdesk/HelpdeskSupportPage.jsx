@@ -29,11 +29,16 @@ import {
 import Header from "@/components/layout/Header";
 import {
   DataCard,
+  MetricCard,
+  MetricCardSkeleton,
+  MetricGrid,
+  ModalShell,
   PageHeaderHero,
   ResponsiveTableShell,
   SearchInput,
   SelectDropdown,
   StatusFilterTabs,
+  TableEmptyRow,
   TablePagination,
   TableSkeletonRows,
 } from "@/components/ui";
@@ -54,14 +59,22 @@ const PAGE_SIZE = 15;
 const HELPDESK_CONFIG = {
   IT: {
     name: "IT Support",
+    kicker: "IT Operations · Helpdesk",
     description: "Review technical concerns submitted by employees and coordinate responses with the IT support team.",
     empty: "No IT Support requests yet",
+    tableTitle: "IT Support Requests",
+    searchPlaceholder: "Search IT requests by employee, SIBS ID, location, or message...",
+    recordLabel: "IT Support requests",
     icon: Headset,
   },
   TA_HR: {
     name: "TA/HR Concerns",
+    kicker: "Talent Acquisition & HR · Helpdesk",
     description: "Review recruitment, employee, and HR concerns submitted to the TA/HR support team.",
-    empty: "No TA/HR requests yet",
+    empty: "No TA/HR concerns yet",
+    tableTitle: "TA/HR Concerns Requests",
+    searchPlaceholder: "Search TA/HR concerns by employee, SIBS ID, location, or message...",
+    recordLabel: "TA/HR concerns",
     icon: HeartHandshake,
   },
 };
@@ -74,7 +87,7 @@ const DATE_FORMATTER = new Intl.DateTimeFormat("en-PH", {
   minute: "2-digit",
   hour12: true,
 });
-const ANIMATION = { table: 120 };
+const ANIMATION = { summary: 60, table: 240, metric: 60 };
 
 // Open cases are requests that still need support action. A selected Helpdesk
 // category without a first message is a draft and never enters these counts.
@@ -227,17 +240,17 @@ function RequesterAvatar({ requester }) {
   }, []);
 
   useEffect(() => {
-    if (!previewVisible) return undefined;
+    if (!previewVisible || !showImage) return undefined;
     window.addEventListener("scroll", updatePreviewPosition, true);
     window.addEventListener("resize", updatePreviewPosition);
     return () => {
       window.removeEventListener("scroll", updatePreviewPosition, true);
       window.removeEventListener("resize", updatePreviewPosition);
     };
-  }, [previewVisible, updatePreviewPosition]);
+  }, [previewVisible, showImage, updatePreviewPosition]);
 
   const avatarContent = (large = false) => (
-    <span className={`relative flex ${large ? "h-40 w-40 rounded-xl text-2xl" : "h-9 w-9 rounded-full text-xs"} shrink-0 items-center justify-center overflow-hidden border font-extrabold shadow-inner ${tone}`}>
+    <span className={`relative flex ${large ? "h-36 w-36 rounded-xl text-2xl" : "h-9 w-9 rounded-full text-xs"} shrink-0 items-center justify-center overflow-hidden border font-extrabold shadow-inner ${tone}`}>
       {initials}
       {showImage ? (
         <img
@@ -251,13 +264,22 @@ function RequesterAvatar({ requester }) {
     </span>
   );
 
+  // If there is no uploaded picture, render standard initials avatar without hover portal popup
+  if (!showImage) {
+    return (
+      <span className="relative inline-flex shrink-0 select-none">
+        {avatarContent(false)}
+      </span>
+    );
+  }
+
   return (
     <>
       <span
         ref={elementRef}
         tabIndex={0}
         aria-label={`${requester.name} profile picture`}
-        className="relative inline-flex shrink-0 outline-none"
+        className="relative inline-flex shrink-0 outline-none cursor-pointer"
         onClick={(event) => event.stopPropagation()}
         onKeyDown={(event) => event.stopPropagation()}
         onMouseEnter={() => { updatePreviewPosition(); setPreviewVisible(true); }}
@@ -265,7 +287,7 @@ function RequesterAvatar({ requester }) {
         onFocus={() => { updatePreviewPosition(); setPreviewVisible(true); }}
         onBlur={() => setPreviewVisible(false)}
       >
-        {avatarContent()}
+        {avatarContent(false)}
       </span>
       {previewVisible && previewPosition && typeof document !== "undefined" ? createPortal(
         <span
@@ -310,7 +332,7 @@ function MobileRequestCard({ conversation, requester, ticket, onOpen, opening, i
             <p className="break-words text-[13px] font-extrabold text-sibs-navy">{requester.name}</p>
             <UnreadBadge count={unread} />
           </div>
-          <p className="mt-1 sibs-text-micro font-extrabold text-sibs-orange">SiBS ID: {requester.sibsId || "—"} · {getCaseDisplayLabel(ticket, conversation)}</p>
+          <p className="mt-1 sibs-text-micro font-bold text-sibs-navy">SiBS ID: {requester.sibsId || "—"} · <span className="text-sibs-muted">{getCaseDisplayLabel(ticket, conversation)}</span></p>
           <div className="mt-2 flex items-center gap-1 text-[11px] font-semibold text-sibs-muted"><MapPin size={12} />{requester.location}</div>
         </div>
       </div>
@@ -339,19 +361,32 @@ const TICKET_STATUS_LABELS = {
   RESOLVED: "Closed",
   REJECTED: "Rejected",
 };
-const TICKET_STATUS_COLORS = {
-  OPEN: "bg-blue-50 text-blue-700 border-blue-200",
-  IN_PROGRESS: "bg-orange-50 text-orange-700 border-orange-200",
-  PENDING: "bg-amber-50 text-amber-700 border-amber-200",
-  RESOLVED: "bg-emerald-50 text-emerald-700 border-emerald-200",
-  REJECTED: "bg-rose-50 text-rose-700 border-rose-200",
-};
-
 function TicketStatusBadge({ status }) {
   if (!TICKET_STATUS_LABELS[status]) return <span className="text-[11px] text-sibs-muted">Loading status...</span>;
-  return <span className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-extrabold ${TICKET_STATUS_COLORS[status]}`}>
-    {TICKET_STATUS_LABELS[status]}
-  </span>;
+  const badgeClass =
+    status === "RESOLVED"
+      ? "sibs-badge-success"
+      : status === "PENDING"
+      ? "sibs-badge-warning"
+      : status === "OPEN"
+      ? "sibs-badge-info"
+      : "inline-flex items-center gap-1.5 rounded-full border border-orange-200 bg-orange-50 px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-orange-800";
+
+  const dotClass =
+    status === "RESOLVED"
+      ? "bg-emerald-500"
+      : status === "PENDING"
+      ? "bg-amber-500"
+      : status === "OPEN"
+      ? "bg-blue-500"
+      : "bg-orange-500";
+
+  return (
+    <span className={badgeClass}>
+      <span className={`h-1.5 w-1.5 rounded-full ${dotClass}`} />
+      {TICKET_STATUS_LABELS[status]}
+    </span>
+  );
 }
 
 function formatElapsed(value) {
@@ -364,261 +399,298 @@ function formatElapsed(value) {
   return `${hours} hr${hours === 1 ? "" : "s"}${minutes % 60 ? ` ${minutes % 60} min` : ""}`;
 }
 
-// Compact date/value line for Request details: no individual timestamp cards.
-// Keep the full event history but use a simple list with subtle separators.
-function TicketTimestamp({ label, value }) {
+function SectionHeader({ icon: Icon, title, subtitle, action }) {
   return (
-    <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 py-2.5">
-      <dt className="text-[11px] font-semibold text-sibs-muted">{label}</dt>
-      <dd className="m-0 text-xs font-bold text-sibs-navy">{formatDate(value)}</dd>
+    <div className="mb-3.5 flex items-start justify-between gap-3 border-b border-sibs-border pb-2.5 font-jakarta">
+      <div className="min-w-0">
+        <h3 className="flex items-center gap-2 sibs-modal-section-title">
+          {Icon ? (
+            <span className="flex h-6 w-6 2xl:h-6.5 2xl:w-6.5 shrink-0 items-center justify-center rounded-[8px] bg-sibs-surface-subtle text-sibs-navy">
+              {React.createElement(Icon, { size: 14, className: "shrink-0 text-sibs-orange" })}
+            </span>
+          ) : null}
+          <span>{title}</span>
+        </h3>
+        {subtitle ? (
+          <p className="sibs-modal-section-subtitle mt-0.5">
+            {subtitle}
+          </p>
+        ) : null}
+      </div>
+      {action ? <div className="shrink-0">{action}</div> : null}
+    </div>
+  );
+}
+
+function TicketTimestamp({ label, value, icon: Icon = Clock3 }) {
+  return (
+    <div className="rounded-xl border border-sibs-border bg-sibs-surface px-3 py-2.5 font-jakarta">
+      <p className="flex items-center gap-1.5 text-[9px] 2xl:text-[9.5px] font-extrabold uppercase tracking-wide text-sibs-muted">
+        {React.createElement(Icon, { size: 13, className: "text-sibs-orange shrink-0" })}
+        {label}
+      </p>
+      <p className="mt-1 text-xs 2xl:text-[13px] font-bold text-sibs-navy tabular-nums">{formatDate(value)}</p>
     </div>
   );
 }
 
 function HelpdeskTicketModal({ conversation, ticket, loading, eligibility, eligibilityLoading, busy, error,
-  currentSibsId, onClose, onAccept, onUpdateStatus, onMessagesChanged }) {
+  currentSibsId, categoryConfig = HELPDESK_CONFIG.IT, onClose, onAccept, onUpdateStatus, onOpenChat }) {
   const requester = getRequester(conversation);
   const isAssignee = Boolean(ticket?.acceptedBySibsId) && safeText(ticket.acceptedBySibsId) === currentSibsId;
   const assignee = (conversation.members || []).find((m) => safeText(m.sibsId) === safeText(ticket?.acceptedBySibsId));
-  const [now, setNow] = useState(Date.now());
-  const [selectedStatus, setSelectedStatus] = useState("IN_PROGRESS");
-  const [confirmClose, setConfirmClose] = useState(false);
-  const [confirmReject, setConfirmReject] = useState(false);
-  const [rejectionReason, setRejectionReason] = useState("");
+  const [now, setNow] = useState(() => Date.now());
+  const [selectedStatusOverride, setSelectedStatusOverride] = useState(null);
+  const selectedStatus = selectedStatusOverride ?? ticket?.status ?? "IN_PROGRESS";
 
   useEffect(() => {
     const id = window.setInterval(() => setNow(Date.now()), 60_000);
     return () => window.clearInterval(id);
   }, []);
-  useEffect(() => { setSelectedStatus(ticket?.status || "IN_PROGRESS"); }, [ticket?.status]);
-  useEffect(() => {
-    if (["RESOLVED", "REJECTED"].includes(ticket?.status)) {
-      setConfirmClose(false);
-      setConfirmReject(false);
-      setRejectionReason("");
-    }
-  }, [ticket?.status]);
-  useEffect(() => {
-    const priorOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    const handleEscape = (event) => {
-      if (event.key !== "Escape" || busy) return;
-      if (confirmClose) { setConfirmClose(false); return; }
-      if (confirmReject) { setConfirmReject(false); return; }
-      if (document.querySelector(".sibs-animated-dropdown.open")) return;
-      onClose();
-    };
-    window.addEventListener("keydown", handleEscape);
-    return () => { document.body.style.overflow = priorOverflow; window.removeEventListener("keydown", handleEscape); };
-  }, [busy, onClose, confirmClose, confirmReject]);
 
-  // The SiBS HRIS modal is intentionally not dismissed by backdrop clicks.
-  // Saving/closing a case is a separate, confirmed support action.
-  const modalContent = (
-    <div className="fixed inset-0 z-[1600] flex items-center justify-center bg-slate-950/70 p-3 backdrop-blur-[3px] sm:p-6"
-      role="presentation" onMouseDown={(event) => event.stopPropagation()}>
-      <section role="dialog" aria-modal="true" aria-label="Helpdesk case conversation and details"
-        className="flex max-h-[94vh] w-full max-w-[1180px] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl font-jakarta"
-        onMouseDown={(event) => event.stopPropagation()}>
-        <div className="flex shrink-0 items-center justify-between gap-3 border-t-[3px] border-sibs-orange bg-sibs-navy px-5 py-4 text-white">
-          <div className="flex min-w-0 items-center gap-3">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sibs-orange"><ClipboardList size={20} /></span>
-            <div className="min-w-0">
-              <h2 className="truncate font-heading text-lg font-bold">{getCaseDisplayLabel(ticket, conversation)}</h2>
-              <p className="truncate text-xs font-semibold text-blue-100">{safeText(conversation.helpdeskCategory) === "IT" ? "IT Support" : "TA/HR Concerns"} · {requester.name}</p>
+  return (
+    <ModalShell
+      open={Boolean(conversation)}
+      onClose={() => {
+        if (!busy && !document.querySelector(".sibs-animated-dropdown.open")) onClose();
+      }}
+      hideCloseButton={busy}
+      closeOnBackdrop={!busy}
+      closeOnEscape={!busy}
+      title={getCaseDisplayLabel(ticket, conversation)}
+      subtitle={`${categoryConfig?.name || "Support"} · ${requester.name}`}
+      icon={categoryConfig?.icon || ClipboardList}
+      maxWidth="max-w-5xl"
+      variant="navy"
+      badge={ticket?.status ? TICKET_STATUS_LABELS[ticket.status] : undefined}
+      bodyClassName="sibs-scrollbar min-h-0 flex-1 overflow-y-auto bg-sibs-surface p-4 sm:p-5 2xl:p-6 font-jakarta"
+      footerMeta={
+        <div className="flex min-w-0 items-center gap-2 text-xs font-semibold text-sibs-muted">
+          <ShieldCheck size={14} className="shrink-0 text-sibs-navy" />
+          <span className="truncate">
+            Case updates sync live across support queues and employee chat.
+          </span>
+        </div>
+      }
+      footer={
+        <button
+          type="button"
+          onClick={onClose}
+          disabled={busy}
+          className="sibs-modal-btn-secondary"
+        >
+          Close Details
+        </button>
+      }
+    >
+      {error && (
+        <div role="alert" className="mb-4 rounded-xl border border-red-200 bg-red-50 p-3 text-xs font-bold text-red-700">
+          {error}
+        </div>
+      )}
+      {loading || !ticket ? (
+        <div className="flex min-h-64 items-center justify-center gap-2 text-sm text-sibs-muted">
+          {loading ? <Loader2 size={20} className="animate-spin text-sibs-orange" /> : <AlertCircle size={20} className="text-sibs-orange" />}
+          {loading ? "Loading request details..." : "Request details are unavailable. Close and retry."}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1.55fr)_minmax(300px,1fr)] items-start">
+          <div className="space-y-4">
+            {/* Request Details */}
+            <div className="rounded-xl border border-sibs-border bg-white p-4 2xl:p-5 shadow-xs font-jakarta">
+              <SectionHeader
+                icon={FileText}
+                title="Request Details"
+                subtitle="Requester information, case milestones, and response metrics."
+                action={<TicketStatusBadge status={ticket.status} />}
+              />
+              <div className="flex items-center gap-3 rounded-xl border border-sibs-border bg-sibs-surface p-3 font-jakarta">
+                <RequesterAvatar requester={requester} />
+                <div className="min-w-0">
+                  <p className="text-sm font-extrabold text-sibs-navy">{requester.name}</p>
+                  <p className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[11px] font-semibold text-sibs-muted">
+                    <span>SiBS ID: <strong className="text-sibs-navy">{requester.sibsId || "—"}</strong></span>
+                    <span>·</span>
+                    <span className="inline-flex items-center gap-1">
+                      <MapPin size={12} className="text-sibs-faint" />
+                      {ticket.requesterSite || requester.location}
+                    </span>
+                  </p>
+                </div>
+              </div>
+              <div className="mt-3.5 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+                <TicketTimestamp label="Case opened · first message" value={ticket.postedAt} icon={CalendarClock} />
+                <TicketTimestamp label="Assigned" value={ticket.assignedAt} icon={UserRound} />
+                <TicketTimestamp label="Accepted" value={ticket.acceptedAt} icon={CheckCircle2} />
+                <TicketTimestamp label="First support reply" value={ticket.firstResponseAt} icon={MessageSquareText} />
+                <TicketTimestamp label="Finished / resolved" value={ticket.resolvedAt} icon={CheckCircle2} />
+              </div>
+              <div className="mt-3.5 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+                {[
+                  ["Queued before acceptance", getQueuedDisplay(ticket, now).text],
+                  ["Response time · after acceptance", getResponseDisplay(ticket).text],
+                  ["Total resolution", formatElapsed(ticket.secondsToResolve)],
+                  ["Handling time", formatElapsed(ticket.secondsToFinish)],
+                ].map(([label, value]) => (
+                  <div key={label} className="rounded-xl border border-sibs-border bg-sibs-surface p-2.5 2xl:p-3 text-center font-jakarta">
+                    <span className="block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wider text-sibs-muted">
+                      {label}
+                    </span>
+                    <span className="mt-1 block font-heading text-sm 2xl:text-base font-bold text-sibs-navy tabular-nums">
+                      {value}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <p className="mt-2 text-[10px] font-medium text-sibs-muted">
+                {ticket.acceptedAt
+                  ? "Queued Time runs from the first message to acceptance. Response Time runs from acceptance to the first support reply."
+                  : ticket.status === "OPEN"
+                    ? "Waiting for acceptance. Queued Time is running. Response Time has not started."
+                    : "No acceptance timestamp is available for this request."}
+              </p>
+            </div>
+
+            {/* Activity Timeline */}
+            <div className="rounded-xl border border-sibs-border bg-white p-4 2xl:p-5 shadow-xs font-jakarta">
+              <SectionHeader
+                icon={Clock3}
+                title="Activity Timeline"
+                subtitle="Chronological log of case submission, assignment, and status updates."
+              />
+              <div className="relative space-y-3.5 pl-6 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-sibs-border">
+                <div className="relative">
+                  <span className="absolute -left-6 top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-emerald-50 ring-4 ring-white">
+                    <CheckCircle2 size={13} className="text-emerald-600" />
+                  </span>
+                  <p className="text-xs font-bold text-sibs-navy">Case opened · first message sent</p>
+                  <p className="text-[10.5px] font-medium text-sibs-muted">{formatDate(ticket.postedAt)}</p>
+                </div>
+                {(ticket.history || []).map((entry, index) => {
+                  const isAccept = entry.eventType === "ACCEPTED";
+                  const isResolve = entry.eventType === "RESOLVED";
+                  return (
+                    <div key={`${entry.eventType}-${entry.occurredAt}-${index}`} className="relative">
+                      <span className="absolute -left-6 top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-orange-50 ring-4 ring-white">
+                        <Clock3 size={13} className={isResolve ? "text-emerald-600" : isAccept ? "text-blue-600" : "text-sibs-orange"} />
+                      </span>
+                      <p className="text-xs font-bold text-sibs-navy">
+                        {isAccept
+                          ? "Accepted and assigned"
+                          : isResolve
+                          ? "Resolved"
+                          : `Status changed to ${TICKET_STATUS_LABELS[entry.newStatus] || entry.newStatus}`}
+                      </p>
+                      <p className="text-[10.5px] font-medium text-sibs-muted">
+                        {formatDate(entry.occurredAt)} · SiBS ID: {entry.actorSibsId}
+                      </p>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
-          <button type="button" onClick={onClose} disabled={busy} aria-label="Close case details"
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/10 hover:bg-white/20 disabled:opacity-50"><X size={18} /></button>
-        </div>
-        <div className="sibs-scrollbar min-h-0 flex-1 overflow-y-auto bg-[#f7f9fc] px-4 py-4 sm:px-6">
-          {error && <div role="alert" className="mb-4 rounded-xl border border-red-200 bg-red-50 p-3 text-xs font-bold text-red-700">{error}</div>}
-          {loading || !ticket ? <div className="flex min-h-64 items-center justify-center gap-2 text-sm text-sibs-muted">
-            {loading ? <Loader2 size={20} className="animate-spin" /> : <AlertCircle size={20} />}
-            {loading ? "Loading request details..." : "Request details are unavailable. Close and retry."}
-          </div> : (
-            <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,1.7fr)_minmax(310px,1fr)]">
-              <div className="min-w-0 space-y-4">
-                <HelpdeskCaseConversation
-                  key={conversation.id}
-                  conversation={conversation}
-                  ticket={ticket}
-                  currentSibsId={currentSibsId}
-                  onMessagesChanged={onMessagesChanged}
-                />
-                <div className="rounded-2xl border border-sibs-border bg-white p-4 shadow-xs">
-                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-sibs-border pb-3">
-                    <h3 className="font-heading text-sm font-bold text-sibs-navy">Request details</h3>
-                    <TicketStatusBadge status={ticket.status} />
-                  </div>
-                  <div className="mt-3 flex items-center gap-3">
-                    <RequesterAvatar requester={requester} />
+
+          <div className="space-y-4">
+            {/* Support Assignment */}
+            <div className="rounded-xl border border-sibs-border bg-white p-4 2xl:p-5 shadow-xs font-jakarta">
+              <SectionHeader
+                icon={UserRoundCheck}
+                title="Support Assignment"
+                subtitle="Ticket ownership and lifecycle state."
+              />
+              <div className="space-y-3.5">
+                <div>
+                  <span className="sibs-modal-field-label">Current Status</span>
+                  <div className="mt-1"><TicketStatusBadge status={ticket.status} /></div>
+                </div>
+                <div>
+                  <span className="sibs-modal-field-label">Accepted By</span>
+                  <div className="mt-1 flex items-center gap-2 rounded-xl border border-sibs-border bg-sibs-surface p-2.5">
+                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-sibs-navy text-white text-[10px] font-bold">
+                      {ticket.acceptedBySibsId ? safeText(assignee?.initials || "SP").slice(0, 2) : "—"}
+                    </div>
                     <div className="min-w-0">
-                      <p className="break-words text-sm font-extrabold text-sibs-navy">{requester.name}</p>
-                      <p className="text-[11px] font-semibold text-sibs-muted">SiBS ID: {requester.sibsId} · Assigned site: {ticket.requesterSite || requester.location}</p>
+                      <p className="truncate text-xs font-bold text-sibs-navy">
+                        {ticket.acceptedBySibsId
+                          ? `${assignee?.displayName || `SiBS ID ${ticket.acceptedBySibsId}`}`
+                          : "Unassigned"}
+                      </p>
+                      {ticket.acceptedBySibsId ? (
+                        <p className="text-[10px] font-medium text-sibs-muted">SiBS ID: {ticket.acceptedBySibsId}</p>
+                      ) : null}
                     </div>
                   </div>
-                  <dl className="mt-3 divide-y divide-sibs-border border-t border-sibs-border">
-                    <TicketTimestamp label={ticket.status === "REJECTED" ? "Received" : "Opened"} value={ticket.postedAt} />
-                    <TicketTimestamp label="Assigned" value={ticket.assignedAt} />
-                    <TicketTimestamp label="Accepted" value={ticket.acceptedAt} />
-                    <TicketTimestamp label="First support reply" value={ticket.firstResponseAt} />
-                    {ticket.status === "REJECTED"
-                      ? <TicketTimestamp label="Rejected" value={ticket.rejectedAt} />
-                      : <TicketTimestamp label="Closed" value={ticket.resolvedAt} />}
-                  </dl>
-                  {ticket.status === "REJECTED" && (
-                    <div className="mt-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-3">
-                      <p className="text-[10px] font-extrabold uppercase text-rose-700">Rejection reason</p>
-                      <p className="mt-1 whitespace-pre-wrap break-words text-xs font-semibold text-sibs-navy">{ticket.rejectionReason || "Not recorded"}</p>
-                      <p className="mt-1 text-[10px] font-medium text-sibs-muted">Rejected by SiBS ID {ticket.rejectedBySibsId || "—"}</p>
-                    </div>
-                  )}
-                                  </div>
-              </div>
-              <div className="min-w-0 space-y-4">
-                <div className="rounded-2xl border border-sibs-border bg-white p-4 shadow-xs">
-                  <h3 className="border-b border-sibs-border pb-3 font-heading text-sm font-bold text-sibs-navy">Ticket properties</h3>
-                  <p className="mt-3 text-[10px] font-extrabold uppercase text-sibs-muted">Status</p>
-                  <div className="mt-2"><TicketStatusBadge status={ticket.status} /></div>
-                  <p className="mt-3 text-[10px] font-extrabold uppercase text-sibs-muted">Accepted by</p>
-                  <p className="mt-1 break-words text-xs font-bold text-sibs-navy">{ticket.acceptedBySibsId
-                    ? `${assignee?.displayName || `SiBS ID ${ticket.acceptedBySibsId}`} (${ticket.acceptedBySibsId})`
-                    : "Unassigned"}</p>
-                  {ticket.status === "OPEN" && (
-                    <div className="mt-4 space-y-2">
-                      <button type="button" onClick={onAccept} disabled={busy || eligibilityLoading || !eligibility?.eligible}
-                        className="flex w-full items-center justify-center gap-2 rounded-lg bg-sibs-orange px-4 py-2.5 text-xs font-extrabold text-white hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-50">
-                        {busy || eligibilityLoading ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle2 size={14} />} Accept Request
-                      </button>
-                      <p className="text-[11px] font-semibold leading-relaxed text-sibs-muted">{eligibilityLoading ? "Verifying today's Kronos attendance and assigned site..." : eligibility?.reason || "You are eligible to accept this request."}</p>
-                      <button type="button" onClick={() => { setRejectionReason(""); setConfirmReject(true); }}
-                        disabled={busy || eligibilityLoading || !eligibility?.eligible}
-                        className="flex w-full items-center justify-center gap-2 rounded-lg border border-rose-200 bg-white px-4 py-2.5 text-xs font-extrabold text-rose-700 transition hover:bg-rose-50 disabled:opacity-50">
-                        <Ban size={14} /> Reject Request
-                      </button>
-                    </div>
-                  )}
-                  {isAssignee && !["RESOLVED", "REJECTED"].includes(ticket.status) && (
-                    <div className="mt-4 space-y-2">
-                      <SelectDropdown label="Update status" labelClassName="text-[10px] font-extrabold uppercase text-sibs-muted"
-                        value={selectedStatus}
-                        options={["IN_PROGRESS", "PENDING", "RESOLVED", "REJECTED"].map((status) => ({ value: status, label: TICKET_STATUS_LABELS[status] }))}
-                        onChange={setSelectedStatus} clearable={false} disabled={busy} className="h-10 rounded-lg" />
-                      <button type="button"
-                        onClick={() => {
-                          if (selectedStatus === "RESOLVED") setConfirmClose(true);
-                          else if (selectedStatus === "REJECTED") { setRejectionReason(""); setConfirmReject(true); }
-                          else onUpdateStatus(selectedStatus);
-                        }}
-                        disabled={busy || selectedStatus === ticket.status}
-                        className="w-full rounded-lg bg-sibs-orange px-4 py-2.5 text-xs font-extrabold text-white hover:brightness-95 disabled:opacity-50">
-                        {busy ? "Saving…" : selectedStatus === "RESOLVED" ? "Close Case" : selectedStatus === "REJECTED" ? "Reject Request" : "Save status"}
-                      </button>
-                    </div>
-                  )}
-                  {ticket.status === "RESOLVED" && <p className="mt-3 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-[11px] font-bold text-emerald-700">This case is closed. Its conversation is archived and read-only.</p>}
-                  {ticket.status === "REJECTED" && <p className="mt-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-[11px] font-bold text-rose-700">This request was rejected and is not included in open or closed case counts. The conversation is read-only.</p>}
                 </div>
-                {ticket.status !== "REJECTED" && <div className="rounded-2xl border border-sibs-border bg-white p-4 shadow-xs">
-                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-sibs-border pb-3">
-                    <h3 className="font-heading text-sm font-bold text-sibs-navy">Case durations</h3>
-                    {ticket.status === "RESOLVED" && <span className="rounded-md bg-emerald-50 px-2 py-1 text-[10px] font-extrabold text-emerald-700">Final</span>}
+                {ticket.status === "OPEN" && (
+                  <div className="pt-2 space-y-2">
+                    <button
+                      type="button"
+                      onClick={onAccept}
+                      disabled={busy || eligibilityLoading || !eligibility?.eligible}
+                      className="sibs-modal-btn-primary w-full"
+                    >
+                      {busy || eligibilityLoading ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle2 size={14} />} Accept Request
+                    </button>
+                    <p className="sibs-text-micro font-medium leading-relaxed text-sibs-muted">
+                      {eligibilityLoading ? "Verifying today's Kronos attendance and assigned site..." : eligibility?.reason || "You are on duty and assigned to this site."}
+                    </p>
                   </div>
-                  <div className="mt-3 grid grid-cols-2 gap-2">
-                    {[ ["Queued before acceptance", getQueuedDisplay(ticket, now).text],
-                      ["Response after acceptance", getResponseDisplay(ticket).text],
-                      ["Total resolution", getResolutionDisplay(ticket)],
-                      ["Handling after acceptance", ticket.resolvedAt ? formatElapsed(ticket.secondsToFinish) : "Pending"]
-                    ].map(([label, value]) => (
-                      <div key={label} className="rounded-xl border border-sibs-border bg-sibs-surface px-2.5 py-3 text-center">
-                        <p className="text-[10px] font-bold leading-relaxed text-sibs-muted">{label}</p>
-                        <p className="mt-1.5 text-sm font-extrabold text-sibs-navy">{value}</p>
-                      </div>
-                    ))}
+                )}
+                {isAssignee && ticket.status !== "RESOLVED" && (
+                  <div className="pt-2 space-y-2">
+                    <SelectDropdown
+                      label="Update status"
+                      labelClassName="sibs-modal-field-label"
+                      value={selectedStatus}
+                      options={["IN_PROGRESS", "PENDING", "RESOLVED"].map((status) => ({
+                        value: status,
+                        label: TICKET_STATUS_LABELS[status],
+                      }))}
+                      onChange={setSelectedStatusOverride}
+                      clearable={false}
+                      disabled={busy}
+                      className="h-9 2xl:h-10 rounded-lg"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => onUpdateStatus(selectedStatus)}
+                      disabled={busy || selectedStatus === ticket.status}
+                      className="sibs-modal-btn-primary w-full"
+                    >
+                      Save Status
+                    </button>
                   </div>
-                  <p className="mt-2 text-[10px] font-medium leading-relaxed text-sibs-muted">
-                    Queue: first message → acceptance. Response: acceptance → first actual support reply.
-                    Resolution: opening → closure. Handling: acceptance → closure.
-                    {ticket.status === "RESOLVED" ? " All values are final." : " Unfinished durations are pending."}
-                  </p>
-                </div>}
-                <div className="rounded-2xl border border-sibs-border bg-white p-4 shadow-xs">
-                  <h3 className="font-heading text-sm font-bold text-sibs-navy">Activity timeline</h3>
-                  <ol className="mt-3 space-y-3">
-                    <li className="flex gap-2.5 text-xs text-sibs-navy"><CheckCircle2 size={16} className="mt-0.5 shrink-0 text-emerald-600" /><span><b>{ticket.status === "REJECTED" ? "Request received · first message sent" : "Case opened · first message sent"}</b><span className="block text-sibs-muted">{formatDate(ticket.postedAt)}</span></span></li>
-                    {(ticket.history || []).map((entry, index) => (
-                      <li key={`${entry.eventType}-${entry.occurredAt}-${index}`} className="flex gap-2.5 text-xs text-sibs-navy">
-                        <Clock3 size={16} className="mt-0.5 shrink-0 text-sibs-orange" />
-                        <span><b>{entry.eventType === "ACCEPTED" ? "Accepted and assigned" : entry.eventType === "RESOLVED" ? "Case closed" : entry.eventType === "REJECTED" ? "Request rejected" : `Status changed to ${TICKET_STATUS_LABELS[entry.newStatus] || entry.newStatus}`}</b>
-                          <span className="block text-sibs-muted">{formatDate(entry.occurredAt)} · SiBS ID: {entry.actorSibsId}</span>
-                          {entry.reason && <span className="mt-0.5 block whitespace-pre-wrap break-words text-rose-700">Reason: {entry.reason}</span>}
-                        </span>
-                      </li>
-                    ))}
-                  </ol>
-                </div>
+                )}
               </div>
             </div>
-          )}
-        </div>
-        <div className="flex shrink-0 justify-end border-t border-sibs-border bg-white px-5 py-3">
-          <button type="button" onClick={onClose} disabled={busy} className="rounded-lg border border-sibs-border bg-white px-5 py-2 text-xs font-extrabold text-sibs-navy hover:bg-sibs-surface">Close</button>
-        </div>
-      </section>
-      {confirmClose && ticket?.status !== "RESOLVED" && isAssignee && (
-        <div className="absolute inset-0 z-20 flex items-center justify-center bg-slate-950/55 px-4 backdrop-blur-[2px]" role="presentation" onMouseDown={(event) => event.stopPropagation()}>
-          <section role="alertdialog" aria-modal="true" aria-labelledby="support-close-confirm-title"
-            aria-describedby="support-close-confirm-description"
-            className="w-full max-w-[410px] overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-[0_24px_70px_rgba(4,44,81,0.3)]">
-            <div className="border-t-[4px] border-sibs-orange bg-sibs-navy px-5 py-4 text-white">
-              <h3 id="support-close-confirm-title" className="font-heading text-sm font-extrabold">Close this case?</h3>
-              <p className="mt-1 text-xs text-white/75">Confirm that the employee's concern is resolved.</p>
+
+            {/* Conversation */}
+            <div className="rounded-xl border border-sibs-border bg-white p-4 2xl:p-5 shadow-xs font-jakarta">
+              <SectionHeader
+                icon={MessageSquareText}
+                title="Latest Message"
+                subtitle="Recent conversation snippet from SiBS Chat."
+              />
+              <div className="rounded-xl border border-sibs-border-subtle bg-sibs-surface p-3.5">
+                <p className="line-clamp-4 text-xs font-semibold leading-relaxed text-sibs-navy italic">
+                  "${safeText(conversation.lastMessageText) || "No messages yet. Open SiBS Chat to discuss the concern."}"
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={onOpenChat}
+                disabled={busy}
+                className="sibs-modal-btn-secondary mt-3.5 w-full"
+              >
+                <MessageCircle size={15} /> Open SiBS Chat <ArrowUpRight size={14} />
+              </button>
             </div>
-            <p id="support-close-confirm-description" className="px-5 py-4 text-xs font-semibold leading-relaxed text-sibs-muted">Only close the case when the problem is fixed. This action cannot be undone, and the conversation will become read-only.</p>
-            <div className="flex justify-end gap-2 border-t border-sibs-border bg-sibs-surface px-5 py-3">
-              <button type="button" onClick={() => setConfirmClose(false)} disabled={busy}
-                className="rounded-xl border border-sibs-border bg-white px-4 py-2.5 text-xs font-extrabold text-sibs-navy">Cancel</button>
-              <button type="button" onClick={() => onUpdateStatus("RESOLVED")} disabled={busy}
-                className="rounded-xl bg-sibs-orange px-4 py-2.5 text-xs font-extrabold text-white disabled:opacity-50">{busy ? "Closing…" : "Close Case"}</button>
-            </div>
-          </section>
-        </div>
-      )}
-      {confirmReject && ticket?.status !== "REJECTED" && (isAssignee || (ticket?.status === "OPEN" && eligibility?.eligible)) && (
-        <div className="absolute inset-0 z-20 flex items-center justify-center bg-slate-950/55 px-4 backdrop-blur-[2px]" role="presentation" onMouseDown={(event) => event.stopPropagation()}>
-          <section role="alertdialog" aria-modal="true" aria-labelledby="support-reject-confirm-title"
-            aria-describedby="support-reject-confirm-description"
-            className="w-full max-w-[450px] overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-[0_24px_70px_rgba(4,44,81,0.3)]">
-            <div className="border-t-[4px] border-sibs-orange bg-sibs-navy px-5 py-4 text-white">
-              <h3 id="support-reject-confirm-title" className="font-heading text-sm font-extrabold">Reject this request?</h3>
-              <p className="mt-1 text-xs text-white/75">A reason is required and will be visible in the request record.</p>
-            </div>
-            <div className="space-y-2 px-5 py-4">
-              <p id="support-reject-confirm-description" className="text-xs font-semibold leading-relaxed text-sibs-muted">
-                Use Rejected only for requests that cannot be actioned by this Helpdesk team. Rejected requests do not count as open or closed cases.
-              </p>
-              <label htmlFor="support-rejection-reason" className="block text-[11px] font-extrabold text-sibs-navy">Reason for rejection *</label>
-              <textarea id="support-rejection-reason" value={rejectionReason} maxLength={1000} rows={4}
-                onChange={(event) => setRejectionReason(event.target.value)}
-                placeholder="Explain why this request cannot be processed (e.g. unrelated to workplace support)."
-                disabled={busy} autoFocus
-                className="w-full resize-y rounded-xl border border-sibs-border bg-white px-3 py-2 text-xs text-sibs-navy outline-none focus:border-sibs-orange focus:ring-2 focus:ring-sibs-orange/20" />
-              <p className="text-[10px] text-sibs-muted">{rejectionReason.trim().length}/1000 characters · minimum 1</p>
-            </div>
-            <div className="flex justify-end gap-2 border-t border-sibs-border bg-sibs-surface px-5 py-3">
-              <button type="button" onClick={() => setConfirmReject(false)} disabled={busy}
-                className="rounded-xl border border-sibs-border bg-white px-4 py-2.5 text-xs font-extrabold text-sibs-navy">Cancel</button>
-              <button type="button" onClick={() => onUpdateStatus("REJECTED", rejectionReason.trim())}
-                disabled={busy || rejectionReason.trim().length < 1 || rejectionReason.trim().length > 1000}
-                className="rounded-xl bg-sibs-orange px-4 py-2.5 text-xs font-extrabold text-white disabled:cursor-not-allowed disabled:opacity-50">{busy ? "Rejecting…" : "Reject Request"}</button>
-            </div>
-          </section>
+          </div>
         </div>
       )}
-    </div>
+    </ModalShell>
   );
-  return createPortal(modalContent, document.body);
 }
 
 export default function HelpdeskSupportPage({ category = "IT" }) {
@@ -655,7 +727,7 @@ export default function HelpdeskSupportPage({ category = "IT" }) {
   const [eligibilityLoading, setEligibilityLoading] = useState(false);
   const [ticketError, setTicketError] = useState("");
   const [ticketBusy, setTicketBusy] = useState(false);
-  const [clockNow, setClockNow] = useState(Date.now());
+  const [clockNow, setClockNow] = useState(() => Date.now());
   const detailControllerRef = useRef(null);
 
   useEffect(() => {
@@ -727,17 +799,18 @@ export default function HelpdeskSupportPage({ category = "IT" }) {
     detailControllerRef.current?.abort();
   }, [category]);
 
-  const allowed = !checkingAccess && !accessError && authorizedCategories.includes(category);
+  const normCategory = safeText(category).toUpperCase();
+  const allowed = !checkingAccess && !accessError && authorizedCategories.map((c) => safeText(c).toUpperCase()).includes(normCategory);
   const loadTicketSummaries = useCallback(async ({ signal } = {}) => {
     try {
-      const entries = await getHelpdeskTicketSummaries(category, { signal });
+      const entries = await getHelpdeskTicketSummaries(normCategory, { signal });
       if (signal?.aborted) return;
       setTicketSummaries(Object.fromEntries(entries.map((entry) => [Number(entry.conversationId), entry])));
       setTicketsError("");
     } catch (error) {
       if (!signal?.aborted) setTicketsError(error?.response?.data?.message || "Ticket status data is temporarily unavailable.");
     }
-  }, [category]);
+  }, [normCategory]);
 
   useEffect(() => {
     if (!allowed) { setTicketSummaries({}); return undefined; }
@@ -799,14 +872,14 @@ export default function HelpdeskSupportPage({ category = "IT" }) {
       void chat?.refreshConversations?.({ silent: true });
     } catch (error) {
       setTicketError(error?.response?.data?.message || "Unable to update request. Refresh and retry.");
-      try { setTicketDetails(await getHelpdeskTicketDetails(activeRequest.id)); } catch {}
+      try { setTicketDetails(await getHelpdeskTicketDetails(activeRequest.id)); } catch (refreshError) { void refreshError; }
     } finally { setTicketBusy(false); }
   };
 
   const requests = useMemo(() => (chat?.conversations || [])
     .filter((conversation) => conversation.isHelpdesk &&
-      safeText(conversation.helpdeskCategory) === category &&
-      conversation.isHelpdeskSupportMember === true &&
+      safeText(conversation.helpdeskCategory).toUpperCase() === normCategory &&
+      Boolean(conversation.isHelpdeskSupportMember) &&
       // A category selected without a first message is only a DRAFT; it is
       // not a real case and must not count in the support request queue.
       Boolean(conversation.caseCode || ticketSummaries[Number(conversation.id)]?.caseCode))
@@ -814,7 +887,7 @@ export default function HelpdeskSupportPage({ category = "IT" }) {
       const a = Date.parse(left.lastMessageAt || left.updatedAt || left.createdAt || "") || 0;
       const b = Date.parse(right.lastMessageAt || right.updatedAt || right.createdAt || "") || 0;
       return b - a || Number(right.id || 0) - Number(left.id || 0);
-    }), [chat?.conversations, category, ticketSummaries]);
+    }), [chat?.conversations, normCategory, ticketSummaries]);
 
   // Counts are scoped to this Helpdesk category and the conversations already
   // authorized by the server (including site and active-view restrictions).
@@ -904,6 +977,7 @@ export default function HelpdeskSupportPage({ category = "IT" }) {
 
   // Rejected requests have their own tab and are excluded from both case counts.
   const statusTabs = [
+    { key: "All", label: normCategory === "TA_HR" ? "All Concerns" : "All Requests", icon: FileText, count: requests.length },
     { key: "CaseOpen", label: "Case Open", icon: FolderOpen, count: openCases },
     { key: "CaseClosed", label: "Case Closed", icon: CheckCircle, count: closedCases },
     { key: "Rejected", label: "Rejected", icon: Ban, count: rejectedRequests },
@@ -941,7 +1015,7 @@ export default function HelpdeskSupportPage({ category = "IT" }) {
         <div className="mx-auto w-full max-w-[1600px] space-y-5 sm:space-y-6 pb-8">
           {/* Permanent page identity: never replace this hero with a skeleton. */}
           <PageHeaderHero
-            kicker="Core HR · Helpdesk"
+            kicker={config.kicker}
             title={config.name}
             description={config.description}
             actions={
@@ -963,7 +1037,7 @@ export default function HelpdeskSupportPage({ category = "IT" }) {
               <AlertCircle size={19} className="shrink-0" />{accessError}
             </div>
           ) : !checkingAccess && !allowed ? (
-            <div className="sibs-page-card-in sibs-card flex gap-3 rounded-2xl border border-sibs-border bg-white p-6 font-jakarta">
+            <div className="sibs-page-card-in sibs-card flex gap-3 rounded-2xl border border-sibs-border bg-white p-6 font-jakarta" style={{ animationDelay: "60ms", animationFillMode: "both" }}>
               <ShieldCheck size={21} className="shrink-0 text-sibs-orange" />
               <div>
                 <h2 className="text-sm font-extrabold text-sibs-navy">Support-team access required</h2>
@@ -980,7 +1054,7 @@ export default function HelpdeskSupportPage({ category = "IT" }) {
               >
                 <div className="flex h-full min-h-[520px] min-w-0 flex-col bg-white font-jakarta">
                   <div className="border-b border-sibs-border p-4 sm:p-5 2xl:p-6">
-                    <h2 className="font-heading text-sm font-bold tracking-tight text-sibs-navy 2xl:text-base">Helpdesk Requests</h2>
+                    <h2 className="font-heading text-sm font-bold tracking-tight text-sibs-navy 2xl:text-base">{config.tableTitle}</h2>
                     <p className="mt-1 sibs-text-xs font-semibold text-sibs-muted">Review queued time (before acceptance), response time (acceptance to first reply), and resolution.</p>
                     <div className="mt-4 flex flex-col gap-3 overflow-visible xl:flex-row xl:items-end">
                       <div className="relative w-full min-w-0 xl:min-w-[180px] xl:flex-[1_1_220px] 2xl:min-w-[280px] 2xl:flex-[1_1_360px]">
@@ -988,11 +1062,11 @@ export default function HelpdeskSupportPage({ category = "IT" }) {
                           label="Search"
                           labelClassName="sibs-text-micro font-extrabold tracking-normal text-sibs-navy"
                           value={search}
-                          placeholder="Search by employee, SIBS ID, location, or message..."
+                          placeholder={config.searchPlaceholder}
                           onChange={(value) => { setSearch(value); setPage(1); }}
                         />
                       </div>
-                      <div className="w-full xl:w-[190px] 2xl:w-[210px] xl:flex-none">
+                      <div className="w-full lg:w-[190px] 2xl:w-[210px] lg:flex-none">
                         <SelectDropdown
                           className="sibs-employee-directory-filter"
                           label="Assigned Location"
@@ -1006,7 +1080,7 @@ export default function HelpdeskSupportPage({ category = "IT" }) {
                           disabled={showSkeleton}
                         />
                       </div>
-                      <div className="w-full xl:w-[170px] xl:flex-none">
+                      <div className="w-full lg:w-[170px] lg:flex-none">
                         <SelectDropdown
                           className="sibs-employee-directory-filter"
                           label="Status"
@@ -1018,7 +1092,7 @@ export default function HelpdeskSupportPage({ category = "IT" }) {
                           disabled={showSkeleton}
                         />
                       </div>
-                      <div className="w-full xl:w-[190px] 2xl:w-[210px] xl:flex-none">
+                      <div className="w-full lg:w-[190px] 2xl:w-[210px] lg:flex-none">
                         <SelectDropdown
                           className="sibs-employee-directory-filter"
                           label="Sort By"
@@ -1071,13 +1145,12 @@ export default function HelpdeskSupportPage({ category = "IT" }) {
                                   {showSkeleton ? (
                                     <TableSkeletonRows count={PAGE_SIZE} columns={8} />
                                   ) : !visible.length ? (
-                                    <tr><td colSpan={8}>
-                                      <div className="flex flex-col items-center justify-center px-5 py-14 text-center">
-                                        <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-sibs-surface text-sibs-navy"><Inbox size={22} /></span>
-                                        <h3 className="mt-3 text-sm font-extrabold text-sibs-navy">{emptyTitle}</h3>
-                                        <p className="mt-1 max-w-xl text-xs font-semibold text-sibs-muted">{emptyDescription}</p>
-                                      </div>
-                                    </td></tr>
+                                    <TableEmptyRow
+                                      colSpan={9}
+                                      icon={Inbox}
+                                      title={emptyTitle}
+                                      description={hasRequestFilters ? "Try adjusting your search or filters." : emptyDescription}
+                                    />
                                   ) : visible.map((conversation) => {
                                     const requester = getRequester(conversation);
                                     const unread = Number(conversation.unreadCount || 0);
@@ -1098,13 +1171,13 @@ export default function HelpdeskSupportPage({ category = "IT" }) {
                                             openDetails(conversation);
                                           }
                                         }}
-                                        className="group cursor-pointer transition-colors hover:bg-sibs-cream-light focus-visible:bg-sibs-cream-light focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sibs-orange/30"
+                                        className="group cursor-pointer transition-colors duration-150 hover:bg-[#FFF7F3]/60 focus-visible:bg-[#FFF7F3]/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sibs-orange/40"
                                       >
-                                        <td className="whitespace-nowrap px-3 py-2 align-middle sibs-text-xs font-extrabold text-sibs-orange 2xl:px-4 2xl:py-2.5">
-                                          <span className="block">{requester.sibsId || "—"}</span>
-                                          <span className="mt-0.5 block text-[10px] font-bold text-sibs-navy" title="Case number within this Helpdesk category">{getCaseDisplayLabel(ticket, conversation)}</span>
+                                        <td className="whitespace-nowrap px-3 py-2.5 align-middle 2xl:px-4 2xl:py-3">
+                                          <span className="block font-bold text-sibs-navy sibs-text-xs transition-colors group-hover:text-sibs-orange">{requester.sibsId || "—"}</span>
+                                          <span className="mt-0.5 block text-[10px] font-bold text-sibs-muted" title="Case number within this Helpdesk category">{getCaseDisplayLabel(ticket, conversation)}</span>
                                         </td>
-                                        <td className="px-3 py-2 align-middle 2xl:px-4 2xl:py-2.5">
+                                        <td className="px-3 py-2.5 align-middle 2xl:px-4 2xl:py-3">
                                           <div className="flex min-w-0 items-center gap-2.5">
                                             <RequesterAvatar requester={requester} />
                                             <div className="min-w-0">
@@ -1114,7 +1187,7 @@ export default function HelpdeskSupportPage({ category = "IT" }) {
                                             </div>
                                           </div>
                                         </td>
-                                        <td className="px-3 py-2 align-middle 2xl:px-4 2xl:py-2.5">
+                                        <td className="px-3 py-2.5 align-middle 2xl:px-4 2xl:py-3">
                                           <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-sibs-muted"><MapPin size={13} className="shrink-0 text-sibs-faint" />{requester.location}</span>
                                         </td>
                                         <td className="px-3 py-2 align-middle 2xl:px-4 2xl:py-2.5"><TicketStatusBadge status={ticket?.status} /></td>
@@ -1125,9 +1198,22 @@ export default function HelpdeskSupportPage({ category = "IT" }) {
                                         <td className="px-3 py-2 align-middle text-[11px] font-semibold text-sibs-muted 2xl:px-4 2xl:py-2.5">
                                           <span title="Time between request acceptance and first actual support reply" className={response.pending ? "font-bold text-sibs-orange" : ""}>{ticket?.status === "REJECTED" ? "—" : response.text}</span>
                                         </td>
-                                        <td className="px-3 py-2 align-middle text-[11px] font-semibold text-sibs-muted 2xl:px-4 2xl:py-2.5">{ticket?.status === "REJECTED" ? "—" : getResolutionDisplay(ticket)}</td>
-                                        <td className="px-3 py-2 align-middle 2xl:px-4 2xl:py-2.5">
+                                        <td className="px-3 py-2.5 align-middle text-[11px] font-semibold text-sibs-muted 2xl:px-4 2xl:py-3">{getResolutionDisplay(ticket)}</td>
+                                        <td className="px-3 py-2.5 align-middle 2xl:px-4 2xl:py-3">
                                           <span className="text-[11px] font-semibold text-sibs-muted">{formatDate(ticket?.postedAt)}</span>
+                                        </td>
+                                        <td className="px-3 py-2 text-right align-middle 2xl:px-4 2xl:py-2.5" onClick={(event) => event.stopPropagation()}>
+                                          <button
+                                            type="button"
+                                            aria-label={`View details for ${requester.name}'s Helpdesk ticket`}
+                                            onClick={() => openDetails(conversation)}
+                                            onKeyDown={(event) => event.stopPropagation()}
+                                            disabled={Boolean(openingId)}
+                                            className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-sibs-border bg-white px-2.5 sibs-text-xs font-bold text-sibs-navy shadow-2xs transition hover:border-sibs-orange/40 hover:bg-sibs-cream-subtle hover:text-sibs-orange disabled:opacity-50"
+                                          >
+                                            <ArrowUpRight size={13} className={openingId === conversation.id ? "animate-pulse text-sibs-orange" : "text-sibs-orange"} />
+                                            <span className="hidden xl:inline">View Details</span>
+                                          </button>
                                         </td>
                                       </tr>
                                     );
@@ -1167,7 +1253,7 @@ export default function HelpdeskSupportPage({ category = "IT" }) {
                       pageSize={PAGE_SIZE}
                       loadedCount={visible.length}
                       onPageChange={changePage}
-                      recordLabel="Helpdesk requests"
+                      recordLabel={config.recordLabel}
                       loading={showSkeleton}
                     />
                   </div>
@@ -1186,7 +1272,8 @@ export default function HelpdeskSupportPage({ category = "IT" }) {
           eligibilityLoading={eligibilityLoading}
           busy={ticketBusy}
           error={ticketError}
-          currentSibsId={safeText(chat?.currentSibsId || user?.username || user?.sibs_id || user?.sibsId)}
+          currentSibsId={safeText(user?.username || user?.sibs_id || user?.sibsId)}
+          categoryConfig={config}
           onClose={closeDetails}
           onAccept={() => runTicketAction("ACCEPT")}
           onUpdateStatus={(status, reason = "") => runTicketAction("STATUS", status, reason)}

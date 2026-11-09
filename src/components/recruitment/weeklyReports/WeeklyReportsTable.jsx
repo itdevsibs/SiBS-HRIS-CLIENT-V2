@@ -67,7 +67,7 @@ export default function WeeklyReportsTable({ reports, onView, loading = false })
               {loading ? (
                 <TableSkeletonRows count={5} columns={6} />
               ) : safeReports.length > 0 ? (
-                safeReports.map((report, index) => {
+                safeReports.map((report) => {
                   const actionCount = toNumber(report.actionItemsCount);
                   const alertCount = toNumber(report.missingDataCount);
                   const fulfillment = getFulfillment(report);
@@ -83,8 +83,7 @@ export default function WeeklyReportsTable({ reports, onView, loading = false })
                           onView(report);
                         }
                       }}
-                      className="sibs-data-table-row sibs-page-card-in group transition-colors"
-                      style={{ animationDelay: `${index * 35}ms`, animationFillMode: "both" }}
+                      className="sibs-data-table-row group transition-colors"
                     >
                       <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle sibs-text-xs font-extrabold text-sibs-navy">
                         <p className="font-extrabold text-sibs-navy">{report.weekLabel}</p>

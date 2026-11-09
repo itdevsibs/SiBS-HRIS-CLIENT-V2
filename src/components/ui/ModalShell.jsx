@@ -1,6 +1,7 @@
-import React, { useEffect, useRef } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
+import ConfirmModal from "./ConfirmModal";
 
 const FOCUSABLE_SELECTOR =
   'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
@@ -20,6 +21,7 @@ import { lockBodyScroll, unlockBodyScroll } from "../../lib/utils/modalScrollLoc
  * - Accessible keyboard focus trap & restoration
  * - Centered mobile layout by default, optional mobileBottomSheet
  * - Header and footer customization slots (headerMeta, headerActions, footerMeta)
+ * - Automatic or explicit dirty-form close protection (isDirty / autoDetectDirty)
  */
 export default function ModalShell({
   open = false,
@@ -46,9 +48,78 @@ export default function ModalShell({
   headerActions = null,
   footerMeta = null,
   initialFocusRef = null,
+  isDirty,
+  autoDetectDirty = true,
+  confirmOnDirtyClose = true,
+  dirtyConfirmTitle = "Discard unsaved changes?",
+  dirtyConfirmDescription = "You have unsaved changes in this form. If you close now, your edits will be lost.",
+  dirtyConfirmLabel = "Discard Changes",
+  dirtyCancelLabel = "Keep Editing",
+  onDirtyDiscard = null,
 }) {
   const dialogRef = useRef(null);
   const previouslyFocusedElementRef = useRef(null);
+  const autoDirtyRef = useRef(false);
+  const [showDirtyConfirm, setShowDirtyConfirm] = useState(false);
+
+  useEffect(() => {
+    if (!open) {
+      autoDirtyRef.current = false;
+    }
+  }, [open]);
+
+  const handleBodyFieldMutate = useCallback(
+    (event) => {
+      if (!autoDetectDirty) return;
+      const target = event?.target;
+      if (!target || typeof target.tagName !== "string") return;
+      const tagName = target.tagName.toLowerCase();
+      if (tagName !== "input" && tagName !== "textarea" && tagName !== "select") {
+        return;
+      }
+      if (
+        target.readOnly ||
+        target.disabled ||
+        target.type === "search" ||
+        target.type === "hidden" ||
+        target.getAttribute?.("role") === "combobox" ||
+        target.getAttribute?.("data-dirty-ignore") === "true" ||
+        target.closest?.("[data-dirty-ignore='true']")
+      ) {
+        return;
+      }
+      autoDirtyRef.current = true;
+    },
+    [autoDetectDirty],
+  );
+
+  const handleBodySubmitCapture = useCallback(() => {
+    autoDirtyRef.current = false;
+  }, []);
+
+  const requestClose = useCallback(() => {
+    const effectiveIsDirty =
+      typeof isDirty === "boolean"
+        ? isDirty
+        : Boolean(autoDetectDirty && autoDirtyRef.current);
+    if (effectiveIsDirty && confirmOnDirtyClose) {
+      setShowDirtyConfirm(true);
+      return;
+    }
+    autoDirtyRef.current = false;
+    onClose?.();
+  }, [isDirty, autoDetectDirty, confirmOnDirtyClose, onClose]);
+
+  const handleDiscardConfirm = () => {
+    autoDirtyRef.current = false;
+    setShowDirtyConfirm(false);
+    onDirtyDiscard?.();
+    onClose?.();
+  };
+
+  const handleDiscardCancel = () => {
+    setShowDirtyConfirm(false);
+  };
 
   // Scroll lock management
   useEffect(() => {
@@ -101,7 +172,11 @@ export default function ModalShell({
     const handleKeyDown = (e) => {
       if (closeOnEscape && e.key === "Escape") {
         e.stopPropagation();
-        onClose?.();
+        if (showDirtyConfirm) {
+          setShowDirtyConfirm(false);
+          return;
+        }
+        requestClose();
         return;
       }
 
@@ -144,7 +219,7 @@ export default function ModalShell({
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [open, onClose, closeOnEscape]);
+  }, [open, closeOnEscape, showDirtyConfirm, requestClose]);
 
   if (!open || typeof document === "undefined") return null;
 
@@ -164,7 +239,7 @@ export default function ModalShell({
       <div
         className="fixed inset-0 sibs-modal-blur sibs-modal-backdrop-in transition-opacity"
         aria-hidden="true"
-        onClick={closeOnBackdrop ? onClose : undefined}
+        onClick={closeOnBackdrop ? requestClose : undefined}
       />
 
       {/* Dialog container */}
@@ -256,7 +331,7 @@ export default function ModalShell({
               {!hideCloseButton && onClose && (
                 <button
                   type="button"
-                  onClick={onClose}
+                  onClick={requestClose}
                   aria-label="Close modal"
                   className={
                     isNavy
@@ -273,6 +348,9 @@ export default function ModalShell({
 
         {/* Body */}
         <div
+          onInput={handleBodyFieldMutate}
+          onChange={handleBodyFieldMutate}
+          onSubmitCapture={handleBodySubmitCapture}
           className={`min-h-0 flex-1 overflow-y-auto sibs-scrollbar ${
             /\b(?:p|px|py|pt|pb|pl|pr)-[^\s]+/.test(typeof bodyClassName === "string" ? bodyClassName : "")
               ? ""
@@ -298,6 +376,19 @@ export default function ModalShell({
           </div>
         )}
       </div>
+      {showDirtyConfirm && (
+        <ConfirmModal
+          open={showDirtyConfirm}
+          onClose={handleDiscardCancel}
+          onConfirm={handleDiscardConfirm}
+          title={dirtyConfirmTitle}
+          description={dirtyConfirmDescription}
+          confirmLabel={dirtyConfirmLabel}
+          cancelLabel={dirtyCancelLabel}
+          variant="danger"
+          closeOnEscape={true}
+        />
+      )}
     </div>,
     document.body,
   );

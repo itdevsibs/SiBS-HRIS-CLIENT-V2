@@ -16,16 +16,12 @@ export default function SuperAdminOverview({
   return (
     <div className="space-y-4 2xl:space-y-5 font-jakarta">
       <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-2 xl:grid-cols-4 2xl:gap-3.5">
-        {cards.map((card, index) => {
+        {cards.map((card) => {
           const tone = OVERVIEW_CARD_TONES[card.label] || "navy";
           return (
             <article
               key={card.label}
-              className="sibs-page-card-in group flex h-[104px] 2xl:h-[116px] flex-col justify-between rounded-xl border border-sibs-border bg-slate-50/80 p-2.5 sm:p-3 2xl:p-3.5 transition-all hover:border-sibs-orange/40 hover:bg-sibs-cream-light shadow-2xs"
-              style={{
-                animationDelay: `${index * 55}ms`,
-                animationFillMode: "both",
-              }}
+              className="group flex h-[104px] 2xl:h-[116px] flex-col justify-between rounded-xl border border-sibs-border bg-slate-50/80 p-2.5 sm:p-3 2xl:p-3.5 transition-all hover:border-sibs-orange/40 hover:bg-sibs-cream-light shadow-2xs"
             >
               <div className="min-w-0">
                 <span
@@ -56,10 +52,7 @@ export default function SuperAdminOverview({
         })}
       </div>
 
-      <section
-        className="sibs-page-card-in font-jakarta rounded-xl 2xl:rounded-2xl bg-sibs-navy p-4 2xl:p-5 text-white shadow-sm"
-        style={{ animationDelay: "240ms", animationFillMode: "both" }}
-      >
+      <section className="font-jakarta rounded-xl 2xl:rounded-2xl bg-sibs-navy p-4 2xl:p-5 text-white shadow-sm">
         <div className="flex flex-col gap-3.5 lg:flex-row lg:items-center lg:justify-between">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">

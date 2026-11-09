@@ -228,7 +228,7 @@ const PipelineListView = ({
   return (
     <div
       className="sibs-page-card-in flex min-h-full flex-1 flex-col space-y-0 overflow-hidden rounded-[10px] border border-sibs-border bg-white shadow-xs"
-      style={{ animationDelay: "240ms", animationFillMode: "both" }}
+      style={{ animationDelay: "300ms", animationFillMode: "both" }}
     >
       <PipelineStageTabs
         activeTab={selectedTab}
@@ -325,11 +325,7 @@ const PipelineListView = ({
                           onKeyDown={(event) =>
                             handleRowKeyDown(event, candidate)
                           }
-                          className="sibs-data-table-row sibs-page-card-in cursor-pointer transition"
-                          style={{
-                            animationDelay: `${index * 35}ms`,
-                            animationFillMode: "both",
-                          }}
+                          className="sibs-data-table-row cursor-pointer transition"
                         >
                           <td className="sibs-data-table-td px-2.5 2xl:px-3.5 py-2 2xl:py-2.5">
                             <div className="flex items-center gap-2.5">

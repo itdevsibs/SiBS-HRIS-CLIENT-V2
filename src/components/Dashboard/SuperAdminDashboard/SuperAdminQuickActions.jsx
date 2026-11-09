@@ -51,6 +51,7 @@ const ACTIONS = [
 export default function SuperAdminQuickActions({
   onNavigate,
   onTabChange,
+  delay = 300,
 }) {
   function handleAction(item) {
     if (item.tab) {
@@ -64,7 +65,7 @@ export default function SuperAdminQuickActions({
   return (
     <section
       className="sibs-page-card-in sibs-card font-jakarta p-3.5 2xl:p-4"
-      style={{ animationDelay: "120ms", animationFillMode: "both" }}
+      style={{ animationDelay: `${delay}ms`, animationFillMode: "both" }}
     >
       <div className="flex items-center justify-between border-b border-sibs-border pb-2 2xl:pb-2.5">
         <div className="min-w-0 space-y-0.5">
@@ -82,16 +83,12 @@ export default function SuperAdminQuickActions({
       </div>
 
       <div className="mt-2.5 2xl:mt-3 grid grid-cols-2 gap-2 2xl:gap-2.5 sm:grid-cols-3 xl:grid-cols-5">
-        {ACTIONS.map((item, index) => (
+        {ACTIONS.map((item) => (
           <button
             key={item.id}
             type="button"
             onClick={() => handleAction(item)}
-            className="group sibs-page-card-in flex flex-col justify-between min-h-[84px] 2xl:min-h-[92px] rounded-xl border border-sibs-border bg-slate-50/80 p-2 2xl:p-2.5 text-left transition-all hover:border-sibs-orange/50 hover:bg-sibs-cream-subtle"
-            style={{
-              animationDelay: `${160 + index * 40}ms`,
-              animationFillMode: "both",
-            }}
+            className="group flex flex-col justify-between min-h-[84px] 2xl:min-h-[92px] rounded-xl border border-sibs-border bg-slate-50/80 p-2 2xl:p-2.5 text-left transition-all hover:border-sibs-orange/50 hover:bg-sibs-cream-subtle"
           >
             <span className="flex h-7 w-7 2xl:h-8 2xl:w-8 shrink-0 items-center justify-center rounded-lg bg-orange-50 text-sibs-orange transition-colors group-hover:bg-sibs-orange group-hover:text-white">
               {createElement(item.icon, {
