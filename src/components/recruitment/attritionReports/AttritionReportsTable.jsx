@@ -5,7 +5,6 @@ import {
   ArrowUpDown,
   Calendar,
   RotateCw,
-  User,
   Users,
 } from "lucide-react";
 import {
@@ -343,22 +342,9 @@ export default function AttritionReportsTable({
                           </td>
 
                           <td className="px-3 2xl:px-4 py-2 2xl:py-2.5">
-                            <div className="flex items-center gap-2.5">
-                              <div className="flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full border border-sibs-border bg-slate-100">
-                                {row.profilePictureUrl ? (
-                                  <img
-                                    src={row.profilePictureUrl}
-                                    alt={row.employeeName}
-                                    className="h-full w-full object-cover"
-                                  />
-                                ) : (
-                                  <User className="h-4 w-4 text-slate-400" />
-                                )}
-                              </div>
-                              <span className="font-extrabold text-sibs-navy group-hover:text-sibs-orange transition-colors">
-                                {row.employeeName}
-                              </span>
-                            </div>
+                            <span className="font-extrabold text-sibs-navy group-hover:text-sibs-orange transition-colors">
+                              {row.employeeName}
+                            </span>
                           </td>
 
                           <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 text-slate-600 whitespace-nowrap font-medium">
@@ -471,26 +457,13 @@ export default function AttritionReportsTable({
                     aria-label={`View separation details for ${row.employeeName}`}
                   >
                     <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <div className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full border border-sibs-border bg-slate-100">
-                          {row.profilePictureUrl ? (
-                            <img
-                              src={row.profilePictureUrl}
-                              alt={row.employeeName}
-                              className="h-full w-full object-cover"
-                            />
-                          ) : (
-                            <User className="h-4 w-4 text-slate-400" />
-                          )}
-                        </div>
-                        <div className="min-w-0">
-                          <h4 className="font-extrabold text-sibs-navy text-xs truncate group-hover:text-sibs-orange transition-colors">
-                            {row.employeeName}
-                          </h4>
-                          <p className="font-mono text-[10.5px] font-bold text-sibs-orange">
-                            {row.sibsId} · <span className="font-normal text-sibs-muted">{row.account}</span>
-                          </p>
-                        </div>
+                      <div className="min-w-0">
+                        <h4 className="font-extrabold text-sibs-navy text-xs truncate group-hover:text-sibs-orange transition-colors">
+                          {row.employeeName}
+                        </h4>
+                        <p className="font-mono text-[10.5px] font-bold text-sibs-orange">
+                          {row.sibsId} · <span className="font-normal text-sibs-muted">{row.account}</span>
+                        </p>
                       </div>
                       <div className="shrink-0">
                         <StatusBadge status={row.status || "Inactive"} />
