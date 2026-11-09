@@ -1709,7 +1709,7 @@ export default function AttendanceTable() {
                         return (
                           <tr
                             key={attendanceRowKeys[index]}
-                            className={`sibs-data-table-row sibs-attendance-row-reveal transition-colors ${canOpenAttendanceDetails ? "cursor-pointer hover:bg-sibs-cream-light focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-sibs-orange" : "hover:bg-sibs-cream-light"}`}
+                            className={`sibs-data-table-row transition-colors ${canOpenAttendanceDetails ? "cursor-pointer hover:bg-sibs-cream-light focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-sibs-orange" : "hover:bg-sibs-cream-light"}`}
                             role={canOpenAttendanceDetails ? "button" : undefined}
                             tabIndex={canOpenAttendanceDetails ? 0 : undefined}
                             aria-label={canOpenAttendanceDetails ? `View schedule and employee information for ${employeeName} on ${formatDate(item.gy_tracker_date)}` : undefined}
@@ -1721,9 +1721,6 @@ export default function AttendanceTable() {
                                 setSelectedEmployeeAttendance(item);
                               }
                             } : undefined}
-                            style={{
-                              animationDelay: `${Math.min(index, 10) * 36}ms`,
-                            }}
                           >
                             {adminView ? (
                               <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-extrabold tabular-nums text-sibs-orange">

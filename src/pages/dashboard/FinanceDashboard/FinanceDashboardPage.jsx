@@ -227,6 +227,7 @@ function CoverageRow({ label, coverage, onClick }) {
   );
 }
 
+// eslint-disable-next-line no-unused-vars
 function QuickAction({ title, description, icon: Icon, onClick }) {
   return (
     <button
@@ -444,10 +445,10 @@ export default function FinanceDashboardPage() {
         </MetricGrid>
 
         <section
-          className="grid grid-cols-1 gap-4 xl:grid-cols-[1.2fr_0.8fr]"
+          className="sibs-page-card-in grid grid-cols-1 gap-4 xl:grid-cols-[1.2fr_0.8fr]"
           style={getAnimationStyle(animationTiming.details)}
         >
-          <article className="sibs-page-card-in sibs-card rounded-2xl border border-sibs-border bg-white p-4 shadow-xs font-jakarta sm:p-5 2xl:p-6">
+          <article className="sibs-card rounded-2xl border border-sibs-border bg-white p-4 shadow-xs font-jakarta sm:p-5 2xl:p-6">
             <div className="flex items-start gap-3 border-b border-sibs-border pb-4">
               <span className="flex h-9 w-9 items-center justify-center rounded-full bg-sibs-cream-light text-sibs-navy">
                 <ShieldCheck className="h-4 w-4" />
@@ -493,7 +494,7 @@ export default function FinanceDashboardPage() {
             </div>
           </article>
 
-          <article className="sibs-page-card-in sibs-card rounded-2xl border border-sibs-border bg-white p-4 shadow-xs font-jakarta sm:p-5 2xl:p-6">
+          <article className="sibs-card rounded-2xl border border-sibs-border bg-white p-4 shadow-xs font-jakarta sm:p-5 2xl:p-6">
             <div className="border-b border-sibs-border pb-4">
               <h2 className="font-heading text-sm font-bold tracking-tight text-sibs-navy 2xl:text-base">
                 Finance Quick Access

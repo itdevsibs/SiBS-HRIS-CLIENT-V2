@@ -1192,6 +1192,8 @@ function ResignationTableCard({
   hasActiveFilters,
   onClearFilters,
   onView,
+  loadError = "",
+  onRetry,
 }) {
   const [pageState, setPageState] = useState({ data, page: 1 });
   const [draftSearch, setDraftSearch] = useState(search);
@@ -1284,7 +1286,7 @@ function ResignationTableCard({
     onClearFilters?.();
   }
 
-  function handlePreviousPage() {
+  function _handlePreviousPage() {
     setPageState((current) => ({
       data,
       page: Math.max(
@@ -1294,7 +1296,7 @@ function ResignationTableCard({
     }));
   }
 
-  function handleNextPage() {
+  function _handleNextPage() {
     setPageState((current) => ({
       data,
       page: Math.min(
@@ -1313,7 +1315,10 @@ function ResignationTableCard({
   }
 
   return (
-    <section className="sibs-page-card-in sibs-card min-w-0 overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-xs font-jakarta">
+    <section
+      className="sibs-page-card-in sibs-card min-w-0 overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-xs font-jakarta"
+      style={{ animationDelay: "240ms", animationFillMode: "both" }}
+    >
       <div className="border-b border-sibs-border p-4 sm:p-5 2xl:p-6 font-jakarta">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0 space-y-0.5">
@@ -1408,6 +1413,24 @@ function ResignationTableCard({
       </div>
 
       <div className="p-3 sm:p-5 2xl:p-6 font-jakarta">
+        {loadError ? (
+          <div
+            role="alert"
+            className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-rose-700"
+          >
+            <span className="text-xs font-bold">{loadError}</span>
+            {typeof onRetry === "function" ? (
+              <button
+                type="button"
+                onClick={onRetry}
+                disabled={loading}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-rose-200 bg-white px-3 py-1.5 text-xs font-extrabold text-rose-700 shadow-2xs transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                Retry
+              </button>
+            ) : null}
+          </div>
+        ) : null}
         <ResponsiveTableShell
           desktopContent={
             <div className="overflow-hidden rounded-xl border border-sibs-border bg-white">
@@ -1435,7 +1458,22 @@ function ResignationTableCard({
                     ) : pageData.length === 0 ? (
                       <tr>
                         <td colSpan={7} className="px-5 py-16 text-center sibs-text-sm font-bold text-sibs-muted">
-                          No resignation records found.
+                          <div className="flex flex-col items-center justify-center gap-2">
+                            <span className={loadError ? "text-rose-700" : ""}>
+                              {loadError || "No resignation records found."}
+                            </span>
+                            {loadError && typeof onRetry === "function" ? (
+                              <button
+                                type="button"
+                                onClick={onRetry}
+                                disabled={loading}
+                                className="inline-flex items-center gap-1.5 rounded-lg border border-rose-200 bg-white px-3 py-1.5 text-xs font-extrabold text-rose-700 shadow-2xs transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+                              >
+                                Retry
+                              </button>
+                            ) : null}
+                          </div>
+
                         </td>
                       </tr>
                     ) : (
@@ -1459,8 +1497,8 @@ function ResignationTableCard({
               ) : pageData.length === 0 ? (
                 <DataCard.Empty
                   icon={<FileText size={22} />}
-                  title="No resignation records found"
-                  description="Adjust the search or filter criteria to see results."
+                  title={loadError ? "Unable to load resignation records" : "No resignation records found"}
+                  description={loadError || "Adjust the search or filter criteria to see results."}
                 />
               ) : (
                 <div className="space-y-3">
@@ -1495,7 +1533,7 @@ function ResignationTableCard({
   );
 }
 
-function ResignationRow({ item, index = 0, onView }) {
+function ResignationRow({ item, onView }) {
   const status = getResignationStatus(item);
   const employeeName = getFullName(item);
 
@@ -1539,11 +1577,7 @@ function ResignationRow({ item, index = 0, onView }) {
       onClick={onView}
       onKeyDown={handleRowKeyDown}
       title="Open resignation details"
-      className="sibs-data-table-row sibs-page-card-in"
-      style={{
-        animationDelay: `${index * 35}ms`,
-        animationFillMode: "both",
-      }}
+      className="sibs-data-table-row"
     >
       <td className="whitespace-nowrap px-3 py-2 2xl:px-4 2xl:py-2.5">
         <div className="flex min-w-0 items-center gap-2.5">
@@ -1720,6 +1754,7 @@ export default function ResignationManagementPage() {
 
   const [resignations, setResignations] = useState([]);
   const [resignationLoading, setResignationLoading] = useState(false);
+  const [resignationLoadError, setResignationLoadError] = useState("");
   const [resignationsLoaded, setResignationsLoaded] = useState(false);
   const [selectedResignation, setSelectedResignation] = useState(null);
 
@@ -1951,11 +1986,13 @@ export default function ResignationManagementPage() {
   const fetchResignations = useCallback(async ({ showError = false } = {}) => {
     try {
       setResignationLoading(true);
+      setResignationLoadError("");
 
       const result = await getSupervisorResignations();
 
       if (!result?.success) {
         setResignations([]);
+        setResignationLoadError(result?.message || "Failed to load resignation records.");
 
         if (showError) {
           setStatusModal({
@@ -1981,6 +2018,12 @@ export default function ResignationManagementPage() {
       return data;
     } catch (error) {
       console.error("FETCH RESIGNATIONS ERROR:", error);
+      setResignationLoadError(
+        error?.response?.data?.message ||
+          error?.response?.data?.error ||
+          error?.message ||
+          "Something went wrong while loading resignations."
+      );
       setResignations([]);
 
       if (showError) {
@@ -2569,6 +2612,8 @@ export default function ResignationManagementPage() {
               hasActiveFilters={hasActiveFilters}
               onClearFilters={handleClearFilters}
               onView={setSelectedResignation}
+              loadError={resignationLoadError}
+              onRetry={() => fetchResignations({ showError: true })}
             />
           </div>
         </div>

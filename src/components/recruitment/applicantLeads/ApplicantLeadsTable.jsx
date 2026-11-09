@@ -278,7 +278,7 @@ export default function ApplicantLeadsTable({
                           openEditModal(lead);
                         }
                       }}
-                      className="sibs-page-card-in group cursor-pointer bg-white text-xs transition-colors duration-150 hover:bg-sibs-cream-light focus-within:bg-sibs-cream-light"
+                      className="group cursor-pointer bg-white text-xs transition-colors duration-150 hover:bg-sibs-cream-light focus-within:bg-sibs-cream-light"
                     >
                       {/* REFERRAL CODE & NAME */}
                       <td className="px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle">

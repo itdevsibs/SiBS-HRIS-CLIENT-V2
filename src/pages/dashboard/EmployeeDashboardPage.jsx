@@ -712,7 +712,7 @@ export default function EmployeeDashboardPage() {
 
           <div className="grid grid-cols-1 items-start gap-4 sm:gap-5 lg:grid-cols-3">
             <div className="space-y-4 sm:space-y-5 lg:col-span-2">
-              <DashboardCard>
+              <DashboardCard delay={60}>
                 <DashboardCardHeader
                   icon={Clock}
                   title="Attendance & Live Timecard"
@@ -829,7 +829,7 @@ export default function EmployeeDashboardPage() {
                 </div>
               </DashboardCard>
 
-              <DashboardCard>
+              <DashboardCard delay={120}>
                 <DashboardCardHeader
                   icon={CalendarDays}
                   title="Work Schedule & Weekly Timeline"
@@ -918,7 +918,10 @@ export default function EmployeeDashboardPage() {
                 </div>
               </DashboardCard>
 
-              <section className="sibs-page-card-in relative overflow-hidden rounded-2xl border border-dashed border-amber-300 bg-gradient-to-br from-white via-amber-50/20 to-amber-100/30 p-4 sm:p-5 shadow-xs">
+              <section
+                className="sibs-page-card-in relative overflow-hidden rounded-2xl border border-dashed border-amber-300 bg-gradient-to-br from-white via-amber-50/20 to-amber-100/30 p-4 sm:p-5 shadow-xs"
+                style={{ animationDelay: "180ms", animationFillMode: "both" }}
+              >
                 <div className="flex flex-col gap-2.5 border-b border-amber-200 pb-3 sm:flex-row sm:items-center sm:justify-between">
                   <div className="min-w-0">
                     <h2 className="text-xs 2xl:text-sm font-extrabold uppercase tracking-wide text-sibs-navy">
@@ -953,7 +956,7 @@ export default function EmployeeDashboardPage() {
             </div>
 
             <div className="space-y-4 sm:space-y-5">
-              <DashboardCard>
+              <DashboardCard delay={120}>
                 <DashboardCardHeader
                   icon={User}
                   title="My Profile & Summary"
@@ -1078,7 +1081,7 @@ export default function EmployeeDashboardPage() {
                 </div>
               </DashboardCard>
 
-              <DashboardCard>
+              <DashboardCard delay={240}>
                 <DashboardCardHeader
                   icon={CalendarDays}
                   title="Leaves & Time Off"
@@ -1170,7 +1173,7 @@ export default function EmployeeDashboardPage() {
                 </div>
               </DashboardCard>
 
-              <DashboardCard>
+              <DashboardCard delay={300}>
                 <DashboardCardHeader
                   icon={Bell}
                   title="Announcements & Holidays"
@@ -1396,9 +1399,12 @@ function DashboardSourceNotice({ message, loading = false }) {
   );
 }
 
-function DashboardCard({ children }) {
+function DashboardCard({ children, delay = 0 }) {
   return (
-    <section className="sibs-page-card-in space-y-3.5 2xl:space-y-4 rounded-2xl border border-sibs-border bg-white p-3.5 sm:p-4 2xl:p-5 shadow-xs">
+    <section
+      className="sibs-page-card-in space-y-3.5 2xl:space-y-4 rounded-2xl border border-sibs-border bg-white p-3.5 sm:p-4 2xl:p-5 shadow-xs"
+      style={delay ? { animationDelay: `${delay}ms`, animationFillMode: "both" } : undefined}
+    >
       {children}
     </section>
   );
@@ -1435,6 +1441,7 @@ function MetricBox({ label, value, valueClassName = "text-sibs-navy" }) {
   );
 }
 
+/* eslint-disable no-unused-vars */
 function SummaryTile({ tone = "light", label, value, detail, icon: Icon }) {
   const dark = tone === "navy";
 

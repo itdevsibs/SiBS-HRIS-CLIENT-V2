@@ -1,5 +1,6 @@
 import { formatHrisDateLocalized } from "@/lib/axios/dateFormatter";
-import { useEffect, useMemo, useRef, useState } from "react";
+import DropdownPortal from "@/components/ui/DropdownPortal";
+import { useId, useMemo, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, CalendarDays } from "lucide-react";
 import { useJobDescription } from "../../../services/context/JobDescriptionContext";
 import ThemedDropdown from "../../layout/dropdown/ThemedDropdown";
@@ -52,7 +53,8 @@ function isSameDate(left, right) {
 
 function DateDropdown({ label, required = false, value, onChange }) {
   const [open, setOpen] = useState(false);
-  const dropdownRef = useRef(null);
+  const triggerRef = useRef(null);
+  const calendarId = useId();
 
   const selectedDate = useMemo(() => {
     if (!value) return null;
@@ -66,19 +68,10 @@ function DateDropdown({ label, required = false, value, onChange }) {
   const calendarDays = useMemo(() => getCalendarDays(viewDate), [viewDate]);
   const today = new Date();
 
-  useEffect(() => {
-    if (selectedDate) setViewDate(selectedDate);
-  }, [selectedDate]);
-
-  useEffect(() => {
-    function handleClickOutside(e) {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
-        setOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  function closeCalendar(restoreFocus = false) {
+    setOpen(false);
+    if (restoreFocus) triggerRef.current?.focus();
+  }
 
   const monthTitle = formatHrisDateLocalized(viewDate, "en-US", {
     month: "long",
@@ -88,7 +81,16 @@ function DateDropdown({ label, required = false, value, onChange }) {
   const displayValue = value ? value : "Select date";
 
   return (
-    <div ref={dropdownRef} className="relative block min-w-0 z-[70]">
+    <div
+      className="relative block min-w-0"
+      onBlur={(event) => {
+        const nextFocus = event.relatedTarget;
+        if (nextFocus && !event.currentTarget.contains(nextFocus) &&
+            !document.getElementById(calendarId)?.contains(nextFocus)) {
+          closeCalendar();
+        }
+      }}
+    >
       <span className={fieldLabelClass}>
         <span>
           {label} {required && <span className="text-red-500">*</span>}
@@ -96,8 +98,15 @@ function DateDropdown({ label, required = false, value, onChange }) {
       </span>
 
       <button
+        ref={triggerRef}
         type="button"
-        onClick={() => setOpen((prev) => !prev)}
+        aria-label={`${label}, ${displayValue}`}
+        aria-controls={open ? calendarId : undefined}
+        aria-expanded={open}
+        onClick={() => {
+          if (!open && selectedDate) setViewDate(selectedDate);
+          setOpen(!open);
+        }}
         className={`flex h-10 w-full items-center justify-between rounded-[10px] border px-3 text-left text-xs font-semibold outline-none transition-all duration-200 ${
           open
             ? "border-sibs-orange bg-white text-sibs-navy ring-4 ring-sibs-orange/10"
@@ -108,16 +117,19 @@ function DateDropdown({ label, required = false, value, onChange }) {
         <CalendarDays size={16} className="shrink-0 text-sibs-muted" />
       </button>
 
-      <div
-        className={`sibs-animated-dropdown absolute left-0 top-full z-[9999] mt-2 w-[280px] ${
-          open ? "open" : "closed"
-        }`}
+      <DropdownPortal
+        open={open}
+        anchorRef={triggerRef}
+        onClose={(event) => closeCalendar(event?.key === "Escape")}
+        width={280}
+        maxHeight={360}
+        topLayer
       >
-        <div className="sibs-animated-dropdown-inner">
-          <div className="sibs-animated-dropdown-box rounded-2xl border border-sibs-border bg-white p-3.5 shadow-[0_18px_40px_rgba(15,23,42,0.16)]">
+        <div id={calendarId} className="sibs-scrollbar max-h-[var(--dropdown-max-height)] overflow-y-auto p-3.5">
           <div className="mb-3 flex items-center justify-between rounded-xl border border-sibs-border bg-sibs-surface px-3 py-2">
             <button
               type="button"
+              aria-label="Previous month"
               onClick={() =>
                 setViewDate((p) => new Date(p.getFullYear(), p.getMonth() - 1, 1))
               }
@@ -128,6 +140,7 @@ function DateDropdown({ label, required = false, value, onChange }) {
             <p className="text-xs font-extrabold text-sibs-navy">{monthTitle}</p>
             <button
               type="button"
+              aria-label="Next month"
               onClick={() =>
                 setViewDate((p) => new Date(p.getFullYear(), p.getMonth() + 1, 1))
               }
@@ -158,7 +171,7 @@ function DateDropdown({ label, required = false, value, onChange }) {
                   type="button"
                   onClick={() => {
                     onChange(toDateKey(date));
-                    setOpen(false);
+                    closeCalendar(true);
                   }}
                   className={`flex h-8 w-full items-center justify-center rounded-lg text-xs font-bold transition ${
                     isSelected
@@ -181,7 +194,7 @@ function DateDropdown({ label, required = false, value, onChange }) {
               type="button"
               onClick={() => {
                 onChange("");
-                setOpen(false);
+                closeCalendar(true);
               }}
               className="rounded-full px-2.5 py-1 text-[11px] font-extrabold text-sibs-muted transition hover:bg-sibs-cream-light hover:text-sibs-orange"
             >
@@ -192,16 +205,15 @@ function DateDropdown({ label, required = false, value, onChange }) {
               onClick={() => {
                 onChange(toDateKey(today));
                 setViewDate(today);
-                setOpen(false);
+                closeCalendar(true);
               }}
               className="rounded-full px-2.5 py-1 text-[11px] font-extrabold text-sibs-navy transition hover:bg-sibs-cream-light hover:text-sibs-orange"
             >
               Today
             </button>
-            </div>
           </div>
         </div>
-      </div>
+      </DropdownPortal>
     </div>
   );
 }
@@ -320,6 +332,7 @@ export default function HiringRequirementSection({
             : "No Existing Job Description - New Job Description"
         }
         searchable
+        topLayer
         zIndex="z-[300]"
         onChange={(value) => {
           handleLinkedRequirementChange?.(value);
@@ -352,6 +365,7 @@ export default function HiringRequirementSection({
           options={accounts}
           placeholder="Search account"
           searchable
+          topLayer
           zIndex="z-[200]"
           onChange={handleAccountChange}
         />
@@ -363,6 +377,7 @@ export default function HiringRequirementSection({
           options={departments}
           placeholder="Search department"
           searchable
+          topLayer
           onChange={handleDepartmentChange}
         />
 
@@ -372,6 +387,7 @@ export default function HiringRequirementSection({
           value={form.locationWorkSetup || form.location_work_setup || ""}
           options={locationWorkSetupOptions}
           placeholder="Select location / work setup"
+          topLayer
           onChange={(value) =>
             updateField("locationWorkSetup", value, ["location_work_setup"])
           }

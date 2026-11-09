@@ -249,6 +249,7 @@ export default function JobDescriptionPage() {
   } = useJobDescription();
 
   const [jobDescriptionList, setJobDescriptionList] = useState([]);
+  const [loadError, setLoadError] = useState("");
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -342,6 +343,7 @@ export default function JobDescriptionPage() {
 
   async function loadJobDescriptionRecords() {
     setIsRefreshing(true);
+    setLoadError("");
     try {
       const result = await getJobDescriptions({
         page: 1,
@@ -349,6 +351,7 @@ export default function JobDescriptionPage() {
       });
 
       if (!result.success) {
+        setLoadError(result.message || "Failed to load job descriptions.");
         showStatus({
           type: "error",
           title: "Load Failed",
@@ -372,6 +375,7 @@ export default function JobDescriptionPage() {
       setLoading(true);
       setDropdownLoading(true);
       setDropdownError("");
+      setLoadError("");
 
       forceScrollToTop();
 
@@ -409,6 +413,7 @@ export default function JobDescriptionPage() {
           );
         } else {
           setJobDescriptionList([]);
+          setLoadError(listResult.message || "Failed to load job descriptions.");
 
           showStatus({
             type: "error",
@@ -850,6 +855,7 @@ export default function JobDescriptionPage() {
               onPageChange={forceScrollToTop}
               scrollToTop={forceScrollToTop}
               onRefresh={loadJobDescriptionRecords}
+              loadError={loadError}
             />
           </div>
         </div>

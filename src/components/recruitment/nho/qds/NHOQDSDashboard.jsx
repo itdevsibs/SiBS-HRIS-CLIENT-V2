@@ -731,7 +731,7 @@ function NHOQDSDashboard({ subTab = "queue", onSubTabChange }) {
       const isCompleted = app.qdsStatus === "Completed";
       const isInProgress = app.qdsStatus === "In Progress";
       const count = app.qdsMaterials?.length || 0;
-      return <tr key={app.id} className="hover:bg-slate-50/80 transition-colors">
+      return <tr key={app.id} className="hover:bg-sibs-cream-light transition-colors">
                           <td className="py-3 px-4">
                             <div className="font-bold text-sibs-navy">{app.fullName}</div>
                             <div className="text-[11px] text-slate-400">{app.email}</div>

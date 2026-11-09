@@ -388,7 +388,7 @@ function uniqueOptions(items, getter, allLabel) {
   return [allLabel, ...values];
 }
 
-function toDropdownOptions(options, allLabel) {
+function _toDropdownOptions(options, allLabel) {
   return options
     .filter((option) => option !== allLabel)
     .map((option) => ({
@@ -465,10 +465,12 @@ export default function JobDescriptionTable({
   canApproveJobDescriptions = false,
   loading = false,
   onView,
+  // eslint-disable-next-line no-unused-vars
   onRevise,
   onPageChange,
   scrollToTop,
   onRefresh,
+  loadError = "",
 }) {
   const navigate = useNavigate();
 
@@ -880,6 +882,25 @@ export default function JobDescriptionTable({
               MOBILE
           ================================================= */}
 
+          {loadError ? (
+            <div
+              role="alert"
+              className="mx-3.5 mt-3.5 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-rose-700 sm:mx-4"
+            >
+              <span className="text-xs font-bold">{loadError}</span>
+              {typeof onRefresh === "function" ? (
+                <button
+                  type="button"
+                  onClick={onRefresh}
+                  disabled={loading}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-rose-200 bg-white px-3 py-1.5 text-xs font-extrabold text-rose-700 shadow-2xs transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  Retry
+                </button>
+              ) : null}
+            </div>
+          ) : null}
+
           <ResponsiveTableShell
             mobileContent={
               loading ? (
@@ -897,15 +918,15 @@ export default function JobDescriptionTable({
               ) : (
                 <div className="p-3.5 sm:p-4">
                   <DataCard.Empty
-                    title="No Job Descriptions Found"
-                    description="No records matched the active search, filters, and status tab."
+                    title={loadError ? "Unable to Load Job Descriptions" : "No Job Descriptions Found"}
+                    description={loadError || "No records matched the active search, filters, and status tab."}
                     action={
                       <button
                         type="button"
-                        onClick={handleResetFilters}
+                        onClick={loadError && typeof onRefresh === "function" ? onRefresh : handleResetFilters}
                         className="sibs-btn-primary !h-8.5 text-xs font-extrabold"
                       >
-                        Reset Search & Filters
+                        {loadError ? "Retry" : "Reset Search & Filters"}
                       </button>
                     }
                   />
@@ -949,7 +970,7 @@ export default function JobDescriptionTable({
                         columns={5}
                       />
                     ) : paginatedList.length > 0 ? (
-                      paginatedList.map((item, index) => {
+                      paginatedList.map((item) => {
                         const status = getRealJdStatus(item);
 
                         const roleTitle =
@@ -964,11 +985,7 @@ export default function JobDescriptionTable({
                               getRecordId(item) || `${roleTitle}-${documentTitle}`
                             }
                             onClick={() => handleOpenFullPageView(item)}
-                            className="sibs-data-table-row sibs-page-card-in cursor-pointer"
-                            style={{
-                              animationDelay: `${index * 30}ms`,
-                              animationFillMode: "both",
-                            }}
+                            className="sibs-data-table-row cursor-pointer"
                           >
                             {/* ROLE / DOCUMENT */}
 
@@ -1042,10 +1059,10 @@ export default function JobDescriptionTable({
                       <TableEmptyRow
                         colSpan={5}
                         icon={FileText}
-                        title="No Job Descriptions Found"
-                        description="No records matched the active search, filters, and status tab."
-                        actionLabel="Reset Search & Filters"
-                        onAction={handleResetFilters}
+                        title={loadError ? "Unable to Load Job Descriptions" : "No Job Descriptions Found"}
+                        description={loadError || "No records matched the active search, filters, and status tab."}
+                        actionLabel={loadError ? "Retry" : "Reset Search & Filters"}
+                        onAction={loadError && typeof onRefresh === "function" ? onRefresh : handleResetFilters}
                       />
                     )}
                   </tbody>

@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from "react";
+import React, { useId, useMemo, useRef, useState } from "react";
 import { Check, ChevronDown } from "lucide-react";
 
 import DropdownPortal from "./DropdownPortal.jsx";
@@ -33,10 +33,13 @@ export default function SelectDropdown({
   optionDescription = (opt) =>
     typeof opt === "object" && opt !== null ? opt.description : null,
 }) {
+  const dropdownId = useId();
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const anchorRef = useRef(null);
   const searchInputRef = useRef(null);
+  const triggerButtonRef = useRef(null);
 
   const normalizedOptions = useMemo(
     () =>
@@ -94,11 +97,13 @@ export default function SelectDropdown({
   function closeMenu() {
     setOpen(false);
     setSearchQuery("");
+    setHighlightedIndex(-1);
   }
 
   function openMenu() {
     if (disabled || open) return;
     setOpen(true);
+    setHighlightedIndex(0);
 
     if (searchable) {
       setSearchQuery("");
@@ -113,6 +118,63 @@ export default function SelectDropdown({
       return;
     }
     openMenu();
+  }
+
+  function handleKeyNavigation(event) {
+    if (disabled) return;
+
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      if (!open) {
+        openMenu();
+        return;
+      }
+      setHighlightedIndex((prev) =>
+        prev < filteredOptions.length - 1 ? prev + 1 : 0
+      );
+      return;
+    }
+
+    if (event.key === "ArrowUp") {
+      event.preventDefault();
+      if (!open) {
+        openMenu();
+        return;
+      }
+      setHighlightedIndex((prev) =>
+        prev > 0 ? prev - 1 : filteredOptions.length - 1
+      );
+      return;
+    }
+
+    if (event.key === "Home" && open) {
+      event.preventDefault();
+      setHighlightedIndex(0);
+      return;
+    }
+
+    if (event.key === "End" && open) {
+      event.preventDefault();
+      setHighlightedIndex(Math.max(0, filteredOptions.length - 1));
+      return;
+    }
+
+    if (event.key === "Enter" && open && highlightedIndex >= 0 && highlightedIndex < filteredOptions.length) {
+      event.preventDefault();
+      const option = filteredOptions[highlightedIndex];
+      if (option && !option.disabled) {
+        selectOption(option.value, option.raw);
+      }
+      return;
+    }
+
+    if (event.key === "Escape" && open) {
+      event.preventDefault();
+      closeMenu();
+      if (searchable) searchInputRef.current?.blur();
+      else triggerButtonRef.current?.focus();
+      return;
+    }
   }
 
   function selectOption(selectedValue, rawOption) {
@@ -147,7 +209,7 @@ export default function SelectDropdown({
   const hasCustomRounded =
     /(?:^|\s)(?:[a-z0-9]+:)*!?rounded-\S+/.test(customClasses);
   const hasCustomPadding =
-    /(?:^|\s)(?:[a-z0-9]+:)*!?p[xy]?\-\S+/.test(customClasses);
+    /(?:^|\s)(?:[a-z0-9]+:)*!?p[xy]?-\S+/.test(customClasses);
 
   const defaultHeightClass = hasCustomHeight ? "" : "h-8.5 sm:h-9 2xl:h-10";
   const defaultRoundedClass = hasCustomRounded ? "" : "rounded-[10px]";
@@ -182,6 +244,10 @@ export default function SelectDropdown({
             role="combobox"
             aria-haspopup="listbox"
             aria-expanded={open}
+            aria-controls={`${dropdownId}-listbox`}
+            aria-activedescendant={
+              open && highlightedIndex >= 0 ? `${dropdownId}-opt-${highlightedIndex}` : undefined
+            }
             aria-required={required ? "true" : undefined}
             aria-label={
               label ? `${label}: ${displayLabel || placeholder}` : placeholder
@@ -194,18 +260,9 @@ export default function SelectDropdown({
             onChange={(event) => {
               if (!open) openMenu();
               setSearchQuery(event.target.value);
+              setHighlightedIndex(0);
             }}
-            onKeyDown={(event) => {
-              if (event.key === "Escape") {
-                event.preventDefault();
-                closeMenu();
-                searchInputRef.current?.blur();
-              }
-              if (event.key === "ArrowDown" && !open) {
-                event.preventDefault();
-                openMenu();
-              }
-            }}
+            onKeyDown={handleKeyNavigation}
             className={`min-w-0 flex-1 appearance-none border-0 bg-transparent p-0 shadow-none outline-none ring-0 placeholder:text-sibs-muted focus:border-0 focus:outline-none focus:ring-0 ${
               open
                 ? "font-bold text-sibs-navy"
@@ -240,15 +297,22 @@ export default function SelectDropdown({
         </div>
       ) : (
         <button
+          ref={triggerButtonRef}
           type="button"
+          role="combobox"
           aria-haspopup="listbox"
           aria-expanded={open}
+          aria-controls={`${dropdownId}-listbox`}
+          aria-activedescendant={
+            open && highlightedIndex >= 0 ? `${dropdownId}-opt-${highlightedIndex}` : undefined
+          }
           aria-required={required ? "true" : undefined}
           aria-label={
             label ? `${label}: ${displayLabel || placeholder}` : placeholder
           }
           disabled={disabled}
           onClick={toggleMenu}
+          onKeyDown={handleKeyNavigation}
           className={triggerClasses}
         >
           <span
@@ -282,7 +346,12 @@ export default function SelectDropdown({
         maxHeight={320}
         className={menuClassName}
       >
-        <div className="sibs-scrollbar max-h-[var(--dropdown-max-height,320px)] overflow-y-auto overscroll-contain py-1">
+        <div
+          id={`${dropdownId}-listbox`}
+          role="listbox"
+          aria-label={label || placeholder}
+          className="sibs-scrollbar max-h-[var(--dropdown-max-height,320px)] overflow-y-auto overscroll-contain py-1"
+        >
           {clearable && !searchQuery ? (
             <button
               type="button"
@@ -301,15 +370,17 @@ export default function SelectDropdown({
           ) : null}
 
           {filteredOptions.length ? (
-            filteredOptions.map((option) => {
+            filteredOptions.map((option, idx) => {
               const selected = multiple
                 ? option.value === "All"
                   ? selectedValues.length === 0 || selectedValues.includes("All")
                   : selectedValues.includes(option.value)
                 : String(option.value) === String(value ?? "");
+              const isHighlighted = idx === highlightedIndex;
 
               return (
                 <button
+                  id={`${dropdownId}-opt-${idx}`}
                   key={option.value || option.label}
                   type="button"
                   role="option"
@@ -318,13 +389,16 @@ export default function SelectDropdown({
                   onClick={() => {
                     if (!option.disabled) selectOption(option.value, option.raw);
                   }}
+                  onMouseEnter={() => setHighlightedIndex(idx)}
                   className={`flex w-full items-start justify-between gap-2.5 px-3 py-2 text-left font-jakarta transition ${
                     option.disabled
                       ? "cursor-not-allowed text-sibs-faint opacity-50"
                       : selected
                         ? "bg-sibs-cream-light font-extrabold text-sibs-orange"
-                        : "bg-white font-semibold text-sibs-text-secondary hover:bg-sibs-cream-subtle hover:text-sibs-orange"
-                  }`}
+                        : isHighlighted
+                          ? "bg-sibs-cream-subtle text-sibs-orange font-semibold"
+                          : "bg-white font-semibold text-sibs-text-secondary hover:bg-sibs-cream-subtle hover:text-sibs-orange"
+                  } ${isHighlighted ? "ring-1 ring-inset ring-sibs-orange/30" : ""}`}
                 >
                   <span className="min-w-0 flex-1">
                     <span className="block truncate sibs-text-xs 2xl:sibs-text-sm">

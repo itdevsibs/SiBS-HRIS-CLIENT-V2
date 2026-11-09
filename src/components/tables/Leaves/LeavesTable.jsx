@@ -25,7 +25,6 @@ import {
   TableSkeletonRows,
 } from "@/components/ui";
 import DropdownPortal from "@/components/ui/DropdownPortal.jsx";
-import api from "@/lib/axios/api-template";
 import {
   LEAVES_STATE_KEY,
   PAGE_LIMIT,
@@ -1016,7 +1015,7 @@ export default function LeavesTable({
                           cellClassName="px-3 2xl:px-4 py-2 2xl:py-2.5 align-middle"
                         />
                       ) : leaves.length > 0 ? (
-                        leaves.map((item, index) => (
+                        leaves.map((item) => (
                           <tr
                             key={`${item.gy_leave_id}-${item.gy_user_id}`}
                             role="button"
@@ -1028,11 +1027,7 @@ export default function LeavesTable({
                                 setSelectedLeave(item);
                               }
                             }}
-                            className="sibs-data-table-row sibs-page-card-in hover:bg-sibs-cream-subtle transition-colors cursor-pointer"
-                            style={{
-                              animationDelay: `${index * 35}ms`,
-                              animationFillMode: "both",
-                            }}
+                            className="sibs-data-table-row hover:bg-sibs-cream-subtle transition-colors cursor-pointer"
                           >
                             <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 sibs-text-xs font-extrabold text-sibs-orange tabular-nums">
                               {item.gy_user_code || "—"}

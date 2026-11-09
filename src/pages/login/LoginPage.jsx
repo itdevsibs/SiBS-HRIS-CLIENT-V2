@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { AlertCircle, Eye, EyeOff } from "lucide-react";
+import { GradientWave } from "@/components/ui/gradient-wave";
 import { useUser } from "../../services/context/UserContext";
 import { getLogin } from "../../lib/axios/getLogin";
 import { getDefaultDashboardPath } from "../../config/accessControl";
@@ -29,27 +30,17 @@ function getSafeRedirectPath(search = "") {
   return redirectPath;
 }
 
-function getLoginFailureMessage(result = {}) {
-  if (result.message) {
-    return result.message;
+const serviceUnavailableMessage = "Sign-in is temporarily unavailable. Try again in a moment.";
+const inputClassName = "h-12 w-full rounded-lg border border-sibs-border bg-sibs-surface pl-3 text-base text-sibs-navy transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sibs-orange aria-invalid:border-rose-500 disabled:opacity-70";
+
+function getLoginFailureMessage(result) {
+  if (!result || result.code === "LOGIN_SERVER_ERROR" || result.status >= 500) {
+    return serviceUnavailableMessage;
   }
-
-  switch (result.code) {
-    case "USER_NOT_FOUND_OR_INACTIVE":
-      return "SIBS ID was not found or the account is inactive.";
-
-    case "PASSWORD_MISMATCH":
-      return "Password does not match. Check the backend encryption values.";
-
-    case "MISSING_CREDENTIALS":
-      return "Please enter your SIBS ID and password.";
-
-    case "LOGIN_SERVER_ERROR":
-      return "The login server encountered an error. Check the backend terminal.";
-
-    default:
-      return "Login failed. Please check your credentials.";
+  if (result.code === "MISSING_CREDENTIALS") {
+    return "Enter your SIBS ID and password.";
   }
+  return "Check your SIBS ID and password, then try again.";
 }
 
 export default function LoginPage() {
@@ -60,19 +51,11 @@ export default function LoginPage() {
   const [sibsId, setSibsId] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState("");
-  const [showError, setShowError] = useState(false);
+  const [error, setError] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
 
-  const showPopup = (message) => {
-    setErrorMessage(message);
-    setShowError(true);
-    setTimeout(() => setShowError(false), 3000);
-  };
-
-  const clearError = () => {
-    setErrorMessage("");
-    setShowError(false);
+  const clearFieldError = (field) => {
+    if (error && (!error.field || error.field === field)) setError(null);
   };
 
   const saveExpiry = (result) => {
@@ -103,29 +86,30 @@ export default function LoginPage() {
     const finalPassword = password;
 
     if (!finalSibsId || !finalPassword) {
-      showPopup("Please enter your SIBS ID and password.");
-      setPassword("");
+      const field = finalSibsId ? "password" : "sibsId";
+      setError({ field, message: finalSibsId ? "Enter your password." : "Enter your SIBS ID." });
+      e.currentTarget.elements.namedItem(field)?.focus();
       return;
     }
 
     setLoading(true);
-    clearError();
+    setError(null);
 
     try {
       const result = await getLogin(finalSibsId, finalPassword);
 
       if (!result?.success) {
         setPassword("");
-        showPopup(getLoginFailureMessage(result));
+        setError({ message: getLoginFailureMessage(result) });
         return;
       }
 
       const user = getResponseUser(result);
 
       if (!user) {
-        console.error("Login success but no user returned:", result);
+        console.error("Login response did not include a user.");
         setPassword("");
-        showPopup("Login successful, but user details were not returned.");
+        setError({ message: serviceUnavailableMessage });
         return;
       }
 
@@ -143,137 +127,108 @@ export default function LoginPage() {
       const destinationPath = redirectPath || getDashboardPath(user);
 
       navigate(destinationPath, { replace: true });
-    } catch (err) {
-      console.error("Login error:", err?.response?.data || err?.message);
-
+    } catch {
       sessionStorage.removeItem("accessTokenExpiresAt");
       localStorage.removeItem("token_expires_at");
 
       setPassword("");
-      showPopup(
-        err?.response?.data?.message ||
-          err?.response?.data?.error ||
-          "Invalid SIBS ID or password.",
-      );
+      setError({ message: serviceUnavailableMessage });
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="relative flex min-h-screen w-full items-center justify-center overflow-hidden bg-sibs-auth-bg p-4 sm:p-6 font-jakarta">
-      <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
-        <div
-          className="absolute inset-0"
-          style={{
-            background: `
-              radial-gradient(circle at 16% 18%, rgba(35, 92, 178, 0.34), transparent 24%),
-              radial-gradient(circle at 82% 84%, rgba(255, 96, 40, 0.32), transparent 28%),
-              radial-gradient(circle at 64% 72%, rgba(255, 132, 78, 0.14), transparent 22%),
-              linear-gradient(135deg, #03112a 0%, #07285b 46%, #08122b 100%)
-            `,
-          }}
-        />
+    <main className="relative flex min-h-dvh w-full items-center justify-center overflow-hidden bg-sibs-auth-bg p-4 font-jakarta sm:p-6">
+      <GradientWave />
 
-        <div className="sibs-drift-1 absolute -left-24 top-[8%] h-80 w-80 rounded-full bg-[#11438b]/35 blur-3xl" />
-        <div className="sibs-drift-2 absolute left-[12%] bottom-[-9%] h-72 w-72 rounded-full bg-[#0b2f6f]/30 blur-3xl" />
-        <div className="sibs-drift-3 absolute right-[-7%] bottom-[-10%] h-[28rem] w-[28rem] rounded-full bg-sibs-orange/25 blur-3xl" />
-        <div className="sibs-drift-4 absolute right-[14%] top-[12%] h-64 w-64 rounded-full bg-white/6 blur-3xl" />
-
-        <div
-          className="sibs-float-slow absolute left-[-8%] top-[24%] h-64 w-[34rem] rotate-[-18deg] rounded-full blur-3xl"
-          style={{
-            background:
-              'linear-gradient(90deg, rgba(12,55,121,0.08) 0%, rgba(32,92,176,0.28) 40%, rgba(255,255,255,0.08) 100%)',
-          }}
-        />
-        <div
-          className="sibs-float-reverse absolute right-[-10%] bottom-[14%] h-72 w-[36rem] rotate-[18deg] rounded-full blur-3xl"
-          style={{
-            background:
-              'linear-gradient(90deg, rgba(255,93,35,0.05) 0%, rgba(255,95,46,0.3) 42%, rgba(255,255,255,0.08) 100%)',
-          }}
-        />
-
-        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/15 to-transparent" />
-        <div className="absolute bottom-0 left-0 right-0 h-[32vh] bg-gradient-to-t from-sibs-orange/10 via-transparent to-transparent" />
-      </div>
-
-      <div className="relative z-10 w-full max-w-md rounded-2xl border border-white/20 bg-white/10 p-5 sm:p-8 shadow-2xl backdrop-blur-md">
-        <div className="mb-6 flex items-center justify-center gap-3">
+      <section aria-labelledby="sign-in-heading" className="relative z-10 w-full max-w-md rounded-2xl border border-white/20 bg-sibs-navy p-5 shadow-2xl sm:p-8">
+        <div className="mb-6 text-center">
           <img
             src="/SiBS_Login_Logo.svg"
-            alt="SiBS HRIS"
+            alt=""
             draggable={false}
-            className="block h-auto w-full max-w-[300px] select-none object-contain"
+            className="mx-auto mb-5 block h-auto w-44 select-none object-contain"
           />
+          <h1 id="sign-in-heading" className="text-xl font-bold tracking-tight text-white sm:text-2xl">
+            Sign in to SiBS HRIS
+          </h1>
         </div>
 
-        {showError && (
-          <div className="mb-4 flex items-start gap-3 rounded-xl border border-rose-300/40 bg-rose-500/20 p-3.5 text-white">
-            <AlertCircle size={18} className="mt-0.5 shrink-0 text-rose-200" />
-            <div>
-              <p className="m-0 text-sm font-semibold text-rose-100">Login Error</p>
-              <p className="m-0 text-sm text-rose-50">{errorMessage}</p>
+        <div role="alert" aria-atomic="true">
+          {error && (
+            <div className="mb-4 flex items-start gap-2.5 rounded-lg border border-rose-200 bg-rose-50 p-3 text-rose-900">
+              <AlertCircle aria-hidden="true" size={17} className="mt-0.5 shrink-0" />
+              <p id="sign-in-error" className="m-0 text-sm font-medium leading-5">{error.message}</p>
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
-        <form onSubmit={handleLogin}>
-          <label className="mb-4 block text-sm font-semibold text-white/85">
-            SIBS ID
+        <form onSubmit={handleLogin} noValidate className="space-y-4">
+          <div>
+            <label htmlFor="sign-in-sibs-id" className="mb-1.5 block text-sm font-semibold text-white">SIBS ID</label>
             <input
+              id="sign-in-sibs-id"
               type="text"
               name="sibsId"
               autoComplete="username"
+              autoCapitalize="none"
+              spellCheck={false}
+              required
+              aria-invalid={error?.field === "sibsId" || undefined}
+              aria-describedby={error?.field === "sibsId" ? "sign-in-error" : undefined}
               value={sibsId}
               disabled={loading}
               onChange={(e) => {
                 setSibsId(e.target.value);
-                if (showError) clearError();
+                clearFieldError("sibsId");
               }}
-              className="mt-1.5 w-full rounded-lg border border-white/20 bg-white/20 px-4 py-2.5 text-base text-white outline-none transition placeholder:text-white/40 focus:border-white/50 focus:ring-2 focus:ring-white/20"
+              className={`${inputClassName} pr-3`}
             />
-          </label>
+          </div>
 
-          <label className="mb-4 block text-sm font-semibold text-white/85">
-            Password
+          <div>
+            <label htmlFor="sign-in-password" className="mb-1.5 block text-sm font-semibold text-white">Password</label>
             <div className="relative">
               <input
+                id="sign-in-password"
                 type={showPassword ? "text" : "password"}
                 name="password"
                 autoComplete="current-password"
+                required
+                aria-invalid={error?.field === "password" || undefined}
+                aria-describedby={error?.field === "password" ? "sign-in-error" : undefined}
                 value={password}
                 disabled={loading}
                 onChange={(e) => {
                   setPassword(e.target.value);
-                  if (showError) clearError();
+                  clearFieldError("password");
                 }}
-                className="mt-1.5 w-full rounded-lg border border-white/20 bg-white/20 pl-4 pr-12 py-2.5 text-base text-white outline-none transition placeholder:text-white/40 focus:border-white/50 focus:ring-2 focus:ring-white/20"
+                className={`${inputClassName} pr-14`}
               />
 
               <button
                 type="button"
                 onClick={() => setShowPassword((current) => !current)}
                 disabled={loading}
-                className="absolute right-2 top-1/2 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-md text-white/90 transition hover:bg-white/10"
+                className="absolute right-0.5 top-0.5 flex size-11 items-center justify-center rounded-md text-sibs-navy transition-colors hover:bg-sibs-canvas focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-sibs-navy disabled:opacity-60"
                 aria-label={showPassword ? "Hide password" : "Show password"}
                 title={showPassword ? "Hide password" : "Show password"}
               >
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>
-          </label>
+          </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="mt-2 w-full rounded-lg bg-sibs-orange py-3 text-base font-extrabold text-white transition hover:bg-sibs-button-hover disabled:cursor-not-allowed disabled:opacity-50"
+            className="mt-1 min-h-12 w-full rounded-lg bg-sibs-orange px-4 py-3 text-base font-extrabold text-sibs-auth-bg transition-colors hover:bg-sibs-button-active focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white disabled:cursor-not-allowed disabled:opacity-70"
           >
-            {loading ? "Logging in..." : "Login"}
+            {loading ? "Signing in…" : "Sign in"}
           </button>
         </form>
-      </div>
-    </div>
+      </section>
+    </main>
   );
 }

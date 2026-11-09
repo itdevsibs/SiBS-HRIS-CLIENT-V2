@@ -3690,7 +3690,7 @@ function ApprovalRequestRow({ request, isWorkforceModule, onView }) {
       : request.department || "--";
 
   return (
-    <tr className="transition hover:bg-sibs-surface">
+    <tr className="transition hover:bg-sibs-cream-light">
       <td className="border-b border-sibs-border px-5 py-5">
         <p className="max-w-[280px] truncate text-sm font-extrabold text-sibs-navy">
           {request.title || "--"}

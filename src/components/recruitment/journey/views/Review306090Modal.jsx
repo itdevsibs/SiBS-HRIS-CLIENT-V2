@@ -968,7 +968,7 @@ function Review306090Modal({
                           {employeeEsepSessions.map((session) => {
     const evalObj = evaluationFor(session, esepEvaluations);
     const comp = kpiComparison(evalObj);
-    return <tr key={session.id} className="hover:bg-sibs-surface/60 transition-colors">
+    return <tr key={session.id} className="hover:bg-sibs-cream-light transition-colors">
                                 <td className="py-2.5 px-3 whitespace-nowrap">
                                   <span className="font-bold text-sibs-navy block text-xs">{session.date}</span>
                                   <span className="font-mono text-[10px] text-sibs-muted">ESEP-{session.id}</span>
@@ -1226,7 +1226,7 @@ function Review306090Modal({
                           {employeeEsepSessions.map((session) => {
     const evalObj = evaluationFor(session, esepEvaluations);
     const comp = kpiComparison(evalObj);
-    return <tr key={session.id} className="hover:bg-sibs-surface/60 transition-colors">
+    return <tr key={session.id} className="hover:bg-sibs-cream-light transition-colors">
                                 <td className="py-2.5 px-3 whitespace-nowrap">
                                   <span className="font-bold text-sibs-navy block text-xs">{session.date}</span>
                                   <span className="font-mono text-[10px] text-sibs-muted">ESEP-{session.id}</span>

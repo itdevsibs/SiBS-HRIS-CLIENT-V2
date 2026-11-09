@@ -290,7 +290,7 @@ function NHOTrainerDashboard({ subTab = "queue", onSubTabChange }) {
       const isAccepted = app.trainerStatus === "Accepted";
       const isUnable = app.trainerStatus === "Unable to Accept";
       const isPending = !isAccepted && !isUnable;
-      return <tr key={app.id} className="hover:bg-sibs-surface/80 transition-colors">
+      return <tr key={app.id} className="hover:bg-sibs-cream-light transition-colors">
                           <td className="py-3 px-4">
                             <div className="font-bold text-sibs-navy">{app.fullName}</div>
                             <div className="text-[11px] text-sibs-faint">{app.email}</div>

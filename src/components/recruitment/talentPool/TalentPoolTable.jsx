@@ -5,7 +5,6 @@ import { DataCard, ResponsiveTableShell, TableSkeletonRows } from "@/components/
 import { useTalentPool } from "../../../services/context/TalentPoolContext";
 import PaginationTable from "../../../services/pagination/PaginationTable";
 import {
-  formatDate,
   getStatusClass,
 } from "../../../lib/utils/talentPool/talentPoolHelpers";
 import { isUnder18Candidate } from "../../../lib/utils/talentPool/talentPoolTabs";
@@ -268,7 +267,7 @@ export default function TalentPoolTable({
                   {isLoading ? (
                     <TableSkeletonRows count={10} columns={6} />
                   ) : paginatedCandidates.length > 0 ? (
-                    paginatedCandidates.map((candidate, index) => {
+                    paginatedCandidates.map((candidate) => {
                       const appliedPosition =
                         candidate.openPosition ||
                         candidate.roleCapability ||
@@ -331,11 +330,7 @@ export default function TalentPoolTable({
                           onKeyDown={(event) =>
                             handleRowKeyDown(event, candidate)
                           }
-                          className="sibs-page-card-in cursor-pointer transition hover:bg-sibs-cream-light focus-visible:bg-sibs-cream-light/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sibs-orange/25"
-                          style={{
-                            animationDelay: `${index * 35}ms`,
-                            animationFillMode: "both",
-                          }}
+                          className="cursor-pointer transition hover:bg-sibs-cream-light focus-visible:bg-sibs-cream-light/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sibs-orange/25"
                         >
                           <td className="border-b border-sibs-border px-3 py-2 2xl:px-4 2xl:py-2.5 align-middle">
                             <div className="min-w-0">

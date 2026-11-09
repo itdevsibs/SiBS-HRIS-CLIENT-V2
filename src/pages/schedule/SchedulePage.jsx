@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { CalendarDays, RefreshCw } from "lucide-react";
+import { AlertCircle, CalendarDays, RefreshCw } from "lucide-react";
 
 import Header from "../../components/layout/Header";
 import { getSchedule } from "../../lib/axios/getSchedule";
@@ -12,6 +12,7 @@ const PAGE_LIMIT = 15;
 
 export default function SchedulePage() {
   const [schedule, setSchedule] = useState([]);
+  const [loadError, setLoadError] = useState("");
 
   const paginationContext = usePagination("schedule");
 
@@ -87,6 +88,7 @@ export default function SchedulePage() {
   }, [search, page, dateFrom, dateTo]);
 
   async function fetchSchedule(showLoading = true) {
+    setLoadError("");
     if (showLoading) setLoading(true);
 
     try {
@@ -96,6 +98,7 @@ export default function SchedulePage() {
       });
 
       if (!result?.success) {
+        setLoadError(result?.message || "Unable to load schedule records. Please try again.");
         setSchedule([]);
 
         setPagination({
@@ -126,6 +129,7 @@ export default function SchedulePage() {
       );
     } catch (err) {
       console.error("Schedule fetch error:", err);
+      setLoadError(err?.message || "Unable to load schedule records. Please try again.");
 
       setSchedule([]);
 
@@ -204,7 +208,30 @@ export default function SchedulePage() {
             }
           />
 
+          {loadError ? (
+            <div
+              role="alert"
+              className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-rose-700"
+            >
+              <div className="flex items-center gap-2 text-xs font-bold">
+                <AlertCircle size={16} aria-hidden="true" className="shrink-0 text-rose-600" />
+                <span>{loadError}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => fetchSchedule(true)}
+                disabled={loading}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-rose-200 bg-white px-3 py-1.5 text-xs font-extrabold text-rose-700 shadow-2xs transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <RefreshCw size={13} aria-hidden="true" className={loading ? "animate-spin" : ""} />
+                Retry
+              </button>
+            </div>
+          ) : null}
+
           <ScheduleTable
+            loadError={loadError}
+            onRetry={() => fetchSchedule(true)}
             schedule={schedule}
             loading={loading}
             page={page}

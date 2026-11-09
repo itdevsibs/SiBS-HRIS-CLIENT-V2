@@ -25,6 +25,7 @@ const INLINE_RIGHT_CONTENT_CLASS =
 function AnimatedDropdown({ open, children, className = "" }) {
   return (
     <div
+      aria-hidden={!open}
       className={`sibs-animated-dropdown absolute left-0 right-0 top-full z-[9999] mt-2 ${
         open ? "open" : "closed"
       } ${className}`}
@@ -239,10 +240,21 @@ export default function PaginationTable({
       }
     }
 
+    function handleKeyDown(event) {
+      if (!openDropdownKey || event.key !== "Escape") return;
+      setOpenDropdownKey(null);
+      setDropdownSearch((previous) => ({
+        ...previous,
+        [openDropdownKey]: "",
+      }));
+    }
+
     document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleKeyDown);
 
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleKeyDown);
     };
   }, [openDropdownKey]);
 
@@ -409,8 +421,44 @@ export default function PaginationTable({
       return;
     }
 
+
     filter.onChange?.(value);
     closeDropdown(filter.key);
+  }
+
+  function handleDropdownKeyDown(event, filterKey) {
+    const container = dropdownRefs.current?.[filterKey];
+    if (!container) return;
+
+    if (event.key === "Escape") {
+      if (openDropdownKey === filterKey) {
+        event.preventDefault();
+        closeDropdown(filterKey);
+      }
+      return;
+    }
+
+    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+      event.preventDefault();
+      if (openDropdownKey !== filterKey) {
+        openDropdown(filterKey);
+        return;
+      }
+      const optionNodes = Array.from(
+        container.querySelectorAll('[role="option"]:not(:disabled)')
+      );
+      if (optionNodes.length === 0) return;
+      const currentIndex = optionNodes.indexOf(document.activeElement);
+      const nextIndex =
+        event.key === "ArrowDown"
+          ? currentIndex < optionNodes.length - 1
+            ? currentIndex + 1
+            : 0
+          : currentIndex > 0
+            ? currentIndex - 1
+            : optionNodes.length - 1;
+      optionNodes[nextIndex]?.focus();
+    }
   }
 
   function renderControls() {
@@ -502,6 +550,11 @@ export default function PaginationTable({
                     onFocus={() => openDropdown(filter.key)}
                     placeholder={filter.placeholder || "Search..."}
                     autoComplete="off"
+                    role="combobox"
+                    aria-expanded={isOpen}
+                    aria-haspopup="listbox"
+                    aria-label={label || filter.placeholder || filter.key}
+                    onKeyDown={(e) => handleDropdownKeyDown(e, filter.key)}
                     disabled={filter.disabled}
                     className={`w-full ${EDGE} border px-3 pr-10 font-jakarta sibs-text-xs font-bold text-sibs-navy outline-none transition placeholder:text-sibs-muted disabled:cursor-not-allowed disabled:opacity-50 ${
                       isOpen
@@ -540,6 +593,9 @@ export default function PaginationTable({
                     isTaInlineLayout ? "h-8.5 sm:h-9 2xl:h-10" : "h-9 2xl:h-11"
                   }`}
                   aria-expanded={isOpen}
+                  aria-haspopup="listbox"
+                  aria-label={label || selectedLabel || filter.key}
+                  onKeyDown={(e) => handleDropdownKeyDown(e, filter.key)}
                 >
                   <span className="block min-w-0 truncate">
                     {selectedLabel}
@@ -555,13 +611,19 @@ export default function PaginationTable({
               )}
 
               <AnimatedDropdown open={isOpen}>
-                <div className="max-h-64 overflow-y-auto py-2 sibs-scrollbar">
+                <div
+                  role="listbox"
+                  aria-multiselectable={filter.multiple || undefined}
+                  onKeyDown={(e) => handleDropdownKeyDown(e, filter.key)}
+                  className="max-h-64 overflow-y-auto py-2 sibs-scrollbar"
+                >
                   {filter.includeAll ?? false ? (
                     <button
                       type="button"
                       onClick={() =>
                         selectDropdownValue(filter, "All")
                       }
+                      role="option"
                       className={`block w-full px-3 py-2 2xl:px-4 2xl:py-2.5 text-left sibs-text-xs transition ${
                         (filter.multiple
                           ? selectedValues.length === 0
@@ -594,6 +656,8 @@ export default function PaginationTable({
                       return (
                         <button
                           key={`${filter.key}-${optionValue}-${index}`}
+                          role="option"
+                          aria-selected={checked}
                           type="button"
                           onClick={() =>
                             selectDropdownValue(filter, optionValue)

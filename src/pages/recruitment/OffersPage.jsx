@@ -567,7 +567,7 @@ export default function OffersPage() {
 
           <section
             className="sibs-page-card-in sibs-card relative z-[10] overflow-visible font-jakarta"
-            style={{ animationDelay: "240ms", animationFillMode: "both" }}
+            style={{ animationDelay: "360ms", animationFillMode: "both" }}
           >
             <OfferFilters />
 

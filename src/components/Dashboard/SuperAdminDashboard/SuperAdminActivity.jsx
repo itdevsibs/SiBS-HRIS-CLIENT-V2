@@ -116,14 +116,10 @@ export default function SuperAdminActivity({
       <ResponsiveTableShell
         mobileView={
           items.length > 0 ? (
-            items.map((item, index) => (
+            items.map((item) => (
               <DataCard
                 key={item.id}
                 interactive={false}
-                style={{
-                  animationDelay: `${index * 40}ms`,
-                  animationFillMode: "both",
-                }}
               >
                 <DataCard.Header
                   title={item.action}
@@ -175,15 +171,11 @@ export default function SuperAdminActivity({
                 </thead>
                 <tbody className="divide-y divide-sibs-border">
                   {items.length > 0 ? (
-                    items.map((item, index) => (
+                    items.map((item) => (
                       <tr
-                        key={item.id}
-                        className="sibs-data-table-row sibs-page-card-in hover:bg-sibs-cream-light/60 transition-colors"
-                        style={{
-                          animationDelay: `${index * 35}ms`,
-                          animationFillMode: "both",
-                        }}
-                      >
+                      key={item.id}
+                      className="sibs-data-table-row hover:bg-sibs-cream-light/60 transition-colors"
+                    >
                         <td className="whitespace-nowrap px-3 2xl:px-4 py-2 2xl:py-2.5 text-[10px] font-semibold text-sibs-text-muted">
                           {item.timestamp}
                         </td>

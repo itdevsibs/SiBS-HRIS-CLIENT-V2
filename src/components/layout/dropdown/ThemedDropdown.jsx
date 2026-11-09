@@ -1,5 +1,6 @@
-import React, { useEffect, useId, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { ChevronDown } from "lucide-react";
+import DropdownPortal from "@/components/ui/DropdownPortal";
 import {
   getThemedDropdownOptionLabel,
   getThemedDropdownOptionValue,
@@ -11,7 +12,15 @@ const labelClass =
 const inputClass =
   "h-10 w-full rounded-[10px] border px-3 font-jakarta text-xs font-bold text-sibs-navy outline-none transition placeholder:text-sibs-muted disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-sibs-muted";
 
-function AnimatedDropdown({ open, children }) {
+function AnimatedDropdown({ open, anchorRef, onClose, topLayer, children }) {
+  if (topLayer) {
+    return (
+      <DropdownPortal open={open} anchorRef={anchorRef} onClose={onClose} maxHeight={256} topLayer>
+        {children}
+      </DropdownPortal>
+    );
+  }
+
   return (
     <div
       className={`sibs-animated-dropdown absolute left-0 right-0 top-full z-[9999] mt-2 ${
@@ -40,10 +49,12 @@ export default function ThemedDropdown({
   emptyText = "No options found.",
   className = "",
   zIndex = "z-[60]",
+  topLayer = false,
   onBeforeOpen,
   onChange,
 }) {
   const dropdownRef = useRef(null);
+  const triggerRef = useRef(null);
   const inputRef = useRef(null);
   const buttonRef = useRef(null);
   const ignoreNextFocusRef = useRef(false);
@@ -52,6 +63,7 @@ export default function ThemedDropdown({
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
+  const [previousOptionCount, setPreviousOptionCount] = useState(options.length);
 
   const selectedLabel = useMemo(() => {
     const selectedOption = options.find(
@@ -72,9 +84,23 @@ export default function ThemedDropdown({
     );
   }, [options, search, searchable]);
 
-  useEffect(() => {
+  if (previousOptionCount !== filteredOptions.length) {
+    setPreviousOptionCount(filteredOptions.length);
     setHighlightedIndex(-1);
-  }, [search, filteredOptions.length]);
+  }
+
+  const selectValue = useCallback((nextValue, option) => {
+    onChange?.(nextValue, option);
+    setOpen(false);
+    setSearch("");
+    setHighlightedIndex(-1);
+    ignoreNextFocusRef.current = !topLayer || (searchable && document.activeElement !== inputRef.current);
+    if (searchable) {
+      inputRef.current?.focus();
+    } else {
+      buttonRef.current?.focus();
+    }
+  }, [onChange, searchable, topLayer]);
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -87,6 +113,7 @@ export default function ThemedDropdown({
 
     function handleKeyDown(event) {
       if (event.key === "Escape") {
+        if (topLayer) return;
         setOpen(false);
         setSearch("");
         setHighlightedIndex(-1);
@@ -112,8 +139,10 @@ export default function ThemedDropdown({
       }
     }
 
-    document.addEventListener("mousedown", handleClickOutside);
-    document.addEventListener("touchstart", handleClickOutside, { passive: true });
+    if (!topLayer) {
+      document.addEventListener("mousedown", handleClickOutside);
+      document.addEventListener("touchstart", handleClickOutside, { passive: true });
+    }
     document.addEventListener("keydown", handleKeyDown);
 
     return () => {
@@ -121,7 +150,18 @@ export default function ThemedDropdown({
       document.removeEventListener("touchstart", handleClickOutside);
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [searchable, open, filteredOptions, highlightedIndex]);
+  }, [searchable, open, filteredOptions, highlightedIndex, selectValue, topLayer]);
+
+  function closePopup(event) {
+    setOpen(false);
+    setSearch("");
+    setHighlightedIndex(-1);
+    const trigger = searchable ? inputRef.current : buttonRef.current;
+    if (event?.key === "Escape" && trigger && document.activeElement !== trigger) {
+      ignoreNextFocusRef.current = searchable;
+      trigger.focus();
+    }
+  }
 
   function openDropdown() {
     if (ignoreNextFocusRef.current) {
@@ -143,19 +183,6 @@ export default function ThemedDropdown({
     openDropdown();
   }
 
-  function selectValue(nextValue, option) {
-    onChange?.(nextValue, option);
-    setOpen(false);
-    setSearch("");
-    setHighlightedIndex(-1);
-    ignoreNextFocusRef.current = true;
-    if (searchable) {
-      inputRef.current?.focus();
-    } else {
-      buttonRef.current?.focus();
-    }
-  }
-
   return (
     <div ref={dropdownRef} className={`relative block min-w-0 ${zIndex} ${className}`}>
       {label ? (
@@ -171,7 +198,17 @@ export default function ThemedDropdown({
         </label>
       ) : null}
 
-      <div className="group relative">
+      <div
+        ref={triggerRef}
+        className="group relative"
+        onBlur={topLayer ? (event) => {
+          const nextFocus = event.relatedTarget;
+          if (nextFocus && !event.currentTarget.contains(nextFocus) &&
+              !document.getElementById(listboxId)?.contains(nextFocus)) {
+            closePopup();
+          }
+        } : undefined}
+      >
         {searchable ? (
           <input
             ref={inputRef}
@@ -190,6 +227,7 @@ export default function ThemedDropdown({
             onFocus={openDropdown}
             onChange={(event) => {
               setSearch(event.target.value);
+              setHighlightedIndex(-1);
               openDropdown();
             }}
             onKeyDown={(event) => {
@@ -246,12 +284,17 @@ export default function ThemedDropdown({
           />
         </button>
 
-        <AnimatedDropdown open={open && !disabled}>
+        <AnimatedDropdown
+          open={open && !disabled}
+          anchorRef={triggerRef}
+          onClose={closePopup}
+          topLayer={topLayer}
+        >
           <div
             id={listboxId}
             role="listbox"
             aria-label={label || placeholder || "Options"}
-            className="max-h-64 overflow-y-auto py-2 sibs-scrollbar"
+            className="max-h-[var(--dropdown-max-height,16rem)] overflow-y-auto py-2 sibs-scrollbar"
           >
             {showPlaceholderOption && placeholder ? (
               <button

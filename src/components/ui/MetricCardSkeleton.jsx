@@ -6,6 +6,7 @@ export function MetricCardSkeleton({
   label = null,
   className = "",
   testId = "metric-card-skeleton",
+  delay = 0,
 }) {
   return (
     <article
@@ -14,6 +15,10 @@ export function MetricCardSkeleton({
         "sibs-metric-card font-jakarta relative flex h-[104px] 2xl:h-[116px] min-h-[96px] 2xl:min-h-[112px] flex-col justify-between overflow-hidden p-3 2xl:p-3.5",
         className,
       )}
+      style={{
+        animationDelay: `${delay}ms`,
+        animationFillMode: "both",
+      }}
       aria-hidden="true"
     >
       <div className="flex h-full items-start justify-between gap-2.5 2xl:gap-3">
@@ -36,6 +41,7 @@ export function MetricCardSkeleton({
   );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function getMetricGridColClass(columns = 6) {
   if (typeof columns === "string") return columns;
   if (columns === 9) {
@@ -94,6 +100,7 @@ export function MetricGridSkeleton({
         <MetricCardSkeleton
           key={typeof item === "string" ? item : `metric-card-skeleton-${index}`}
           label={typeof item === "string" ? item : null}
+          delay={60 + index * 60}
         />
       ))}
     </section>

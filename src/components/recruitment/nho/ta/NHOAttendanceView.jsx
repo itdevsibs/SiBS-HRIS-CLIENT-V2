@@ -137,7 +137,7 @@ function NHOAttendanceView({ onOpenAttendanceModal, onOpenDetails }) {
                   </tr>
                 ) : (
                   filtered.map((app) => (
-                    <tr key={app.id} className="hover:bg-sibs-surface/60 transition-colors">
+                    <tr key={app.id} className="hover:bg-sibs-cream-light transition-colors">
                       <td className="px-4 py-3">
                         <div className="font-extrabold text-sibs-navy">{app.fullName}</div>
                         <div className="font-mono text-[10px] text-sibs-muted font-medium">

@@ -1,5 +1,5 @@
 import React from "react";
-import { BarChart3, ShieldCheck } from "lucide-react";
+import { ShieldCheck } from "lucide-react";
 import { useOnboarding } from "../../../services/context/OnboardingContext";
 
 function clampPercentage(value) {
@@ -79,12 +79,9 @@ export default function OnboardingOutcomeOverview({ loading: propLoading }) {
         <div>
           <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between border-b border-sibs-border/60 pb-3">
             <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <BarChart3 size={16} className="shrink-0 text-sibs-orange" />
-                <h2 className="font-heading text-sm 2xl:text-base font-bold text-sibs-navy tracking-tight">
-                  Onboarding Outcome Distribution
-                </h2>
-              </div>
+              <h2 className="font-heading text-sm 2xl:text-base font-bold text-sibs-navy tracking-tight">
+                Onboarding Outcome Distribution
+              </h2>
               <p className="mt-0.5 sibs-text-xs font-semibold text-sibs-muted">
                 Current accepted-offer outcomes across active onboarding records.
               </p>

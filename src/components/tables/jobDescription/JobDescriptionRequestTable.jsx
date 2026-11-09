@@ -319,7 +319,7 @@ const JobDescriptionRequestTable = ({ onView }) => {
                           key={`${request.source || "job-description"}-${
                             request.id || request.rawId
                           }`}
-                          className="transition-colors hover:bg-sibs-surface/80"
+                          className="transition-colors hover:bg-sibs-cream-light"
                         >
                           <td className="border-b border-sibs-border px-5 py-5 align-middle">
                             <div className="flex items-center gap-3">

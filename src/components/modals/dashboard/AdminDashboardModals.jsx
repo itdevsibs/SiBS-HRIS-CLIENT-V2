@@ -228,7 +228,7 @@ function EmployeesModal({ rows }) {
             <EmptyTableRow colSpan={6} message="No active employees match the search." />
           ) : (
             rows.map((employee) => (
-              <tr key={employee.id || employee.sibsId} className="transition hover:bg-sibs-cream-subtle/50">
+              <tr key={employee.id || employee.sibsId} className="transition hover:bg-sibs-cream-light">
                 <td className="whitespace-nowrap px-3.5 py-2.5 2xl:px-4 2xl:py-3 tabular-nums font-bold text-sibs-muted sibs-text-xs">{employee.sibsId || employee.id}</td>
                 <td className="px-3.5 py-2.5 2xl:px-4 2xl:py-3 font-extrabold text-sibs-navy sibs-text-xs">{employee.name}</td>
                 <td className="px-3.5 py-2.5 2xl:px-4 2xl:py-3 text-sibs-text-secondary sibs-text-xs">{employee.department}</td>
@@ -260,7 +260,7 @@ function DepartmentsModal({ rows }) {
             <EmptyTableRow colSpan={3} message="No active departments match the search." />
           ) : (
             rows.map((department) => (
-              <tr key={department.id} className="transition hover:bg-sibs-cream-subtle/50">
+              <tr key={department.id} className="transition hover:bg-sibs-cream-light">
                 <td className="px-3.5 py-2.5 2xl:px-4 2xl:py-3 tabular-nums font-bold text-sibs-muted sibs-text-xs">{department.id}</td>
                 <td className="px-3.5 py-2.5 2xl:px-4 2xl:py-3 font-extrabold text-sibs-navy sibs-text-xs">{department.name}</td>
                 <td className="px-3.5 py-2.5 2xl:px-4 2xl:py-3 font-extrabold text-sibs-navy sibs-text-xs">{formatNumber(department.headcount)}</td>
@@ -331,7 +331,7 @@ function InterviewsModal({ rows }) {
             <EmptyTableRow colSpan={6} message="No interviews are scheduled today." />
           ) : (
             rows.map((interview) => (
-              <tr key={interview.id} className="transition hover:bg-sibs-cream-subtle/50">
+              <tr key={interview.id} className="transition hover:bg-sibs-cream-light">
                 <td className="whitespace-nowrap px-3.5 py-2.5 2xl:px-4 2xl:py-3 tabular-nums font-extrabold text-indigo-600 sibs-text-xs">{interview.time}</td>
                 <td className="px-3.5 py-2.5 2xl:px-4 2xl:py-3 font-extrabold text-sibs-navy sibs-text-xs">{interview.candidate}</td>
                 <td className="px-3.5 py-2.5 2xl:px-4 2xl:py-3 text-sibs-text-secondary sibs-text-xs">{interview.position}</td>
@@ -365,7 +365,7 @@ function PayrollModal({ rows }) {
             <EmptyTableRow colSpan={5} message="No payroll-eligible employees match the search." />
           ) : (
             rows.map((employee) => (
-              <tr key={employee.id || employee.sibsId} className="transition hover:bg-sibs-cream-subtle/50">
+              <tr key={employee.id || employee.sibsId} className="transition hover:bg-sibs-cream-light">
                 <td className="px-3.5 py-2.5 2xl:px-4 2xl:py-3 tabular-nums font-bold text-sibs-muted sibs-text-xs">{employee.sibsId || employee.id}</td>
                 <td className="px-3.5 py-2.5 2xl:px-4 2xl:py-3 font-extrabold text-sibs-navy sibs-text-xs">{employee.name}</td>
                 <td className="px-3.5 py-2.5 2xl:px-4 2xl:py-3 text-sibs-text-secondary sibs-text-xs">{employee.department}</td>
