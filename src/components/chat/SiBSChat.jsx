@@ -11,6 +11,7 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { useLocation } from "react-router-dom";
+import { shouldShowHelpdeskInSibsChat } from "@/lib/utils/chat/chatHelpdeskVisibility";
 import {
   ArrowLeft,
   Check,
@@ -53,6 +54,7 @@ import {
   getChatAttachmentPreview,
   getChatParticipants,
   getChatHelpdeskDuty,
+  getChatHelpdeskRequestableCategories,
   getHelpdeskTicketDetails,
   updateHelpdeskTicketStatus,
   getChatThemeImageBlob,
@@ -420,29 +422,14 @@ function getChatMemberFullName(member = {}) {
   );
 }
 
-// Helpdesk conversations belong to their original requester. Always show the
-// requester (never the first support-team member), including older threads
-// where the requester is no longer present in the active membership list.
-function getHelpdeskRequester(conversation = {}) {
-  const requesterId = cleanText(
-    conversation?.createdBySibsId || conversation?.requester?.sibsId,
-  );
-  const members = Array.isArray(conversation?.members) ? conversation.members : [];
-  const member = members.find((entry) => cleanText(entry?.sibsId) === requesterId);
-  const profile = conversation?.requester || member || {};
-  const savedName = cleanText(conversation?.name || conversation?.title)
-    .split(" · ").slice(1).join(" · ").trim();
-  return {
-    ...profile,
-    sibsId: requesterId,
-    displayName: cleanText(profile?.displayName) || savedName ||
-      (requesterId ? `SIBS ID ${requesterId}` : "Unknown employee"),
-    initials: cleanText(profile?.initials) || "EMP",
-  };
-}
-
 function getHelpdeskCategoryLabel(category) {
   return cleanText(category).toUpperCase() === "IT" ? "IT Support" : "TA/HR Concerns";
+}
+
+// Branding for personal Helpdesk request views only. Staff dashboards and
+// regular private/group conversations retain their existing titles.
+function getPersonalHelpdeskChatTitle(category) {
+  return `SiBS - ${getHelpdeskCategoryLabel(category)}`;
 }
 
 // The database keeps globally unique codes (IT-1 / THR-1). The chat UI shows
@@ -452,19 +439,10 @@ function getHelpdeskCaseLabel(conversation = {}) {
   if (!caseCode) return "New concern";
   const match = caseCode.match(/^(?:IT|THR)-(\d+)$/i);
   const caseNumber = match ? String(Number(match[1])) : caseCode;
-  const isResolved = cleanText(conversation?.caseStatus).toUpperCase() === "RESOLVED";
+  const status = cleanText(conversation?.caseStatus).toUpperCase();
+  if (status === "REJECTED") return "Rejected request";
+  const isResolved = status === "RESOLVED";
   return `Case ${isResolved ? "Closed" : "Opened"} #${caseNumber}`;
-}
-
-// Department and account labels come from the requester profile, populated by
-// the HRIS sibs_departments / sibs_accounts organization mapping. A missing
-// department means we cannot safely assert an HRIS account assignment.
-function getHelpdeskRequesterOrganizationLabel(conversation = {}) {
-  const requester = getHelpdeskRequester(conversation);
-  const department = cleanText(requester?.department);
-  const account = cleanText(requester?.account);
-  if (!department) return "Department / Account not mapped in HRIS";
-  return account ? `${department} - ${account}` : `${department} - Account not mapped`;
 }
 
 // Role labels come from HRIS-verified server data, including Super Admin
@@ -712,14 +690,26 @@ function isHelpdeskConversationVisibleOnDay(conversation = {}, todayKey) {
   }
 
   const status = cleanText(conversation?.caseStatus).toUpperCase();
+  // Drafts are personal unsent requests, not opened cases. The backend may
+  // reuse a draft from a previous Philippine day when the user contacts the
+  // same team again. Keep it in the sidebar until the first message is sent,
+  // regardless of its original createdAt timestamp.
+  const isUnsentDraft = status === "DRAFT" || (
+    !status &&
+    !conversation?.caseCode &&
+    !conversation?.caseOpenedAt &&
+    !Number(conversation?.lastMessageId || 0)
+  );
+  if (isUnsentDraft) return true;
   // Do not lose an actionable case just because the calendar rolled over.
-  if (status && !["RESOLVED", "CLOSED", "DRAFT"].includes(status)) return true;
+  if (status && !["RESOLVED", "CLOSED", "REJECTED"].includes(status)) return true;
 
   const activityDates = [
     conversation.caseOpenedAt,
     conversation.caseAcceptedAt,
     conversation.caseUpdatedAt,
     conversation.caseResolvedAt,
+    conversation.caseRejectedAt,
     conversation.lastMessageAt,
     // A newly created draft has no first-message/case timestamps yet.
     ...(status === "DRAFT" || !status ? [conversation.createdAt] : []),
@@ -1136,7 +1126,6 @@ function NewChatOverlay({
   onClose,
   onPrivateChat,
   onCreateGroup,
-  onHelpdeskChat,
   busy,
 }) {
   const [mode, setMode] = useState("private");
@@ -1148,7 +1137,7 @@ function NewChatOverlay({
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (!open || mode === "helpdesk") return undefined;
+    if (!open) return undefined;
 
     let active = true;
     const timer = window.setTimeout(async () => {
@@ -1241,13 +1230,13 @@ function NewChatOverlay({
             New Chat
           </h3>
           <p className="text-[11px] font-semibold text-sibs-muted">
-            Private message, group chat, or helpdesk
+            Private messages and group chats
           </p>
         </div>
       </header>
 
       <div className="border-b border-sibs-border px-4 py-3">
-        <div className="grid grid-cols-3 rounded-xl bg-sibs-surface p-1">
+        <div className="grid grid-cols-2 rounded-xl bg-sibs-surface p-1">
           <button
             type="button"
             onClick={() => setMode("private")}
@@ -1270,15 +1259,6 @@ function NewChatOverlay({
           >
             Group Chat
           </button>
-          <button
-            type="button"
-            onClick={() => { setMode("helpdesk"); setError(""); }}
-            className={`rounded-lg px-2 py-2 text-xs font-extrabold transition ${
-              mode === "helpdesk" ? "bg-white text-sibs-navy shadow-sm" : "text-sibs-muted"
-            }`}
-          >
-            Helpdesk
-          </button>
         </div>
 
         {mode === "group" ? (
@@ -1292,7 +1272,7 @@ function NewChatOverlay({
           />
         ) : null}
 
-        {mode !== "helpdesk" ? <label className="relative mt-3 block">
+        <label className="relative mt-3 block">
           <Search
             size={16}
             className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sibs-faint"
@@ -1304,7 +1284,7 @@ function NewChatOverlay({
             placeholder="Search name, SIBS ID, or email..."
             className="h-10 w-full rounded-xl border border-sibs-border bg-sibs-surface pl-9 pr-3 text-sm font-semibold text-sibs-navy outline-none transition focus:border-sibs-orange focus:bg-white focus:ring-2 focus:ring-sibs-orange/10"
           />
-        </label> : null}
+        </label>
       </div>
 
       {error ? (
@@ -1314,47 +1294,7 @@ function NewChatOverlay({
       ) : null}
 
       <div className="sibs-scrollbar min-h-0 flex-1 overflow-y-auto px-2 py-2">
-        {mode === "helpdesk" ? (
-          <div className="space-y-3 px-2 pt-3">
-            <p className="px-1 text-xs font-semibold leading-5 text-sibs-muted">
-              Select the team for your concern. Your conversation stays visible to you and all active members of that support team.
-            </p>
-            {[
-              { key: "TA_HR", title: "TA/HR Concerns", description: "Recruitment, employment, HR and people concerns", Icon: HeartHandshake },
-              { key: "IT", title: "IT Support", description: "Account access, devices, systems and technical concerns", Icon: MonitorCog },
-            ].map(({ key, title, description, Icon }) => (
-              <button
-                key={key}
-                type="button"
-                disabled={busy}
-                onClick={() => {
-                  void (async () => {
-                    try {
-                      setError("");
-                      await onHelpdeskChat(key);
-                      onClose();
-                    } catch (requestError) {
-                      setError(requestError?.response?.data?.message || requestError?.message || "Unable to open the helpdesk conversation.");
-                    }
-                  })();
-                }}
-                className="flex w-full items-center gap-3 rounded-xl border border-sibs-border bg-white px-4 py-4 text-left transition hover:border-sibs-orange/40 hover:bg-sibs-surface disabled:opacity-50"
-              >
-                <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-sibs-orange/10 text-sibs-orange">
-                  <Icon size={23} />
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block text-sm font-extrabold text-sibs-navy">{title}</span>
-                  <span className="mt-1 block text-[11px] font-semibold leading-5 text-sibs-muted">{description}</span>
-                </span>
-                <Headset size={18} className="shrink-0 text-sibs-muted" />
-              </button>
-            ))}
-            <p className="px-1 text-[11px] font-medium leading-5 text-sibs-muted">
-              Team members can view and respond to all requests routed to their helpdesk. Other employees cannot access those conversations.
-            </p>
-          </div>
-        ) : loading ? (
+        {loading ? (
           <div className="flex h-full items-center justify-center text-sibs-muted">
             <Loader2 className="h-5 w-5 animate-spin" />
           </div>
@@ -2009,7 +1949,7 @@ export default function SiBSChat({
   const [expandedChatFolders, setExpandedChatFolders] = useState({
     private: false,
     groups: false,
-    helpdesk: false,
+    helpdesk: true,
     it: false,
     taHr: false,
   });
@@ -2037,6 +1977,9 @@ export default function SiBSChat({
   const [attachmentsLoading, setAttachmentsLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const [actionBusy, setActionBusy] = useState(false);
+  const [helpdeskStartingCategory, setHelpdeskStartingCategory] = useState("");
+  const [helpdeskStartError, setHelpdeskStartError] = useState("");
+  const helpdeskRequestPendingRef = useRef(false);
   const [localError, setLocalError] = useState("");
   const [attachmentNotice, setAttachmentNotice] = useState("");
   const [documentPreview, setDocumentPreview] = useState(null);
@@ -2104,6 +2047,33 @@ export default function SiBSChat({
   const suppressLauncherClickRef = useRef(false);
 
   const currentSibsId = getUserSibsId(user);
+  const [requestableHelpdeskCategories, setRequestableHelpdeskCategories] = useState(null);
+  const [helpdeskRequestScopeError, setHelpdeskRequestScopeError] = useState("");
+
+  useEffect(() => {
+    if (!open || !currentSibsId) {
+      setRequestableHelpdeskCategories(null);
+      setHelpdeskRequestScopeError("");
+      return undefined;
+    }
+    const controller = new AbortController();
+    setRequestableHelpdeskCategories(null);
+    setHelpdeskRequestScopeError("");
+    void getChatHelpdeskRequestableCategories({ signal: controller.signal })
+      .then((categories) => {
+        if (controller.signal.aborted) return;
+        setRequestableHelpdeskCategories(categories);
+      })
+      .catch((error) => {
+        if (controller.signal.aborted || error?.name === "AbortError" || error?.code === "ERR_CANCELED") return;
+        setRequestableHelpdeskCategories([]); // Do not show forbidden request actions.
+        setHelpdeskRequestScopeError(error?.response?.data?.message || error?.message || "Unable to check Helpdesk request permissions.");
+      });
+    return () => controller.abort();
+  }, [open, currentSibsId]);
+  const canRequestHelpdesk = useCallback((category) =>
+    Array.isArray(requestableHelpdeskCategories) && requestableHelpdeskCategories.includes(category),
+  [requestableHelpdeskCategories]);
   const visible =
     enabled &&
     !userLoading &&
@@ -2264,6 +2234,9 @@ export default function SiBSChat({
       setIsExpanded(false);
       setExpandedBounds(null);
       setIsNavigatingBack(false);
+      explicitlyViewingListRef.current = true;
+      setNewChatOpen(false);
+      setGroupInfoOpen(false);
       if (navigateBackTimerRef.current) {
         clearTimeout(navigateBackTimerRef.current);
         navigateBackTimerRef.current = null;
@@ -2511,7 +2484,7 @@ export default function SiBSChat({
     const justOpened = open && !previousOpenRef.current;
     previousOpenRef.current = open;
 
-    if (!justOpened || !chat?.activeConversationId) return;
+    if (!justOpened || !chat?.activeConversationId || explicitlyViewingListRef.current) return;
 
     // Re-load the visible conversation when the panel is opened. This is the
     // point where its unread messages become read. Messages received while
@@ -2770,6 +2743,11 @@ export default function SiBSChat({
     return (chat?.conversations || []).filter((conversation) => {
       // Scope only the IT / TA-HR Helpdesk folders to today's activity.
       // A case worked across midnight is counted on both Philippine dates.
+      if (!shouldShowHelpdeskInSibsChat(conversation, currentSibsId)) return false;
+      if (conversation?.isHelpdesk || cleanText(conversation?.conversationType).toUpperCase() === "HELPDESK") {
+        const category = cleanText(conversation?.helpdeskCategory).toUpperCase();
+        if (!canRequestHelpdesk(category)) return false;
+      }
       if (!isHelpdeskConversationVisibleOnDay(conversation, todayKey)) return false;
       if (!query) return true;
 
@@ -2789,7 +2767,7 @@ export default function SiBSChat({
 
       return haystack.includes(query);
     });
-  }, [chat?.conversations, conversationSearch, chatClockMs]);
+  }, [chat?.conversations, conversationSearch, chatClockMs, currentSibsId, canRequestHelpdesk]);
 
   const chatSidebarFolders = useMemo(() => {
     const folders = { private: [], groups: [], it: [], taHr: [] };
@@ -2823,7 +2801,13 @@ export default function SiBSChat({
     ].filter(isVisible);
   }, [filteredConversations, chatSearchActive]);
 
-  const activeConversation = chat?.activeConversation || null;
+  // A support-account thread must not bypass the Helpdesk dashboard by
+  // remaining selected in the shared ChatContext from an earlier visit.
+  const candidateActiveConversation = chat?.activeConversation;
+  const activeConversation = shouldShowHelpdeskInSibsChat(candidateActiveConversation, currentSibsId) &&
+    (!candidateActiveConversation?.isHelpdesk ||
+      canRequestHelpdesk(cleanText(candidateActiveConversation?.helpdeskCategory).toUpperCase()))
+    ? candidateActiveConversation || null : null;
 
   // The selected conversation can arrive before/after the refreshed list.
   // Compare IDs instead of depending on the entire conversation object so
@@ -2849,7 +2833,7 @@ export default function SiBSChat({
       const next = {
         private: selectedFolder === "private",
         groups: selectedFolder === "groups",
-        helpdesk: selectedFolder === "it" || selectedFolder === "taHr",
+        helpdesk: selectedFolder === "it" || selectedFolder === "taHr" || previous.helpdesk,
         it: selectedFolder === "it",
         taHr: selectedFolder === "taHr",
       };
@@ -2951,7 +2935,7 @@ export default function SiBSChat({
   ).toUpperCase();
   const helpdeskCaseStatusLabel = {
     OPEN: 'Open', IN_PROGRESS: 'In Progress', PENDING: 'Pending',
-    RESOLVED: 'Case Closed',
+    RESOLVED: 'Case Closed', REJECTED: 'Rejected',
   }[helpdeskCaseStatus] || 'Status';
   const canChangeHelpdeskStatus = Boolean(activeHelpdeskId && activeStatusTicket &&
     cleanText(activeStatusTicket.acceptedBySibsId) === currentSibsId &&
@@ -2997,28 +2981,39 @@ export default function SiBSChat({
   const [helpdeskDuty, setHelpdeskDuty] = useState(null);
   const [helpdeskDutyLoading, setHelpdeskDutyLoading] = useState(false);
   const [helpdeskDutyError, setHelpdeskDutyError] = useState(false);
+  const [helpdeskDutyCheckedAt, setHelpdeskDutyCheckedAt] = useState(null);
   useEffect(() => {
     setDutyRosterExpanded(false);
   }, [activeHelpdeskId]);
 
+  const isPersonalHelpdeskRequest = Boolean(activeConversation?.isHelpdesk &&
+    cleanText(activeConversation.createdBySibsId) === currentSibsId);
   const visibleHelpdeskDuty = helpdeskDuty?.conversationId === activeHelpdeskId
     ? helpdeskDuty : null;
 
+  // Attendance is displayed to both the requester and support team. It is
+  // NEVER inferred from chat-online presence: only Kronos clock-in without a
+  // clock-out qualifies as currently on duty. Refresh while this chat is open,
+  // including after returning to the browser tab; a short server-side cache
+  // protects Kronos from excessive traffic.
   useEffect(() => {
     if (!activeHelpdeskId) {
       setHelpdeskDuty(null);
       setHelpdeskDutyLoading(false);
       setHelpdeskDutyError(false);
+      setHelpdeskDutyCheckedAt(null);
       return undefined;
     }
     let active = true;
     let inProgress = false;
     let controller = null;
     setHelpdeskDuty(null);
+    setHelpdeskDutyCheckedAt(null);
     setHelpdeskDutyLoading(true);
     setHelpdeskDutyError(false);
+
     async function refreshAttendance() {
-      if (inProgress) return;
+      if (!active || inProgress || document.visibilityState === 'hidden') return;
       inProgress = true;
       controller = new AbortController();
       try {
@@ -3026,9 +3021,12 @@ export default function SiBSChat({
         if (active) {
           setHelpdeskDuty(result);
           setHelpdeskDutyError(!result);
+          if (result) setHelpdeskDutyCheckedAt(Date.now());
         }
       } catch (error) {
         if (active && error?.name !== 'CanceledError' && error?.name !== 'AbortError') {
+          // Preserve the last known roster, but flag failed refreshes. Never
+          // convert an API failure into 'no on-duty support'.
           setHelpdeskDutyError(true);
         }
       } finally {
@@ -3036,12 +3034,19 @@ export default function SiBSChat({
         if (active) setHelpdeskDutyLoading(false);
       }
     }
+
+    function refreshWhenVisible() {
+      if (document.visibilityState === 'visible') void refreshAttendance();
+    }
     void refreshAttendance();
-    // Avoid adding this to SiBS Chat's two-second message/presence poll.
-    const interval = window.setInterval(() => void refreshAttendance(), 120_000);
+    const interval = window.setInterval(refreshWhenVisible, 30_000);
+    document.addEventListener('visibilitychange', refreshWhenVisible);
+    window.addEventListener('focus', refreshWhenVisible);
     return () => {
       active = false;
       window.clearInterval(interval);
+      document.removeEventListener('visibilitychange', refreshWhenVisible);
+      window.removeEventListener('focus', refreshWhenVisible);
       controller?.abort();
     };
   }, [activeHelpdeskId]);
@@ -3196,31 +3201,18 @@ export default function SiBSChat({
   // An explicit Back action should keep the list visible until the user chooses
   // another thread. Otherwise the desktop auto-selection effect immediately
   // reopens the first conversation after selectConversation(null).
-  const explicitlyViewingListRef = useRef(false);
+  // The floating launcher opens the conversation list, never an empty/right
+  // conversation panel. Explicit selections and notification deep links reset
+  // this flag when they intentionally open a conversation.
+  const explicitlyViewingListRef = useRef(true);
   // Clear this guard only when the employee selects a conversation again
   // (handleSelectConversation), not when an old active ID is emitted during
   // Back navigation. Otherwise the desktop first-chat auto-selection can
   // immediately undo Back and reopen the same conversation.
 
-  // Selecting another chat is only needed when the selected ID or first
-  // available conversation changes, not after every presence/typing update.
-  const firstAvailableConversationId = Number(chat?.conversations?.[0]?.id || 0);
-  useEffect(() => {
-    if (!open || chat?.activeConversationId || !firstAvailableConversationId ||
-        explicitlyViewingListRef.current) return;
-
-    // On mobile, keep the conversation list visible until the user chooses a chat.
-    // Without this guard, pressing the mobile Back button clears the active chat,
-    // then this effect immediately re-opens the first conversation.
-    if (
-      typeof window !== "undefined" &&
-      window.matchMedia("(max-width: 639px)").matches
-    ) {
-      return;
-    }
-
-    void chat?.selectConversation?.(firstAvailableConversationId);
-  }, [chat?.activeConversationId, chat?.selectConversation, firstAvailableConversationId, open]);
+  // Do not auto-open the first chat on desktop. A conversation pane must open
+  // only after the employee selects a thread, starts a chat, or follows a
+  // targeted notification. Back must always return to the sidebar list.
 
   // When the selected chat is revoked on the server, also dismiss its info
   // overlay instead of leaving a stale Helpdesk/Group membership screen open.
@@ -3653,8 +3645,8 @@ export default function SiBSChat({
   async function submitGif(gif) {
     const gifUrl = cleanText(gif?.gifUrl);
     if (!gifUrl || sending || !activeConversation) return;
-    if (activeConversation?.isHelpdesk && activeConversation.caseStatus === "RESOLVED" &&
-        cleanText(activeConversation.createdBySibsId) !== currentSibsId) {
+    if (activeConversation?.isHelpdesk && (activeConversation.caseStatus === "REJECTED" ||
+        (activeConversation.caseStatus === "RESOLVED" && cleanText(activeConversation.createdBySibsId) !== currentSibsId))) {
       setLocalError("This Helpdesk case is closed. Support replies are disabled.");
       return;
     }
@@ -3688,8 +3680,8 @@ export default function SiBSChat({
 
   async function submitMessage() {
     const text = cleanText(draft);
-    if (activeConversation?.isHelpdesk && activeConversation.caseStatus === "RESOLVED" &&
-        cleanText(activeConversation.createdBySibsId) !== currentSibsId) {
+    if (activeConversation?.isHelpdesk && (activeConversation.caseStatus === "REJECTED" ||
+        (activeConversation.caseStatus === "RESOLVED" && cleanText(activeConversation.createdBySibsId) !== currentSibsId))) {
       setLocalError("This case is closed. Support replies are disabled. The requester can open a new case.");
       return;
     }
@@ -4043,6 +4035,11 @@ export default function SiBSChat({
 
     if (!open) {
       void ensureSibsChatSystemNotifications();
+      // Reopening the launcher starts in the conversation list even if the
+      // ChatContext remembered a previously selected conversation.
+      explicitlyViewingListRef.current = true;
+      setNewChatOpen(false);
+      setGroupInfoOpen(false);
     }
 
     setOpen((current) => !current);
@@ -4093,9 +4090,16 @@ export default function SiBSChat({
   const isCustomTheme = isChatThemeCustom(conversationTheme);
   const isThemeDark = isChatThemeDark(conversationTheme, imageLuminanceIsDark);
 
+  // Desktop and mobile use the same explicit selection rule. The desktop
+  // window widens to reveal the messages; mobile slides between full panes.
   const hasActiveMobileView = Boolean(
-    (activeConversation || newChatOpen) && !isNavigatingBack,
+    (newChatOpen || (activeConversation && !explicitlyViewingListRef.current)) &&
+      !isNavigatingBack,
   );
+  // Preserve the v31 close-button rule in this updated SiBSChat version.
+  // During the Back slide-out, keep the sidebar X hidden until the conversation
+  // pane has finished collapsing; show it once the sidebar is visible alone.
+  const showSidebarCloseButton = !hasActiveMobileView && !isNavigatingBack;
 
   function handleBackToList() {
     // If a Helpdesk/Group Info overlay is visible, Back first returns to the
@@ -4106,25 +4110,31 @@ export default function SiBSChat({
       return;
     }
     explicitlyViewingListRef.current = true;
+    // Expanded mode must also fold back into the sidebar-only window.
+    setIsExpanded(false);
+    setExpandedBounds(null);
     setHelpdeskStatusMenuOpen(false);
     setHelpdeskCloseConfirm(false);
     setGroupInfoOpen(false);
-    if (typeof window !== "undefined" && window.matchMedia?.("(max-width: 639px)")?.matches) {
-      setIsNavigatingBack(true);
-      if (navigateBackTimerRef.current) {
-        clearTimeout(navigateBackTimerRef.current);
-      }
-      navigateBackTimerRef.current = setTimeout(() => {
-        void chat?.selectConversation?.(null);
-        setIsNavigatingBack(false);
-        navigateBackTimerRef.current = null;
-      }, 300);
-    } else {
-      void chat?.selectConversation?.(null);
+    // Keep the conversation mounted for the 300ms slide-out, then clear the
+    // selection. Without this, the right pane instantly swaps to an empty
+    // state before the sidebar finishes expanding into view.
+    setIsNavigatingBack(true);
+    if (navigateBackTimerRef.current) {
+      clearTimeout(navigateBackTimerRef.current);
     }
+    navigateBackTimerRef.current = setTimeout(() => {
+      void chat?.selectConversation?.(null);
+      setIsNavigatingBack(false);
+      navigateBackTimerRef.current = null;
+    }, 300);
   }
 
   function handleCloseNewChat() {
+    if (!activeConversation || explicitlyViewingListRef.current) {
+      setIsExpanded(false);
+      setExpandedBounds(null);
+    }
     if (typeof window !== "undefined" && window.matchMedia?.("(max-width: 639px)")?.matches) {
       setIsNavigatingBack(true);
       if (navigateBackTimerRef.current) {
@@ -4137,6 +4147,47 @@ export default function SiBSChat({
       }, 300);
     } else {
       setNewChatOpen(false);
+    }
+  }
+
+  // Direct Helpdesk contact from the sidebar. Opening an existing draft or
+  // creating a thread does not open a case; the first message does that.
+  // Use the same endpoint and permissions as the former New Chat Helpdesk tab.
+  async function handleContactHelpdesk(category) {
+    if (!canRequestHelpdesk(category)) {
+      setHelpdeskStartError("This Helpdesk category is handled by your support team. Choose the other Helpdesk category for a personal request.");
+      return;
+    }
+    if (helpdeskRequestPendingRef.current) return;
+    helpdeskRequestPendingRef.current = true;
+    setHelpdeskStartingCategory(category);
+    setHelpdeskStartError("");
+    try {
+      const result = await chat.startHelpdeskConversation(category);
+      if (!Number(result?.id)) {
+        throw new Error("Unable to open the Helpdesk request.");
+      }
+      explicitlyViewingListRef.current = false;
+      if (navigateBackTimerRef.current) {
+        clearTimeout(navigateBackTimerRef.current);
+        navigateBackTimerRef.current = null;
+      }
+      setIsNavigatingBack(false);
+      setNewChatOpen(false);
+      setExpandedChatFolders((previous) => ({
+        ...previous,
+        helpdesk: true,
+        [category === "IT" ? "it" : "taHr"]: true,
+      }));
+    } catch (requestError) {
+      setHelpdeskStartError(
+        requestError?.response?.data?.message ||
+          requestError?.message ||
+          "Unable to contact the Helpdesk. Please try again.",
+      );
+    } finally {
+      helpdeskRequestPendingRef.current = false;
+      setHelpdeskStartingCategory("");
     }
   }
 
@@ -4225,11 +4276,13 @@ export default function SiBSChat({
         onDragLeave={handleChatDragLeave}
         onDrop={handleChatDrop}
         onDragEnd={() => setDraggingAttachments(false)}
-        className={`font-jakarta t-resize fixed right-4 z-[35] flex max-sm:!inset-0 max-sm:!h-[100dvh] max-sm:!w-screen max-sm:!rounded-none max-sm:!border-0 ${
+        className={`font-jakarta t-resize fixed right-4 z-[35] flex transition-[width,transform,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none max-sm:!inset-0 max-sm:!h-[100dvh] max-sm:!w-screen max-sm:!rounded-none max-sm:!border-0 ${
           hideTrigger
             ? "h-[min(720px,calc(100dvh-3rem))]"
             : "h-[min(720px,calc(100dvh-9rem))]"
-        } w-[min(960px,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-2xl sm:right-6 ${
+        } ${
+          hasActiveMobileView ? "w-[min(960px,calc(100vw-2rem))]" : "w-[min(300px,calc(100vw-2rem))]"
+        } overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-2xl sm:right-6 ${
           hideTrigger ? "" : "bottom-24"
         } ${
           open
@@ -4318,15 +4371,20 @@ export default function SiBSChat({
               >
                 {isExpanded ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
               </button>
-              <button
-                type="button"
-                onClick={() => setOpen(false)}
-                title="Close SiBS Chat"
-                aria-label="Close SiBS Chat"
-                className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/10 text-white transition hover:bg-white/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
-              >
-                <X size={17} />
-              </button>
+              {/* The sidebar Close control is only available when the conversation
+                  pane is hidden. The active conversation has its own Close and
+                  Back buttons, so avoid showing two close controls at once. */}
+              {showSidebarCloseButton ? (
+                <button
+                  type="button"
+                  onClick={() => setOpen(false)}
+                  title="Close SiBS Chat"
+                  aria-label="Close SiBS Chat"
+                  className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/10 text-white transition hover:bg-white/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+                >
+                  <X size={17} />
+                </button>
+              ) : null}
             </div>
           </header>
 
@@ -4343,6 +4401,19 @@ export default function SiBSChat({
             </label>
           </div>
 
+          {helpdeskRequestScopeError ? (
+            <p role="alert" className="mx-3 mt-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] font-semibold text-amber-800">
+              {helpdeskRequestScopeError}
+            </p>
+          ) : null}
+          {open && !requestableHelpdeskCategories ? (
+            <p className="mx-3 mt-2 text-[10px] font-semibold text-sibs-muted">Checking Helpdesk access…</p>
+          ) : null}
+          {helpdeskStartError ? (
+            <div role="alert" className="mx-3 mt-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-[11px] font-semibold text-red-700">
+              {helpdeskStartError}
+            </div>
+          ) : null}
           <div className="sibs-scrollbar min-h-0 flex-1 overflow-y-auto p-2">
             {chat.conversationsLoading && !chat.conversations.length ? (
               <div className="flex h-full items-center justify-center text-sibs-muted">
@@ -4358,9 +4429,6 @@ export default function SiBSChat({
                 const otherMember = conversation.otherMember;
                 const online = otherMember ? isMemberOnline(otherMember) : false;
                 const isHelpdeskThread = Boolean(conversation.isHelpdesk);
-                const requester = isHelpdeskThread ? getHelpdeskRequester(conversation) : null;
-                const requesterName = requester ? getChatMemberFullName(requester) : "";
-                const requesterId = cleanText(requester?.sibsId);
                 const helpdeskLabel = isHelpdeskThread
                   ? getHelpdeskCategoryLabel(conversation.helpdeskCategory) : "";
                 const conversationTypingIds = Array.isArray(
@@ -4437,39 +4505,29 @@ export default function SiBSChat({
                       onClick={() => handleSelectConversation(conversation.id)}
                       className="flex min-w-0 flex-1 items-center gap-3 px-3 py-2.5 text-left"
                     >
-                      <ChatAvatar
-                        employee={isHelpdeskThread ? requester : conversation.isGroup ? null : otherMember}
-                        initials={isHelpdeskThread ? requester?.initials : conversation.initials}
-                        online={isHelpdeskThread ? false : online}
-                        group={conversation.isGroup && !isHelpdeskThread}
-                        size="md"
-                      />
+                      {isHelpdeskThread ? (
+                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-sibs-cream-light text-sibs-orange">
+                          {cleanText(conversation.helpdeskCategory).toUpperCase() === "IT"
+                            ? <MonitorCog size={18} /> : <HeartHandshake size={18} />}
+                        </span>
+                      ) : (
+                        <ChatAvatar
+                          employee={conversation.isGroup ? null : otherMember}
+                          initials={conversation.initials}
+                          online={online}
+                          group={conversation.isGroup}
+                          size="md"
+                        />
+                      )}
                       <span className="min-w-0 flex-1">
                         {isHelpdeskThread ? (
                           <>
-                            {/* Keep the complete Helpdesk category and case state visible.
-                                The date used to share this row, leaving only enough
-                                room for a truncated "IT Support · Case C…" label. */}
-                            <span
-                              className="block w-full min-w-0 whitespace-normal break-words text-[10px] font-extrabold leading-4 text-sibs-orange"
-                              title={`${helpdeskLabel} · ${getHelpdeskCaseLabel(conversation)}`}
-                            >
-                              {helpdeskLabel} · {getHelpdeskCaseLabel(conversation)}
+                            <span className="block truncate text-[10px] font-extrabold text-sibs-orange">
+                              My {helpdeskLabel} request
                             </span>
-                            <span
-                              className="mt-0.5 block line-clamp-2 break-words text-[12px] font-extrabold leading-4 text-sibs-navy"
-                              title={`${requesterName}${requesterId ? ` (SIBS ID ${requesterId})` : ""}`}
-                            >
-                              {requesterName}
+                            <span className="mt-0.5 block truncate text-xs font-extrabold text-sibs-navy">
+                              {getHelpdeskCaseLabel(conversation)}
                             </span>
-                            {requesterId ? (
-                              <span
-                                className="mt-1 block min-w-0 truncate text-[10px] font-bold text-sibs-muted"
-                                title={`SiBS ID: ${requesterId}${cleanText(requester?.assignedLocationLabel) ? ` - ${cleanText(requester.assignedLocationLabel)}` : ""}`}
-                              >
-                                {`SiBS ID: ${requesterId}${cleanText(requester?.assignedLocationLabel) ? ` - ${cleanText(requester.assignedLocationLabel)}` : ""}`}
-                              </span>
-                            ) : null}
                             <span className="mt-0.5 flex min-w-0 items-center gap-2">
                               <span className={`min-w-0 flex-1 truncate text-[10px] ${conversationTypingLabel ? "font-bold text-sibs-orange" : "text-sibs-muted"}`}>
                                 {preview}
@@ -4614,15 +4672,15 @@ export default function SiBSChat({
         </aside>
 
         <div
-          className={`relative min-w-0 max-sm:flex-none sm:flex-1 flex flex-col max-sm:w-full max-sm:shrink-0 max-sm:transition-transform max-sm:duration-300 max-sm:ease-[cubic-bezier(0.22,1,0.36,1)] max-sm:will-change-transform motion-reduce:transition-none sm:translate-x-0 ${
+          className={`relative min-w-0 max-sm:flex-none sm:flex-1 flex flex-col max-sm:w-full max-sm:shrink-0 transition-[transform,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform motion-reduce:transition-none ${
             hasActiveMobileView
-              ? "max-sm:-translate-x-full max-sm:pointer-events-auto"
-              : "max-sm:translate-x-0 max-sm:pointer-events-none"
+              ? "max-sm:-translate-x-full max-sm:pointer-events-auto sm:translate-x-0 sm:opacity-100 sm:pointer-events-auto"
+              : "max-sm:translate-x-0 max-sm:pointer-events-none sm:translate-x-6 sm:opacity-0 sm:pointer-events-none"
           }`}
         >
           {activeConversation ? (
             <>
-              <header className={`relative z-30 flex ${activeConversation.isHelpdesk ? "h-[82px]" : "h-[68px]"} shrink-0 items-center gap-1.5 border-b border-white/10 bg-sibs-navy px-2 text-white shadow-xs sm:gap-3 sm:px-4`}>
+              <header className="relative z-30 flex h-[68px] shrink-0 items-center gap-1.5 border-b border-white/10 bg-sibs-navy px-2 text-white shadow-xs sm:gap-3 sm:px-4">
                 <button
                   type="button"
                   onClick={handleBackToList}
@@ -4632,26 +4690,35 @@ export default function SiBSChat({
                 >
                   <ArrowLeft size={18} />
                 </button>
-                <ChatAvatar
-                  employee={activeConversation.isGroup ? null : activeOtherMember}
-                  initials={activeConversation.initials}
-                  online={activePrivateOnline}
-                  group={activeConversation.isGroup}
-                  size="sm"
-                />
+                {activeConversation.isHelpdesk ? (
+                  <span
+                    className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/20 bg-white/10 text-sibs-orange"
+                    aria-hidden="true"
+                  >
+                    {cleanText(activeConversation.helpdeskCategory).toUpperCase() === "IT"
+                      ? <MonitorCog size={19} />
+                      : <HeartHandshake size={19} />}
+                  </span>
+                ) : (
+                  <ChatAvatar
+                    employee={activeConversation.isGroup ? null : activeOtherMember}
+                    initials={activeConversation.initials}
+                    online={activePrivateOnline}
+                    group={activeConversation.isGroup}
+                    size="sm"
+                  />
+                )}
                 <div className="min-w-0 flex-1">
                   <h3 className="truncate font-heading text-sm sm:text-base font-extrabold text-white">
-                    {activeConversation.title}
+                    {activeConversation.isHelpdesk
+                      ? getPersonalHelpdeskChatTitle(activeConversation.helpdeskCategory)
+                      : activeConversation.title}
                   </h3>
                   {activeConversation.isHelpdesk ? (
-                    <p
-                      className="mt-0.5 truncate text-[10px] font-semibold text-white/90"
-                      title={getHelpdeskRequesterOrganizationLabel(activeConversation)}
-                    >
-                      {getHelpdeskRequesterOrganizationLabel(activeConversation)}
+                    <p className="mt-1 truncate text-[10px] font-semibold text-white/75">
+                      Your request · {getHelpdeskCaseLabel(activeConversation)}
                     </p>
-                  ) : null}
-                  {activeConversation.isGroup ? (
+                  ) : activeConversation.isGroup ? (
                     <button
                       type="button"
                       onClick={() => setGroupInfoOpen(true)}
@@ -4659,14 +4726,9 @@ export default function SiBSChat({
                       className="mt-0.5 inline-flex items-center gap-1 text-left text-[10px] font-semibold text-white/75 transition hover:text-white"
                     >
                       <span>
-                        {activeConversation.isHelpdesk
-                          ? `${getHelpdeskCaseLabel(activeConversation)} · `
-                          : ""}
                         {activeConversation.members?.length || 0} member
                         {(activeConversation.members?.length || 0) === 1 ? "" : "s"}
-                        {activeConversation.isHelpdesk && visibleHelpdeskDuty
-                          ? ` · ${visibleHelpdeskDuty.presentCount} present today · ${visibleHelpdeskDuty.clockedInCount} clocked in`
-                          : ''}
+
                       </span>
                     </button>
                   ) : (
@@ -4693,7 +4755,7 @@ export default function SiBSChat({
                         aria-expanded={canChangeHelpdeskStatus ? helpdeskStatusMenuOpen : undefined}
                         title={canChangeHelpdeskStatus
                           ? 'Update this case status'
-                          : helpdeskCaseStatus === 'RESOLVED'
+                          : ['RESOLVED', 'REJECTED'].includes(helpdeskCaseStatus)
                             ? 'This case is closed'
                             : helpdeskStatusLoading
                               ? 'Checking the accepted support employee…'
@@ -4713,7 +4775,7 @@ export default function SiBSChat({
                       >
                         {helpdeskStatusSaving || helpdeskStatusLoading ? (
                           <Loader2 size={12} className="shrink-0 animate-spin" />
-                        ) : helpdeskCaseStatus === 'RESOLVED' ? (
+                        ) : ['RESOLVED', 'REJECTED'].includes(helpdeskCaseStatus) ? (
                           <CheckCircle2 size={12} className="shrink-0" />
                         ) : null}
                         <span className="min-w-0 truncate">{helpdeskCaseStatusLabel}</span>
@@ -4783,7 +4845,8 @@ export default function SiBSChat({
               </header>
 
 
-              {activeConversation.isHelpdesk ? (
+              {activeConversation.isHelpdesk &&
+                cleanText(activeConversation.createdBySibsId) !== currentSibsId ? (
                 <div className="shrink-0 border-b border-emerald-100 bg-emerald-50 px-3 py-2 text-[11px] sm:px-4">
                   <div className="flex items-center justify-between gap-2">
                     <span className="font-extrabold text-emerald-800">Support on duty</span>
@@ -4814,7 +4877,7 @@ export default function SiBSChat({
                             />
                             <span className="flex min-w-0 flex-1 flex-col gap-1">
                               <span className="min-w-0 break-words text-[10px] font-semibold leading-snug text-sibs-navy">
-                                {getChatMemberDisplayName(member)}
+                                {getChatMemberFullName(member)}
                               </span>
                               <span className="flex min-w-0 items-start gap-1 break-words text-[10px] font-semibold leading-tight text-sibs-muted">
                                 <MapPin size={11} className="mt-px shrink-0" />
@@ -4841,6 +4904,75 @@ export default function SiBSChat({
                     </button>
                   ) : null}
                 </div>
+              ) : null}
+
+              {isPersonalHelpdeskRequest ? (
+                <>
+                  <div className="shrink-0 border-b border-sibs-border bg-sibs-cream-subtle px-4 py-2.5">
+                    <p className="text-[11px] font-semibold leading-relaxed text-sibs-navy">
+                      <span className="font-extrabold text-sibs-orange">Helpdesk notice: </span>
+                      For employees with genuine work-related issues or concerns. Requests outside the team's support scope may be rejected with a reason.
+                    </p>
+                    {cleanText(activeConversation?.caseStatus).toUpperCase() === "REJECTED" && (
+                      <div role="status" className="mt-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-[11px] font-semibold text-rose-800">
+                        <strong>Request rejected.</strong> {activeConversation?.caseRejectionReason || "Contact the appropriate support team for your concern."}
+                        <span className="mt-1 block text-[10px]">This conversation is archived. Use Helpdesk on the left to start a new request.</span>
+                      </div>
+                    )}
+                  </div>
+                  <section className="shrink-0 border-b border-emerald-100 bg-emerald-50/80 px-3 py-2.5 text-[11px] sm:px-4" aria-label="Live support attendance">
+                    <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+                      <span className="inline-flex items-center gap-1.5 font-extrabold text-sibs-navy">
+                        <span className="inline-block h-2 w-2 rounded-full bg-emerald-500" aria-hidden="true" />
+                        {cleanText(activeConversation.helpdeskCategory).toUpperCase() === 'IT' ? 'IT Support' : 'TA/HR Support'} on duty
+                      </span>
+                      <span className="text-[10px] font-semibold text-emerald-800">
+                        {visibleHelpdeskDuty
+                          ? `${visibleHelpdeskDuty.clockedInCount} clocked in`
+                          : helpdeskDutyLoading ? 'Checking attendance…' : 'Attendance not verified'}
+                      </span>
+                    </div>
+                    <div role="status" aria-live="polite" className="mt-1.5">
+                      {helpdeskDutyLoading && !visibleHelpdeskDuty ? (
+                        <span className="text-[10px] font-semibold text-sibs-muted">Checking Kronos attendance for available support…</span>
+                      ) : !visibleHelpdeskDuty ? (
+                        <span className="text-[10px] font-semibold text-sibs-muted">Support availability is temporarily unavailable. You can still send your concern.</span>
+                      ) : onDutySupportMembers.length ? (
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          {(dutyRosterExpanded ? onDutySupportMembers : onDutySupportMembers.slice(0, 3)).map((member) => (
+                            <span key={member.sibsId} className="inline-flex max-w-full items-center gap-1.5 rounded-lg border border-emerald-200 bg-white px-2 py-1" title={`${getChatMemberFullName(member)} · Clocked in · SiBS ID ${member.sibsId}`}>
+                              <span className="min-w-0 max-w-[260px] whitespace-normal break-words text-[10px] font-bold leading-4 text-sibs-navy">
+                                {getChatMemberFullName(member)}
+                              </span>
+                              <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" aria-label="Clocked in" />
+                            </span>
+                          ))}
+                          {onDutySupportMembers.length > 3 && (
+                            <button
+                              type="button"
+                              onClick={() => setDutyRosterExpanded((expanded) => !expanded)}
+                              aria-expanded={dutyRosterExpanded}
+                              className="rounded-lg px-2 py-1 text-[10px] font-bold text-emerald-800 hover:bg-emerald-100"
+                            >
+                              {dutyRosterExpanded ? 'Show less' : `+${onDutySupportMembers.length - 3} more`}
+                            </button>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-[10px] font-semibold text-sibs-muted">
+                          {visibleHelpdeskDuty.unavailableCount > 0
+                            ? 'Some attendance records could not be verified. Current availability is uncertain.'
+                            : 'No support members are currently confirmed clocked in. You can still send your concern.'}
+                        </span>
+                      )}
+                    </div>
+                    <p className="mt-1.5 text-[9px] font-medium text-sibs-muted">
+                      Based on Kronos clock-in without clock-out · refreshes approximately every 30 seconds
+                      {helpdeskDutyCheckedAt ? ` · Last checked ${chatClockFormatter.format(new Date(helpdeskDutyCheckedAt))} PHT` : ''}
+                      {helpdeskDutyError && visibleHelpdeskDuty ? ' · Latest refresh unavailable' : ''}
+                    </p>
+                  </section>
+                </>
               ) : null}
 
               {(localError || chat.error) ? (
@@ -5682,17 +5814,31 @@ export default function SiBSChat({
                 ) : (
                   <div className="flex h-full items-center justify-center text-center">
                     <div className="chat-theme-empty-content mx-auto">
-                      <ChatAvatar
-                        employee={activeConversation.isGroup ? null : activeOtherMember}
-                        initials={activeConversation.initials}
-                        online={activePrivateOnline}
-                        group={activeConversation.isGroup}
-                        size="lg"
-                      />
+                      {activeConversation.isHelpdesk ? (
+                        <span
+                          className="mx-auto inline-flex h-12 w-12 items-center justify-center rounded-full bg-sibs-navy text-white"
+                          aria-hidden="true"
+                        >
+                          {cleanText(activeConversation.helpdeskCategory).toUpperCase() === "IT"
+                            ? <MonitorCog size={21} />
+                            : <HeartHandshake size={21} />}
+                        </span>
+                      ) : (
+                        <ChatAvatar
+                          employee={activeConversation.isGroup ? null : activeOtherMember}
+                          initials={activeConversation.initials}
+                          online={activePrivateOnline}
+                          group={activeConversation.isGroup}
+                          size="lg"
+                        />
+                      )}
                       <p className="chat-theme-empty-title mt-3 text-sm font-extrabold text-sibs-navy">
-                        {activeConversation.title}
+                        {activeConversation.isHelpdesk
+                          ? getPersonalHelpdeskChatTitle(activeConversation.helpdeskCategory)
+                          : activeConversation.title}
                       </p>
-                      {!activeConversation.isGroup &&
+                      {!activeConversation.isHelpdesk &&
+                      !activeConversation.isGroup &&
                       activePrivateNickname &&
                       activePrivateFullName &&
                       activePrivateNickname !== activePrivateFullName ? (
@@ -6122,7 +6268,7 @@ export default function SiBSChat({
                     <textarea
                       ref={textareaRef}
                       value={draft}
-                      disabled={activeConversation?.isHelpdesk && activeConversation.caseStatus === "RESOLVED" && cleanText(activeConversation.createdBySibsId) !== currentSibsId}
+                      disabled={activeConversation?.isHelpdesk && (activeConversation.caseStatus === "REJECTED" || (activeConversation.caseStatus === "RESOLVED" && cleanText(activeConversation.createdBySibsId) !== currentSibsId))}
                       onChange={(event) => {
                         const nextValue = event.target.value.slice(0, 5000);
                         setDraft(nextValue);
@@ -6163,7 +6309,7 @@ export default function SiBSChat({
                   <button
                     type="button"
                     onClick={submitMessage}
-                    disabled={sending || attachmentsLoading || (!cleanText(draft) && !selectedImages.length) || (activeConversation?.isHelpdesk && activeConversation.caseStatus === "RESOLVED" && cleanText(activeConversation.createdBySibsId) !== currentSibsId)}
+                    disabled={sending || attachmentsLoading || (!cleanText(draft) && !selectedImages.length) || (activeConversation?.isHelpdesk && (activeConversation.caseStatus === "REJECTED" || (activeConversation.caseStatus === "RESOLVED" && cleanText(activeConversation.createdBySibsId) !== currentSibsId)))}
                     aria-label={attachmentsLoading ? "Preparing attachments" : "Send message"}
                     className="relative z-[1] inline-flex h-10 w-10 shrink-0 self-end items-center justify-center rounded-xl bg-sibs-orange text-white shadow-xs transition hover:bg-sibs-button-hover active:scale-[0.96] disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-sibs-faint disabled:shadow-none disabled:opacity-100"
                   >
@@ -6185,9 +6331,6 @@ export default function SiBSChat({
             }
             onCreateGroup={(payload) =>
               runAction(() => chat.startGroupConversation(payload))
-            }
-            onHelpdeskChat={(category) =>
-              runAction(() => chat.startHelpdeskConversation(category))
             }
           />
 

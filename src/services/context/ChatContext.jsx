@@ -1,3 +1,4 @@
+import { shouldShowHelpdeskInSibsChat } from "@/lib/utils/chat/chatHelpdeskVisibility";
 /* eslint-disable react-refresh/only-export-components */
 import {
   createContext,
@@ -498,6 +499,15 @@ export function ChatProvider({ children }) {
         senderSibsId === currentSibsId ||
         isMembershipActivity
       ) {
+        return false;
+      }
+
+      // A support-side Helpdesk request belongs to its dedicated HRIS page,
+      // not the floating SiBS Chat notification/open-conversation workflow.
+      const notificationConversation = conversationsRef.current.find(
+        (item) => Number(item?.id || 0) === id,
+      );
+      if (notificationConversation && !shouldShowHelpdeskInSibsChat(notificationConversation, currentSibsId)) {
         return false;
       }
 
@@ -1877,10 +1887,11 @@ export function ChatProvider({ children }) {
   const totalUnread = useMemo(
     () =>
       conversations.reduce(
-        (total, conversation) => total + Number(conversation.unreadCount || 0),
-        0,
-      ),
-    [conversations],
+        (total, conversation) => total + (
+          shouldShowHelpdeskInSibsChat(conversation, currentSibsId)
+            ? Number(conversation.unreadCount || 0) : 0
+        ), 0),
+    [conversations, currentSibsId],
   );
 
   const value = useMemo(

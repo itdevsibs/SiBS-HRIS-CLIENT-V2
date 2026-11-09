@@ -74,6 +74,21 @@ export async function getChatHelpdeskSupportScope({ signal } = {}) {
   };
 }
 
+/**
+ * Requester-only options: an IT team member may ask TA/HR for help, and a
+ * TA/HR member may ask IT. Determined by the HRIS department roster; never
+ * guess from admin_access, nicknames or chat conversation memberships.
+ * Fail closed if the API does not yet supply this scope.
+ */
+export async function getChatHelpdeskRequestableCategories({ signal } = {}) {
+  const response = await api.get("/chat/helpdesk/support-access", { signal });
+  const categories = response.data?.data?.requestableCategories;
+  if (!Array.isArray(categories)) {
+    throw new Error("Helpdesk request permissions are unavailable. Update the HRIS Server.");
+  }
+  return categories.filter((category) => category === "IT" || category === "TA_HR");
+}
+
 // Preserve the existing categories-only API for other chat consumers.
 export async function getChatHelpdeskSupportAccess({ signal } = {}) {
   const scope = await getChatHelpdeskSupportScope({ signal });
@@ -101,8 +116,8 @@ export async function acceptHelpdeskTicket(conversationId) {
   return response.data?.data || null;
 }
 
-export async function updateHelpdeskTicketStatus(conversationId, status) {
-  const response = await api.patch(`/chat/helpdesk/requests/${encodeURIComponent(conversationId)}/status`, { status });
+export async function updateHelpdeskTicketStatus(conversationId, status, reason = "") {
+  const response = await api.patch(`/chat/helpdesk/requests/${encodeURIComponent(conversationId)}/status`, { status, reason });
   return response.data?.data || null;
 }
 
