@@ -12,13 +12,14 @@ import {
   X,
 } from "lucide-react";
 
-import { askSibsAi } from "@/lib/axios/ai";
+import { askN8nAi } from "@/lib/axios/n8n-ai-chat";
 import {
   buildConversationPayload,
   getAiErrorMessage,
   normalizeAiAnswerPayload,
 } from "@/lib/utils/ai/aiAssistantHelpers";
 import { useUser } from "@/services/context/UserContext";
+import HermesResponseRenderer from "./HermesResponseRenderer";
 
 const SUGGESTED_PROMPTS = [
   "What is my profile?",
@@ -67,7 +68,7 @@ function InsightList({ title, items, icon, tone = "default" }) {
   );
 }
 
-function AssistantMessage({ message }) {
+function AssistantMessage({ message, hermes = false, onContinue = null }) {
   return (
     <div className="flex justify-start">
       <div className="max-w-[92%] space-y-3 rounded-2xl rounded-bl-md border border-sibs-border bg-white px-3.5 py-3 shadow-xs">
@@ -75,12 +76,23 @@ function AssistantMessage({ message }) {
           <span className="inline-flex h-6 w-6 items-center justify-center rounded-lg bg-sibs-navy text-white">
             <Bot size={13} />
           </span>
-          SiBS AI
+          {hermes ? "SiBS AI · Hermes" : "SiBS AI · n8n"}
         </div>
 
-        <p className="whitespace-pre-wrap sibs-text-xs font-medium leading-6 text-sibs-navy">
-          {message.content}
-        </p>
+        {hermes ? (
+          <HermesResponseRenderer
+            content={message.content}
+            report={message.report}
+            verifiedData={message.verifiedData}
+            status={message.status}
+            finishReason={message.finishReason}
+            onContinue={onContinue}
+          />
+        ) : (
+          <p className="whitespace-pre-wrap sibs-text-xs font-medium leading-6 text-sibs-navy">
+            {message.content}
+          </p>
+        )}
 
         <InsightList
           title="Highlights"
@@ -105,6 +117,11 @@ function AssistantMessage({ message }) {
             Live HRIS data used: {message.toolsUsed.join(", ")}
           </p>
         ) : null}
+        {hermes && message.responseMs != null ? (
+          <p className="border-t border-sibs-border pt-2 sibs-text-micro font-semibold text-sibs-faint">
+            Response time: {message.responseMs} ms
+          </p>
+        ) : null}
       </div>
     </div>
   );
@@ -121,11 +138,14 @@ function UserMessage({ message }) {
 }
 
 export default function SiBSAIAssistant({
+  variant = "n8n",
   enabled = true,
   isOpen: controlledOpen,
   onOpenChange,
   hideTrigger = false,
 }) {
+  const hermes = variant === "hermes";
+  const assistantName = hermes ? "Ask SiBS AI (Hermes)" : "Ask SiBS AI (n8n)";
   const { user, loading: userLoading } = useUser() || {};
   const [internalOpen, setInternalOpen] = useState(false);
   const isControlled = controlledOpen !== undefined;
@@ -155,8 +175,15 @@ export default function SiBSAIAssistant({
   const scrollRef = useRef(null);
   const dragStateRef = useRef(null);
   const suppressTriggerClickRef = useRef(false);
+  const activeRequestControllerRef = useRef(null);
 
-  const visible = enabled && !userLoading && Boolean(user);
+  useEffect(() => {
+    return () => {
+      activeRequestControllerRef.current?.abort();
+    };
+  }, []);
+
+  const visible = enabled && !userLoading && Boolean(user) && (!hermes || import.meta.env.DEV);
   const canSend = Boolean(question.trim()) && !submitting;
 
   const welcomeName = useMemo(() => {
@@ -335,18 +362,23 @@ export default function SiBSAIAssistant({
   }
 
   function handleNewChat() {
-    if (submitting) return;
-
+    activeRequestControllerRef.current?.abort();
     setMessages([]);
     setConversationId("");
     setQuestion("");
     setError("");
+    setSubmitting(false);
     window.requestAnimationFrame(() => inputRef.current?.focus?.());
   }
 
   async function submitQuestion(value = question) {
     const cleanQuestion = String(value || "").trim();
     if (!cleanQuestion || submitting) return;
+
+    // Abort any pending in-flight request before launching new one
+    activeRequestControllerRef.current?.abort();
+    const controller = new AbortController();
+    activeRequestControllerRef.current = controller;
 
     const conversation = buildConversationPayload(messages);
     const userMessage = {
@@ -361,7 +393,33 @@ export default function SiBSAIAssistant({
     setSubmitting(true);
 
     try {
-      const response = await askSibsAi({
+      if (hermes && import.meta.env.DEV) {
+        // eslint-disable-next-line react-hooks/purity -- timing starts on the submit event
+        const startedAt = performance.now();
+        const [{ default: api }, { sendHermesAgentChat }] = await Promise.all([
+          import("@/lib/axios/api-template"),
+          import("@/lib/axios/hermes-agent-chat"),
+        ]);
+        const response = await sendHermesAgentChat({
+          apiClient: api,
+          message: cleanQuestion,
+          conversation,
+          includeReport: true,
+          signal: controller.signal,
+        });
+        setMessages((current) => [...current, {
+          id: `assistant-${Date.now()}`,
+          role: "assistant",
+          content: response.reply,
+          status: response.status || "completed",
+          finishReason: response.finishReason || "stop",
+          responseMs: Math.round(performance.now() - startedAt),
+          report: response.report,
+          verifiedData: response.verifiedData,
+        }]);
+        return;
+      }
+      const response = await askN8nAi({
         message: cleanQuestion,
         conversation,
         conversationId,
@@ -390,11 +448,23 @@ export default function SiBSAIAssistant({
         },
       ]);
     } catch (requestError) {
+      if (
+        requestError?.name === "AbortError" ||
+        requestError?.name === "CanceledError" ||
+        requestError?.code === "ERR_CANCELED"
+      ) {
+        return;
+      }
       setError(getAiErrorMessage(requestError));
     } finally {
       setSubmitting(false);
     }
   }
+
+  const handleContinue = useCallback(() => {
+    if (submitting) return;
+    void submitQuestion("Please continue where you left off.");
+  }, [submitting, submitQuestion]);
 
   const assistantUi = (
     <>
@@ -408,7 +478,7 @@ export default function SiBSAIAssistant({
           onPointerMove={handleTriggerPointerMove}
           onPointerUp={handleTriggerPointerUp}
           onPointerCancel={handleTriggerPointerCancel}
-          aria-label="Open Ask SiBS AI"
+          aria-label={`Open ${assistantName}`}
           aria-expanded={open}
           className={`font-jakarta fixed z-[120] transform-gpu inline-flex select-none items-center gap-2 sm:gap-2.5 rounded-2xl bg-sibs-navy p-2 sm:px-4 sm:py-3 font-heading text-sm font-bold tracking-tight text-white shadow-xl border border-white/10 transition-[transform,background-color,box-shadow,opacity] duration-200 hover:bg-sibs-tertiary-2 focus:outline-none focus:ring-4 focus:ring-sibs-orange/20 ${
             triggerPosition ? "" : "right-4 sm:right-6"
@@ -435,7 +505,7 @@ export default function SiBSAIAssistant({
           <span className="inline-flex h-8 w-8 sm:h-7 sm:w-7 items-center justify-center rounded-xl bg-sibs-orange text-white shadow-xs">
             <Sparkles size={16} />
           </span>
-          <span className="hidden xs:inline sm:inline pr-1">Ask SiBS AI</span>
+          <span className="hidden xs:inline sm:inline pr-1">{assistantName}</span>
         </button>
       ) : null}
 
@@ -459,7 +529,7 @@ export default function SiBSAIAssistant({
 
         {/* Aside Container (No Top Accent Bar per user preference) */}
         <aside
-          aria-label="Ask SiBS AI"
+          aria-label={assistantName}
           className={`font-jakarta absolute inset-y-0 right-0 flex w-full max-w-[430px] flex-col border-l border-sibs-border-subtle bg-white shadow-2xl transition-transform duration-300 ease-out max-sm:max-w-none ${
             open ? "translate-x-0" : "translate-x-full"
           }`}
@@ -475,7 +545,7 @@ export default function SiBSAIAssistant({
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
                     <h2 className="truncate font-heading text-base 2xl:text-lg font-bold tracking-tight text-white">
-                      Ask SiBS AI
+                      {assistantName}
                     </h2>
                     <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-400/15 px-2 py-0.5 sibs-text-micro font-extrabold uppercase tracking-wide text-emerald-300 border border-emerald-400/20">
                       <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
@@ -494,7 +564,7 @@ export default function SiBSAIAssistant({
                   onClick={handleNewChat}
                   disabled={submitting}
                   title="New chat"
-                  aria-label="Start a new SiBS AI chat"
+                  aria-label={`Start a new ${assistantName} chat`}
                   className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-white/70 transition hover:bg-white/10 hover:text-white active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30 disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   <RefreshCw size={15} />
@@ -562,7 +632,12 @@ export default function SiBSAIAssistant({
                   message.role === "user" ? (
                     <UserMessage key={message.id} message={message} />
                   ) : (
-                    <AssistantMessage key={message.id} message={message} />
+                    <AssistantMessage
+                      key={message.id}
+                      message={message}
+                      hermes={hermes}
+                      onContinue={handleContinue}
+                    />
                   ),
                 )}
               </div>
@@ -572,7 +647,7 @@ export default function SiBSAIAssistant({
               <div className="mt-3 flex justify-start">
                 <div className="inline-flex items-center gap-2 rounded-2xl rounded-bl-md border border-sibs-border bg-white px-3.5 py-3 sibs-text-xs font-semibold text-sibs-muted shadow-xs">
                   <LoaderCircle size={15} className="animate-spin text-sibs-orange" />
-                  SiBS AI is checking authorized HRIS data...
+                  {hermes ? "Hermes is preparing an answer..." : "n8n AI is checking authorized HRIS data..."}
                 </div>
               </div>
             ) : null}
@@ -583,7 +658,7 @@ export default function SiBSAIAssistant({
                   <AlertTriangle className="mt-0.5 shrink-0 text-rose-600" size={15} />
                   <div>
                     <p className="sibs-text-xs font-extrabold text-rose-700">
-                      SiBS AI could not complete that request
+                      {hermes ? "Hermes could not complete that request" : "n8n AI could not complete that request"}
                     </p>
                     <p className="mt-1 sibs-text-micro font-semibold leading-5 text-rose-600">
                       {error}
@@ -600,7 +675,7 @@ export default function SiBSAIAssistant({
               <textarea
                 ref={inputRef}
                 value={question}
-                onChange={(event) => setQuestion(event.target.value.slice(0, 4000))}
+                onChange={(event) => setQuestion(event.target.value.slice(0, hermes ? 2000 : 4000))}
                 onKeyDown={(event) => {
                   if (event.key === "Enter" && !event.shiftKey) {
                     event.preventDefault();
@@ -609,7 +684,7 @@ export default function SiBSAIAssistant({
                 }}
                 disabled={submitting}
                 rows={2}
-                maxLength={4000}
+                maxLength={hermes ? 2000 : 4000}
                 placeholder="Ask about your authorized HRIS data..."
                 className="max-h-32 min-h-[52px] w-full resize-none bg-transparent px-2 py-1.5 sibs-text-xs font-medium leading-5 text-sibs-navy outline-none placeholder:text-sibs-faint disabled:cursor-not-allowed disabled:opacity-60"
               />

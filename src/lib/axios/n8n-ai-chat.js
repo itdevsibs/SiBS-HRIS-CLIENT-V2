@@ -1,6 +1,6 @@
 import api from "./api-template";
 
-export async function askSibsAi({
+export async function askN8nAi({
   message,
   conversation = [],
   conversationId = "",
