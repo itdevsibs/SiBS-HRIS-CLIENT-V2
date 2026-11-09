@@ -4096,6 +4096,10 @@ export default function SiBSChat({
     (newChatOpen || (activeConversation && !explicitlyViewingListRef.current)) &&
       !isNavigatingBack,
   );
+  // Preserve the v31 close-button rule in this updated SiBSChat version.
+  // During the Back slide-out, keep the sidebar X hidden until the conversation
+  // pane has finished collapsing; show it once the sidebar is visible alone.
+  const showSidebarCloseButton = !hasActiveMobileView && !isNavigatingBack;
 
   function handleBackToList() {
     // If a Helpdesk/Group Info overlay is visible, Back first returns to the
@@ -4370,7 +4374,7 @@ export default function SiBSChat({
               {/* The sidebar Close control is only available when the conversation
                   pane is hidden. The active conversation has its own Close and
                   Back buttons, so avoid showing two close controls at once. */}
-              {!hasActiveMobileView ? (
+              {showSidebarCloseButton ? (
                 <button
                   type="button"
                   onClick={() => setOpen(false)}
