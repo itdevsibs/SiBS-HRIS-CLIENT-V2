@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ChevronRight, MessageCircleMore, Sparkles, X } from "lucide-react";
+import { BrainCircuit, ChevronRight, MessageCircleMore, Sparkles, X } from "lucide-react";
 import { createPortal } from "react-dom";
 
 import { useUser } from "@/services/context/UserContext";
@@ -50,9 +50,11 @@ export default function SiBSAssistantLauncher({
   onOpenAi,
   onToggleAi,
   onOpenChat,
+  onOpenHermes,
   onToggleChat,
   isAiOpen = false,
   isChatOpen = false,
+  isHermesOpen = false,
 }) {
   const { user, loading: userLoading } = useUser() || {};
   const chat = useChat();
@@ -137,6 +139,7 @@ export default function SiBSAssistantLauncher({
   // Close menu when an assistant drawer transitions to open
   const prevAiOpenRef = useRef(isAiOpen);
   const prevChatOpenRef = useRef(effectiveChatOpen);
+  const prevHermesOpenRef = useRef(isHermesOpen);
 
   useEffect(() => {
     if (typeof window === "undefined") return undefined;
@@ -159,13 +162,15 @@ export default function SiBSAssistantLauncher({
   useEffect(() => {
     if (
       (!prevAiOpenRef.current && isAiOpen) ||
+      (!prevHermesOpenRef.current && isHermesOpen) ||
       (!prevChatOpenRef.current && effectiveChatOpen)
     ) {
       setMenuOpen(false);
     }
     prevAiOpenRef.current = isAiOpen;
     prevChatOpenRef.current = effectiveChatOpen;
-  }, [isAiOpen, effectiveChatOpen]);
+    prevHermesOpenRef.current = isHermesOpen;
+  }, [isAiOpen, isHermesOpen, effectiveChatOpen]);
 
   // Keep launcher within viewport on resize
   useEffect(() => {
@@ -353,6 +358,11 @@ export default function SiBSAssistantLauncher({
     onOpenAi?.();
   }, [onOpenAi]);
 
+  const handleSelectHermes = useCallback(() => {
+    setMenuOpen(false);
+    onOpenHermes?.();
+  }, [onOpenHermes]);
+
   const handleSelectChat = useCallback(() => {
     if (!isChatAllowed) return;
     setMenuOpen(false);
@@ -363,7 +373,7 @@ export default function SiBSAssistantLauncher({
     }
   }, [isChatAllowed, isChatOpen, onToggleChat, onOpenChat]);
 
-  if (!isVisible || isAiOpen || effectiveChatOpen) return null;
+  if (!isVisible || isAiOpen || isHermesOpen || effectiveChatOpen) return null;
 
   const isUpperHalf = triggerPosition
     ? triggerPosition.top < (typeof window !== "undefined" ? window.innerHeight / 2 : 400)
@@ -434,7 +444,7 @@ export default function SiBSAssistantLauncher({
 
           {/* Menu Options */}
           <div className="mt-2 space-y-1.5">
-            {/* Option 1: Ask SiBS AI */}
+            {/* Option 1: Ask SiBS AI (n8n) */}
             <button
               ref={firstItemRef}
               role="menuitem"
@@ -450,7 +460,7 @@ export default function SiBSAssistantLauncher({
                   Ask SiBS AI
                 </p>
                 <p className="text-[11px] font-semibold text-sibs-muted">
-                  HRIS questions & insights
+                  HRIS questions & insights · n8n
                 </p>
               </div>
               <ChevronRight
@@ -458,8 +468,32 @@ export default function SiBSAssistantLauncher({
                 className="shrink-0 text-sibs-faint transition group-hover:translate-x-0.5 group-hover:text-sibs-orange"
               />
             </button>
-
-            {/* Option 2: SiBS Chat */}
+            {/* Option 2: Ask SiBS AI (Hermes) */}
+            {import.meta.env.DEV ? (
+              <button
+                role="menuitem"
+                type="button"
+                onClick={handleSelectHermes}
+                className="group flex min-h-[52px] w-full items-center gap-3 rounded-xl border border-transparent p-2.5 text-left transition hover:border-sibs-border hover:bg-sibs-surface focus:border-sibs-orange focus:bg-sibs-surface focus:outline-none"
+              >
+                <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sibs-navy text-white shadow-xs transition group-hover:scale-105">
+                  <BrainCircuit size={18} />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="font-heading text-sm font-bold text-sibs-navy group-hover:text-sibs-orange">
+                    Ask SiBS AI (Hermes)
+                  </p>
+                  <p className="text-[11px] font-semibold text-sibs-muted">
+                    Hermes agent · AI benchmark
+                  </p>
+                </div>
+                <ChevronRight
+                  size={16}
+                  className="shrink-0 text-sibs-faint transition group-hover:translate-x-0.5 group-hover:text-sibs-orange"
+                />
+              </button>
+            ) : null}
+            {/* Option 3: SiBS Chat */}
             <button
               role="menuitem"
               type="button"

@@ -64,6 +64,8 @@ docs/superpowers/
 !src/test/remediation.test.jsx
 /tests/
 *.test.*
+!src/components/ai/HermesAssistant.test.jsx
+!src/lib/axios/hermes-agent-chat.test.jsx
 !src/lib/axios/hrisQueryCache.test.jsx
 !src/lib/axios/apiTemplateCoalescing.test.jsx
 !src/pages/recruitment/JobDescriptionPage.test.jsx

@@ -51,7 +51,7 @@ function LazyChatSurface({ enabled, isOpen, onOpenChange }) {
   );
 }
 
-function LazyAiAssistantSurface({ enabled, isOpen, onOpenChange }) {
+function LazyAiAssistantSurface({ enabled, isOpen, onOpenChange, variant }) {
   const [hasMounted, setHasMounted] = useState(Boolean(isOpen));
   useEffect(() => {
     if (isOpen) {
@@ -68,6 +68,7 @@ function LazyAiAssistantSurface({ enabled, isOpen, onOpenChange }) {
   return (
     <Suspense fallback={null}>
       <SiBSAIAssistant
+        variant={variant}
         enabled={enabled}
         isOpen={isOpen}
         onOpenChange={onOpenChange}
@@ -88,6 +89,17 @@ export default function AppShell({ children }) {
 
   const [aiOpen, setAiOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
+  const [hermesOpen, setHermesOpen] = useState(false);
+
+  const handleOpenHermes = useCallback(() => {
+    setAiOpen(false);
+    setChatOpen(false);
+    setHermesOpen(true);
+  }, []);
+
+  const handleHermesOpenChange = useCallback((isOpen) => {
+    setHermesOpen(isOpen);
+  }, []);
 
   // Pages can select a conversation through ChatContext and then request
   // the existing chat surface without creating another message renderer.
@@ -101,21 +113,25 @@ export default function AppShell({ children }) {
   }, []);
 
   const handleOpenAi = useCallback(() => {
+    setHermesOpen(false);
     setChatOpen(false);
     setAiOpen(true);
   }, []);
 
   const handleToggleAi = useCallback(() => {
+    setHermesOpen(false);
     setChatOpen(false);
     setAiOpen((prev) => !prev);
   }, []);
 
   const handleOpenChat = useCallback(() => {
+    setHermesOpen(false);
     setAiOpen(false);
     setChatOpen(true);
   }, []);
 
   const handleToggleChat = useCallback(() => {
+    setHermesOpen(false);
     setAiOpen(false);
     setChatOpen((prev) => !prev);
   }, []);
@@ -123,6 +139,7 @@ export default function AppShell({ children }) {
   const handleChatOpenChange = useCallback((isOpen) => {
     setChatOpen(isOpen);
     if (isOpen) {
+      setHermesOpen(false);
       setAiOpen(false);
     }
   }, []);
@@ -130,6 +147,7 @@ export default function AppShell({ children }) {
   const handleAiOpenChange = useCallback((isOpen) => {
     setAiOpen(isOpen);
     if (isOpen) {
+      setHermesOpen(false);
       setChatOpen(false);
     }
   }, []);
@@ -179,14 +197,24 @@ export default function AppShell({ children }) {
         isOpen={aiOpen}
         onOpenChange={handleAiOpenChange}
       />
+      {import.meta.env.DEV ? (
+        <LazyAiAssistantSurface
+          variant="hermes"
+          enabled={!hideSidebar && !isFinalInterviewForm}
+          isOpen={hermesOpen}
+          onOpenChange={handleHermesOpenChange}
+        />
+      ) : null}
       <SiBSAssistantLauncher
         enabled={!hideSidebar && !isFinalInterviewForm}
         onOpenAi={handleOpenAi}
         onToggleAi={handleToggleAi}
         onOpenChat={handleOpenChat}
+        onOpenHermes={handleOpenHermes}
         onToggleChat={handleToggleChat}
         isAiOpen={aiOpen}
         isChatOpen={chatOpen}
+        isHermesOpen={hermesOpen}
       />
       <LazyAdminLoginModal />
     </Providers>
