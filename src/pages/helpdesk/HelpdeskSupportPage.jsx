@@ -11,9 +11,11 @@ import {
   AlertCircle,
   ArrowUpRight,
   CalendarClock,
+  CheckCircle,
   CheckCircle2,
   Clock3,
   ClipboardList,
+  FolderOpen,
   Loader2,
   UserRound,
   X,
@@ -47,7 +49,7 @@ import { useChat } from "@/services/context/ChatContext";
 import { useUser } from "@/services/context/UserContext";
 import {
   getChatAttachmentUrl,
-  getChatHelpdeskSupportAccess,
+  getChatHelpdeskSupportScope,
   getHelpdeskTicketSummaries,
   getHelpdeskTicketDetails,
   getHelpdeskTicketEligibility,
@@ -80,6 +82,16 @@ const DATE_FORMATTER = new Intl.DateTimeFormat("en-PH", {
   hour12: true,
 });
 const ANIMATION = { summary: 60, table: 120, metric: 60 };
+
+// Open cases are requests that still need support action. A selected Helpdesk
+// category without a first message is a draft and never enters these counts.
+const ACTIVE_CASE_STATUSES = new Set(["OPEN", "IN_PROGRESS", "PENDING"]);
+function getCaseStatus(ticket, conversation = {}) {
+  const status = safeText(ticket?.status || conversation?.caseStatus).toUpperCase();
+  // Accept old CLOSED values in case the conversation cache predates the
+  // ticket API's RESOLVED status without changing persistent records.
+  return status === "CLOSED" ? "RESOLVED" : status;
+}
 
 function safeText(value) {
   return String(value ?? "").trim();
@@ -115,21 +127,74 @@ function getCaseNumber(ticket, conversation = {}) {
 function getCaseDisplayLabel(ticket, conversation = {}) {
   const caseNumber = getCaseNumber(ticket, conversation);
   if (!caseNumber) return "Case pending";
-  const status = safeText(ticket?.status || conversation?.caseStatus).toUpperCase();
+  const status = getCaseStatus(ticket, conversation);
   return `Case ${status === "RESOLVED" ? "Closed" : "Opened"} #${caseNumber}`;
 }
 
-function getResponseDisplay(ticket, nowMs) {
+// Response Time is separate from queue wait: acceptance -> the FIRST real
+// reply sent by a support member. Do not use secondsToAccept here (that is
+// Queued Time). Never fabricate a response from a case's acceptedAt timestamp.
+function getResponseDisplay(ticket) {
   if (!ticket) return { text: "—", pending: false };
+  if (!ticket.acceptedAt) return { text: "Not accepted", pending: false };
+
+  // v8 backend returns secondsToFirstResponse and firstResponseAt, derived
+  // from real chat_messages. Avoid treating old/cached API rows as replies.
+  const serverSeconds = ticket.secondsToFirstResponse;
+  const hasServerSeconds = serverSeconds !== null && serverSeconds !== undefined
+    && serverSeconds !== "" && Number.isFinite(Number(serverSeconds));
+  const acceptedAtMs = Date.parse(ticket.acceptedAt || "");
+  const firstResponseAtMs = Date.parse(ticket.firstResponseAt || "");
+  const fallbackSeconds = Number.isFinite(acceptedAtMs) && Number.isFinite(firstResponseAtMs)
+    && firstResponseAtMs >= acceptedAtMs
+      ? Math.floor((firstResponseAtMs - acceptedAtMs) / 1000)
+      : null;
+  const responseSeconds = hasServerSeconds ? Number(serverSeconds) : fallbackSeconds;
+  if (responseSeconds !== null && Number.isFinite(responseSeconds)) {
+    return { text: formatElapsed(responseSeconds), pending: false };
+  }
+
+  // No actual support reply after acceptance: don't substitute queue time.
+  return safeText(ticket.status).toUpperCase() === "RESOLVED"
+    ? { text: "No reply", pending: false }
+    : { text: "Awaiting reply", pending: true };
+}
+
+// Queued Time is strictly the waiting period BEFORE a support member accepts:
+// opened_at (the first message) -> accepted_at (the acceptance action).
+// Do not keep increasing it once the case is accepted, pending, or closed.
+// Use the server-calculated duration to avoid client clock/timezone drift.
+function getQueuedDisplay(ticket, nowMs) {
+  if (!ticket?.postedAt) return { text: "—", pending: false, accepted: false };
+
   if (ticket.acceptedAt) {
-    return { text: formatElapsed(ticket.secondsToAccept), pending: false };
+    const serverSeconds = ticket.secondsToAccept;
+    const start = Date.parse(ticket.postedAt);
+    const end = Date.parse(ticket.acceptedAt);
+    const elapsedSeconds = serverSeconds !== null && serverSeconds !== undefined && serverSeconds !== ""
+      && Number.isFinite(Number(serverSeconds))
+      ? Math.max(0, Number(serverSeconds))
+      : Number.isFinite(start) && Number.isFinite(end)
+        ? Math.max(0, Math.floor((end - start) / 1000))
+        : null;
+    return { text: formatElapsed(elapsedSeconds), pending: false, accepted: true };
   }
-  const openedAtMs = Date.parse(ticket.postedAt || "");
-  if (ticket.status === "OPEN" && Number.isFinite(openedAtMs)) {
-    const elapsedSeconds = Math.max(0, Math.floor((nowMs - openedAtMs) / 1000));
-    return { text: formatElapsed(elapsedSeconds), pending: true };
+
+  // An unaccepted request is still queued only while its status is OPEN.
+  // Older/inconsistent tickets with non-OPEN status and no acceptance timestamp
+  // must not be made to look as though they're waiting for acceptance forever.
+  if (safeText(ticket.status).toUpperCase() !== "OPEN") {
+    return { text: "—", pending: false, accepted: false };
   }
-  return { text: "—", pending: false };
+  const opened = Date.parse(ticket.postedAt);
+  if (!Number.isFinite(opened) || !Number.isFinite(nowMs)) {
+    return { text: "—", pending: true, accepted: false };
+  }
+  return {
+    text: formatElapsed(Math.max(0, Math.floor((nowMs - opened) / 1000))),
+    pending: true,
+    accepted: false,
+  };
 }
 
 function getResolutionDisplay(ticket) {
@@ -235,6 +300,7 @@ function UnreadBadge({ count }) {
 
 function MobileRequestCard({ conversation, requester, ticket, onOpen, opening, index, nowMs }) {
   const unread = Number(conversation.unreadCount || 0);
+  const queued = getQueuedDisplay(ticket, nowMs);
   return (
     <DataCard
       interactive
@@ -256,8 +322,12 @@ function MobileRequestCard({ conversation, requester, ticket, onOpen, opening, i
       </div>
       <div className="mt-3 flex items-center justify-between border-t border-sibs-border pt-2.5">
         <span className="flex items-center gap-1.5"><TicketStatusBadge status={ticket?.status} /></span>
-        <span className="text-[10px] font-semibold text-sibs-muted">{getResponseDisplay(ticket, nowMs).pending ? "Waiting" : "Response"}: {getResponseDisplay(ticket, nowMs).text}</span>
+        <span className="text-[10px] font-semibold text-sibs-muted">Response: {getResponseDisplay(ticket).text}</span>
       </div>
+      <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] font-semibold text-sibs-muted">
+        <span>Time waiting for acceptance: <span className={queued.pending ? "font-extrabold text-sibs-orange" : "font-bold text-sibs-navy"}>{queued.text}</span></span>
+        {queued.pending ? <span className="text-[10px] text-sibs-orange">Waiting for acceptance</span> : null}
+      </p>
       <p className="mt-2 text-[11px] font-semibold text-sibs-muted">Opened: {formatDate(ticket?.postedAt)}</p>
       <div className="mt-2 flex items-center justify-between text-[10px] font-semibold text-sibs-muted">
         <span>{formatDate(conversation.lastMessageAt || conversation.updatedAt || conversation.createdAt)}</span>
@@ -334,8 +404,6 @@ function HelpdeskTicketModal({ conversation, ticket, loading, eligibility, eligi
     return () => { document.body.style.overflow = priorOverflow; window.removeEventListener("keydown", handleEscape); };
   }, [busy, onClose]);
 
-  const waitSeconds = ticket?.secondsToAccept ?? (ticket?.postedAt
-    ? Math.max(0, Math.floor((now - Date.parse(ticket.postedAt)) / 1000)) : null);
   const modalContent = (
     <div className="fixed inset-0 z-[1600] flex items-center justify-center bg-slate-950/70 p-3 backdrop-blur-[3px] sm:p-6"
       role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget && !busy) onClose(); }}>
@@ -376,10 +444,12 @@ function HelpdeskTicketModal({ conversation, ticket, loading, eligibility, eligi
                     <TicketTimestamp label="Case opened · first message" value={ticket.postedAt} icon={CalendarClock} />
                     <TicketTimestamp label="Assigned" value={ticket.assignedAt} icon={UserRound} />
                     <TicketTimestamp label="Accepted" value={ticket.acceptedAt} icon={CheckCircle2} />
+                    <TicketTimestamp label="First support reply" value={ticket.firstResponseAt} icon={MessageSquareText} />
                     <TicketTimestamp label="Finished / resolved" value={ticket.resolvedAt} icon={CheckCircle2} />
                   </div>
-                  <div className="mt-4 grid grid-cols-3 gap-2">
-                    {[['Response time', formatElapsed(waitSeconds)],
+                  <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                    {[['Queued before acceptance', getQueuedDisplay(ticket, now).text],
+                      ['Response time · after acceptance', getResponseDisplay(ticket).text],
                       ['Total resolution', formatElapsed(ticket.secondsToResolve)],
                       ['Handling time', formatElapsed(ticket.secondsToFinish)]].map(([label, value]) => (
                       <div key={label} className="rounded-xl border border-sibs-border bg-white p-2.5 text-center">
@@ -389,7 +459,11 @@ function HelpdeskTicketModal({ conversation, ticket, loading, eligibility, eligi
                     ))}
                   </div>
                   <p className="mt-2 text-[10px] font-medium text-sibs-muted">
-                    {ticket.acceptedAt ? 'Response time is measured from submission to acceptance.' : 'Response timer continues until a support employee accepts.'}
+                    {ticket.acceptedAt
+                      ? 'Queued Time: first message → acceptance. Response Time: acceptance → first actual support reply. Both stop at their respective event.'
+                      : ticket.status === 'OPEN'
+                        ? 'Waiting for acceptance. Queued Time is running; Response Time has not started.'
+                        : 'No acceptance timestamp is available for this request.'}
                   </p>
                 </div>
                 <div className="rounded-2xl border border-sibs-border bg-white p-4 shadow-xs">
@@ -475,7 +549,12 @@ export default function HelpdeskSupportPage({ category = "IT" }) {
   const tableScrollRef = useRef(null);
 
   const [authorizedCategories, setAuthorizedCategories] = useState([]);
+  const [authorizedLocationsByCategory, setAuthorizedLocationsByCategory] = useState({});
   const [checkingAccess, setCheckingAccess] = useState(true);
+  // A route entry always gets a brief, visible skeleton animation, even when
+  // the shared chat cache already contains all requests. The real page header
+  // remains outside the skeleton and renders immediately.
+  const [entrySkeletonVisible, setEntrySkeletonVisible] = useState(true);
   const [accessError, setAccessError] = useState("");
   const [search, setSearch] = useState("");
   const [assignedSite, setAssignedSite] = useState("All");
@@ -498,6 +577,18 @@ export default function HelpdeskSupportPage({ category = "IT" }) {
   const [clockNow, setClockNow] = useState(Date.now());
   const detailControllerRef = useRef(null);
 
+  useEffect(() => {
+    // Route keys in router.jsx remount this component for every IT <-> TA/HR
+    // switch. Ensure a cached/fast API response cannot skip the animation.
+    // Reduced-motion users never receive an artificial animation delay.
+    if (window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches) {
+      setEntrySkeletonVisible(false);
+      return undefined;
+    }
+    const timeout = window.setTimeout(() => setEntrySkeletonVisible(false), 350);
+    return () => window.clearTimeout(timeout);
+  }, []);
+
   // Update only the visible open-case waiting duration once per minute.
   // Elapsed time is always calculated from the first actual message (postedAt).
   useEffect(() => {
@@ -511,11 +602,15 @@ export default function HelpdeskSupportPage({ category = "IT" }) {
     if (!quiet) setCheckingAccess(true);
     setAccessError("");
     try {
-      const categories = await getChatHelpdeskSupportAccess({ signal });
-      if (!signal?.aborted) setAuthorizedCategories(categories);
+      const scope = await getChatHelpdeskSupportScope({ signal });
+      if (!signal?.aborted) {
+        setAuthorizedCategories(scope.categories);
+        setAuthorizedLocationsByCategory(scope.locationsByCategory);
+      }
     } catch (error) {
       if (!signal?.aborted) {
         setAuthorizedCategories([]);
+        setAuthorizedLocationsByCategory({});
         setAccessError(error?.response?.data?.message || "Unable to verify Helpdesk support access. Please retry.");
       }
     } finally {
@@ -528,6 +623,7 @@ export default function HelpdeskSupportPage({ category = "IT" }) {
     // Drop old access immediately; never display a privileged queue from the
     // previous view while its new signed session is being verified.
     setAuthorizedCategories([]);
+    setAuthorizedLocationsByCategory({});
     setCheckingAccess(true);
     const controller = new AbortController();
     void loadAccess({ signal: controller.signal });
@@ -641,18 +737,33 @@ export default function HelpdeskSupportPage({ category = "IT" }) {
 
   const unreadConversations = useMemo(() => requests.filter((request) => Number(request.unreadCount || 0) > 0).length, [requests]);
   const unreadMessages = useMemo(() => requests.reduce((sum, request) => sum + Number(request.unreadCount || 0), 0), [requests]);
+  // Counts are scoped to this Helpdesk category and the conversations already
+  // authorized by the server (including site and active-view restrictions).
+  const { openCases, closedCases } = useMemo(() => requests.reduce((counts, conversation) => {
+    const status = getCaseStatus(ticketSummaries[Number(conversation.id)], conversation);
+    if (ACTIVE_CASE_STATUSES.has(status)) counts.openCases += 1;
+    else if (status === "RESOLVED") counts.closedCases += 1;
+    return counts;
+  }, { openCases: 0, closedCases: 0 }), [requests, ticketSummaries]);
 
+  // Options reflect verified HRIS department/manager access, not only sites
+  // represented in today's cases. Only the two approved operational locations
+  // are shown; Mabini is intentionally excluded.
   const siteOptions = useMemo(() => [
     { value: "All", label: "All Locations" },
-    ...Array.from(new Set(requests.map((request) => getRequester(request).location)))
-      .sort((a, b) => a.localeCompare(b))
+    ...["Davao", "Tagum"]
+      .filter((location) => authorizedCategories.includes(category) &&
+        (authorizedLocationsByCategory[category] || []).includes(location))
       .map((location) => ({ value: location, label: location })),
-  ], [requests]);
+  ], [category, authorizedCategories, authorizedLocationsByCategory]);
 
   const filtered = useMemo(() => requests.filter((conversation) => {
     const requester = getRequester(conversation);
+    const caseStatus = getCaseStatus(ticketSummaries[Number(conversation.id)], conversation);
     if (activeTab === "Unread" && Number(conversation.unreadCount || 0) < 1) return false;
-    if (statusFilter !== "All" && ticketSummaries[Number(conversation.id)]?.status !== statusFilter) return false;
+    if (activeTab === "CaseOpen" && !ACTIVE_CASE_STATUSES.has(caseStatus)) return false;
+    if (activeTab === "CaseClosed" && caseStatus !== "RESOLVED") return false;
+    if (statusFilter !== "All" && caseStatus !== statusFilter) return false;
     if (assignedSite !== "All" && requester.location !== assignedSite) return false;
     const searchable = [requester.name, requester.sibsId, requester.location,
       conversation.caseCode, ticketSummaries[Number(conversation.id)]?.caseCode,
@@ -677,8 +788,10 @@ export default function HelpdeskSupportPage({ category = "IT" }) {
   const totalPages = Math.max(1, Math.ceil(sortedFiltered.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
   const visible = sortedFiltered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
-  const showSkeleton = checkingAccess || Boolean(chat?.conversationsLoading && !requests.length);
-  const summaryLoading = checkingAccess || Boolean(chat?.conversationsLoading && !requests.length);
+  // Only the metric cards and request rows participate in skeleton loading.
+  // The category title/description/actions above remain visible throughout.
+  const showSkeleton = entrySkeletonVisible || checkingAccess || Boolean(chat?.conversationsLoading && !requests.length);
+  const summaryLoading = showSkeleton;
 
   const changePage = (next) => {
     setPage(Math.min(Math.max(Number(next) || 1, 1), totalPages));
@@ -722,8 +835,35 @@ export default function HelpdeskSupportPage({ category = "IT" }) {
 
   const statusTabs = [
     { key: "All", label: "All Requests", icon: FileText, count: requests.length },
+    { key: "CaseOpen", label: "Case Open", icon: FolderOpen, count: openCases },
+    { key: "CaseClosed", label: "Case Closed", icon: CheckCircle, count: closedCases },
     { key: "Unread", label: "Unread", icon: MessageCircle, count: unreadConversations },
   ];
+
+  // Keep the Status dropdown consistent with the selected case tab and avoid
+  // retaining a conflicting value (e.g. Closed + In Progress).
+  const statusOptions = [
+    { value: "All", label: "All Statuses" },
+    ...Object.entries(TICKET_STATUS_LABELS)
+      .filter(([status]) => activeTab === "CaseOpen" ? ACTIVE_CASE_STATUSES.has(status)
+        : activeTab === "CaseClosed" ? status === "RESOLVED" : true)
+      .map(([value, label]) => ({ value, label })),
+  ];
+  const selectRequestTab = (value) => {
+    setActiveTab(value);
+    setStatusFilter("All");
+    setPage(1);
+    tableScrollRef.current?.scrollTo({ top: 0, behavior: "auto" });
+  };
+  const hasRequestFilters = Boolean(search.trim()) || assignedSite !== "All" || statusFilter !== "All";
+  const emptyTitle = hasRequestFilters ? "No matching requests"
+    : activeTab === "CaseOpen" ? "No open cases"
+      : activeTab === "CaseClosed" ? "No closed cases"
+        : activeTab === "Unread" ? "No unread requests" : config.empty;
+  const emptyDescription = activeTab === "CaseOpen" ? "Open, In Progress, and Pending cases appear here."
+    : activeTab === "CaseClosed" ? "Cases marked Closed appear here."
+      : activeTab === "Unread" ? "New messages will appear here when they arrive."
+        : "Incoming requests appear automatically when employees use SiBS Chat Helpdesk.";
 
   const metricItems = [
     { label: "Total Cases", value: requests.length, description: "Cases opened by a first message", icon: Inbox, tone: "navy" },
@@ -736,6 +876,7 @@ export default function HelpdeskSupportPage({ category = "IT" }) {
       <div className="shrink-0"><Header /></div>
       <main ref={mainScrollRef} className="sibs-dashboard-main-wide">
         <div className="mx-auto w-full max-w-[1600px] space-y-5 sm:space-y-6 pb-8">
+          {/* Permanent page identity: never replace this hero with a skeleton. */}
           <PageHeaderHero
             kicker="Core HR · Helpdesk"
             title={config.name}
@@ -781,8 +922,8 @@ export default function HelpdeskSupportPage({ category = "IT" }) {
                       icon={metric.icon}
                       tone={metric.tone}
                       delay={ANIMATION.summary + index * ANIMATION.metric}
-                      onClick={index === 0 ? () => { setActiveTab("All"); setPage(1); }
-                        : index === 1 ? () => { setActiveTab("Unread"); setPage(1); } : undefined}
+                      onClick={index === 0 ? () => selectRequestTab("All")
+                        : index === 1 ? () => selectRequestTab("Unread") : undefined}
                     />
                   ))}
               </MetricGrid>
@@ -794,7 +935,7 @@ export default function HelpdeskSupportPage({ category = "IT" }) {
                 <div className="flex h-full min-h-[520px] min-w-0 flex-col bg-white font-jakarta">
                   <div className="border-b border-sibs-border p-4 sm:p-5 2xl:p-6">
                     <h2 className="font-heading text-sm font-bold tracking-tight text-sibs-navy 2xl:text-base">Helpdesk Requests</h2>
-                    <p className="mt-1 sibs-text-xs font-semibold text-sibs-muted">Select a request to review its status, assignment, response time, and resolution.</p>
+                    <p className="mt-1 sibs-text-xs font-semibold text-sibs-muted">Review queued time (before acceptance), response time (acceptance to first reply), and resolution.</p>
                     <div className="mt-4 flex flex-col gap-3 overflow-visible xl:flex-row xl:items-end">
                       <div className="relative w-full min-w-0 xl:min-w-[180px] xl:flex-[1_1_220px] 2xl:min-w-[280px] 2xl:flex-[1_1_360px]">
                         <SearchInput
@@ -824,7 +965,7 @@ export default function HelpdeskSupportPage({ category = "IT" }) {
                           className="sibs-employee-directory-filter"
                           label="Status"
                           labelClassName="sibs-text-micro font-extrabold tracking-normal text-sibs-navy"
-                          options={[{ value: "All", label: "All Statuses" }, ...Object.entries(TICKET_STATUS_LABELS).map(([value, label]) => ({ value, label }))]}
+                          options={statusOptions}
                           value={statusFilter}
                           onChange={(value) => { setStatusFilter(value); setPage(1); }}
                           clearable={false}
@@ -856,25 +997,26 @@ export default function HelpdeskSupportPage({ category = "IT" }) {
                       <StatusFilterTabs
                         tabs={statusTabs}
                         activeValue={activeTab}
-                        onChange={(value) => { setActiveTab(value); setPage(1); }}
+                        onChange={selectRequestTab}
                         layoutId={`helpdeskRequestsTabIndicator-${category}`}
                       />
                       <ResponsiveTableShell
                         desktopContent={
                           <div className="overflow-hidden bg-white">
                             <div ref={tableScrollRef} className="max-h-[480px] overflow-auto sibs-scrollbar 2xl:max-h-[640px]">
-                              <table className="w-full min-w-[1140px] table-fixed border-collapse text-left">
+                              <table className="w-full min-w-[1280px] table-fixed border-collapse text-left">
                                 <thead className="sticky top-0 z-10 bg-sibs-surface">
                                   <tr className="border-b border-sibs-border">
                                     {[
                                       ["SIBS ID", "w-[8%]"],
-                                      ["EMPLOYEE NAME", "w-[20%]"],
-                                      ["ASSIGNED SITE", "w-[11%]"],
-                                      ["STATUS", "w-[11%]"],
-                                      ["RESPONSE TIME", "w-[12%]"],
-                                      ["RESOLUTION TIME", "w-[13%]"],
-                                      ["POSTED", "w-[15%]"],
-                                      ["ACTIONS", "w-[10%] text-right"],
+                                      ["EMPLOYEE NAME", "w-[19%]"],
+                                      ["ASSIGNED SITE", "w-[10%]"],
+                                      ["STATUS", "w-[10%]"],
+                                      ["QUEUED TIME", "w-[10%]"],
+                                      ["RESPONSE TIME", "w-[11%]"],
+                                      ["RESOLUTION TIME", "w-[12%]"],
+                                      ["POSTED", "w-[11%]"],
+                                      ["ACTIONS", "w-[9%] text-right"],
                                     ].map(([label, width]) => (
                                       <th key={label} scope="col" className={`${width} px-3 py-2.5 sibs-text-micro font-extrabold uppercase tracking-wider text-sibs-muted 2xl:px-4 2xl:py-3`}>{label}</th>
                                     ))}
@@ -882,13 +1024,13 @@ export default function HelpdeskSupportPage({ category = "IT" }) {
                                 </thead>
                                 <tbody className="divide-y divide-sibs-border" aria-busy={showSkeleton}>
                                   {showSkeleton ? (
-                                    <TableSkeletonRows count={PAGE_SIZE} columns={8} />
+                                    <TableSkeletonRows count={PAGE_SIZE} columns={9} />
                                   ) : !visible.length ? (
-                                    <tr><td colSpan={8}>
+                                    <tr><td colSpan={9}>
                                       <div className="flex flex-col items-center justify-center px-5 py-14 text-center">
                                         <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-sibs-surface text-sibs-navy"><Inbox size={22} /></span>
-                                        <h3 className="mt-3 text-sm font-extrabold text-sibs-navy">{search || activeTab === "Unread" || assignedSite !== "All" ? "No matching requests" : config.empty}</h3>
-                                        <p className="mt-1 max-w-xl text-xs font-semibold text-sibs-muted">Incoming requests appear automatically when employees use SiBS Chat Helpdesk.</p>
+                                        <h3 className="mt-3 text-sm font-extrabold text-sibs-navy">{emptyTitle}</h3>
+                                        <p className="mt-1 max-w-xl text-xs font-semibold text-sibs-muted">{emptyDescription}</p>
                                       </div>
                                     </td></tr>
                                   ) : visible.map((conversation) => {
@@ -896,6 +1038,8 @@ export default function HelpdeskSupportPage({ category = "IT" }) {
                                     const unread = Number(conversation.unreadCount || 0);
                                     const opening = openingId === conversation.id;
                                     const ticket = ticketSummaries[Number(conversation.id)];
+                                    const queued = getQueuedDisplay(ticket, clockNow);
+                                    const response = getResponseDisplay(ticket);
                                     return (
                                       <tr
                                         key={conversation.id}
@@ -929,8 +1073,11 @@ export default function HelpdeskSupportPage({ category = "IT" }) {
                                         </td>
                                         <td className="px-3 py-2 align-middle 2xl:px-4 2xl:py-2.5"><TicketStatusBadge status={ticket?.status} /></td>
                                         <td className="px-3 py-2 align-middle text-[11px] font-semibold text-sibs-muted 2xl:px-4 2xl:py-2.5">
-                                          <span className={getResponseDisplay(ticket, clockNow).pending ? "font-bold text-sibs-orange" : ""}>{getResponseDisplay(ticket, clockNow).text}</span>
-                                          {getResponseDisplay(ticket, clockNow).pending && <span className="mt-0.5 block text-[10px] text-sibs-muted">Awaiting acceptance</span>}
+                                          <span title="Time elapsed from first message until support acceptance" className={queued.pending ? "font-extrabold text-sibs-orange" : ""}>{queued.text}</span>
+                                          {queued.pending && <span className="mt-0.5 block text-[10px] text-sibs-orange">Waiting for acceptance</span>}
+                                        </td>
+                                        <td className="px-3 py-2 align-middle text-[11px] font-semibold text-sibs-muted 2xl:px-4 2xl:py-2.5">
+                                          <span title="Time between request acceptance and first actual support reply" className={response.pending ? "font-bold text-sibs-orange" : ""}>{response.text}</span>
                                         </td>
                                         <td className="px-3 py-2 align-middle text-[11px] font-semibold text-sibs-muted 2xl:px-4 2xl:py-2.5">{getResolutionDisplay(ticket)}</td>
                                         <td className="px-3 py-2 align-middle 2xl:px-4 2xl:py-2.5">
@@ -969,8 +1116,8 @@ export default function HelpdeskSupportPage({ category = "IT" }) {
                                   nowMs={clockNow}
                                   onOpen={() => openDetails(conversation)}
                                 />
-                              )) : <DataCard.Empty title={search || activeTab === "Unread" || assignedSite !== "All" ? "No matching requests" : config.empty}
-                                description="Try adjusting your search or filters." />}
+                              )) : <DataCard.Empty title={emptyTitle}
+                                description={hasRequestFilters ? "Try adjusting your search or filters." : emptyDescription} />}
                           </div>
                         }
                       />

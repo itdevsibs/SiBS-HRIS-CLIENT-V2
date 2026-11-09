@@ -467,21 +467,36 @@ function SibsLogo({ collapsed = false, isMobile = false }) {
           draggable={false}
           className="block h-full w-full rounded-[13px] object-contain 2xl:rounded-[15px]"
         />
+        {/* Ticketing-style floating accent: small, anchored to the icon's upper right.
+            Follow the existing 6s SiBS white/orange wordmark color cycle. */}
         <MotionSpan
           aria-hidden="true"
-          className="pointer-events-none absolute -right-1 -top-1 z-10 h-3 w-3 rounded-full border-2 border-sibs-primary-1 shadow-sm 2xl:h-3.5 2xl:w-3.5"
+          className="pointer-events-none absolute -right-1 -top-1 z-10 h-3 w-3 rounded-full border-2 border-sibs-primary-1 2xl:h-3.5 2xl:w-3.5"
           animate={{
+            // Subtle clockwise floating motion, staying above the icon.
+            x: [0, 2, 0, -2, 0],
+            y: [-1, 0, 1, 0, -1],
+            scale: [1, 1.06, 1.1, 1.06, 1],
             backgroundColor: [
               "rgb(255, 255, 255)",
+              "rgb(255, 175, 133)",
               "var(--color-sibs-orange)",
+              "rgb(255, 175, 133)",
               "rgb(255, 255, 255)",
+            ],
+            boxShadow: [
+              "0 0 5px rgba(255,255,255,0.45)",
+              "0 0 7px rgba(255,175,133,0.55)",
+              "0 0 9px rgba(255,110,48,0.65)",
+              "0 0 7px rgba(255,175,133,0.55)",
+              "0 0 5px rgba(255,255,255,0.45)",
             ],
           }}
           transition={{
             duration: 6,
             repeat: Infinity,
             ease: "easeInOut",
-            times: [0, 0.5, 1],
+            times: [0, 0.25, 0.5, 0.75, 1],
           }}
         />
       </MotionDiv>

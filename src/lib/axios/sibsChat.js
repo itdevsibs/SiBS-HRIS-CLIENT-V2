@@ -56,10 +56,28 @@ export async function getChatParticipants(query = "", limit = 0) {
   return response.data?.data || [];
 }
 
-export async function getChatHelpdeskSupportAccess({ signal } = {}) {
+/**
+ * Verified Helpdesk support access and available office filters for the active
+ * Admin/Employee view. Permissions are enforced by the server, never by UI filters.
+ */
+export async function getChatHelpdeskSupportScope({ signal } = {}) {
   const response = await api.get("/chat/helpdesk/support-access", { signal });
-  const categories = response.data?.data?.categories;
-  return Array.isArray(categories) ? categories : [];
+  const scope = response.data?.data || {};
+  return {
+    categories: Array.isArray(scope.categories) ? scope.categories : [],
+    locationsByCategory:
+      scope.locationsByCategory &&
+      typeof scope.locationsByCategory === "object" &&
+      !Array.isArray(scope.locationsByCategory)
+        ? scope.locationsByCategory
+        : {},
+  };
+}
+
+// Preserve the existing categories-only API for other chat consumers.
+export async function getChatHelpdeskSupportAccess({ signal } = {}) {
+  const scope = await getChatHelpdeskSupportScope({ signal });
+  return scope.categories;
 }
 
 // Helpdesk workflow metadata extends the existing chat conversations.

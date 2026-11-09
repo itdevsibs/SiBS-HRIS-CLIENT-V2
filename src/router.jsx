@@ -329,14 +329,16 @@ function MainApplicationRoutes() {
       />
 
       {/* Department-scoped Helpdesk support queues. The API independently
-          enforces access for both direct URL access and navigation. */}
+          enforces access for both direct URL access and navigation.
+          Distinct keys force React to remount the shared page when switching
+          categories, replaying its entry loading/animation every visit. */}
       <Route
         path="/helpdesk/it-support"
-        element={<PrivateRoute><HelpdeskSupportPage category="IT" /></PrivateRoute>}
+        element={<PrivateRoute><HelpdeskSupportPage key="helpdesk-it-support" category="IT" /></PrivateRoute>}
       />
       <Route
         path="/helpdesk/ta-hr-concerns"
-        element={<PrivateRoute><HelpdeskSupportPage category="TA_HR" /></PrivateRoute>}
+        element={<PrivateRoute><HelpdeskSupportPage key="helpdesk-ta-hr-concerns" category="TA_HR" /></PrivateRoute>}
       />
 
       {/* EMPLOYEE */}
