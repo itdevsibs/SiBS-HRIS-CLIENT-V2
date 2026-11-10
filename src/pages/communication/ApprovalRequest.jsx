@@ -1266,12 +1266,14 @@ function CustomSelect({ label, value, options = [], onChange, allLabel = "" }) {
 
 export default function ApprovalRequest() {
   const { user } = useUser();
+  const location = useLocation();
+  const openPendingAttrition = new URLSearchParams(location.search).get("queue") === "pending-attrition";
 
   const [activeModule, setActiveModule] = useState("Attrition");
   const [search, setSearch] = useState("");
   const [searchInput, setSearchInput] = useState("");
-  const [statusFilter, setStatusFilter] = useState("All");
-  const [typeFilter, setTypeFilter] = useState("Resignation");
+  const [statusFilter, setStatusFilter] = useState(openPendingAttrition ? "Pending" : "All");
+  const [typeFilter, setTypeFilter] = useState(openPendingAttrition ? "All" : "Resignation");
   const [page, setPage] = useState(1);
 
   const [requests, setRequests] = useState([]);
@@ -1323,7 +1325,6 @@ export default function ApprovalRequest() {
     useState(false);
 
   const navigate = useNavigate();
-  const location = useLocation();
   const { updateSelectedJobDescription, closeJobDescriptionDetails } =
     useJobDescription();
 

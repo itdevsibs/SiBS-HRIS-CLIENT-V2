@@ -1,6 +1,6 @@
 import React from "react";
 import {
-  AlertTriangle,
+  CalendarCheck,
   Clock,
   Users,
   UserX,
@@ -18,25 +18,25 @@ const METRICS = [
   },
   {
     key: "attendance",
-    label: "Attendance Flags",
+    label: "Recorded Attendance",
     value: "—",
-    description: "Biometric timecard check",
-    icon: AlertTriangle,
+    description: "Employees with an attendance record",
+    icon: CalendarCheck,
     tone: "green",
   },
   {
     key: "approvals",
-    label: "Pending Approvals",
+    label: "Pending Attrition Approvals",
     value: "—",
-    description: "Leaves, offers & reqs",
+    description: "Pending status in your Attrition approval queue",
     icon: Clock,
     tone: "amber",
   },
   {
     key: "leaves",
-    label: "Pending Leaves",
+    label: "Pending Leave Requests",
     value: "—",
-    description: "Leave requests awaiting review",
+    description: "Last 6 weeks in your leave scope",
     icon: UserX,
     tone: "red",
   },
@@ -59,29 +59,33 @@ export default function SuperAdminDashboardStats({
             if (liveMetrics.departmentsCount) {
               desc = `Across ${liveMetrics.departmentsCount} active depts`;
             }
-          } else if (metric.key === "attendance" && liveMetrics.attendanceFlags !== undefined) {
-            val = String(liveMetrics.attendanceFlags);
-            badge = Number(val) > 0 ? "Needs Review" : "All Clear";
+          } else if (metric.key === "attendance" && liveMetrics.attendancePresent !== undefined) {
+            val = liveMetrics.attendancePresent;
+            if (liveMetrics.attendanceDate) desc += ` · ${liveMetrics.attendanceDate}`;
           } else if (metric.key === "approvals" && liveMetrics.pendingApprovals !== undefined) {
             val = String(liveMetrics.pendingApprovals);
-            badge = Number(val) > 0 ? "Cross-Module" : "Queue Clear";
           } else if (metric.key === "leaves" && liveMetrics.leavesCount !== undefined) {
             val = String(liveMetrics.leavesCount);
-            badge = Number(val) > 0 ? `${val} Active` : "None Active";
           }
         }
+
+        const loading = (metric.key === "leaves" && liveMetrics?.leavesStatus === "updating") ||
+          (metric.key === "approvals" && liveMetrics?.approvalsLoading);
+        if (val === "—" && !loading) badge = "Unavailable";
 
         return (
           <MetricCard
             key={metric.key}
             label={metric.label}
             value={val}
+            loading={loading}
             description={desc}
             badge={badge}
             icon={metric.icon}
             tone={metric.tone}
             delay={60 + index * 60}
-            onClick={() => onMetricClick?.(metric)}
+            onClick={metric.key === "attendance" || (metric.key === "leaves" && !liveMetrics?.leavesDateRange)
+              ? undefined : () => onMetricClick?.(metric)}
           />
         );
       })}

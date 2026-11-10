@@ -12,6 +12,11 @@ export const SUPER_ADMIN_ROUTES = Object.freeze({
   accessSettings: "/settings/user-settings",
 });
 
+export const SUPER_ADMIN_PENDING_APPROVALS_PATH = "/approval-request?queue=pending-attrition";
+export function getSuperAdminPendingLeavesState(leaveDateRange) {
+  return { source: "super-admin-pending-leaves", leaveStatus: "Pending", leaveDateRange };
+}
+
 export const ACCESS_LEVELS = Object.freeze([
   "1 - TA",
   "2 - HR",
@@ -54,8 +59,11 @@ export function buildDynamicSnapshotCards({
 } = {}) {
   const employees = Number(metrics?.employeesCount || 0);
   const departments = Number(metrics?.departmentsCount || 0);
-  const leaves = Number(metrics?.leavesCount || 0);
-  const approvals = Number(metrics?.pendingApprovals || 0);
+  const leaves = metrics.leavesStatus === "updating" ? "Updating"
+    : metrics.leavesCount === "—" || metrics.leavesCount == null ? "Unavailable" : metrics.leavesCount;
+  const approvals = metrics.approvalsLoading ? "Updating"
+    : metrics.pendingApprovals === "—" || metrics.pendingApprovals == null
+    ? "Unavailable" : metrics.pendingApprovals;
   const recruitment = Number(metrics?.recruitmentCount || 0);
   const accounts = accountCount || 0;
   const admins = adminCount || Number(metrics?.admins || 0);
@@ -88,7 +96,7 @@ export function buildDynamicSnapshotCards({
           "Active Departments",
           departments > 0 ? `${departments} Depts` : "Configured",
         ],
-        ["Pending Leaves", `${leaves} Active`],
+        ["Pending Leave Requests", leaves],
         ["Access Governance", `${admins} Assigned`],
       ],
     },
@@ -123,11 +131,11 @@ export function buildDynamicSnapshotCards({
     {
       title: "Finance & Payroll Summary",
       iconKey: "finance",
-      path: SUPER_ADMIN_ROUTES.approvals || "/payroll",
+      path: SUPER_ADMIN_PENDING_APPROVALS_PATH,
       metrics: [
         ["Current Payroll Cycle", payrollCycleText],
         ["Payroll Status", "Active Cycle"],
-        ["Approval Requests", `${approvals} Pending Clearance`],
+        ["Pending Attrition Approvals", approvals],
         ["Reports & Audits", "Audit Logs Ready"],
       ],
     },
@@ -233,18 +241,6 @@ export function getAccessLevelClass(accessLevel) {
   return "bg-slate-100 text-slate-700 border border-slate-200";
 }
 
-export function getSeverityPillClass(severity) {
-  if (severity === "High") {
-    return "border-rose-200 bg-rose-50 text-rose-700";
-  }
-
-  if (severity === "Medium") {
-    return "border-amber-200 bg-amber-50 text-amber-700";
-  }
-
-  return "border-blue-200 bg-blue-50 text-blue-700";
-}
-
 function includesSearch(values, keyword) {
   if (!keyword) return true;
 
@@ -261,8 +257,6 @@ export function filterSuperAdminExceptions(items, search, moduleFilter) {
       [
         item.title,
         item.description,
-        item.assignedTo,
-        item.category,
         item.moduleTarget,
       ],
       keyword,
@@ -363,23 +357,34 @@ export function paginateSuperAdminItems(items, page, limit) {
   };
 }
 
+function verifiedCount(value) {
+  return Number.isSafeInteger(value) && value >= 0 ? value : null;
+}
+
+export function normalizeSuperAdminQueueMetrics(approvalResult, leaveResult) {
+  const approvalsTotal = approvalResult?.success === true
+    ? verifiedCount(approvalResult.data?.pending) : null;
+  const leavesUpdating = leaveResult?.success === true &&
+    (leaveResult.ready === false || leaveResult.stale === true);
+  const recent = leaveResult?.data?.recentPendingLeaves;
+  const leavesTotal = leaveResult?.success === true && leaveResult.ready === true &&
+    !leavesUpdating && recent?.dateFrom && recent?.dateTo
+    ? verifiedCount(recent.count) : null;
+
+  return {
+    approvalsTotal,
+    leavesTotal,
+    leavesDateRange: leavesTotal === null ? null : { dateFrom: recent.dateFrom, dateTo: recent.dateTo },
+    leavesStatus: leavesUpdating ? "updating" : leavesTotal === null ? "unavailable" : "ready",
+  };
+}
+
 export function normalizeSuperAdminMetrics(overview = {}, extraData = {}) {
-  const employees = Number(
-    extraData?.employeeTotal ?? overview?.metrics?.employees ?? 0,
-  );
+  const employees = extraData?.employeeTotal ?? overview?.metrics?.employees ?? null;
   const departments = Number(
     extraData?.departmentsTotal ?? overview?.metrics?.departments ?? 0,
   );
-  const late = Number(overview?.attendance?.late || 0);
-  const absent = Number(overview?.attendance?.absent || 0);
-  const onLeave = Number(extraData?.leavesTotal ?? overview?.attendance?.onLeave ?? 0);
-  const attendanceFlags = late + absent;
-  const pendingApprovals = Number(
-    extraData?.approvalsTotal ??
-      overview?.notificationCounts?.pendingApprovals ??
-      overview?.notificationCounts?.approvals ??
-      0,
-  );
+  const attendancePresent = verifiedCount(overview?.attendance?.present);
   // `interviewsToday` counts only today's interviews, not active candidates.
   // Until the feed supplies an actual pipeline count, show unavailable rather
   // than a misleading zero.
@@ -391,13 +396,19 @@ export function normalizeSuperAdminMetrics(overview = {}, extraData = {}) {
   const adminCount = Number(extraData?.adminCount ?? 7);
 
   return {
-    employees: employees > 0 ? employees.toLocaleString() : "0",
+    employees: employees?.toLocaleString() ?? "—",
     employeesCount: employees,
     departmentsCount: departments,
     admins: String(adminCount),
-    attendanceFlags: String(attendanceFlags),
-    pendingApprovals: String(pendingApprovals),
-    leavesCount: String(onLeave),
+    attendancePresent: attendancePresent?.toLocaleString() ?? "—",
+    attendanceDate: overview?.generatedAt
+      ? formatHrisDateLocalized(overview.generatedAt, "en-PH", { month: "short", day: "numeric", year: "numeric" })
+      : null,
+    pendingApprovals: extraData.approvalsTotal?.toLocaleString() ?? "—",
+    approvalsLoading: extraData.approvalsLoading,
+    leavesCount: extraData.leavesTotal?.toLocaleString() ?? "—",
+    leavesStatus: extraData.leavesStatus,
+    leavesDateRange: extraData.leavesDateRange,
     recruitmentCount: recruitmentCount !== null &&
       Number.isFinite(recruitmentCount) && recruitmentCount >= 0
       ? String(recruitmentCount)
@@ -406,17 +417,16 @@ export function normalizeSuperAdminMetrics(overview = {}, extraData = {}) {
 }
 
 export function buildDynamicSummaryCards(metrics = {}) {
-  const empCount = metrics?.employees || "0";
+  const empCount = metrics?.employees || "—";
   const deptCount = metrics?.departmentsCount || 0;
-  const leavesCount = metrics?.leavesCount || "0";
-  const approvalsCount = metrics?.pendingApprovals || "0";
-  const recruitmentCount = metrics?.recruitmentCount || "0";
+  const approvalsCount = metrics?.pendingApprovals || "—";
+  const recruitmentCount = metrics?.recruitmentCount || "—";
 
   return [
     {
       label: "Core HR Scope",
       value: `${empCount} Active Staff`,
-      details: `${deptCount} Departments • ${leavesCount} Pending Leaves • ${approvalsCount} Approvals`,
+      details: metrics?.employees === "—" ? "Workforce data unavailable" : `${deptCount} Departments`,
       linkLabel: "Open HR Directory",
       path: SUPER_ADMIN_ROUTES.employees,
     },
@@ -437,119 +447,39 @@ export function buildDynamicSummaryCards(metrics = {}) {
     {
       label: "Finance & Governance",
       value: "System Governance",
-      details: `${approvalsCount} Cross-Module Approval Requests`,
+      details: metrics.approvalsLoading ? "Updating approval count"
+        : approvalsCount === "—" ? "Approval count unavailable" : `${approvalsCount} Pending Attrition Approvals`,
       linkLabel: "Open Approvals",
-      path: SUPER_ADMIN_ROUTES.approvals,
+      path: SUPER_ADMIN_PENDING_APPROVALS_PATH,
     },
   ];
 }
 
-export function deriveLiveExceptions({
-  employeeData = null,
-  approvalsData = null,
-  leavesData = null,
-  overviewData = null,
-} = {}) {
-  const exceptions = [];
+export function deriveLiveExceptions({ approvalsTotal, leavesTotal, leavesDateRange } = {}) {
+  const flags = [];
 
-  // 1. Unmapped / Incomplete Employees
-  const employees = Array.isArray(employeeData?.data) ? employeeData.data : [];
-  const unmappedEmployees = employees.filter((emp) => {
-    const dept = emp.department || emp.departmentAccount;
-    const acct = emp.account || emp.accountGroup;
-    return !dept || !acct;
-  });
-
-  if (unmappedEmployees.length > 0) {
-    exceptions.push({
-      id: "EXC-LIVE-UNMAPPED",
-      category: "Unmapped User",
-      title: `${unmappedEmployees.length} Employee/s Missing Department or Account Mapping`,
-      description: "Employee record(s) in the directory require cost center and organizational account assignments.",
-      severity: "High",
-      moduleTarget: "Employee Directory",
-      path: SUPER_ADMIN_ROUTES.employees,
-      assignedTo: "HR Operations",
-      daysPending: 2,
+  if (approvalsTotal > 0) {
+    flags.push({
+      id: "pending-attrition",
+      title: `${approvalsTotal} pending workflow approval${approvalsTotal === 1 ? "" : "s"}`,
+      description: "Attrition requests in the visible approval queue with Pending status.",
+      moduleTarget: "Approval Requests",
+      path: SUPER_ADMIN_PENDING_APPROVALS_PATH,
     });
   }
 
-  // 2. Pending Leaves
-  const pendingLeavesCount =
-    leavesData?.pagination?.total ??
-    (Array.isArray(leavesData?.data)
-      ? leavesData.data.filter((lv) => lv.status === "Pending").length
-      : 0);
-
-  if (pendingLeavesCount > 0) {
-    exceptions.push({
-      id: "EXC-LIVE-LEAVES",
-      category: "Pending Leave",
-      title: `${pendingLeavesCount} Leave Request/s Awaiting Approval`,
-      description: "Employee leave requests are currently pending supervisor or management review.",
-      severity: pendingLeavesCount > 10 ? "High" : "Medium",
+  if (leavesTotal > 0) {
+    flags.push({
+      id: "pending-leaves",
+      title: `${leavesTotal} pending leave request${leavesTotal === 1 ? "" : "s"}`,
+      description: "Pending leave requests dated within the last six weeks in your leave scope.",
       moduleTarget: "Leaves Management",
       path: "/leaves",
-      assignedTo: "HR Admin",
-      daysPending: 3,
+      state: getSuperAdminPendingLeavesState(leavesDateRange),
     });
   }
 
-  // 3. Pending Approvals
-  const pendingApprovalsCount =
-    approvalsData?.counts?.pending ??
-    approvalsData?.total ??
-    (Array.isArray(approvalsData?.data) ? approvalsData.data.length : 0);
-
-  if (pendingApprovalsCount > 0) {
-    exceptions.push({
-      id: "EXC-LIVE-APPROVALS",
-      category: "Stuck Approval",
-      title: `${pendingApprovalsCount} Workflow Approval Request/s Pending Review`,
-      description: "System approval requests for Job Descriptions, Hiring Needs, or Personnel Requisitions require signoff.",
-      severity: pendingApprovalsCount > 5 ? "High" : "Medium",
-      moduleTarget: "Approval Requests",
-      path: SUPER_ADMIN_ROUTES.approvals,
-      assignedTo: "Approver Desk",
-      daysPending: 4,
-    });
-  }
-
-  // 4. Resignations
-  const resignationCount = Number(overviewData?.resignationCount || 0);
-  if (resignationCount > 0) {
-    exceptions.push({
-      id: "EXC-LIVE-RESIGNATIONS",
-      category: "Pending Resignation",
-      title: `${resignationCount} Active Resignation Clearance/s in Progress`,
-      description: "Resignation records and exit clearance workflows are pending final management signoff.",
-      severity: "High",
-      moduleTarget: "Resignation Management",
-      path: "/resignation",
-      assignedTo: "HR Operations",
-      daysPending: 5,
-    });
-  }
-
-  // 5. Attendance Variances
-  const attendanceLate = Number(overviewData?.attendance?.late || 0);
-  const attendanceAbsent = Number(overviewData?.attendance?.absent || 0);
-  const totalAttendanceFlags = attendanceLate + attendanceAbsent;
-  if (totalAttendanceFlags > 0) {
-    exceptions.push({
-      id: "EXC-LIVE-ATTENDANCE",
-      category: "Attendance Variance",
-      title: `${totalAttendanceFlags} Timecard & Biometric Variances Pending Review`,
-      description: `${attendanceLate} late arrivals and ${attendanceAbsent} absences recorded in attendance logs requiring workforce validation.`,
-      severity: totalAttendanceFlags > 10 ? "High" : "Medium",
-      moduleTarget: "Time & Attendance",
-      path: "/attendance",
-      assignedTo: "WFM Lead",
-      daysPending: 1,
-    });
-  }
-
-  return exceptions;
+  return flags;
 }
 
 export function detectActivityModule(action = "", details = "") {

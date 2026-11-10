@@ -14,9 +14,9 @@ describe("Super Admin primary KPIs", () => {
     }} />);
 
     expect(screen.getByText("Active Employees")).toBeInTheDocument();
-    expect(screen.getByText("Attendance Flags")).toBeInTheDocument();
-    expect(screen.getByText("Pending Approvals")).toBeInTheDocument();
-    expect(screen.getByText("Pending Leaves")).toBeInTheDocument();
+    expect(screen.getByText("Recorded Attendance")).toBeInTheDocument();
+    expect(screen.getByText("Pending Attrition Approvals")).toBeInTheDocument();
+    expect(screen.getByText("Pending Leave Requests")).toBeInTheDocument();
     expect(screen.queryByText("Users with Access")).not.toBeInTheDocument();
     expect(screen.queryByText("Recruitment Funnel")).not.toBeInTheDocument();
   });

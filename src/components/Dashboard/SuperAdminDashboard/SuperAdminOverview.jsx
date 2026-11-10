@@ -1,4 +1,5 @@
 import { AlertTriangle, ArrowRight, ChevronRight } from "lucide-react";
+import { SUPER_ADMIN_PENDING_APPROVALS_PATH } from "@/lib/utils/Dashboards/SuperAdminDashboard/superAdminDashboardHelpers";
 
 const OVERVIEW_CARD_TONES = {
   "Core HR Scope": "orange",
@@ -10,6 +11,7 @@ const OVERVIEW_CARD_TONES = {
 export default function SuperAdminOverview({
   cards,
   exceptionsCount,
+  queuesIncomplete,
   onNavigate,
   onOpenExceptions,
 }) {
@@ -61,12 +63,15 @@ export default function SuperAdminOverview({
                 Super Admin Operational Focus Items
               </h3>
               <span className="rounded-full bg-white/15 px-2.5 py-0.5 sibs-text-micro font-extrabold text-white">
-                {exceptionsCount} Active Desk Exceptions
+                {queuesIncomplete && exceptionsCount === 0
+                  ? "Counts incomplete"
+                  : `${exceptionsCount} flagged ${exceptionsCount === 1 ? "category" : "categories"}`}
               </span>
             </div>
             <p className="mt-2 2xl:mt-2.5 max-w-5xl sibs-text-xs font-semibold leading-relaxed text-slate-200">
-              There are currently {exceptionsCount} items flagged in the Risk &amp;
-              Exceptions Desk requiring Super Admin or HR Director review.
+              {queuesIncomplete
+                ? "Some queue counts are unavailable or still updating."
+                : "Review the visible Attrition approval and leave queues from the Risk Desk."}
             </p>
           </div>
 
@@ -81,10 +86,10 @@ export default function SuperAdminOverview({
             </button>
             <button
               type="button"
-              onClick={() => onNavigate("/approval-request")}
+              onClick={() => onNavigate(SUPER_ADMIN_PENDING_APPROVALS_PATH)}
               className="inline-flex h-8.5 2xl:h-10 shrink-0 items-center justify-center rounded-lg border border-white/20 bg-white/10 px-3.5 2xl:px-4 text-[11.5px] 2xl:text-[12px] font-extrabold text-white transition-all hover:bg-white/20 active:scale-[0.98]"
             >
-              Review Approval Queue
+              Review Attrition Queue
             </button>
           </div>
         </div>

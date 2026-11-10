@@ -25,6 +25,7 @@ import {
   TableSkeletonRows,
 } from "@/components/ui";
 import DropdownPortal from "@/components/ui/DropdownPortal.jsx";
+import { getTodayDate } from "@/lib/axios/dateFormatter";
 import {
   LEAVES_STATE_KEY,
   PAGE_LIMIT,
@@ -663,6 +664,7 @@ export default function LeavesTable({
   isPersonalView = false,
   filterValues = {},
   allDatesView = false,
+  maxDateRangeDays,
   onDateFilterChange,
   canApproveLeave = false,
   approvalLoading = false,
@@ -693,11 +695,12 @@ export default function LeavesTable({
     [isPersonalView],
   );
   const now = new Date();
-  const todayDateKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  const todayDateKey = maxDateRangeDays ? getTodayDate()
+    : `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
   const safeRange = sanitizeLeavesDateRange(
     { dateFrom: filterValues?.dateFrom ?? initialDateRange.dateFrom,
       dateTo: filterValues?.dateTo ?? initialDateRange.dateTo },
-    { allowEmpty: allDatesView || isPersonalView },
+    { allowEmpty: allDatesView || isPersonalView, maxDays: maxDateRangeDays },
   );
   const dateFrom = allDatesView ? "" : safeRange.dateFrom;
   const dateTo = allDatesView ? "" : safeRange.dateTo;
@@ -706,7 +709,7 @@ export default function LeavesTable({
     onDateFilterChange?.();
     setLeavesDateRange?.(sanitizeLeavesDateRange(
       { dateFrom: value, dateTo },
-      { changed: "from" },
+      { changed: "from", maxDays: maxDateRangeDays },
     ));
   }
 
@@ -714,7 +717,7 @@ export default function LeavesTable({
     onDateFilterChange?.();
     setLeavesDateRange?.(sanitizeLeavesDateRange(
       { dateFrom, dateTo: value },
-      { changed: "to" },
+      { changed: "to", maxDays: maxDateRangeDays },
     ));
   }
 

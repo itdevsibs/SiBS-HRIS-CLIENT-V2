@@ -10,8 +10,8 @@ import {
   getHrDashboardOverview,
 } from "../../../lib/axios/getHrDashboard";
 import { getEmployee } from "../../../lib/axios/getEmployee";
-import { getApprovalRequests } from "../../../lib/axios/getApprovalRequest";
-import { getLeaves } from "../../../lib/axios/getLeaves";
+import { getApprovalRequestCounts } from "../../../lib/axios/getApprovalRequest";
+import { getLeavesSummary } from "../../../lib/axios/getLeaves";
 import {
   getActiveCandidateCountCacheKey,
   getActiveCandidatePipelineCount,
@@ -22,6 +22,8 @@ import { getUserSettingsUsers } from "../../../lib/axios/userSettings";
 import { normalizeDashboardOverview } from "../../../lib/utils/Dashboards/AdminDashboard/adminDashboardHelpers";
 import {
   ACCESS_LEVELS,
+  SUPER_ADMIN_PENDING_APPROVALS_PATH,
+  getSuperAdminPendingLeavesState,
   SUPER_ADMIN_ROUTES,
   buildDynamicSnapshotCards,
   buildDynamicSummaryCards,
@@ -35,6 +37,7 @@ import {
   getUserDisplayName,
   normalizeAssignedAdminUsers,
   normalizeSuperAdminMetrics,
+  normalizeSuperAdminQueueMetrics,
   paginateSuperAdminItems,
 } from "../../../lib/utils/Dashboards/SuperAdminDashboard/superAdminDashboardHelpers.js";
 
@@ -87,14 +90,15 @@ export default function SuperAdminDashboardPage() {
 
   const [activeTab, setActiveTab] = useState("overview");
   const [adminUsers, setAdminUsers] = useState([]);
-  const [exceptions, setExceptions] = useState([]);
   const [activityLogs, setActivityLogs] = useState([]);
   const [backendOverview, setBackendOverview] = useState(null);
   const [extraCounts, setExtraCounts] = useState({
     employeeTotal: null,
     departmentsTotal: null,
     approvalsTotal: null,
+    approvalsLoading: true,
     leavesTotal: null,
+    leavesStatus: "updating",
     recruitmentTotal: null,
   });
   const [notice, setNotice] = useState("");
@@ -120,6 +124,19 @@ export default function SuperAdminDashboardPage() {
   const module = filterValues?.module || "All Modules";
   const account = filterValues?.account || "All Accounts";
   const status = filterValues?.status || "All Statuses";
+  const leaveSummaryKey = `${activeCountCacheKey}|${user?.admin_access ?? user?.adminAccess ?? ""}|${user?.role ?? user?.userRole ?? user?.tokenType ?? ""}`;
+
+  const refreshPendingLeaves = useCallback(async () => {
+    const result = await getLeavesSummary({ cacheKey: leaveSummaryKey });
+    const { leavesTotal, leavesStatus, leavesDateRange } = normalizeSuperAdminQueueMetrics(null, result);
+    setExtraCounts((current) => ({ ...current, leavesTotal, leavesStatus, leavesDateRange }));
+  }, [leaveSummaryKey]);
+
+  useEffect(() => {
+    if (extraCounts.leavesStatus !== "updating") return undefined;
+    const timer = window.setInterval(() => void refreshPendingLeaves(), 10_000);
+    return () => window.clearInterval(timer);
+  }, [extraCounts.leavesStatus, refreshPendingLeaves]);
 
   const fetchDashboardData = useCallback(
     function fetchDashboardData({ forceRefresh = false } = {}) {
@@ -147,16 +164,27 @@ export default function SuperAdminDashboardPage() {
         try {
           setLoading(true);
           const overviewPromise = getHrDashboardOverview({ forceRefresh }).then((value) => {
-            if (value) {
+            if (value?.success === true) {
               const normalized = normalizeDashboardOverview(value);
-              setBackendOverview(normalized);
+              const attendance = (value.data && !value.metrics ? value.data : value).attendance;
+              setBackendOverview({
+                ...normalized,
+                attendance: { ...normalized.attendance, present: attendance?.present ?? null },
+              });
               setExtraCounts((current) => ({
                 ...current,
                 employeeTotal: normalized.metrics.employees,
                 departmentsTotal: normalized.metrics.departments,
               }));
+            } else {
+              setBackendOverview(null);
+              setExtraCounts((current) => ({ ...current, employeeTotal: null, departmentsTotal: null }));
             }
             return value;
+          }).catch(() => {
+            setBackendOverview(null);
+            setExtraCounts((current) => ({ ...current, employeeTotal: null, departmentsTotal: null }));
+            return null;
           });
           // The active candidate count uses the same lightweight, shared endpoint
           // as the sidebar, so activity-feed queries cannot delay the TA card.
@@ -199,8 +227,12 @@ export default function SuperAdminDashboardPage() {
             return employeePromise;
           };
           const assignedUsersPromise = getUserSettingsUsers({ limit: 100 });
-          const approvalsPromise = getApprovalRequests({ status: "Pending", limit: 50 });
-          const leavesPromise = getLeaves({ status: "Pending", limit: 50 });
+          const approvalsPromise = getApprovalRequestCounts({ module: "Attrition", status: "Pending" })
+            .then((result) => {
+              const { approvalsTotal } = normalizeSuperAdminQueueMetrics(result);
+              setExtraCounts((current) => ({ ...current, approvalsTotal, approvalsLoading: false }));
+            });
+          const leavesPromise = refreshPendingLeaves();
 
           const adminsPromise = (async () => {
             const [assignedUsersData] = await Promise.allSettled([assignedUsersPromise]);
@@ -242,52 +274,10 @@ export default function SuperAdminDashboardPage() {
 
           const metricsPromise = overviewPromise.finally(() => finishSection("metrics"));
 
-          const secondaryMetricsPromise = (async () => {
-            const [
-              overviewData,
-              approvalsData,
-              leavesData,
-            ] = await Promise.allSettled([
-              overviewPromise,
-              approvalsPromise,
-              leavesPromise,
-            ]);
-
-            let appTotal = null;
-            if (approvalsData.status === "fulfilled" && approvalsData.value) {
-              appTotal =
-                approvalsData.value.counts?.pending ??
-                approvalsData.value.total ??
-                null;
-            }
-
-            let lvsTotal = null;
-            if (leavesData.status === "fulfilled" && leavesData.value) {
-              lvsTotal =
-                leavesData.value.pagination?.total ?? leavesData.value.total ?? null;
-            }
-
-            setExtraCounts((current) => ({
-              ...current,
-              approvalsTotal: appTotal,
-              leavesTotal: lvsTotal,
-            }));
-
-            const liveExceptions = deriveLiveExceptions({
-              employeeData: null,
-              approvalsData:
-                approvalsData.status === "fulfilled" ? approvalsData.value : null,
-              leavesData:
-                leavesData.status === "fulfilled" ? leavesData.value : null,
-              overviewData:
-                overviewData.status === "fulfilled" ? overviewData.value : null,
-            });
-            setExceptions(liveExceptions);
-          })();
-
           await Promise.allSettled([
             metricsPromise,
-            secondaryMetricsPromise,
+            approvalsPromise,
+            leavesPromise,
             adminsPromise,
             feedPromise,
             countPromise,
@@ -305,7 +295,7 @@ export default function SuperAdminDashboardPage() {
       })();
       return request.promise;
     },
-    [setLoading, activeCountCacheKey],
+    [setLoading, activeCountCacheKey, refreshPendingLeaves],
   );
 
   useEffect(() => {
@@ -319,7 +309,7 @@ export default function SuperAdminDashboardPage() {
     setIsManualRefreshing(true);
     try {
       await fetchDashboardData({ forceRefresh: true });
-      setNotice("Super Admin dashboard data refreshed from server.");
+      setNotice("Refresh finished. Check the cards for the latest source status.");
     } catch {
       setNotice("Failed to refresh dashboard data.");
     } finally {
@@ -336,6 +326,15 @@ export default function SuperAdminDashboardPage() {
       }),
     [backendOverview, extraCounts, adminUsers.length, quickActiveCount],
   );
+  const exceptions = useMemo(
+    () => deriveLiveExceptions({
+      approvalsTotal: extraCounts.approvalsTotal,
+      leavesTotal: extraCounts.leavesTotal,
+      leavesDateRange: extraCounts.leavesDateRange,
+    }),
+    [extraCounts.approvalsTotal, extraCounts.leavesTotal, extraCounts.leavesDateRange],
+  );
+  const queuesIncomplete = extraCounts.approvalsTotal === null || extraCounts.leavesTotal === null;
 
   const dynamicSummaryCards = useMemo(
     () => buildDynamicSummaryCards(liveMetrics),
@@ -465,12 +464,6 @@ export default function SuperAdminDashboardPage() {
     setPage(1);
   }
 
-  function resolveException(id) {
-    const target = exceptions.find((item) => item.id === id);
-    setExceptions((current) => current.filter((item) => item.id !== id));
-    setNotice(`Resolved exception: ${target?.title || id}.`);
-  }
-
   const paginationProps = {
     currentPage: activePagination.currentPage,
     totalPages: activePagination.totalPages,
@@ -494,16 +487,14 @@ export default function SuperAdminDashboardPage() {
       navigate(SUPER_ADMIN_ROUTES.employees);
       return;
     }
-    if (metric.key === "attendance") {
-      navigate("/attendance");
-      return;
-    }
     if (metric.key === "approvals") {
-      navigate(SUPER_ADMIN_ROUTES.approvals);
+      navigate(SUPER_ADMIN_PENDING_APPROVALS_PATH);
       return;
     }
     if (metric.key === "leaves") {
-      navigate("/leaves");
+      if (extraCounts.leavesDateRange) {
+        navigate("/leaves", { state: getSuperAdminPendingLeavesState(extraCounts.leavesDateRange) });
+      }
       return;
     }
     if (metric.key === "recruitment") {
@@ -575,6 +566,7 @@ export default function SuperAdminDashboardPage() {
                 <SuperAdminOverview
                   cards={dynamicSummaryCards}
                   exceptionsCount={exceptions.length}
+                  queuesIncomplete={queuesIncomplete}
                   onNavigate={navigate}
                   onOpenExceptions={() => handleTabChange("exceptions")}
                 />
@@ -586,7 +578,7 @@ export default function SuperAdminDashboardPage() {
                   totalItems={filteredExceptions.length}
                   pagination={paginationProps}
                   onNavigate={navigate}
-                  onResolve={resolveException}
+                  queuesIncomplete={queuesIncomplete}
                   searchInput={searchInput}
                   onSearchChange={setSearchInput}
                   onSearchKeyDown={handleSearchKeyDown}

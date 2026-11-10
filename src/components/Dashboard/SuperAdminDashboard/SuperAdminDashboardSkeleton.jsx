@@ -3,9 +3,9 @@ import { Skeleton, MetricGridSkeleton } from "@/components/ui";
 
 const SUPER_ADMIN_METRIC_LABELS = [
   "Active Employees",
-  "Attendance Flags",
-  "Pending Approvals",
-  "Pending Leaves",
+  "Recorded Attendance",
+  "Pending Attrition Approvals",
+  "Pending Leave Requests",
 ];
 const TABLE_ROW_COUNT = 6;
 
