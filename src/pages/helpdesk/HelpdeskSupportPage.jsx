@@ -98,6 +98,19 @@ function safeText(value) {
   return String(value ?? "").trim();
 }
 
+// Resolve timeline actors from the HRIS-verified conversation roster.
+// displayName is the complete employee name; do not use preferredName or
+// chatNickname for audited acceptance, status, and closure events.
+function getTimelineActorLabel(entry = {}, conversation = {}) {
+  const actorId = safeText(entry.actorSibsId);
+  if (!actorId) return "SiBS ID: —";
+  const member = (conversation.members || []).find(
+    (person) => safeText(person?.sibsId) === actorId,
+  );
+  const fullName = safeText(member?.displayName || entry.actorDisplayName);
+  return `SiBS ID: ${actorId}${fullName ? ` - ${fullName}` : ""}`;
+}
+
 function getRequester(conversation = {}) {
   const sibsId = safeText(conversation.createdBySibsId || conversation.requester?.sibsId);
   const member = (conversation.members || []).find((item) => safeText(item.sibsId) === sibsId);
@@ -131,6 +144,18 @@ function getCaseDisplayLabel(ticket, conversation = {}) {
   if (status === "REJECTED") return "Rejected request";
   if (!caseNumber) return "Case pending";
   return `Case ${status === "RESOLVED" ? "Closed" : "Opened"} #${caseNumber}`;
+}
+
+// The case modal displays the requester's verified assigned site alongside
+// the case number. Only the two operational Helpdesk sites are supported.
+// Avoid showing an unverified or missing site in the modal title.
+function getCaseModalTitle(ticket, conversation = {}) {
+  const caseLabel = getCaseDisplayLabel(ticket, conversation);
+  const requester = getRequester(conversation);
+  const rawSite = safeText(ticket?.requesterSite || requester.location)
+    .replace(/\s+site$/i, "").trim().toLowerCase();
+  const site = rawSite === "davao" ? "Davao" : rawSite === "tagum" ? "Tagum" : "";
+  return site ? `${caseLabel} (${site} Site)` : caseLabel;
 }
 
 // Response Time is separate from queue wait: acceptance -> the FIRST real
@@ -451,7 +476,7 @@ function HelpdeskTicketModal({ conversation, ticket, loading, eligibility, eligi
           <div className="flex min-w-0 items-center gap-3">
             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sibs-orange"><ClipboardList size={20} /></span>
             <div className="min-w-0">
-              <h2 className="truncate font-heading text-lg font-bold">{getCaseDisplayLabel(ticket, conversation)}</h2>
+              <h2 className="truncate font-heading text-lg font-bold">{getCaseModalTitle(ticket, conversation)}</h2>
               <p className="truncate text-xs font-semibold text-blue-100">{safeText(conversation.helpdeskCategory) === "IT" ? "IT Support" : "TA/HR Concerns"} · {requester.name}</p>
             </div>
           </div>
@@ -578,7 +603,8 @@ function HelpdeskTicketModal({ conversation, ticket, loading, eligibility, eligi
                       <li key={`${entry.eventType}-${entry.occurredAt}-${index}`} className="flex gap-2.5 text-xs text-sibs-navy">
                         <Clock3 size={16} className="mt-0.5 shrink-0 text-sibs-orange" />
                         <span><b>{entry.eventType === "ACCEPTED" ? "Accepted and assigned" : entry.eventType === "RESOLVED" ? "Case closed" : entry.eventType === "REJECTED" ? "Request rejected" : `Status changed to ${TICKET_STATUS_LABELS[entry.newStatus] || entry.newStatus}`}</b>
-                          <span className="block text-sibs-muted">{formatDate(entry.occurredAt)} · SiBS ID: {entry.actorSibsId}</span>
+                          <span className="block text-sibs-muted">{formatDate(entry.occurredAt)}</span>
+                          <span className="mt-0.5 block break-words text-sibs-muted">{getTimelineActorLabel(entry, conversation)}</span>
                           {entry.reason && <span className="mt-0.5 block whitespace-pre-wrap break-words text-rose-700">Reason: {entry.reason}</span>}
                         </span>
                       </li>
