@@ -152,17 +152,14 @@ export default function LoginPage() {
     <main className="relative flex min-h-dvh w-full items-center justify-center overflow-hidden bg-sibs-auth-bg p-4 font-jakarta sm:p-6">
       <GradientWave />
 
-      <section aria-labelledby="sign-in-heading" className="relative z-10 w-full max-w-md rounded-2xl border border-white/20 bg-sibs-navy p-5 shadow-2xl sm:p-8">
+      <section aria-label="SiBS HRIS sign in" className="relative z-10 w-full max-w-md rounded-2xl border border-white/20 bg-sibs-navy p-5 shadow-2xl sm:p-8">
         <div className="mb-6 text-center">
           <img
             src="/SiBS_Login_Logo.svg"
-            alt=""
+            alt="SiBS HRIS"
             draggable={false}
-            className="mx-auto mb-5 block h-auto w-44 select-none object-contain"
+            className="mx-auto block h-auto w-64 max-w-full select-none object-contain sm:w-72"
           />
-          <h1 id="sign-in-heading" className="text-xl font-bold tracking-tight text-white sm:text-2xl">
-            Sign in to SiBS HRIS
-          </h1>
         </div>
 
         <div role="alert" aria-atomic="true">
