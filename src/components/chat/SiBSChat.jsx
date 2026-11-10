@@ -1040,7 +1040,17 @@ function ChatAvatar({
   );
 }
 
-function ChatFolderList({ folders, expandedFolders, onFoldersChange, children, nested = false }) {
+function ChatFolderList({
+  folders,
+  expandedFolders,
+  onFoldersChange,
+  children,
+  nested = false,
+  onHelpdeskContact,
+  canRequestHelpdesk,
+  helpdeskStartingCategory = "",
+  helpdeskScopePending = false,
+}) {
   return (
     <Accordion
       multiple
@@ -1051,31 +1061,65 @@ function ChatFolderList({ folders, expandedFolders, onFoldersChange, children, n
         const { key, label, conversations, unread, subfolders, Icon } = folder;
         return (
           <AccordionItem key={key} value={key} className="border-0!">
-            <AccordionTrigger
-              className={`mb-1 gap-2! rounded-lg! hover:bg-sibs-surface hover:no-underline focus-visible:outline-offset-[-2px]! focus-visible:outline-sibs-orange! ${
-                nested ? "py-2! pl-5 pr-2 text-[11px]! font-bold!" : "px-2.5 py-2.5! text-xs! font-extrabold!"
-              }`}
-              indicator={(
-                <ChevronRight
-                  aria-hidden="true"
-                  className="size-3.5 shrink-0 text-sibs-muted transition-transform duration-200 group-aria-expanded/accordion-trigger:rotate-90 motion-reduce:transition-none"
-                />
-              )}
-            >
-              <Icon size={nested ? 14 : 16} className="shrink-0 text-sibs-orange" />
-              <span className="min-w-0 flex-1 truncate">{label}</span>
-              {unread > 0 ? (
-                <span
-                  title={`${unread} unread message${unread === 1 ? "" : "s"}`}
-                  className="inline-flex min-w-5 items-center justify-center rounded-full bg-sibs-orange px-1 py-0.5 text-[9px] font-bold text-white"
-                >
-                  {unread > 99 ? "99+" : unread}
-                </span>
-              ) : null}
-              <span className="rounded-md bg-sibs-surface px-1.5 py-0.5 text-[10px] font-bold text-sibs-muted">
-                {conversations.length}
-              </span>
-            </AccordionTrigger>
+            {nested && (key === "it" || key === "taHr") ? (() => {
+              const category = key === "it" ? "IT" : "TA_HR";
+              const canContact = Boolean(canRequestHelpdesk?.(category));
+              const contacting = helpdeskStartingCategory === category;
+              const unavailableReason = helpdeskScopePending
+                ? "Checking Helpdesk request access…"
+                : "You cannot request support from your own Helpdesk team.";
+              return (
+                <div className="mb-1 flex items-center gap-0.5 rounded-lg pl-4 pr-1 hover:bg-sibs-surface">
+                  <button
+                    type="button"
+                    onClick={() => onHelpdeskContact?.(category)}
+                    disabled={!canContact || Boolean(helpdeskStartingCategory)}
+                    title={canContact ? `Contact ${label}` : unavailableReason}
+                    aria-label={`Contact ${label}`}
+                    className="flex min-w-0 flex-1 items-center gap-2 py-2 text-left text-[11px] font-bold text-sibs-navy transition hover:text-sibs-orange disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    <Icon size={14} className="shrink-0 text-sibs-orange" />
+                    <span className="min-w-0 flex-1 truncate">{label}</span>
+                  </button>
+                  {canContact ? (
+                    <button
+                      type="button"
+                      onClick={() => onHelpdeskContact?.(category)}
+                      disabled={Boolean(helpdeskStartingCategory)}
+                      title={`New ${label} request`}
+                      aria-label={`New ${label} request`}
+                      className="inline-flex h-8 w-7 shrink-0 items-center justify-center rounded-lg text-sibs-orange transition hover:bg-sibs-cream-light disabled:opacity-50"
+                    >
+                      {contacting ? <Loader2 size={13} className="animate-spin" /> : <Plus size={15} />}
+                    </button>
+                  ) : null}
+                  <AccordionTrigger
+                    className="h-8! w-7! shrink-0 justify-center! gap-0! p-0! hover:bg-white/70"
+                    title={`${expandedFolders[key] ? "Hide" : "Show"} ${label} conversations`}
+                    aria-label={`${expandedFolders[key] ? "Hide" : "Show"} ${label} conversations`}
+                    indicator={<ChevronRight aria-hidden="true" className="size-3.5 shrink-0 text-sibs-muted transition-transform duration-200 group-aria-expanded/accordion-trigger:rotate-90 motion-reduce:transition-none" />}
+                  />
+                </div>
+              );
+            })() : (
+              <AccordionTrigger
+                className="mb-1 gap-2! rounded-lg! px-2.5 py-2.5! text-xs! font-extrabold! hover:bg-sibs-surface hover:no-underline focus-visible:outline-offset-[-2px]! focus-visible:outline-sibs-orange!"
+                indicator={<ChevronRight aria-hidden="true" className="size-3.5 shrink-0 text-sibs-muted transition-transform duration-200 group-aria-expanded/accordion-trigger:rotate-90 motion-reduce:transition-none" />}
+              >
+                <Icon size={16} className="shrink-0 text-sibs-orange" />
+                <span className="min-w-0 flex-1 truncate">{label}</span>
+                {unread > 0 ? (
+                  <span title={`${unread} unread messages`} className="inline-flex min-w-5 items-center justify-center rounded-full bg-sibs-orange px-1 py-0.5 text-[9px] font-bold text-white">
+                    {unread > 99 ? "99+" : unread}
+                  </span>
+                ) : null}
+                {key !== "helpdesk" ? (
+                  <span className="rounded-md bg-sibs-surface px-1.5 py-0.5 text-[10px] font-bold text-sibs-muted">
+                    {conversations.length}
+                  </span>
+                ) : null}
+              </AccordionTrigger>
+            )}
             <AccordionContent className="pb-0!" panelClassName="data-open:has-[[role=menu]]:overflow-visible">
               {subfolders ? (
                 <ChatFolderList
@@ -1083,6 +1127,10 @@ function ChatFolderList({ folders, expandedFolders, onFoldersChange, children, n
                   expandedFolders={expandedFolders}
                   onFoldersChange={onFoldersChange}
                   nested
+                  onHelpdeskContact={onHelpdeskContact}
+                  canRequestHelpdesk={canRequestHelpdesk}
+                  helpdeskStartingCategory={helpdeskStartingCategory}
+                  helpdeskScopePending={helpdeskScopePending}
                 >
                   {children}
                 </ChatFolderList>
@@ -4416,15 +4464,19 @@ export default function SiBSChat({
           ) : null}
           <div className="sibs-scrollbar min-h-0 flex-1 overflow-y-auto p-2">
             {chat.conversationsLoading && !chat.conversations.length ? (
-              <div className="flex h-full items-center justify-center text-sibs-muted">
-                <Loader2 size={20} className="animate-spin" />
+              <div className="flex items-center gap-2 px-3 py-2 text-[10px] font-semibold text-sibs-muted">
+                <Loader2 size={13} className="animate-spin" /> Loading conversations…
               </div>
-            ) : filteredConversations.length ? (
-              <ChatFolderList
-                folders={chatSidebarFolders}
-                expandedFolders={expandedChatFolders}
-                onFoldersChange={updateChatFolders}
-              >{(conversation, nested) => {
+            ) : null}
+            <ChatFolderList
+              folders={chatSidebarFolders}
+              expandedFolders={expandedChatFolders}
+              onFoldersChange={updateChatFolders}
+              onHelpdeskContact={handleContactHelpdesk}
+              canRequestHelpdesk={canRequestHelpdesk}
+              helpdeskStartingCategory={helpdeskStartingCategory}
+              helpdeskScopePending={!Array.isArray(requestableHelpdeskCategories)}
+            >{(conversation, nested) => {
                 const selected = Number(chat.activeConversationId) === Number(conversation.id);
                 const otherMember = conversation.otherMember;
                 const online = otherMember ? isMemberOnline(otherMember) : false;
@@ -4651,23 +4703,11 @@ export default function SiBSChat({
                   </div>
                 );
               }}</ChatFolderList>
-            ) : (
-              <div className="flex h-full items-center justify-center px-5 text-center">
-                <div>
-                  <MessageCircleMore size={24} className="mx-auto text-sibs-faint" />
-                  <p className="mt-2 text-xs font-extrabold text-sibs-navy">
-                    {cleanText(conversationSearch) ? "No matching conversations" : "No chats yet"}
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => setNewChatOpen(true)}
-                    className="mt-2 text-[11px] font-extrabold text-sibs-orange"
-                  >
-                    Start a conversation
-                  </button>
-                </div>
-              </div>
-            )}
+            {chatSearchActive && !filteredConversations.length ? (
+              <p className="px-3 py-4 text-center text-[11px] font-semibold text-sibs-muted">
+                No matching conversations.
+              </p>
+            ) : null}
           </div>
         </aside>
 
