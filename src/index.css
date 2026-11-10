@@ -2593,3 +2593,14 @@
   .sibs-collectible-photo::before,
   .sibs-collectible-photo::after { animation: none !important; }
 }
+
+/* LOGIN ONLY: fill the viewport edge-to-edge without the stable scrollbar
+   gutter used by authenticated HRIS pages. Removed automatically on unmount. */
+html.sibs-login-full-bleed {
+  scrollbar-gutter: auto;
+  background-color: var(--sibs-auth-bg);
+}
+html.sibs-login-full-bleed body,
+html.sibs-login-full-bleed #root {
+  background-color: var(--sibs-auth-bg);
+}

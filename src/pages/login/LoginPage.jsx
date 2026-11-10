@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useLayoutEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { AlertCircle, Eye, EyeOff } from "lucide-react";
 import { GradientWave } from "@/components/ui/gradient-wave";
@@ -44,6 +44,16 @@ function getLoginFailureMessage(result) {
 }
 
 export default function LoginPage() {
+  // The global HRIS layout reserves a scrollbar gutter. On the public login
+  // screen that gutter exposes the light document background as a thin stripe
+  // along the viewport edge. Make auth routes full-bleed without altering the
+  // stable scrollbar layout of authenticated pages.
+  useLayoutEffect(() => {
+    const root = document.documentElement;
+    root.classList.add("sibs-login-full-bleed");
+    return () => root.classList.remove("sibs-login-full-bleed");
+  }, []);
+
   const location = useLocation();
   const navigate = useNavigate();
   const { setUser } = useUser();
@@ -223,7 +233,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="mt-1 min-h-12 w-full rounded-lg bg-sibs-orange px-4 py-3 text-base font-extrabold text-sibs-auth-bg transition-colors hover:bg-sibs-button-active focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white disabled:cursor-not-allowed disabled:opacity-70"
+            className="mt-1 min-h-12 w-full rounded-lg bg-sibs-orange px-4 py-3 text-base font-extrabold text-white transition-colors hover:bg-sibs-button-active focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white disabled:cursor-not-allowed disabled:opacity-70"
           >
             {loading ? "Signing in…" : "Sign in"}
           </button>
