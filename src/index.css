@@ -163,8 +163,13 @@
     font-family: "Plus Jakarta Sans", system-ui, sans-serif;
   }
 
+  /* The fixed page shell already owns dashboard scrolling. A permanently
+     reserved root scrollbar gutter leaves an uncovered light strip beside
+     full-screen modal backdrops (including nested/custom modals).
+     Use the browser's default automatic gutter so overlays are edge-to-edge;
+     inner modal scrollbars and page scrolling remain unchanged. */
   html {
-    scrollbar-gutter: stable;
+    scrollbar-gutter: auto;
   }
 
   body {

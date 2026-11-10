@@ -168,6 +168,19 @@ function EmployeeStatusBadge({ status }) {
   );
 }
 
+// The department directory API exposes HRIS locations as "SiBS Tagum",
+// "SiBS Davao", "Tagum & Davao", and occasionally "Hybrid". Filter on
+// confirmed site names, not account/LOB names or employee name text.
+// Dual-site employees intentionally appear under both site filters.
+function employeeMatchesSite(employee, site) {
+  if (site === "All") return true;
+  const location = String(employee?.location || "").trim();
+  if (!location) return false;
+  return site === "Davao"
+    ? /(?:^|[^a-z])davao(?:$|[^a-z])/i.test(location)
+    : site === "Tagum" && /(?:^|[^a-z])tagum(?:$|[^a-z])/i.test(location);
+}
+
 function AccountEmployeesModal({
   account,
   employees,
@@ -183,6 +196,27 @@ function AccountEmployeesModal({
   onAssignLob,
   onClose,
 }) {
+  const [siteFilter, setSiteFilter] = useState("All");
+
+  // Reset when changing accounts (or opening an account-specific LOB list).
+  // The account directory uses one shared modal component for every account.
+  useEffect(() => {
+    setSiteFilter("All");
+  }, [account?.id, lobFilter]);
+
+  // The global HRIS html scrollbar-gutter: stable leaves a white strip next
+  // to portal-backed modal overlays in Chrome. Override it only while this
+  // employees modal is present; restore the exact prior inline style on close.
+  useEffect(() => {
+    if (!account || typeof document === "undefined") return undefined;
+    const root = document.documentElement;
+    const priorGutter = root.style.scrollbarGutter;
+    root.style.scrollbarGutter = "auto";
+    return () => {
+      root.style.scrollbarGutter = priorGutter;
+    };
+  }, [account?.id]);
+
   if (!account) return null;
 
   const activeLobs = (Array.isArray(lobs) ? lobs : []).filter(
@@ -204,7 +238,17 @@ function AccountEmployeesModal({
         );
       })
     : employees;
-  const visibleEmployeeCount = visibleEmployees.length;
+  const employeesWithinSite = visibleEmployees.filter((employee) =>
+    employeeMatchesSite(employee, siteFilter),
+  );
+  const siteOptions = ["All", "Davao", "Tagum"].map((site) => ({
+    site,
+    count: visibleEmployees.filter((employee) => employeeMatchesSite(employee, site)).length,
+  }));
+  const visibleEmployeeCount = employeesWithinSite.length;
+  const assignedVisibleCount = employeesWithinSite.filter((employee) =>
+    Array.isArray(employee.lobIds) ? employee.lobIds.length > 0 : Boolean(employee.lobId),
+  ).length;
 
   return (
     <ModalShell
@@ -218,11 +262,11 @@ function AccountEmployeesModal({
       }
       icon={UsersRound}
       badge={`${
-        filteredByLob
+        siteFilter !== "All" || filteredByLob
           ? visibleEmployeeCount
           : summary.totalEmployees || employees.length
       } employee${
-        (filteredByLob
+        (siteFilter !== "All" || filteredByLob
           ? visibleEmployeeCount
           : summary.totalEmployees || employees.length) === 1
           ? ""
@@ -236,15 +280,14 @@ function AccountEmployeesModal({
       footer={
         <div className="flex w-full items-center justify-between gap-3">
           <span className="text-xs font-bold text-sibs-muted">
-            {filteredByLob
-              ? `${visibleEmployeeCount} employee${visibleEmployeeCount === 1 ? "" : "s"} assigned to ${lobFilter}`
-              : `${summary.lobAssignedEmployees || 0} with LOB · ${
-                  summary.lobUnassignedEmployees ??
-                  Math.max(
-                    0,
-                    employees.length - (summary.lobAssignedEmployees || 0),
-                  )
-                } unassigned`}
+            {siteFilter !== "All"
+              ? `${visibleEmployeeCount} ${siteFilter} employee${visibleEmployeeCount === 1 ? "" : "s"} · ${assignedVisibleCount} with LOB · ${visibleEmployeeCount - assignedVisibleCount} unassigned`
+              : filteredByLob
+                ? `${visibleEmployeeCount} employee${visibleEmployeeCount === 1 ? "" : "s"} assigned to ${lobFilter}`
+                : `${summary.lobAssignedEmployees || 0} with LOB · ${
+                    summary.lobUnassignedEmployees ??
+                    Math.max(0, employees.length - (summary.lobAssignedEmployees || 0))
+                  } unassigned`}
           </span>
           <button type="button" className="sibs-btn-primary !text-sm" onClick={onClose}>
             Close Employees
@@ -269,6 +312,32 @@ function AccountEmployeesModal({
         </div>
       ) : null}
 
+      {/* Shared by every account, not just US Visa. This filters the visible
+          employee cards without modifying account-specific LOB assignments. */}
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-sibs-border bg-sibs-surface px-3 py-2.5" role="group" aria-label="Filter account employees by assigned site">
+        <span className="flex items-center gap-1.5 text-[11px] font-extrabold text-sibs-navy">
+          <MapPin className="h-3.5 w-3.5 shrink-0 text-sibs-orange" />
+          Assigned Site
+        </span>
+        <div className="flex flex-wrap items-center gap-1.5">
+          {siteOptions.map(({ site, count }) => (
+            <button
+              key={site}
+              type="button"
+              aria-pressed={siteFilter === site}
+              onClick={() => setSiteFilter(site)}
+              className={`inline-flex min-h-9 items-center gap-1.5 rounded-lg border px-3 py-1.5 text-[11px] font-extrabold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sibs-orange ${
+                siteFilter === site
+                  ? "border-sibs-orange bg-sibs-orange text-white shadow-sm"
+                  : "border-sibs-border bg-white text-sibs-navy hover:border-sibs-orange/50 hover:bg-sibs-cream-light"
+              }`}
+            >
+              {site} <span className={`rounded-md px-1.5 py-0.5 text-[10px] ${siteFilter === site ? "bg-white/20 text-white" : "bg-sibs-surface text-sibs-muted"}`}>{count}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
       {loading ? (
         <div className="grid gap-2 sm:grid-cols-2" data-testid="account-employees-skeleton">
           {Array.from({ length: 6 }).map((_, index) => (
@@ -292,9 +361,9 @@ function AccountEmployeesModal({
         <div className="rounded-[10px] border border-rose-200 bg-rose-50 p-6 text-center text-sm font-semibold text-rose-700">
           {error}
         </div>
-      ) : visibleEmployees.length ? (
+      ) : employeesWithinSite.length ? (
         <div className="grid gap-2 sm:grid-cols-2">
-          {visibleEmployees.map((employee, index) => {
+          {employeesWithinSite.map((employee, index) => {
             const savingAssignment = Boolean(
               assignmentSavingSibsId?.[String(employee.sibsId)],
             );
@@ -429,9 +498,11 @@ function AccountEmployeesModal({
         </div>
       ) : (
         <div className="rounded-[10px] border border-dashed border-sibs-border p-8 text-center text-sm font-semibold text-sibs-muted">
-          {filteredByLob
-            ? `No employees are currently assigned to ${lobFilter}.`
-            : "No employees are assigned to this account."}
+          {siteFilter !== "All"
+            ? `No employees are assigned to ${siteFilter} for this ${filteredByLob ? "Line of Business" : "account"}.`
+            : filteredByLob
+              ? `No employees are currently assigned to ${lobFilter}.`
+              : "No employees are assigned to this account."}
         </div>
       )}
     </ModalShell>
