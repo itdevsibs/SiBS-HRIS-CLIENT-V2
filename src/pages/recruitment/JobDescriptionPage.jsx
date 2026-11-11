@@ -759,7 +759,7 @@ export default function JobDescriptionPage() {
         ref={mainRef}
         className="sibs-dashboard-main-wide min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6 lg:p-7"
       >
-        <div className="mx-auto w-full max-w-[1700px] space-y-4 sm:space-y-5">
+        <div className="mx-auto flex min-h-full w-full max-w-[1700px] flex-col gap-4 sm:gap-5">
           <PageHeaderHero
             kicker="Recruitment View"
             title="Job Description"
@@ -843,6 +843,7 @@ export default function JobDescriptionPage() {
           )}
 
           <div
+            className="flex shrink-0 grow flex-col"
             key={jobDescriptionList.length}
             onClickCapture={handleTableClickCapture}
           >

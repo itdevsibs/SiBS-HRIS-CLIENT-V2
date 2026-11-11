@@ -223,7 +223,7 @@ export default function ResigneePage() {
     <div className="sibs-dashboard-shell">
       <div className="shrink-0"><Header /></div>
       <main className="sibs-dashboard-main-wide">
-        <div className="mx-auto w-full max-w-[1700px] space-y-4 sm:space-y-5">
+        <div className="mx-auto flex min-h-full w-full max-w-[1700px] flex-col gap-4 sm:gap-5">
           <PageHeaderHero
             kicker="Core HR View"
             title="Resignees"
@@ -248,7 +248,7 @@ export default function ResigneePage() {
           {statsError ? <p role="status" className="sibs-page-card-in sibs-text-xs font-semibold text-amber-700">{statsError} Employee records remain available.</p> : null}
 
           <section
-            className="sibs-page-card-in sibs-card min-w-0 overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-xs font-jakarta"
+            className="flex shrink-0 grow flex-col sibs-page-card-in sibs-card min-w-0 overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-xs font-jakarta"
             style={{ animationDelay: "240ms", animationFillMode: "both" }}
           >
             <div className="border-b border-sibs-border p-4 sm:p-5 2xl:p-6 font-jakarta">
@@ -338,7 +338,7 @@ export default function ResigneePage() {
               </div>
             ) : null}
 
-            <div className="p-3 sm:p-5 2xl:p-6 font-jakarta">
+            <div className="flex flex-1 flex-col p-3 sm:p-5 2xl:p-6 font-jakarta">
               <ResponsiveTableShell
                 desktopContent={
                   <div className="overflow-hidden rounded-xl border border-sibs-border bg-white">
@@ -492,7 +492,7 @@ export default function ResigneePage() {
                 }
               />
 
-              <div className="mt-4 2xl:mt-5">
+              <div className="mt-auto pt-4 2xl:pt-5">
                 <TablePagination
                   currentPage={pagination.currentPage}
                   totalPages={pagination.totalPages}

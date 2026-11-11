@@ -156,7 +156,7 @@ export default function AttritionReportsTable({
   return (
     <section
       aria-label="Detailed Employee Attrition Records"
-      className="sibs-page-card-in rounded-[14px] border border-sibs-border bg-white font-jakarta shadow-xs"
+      className="flex shrink-0 grow flex-col sibs-page-card-in rounded-[14px] border border-sibs-border bg-white font-jakarta shadow-xs"
       style={{ animationDelay: "360ms", animationFillMode: "both" }}
     >
       {/* 1. Card Header with Integrated Search and Filters (Matching Sourcing Channel Performance Directory) */}
@@ -263,7 +263,7 @@ export default function AttritionReportsTable({
       ) : null}
 
       {/* 2. Framed Table Container with standard padding */}
-      <div className="min-h-0 flex-1 p-4 sm:p-5 2xl:p-6 font-jakarta">
+      <div className="flex flex-1 flex-col p-4 sm:p-5 2xl:p-6 font-jakarta">
         <ResponsiveTableShell
           desktopContent={
             <div className="overflow-hidden rounded-[14px] border border-sibs-border bg-white shadow-2xs">
@@ -508,7 +508,7 @@ export default function AttritionReportsTable({
         />
 
         {/* 3. Pagination Footer (Framed cleanly inside card padding) */}
-        <div className="pt-3 sm:pt-4">
+        <div className="mt-auto pt-3 sm:pt-4">
           <TablePagination
             currentPage={pagination.currentPage || 1}
             totalPages={pagination.totalPages || 1}

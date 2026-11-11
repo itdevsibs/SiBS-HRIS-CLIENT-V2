@@ -231,7 +231,7 @@ export default function ScheduleTable({
         }
       `}</style>
 
-      <div className="space-y-4 sm:space-y-5">
+      <div className="flex shrink-0 grow flex-col gap-4 sm:gap-5">
         <section
           className="sibs-profile-tab-panel"
           style={getAnimationStyle(60)}
@@ -285,7 +285,7 @@ export default function ScheduleTable({
         </section>
 
         <section
-          className="sibs-page-card-in sibs-card overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-xs"
+          className="sibs-page-card-in sibs-card flex flex-1 flex-col overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-xs"
           style={getAnimationStyle(120)}
         >
           <div className="border-b border-sibs-border p-4 sm:p-5 2xl:p-6 font-jakarta">
@@ -321,7 +321,7 @@ export default function ScheduleTable({
             </div>
           </div>
 
-          <div className="p-3 sm:p-5 2xl:p-6">
+          <div className="flex flex-1 flex-col p-3 sm:p-5 2xl:p-6">
             <ResponsiveTableShell
               desktopContent={
                 <div className="sibs-data-table-shell overflow-hidden rounded-xl border border-sibs-border bg-white">
@@ -474,7 +474,7 @@ export default function ScheduleTable({
               }
             />
 
-            <div className="mt-4 2xl:mt-5">
+            <div className="mt-auto pt-4 2xl:pt-5">
               <TablePagination
                 loading={loading}
                 currentPage={currentPage}

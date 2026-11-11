@@ -162,7 +162,7 @@ export default function ResignationPage() {
       </div>
 
       <main className="sibs-dashboard-main-wide">
-        <div className="mx-auto w-full max-w-[1700px] space-y-5">
+        <div className="mx-auto flex min-h-full w-full max-w-[1700px] flex-col gap-5">
           <PageHeaderHero
             kicker="Core HR View"
             title="My Resignation Requests"
@@ -227,7 +227,7 @@ export default function ResignationPage() {
           }
         />
 
-        <section className="sibs-page-card-in sibs-card overflow-hidden rounded-[14px] border border-sibs-border bg-white shadow-xs font-jakarta" style={{ animationDelay: "180ms", animationFillMode: "both" }}>
+        <section className="sibs-page-card-in sibs-card shrink-0 grow overflow-hidden rounded-[14px] border border-sibs-border bg-white shadow-xs font-jakarta" style={{ animationDelay: "180ms", animationFillMode: "both" }}>
           <div className="border-b border-sibs-border p-4 sm:p-5 2xl:p-6">
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
               <div>

@@ -1239,7 +1239,7 @@ export default function EmployeeTable({
     currentTab?.description || "Employee master records";
 
   return (
-    <div className="flex h-full min-h-[520px] min-w-0 flex-col bg-white font-jakarta">
+    <div className="flex min-w-0 flex-1 flex-col bg-white font-jakarta">
 
       <div className="border-b border-sibs-border p-4 sm:p-5 2xl:p-6 font-jakarta">
         <h3 className="font-heading text-sm 2xl:text-base font-bold text-sibs-navy tracking-tight">

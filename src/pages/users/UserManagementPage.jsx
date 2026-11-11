@@ -917,7 +917,7 @@ export default function UserManagementPage() {
         </div>
 
         <main className="sibs-dashboard-main-wide">
-          <div className="mx-auto w-full max-w-[1700px] space-y-5">
+          <div className="mx-auto flex min-h-full w-full max-w-[1700px] flex-col gap-5">
             <PageHeaderHero
               kicker="Super Admin System Control"
               title="User Management"
@@ -989,7 +989,7 @@ export default function UserManagementPage() {
             </section>
 
           <div
-            className="sibs-page-card-in sibs-table-shell"
+            className="flex shrink-0 grow flex-col sibs-page-card-in sibs-table-shell"
             style={{ animationDelay: "240ms", animationFillMode: "both" }}
           >
             <div className="border-b border-sibs-border p-3 sm:p-4">
@@ -1087,7 +1087,7 @@ export default function UserManagementPage() {
               }
             />
 
-            <div className="px-4 pb-3">
+            <div className="mt-auto px-4 pb-3">
               <TablePagination
                 currentPage={pagination.page}
                 totalPages={pagination.totalPages}

@@ -241,7 +241,7 @@ export default function EmployeesPage() {
         ref={mainScrollRef}
         className="sibs-dashboard-main-wide"
       >
-        <div className="mx-auto w-full max-w-[1600px] space-y-5 sm:space-y-6">
+        <div className="mx-auto flex min-h-full w-full max-w-[1600px] flex-col gap-5 sm:gap-6">
           <PageHeaderHero
             kicker="Employee Directory View"
             title="Employee Directory"
@@ -290,7 +290,7 @@ export default function EmployeesPage() {
           </MetricGrid>
 
           <section
-            className="sibs-page-card-in sibs-card min-h-[520px] overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-xs font-jakarta"
+            className="sibs-page-card-in sibs-card flex shrink-0 grow flex-col overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-xs font-jakarta"
             style={getAnimationStyle(animationTiming.table)}
           >
             {renderActiveTable()}

@@ -1331,7 +1331,7 @@ export default function KronosAttendancePage() {
         ref={mainRef}
         className="sibs-dashboard-main-wide"
       >
-        <div className="mx-auto w-full max-w-[1700px] space-y-5">
+        <div className="mx-auto flex min-h-full w-full max-w-[1700px] flex-col gap-5">
           <PageHeaderHero
             kicker={
               <div className="flex flex-wrap items-center gap-2">
@@ -1440,7 +1440,7 @@ export default function KronosAttendancePage() {
           </section>
 
           <section
-            className="overflow-visible rounded-[14px] border border-sibs-border bg-white shadow-xs font-jakarta transition-all duration-200 hover:border-sibs-navy/20 hover:shadow-md"
+            className="flex shrink-0 grow flex-col overflow-visible rounded-[14px] border border-sibs-border bg-white shadow-xs font-jakarta transition-all duration-200 hover:border-sibs-navy/20 hover:shadow-md"
             style={{ animationDelay: "120ms" }}
           >
             <div className="relative z-40 border-b border-sibs-border bg-white p-4 sm:p-5">
@@ -1585,7 +1585,7 @@ export default function KronosAttendancePage() {
               </div>
             ) : null}
 
-            <div className="p-4 sm:p-6 font-jakarta">
+            <div className="flex flex-1 flex-col p-4 sm:p-6 font-jakarta">
               <ResponsiveTableShell
                 breakpoint="lg"
                 mobileContent={
@@ -1886,6 +1886,7 @@ export default function KronosAttendancePage() {
               />
 
               <TablePagination
+                className="mt-auto"
                 currentPage={currentPage}
                 totalPages={totalPages}
                 totalItems={totalRecords}

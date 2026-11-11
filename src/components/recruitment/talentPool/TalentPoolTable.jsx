@@ -201,7 +201,7 @@ export default function TalentPoolTable({
   }
 
   return (
-    <div className="font-jakarta">
+    <div className="flex flex-1 flex-col font-jakarta">
       {loadError ? (
         <div className="p-4">
           <TableState
@@ -481,7 +481,7 @@ export default function TalentPoolTable({
         />
       </div>
 
-          <div className="px-4 pb-4 sm:px-5 sm:pb-5">
+          <div className="mt-auto px-4 pb-4 sm:px-5 sm:pb-5">
             <PaginationTable
               showSearch={false}
               showPagination

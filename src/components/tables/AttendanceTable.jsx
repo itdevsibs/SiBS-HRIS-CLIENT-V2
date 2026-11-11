@@ -1407,7 +1407,7 @@ export default function AttendanceTable() {
       : 10;
 
   return (
-    <div className="space-y-5 sm:space-y-6">
+    <div className="flex shrink-0 grow flex-col gap-5 sm:gap-6">
       <style>{`
         @keyframes sibsAttendanceRowReveal {
           from {
@@ -1450,7 +1450,7 @@ export default function AttendanceTable() {
         </div>
       ) : null}
       <section
-        className="sibs-page-card-in sibs-card overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-xs font-jakarta"
+        className="sibs-page-card-in sibs-card flex flex-1 flex-col overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-xs font-jakarta"
         style={getAnimationStyle(120)}
       >
         <div className="border-b border-sibs-border p-4 sm:p-5 2xl:p-6 font-jakarta">
@@ -1588,7 +1588,7 @@ export default function AttendanceTable() {
           </button>
         </div>
 
-        <div className="p-3 sm:p-5 2xl:p-6">
+        <div className="flex flex-1 flex-col p-3 sm:p-5 2xl:p-6">
           <ResponsiveTableShell
             desktopContent={
               <div className="overflow-hidden rounded-xl border border-sibs-border bg-white">
@@ -1951,7 +1951,7 @@ export default function AttendanceTable() {
           }
         />
 
-          <div className="mt-5">
+          <div className="mt-auto pt-5">
             <TablePagination
               currentPage={currentPage}
               totalPages={totalPages}
