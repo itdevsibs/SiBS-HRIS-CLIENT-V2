@@ -98,6 +98,7 @@ tests/
 !src/lib/utils/journey/onboardingRoster.test.mjs
 !src/lib/utils/journey/trainerMonitoringValidation.test.mjs
 !src/pages/dashboard/QDSDashboard/QDSDashboardPage.test.jsx
+!src/pages/helpdesk/HelpdeskSupportPage.test.jsx
 
 
 # Temporary migration & scratch scripts

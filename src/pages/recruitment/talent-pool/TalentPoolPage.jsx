@@ -420,7 +420,7 @@ function TalentPoolPageContent() {
       </div>
 
       <main className="sibs-dashboard-main-wide">
-        <div className="mx-auto w-full max-w-[1700px] space-y-4 sm:space-y-5 2xl:space-y-6">
+        <div className="mx-auto flex min-h-full w-full max-w-[1700px] flex-col gap-4 sm:gap-5 2xl:gap-6">
           <PageHeaderHero
             kicker="Recruitment View"
             title="Talent Pool / Candidate Database"
@@ -477,7 +477,7 @@ function TalentPoolPageContent() {
           <TalentPoolStats />
 
           <section
-            className="sibs-page-card-in sibs-card relative z-[10] overflow-hidden rounded-[14px] border border-sibs-border bg-white shadow-xs font-jakarta"
+            className="flex shrink-0 grow flex-col sibs-page-card-in sibs-card relative z-[10] overflow-hidden rounded-[14px] border border-sibs-border bg-white shadow-xs font-jakarta"
             style={{ animationDelay: "360ms", animationFillMode: "both" }}
           >
             <div className="border-b border-sibs-border p-4 sm:p-5 2xl:p-6 font-jakarta">
@@ -495,8 +495,8 @@ function TalentPoolPageContent() {
               </div>
             </div>
 
-            <div className="min-h-0 flex-1 p-4 sm:p-5 2xl:p-6">
-              <div className="overflow-hidden rounded-[14px] border border-sibs-border bg-white shadow-xs">
+            <div className="flex flex-1 flex-col p-4 sm:p-5 2xl:p-6">
+              <div className="flex flex-1 flex-col overflow-hidden rounded-[14px] border border-sibs-border bg-white shadow-xs">
                 <TalentPoolTabs
                   activeTab={activeTab}
                   onChange={setActiveTab}

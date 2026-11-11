@@ -25,6 +25,7 @@ import {
   getLeaveTypeLabel,
   getLeavesInitialDateRange,
   sanitizeLeavesDateRange,
+  SUPER_ADMIN_LEAVES_RANGE_DAYS,
   normalizeStatus,
 } from "@/lib/utils/leaves/leaveHelpers";
 
@@ -44,6 +45,7 @@ export default function LeavesPage() {
 
   const [statusFilter, setStatusFilter] = useState("All");
   const [allDatesView, setAllDatesView] = useState(false);
+  const [maxDateRangeDays, setMaxDateRangeDays] = useState(undefined);
   const [departmentFilter, setDepartmentFilter] = useState("All");
   const [accountFilter, setAccountFilter] = useState("All");
   const [departmentOptions, setDepartmentOptions] = useState([]);
@@ -79,7 +81,7 @@ export default function LeavesPage() {
   const storedDateTo = filterValues?.dateTo ?? initialLeavesDateRange.dateTo;
   const safeDateRange = sanitizeLeavesDateRange(
     { dateFrom: storedDateFrom, dateTo: storedDateTo },
-    { allowEmpty: isEmployeeAccount || allDatesView },
+    { allowEmpty: isEmployeeAccount || allDatesView, maxDays: maxDateRangeDays },
   );
   const dateFrom = allDatesView ? "" : safeDateRange.dateFrom;
   const dateTo = allDatesView ? "" : safeDateRange.dateTo;
@@ -229,7 +231,8 @@ export default function LeavesPage() {
 
   useEffect(() => {
     const notificationState =
-      location.state?.source === "pending-leave-notification"
+      location.state?.source === "pending-leave-notification" ||
+      location.state?.source === "super-admin-pending-leaves"
         ? location.state
         : null;
     if (initializedRef.current && !notificationState) return;
@@ -237,6 +240,9 @@ export default function LeavesPage() {
 
     const fromNotification = Boolean(notificationState?.allDates);
     setAllDatesView(fromNotification);
+    const superAdminRange = notificationState?.source === "super-admin-pending-leaves"
+      ? notificationState.leaveDateRange : null;
+    setMaxDateRangeDays(superAdminRange ? SUPER_ADMIN_LEAVES_RANGE_DAYS : undefined);
     const initialStatus =
       String(notificationState?.leaveStatus || "").trim() || "All";
 
@@ -250,7 +256,7 @@ export default function LeavesPage() {
     setAccountOptions([]);
 
     if (typeof setDateRange === "function") {
-      setDateRange(fromNotification ? { dateFrom: "", dateTo: "" } : initialLeavesDateRange);
+      setDateRange(superAdminRange ?? (fromNotification ? { dateFrom: "", dateTo: "" } : initialLeavesDateRange));
     }
 
     setFiltersReady(true);
@@ -262,6 +268,7 @@ export default function LeavesPage() {
       });
     }
   }, [
+    initialLeavesDateRange,
     location.key,
     location.pathname,
     location.state,
@@ -492,6 +499,7 @@ export default function LeavesPage() {
               isPersonalView={isPersonalView}
               filterValues={filterValues}
               allDatesView={allDatesView}
+              maxDateRangeDays={maxDateRangeDays}
               onDateFilterChange={handleDateFilterChange}
             />
           </section>

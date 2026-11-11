@@ -17,7 +17,7 @@ function ApplicantLeadsPageContent() {
       </div>
 
       <main className="sibs-dashboard-main-wide">
-        <div className="mx-auto w-full max-w-[1700px] space-y-4 sm:space-y-5">
+        <div className="mx-auto flex min-h-full w-full max-w-[1700px] flex-col gap-4 sm:gap-5">
           <ApplicantLeadsToast />
           <ApplicantLeadsHeader />
           <ApplicantLeadsSummary />

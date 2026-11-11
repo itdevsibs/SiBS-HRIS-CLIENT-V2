@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import ConfirmModal from "./ConfirmModal";
@@ -34,8 +34,12 @@ export default function ModalShell({
   zIndex = "z-[9999]",
   children,
   footer,
+  role = "dialog",
+  "aria-describedby": describedBy,
+  closeDisabled = false,
   closeOnBackdrop = true,
   closeOnEscape = true,
+  suspendFocusTrap = false,
   lockScroll = true,
   className = "",
   bodyClassName = "",
@@ -48,6 +52,7 @@ export default function ModalShell({
   headerActions = null,
   footerMeta = null,
   initialFocusRef = null,
+  returnFocusFallbackRef = null,
   isDirty,
   autoDetectDirty = true,
   confirmOnDirtyClose = true,
@@ -57,6 +62,7 @@ export default function ModalShell({
   dirtyCancelLabel = "Keep Editing",
   onDirtyDiscard = null,
 }) {
+  const titleId = useId();
   const dialogRef = useRef(null);
   const previouslyFocusedElementRef = useRef(null);
   const autoDirtyRef = useRef(false);
@@ -98,6 +104,7 @@ export default function ModalShell({
   }, []);
 
   const requestClose = useCallback(() => {
+    if (closeDisabled) return;
     const effectiveIsDirty =
       typeof isDirty === "boolean"
         ? isDirty
@@ -108,7 +115,7 @@ export default function ModalShell({
     }
     autoDirtyRef.current = false;
     onClose?.();
-  }, [isDirty, autoDetectDirty, confirmOnDirtyClose, onClose]);
+  }, [closeDisabled, isDirty, autoDetectDirty, confirmOnDirtyClose, onClose]);
 
   const handleDiscardConfirm = () => {
     autoDirtyRef.current = false;
@@ -141,6 +148,7 @@ export default function ModalShell({
     if (!open || typeof document === "undefined") return undefined;
 
     previouslyFocusedElementRef.current = document.activeElement;
+    const fallback = returnFocusFallbackRef?.current;
 
     if (dialogRef.current) {
       if (initialFocusRef?.current) {
@@ -156,21 +164,20 @@ export default function ModalShell({
     }
 
     return () => {
-      if (
-        previouslyFocusedElementRef.current &&
-        typeof previouslyFocusedElementRef.current.focus === "function"
-      ) {
-        previouslyFocusedElementRef.current.focus();
-      }
+      const previous = previouslyFocusedElementRef.current;
+      if (previous?.isConnected) previous.focus?.();
+      if (document.activeElement !== previous && fallback?.isConnected) fallback.focus();
     };
-  }, [open, initialFocusRef]);
+  }, [open, initialFocusRef, returnFocusFallbackRef]);
 
   // ESC key listener & Tab key focus trap
   useEffect(() => {
-    if (!open || typeof document === "undefined") return undefined;
+    if (!open || suspendFocusTrap || typeof document === "undefined") return undefined;
 
     const handleKeyDown = (e) => {
+      if (e.defaultPrevented) return;
       if (closeOnEscape && e.key === "Escape") {
+        if (e.target?.closest?.(".sibs-animated-dropdown.open")) return;
         e.stopPropagation();
         if (showDirtyConfirm) {
           setShowDirtyConfirm(false);
@@ -188,6 +195,7 @@ export default function ModalShell({
 
         if (focusables.length === 0) {
           e.preventDefault();
+          dialogRef.current.focus();
           return;
         }
 
@@ -197,6 +205,7 @@ export default function ModalShell({
         if (e.shiftKey) {
           if (
             document.activeElement === firstElement ||
+            document.activeElement?.tabIndex < 0 ||
             !dialogRef.current.contains(document.activeElement)
           ) {
             e.preventDefault();
@@ -219,7 +228,7 @@ export default function ModalShell({
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [open, closeOnEscape, showDirtyConfirm, requestClose]);
+  }, [open, suspendFocusTrap, closeOnEscape, showDirtyConfirm, requestClose]);
 
   if (!open || typeof document === "undefined") return null;
 
@@ -227,8 +236,11 @@ export default function ModalShell({
 
   return createPortal(
     <div
-      role="dialog"
+      role={role}
       aria-modal="true"
+      aria-labelledby={title ? titleId : undefined}
+      aria-describedby={describedBy}
+      inert={suspendFocusTrap || undefined}
       className={`fixed inset-0 ${zIndex} flex ${
         mobileBottomSheet
           ? "items-end sm:items-center justify-center p-0 sm:p-4"
@@ -283,6 +295,7 @@ export default function ModalShell({
                 <div className="flex flex-wrap items-center gap-1.5">
                   {title && (
                     <h2
+                      id={titleId}
                       className={`sibs-modal-title truncate ${
                         isNavy ? "text-white" : "text-sibs-navy"
                       }`}
@@ -333,6 +346,7 @@ export default function ModalShell({
                   type="button"
                   onClick={requestClose}
                   aria-label="Close modal"
+                  disabled={closeDisabled}
                   className={
                     isNavy
                       ? "sibs-modal-close-btn"

@@ -122,11 +122,12 @@ export default function HelpdeskCaseConversation({
   conversation, ticket, currentSibsId, onMessagesChanged,
 }) {
   const conversationId = Number(conversation?.id || 0);
-  const isClosed = ["RESOLVED", "REJECTED"].includes(clean(ticket?.status).toUpperCase());
+  const status = clean(ticket?.status).toUpperCase();
+  const isRejected = status === "REJECTED";
+  const isClosed = status === "RESOLVED" || isRejected;
   const isAssignedSupport = Boolean(ticket?.acceptedBySibsId) &&
     clean(ticket.acceptedBySibsId) === clean(currentSibsId);
-  const canReply = isAssignedSupport && !isClosed &&
-    ["IN_PROGRESS", "PENDING"].includes(clean(ticket?.status).toUpperCase());
+  const canReply = isAssignedSupport && ["IN_PROGRESS", "PENDING"].includes(status);
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadingOlder, setLoadingOlder] = useState(false);
@@ -343,23 +344,25 @@ export default function HelpdeskCaseConversation({
     <div className="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-xs">
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-sibs-border px-4 py-3">
         <div>
-          <h3 className="font-heading text-sm font-extrabold text-sibs-navy">{isClosed && clean(ticket?.status).toUpperCase() === "REJECTED" ? "Request conversation" : "Case conversation"}</h3>
-          <p className="mt-0.5 text-[10px] font-semibold text-sibs-muted">
-            {isClosed ? "Archived conversation · read only" : canReply ? "Reply to the employee from this Helpdesk case" : "Case conversation · support access"}
-          </p>
+          <h3 className="sibs-modal-section-title">{isRejected ? "Request conversation" : "Case conversation"}</h3>
+          {!isClosed && <p className="sibs-modal-section-subtitle mt-0.5">
+            {canReply ? "Reply to the employee from this Helpdesk case" : "Case conversation · support access"}
+          </p>}
         </div>
         <button type="button" onClick={() => void loadLatest({ manual: true })} disabled={loading || refreshing}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-sibs-border px-2.5 py-1.5 text-[10px] font-bold text-sibs-navy hover:bg-sibs-surface disabled:opacity-50"
-          title="Refresh messages"><RefreshCcw size={13} className={refreshing ? "animate-spin" : ""} /> Refresh</button>
+          className="sibs-modal-btn-secondary min-h-11 sm:min-h-0"
+          title="Refresh messages"><RefreshCcw size={13} className={refreshing ? "motion-safe:animate-spin" : ""} /> Refresh</button>
       </div>
-      <div ref={scrollRef} className="sibs-scrollbar min-h-[280px] max-h-[430px] flex-1 space-y-3 overflow-y-auto bg-[#f6f8fb] px-3 py-4 sm:px-4" aria-live="polite" aria-busy={loading}>
+      <div ref={scrollRef} role="region" aria-label="Conversation messages" tabIndex={0}
+        className="sibs-scrollbar min-h-44 max-h-[min(430px,45dvh)] flex-1 space-y-3 overflow-y-auto bg-sibs-surface px-3 py-4 sm:px-4 lg:min-h-[280px]"
+        aria-live="polite" aria-busy={loading}>
         {loading && !messages.length ? (
-          <div className="flex h-40 items-center justify-center gap-2 text-xs font-semibold text-sibs-muted"><Loader2 className="animate-spin" size={17} /> Loading messages…</div>
+          <div className="flex h-40 items-center justify-center gap-2 text-xs font-semibold text-sibs-muted"><Loader2 className="motion-safe:animate-spin" size={17} /> Loading messages…</div>
         ) : (
           <>
             {hasOlder && <div className="flex justify-center"><button type="button" onClick={() => void loadEarlier()} disabled={loadingOlder}
               className="rounded-lg bg-white px-3 py-1.5 text-[10px] font-bold text-sibs-navy shadow-xs hover:bg-sibs-surface disabled:opacity-50">
-              {loadingOlder ? <Loader2 size={13} className="inline animate-spin" /> : <ArrowDown size={13} className="inline rotate-180" />} Load earlier messages
+              {loadingOlder ? <Loader2 size={13} className="inline motion-safe:animate-spin" /> : <ArrowDown size={13} className="inline rotate-180" />} Load earlier messages
             </button></div>}
             {messages.map((message, index) => {
               const senderId = clean(message.senderSibsId);
@@ -385,10 +388,10 @@ export default function HelpdeskCaseConversation({
                       {!mine && <HelpdeskSenderAvatar employee={message.sender || member} name={senderName} sibsId={senderId} />}
                       <div className={`min-w-0 max-w-[80%] sm:max-w-[75%] ${mine ? "items-end" : "items-start"}`}>
                         <div className={`mb-1 flex flex-wrap items-center gap-1.5 ${mine ? "justify-end" : "justify-start"}`}>
-                          <span className="text-[10px] font-extrabold text-sibs-navy">{mine ? "You" : senderName}</span>
-                          {role && <span className="rounded-md border border-sibs-border bg-white px-1.5 py-0.5 text-[9px] font-bold text-sibs-muted">{role}</span>}
+                          <span className="sibs-text-xs font-extrabold text-sibs-navy">{mine ? "You" : senderName}</span>
+                          {role && <span className="sibs-modal-section-subtitle rounded-md border border-sibs-border bg-white px-1.5 py-0.5">{role}</span>}
                         </div>
-                        <div className={`rounded-2xl px-3 py-2 text-[11px] font-semibold leading-relaxed shadow-xs ${mine ? "rounded-br-sm bg-sibs-orange text-white" : "rounded-bl-sm border border-sibs-border bg-white text-sibs-navy"}`}>
+                        <div className={`sibs-text-xs rounded-2xl px-3 py-2 font-semibold leading-relaxed wrap-anywhere shadow-xs ${mine ? "rounded-br-sm bg-sibs-navy text-white" : "rounded-bl-sm border border-sibs-border bg-white text-sibs-navy"}`}>
                           {message.replyTo && <div className={`mb-2 rounded-lg border-l-[3px] px-2 py-1 text-[10px] ${mine ? "border-white/70 bg-white/10" : "border-sibs-orange bg-sibs-surface"}`}>
                             <b>{clean(message.replyTo.sender?.displayName) || `SiBS ID ${message.replyTo.senderSibsId}`}</b><p className="line-clamp-2">{clean(message.replyTo.messageText) || "Attachment"}</p>
                           </div>}
@@ -407,7 +410,7 @@ export default function HelpdeskCaseConversation({
                             })}
                           </>}
                         </div>
-                        <div className={`mt-1 flex items-center gap-2 text-[9px] text-sibs-muted ${mine ? "justify-end" : "justify-start"}`}>
+                        <div className={`sibs-modal-section-subtitle mt-1 flex flex-wrap items-center gap-2 ${mine ? "justify-end" : "justify-start"}`}>
                           <span>{formatChatDate(message.createdAt)}</span>
                           {canReply && !unsent && <button type="button" onClick={() => setReplyTo(message)} className="inline-flex items-center gap-1 hover:text-sibs-orange"><Reply size={11} />Reply</button>}
                         </div>
@@ -418,7 +421,7 @@ export default function HelpdeskCaseConversation({
                 </div>
               );
             })}
-            {isClosed && messages.length > 0 && <p className="mx-auto my-4 w-fit rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-center text-[10px] font-extrabold text-emerald-700">Case Closed #{clean(ticket?.caseCode).split("-").at(-1) || "—"} · {formatChatDate(ticket?.resolvedAt)}</p>}
+            {status === "RESOLVED" && messages.length > 0 && <p className="mx-auto my-4 w-fit rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-center text-[10px] font-extrabold text-emerald-700">Case Closed #{clean(ticket?.caseCode).split("-").at(-1) || "—"} · {formatChatDate(ticket?.resolvedAt)}</p>}
             {!messages.length && !loading && <p className="py-14 text-center text-xs font-semibold text-sibs-muted">No messages have been sent in this case.</p>}
           </>
         )}
@@ -435,20 +438,20 @@ export default function HelpdeskCaseConversation({
             <input ref={fileInputRef} type="file" multiple hidden accept="image/*,.heic,.heif,.gif,.pdf,.doc,.docx,.xls,.xlsx,.csv,.mp4,.webm,.mp3,.wav" onChange={chooseFiles} />
             <button type="button" onClick={() => fileInputRef.current?.click()} disabled={sending} title="Add attachments"
               className="mb-1 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-sibs-border text-sibs-navy hover:border-sibs-orange hover:text-sibs-orange disabled:opacity-50"><Paperclip size={17} /></button>
-            <textarea rows={2} value={draft} onChange={(event) => setDraft(event.target.value)} placeholder="Reply to this Helpdesk request…"
+            <textarea rows={2} value={draft} onChange={(event) => setDraft(event.target.value)} aria-label="Support reply" placeholder="Reply to this Helpdesk request…"
               onKeyDown={(event) => { if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); void send(); } }}
               disabled={sending} maxLength={10000}
               className="min-h-10 min-w-0 flex-1 resize-y rounded-xl border border-sibs-border bg-sibs-surface px-3 py-2.5 text-xs font-semibold text-sibs-navy outline-none focus:border-sibs-orange" />
             <button type="submit" disabled={sending || (!clean(draft) && !files.length)} aria-label="Send support reply"
-              className="mb-1 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-sibs-orange text-white transition hover:brightness-95 disabled:opacity-40">
-              {sending ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
+              className="mb-1 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-sibs-navy text-white transition hover:bg-sibs-navy-alt disabled:opacity-40">
+              {sending ? <Loader2 size={16} className="motion-safe:animate-spin" /> : <Send size={16} />}
             </button>
           </div>
           <p className="mt-1.5 text-[10px] font-medium text-sibs-muted">Enter sends · Shift+Enter adds a new line · Up to five attachments</p>
         </form>
       ) : <div className="flex items-center gap-2 border-t border-sibs-border bg-sibs-surface px-4 py-3 text-[11px] font-bold text-sibs-muted">
         {isClosed ? <CheckCircle2 size={15} className="text-emerald-600" /> : <AlertCircle size={15} className="text-sibs-orange" />}
-        {isClosed ? "Case closed — archived conversation. Replies are disabled." : ticket?.status === "OPEN"
+        {isClosed ? "Archived conversation. Replies are disabled." : status === "OPEN"
           ? "Accept the request before sending a support reply."
           : "Only the assigned support employee can reply to this request."}
       </div>}

@@ -13,22 +13,24 @@ import {
   CheckCircle,
   CheckCircle2,
   Clock3,
-  ClipboardList,
+  CalendarClock,
   FolderOpen,
   Ban,
   Loader2,
-  X,
   Headset,
   HeartHandshake,
   Inbox,
   MapPin,
+  MessageSquare,
   RefreshCcw,
   ShieldCheck,
+  UserRound,
 } from "lucide-react";
 
 import Header from "@/components/layout/Header";
 import {
   DataCard,
+  ModalShell,
   PageHeaderHero,
   ResponsiveTableShell,
   SearchInput,
@@ -416,262 +418,318 @@ function formatElapsed(value) {
   return `${hours} hr${hours === 1 ? "" : "s"}${minutes % 60 ? ` ${minutes % 60} min` : ""}`;
 }
 
-// Compact date/value line for Request details: no individual timestamp cards.
-// Keep the full event history but use a simple list with subtle separators.
-function TicketTimestamp({ label, value }) {
-  return (
-    <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 py-2.5">
-      <dt className="text-[11px] font-semibold text-sibs-muted">{label}</dt>
-      <dd className="m-0 text-xs font-bold text-sibs-navy">{formatDate(value)}</dd>
-    </div>
-  );
-}
-
 function HelpdeskTicketModal({ conversation, ticket, loading, eligibility, eligibilityLoading, busy, error,
-  currentSibsId, onClose, onAccept, onUpdateStatus, onMessagesChanged }) {
+  currentSibsId, onClose, onAccept, onUpdateStatus, onMessagesChanged, returnFocusFallbackRef }) {
   const requester = getRequester(conversation);
-  const isAssignee = Boolean(ticket?.acceptedBySibsId) && safeText(ticket.acceptedBySibsId) === currentSibsId;
-  const assignee = (conversation.members || []).find((m) => safeText(m.sibsId) === safeText(ticket?.acceptedBySibsId));
-  const [now, setNow] = useState(Date.now());
-  const [selectedStatus, setSelectedStatus] = useState("IN_PROGRESS");
+  const ticketStatus = ticket?.status;
+  const isResolved = ticketStatus === "RESOLVED";
+  const isRejected = ticketStatus === "REJECTED";
+  const categoryName = safeText(conversation.helpdeskCategory) === "IT" ? "IT Support" : "TA/HR Concerns";
+  const acceptedBy = safeText(ticket?.acceptedBySibsId);
+  const isAssignee = Boolean(acceptedBy) && acceptedBy === currentSibsId;
+  const assignee = acceptedBy ? (conversation.members || []).find((member) => safeText(member.sibsId) === acceptedBy) : null;
+  const [now, setNow] = useState(Date.now);
+  const [previousTicketStatus, setPreviousTicketStatus] = useState(ticketStatus);
+  const [selectedStatus, setSelectedStatus] = useState(ticketStatus || "IN_PROGRESS");
   const [confirmClose, setConfirmClose] = useState(false);
   const [confirmReject, setConfirmReject] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
+  const titleRef = useRef(null);
+  const chatHeadingRef = useRef(null);
+  const rejectionReasonRef = useRef(null);
+  const confirmationTriggerRef = useRef(null);
+  const showCloseConfirmation = confirmClose && ticket?.status !== "RESOLVED" && isAssignee;
+  const showRejectConfirmation = confirmReject && ticket?.status !== "REJECTED" &&
+    (isAssignee || (ticket?.status === "OPEN" && eligibility?.eligible));
+  const confirmationOpen = showCloseConfirmation || showRejectConfirmation;
+
+  if (ticketStatus !== previousTicketStatus) {
+    setPreviousTicketStatus(ticketStatus);
+    setSelectedStatus(ticketStatus || "IN_PROGRESS");
+    if (ticketStatus === "RESOLVED" || ticketStatus === "REJECTED") {
+      setConfirmClose(false);
+      setConfirmReject(false);
+      setRejectionReason("");
+    }
+  }
 
   useEffect(() => {
     const id = window.setInterval(() => setNow(Date.now()), 60_000);
     return () => window.clearInterval(id);
   }, []);
-  useEffect(() => { setSelectedStatus(ticket?.status || "IN_PROGRESS"); }, [ticket?.status]);
   useEffect(() => {
-    if (["RESOLVED", "REJECTED"].includes(ticket?.status)) {
-      setConfirmClose(false);
-      setConfirmReject(false);
-      setRejectionReason("");
-    }
-  }, [ticket?.status]);
-  useEffect(() => {
-    const priorOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    const handleEscape = (event) => {
-      if (event.key !== "Escape" || busy) return;
-      if (confirmClose) { setConfirmClose(false); return; }
-      if (confirmReject) { setConfirmReject(false); return; }
-      if (document.querySelector(".sibs-animated-dropdown.open")) return;
-      onClose();
-    };
-    window.addEventListener("keydown", handleEscape);
-    return () => { document.body.style.overflow = priorOverflow; window.removeEventListener("keydown", handleEscape); };
-  }, [busy, onClose, confirmClose, confirmReject]);
+    if (confirmationOpen || !confirmationTriggerRef.current) return;
+    const trigger = confirmationTriggerRef.current;
+    confirmationTriggerRef.current = null;
+    // An accepted update can remove or disable the original action.
+    const target = trigger.isConnected && !trigger.disabled ? trigger : titleRef.current;
+    target?.focus({ preventScroll: true });
+  }, [confirmationOpen]);
 
-  // The SiBS HRIS modal is intentionally not dismissed by backdrop clicks.
-  // Saving/closing a case is a separate, confirmed support action.
-  const modalContent = (
-    <div className="fixed inset-0 z-[1600] flex items-center justify-center bg-slate-950/70 p-3 backdrop-blur-[3px] sm:p-6"
-      role="presentation" onMouseDown={(event) => event.stopPropagation()}>
-      <section role="dialog" aria-modal="true" aria-label="Helpdesk case conversation and details"
-        className="flex max-h-[94vh] w-full max-w-[1180px] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl font-jakarta"
-        onMouseDown={(event) => event.stopPropagation()}>
-        <div className="flex shrink-0 items-center justify-between gap-3 border-t-[3px] border-sibs-orange bg-sibs-navy px-5 py-4 text-white">
-          <div className="flex min-w-0 items-center gap-3">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sibs-orange"><ClipboardList size={20} /></span>
-            <div className="min-w-0">
-              <h2 className="truncate font-heading text-lg font-bold">{getCaseModalTitle(ticket, conversation)}</h2>
-              <p className="truncate text-xs font-semibold text-blue-100">{safeText(conversation.helpdeskCategory) === "IT" ? "IT Support" : "TA/HR Concerns"} · {requester.name}</p>
-            </div>
-          </div>
-          <button type="button" onClick={onClose} disabled={busy} aria-label="Close case details"
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/10 hover:bg-white/20 disabled:opacity-50"><X size={18} /></button>
-        </div>
-        <div className="sibs-scrollbar min-h-0 flex-1 overflow-y-auto bg-[#f7f9fc] px-4 py-4 sm:px-6">
-          {error && <div role="alert" className="mb-4 rounded-xl border border-red-200 bg-red-50 p-3 text-xs font-bold text-red-700">{error}</div>}
+  const openRejection = (event) => {
+    confirmationTriggerRef.current = event.currentTarget;
+    setRejectionReason("");
+    setConfirmReject(true);
+  };
+  const dismissConfirmation = () => {
+    setConfirmClose(false);
+    setConfirmReject(false);
+  };
+  const errorNotice = error && (
+    <div role="alert" className="mb-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs font-bold text-rose-700">{error}</div>
+  );
+  const durations = ticket && !isRejected ? [
+    { label: "Queued time", value: getQueuedDisplay(ticket, now).text, detail: "First message to acceptance" },
+    { label: "Response time", value: getResponseDisplay(ticket).text, detail: "Acceptance to first support reply" },
+    { label: "Total resolution", value: getResolutionDisplay(ticket), detail: "Opening to closure", highlight: isResolved },
+    { label: "Handling time", value: ticket.resolvedAt ? formatElapsed(ticket.secondsToFinish) : "Pending", detail: "Acceptance to closure" },
+  ] : [];
+  const milestones = ticket ? [
+    { label: isRejected ? "Received" : "Opened", value: ticket.postedAt, icon: <CalendarClock size={16} /> },
+    { label: "Assigned", value: ticket.assignedAt, icon: <UserRound size={16} /> },
+    { label: "Accepted", value: ticket.acceptedAt, icon: <CheckCircle2 size={16} /> },
+    { label: "First support reply", value: ticket.firstResponseAt, icon: <MessageSquare size={16} /> },
+    { label: isRejected ? "Rejected" : "Resolved", value: isRejected ? ticket.rejectedAt : ticket.resolvedAt,
+      icon: isRejected ? <Ban size={16} /> : <CheckCircle2 size={16} />,
+      highlight: isRejected ? "rejected" : isResolved ? "resolved" : null },
+  ] : [];
+
+  return (
+    <>
+      <ModalShell
+        open
+        onClose={onClose}
+        closeDisabled={busy}
+        closeOnBackdrop={false}
+        suspendFocusTrap={confirmationOpen}
+        autoDetectDirty={false}
+        initialFocusRef={titleRef}
+        returnFocusFallbackRef={returnFocusFallbackRef}
+        title={<span ref={titleRef} tabIndex={-1}>{getCaseModalTitle(ticket, conversation)}</span>}
+        subtitle={`${categoryName} · ${requester.name}`}
+        icon={conversation.helpdeskCategory === "IT" ? Headset : HeartHandshake}
+        maxWidth="max-w-[1180px]"
+        zIndex="z-[1600]"
+        bodyClassName="overscroll-contain bg-sibs-surface px-4 py-4 sm:px-6"
+        footerMeta={ticket && !loading ? (
+          <button type="button" className="sibs-modal-btn-secondary" onClick={() => chatHeadingRef.current?.focus()}>
+            <MessageSquare size={14} aria-hidden="true" /> Go to chat
+          </button>
+        ) : null}
+        footer={<button type="button" onClick={onClose} disabled={busy} className="sibs-modal-btn-secondary whitespace-nowrap">Close Details</button>}
+      >
+          {!confirmationOpen && errorNotice}
           {loading || !ticket ? <div className="flex min-h-64 items-center justify-center gap-2 text-sm text-sibs-muted">
-            {loading ? <Loader2 size={20} className="animate-spin" /> : <AlertCircle size={20} />}
+            {loading ? <Loader2 size={20} className="motion-safe:animate-spin" /> : <AlertCircle size={20} />}
             {loading ? "Loading request details..." : "Request details are unavailable. Close and retry."}
           </div> : (
-            <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,1.7fr)_minmax(310px,1fr)]">
-              <div className="min-w-0 space-y-4">
-                <HelpdeskCaseConversation
-                  key={conversation.id}
-                  conversation={conversation}
-                  ticket={ticket}
-                  currentSibsId={currentSibsId}
-                  onMessagesChanged={onMessagesChanged}
-                />
-                <div className="rounded-2xl border border-sibs-border bg-white p-4 shadow-xs">
-                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-sibs-border pb-3">
-                    <h3 className="font-heading text-sm font-bold text-sibs-navy">Request details</h3>
-                    <TicketStatusBadge status={ticket.status} />
-                  </div>
-                  <div className="mt-3 flex items-center gap-3">
-                    <RequesterAvatar requester={requester} />
-                    <div className="min-w-0">
-                      <p className="break-words text-sm font-extrabold text-sibs-navy">{requester.name}</p>
-                      <p className="text-[11px] font-semibold text-sibs-muted">SiBS ID: {requester.sibsId} · Assigned site: {ticket.requesterSite || requester.location}</p>
+            <div className="space-y-4">
+              <div className="grid gap-3 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
+                <section aria-label="Requester" className="flex min-w-0 items-center gap-3 rounded-2xl border border-sibs-border bg-white p-4 shadow-xs">
+                  <RequesterAvatar requester={requester} />
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                      <h3 className="font-heading text-lg font-bold wrap-anywhere text-sibs-navy">{requester.name}</h3>
+                      {requester.sibsId && <span className="rounded border border-sibs-border bg-sibs-surface px-1.5 py-0.5 text-xs font-bold text-sibs-navy">SiBS ID: {requester.sibsId}</span>}
                     </div>
+                    <p className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs font-semibold text-sibs-muted">
+                      <span className="inline-flex items-center gap-1.5"><MapPin size={14} aria-hidden="true" className="shrink-0 text-sibs-orange" />{ticket.requesterSite || requester.location}</span>
+                      <span>{categoryName}</span>
+                    </p>
                   </div>
-                  <dl className="mt-3 divide-y divide-sibs-border border-t border-sibs-border">
-                    <TicketTimestamp label={ticket.status === "REJECTED" ? "Received" : "Opened"} value={ticket.postedAt} />
-                    <TicketTimestamp label="Assigned" value={ticket.assignedAt} />
-                    <TicketTimestamp label="Accepted" value={ticket.acceptedAt} />
-                    <TicketTimestamp label="First support reply" value={ticket.firstResponseAt} />
-                    {ticket.status === "REJECTED"
-                      ? <TicketTimestamp label="Rejected" value={ticket.rejectedAt} />
-                      : <TicketTimestamp label="Closed" value={ticket.resolvedAt} />}
-                  </dl>
-                  {ticket.status === "REJECTED" && (
-                    <div className="mt-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-3">
-                      <p className="text-[10px] font-extrabold uppercase text-rose-700">Rejection reason</p>
-                      <p className="mt-1 whitespace-pre-wrap break-words text-xs font-semibold text-sibs-navy">{ticket.rejectionReason || "Not recorded"}</p>
-                      <p className="mt-1 text-[10px] font-medium text-sibs-muted">Rejected by SiBS ID {ticket.rejectedBySibsId || "—"}</p>
-                    </div>
-                  )}
-                                  </div>
+                </section>
+                <section aria-label="Case submission" className="flex items-center gap-3 rounded-2xl border border-sibs-cream bg-sibs-cream-light p-4 shadow-xs">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-sibs-cream bg-white text-sibs-navy">
+                    <CalendarClock size={19} aria-hidden="true" />
+                  </span>
+                  <div className="min-w-0">
+                    <h3 className="sibs-modal-section-subtitle uppercase">Case submission</h3>
+                    <p className="mt-0.5 font-heading text-lg font-bold tabular-nums text-sibs-navy">{formatDate(ticket.postedAt)}</p>
+                    <div className="mt-1"><TicketStatusBadge status={ticketStatus} /></div>
+                  </div>
+                </section>
               </div>
-              <div className="min-w-0 space-y-4">
-                <div className="rounded-2xl border border-sibs-border bg-white p-4 shadow-xs">
-                  <h3 className="border-b border-sibs-border pb-3 font-heading text-sm font-bold text-sibs-navy">Ticket properties</h3>
-                  <p className="mt-3 text-[10px] font-extrabold uppercase text-sibs-muted">Status</p>
-                  <div className="mt-2"><TicketStatusBadge status={ticket.status} /></div>
-                  <p className="mt-3 text-[10px] font-extrabold uppercase text-sibs-muted">Accepted by</p>
-                  <p className="mt-1 break-words text-xs font-bold text-sibs-navy">{ticket.acceptedBySibsId
-                    ? `${assignee?.displayName || `SiBS ID ${ticket.acceptedBySibsId}`} (${ticket.acceptedBySibsId})`
-                    : "Unassigned"}</p>
-                  {ticket.status === "OPEN" && (
-                    <div className="mt-4 space-y-2">
-                      <button type="button" onClick={onAccept} disabled={busy || eligibilityLoading || !eligibility?.eligible}
-                        className="flex w-full items-center justify-center gap-2 rounded-lg bg-sibs-orange px-4 py-2.5 text-xs font-extrabold text-white hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-50">
-                        {busy || eligibilityLoading ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle2 size={14} />} Accept Request
-                      </button>
-                      <p className="text-[11px] font-semibold leading-relaxed text-sibs-muted">{eligibilityLoading ? "Verifying today's Kronos attendance and assigned site..." : eligibility?.reason || "You are eligible to accept this request."}</p>
-                      <button type="button" onClick={() => { setRejectionReason(""); setConfirmReject(true); }}
-                        disabled={busy || eligibilityLoading || !eligibility?.eligible}
-                        className="flex w-full items-center justify-center gap-2 rounded-lg border border-rose-200 bg-white px-4 py-2.5 text-xs font-extrabold text-rose-700 transition hover:bg-rose-50 disabled:opacity-50">
-                        <Ban size={14} /> Reject Request
-                      </button>
+
+              {!isRejected && (
+                <dl aria-label="Case durations" className="grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-sibs-border bg-sibs-border shadow-xs lg:grid-cols-4">
+                  {durations.map(({ label, value, detail, highlight }) => (
+                    <div key={label} className={highlight ? "bg-emerald-50 p-3 text-center" : "bg-white p-3 text-center"}>
+                      <dt className="sibs-modal-section-subtitle uppercase">{label}</dt>
+                      <dd className={`mt-0.5 font-heading text-xl font-bold tabular-nums ${highlight ? "text-emerald-800" : "text-sibs-navy"}`}>{value}</dd>
+                      <dd className="sibs-modal-section-subtitle mt-0.5">{detail}</dd>
                     </div>
-                  )}
-                  {isAssignee && !["RESOLVED", "REJECTED"].includes(ticket.status) && (
-                    <div className="mt-4 space-y-2">
-                      <SelectDropdown label="Update status" labelClassName="text-[10px] font-extrabold uppercase text-sibs-muted"
-                        value={selectedStatus}
-                        options={["IN_PROGRESS", "PENDING", "RESOLVED", "REJECTED"].map((status) => ({ value: status, label: TICKET_STATUS_LABELS[status] }))}
-                        onChange={setSelectedStatus} clearable={false} disabled={busy} className="h-10 rounded-lg" />
-                      <button type="button"
-                        onClick={() => {
-                          if (selectedStatus === "RESOLVED") setConfirmClose(true);
-                          else if (selectedStatus === "REJECTED") { setRejectionReason(""); setConfirmReject(true); }
-                          else onUpdateStatus(selectedStatus);
-                        }}
-                        disabled={busy || selectedStatus === ticket.status}
-                        className="w-full rounded-lg bg-sibs-orange px-4 py-2.5 text-xs font-extrabold text-white hover:brightness-95 disabled:opacity-50">
-                        {busy ? "Saving…" : selectedStatus === "RESOLVED" ? "Close Case" : selectedStatus === "REJECTED" ? "Reject Request" : "Save status"}
-                      </button>
+                  ))}
+                </dl>
+              )}
+
+              {isRejected && (
+                <section className="rounded-xl border border-rose-200 bg-rose-50 p-4">
+                  <h3 className="text-xs font-extrabold text-rose-800">Rejection reason</h3>
+                  <p className="mt-1 whitespace-pre-wrap wrap-anywhere text-xs font-semibold text-sibs-navy">{ticket.rejectionReason || "Not recorded"}</p>
+                  <p className="sibs-modal-section-subtitle mt-1">Rejected by SiBS ID {ticket.rejectedBySibsId || "—"}. This request is excluded from open and closed case counts.</p>
+                </section>
+              )}
+
+              <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+                <section className="min-w-0 rounded-2xl border border-sibs-border bg-white p-4 shadow-xs sm:p-5">
+                  <div className="border-b border-sibs-border pb-3">
+                    <h3 ref={chatHeadingRef} tabIndex={-1} className="sibs-modal-section-title flex items-center gap-2">
+                      <MessageSquare size={16} aria-hidden="true" className="text-sibs-orange" /> Support Assignment &amp; Chat
+                    </h3>
+                    <p className="sibs-modal-section-subtitle mt-1">Assigned agent and the full case conversation.</p>
+                  </div>
+                  <p className="sibs-modal-section-subtitle mt-3 uppercase">Assigned support agent</p>
+                  <div className="mt-1.5 flex items-center gap-2.5 rounded-xl border border-sibs-border bg-sibs-surface p-2.5">
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-sibs-navy text-white"><UserRound size={15} aria-hidden="true" /></span>
+                    <div className="min-w-0">
+                      <p className="wrap-anywhere text-xs font-extrabold text-sibs-navy">{assignee?.displayName || (acceptedBy ? "Support agent" : "Unassigned")}</p>
+                      {acceptedBy && <p className="sibs-modal-section-subtitle">SiBS ID: {acceptedBy}</p>}
                     </div>
-                  )}
-                  {ticket.status === "RESOLVED" && <p className="mt-3 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-[11px] font-bold text-emerald-700">This case is closed. Its conversation is archived and read-only.</p>}
-                  {ticket.status === "REJECTED" && <p className="mt-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-[11px] font-bold text-rose-700">This request was rejected and is not included in open or closed case counts. The conversation is read-only.</p>}
-                </div>
-                {ticket.status !== "REJECTED" && <div className="rounded-2xl border border-sibs-border bg-white p-4 shadow-xs">
-                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-sibs-border pb-3">
-                    <h3 className="font-heading text-sm font-bold text-sibs-navy">Case durations</h3>
-                    {ticket.status === "RESOLVED" && <span className="rounded-md bg-emerald-50 px-2 py-1 text-[10px] font-extrabold text-emerald-700">Final</span>}
                   </div>
-                  <div className="mt-3 grid grid-cols-2 gap-2">
-                    {[ ["Queued before acceptance", getQueuedDisplay(ticket, now).text],
-                      ["Response after acceptance", getResponseDisplay(ticket).text],
-                      ["Total resolution", getResolutionDisplay(ticket)],
-                      ["Handling after acceptance", ticket.resolvedAt ? formatElapsed(ticket.secondsToFinish) : "Pending"]
-                    ].map(([label, value]) => (
-                      <div key={label} className="rounded-xl border border-sibs-border bg-sibs-surface px-2.5 py-3 text-center">
-                        <p className="text-[10px] font-bold leading-relaxed text-sibs-muted">{label}</p>
-                        <p className="mt-1.5 text-sm font-extrabold text-sibs-navy">{value}</p>
-                      </div>
-                    ))}
+                {ticket.status === "OPEN" && (
+                  <div className="mt-4 space-y-2">
+                    <button type="button" onClick={onAccept} disabled={busy || eligibilityLoading || !eligibility?.eligible}
+                      className="flex w-full items-center justify-center gap-2 rounded-lg bg-sibs-navy px-4 py-2.5 text-xs font-extrabold text-white hover:bg-sibs-navy-alt disabled:cursor-not-allowed disabled:opacity-50">
+                      {busy || eligibilityLoading ? <Loader2 size={14} className="motion-safe:animate-spin" /> : <CheckCircle2 size={14} />} Accept Request
+                    </button>
+                    <p className="text-[11px] font-semibold leading-relaxed text-sibs-muted">{eligibilityLoading ? "Verifying today's Kronos attendance and assigned site..." : eligibility?.reason || "You are eligible to accept this request."}</p>
+                    <button type="button" onClick={openRejection}
+                      disabled={busy || eligibilityLoading || !eligibility?.eligible}
+                      className="flex w-full items-center justify-center gap-2 rounded-lg border border-rose-200 bg-white px-4 py-2.5 text-xs font-extrabold text-rose-700 transition hover:bg-rose-50 disabled:opacity-50">
+                      <Ban size={14} /> Reject Request
+                    </button>
                   </div>
-                  <p className="mt-2 text-[10px] font-medium leading-relaxed text-sibs-muted">
-                    Queue: first message → acceptance. Response: acceptance → first actual support reply.
-                    Resolution: opening → closure. Handling: acceptance → closure.
-                    {ticket.status === "RESOLVED" ? " All values are final." : " Unfinished durations are pending."}
-                  </p>
-                </div>}
-                <div className="rounded-2xl border border-sibs-border bg-white p-4 shadow-xs">
-                  <h3 className="font-heading text-sm font-bold text-sibs-navy">Activity timeline</h3>
-                  <ol className="mt-3 space-y-3">
-                    <li className="flex gap-2.5 text-xs text-sibs-navy"><CheckCircle2 size={16} className="mt-0.5 shrink-0 text-emerald-600" /><span><b>{ticket.status === "REJECTED" ? "Request received · first message sent" : "Case opened · first message sent"}</b><span className="block text-sibs-muted">{formatDate(ticket.postedAt)}</span></span></li>
-                    {(ticket.history || []).map((entry, index) => (
-                      <li key={`${entry.eventType}-${entry.occurredAt}-${index}`} className="flex gap-2.5 text-xs text-sibs-navy">
-                        <Clock3 size={16} className="mt-0.5 shrink-0 text-sibs-orange" />
-                        <span><b>{entry.eventType === "ACCEPTED" ? "Accepted and assigned" : entry.eventType === "RESOLVED" ? "Case closed" : entry.eventType === "REJECTED" ? "Request rejected" : `Status changed to ${TICKET_STATUS_LABELS[entry.newStatus] || entry.newStatus}`}</b>
-                          <span className="block text-sibs-muted">{formatDate(entry.occurredAt)}</span>
-                          <span className="mt-0.5 block break-words text-sibs-muted">{getTimelineActorLabel(entry, conversation)}</span>
-                          {entry.reason && <span className="mt-0.5 block whitespace-pre-wrap break-words text-rose-700">Reason: {entry.reason}</span>}
-                        </span>
-                      </li>
-                    ))}
-                  </ol>
+                )}
+                {isAssignee && !["RESOLVED", "REJECTED"].includes(ticket.status) && (
+                  <div className="mt-4 space-y-2">
+                    <SelectDropdown label="Update status" labelClassName="text-[10px] font-extrabold uppercase text-sibs-muted"
+                      value={selectedStatus}
+                      options={["IN_PROGRESS", "PENDING", "RESOLVED", "REJECTED"].map((status) => ({ value: status, label: TICKET_STATUS_LABELS[status] }))}
+                      onChange={setSelectedStatus} clearable={false} disabled={busy} className="h-10 rounded-lg" />
+                    <button type="button"
+                      onClick={(event) => {
+                        if (selectedStatus === "RESOLVED") {
+                          confirmationTriggerRef.current = event.currentTarget;
+                          setConfirmClose(true);
+                        } else if (selectedStatus === "REJECTED") openRejection(event);
+                        else onUpdateStatus(selectedStatus);
+                      }}
+                      disabled={busy || selectedStatus === ticket.status}
+                      className="w-full rounded-lg bg-sibs-navy px-4 py-2.5 text-xs font-extrabold text-white hover:bg-sibs-navy-alt disabled:opacity-50">
+                      {busy ? "Saving…" : selectedStatus === "RESOLVED" ? "Close Case" : selectedStatus === "REJECTED" ? "Reject Request" : "Save status"}
+                    </button>
+                  </div>
+                )}
+                  <div className="mt-4">
+                    <HelpdeskCaseConversation
+                      key={conversation.id}
+                      conversation={conversation}
+                      ticket={ticket}
+                      currentSibsId={currentSibsId}
+                      onMessagesChanged={onMessagesChanged}
+                    />
+                  </div>
+                </section>
+
+                <div className="flex min-w-0 flex-col gap-4">
+                  <section className="rounded-2xl border border-sibs-border bg-white p-4 shadow-xs">
+                    <h3 className="sibs-modal-section-title flex items-center gap-2 border-b border-sibs-border pb-2.5">
+                      <Clock3 size={16} aria-hidden="true" className="text-sibs-orange" /> Lifecycle Milestones
+                    </h3>
+                    <ol aria-label="Lifecycle milestones" className="mt-3 space-y-2">
+                      {milestones.map(({ label, value, icon, highlight }, index) => (
+                        <li key={label} className={`flex min-h-14 items-center gap-3 rounded-lg border px-3 py-3 ${highlight === "resolved" ? "border-emerald-200 bg-emerald-50 text-emerald-800" : highlight === "rejected" ? "border-rose-200 bg-rose-50 text-rose-800" : "border-sibs-border bg-sibs-surface text-sibs-navy"}`}>
+                          <div aria-hidden="true" className="flex shrink-0 items-center gap-1.5 text-xs font-bold tabular-nums">
+                            <span>{String(index + 1).padStart(2, "0")}</span>{icon}
+                          </div>
+                          <div className="flex min-w-0 flex-1 flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
+                            <p className="text-sm font-bold leading-tight">{label}</p>
+                            <p className="text-xs font-semibold tabular-nums text-sibs-muted">{formatDate(value)}</p>
+                          </div>
+                        </li>
+                      ))}
+                    </ol>
+                  </section>
+
+                  <section className="min-w-0 rounded-2xl border border-sibs-border bg-white p-4 shadow-xs sm:p-5 lg:flex-1">
+                    <div className="border-b border-sibs-border pb-3">
+                      <h3 className="sibs-modal-section-title flex items-center gap-2"><Clock3 size={16} aria-hidden="true" className="text-sibs-orange" /> Activity Audit Log</h3>
+                      <p className="sibs-modal-section-subtitle mt-1">Case activity recorded in the support queue.</p>
+                    </div>
+                    <ol className="mt-3 space-y-3">
+                      <li className="flex gap-2.5 text-xs text-sibs-navy"><CheckCircle2 size={16} className="mt-0.5 shrink-0 text-emerald-600" /><span><b>{ticket.status === "REJECTED" ? "Request received · first message sent" : "Case opened · first message sent"}</b><span className="block text-sibs-muted">{formatDate(ticket.postedAt)}</span></span></li>
+                      {(ticket.history || []).map((entry, index) => (
+                        <li key={`${entry.eventType}-${entry.occurredAt}-${index}`} className="flex gap-2.5 text-xs text-sibs-navy">
+                          <Clock3 size={16} className="mt-0.5 shrink-0 text-sibs-orange" />
+                          <span><b>{entry.eventType === "ACCEPTED" ? "Accepted and assigned" : entry.eventType === "RESOLVED" ? "Case closed" : entry.eventType === "REJECTED" ? "Request rejected" : `Status changed to ${TICKET_STATUS_LABELS[entry.newStatus] || entry.newStatus}`}</b>
+                            <span className="block text-sibs-muted">{formatDate(entry.occurredAt)}</span>
+                            <span className="mt-0.5 block break-words text-sibs-muted">{getTimelineActorLabel(entry, conversation)}</span>
+                            {entry.reason && <span className="mt-0.5 block whitespace-pre-wrap break-words text-rose-700">Reason: {entry.reason}</span>}
+                          </span>
+                        </li>
+                      ))}
+                    </ol>
+                  </section>
                 </div>
               </div>
             </div>
           )}
-        </div>
-        <div className="flex shrink-0 justify-end border-t border-sibs-border bg-white px-5 py-3">
-          <button type="button" onClick={onClose} disabled={busy} className="rounded-lg border border-sibs-border bg-white px-5 py-2 text-xs font-extrabold text-sibs-navy hover:bg-sibs-surface">Close</button>
-        </div>
-      </section>
-      {confirmClose && ticket?.status !== "RESOLVED" && isAssignee && (
-        <div className="absolute inset-0 z-20 flex items-center justify-center bg-slate-950/55 px-4 backdrop-blur-[2px]" role="presentation" onMouseDown={(event) => event.stopPropagation()}>
-          <section role="alertdialog" aria-modal="true" aria-labelledby="support-close-confirm-title"
-            aria-describedby="support-close-confirm-description"
-            className="w-full max-w-[410px] overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-[0_24px_70px_rgba(4,44,81,0.3)]">
-            <div className="border-t-[4px] border-sibs-orange bg-sibs-navy px-5 py-4 text-white">
-              <h3 id="support-close-confirm-title" className="font-heading text-sm font-extrabold">Close this case?</h3>
-              <p className="mt-1 text-xs text-white/75">Confirm that the employee's concern is resolved.</p>
-            </div>
-            <p id="support-close-confirm-description" className="px-5 py-4 text-xs font-semibold leading-relaxed text-sibs-muted">Only close the case when the problem is fixed. This action cannot be undone, and the conversation will become read-only.</p>
-            <div className="flex justify-end gap-2 border-t border-sibs-border bg-sibs-surface px-5 py-3">
-              <button type="button" onClick={() => setConfirmClose(false)} disabled={busy}
-                className="rounded-xl border border-sibs-border bg-white px-4 py-2.5 text-xs font-extrabold text-sibs-navy">Cancel</button>
-              <button type="button" onClick={() => onUpdateStatus("RESOLVED")} disabled={busy}
-                className="rounded-xl bg-sibs-orange px-4 py-2.5 text-xs font-extrabold text-white disabled:opacity-50">{busy ? "Closing…" : "Close Case"}</button>
-            </div>
-          </section>
-        </div>
-      )}
-      {confirmReject && ticket?.status !== "REJECTED" && (isAssignee || (ticket?.status === "OPEN" && eligibility?.eligible)) && (
-        <div className="absolute inset-0 z-20 flex items-center justify-center bg-slate-950/55 px-4 backdrop-blur-[2px]" role="presentation" onMouseDown={(event) => event.stopPropagation()}>
-          <section role="alertdialog" aria-modal="true" aria-labelledby="support-reject-confirm-title"
-            aria-describedby="support-reject-confirm-description"
-            className="w-full max-w-[450px] overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-[0_24px_70px_rgba(4,44,81,0.3)]">
-            <div className="border-t-[4px] border-sibs-orange bg-sibs-navy px-5 py-4 text-white">
-              <h3 id="support-reject-confirm-title" className="font-heading text-sm font-extrabold">Reject this request?</h3>
-              <p className="mt-1 text-xs text-white/75">A reason is required and will be visible in the request record.</p>
-            </div>
-            <div className="space-y-2 px-5 py-4">
-              <p id="support-reject-confirm-description" className="text-xs font-semibold leading-relaxed text-sibs-muted">
-                Use Rejected only for requests that cannot be actioned by this Helpdesk team. Rejected requests do not count as open or closed cases.
-              </p>
-              <label htmlFor="support-rejection-reason" className="block text-[11px] font-extrabold text-sibs-navy">Reason for rejection *</label>
-              <textarea id="support-rejection-reason" value={rejectionReason} maxLength={1000} rows={4}
+      </ModalShell>
+      {confirmationOpen && (
+        <ModalShell
+          open
+          role="alertdialog"
+          aria-describedby="helpdesk-confirm-description"
+          title={showRejectConfirmation ? "Reject this request?" : "Close this case?"}
+          subtitle={showRejectConfirmation
+            ? "A reason is required and will be visible in the request record."
+            : "Confirm that the employee's concern is resolved."}
+          icon={showRejectConfirmation ? Ban : CheckCircle2}
+          onClose={dismissConfirmation}
+          closeDisabled={busy}
+          closeOnBackdrop={false}
+          hideCloseButton
+          autoDetectDirty={false}
+          initialFocusRef={showRejectConfirmation ? rejectionReasonRef : null}
+          maxWidth="max-w-md"
+          zIndex="z-[2000000]"
+          footer={
+            <>
+              <button type="button" onClick={dismissConfirmation} disabled={busy} className="sibs-modal-btn-secondary">Cancel</button>
+              {showRejectConfirmation ? (
+                <button type="button" onClick={() => onUpdateStatus("REJECTED", rejectionReason.trim())}
+                  disabled={busy || rejectionReason.trim().length < 1 || rejectionReason.trim().length > 1000}
+                  className="sibs-btn-danger min-h-9">{busy ? "Rejecting…" : "Reject Request"}</button>
+              ) : (
+                <button type="button" onClick={() => onUpdateStatus("RESOLVED")} disabled={busy}
+                  className="inline-flex min-h-9 items-center justify-center rounded-[10px] bg-sibs-navy px-4 text-xs font-extrabold text-white hover:bg-sibs-navy-alt disabled:opacity-50">
+                  {busy ? "Closing…" : "Close Case"}
+                </button>
+              )}
+            </>
+          }
+        >
+          {errorNotice}
+          <p id="helpdesk-confirm-description" className="text-xs font-semibold leading-relaxed text-sibs-muted">
+            {showRejectConfirmation
+              ? "Use Rejected only for requests that cannot be actioned by this Helpdesk team. Rejected requests do not count as open or closed cases."
+              : "Only close the case when the problem is fixed. This action cannot be undone, and the conversation will become read-only."}
+          </p>
+          {showRejectConfirmation && (
+            <div className="mt-3 space-y-2">
+              <label htmlFor="support-rejection-reason" className="block text-xs font-extrabold text-sibs-navy">Reason for rejection *</label>
+              <textarea id="support-rejection-reason" ref={rejectionReasonRef} value={rejectionReason} maxLength={1000} rows={4}
                 onChange={(event) => setRejectionReason(event.target.value)}
                 placeholder="Explain why this request cannot be processed (e.g. unrelated to workplace support)."
-                disabled={busy} autoFocus
-                className="w-full resize-y rounded-xl border border-sibs-border bg-white px-3 py-2 text-xs text-sibs-navy outline-none focus:border-sibs-orange focus:ring-2 focus:ring-sibs-orange/20" />
-              <p className="text-[10px] text-sibs-muted">{rejectionReason.trim().length}/1000 characters · minimum 1</p>
+                disabled={busy} required
+                className="sibs-input min-h-24 w-full resize-y px-3 py-2" />
+              <p className="sibs-modal-section-subtitle">{rejectionReason.trim().length}/1000 characters · minimum 1</p>
             </div>
-            <div className="flex justify-end gap-2 border-t border-sibs-border bg-sibs-surface px-5 py-3">
-              <button type="button" onClick={() => setConfirmReject(false)} disabled={busy}
-                className="rounded-xl border border-sibs-border bg-white px-4 py-2.5 text-xs font-extrabold text-sibs-navy">Cancel</button>
-              <button type="button" onClick={() => onUpdateStatus("REJECTED", rejectionReason.trim())}
-                disabled={busy || rejectionReason.trim().length < 1 || rejectionReason.trim().length > 1000}
-                className="rounded-xl bg-sibs-orange px-4 py-2.5 text-xs font-extrabold text-white disabled:cursor-not-allowed disabled:opacity-50">{busy ? "Rejecting…" : "Reject Request"}</button>
-            </div>
-          </section>
-        </div>
+          )}
+        </ModalShell>
       )}
-    </div>
+    </>
   );
-  return createPortal(modalContent, document.body);
 }
 
 export default function HelpdeskSupportPage({ category = "IT" }) {
@@ -681,6 +739,7 @@ export default function HelpdeskSupportPage({ category = "IT" }) {
   const userViewKey = `${safeText(user?.username || user?.sibsId || user?.sibs_id)}:${safeText(user?.role)}`;
   const mainScrollRef = useRef(null);
   const tableScrollRef = useRef(null);
+  const queueSearchRef = useRef(null);
 
   const [authorizedCategories, setAuthorizedCategories] = useState([]);
   const [authorizedLocationsByCategory, setAuthorizedLocationsByCategory] = useState({});
@@ -886,7 +945,11 @@ export default function HelpdeskSupportPage({ category = "IT" }) {
       void chat?.refreshConversations?.({ silent: true });
     } catch (error) {
       setTicketError(error?.response?.data?.message || "Unable to update request. Refresh and retry.");
-      try { setTicketDetails(await getHelpdeskTicketDetails(activeRequest.id)); } catch {}
+      try {
+        setTicketDetails(await getHelpdeskTicketDetails(activeRequest.id));
+      } catch {
+        // Keep the original action error visible if the follow-up read also fails.
+      }
     } finally { setTicketBusy(false); }
   };
 
@@ -1025,7 +1088,7 @@ export default function HelpdeskSupportPage({ category = "IT" }) {
     <div className="sibs-dashboard-shell">
       <div className="shrink-0"><Header /></div>
       <main ref={mainScrollRef} className="sibs-dashboard-main-wide">
-        <div className="mx-auto w-full max-w-[1600px] space-y-5 sm:space-y-6 pb-8">
+        <div className="mx-auto flex min-h-full w-full max-w-[1600px] flex-col gap-5 sm:gap-6">
           {/* Permanent page identity: never replace this hero with a skeleton. */}
           <PageHeaderHero
             kicker={config.kicker}
@@ -1062,16 +1125,17 @@ export default function HelpdeskSupportPage({ category = "IT" }) {
           ) : (
             <>
               <section
-                className="sibs-page-card-in sibs-card min-h-[520px] overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-xs font-jakarta"
+                className="sibs-page-card-in sibs-card flex shrink-0 grow flex-col overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-xs font-jakarta"
                 style={{ animationDelay: `${ANIMATION.table}ms`, animationFillMode: "both" }}
               >
-                <div className="flex h-full min-h-[520px] min-w-0 flex-col bg-white font-jakarta">
+                <div className="flex min-w-0 flex-1 flex-col bg-white font-jakarta">
                   <div className="border-b border-sibs-border p-4 sm:p-5 2xl:p-6">
                     <h2 className="font-heading text-sm font-bold tracking-tight text-sibs-navy 2xl:text-base">{config.tableTitle}</h2>
                     <p className="mt-1 sibs-text-xs font-semibold text-sibs-muted">Review queued time (before acceptance), response time (acceptance to first reply), and resolution.</p>
                     <div className="mt-4 flex flex-col gap-3 overflow-visible xl:flex-row xl:items-end">
                       <div className="relative w-full min-w-0 xl:min-w-[180px] xl:flex-[1_1_220px] 2xl:min-w-[280px] 2xl:flex-[1_1_360px]">
                         <SearchInput
+                          inputRef={queueSearchRef}
                           label="Search"
                           labelClassName="sibs-text-micro font-extrabold tracking-normal text-sibs-navy"
                           value={search}
@@ -1266,6 +1330,7 @@ export default function HelpdeskSupportPage({ category = "IT" }) {
       </main>
       {activeRequest && (
         <HelpdeskTicketModal
+          returnFocusFallbackRef={queueSearchRef}
           conversation={activeRequest}
           ticket={ticketDetails}
           loading={ticketLoading}

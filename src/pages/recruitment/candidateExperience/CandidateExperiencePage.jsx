@@ -45,7 +45,7 @@ export default function CandidateExperiencePage() {
       </div>
 
       <main className="sibs-dashboard-main-wide">
-        <div className="mx-auto w-full max-w-[1700px] space-y-3.5 sm:space-y-4 2xl:space-y-5">
+        <div className="mx-auto flex min-h-full w-full max-w-[1700px] flex-col gap-3.5 sm:gap-4 2xl:gap-5">
           <CandidateExperienceHeader
             onAddManual={() => setManualOpen(true)}
             onRefresh={refresh}
@@ -83,7 +83,7 @@ export default function CandidateExperiencePage() {
           <CandidateExperienceAnalytics records={records} metrics={metrics} loading={loading} />
 
           <section
-            className="sibs-page-card-in overflow-hidden rounded-[10px] 2xl:rounded-[14px] border border-sibs-border bg-white shadow-sm font-jakarta"
+            className="flex shrink-0 grow flex-col sibs-page-card-in overflow-hidden rounded-[10px] 2xl:rounded-[14px] border border-sibs-border bg-white shadow-sm font-jakarta"
             style={{ animationDelay: "240ms", animationFillMode: "both" }}
           >
             <header className="border-b border-sibs-border bg-white p-4 sm:p-5 2xl:p-6 font-jakarta">
@@ -108,7 +108,7 @@ export default function CandidateExperiencePage() {
               </div>
             </header>
 
-            <div className="min-h-0 flex-1 p-4 sm:p-5 2xl:p-6 font-jakarta">
+            <div className="flex flex-1 flex-col p-4 sm:p-5 2xl:p-6 font-jakarta">
               <CandidateExperienceTable
                 records={filteredRecords}
                 onSelect={setSelectedRecord}

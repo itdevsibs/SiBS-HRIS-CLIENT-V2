@@ -1,9 +1,10 @@
 import React, { StrictMode } from "react";
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, useLocation } from "react-router-dom";
 import { PaginationProvider } from "../../../services/context/PaginationContext";
 import SuperAdminDashboardPage from "./SuperAdminDashboardPage";
+import { sanitizeLeavesDateRange, SUPER_ADMIN_LEAVES_RANGE_DAYS } from "@/lib/utils/leaves/leaveHelpers";
 
 const api = vi.hoisted(() => ({
   overview: vi.fn(), feed: vi.fn(), employees: vi.fn(),
@@ -14,8 +15,8 @@ vi.mock("../../../lib/axios/getHrDashboard", () => ({
 }));
 vi.mock("../../../lib/axios/getEmployee", () => ({ getEmployee: api.employees }));
 vi.mock("../../../lib/axios/userSettings", () => ({ getUserSettingsUsers: api.users }));
-vi.mock("../../../lib/axios/getApprovalRequest", () => ({ getApprovalRequests: api.approvals }));
-vi.mock("../../../lib/axios/getLeaves", () => ({ getLeaves: api.leaves }));
+vi.mock("../../../lib/axios/getApprovalRequest", () => ({ getApprovalRequestCounts: api.approvals }));
+vi.mock("../../../lib/axios/getLeaves", () => ({ getLeavesSummary: api.leaves }));
 vi.mock("../../../lib/axios/getCandidatePipeline", () => ({
   getActiveCandidateCountCacheKey: () => "test-cache-key",
   getActiveCandidatePipelineCount: vi.fn().mockResolvedValue(10),
@@ -24,6 +25,7 @@ vi.mock("../../../lib/axios/getCandidatePipeline", () => ({
 }));
 // Global header and authentication have their own unrelated network/session lifecycle.
 vi.mock("../../../components/layout/Header", () => ({ default: () => null }));
+vi.mock("../../../components/Dashboard/shared/StatutoryCoveragePanel", () => ({ default: () => null }));
 vi.mock("../../../services/context/UserContext", () => ({
   useUser: () => ({ user: { firstName: "Test", role: "super_admin" } }),
 }));
@@ -40,16 +42,25 @@ const employee = {
   adminAccess: 7, role: "super_admin", department: "HR", account: "Internal",
 };
 const payloads = {
-  overview: { metrics: { employees: 80, departments: 5 }, attendance: { late: 2, absent: 3 } },
+  overview: { success: true, metrics: { employees: 80, departments: 5 }, attendance: { present: 31, late: 2, absent: 49 } },
   feed: { recentActivities: [{ id: "LOG-1", actor: "Audit Actor", action: "UPDATED_EMPLOYEE", details: "Updated directory", status: "Success" }] },
   employees: { data: [employee], pagination: { total: 42 }, departmentOptions: ["HR", "TA"] },
   users: { data: [{ id: "USER-1", fullName: "Assigned Admin", email: "assigned@example.com", role: "super_admin", adminAccess: 7 }] },
-  approvals: { counts: { pending: 6 }, data: [], total: 6 },
-  leaves: { data: [], pagination: { total: 4 } },
+  approvals: { success: true, data: { pending: 6 } },
+  leaves: { success: true, ready: true, data: {
+    pendingLeaves: 294,
+    recentPendingLeaves: { count: 4, dateFrom: "2026-09-29", dateTo: "2026-11-09" },
+  } },
 };
 
+function LeaveDestination() {
+  const { pathname, state } = useLocation();
+  if (pathname !== "/leaves") return null;
+  return <output aria-label="Leave drilldown">{JSON.stringify(state)}</output>;
+}
+
 function renderDashboard() {
-  return render(<StrictMode><MemoryRouter><PaginationProvider><SuperAdminDashboardPage /></PaginationProvider></MemoryRouter></StrictMode>);
+  return render(<StrictMode><MemoryRouter><PaginationProvider><SuperAdminDashboardPage /><LeaveDestination /></PaginationProvider></MemoryRouter></StrictMode>);
 }
 
 function pendingBatch() {
@@ -124,10 +135,13 @@ describe("Super Admin dashboard requests", () => {
     renderDashboard();
     await resolveBatch(batch, ["feed"]);
     expect(screen.getByRole("button", { name: /Employees.*80/ })).toBeTruthy();
-    expect(screen.getByRole("button", { name: /Attendance Flags.*5/ })).toBeTruthy();
-    expect(screen.getByRole("button", { name: /Pending Approvals.*6/ })).toBeTruthy();
+    expect(screen.getByRole("article", { name: "Recorded Attendance: 31" })).toBeTruthy();
+    expect(screen.queryByRole("article", { name: "Recorded Attendance: 51" })).toBeNull();
+    expect(screen.getByRole("button", { name: /Pending Attrition Approvals.*6/ })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Pending Leave Requests: 4" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Pending Leave Requests: 294" })).toBeNull();
     fireEvent.click(screen.getByRole("tab", { name: /Risk & Exceptions Desk/ }));
-    expect(screen.getAllByText("4 Leave Request/s Awaiting Approval").length).toBeGreaterThan(0);
+    expect(screen.getByText("4 pending leave requests")).toBeTruthy();
     await resolveBatch(batch);
   });
 
@@ -141,9 +155,12 @@ describe("Super Admin dashboard requests", () => {
 
     expect(api.employees).not.toHaveBeenCalled();
     expect(screen.getByRole("button", { name: /Employees.*80/ })).toBeTruthy();
-    expect(screen.getByRole("button", { name: /Attendance Flags.*5/ })).toBeTruthy();
+    expect(screen.getByRole("article", { name: "Recorded Attendance: 31" })).toBeTruthy();
+    expect(screen.getByText("Pending Leave Requests").closest('[data-testid="metric-card-skeleton"]')).toBeTruthy();
+    expect(screen.getByText("Pending Attrition Approvals").closest('[data-testid="metric-card-skeleton"]')).toBeTruthy();
 
     await resolveBatch(batch);
+    expect(screen.getByRole("button", { name: "Pending Leave Requests: 4" })).toBeTruthy();
   });
 
   it("runs dashboard requests concurrently rather than waterfalling behind the overview", async () => {
@@ -176,7 +193,7 @@ describe("Super Admin dashboard requests", () => {
 
   it("retains the employee fallback and successful data when unrelated requests fail", async () => {
     api.users.mockRejectedValue(new Error("users unavailable"));
-    api.leaves.mockRejectedValue(new Error("leaves unavailable"));
+    api.leaves.mockResolvedValue({ success: false, ready: false });
     renderDashboard();
     await waitFor(() => expect(screen.getByRole("main").getAttribute("aria-busy")).toBe("false"));
     expect(screen.getByRole("button", { name: /Employees.*80/ })).toBeTruthy();
@@ -185,8 +202,34 @@ describe("Super Admin dashboard requests", () => {
     api.overview.mockRejectedValue(new Error("offline"));
     api.feed.mockRejectedValue(new Error("offline"));
     await act(async () => window.dispatchEvent(new Event("focus")));
-    expect(screen.getByRole("button", { name: /Attendance Flags.*5/ })).toBeTruthy();
+    expect(screen.getByRole("article", { name: "Recorded Attendance: —, Unavailable" })).toBeTruthy();
     fireEvent.click(screen.getByRole("tab", { name: /System & Module Activity/ }));
     expect(within(screen.getByRole("tabpanel")).getAllByText("Audit Actor").length).toBeGreaterThan(0);
+  });
+
+  it("distinguishes missing attendance data from a verified zero", async () => {
+    api.overview.mockResolvedValueOnce({ success: true, attendance: {} });
+    api.overview.mockResolvedValue({ success: true, attendance: { present: 0 } });
+    renderDashboard();
+    await waitFor(() => expect(screen.getByRole("article", { name: "Recorded Attendance: —, Unavailable" })).toBeTruthy());
+    await act(async () => window.dispatchEvent(new Event("focus")));
+    await waitFor(() => expect(screen.getByRole("article", { name: "Recorded Attendance: 0" })).toBeTruthy());
+  });
+
+  it("opens the pending leave list with the dates from the cached count", async () => {
+    renderDashboard();
+    fireEvent.click(await screen.findByRole("button", { name: "Pending Leave Requests: 4" }));
+    expect(JSON.parse(screen.getByLabelText("Leave drilldown").textContent)).toEqual({
+      source: "super-admin-pending-leaves",
+      leaveStatus: "Pending",
+      leaveDateRange: { dateFrom: "2026-09-29", dateTo: "2026-11-09" },
+    });
+  });
+
+  it("keeps the six-week window intact and caps longer drilldown ranges", () => {
+    const options = { maxDays: SUPER_ADMIN_LEAVES_RANGE_DAYS };
+    const window = { dateFrom: "2024-01-01", dateTo: "2024-02-11" };
+    expect(sanitizeLeavesDateRange(window, options)).toEqual(window);
+    expect(sanitizeLeavesDateRange({ ...window, dateFrom: "2023-12-31" }, options)).toEqual(window);
   });
 });

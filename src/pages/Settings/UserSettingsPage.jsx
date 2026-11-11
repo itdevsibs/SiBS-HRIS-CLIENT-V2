@@ -2144,7 +2144,7 @@ export default function UserSettingsPage() {
       </div>
 
       <main className="sibs-dashboard-main-wide">
-        <div className="mx-auto w-full max-w-[1700px] space-y-5">
+        <div className="mx-auto flex min-h-full w-full max-w-[1700px] flex-col gap-5">
           <PageHeaderHero
             kicker="User Settings View"
             title="User Settings"
@@ -2219,7 +2219,7 @@ export default function UserSettingsPage() {
           )}
 
           <section
-            className="sibs-page-card-in sibs-card overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-xs font-jakarta"
+            className="flex shrink-0 grow flex-col sibs-page-card-in sibs-card overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-xs font-jakarta"
             style={{
               animationDelay: "240ms",
               animationFillMode: "both",
@@ -2556,7 +2556,7 @@ export default function UserSettingsPage() {
           />
             </div>
 
-            <div className="border-t border-sibs-border bg-white px-4 py-3 sm:px-5 font-jakarta">
+            <div className="mt-auto border-t border-sibs-border bg-white px-4 py-3 sm:px-5 font-jakarta">
               <TablePagination
                 currentPage={currentPage}
                 totalPages={pagination.totalPages}

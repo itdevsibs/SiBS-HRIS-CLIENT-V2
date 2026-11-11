@@ -772,7 +772,7 @@ export default function JobDescriptionTable({
 
   return (
     <section
-      className="sibs-page-card-in overflow-visible rounded-2xl border border-sibs-border bg-white font-jakarta shadow-xs"
+      className="sibs-page-card-in flex flex-1 flex-col overflow-visible rounded-2xl border border-sibs-border bg-white font-jakarta shadow-xs"
       style={{ animationDelay: "240ms", animationFillMode: "both" }}
     >
       <div className="border-b border-sibs-border p-4 sm:p-5 2xl:p-6 font-jakarta">
@@ -865,7 +865,7 @@ export default function JobDescriptionTable({
         </div>
       </div>
 
-      <div className="min-h-0 flex-1 p-4 sm:p-5 2xl:p-6">
+      <div className="flex flex-1 flex-col p-4 sm:p-5 2xl:p-6">
         <div className="overflow-hidden rounded-xl border border-sibs-border bg-white">
           {/* =================================================
               STATUS TABS
@@ -1077,6 +1077,7 @@ export default function JobDescriptionTable({
         ================================================= */}
 
         <TablePagination
+          className="mt-auto"
           currentPage={safeCurrentPage}
           totalPages={totalPages}
           totalRecords={filteredList.length}
