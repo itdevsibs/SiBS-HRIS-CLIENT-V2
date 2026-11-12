@@ -1670,7 +1670,7 @@ export default function WorkforceHiringOverviewDetailsTable() {
       style={{ animationDelay: "240ms", animationFillMode: "both" }}
     >
       <div className="border-b border-sibs-border px-3 py-2 2xl:px-5 2xl:py-4">
-        <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(320px,1fr)_minmax(680px,860px)] xl:items-start">
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_auto] xl:items-start">
           <div className="min-w-0">
             <div className="flex min-w-0 items-start gap-2">
 
@@ -1705,6 +1705,9 @@ export default function WorkforceHiringOverviewDetailsTable() {
                 showFilterPanel={false}
                 showFilterHeader={false}
                 showPagination={false}
+                controlsClassName="flex flex-col gap-2.5 overflow-visible xl:flex-row xl:flex-nowrap xl:items-end xl:justify-end"
+                searchClassName="relative w-full min-w-0 xl:w-[200px] 2xl:w-[240px] xl:flex-none"
+                rightContentClassName="flex w-full items-end xl:w-auto xl:flex-none shrink-0"
                 searchValue={searchInput}
                 onSearchChange={(val) => {
                   const nextVal = typeof val === "string" ? val : val?.target?.value ?? "";
@@ -1727,6 +1730,7 @@ export default function WorkforceHiringOverviewDetailsTable() {
                     allLabel: "All Clusters",
                     label: "Cluster",
                     searchable: true,
+                    className: "w-full xl:w-[140px] 2xl:w-[160px] xl:flex-none",
                   },
                   {
                     key: "risk",
@@ -1740,11 +1744,12 @@ export default function WorkforceHiringOverviewDetailsTable() {
                     allLabel: "All Risks",
                     label: "Risk Level",
                     searchable: false,
+                    className: "w-full xl:w-[115px] 2xl:w-[135px] xl:flex-none",
                   },
                 ]}
                 rightContent={
-                  <div className="flex w-full flex-wrap items-center justify-start gap-2 xl:w-auto xl:justify-end">
-                    <span className="inline-flex h-8.5 2xl:h-10 items-center rounded-[10px] border border-sibs-border bg-sibs-surface px-3 text-xs font-bold tabular-nums text-sibs-navy">
+                  <div className="flex h-8.5 sm:h-9 2xl:h-10 shrink-0 items-center gap-2">
+                    <span className="inline-flex h-full items-center whitespace-nowrap rounded-[10px] border border-sibs-border bg-sibs-surface px-3 text-xs font-bold tabular-nums text-sibs-navy">
                       {sortedRows.length} account rows
                     </span>
 
@@ -1752,7 +1757,7 @@ export default function WorkforceHiringOverviewDetailsTable() {
                       <button
                         type="button"
                         onClick={clearAllFilters}
-                        className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 rounded-[10px] border border-sibs-border bg-white px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-muted transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange focus:outline-none xl:w-auto"
+                        className="inline-flex h-full items-center justify-center gap-1.5 whitespace-nowrap rounded-[10px] border border-sibs-border bg-white px-3 2xl:px-3.5 sibs-text-xs font-extrabold text-sibs-muted transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange focus:outline-none"
                       >
                         <RotateCcw size={14} />
                         Clear

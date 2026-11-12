@@ -1,4 +1,6 @@
 import api from "./api-template";
+import { getTodayDate } from "./dateFormatter";
+import { SUPER_ADMIN_LEAVES_RANGE_DAYS } from "../utils/leaves/leaveHelpers";
 
 function getLocalCalendarDate(date = new Date()) {
   const year = date.getFullYear();
@@ -74,21 +76,87 @@ export async function getLeaves({
 // Single-flight and short backoff across React StrictMode remounts. Scope is
 // keyed by authenticated user+role to prevent another user's counts leaking.
 const sidebarSummaryRequests = new Map();
+const recentSummaryRequests = new Map();
 
-export async function getLeavesSummary({ cacheKey = "" } = {}) {
-  const key = String(cacheKey || "");
+export function getLeaveSummaryCacheKey(user, { requireIdentifier = false } = {}) {
+  if (!user || typeof user !== "object") return "";
+
+  const identifier = String(
+    user.sibs_id ||
+    user.sibsId ||
+    user.employee_sibs_id ||
+    user.employeeSibsId ||
+    user.gy_emp_code ||
+    user.gy_user_code ||
+    user.userCode ||
+    user.user_code ||
+    user.employee_id ||
+    user.employeeId ||
+    user.employeeCode ||
+    user.employee_code ||
+    user.user_id ||
+    user.userId ||
+    user.id ||
+    user.username ||
+    user.email ||
+    "",
+  ).trim();
+
+  const access = user.admin_access ?? user.adminAccess ?? "";
+  const role = user.role ?? user.userRole ?? user.tokenType ?? "";
+
+  if (!identifier && !access && !role) return "";
+  if (requireIdentifier && (!identifier || (!access && !role))) return "";
+
+  return `${identifier || "anonymous"}|${access}|${role}`;
+}
+
+export async function getLeavesSummary({
+  cacheKey = "", forceRefresh = false, window: summaryWindow, signal,
+} = {}) {
+  const recent = summaryWindow === "recent";
+  const dateTo = recent ? getTodayDate() : "";
+  const identity = String(cacheKey || "");
+  const key = recent
+    ? identity && !identity.startsWith("anonymous|") && JSON.stringify([identity, dateTo])
+    : identity;
+  const cache = recent ? recentSummaryRequests : sidebarSummaryRequests;
   const now = Date.now();
-  const entry = key ? sidebarSummaryRequests.get(key) : null;
+  const entry = key ? cache.get(key) : null;
   if (entry?.pending) return entry.pending;
-  if (entry && entry.expiresAt > now) return entry.result;
+  if (entry && entry.expiresAt > now && (!forceRefresh || entry.backoff)) return entry.result;
 
-  const pending = api.get("/api/leaves/summary/sidebar", { timeout: 10000 })
+  function remember(result, ttl, backoff = false) {
+    if (key && !signal?.aborted && (!recent || dateTo === getTodayDate())) {
+      cache.set(key, { result, expiresAt: Date.now() + ttl, backoff });
+    }
+  }
+
+  const pending = api.get("/api/leaves/summary/sidebar", {
+    timeout: 10000,
+    ...(recent && {
+      params: { window: "recent" },
+      // Dashboard polling already serializes requests within its identity and
+      // window. The Axios bridge must not join a previous window's request.
+      skipInFlightDeduplication: true,
+    }),
+    ...(signal && { signal }),
+  })
     .then((res) => {
       const result = res.data;
-      if (key) {
-        const ttl = result?.success && result?.ready === false
-          ? 10_000 : result?.success ? 30_000 : 2 * 60_000;
-        sidebarSummaryRequests.set(key, { result, expiresAt: Date.now() + ttl });
+      if (recent) {
+        if (result?.success && result.ready === true && result.stale !== true) {
+          const summary = result.data?.recentPendingLeaves;
+          const start = new Date(`${dateTo}T00:00:00Z`);
+          start.setUTCDate(start.getUTCDate() - SUPER_ADMIN_LEAVES_RANGE_DAYS + 1);
+          if (summary?.dateTo !== dateTo || summary?.dateFrom !== start.toISOString().slice(0, 10)) {
+            return { success: false, ready: false, data: null };
+          }
+          remember(result, 30_000);
+        }
+      } else {
+        remember(result, result?.success && result.ready === false
+          ? 1_500 : result?.success ? 30_000 : 2 * 60_000);
       }
       return result;
     })
@@ -103,25 +171,25 @@ export async function getLeavesSummary({ cacheKey = "" } = {}) {
         message: err?.response?.data?.message || err?.message || "Failed to fetch leave summary.",
         data: null,
       };
-      if (key) {
-        sidebarSummaryRequests.set(key, {
-          result,
-          expiresAt: Date.now() + Math.max(60, Number(result.retryAfterSeconds) || 120) * 1000,
-        });
+      if (!recent) {
+        remember(result, Math.max(60, Number(result.retryAfterSeconds) || 120) * 1000);
+      } else if (result.status === 503) {
+        const retryAfter = Number(result.retryAfterSeconds);
+        remember(result, (Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter : 120) * 1000, true);
       }
       return result;
     })
     .finally(() => {
-      const current = sidebarSummaryRequests.get(key);
-      if (current?.pending === pending) sidebarSummaryRequests.delete(key);
+      const current = cache.get(key);
+      if (current?.pending === pending) cache.delete(key);
       // Limit the size of this short-lived client cache.
-      if (sidebarSummaryRequests.size > 60) {
+      if (cache.size > 60) {
         const time = Date.now();
-        for (const [id, value] of sidebarSummaryRequests) {
-          if (!value.pending && value.expiresAt <= time) sidebarSummaryRequests.delete(id);
+        for (const [id, value] of cache) {
+          if (!value.pending && value.expiresAt <= time) cache.delete(id);
         }
       }
     });
-  if (key) sidebarSummaryRequests.set(key, { pending });
+  if (key && !recent) cache.set(key, { pending });
   return pending;
 }

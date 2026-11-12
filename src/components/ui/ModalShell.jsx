@@ -80,7 +80,17 @@ export default function ModalShell({
       const target = event?.target;
       if (!target || typeof target.tagName !== "string") return;
       const tagName = target.tagName.toLowerCase();
-      if (tagName !== "input" && tagName !== "textarea" && tagName !== "select") {
+      const isCustomControl =
+        target.getAttribute?.("role") === "combobox" ||
+        target.getAttribute?.("role") === "listbox" ||
+        target.getAttribute?.("data-form-control") === "true";
+
+      if (
+        tagName !== "input" &&
+        tagName !== "textarea" &&
+        tagName !== "select" &&
+        !isCustomControl
+      ) {
         return;
       }
       if (
@@ -88,7 +98,6 @@ export default function ModalShell({
         target.disabled ||
         target.type === "search" ||
         target.type === "hidden" ||
-        target.getAttribute?.("role") === "combobox" ||
         target.getAttribute?.("data-dirty-ignore") === "true" ||
         target.closest?.("[data-dirty-ignore='true']")
       ) {
@@ -177,6 +186,7 @@ export default function ModalShell({
     const handleKeyDown = (e) => {
       if (e.defaultPrevented) return;
       if (closeOnEscape && e.key === "Escape") {
+        if (document.querySelector(".sibs-animated-dropdown.open")) return;
         if (e.target?.closest?.(".sibs-animated-dropdown.open")) return;
         e.stopPropagation();
         if (showDirtyConfirm) {

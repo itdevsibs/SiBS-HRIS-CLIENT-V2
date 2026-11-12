@@ -100,6 +100,33 @@ it("renders ESEP outcomes and opens the Assign Action Item modal", async () => {
   const close = [...dialog.querySelectorAll("button")].find((button) => button.textContent === "Close");
   await React.act(async () => close.click());
   assert.equal(document.querySelector('[role="dialog"]'), null);
+
+  const sessionLink = [...container.querySelectorAll("tbody button")].find(
+    (button) => button.textContent.includes("open coaching session")
+  );
+  assert.ok(sessionLink, "the employee name should provide keyboard access to the session");
+  const ledger = sessionLink.closest("table");
+  assert.equal(ledger.querySelectorAll("th").length, 6);
+  assert.ok(!ledger.textContent.includes("View GROW"));
+
+  const sessionRow = sessionLink.closest("tr");
+  await React.act(async () => sessionRow.cells[0].click());
+  const sessionDialog = document.querySelector('[role="dialog"]');
+  assert.ok(sessionDialog?.textContent.includes("Coaching Session History"));
+  assert.ok(sessionDialog.textContent.includes(sessionRow.cells[4].firstElementChild.textContent));
+  const closeSession = [...sessionDialog.querySelectorAll("button")].find((button) => button.textContent === "Close");
+  await React.act(async () => closeSession.click());
+
+  const resultsButton = [...container.querySelectorAll("tbody button")].find(
+    (button) => button.textContent.includes("open coaching results")
+  );
+  assert.ok(resultsButton, "the employee name should provide keyboard access to coaching results");
+  const resultsTable = resultsButton.closest("table");
+  assert.equal(resultsTable.querySelectorAll("th").length, 5);
+  assert.ok(!resultsTable.textContent.includes("View results"));
+  await React.act(async () => resultsButton.closest("tr").cells[1].click());
+  const resultsDialog = document.querySelector('[role="dialog"]');
+  assert.ok(resultsDialog?.textContent.includes(resultsButton.firstChild.textContent));
 });
 async function render(props) {
   if (app) await React.act(async () => app.unmount());
@@ -168,6 +195,15 @@ it("opens the real journey profile with timeline, coaching, handoffs, and milest
   const training = dialogs.find((element) => element.classList.contains("z-[10020]"));
   assert.ok(training, "nested training details must appear above the profile modal");
   assert.ok(training.textContent.includes("Full Process View"));
+  const trainingTabs = [...training.querySelectorAll('[role="tablist"] [role="tab"]')];
+  assert.equal(trainingTabs.length, 3);
+  assert.equal(trainingTabs[0].getAttribute("aria-selected"), "true");
+  await React.act(async () => trainingTabs[1].click());
+  assert.equal(trainingTabs[1].getAttribute("aria-selected"), "true");
+  assert.ok(training.textContent.includes("Compliance & Security (PII Protection)"));
+  await React.act(async () => trainingTabs[2].click());
+  assert.equal(trainingTabs[2].getAttribute("aria-selected"), "true");
+  assert.ok(training.textContent.includes("Official Evaluator Sign-off"));
   const closeTraining = [...training.querySelectorAll("button")].find((button) => button.textContent === "Close Full View");
   assert.ok(closeTraining.classList.contains("sibs-modal-btn-secondary"));
   await React.act(async () => closeTraining.click());

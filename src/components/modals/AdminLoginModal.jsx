@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Activity, Eye, EyeOff, X } from "lucide-react";
 
@@ -8,6 +8,45 @@ import { useAdmin } from "../../services/context/AdminContext";
 import { getAdminLogin } from "../../lib/axios/getAdminLogin";
 import { getDefaultDashboardPath } from "../../config/accessControl";
 import StatusModal from "./StatusModal";
+
+const FOCUSABLE_SELECTOR =
+  'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+function getFocusableElements(container) {
+  if (!container) return [];
+  return Array.from(container.querySelectorAll(FOCUSABLE_SELECTOR)).filter(
+    (el) =>
+      !el.closest("[inert]") &&
+      (el.offsetWidth || el.offsetHeight || el.getClientRects().length)
+  );
+}
+
+function trapFocus(event, container) {
+  if (event.key !== "Tab" || !container) return;
+  const items = getFocusableElements(container);
+  if (!items.length) {
+    event.preventDefault();
+    return;
+  }
+  const first = items[0];
+  const last = items[items.length - 1];
+  if (
+    event.shiftKey &&
+    (document.activeElement === first ||
+      document.activeElement === container ||
+      !container.contains(document.activeElement))
+  ) {
+    event.preventDefault();
+    last.focus();
+  } else if (
+    !event.shiftKey &&
+    (document.activeElement === last ||
+      !container.contains(document.activeElement))
+  ) {
+    event.preventDefault();
+    first.focus();
+  }
+}
 
 export default function AdminLoginModal() {
   const navigate = useNavigate();
@@ -40,6 +79,9 @@ export default function AdminLoginModal() {
     });
   };
 
+  const dialogRef = useRef(null);
+  const previousFocusRef = useRef(null);
+
   const closeStatusModal = () => {
     setStatusModal({
       open: false,
@@ -49,21 +91,36 @@ export default function AdminLoginModal() {
     });
   };
 
-  const onClose = () => {
+  const onClose = useCallback(() => {
     if (loading) return;
 
     setAdminLogin(false);
     setPassword("");
     setShowPassword(false);
     closeStatusModal();
-  };
+  }, [loading, setAdminLogin]);
 
   useEffect(() => {
     if (!adminLogin) return;
 
+    previousFocusRef.current = document.activeElement;
+    const frame = dialogRef.current;
+    const items = getFocusableElements(frame);
+    const target = items[0] || frame;
+    target?.focus?.({ preventScroll: true });
+
     const handleKeyDown = (e) => {
+      if (statusModal.open) return;
+
       if (e.key === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
         onClose();
+        return;
+      }
+
+      if (e.key === "Tab") {
+        trapFocus(e, dialogRef.current);
       }
     };
 
@@ -73,8 +130,11 @@ export default function AdminLoginModal() {
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
       document.body.style.overflow = "";
+      if (previousFocusRef.current?.isConnected) {
+        previousFocusRef.current.focus();
+      }
     };
-  }, [adminLogin, loading]);
+  }, [adminLogin, onClose, statusModal.open]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -142,9 +202,11 @@ export default function AdminLoginModal() {
         role="presentation"
       >
         <div
+          ref={dialogRef}
           role="dialog"
           aria-modal="true"
           aria-labelledby="admin-login-title"
+          tabIndex={-1}
           onClick={(e) => e.stopPropagation()}
           className="sibs-modal-pop-in flex max-h-[92dvh] w-full max-w-[448px] flex-col overflow-hidden rounded-2xl border border-white/70 bg-white font-jakarta shadow-2xl"
         >

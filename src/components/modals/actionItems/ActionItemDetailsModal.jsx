@@ -19,39 +19,17 @@ import {
   getRiskClass,
   getStatusClass,
 } from "../../../lib/utils/actionItems/actionItemsHelpers.js";
+import MetricCard, { MetricGrid } from "../../ui/MetricCard";
 import ModalShell from "../../ui/ModalShell";
 
 function SectionTitle({ icon: Icon, children, helper = "" }) {
   return (
-    <div className="mb-3.5 flex items-start justify-between gap-3 border-b border-sibs-border pb-2.5 font-jakarta">
-      <div className="min-w-0">
-        <h3 className="flex items-center gap-2 sibs-modal-section-title text-sibs-navy">
-          {Icon ? (
-            <span className="flex h-6 w-6 2xl:h-6.5 2xl:w-6.5 shrink-0 items-center justify-center rounded-[10px] bg-sibs-surface-subtle text-sibs-navy">
-              <Icon size={14} className="shrink-0 text-sibs-orange" />
-            </span>
-          ) : null}
-          {children}
-        </h3>
-        {helper ? (
-          <p className="sibs-modal-section-subtitle mt-0.5 text-sibs-muted">
-            {helper}
-          </p>
-        ) : null}
-      </div>
-    </div>
-  );
-}
-
-function MetricCell({ label, value, valueClass = "text-sibs-navy" }) {
-  return (
-    <div className="flex min-h-[48px] 2xl:min-h-[52px] flex-col items-center justify-center px-2 text-center font-jakarta">
-      <span className="text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-sibs-muted">
-        {label}
-      </span>
-      <span className={`mt-0.5 tabular-nums text-xs 2xl:text-sm font-extrabold ${valueClass}`}>
-        {value}
-      </span>
+    <div className="mb-4 border-b border-sibs-border pb-3">
+      <h3 className="sibs-modal-section-title flex items-center gap-2">
+        {Icon && <Icon size={16} aria-hidden="true" className="shrink-0 text-sibs-orange" />}
+        {children}
+      </h3>
+      {helper && <p className="sibs-modal-section-subtitle mt-1">{helper}</p>}
     </div>
   );
 }
@@ -134,15 +112,13 @@ export default function ActionItemDetailsModal({
       open={Boolean(open && item)}
       onClose={onClose}
       variant="navy"
-      maxWidth="max-w-5xl 2xl:max-w-6xl"
-      className="rounded-[14px] text-slate-900"
-      headerClassName="rounded-t-[14px]"
+      maxWidth="max-w-[1180px]"
       icon={ClipboardCheck}
       title={item.actionItem || "Action Item Details"}
       subtitle="Review the linked hiring gap, accountability, progress, and execution history."
       headerMeta={
         <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-          <span className="rounded bg-sibs-orange px-2 py-0.5 font-jakarta text-[8.5px] 2xl:text-[9px] font-extrabold uppercase text-white">
+          <span className="rounded-full border border-white/15 bg-white/10 px-2 py-0.5 text-[8.5px] 2xl:text-[9px] font-extrabold uppercase text-white">
             {item.actionId || "ACTION"}
           </span>
           <span className="text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-slate-300">
@@ -164,10 +140,10 @@ export default function ActionItemDetailsModal({
           </span>
         </div>
       }
-      bodyClassName="sibs-scrollbar min-h-0 flex-1 overflow-y-auto bg-sibs-surface p-3.5 sm:p-4 2xl:p-5 font-jakarta"
+      bodyClassName="overscroll-contain bg-sibs-surface p-4 sm:p-6"
       footerMeta={
-        <div className="flex min-w-0 items-center gap-2 text-[9px] font-semibold text-sibs-muted">
-          <Target size={13} className="shrink-0 text-sibs-navy" />
+        <div className="flex min-w-0 items-center gap-2 sibs-text-xs text-sibs-muted">
+          <Target size={15} aria-hidden="true" className="shrink-0 text-sibs-orange" />
           <span className="truncate">
             Linked to {sourceModule} · {item.linkedGap || "General"} gap · {remainingGap} remaining
           </span>
@@ -177,17 +153,21 @@ export default function ActionItemDetailsModal({
         <button
           type="button"
           onClick={onClose}
-          className="inline-flex h-8.5 2xl:h-10 shrink-0 items-center justify-center rounded-[10px] bg-sibs-navy px-4 2xl:px-5 text-xs font-extrabold text-white transition hover:bg-sibs-navy-hover active:scale-[0.98]"
+          className="sibs-modal-btn-secondary shrink-0"
         >
           Close Details
         </button>
       }
-      footerClassName="shrink-0 border-t border-sibs-border bg-sibs-surface px-4 py-2.5 sm:px-5 2xl:px-6 2xl:py-3 rounded-b-[14px]"
     >
-      <div data-layout="action-item-details-modal-new-theme">
+      <div className="space-y-4 sm:space-y-5" data-layout="action-item-details-modal-new-theme">
+        <MetricGrid columns="grid-cols-2 sm:grid-cols-3">
+          <MetricCard label="Requirement" value={requirement} icon={Target} tone="navy" />
+          <MetricCard label="Filled / Accepted" value={filled} icon={CheckCircle2} tone="green" />
+          <MetricCard label="Remaining Gap" value={remainingGap} icon={AlertTriangle} tone="rose" className="col-span-2 sm:col-span-1" />
+        </MetricGrid>
         <div className="grid grid-cols-1 gap-3.5 2xl:gap-4 lg:grid-cols-[minmax(0,1.35fr)_minmax(280px,0.65fr)] 2xl:grid-cols-[minmax(0,1.45fr)_minmax(300px,0.55fr)] lg:items-start">
           <div className="space-y-3.5 2xl:space-y-4">
-            <section className="rounded-[10px] border border-sibs-border bg-white p-3.5 shadow-sm sm:p-4 2xl:p-5">
+            <section className="sibs-card min-w-0 p-4 sm:p-5">
               <SectionTitle
                 icon={FileText}
                 helper="Primary action description, remarks, and current execution state."
@@ -218,7 +198,7 @@ export default function ActionItemDetailsModal({
               </div>
             </section>
 
-            <section className="rounded-[10px] border border-sibs-border bg-white p-3.5 shadow-sm sm:p-4 2xl:p-5">
+            <section className="sibs-card min-w-0 p-4 sm:p-5">
               <SectionTitle
                 icon={Target}
                 helper="The current hiring requirement and the source record linked to this action."
@@ -239,20 +219,6 @@ export default function ActionItemDetailsModal({
                   <p className="text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-sibs-muted">Source Record</p>
                   <p className="mt-0.5 text-[11px] 2xl:text-xs font-extrabold font-mono leading-tight text-sibs-navy">{item.sourceRecordId || item.weeklyPlanItemId || item.hiringNeedId || "—"}</p>
                 </div>
-              </div>
-
-              <div className="mt-3 grid grid-cols-3 divide-x divide-sibs-border rounded-[10px] border border-sibs-border bg-sibs-surface px-1 py-1.5">
-                <MetricCell label="Requirement" value={requirement} />
-                <MetricCell
-                  label="Filled / Accepted"
-                  value={filled}
-                  valueClass="text-emerald-600"
-                />
-                <MetricCell
-                  label="Remaining Gap"
-                  value={remainingGap}
-                  valueClass="text-rose-600"
-                />
               </div>
 
               <div className="mt-3">
@@ -310,7 +276,7 @@ export default function ActionItemDetailsModal({
               ) : null}
             </section>
 
-            <section className="rounded-[10px] border border-sibs-border bg-white p-3.5 shadow-sm sm:p-4 2xl:p-5">
+            <section className="sibs-card min-w-0 p-4 sm:p-5">
               <SectionTitle
                 icon={MessageSquarePlus}
                 helper="Record a concise update for the next JIT or weekly hiring review."
@@ -330,13 +296,13 @@ export default function ActionItemDetailsModal({
                     value={note}
                     onChange={(event) => setNote(event.target.value)}
                     placeholder="Add a progress note for the next JIT or weekly call..."
-                    className="h-8.5 2xl:h-10 min-w-0 flex-1 rounded-[10px] border border-sibs-border bg-white px-3.5 sibs-text-xs font-semibold text-sibs-navy outline-none transition focus:border-sibs-orange focus:ring-2 focus:ring-sibs-orange/20"
+                    className="h-9 2xl:h-10 min-w-0 flex-1 rounded-[10px] border border-sibs-border bg-white px-3.5 sibs-text-xs font-semibold text-sibs-navy outline-none transition focus:border-sibs-orange focus:ring-2 focus:ring-sibs-orange/20"
                   />
                   <button
                     type="button"
                     onClick={handleAddNote}
                     disabled={!note.trim()}
-                    className="inline-flex h-8.5 2xl:h-10 shrink-0 items-center justify-center rounded-[10px] bg-sibs-navy px-4 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-sibs-navy-hover disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98]"
+                    className="sibs-modal-btn-primary shrink-0"
                   >
                     Add Note
                   </button>
@@ -344,7 +310,7 @@ export default function ActionItemDetailsModal({
               )}
             </section>
 
-            <section className="rounded-[10px] border border-sibs-border bg-white p-3.5 shadow-sm sm:p-4 2xl:p-5">
+            <section className="sibs-card min-w-0 p-4 sm:p-5">
               <SectionTitle
                 icon={ClipboardCheck}
                 helper="Chronological changes and progress entries recorded for this action."
@@ -382,7 +348,7 @@ export default function ActionItemDetailsModal({
           </div>
 
           <aside className="space-y-3.5 2xl:space-y-4 lg:sticky lg:top-0">
-            <section className="rounded-[10px] border border-sibs-border bg-white p-3.5 shadow-sm sm:p-4 2xl:p-5">
+            <section className="sibs-card min-w-0 p-4 sm:p-5">
               <SectionTitle
                 icon={UserRound}
                 helper="The person accountable for delivery and the target completion date."
@@ -445,7 +411,7 @@ export default function ActionItemDetailsModal({
               </div>
             </section>
 
-            <section className="rounded-[10px] border border-sibs-border bg-white p-3.5 shadow-sm sm:p-4 2xl:p-5">
+            <section className="sibs-card min-w-0 p-4 sm:p-5">
               <SectionTitle
                 icon={CheckCircle2}
                 helper="Manual action items can be advanced through the execution lifecycle."
@@ -492,7 +458,7 @@ export default function ActionItemDetailsModal({
               )}
             </section>
 
-            <section className="rounded-[10px] border border-blue-100 bg-gradient-to-br from-blue-50/90 to-blue-50/40 p-3.5 sm:p-4 2xl:p-5">
+            <section className="sibs-card min-w-0 p-4 sm:p-5">
               <SectionTitle
                 icon={ExternalLink}
                 helper="Open the originating hiring plan or need to review the source requirement."
@@ -505,12 +471,12 @@ export default function ActionItemDetailsModal({
                   <button
                     type="button"
                     onClick={handleViewSource}
-                    className="inline-flex h-8 2xl:h-8.5 w-full items-center justify-center gap-2 rounded-[10px] bg-sibs-orange px-3.5 text-xs font-extrabold text-white shadow-sm transition hover:bg-sibs-orange/90 active:scale-[0.98]"
+                    className="sibs-modal-btn-primary w-full"
                   >
                     <ExternalLink size={13} /> View Source Record
                   </button>
                 ) : (
-                  <div className="rounded-[10px] border border-blue-200 bg-white px-3 py-2 text-center text-[10px] font-bold text-sibs-muted">
+                  <div className="rounded-xl border border-sibs-border bg-sibs-surface px-3 py-2 text-center sibs-text-xs font-semibold text-sibs-muted">
                     No source route is configured for {sourceModule}.
                   </div>
                 )}

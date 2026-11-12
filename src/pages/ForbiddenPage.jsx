@@ -44,7 +44,7 @@ export default function ForbiddenPage({ attemptedPath = "" }) {
           403 — Access Denied
         </span>
 
-        <h1 className="mt-3 text-xl font-bold tracking-tight text-sibs-navy sm:text-2xl">
+        <h1 className="mt-3 font-heading text-xl font-bold tracking-tight text-sibs-navy sm:text-2xl">
           Access Restricted
         </h1>
 

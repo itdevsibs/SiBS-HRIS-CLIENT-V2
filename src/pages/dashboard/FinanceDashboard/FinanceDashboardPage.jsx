@@ -159,7 +159,7 @@ function FinanceDashboardErrorState({ message, onRetry }) {
           <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-[10px] bg-rose-50 text-rose-600">
             <AlertCircle className="h-6 w-6" />
           </div>
-          <h2 className="mt-4 text-lg font-extrabold text-sibs-navy">
+          <h2 className="mt-4 font-heading text-lg font-extrabold text-sibs-navy">
             Unable to load Finance Dashboard
           </h2>
           <p className="mt-2 text-sm font-medium leading-6 text-sibs-muted">
@@ -386,8 +386,8 @@ export default function FinanceDashboardPage() {
             />
           </button>
 
-          <span className="sibs-btn-primary pointer-events-none max-sm:flex-1">
-            <ShieldCheck className="h-3.5 w-3.5 2xl:h-4 2xl:w-4 text-white" />
+          <span className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-xs font-bold text-emerald-700 max-sm:flex-1">
+            <ShieldCheck className="h-3.5 w-3.5 2xl:h-4 2xl:w-4 text-emerald-600" />
             Statutory Coverage
           </span>
         </div>

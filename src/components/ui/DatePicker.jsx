@@ -1,5 +1,5 @@
 import { createSystemDateTimeFormatter } from "@/lib/axios/dateFormatter";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useId, useMemo, useRef, useState } from "react";
 import {
   CalendarDays,
   ChevronDown,
@@ -156,6 +156,7 @@ export default function DatePicker({
   const minDate = useMemo(() => parseLocalDate(min), [min]);
   const maxDate = useMemo(() => parseLocalDate(max), [max]);
   const today = useMemo(() => new Date(), []);
+  const datePickerId = useId();
 
   const [open, setOpen] = useState(false);
   const [viewDate, setViewDate] = useState(
@@ -175,20 +176,24 @@ export default function DatePicker({
   const minYear = minDate?.getFullYear() ?? 1900;
   const maxYear = maxDate?.getFullYear() ?? 2100;
 
-  useEffect(() => {
-    if (!selectedDate) return;
+  const [prevSelectedDate, setPrevSelectedDate] = useState(selectedDate);
+  if (selectedDate !== prevSelectedDate) {
+    setPrevSelectedDate(selectedDate);
+    if (selectedDate) {
+      setViewDate(
+        new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1),
+      );
+    }
+  }
 
-    setViewDate(
-      new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1),
-    );
-  }, [selectedDate]);
-
-  useEffect(() => {
+  const [prevOpenState, setPrevOpenState] = useState(open);
+  if (open !== prevOpenState) {
+    setPrevOpenState(open);
     if (!open) {
       setYearSearchOpen(false);
       setYearSearch("");
     }
-  }, [open]);
+  }
 
   const cells = useMemo(() => getCalendarCells(viewDate), [viewDate]);
 
@@ -365,6 +370,8 @@ export default function DatePicker({
     <div ref={anchorRef} className="relative min-w-0 w-full font-jakarta">
       {label && !hideLabel ? (
         <label
+          id={`${datePickerId}-label`}
+          htmlFor={`${datePickerId}-button`}
           className={`mb-1 block ${
             labelClassName || "sibs-text-xs font-bold text-sibs-navy"
           }`}
@@ -375,9 +382,11 @@ export default function DatePicker({
       ) : null}
 
       <button
+        id={`${datePickerId}-button`}
         type="button"
         aria-haspopup="dialog"
         aria-expanded={open}
+        aria-labelledby={label && !hideLabel ? `${datePickerId}-label` : undefined}
         aria-label={
           renderedValue
             ? leadingLabel
@@ -443,6 +452,7 @@ export default function DatePicker({
         width={300}
         matchAnchorWidth={false}
         maxHeight={430}
+        topLayer={true}
       >
         <div className="w-full font-jakarta">
           <div className="flex items-center justify-between border-b border-sibs-border px-4 py-2.5">
@@ -560,7 +570,7 @@ export default function DatePicker({
                 {WEEKDAY_LABELS.map((day) => (
                   <div
                     key={day}
-                    className="flex h-7 items-center justify-center sibs-text-micro font-extrabold text-slate-400"
+                    className="flex h-7 items-center justify-center sibs-text-micro font-extrabold text-sibs-muted"
                   >
                     {day}
                   </div>
@@ -580,6 +590,12 @@ export default function DatePicker({
                       key={key}
                       type="button"
                       disabled={disabledDate}
+                      aria-label={date.toLocaleDateString("en-US", {
+                        month: "long",
+                        day: "numeric",
+                        year: "numeric",
+                      })}
+                      aria-pressed={selected}
                       onClick={() => selectDate(date)}
                       className={`flex h-8 items-center justify-center rounded-lg sibs-text-xs font-bold transition focus:outline-none focus:ring-2 focus:ring-sibs-orange/20 ${
                         selected
@@ -588,10 +604,10 @@ export default function DatePicker({
                             ? "bg-sibs-cream-subtle font-extrabold text-sibs-orange"
                             : currentMonth
                               ? "text-sibs-navy hover:bg-sibs-cream-light hover:text-sibs-orange"
-                              : "text-slate-400 hover:bg-slate-50"
+                              : "text-sibs-muted/80 hover:bg-slate-50"
                       } ${
                         disabledDate
-                          ? "cursor-not-allowed bg-slate-50 text-slate-300 hover:bg-slate-50"
+                          ? "cursor-not-allowed bg-slate-50 text-sibs-faint hover:bg-slate-50"
                           : ""
                       }`}
                     >
@@ -620,7 +636,7 @@ export default function DatePicker({
                       type="button"
                       disabled={isDisabledDate(today)}
                       onClick={selectToday}
-                      className="rounded-full px-2.5 py-1 sibs-text-micro font-extrabold text-sibs-navy transition hover:bg-sibs-cream-light hover:text-sibs-orange disabled:cursor-not-allowed disabled:text-slate-300"
+                      className="rounded-full px-2.5 py-1 sibs-text-micro font-extrabold text-sibs-navy transition hover:bg-sibs-cream-light hover:text-sibs-orange disabled:cursor-not-allowed disabled:text-sibs-faint"
                     >
                       Today
                     </button>

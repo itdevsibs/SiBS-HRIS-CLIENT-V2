@@ -95,8 +95,8 @@ export default function CandidateExperienceSurveyPage({ tokenParam = "" }) {
         <section className="relative mb-6 overflow-hidden h-auto rounded-[14px] border border-sibs-navy bg-gradient-to-r from-sibs-navy via-sibs-navy to-sibs-navy p-5 text-white shadow-lg sm:p-6">
           <div className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-sibs-orange/15 blur-3xl" />
 
-          <div className="relative z-10 h-full">
-            <div className="min-w-0 h-full text-left">
+          <div className="relative z-10 h-full lg:flex lg:items-end lg:justify-between lg:gap-6">
+            <div className="min-w-0 flex-1 text-left">
               <img
                 alt="SiBS Logo"
                 className="mx-auto mb-5 block h-16 w-auto select-none md:h-20"
@@ -121,7 +121,7 @@ export default function CandidateExperienceSurveyPage({ tokenParam = "" }) {
               </p>
             </div>
 
-            <div className="mt-4 w-full shrink-0 rounded-[10px] border border-white/10 bg-black/40 px-5 py-4 text-left backdrop-blur-sm sm:absolute sm:bottom-0 sm:right-0 sm:mt-0 sm:w-auto sm:min-w-[160px] sm:text-center">
+            <div className="mt-4 w-full shrink-0 rounded-[10px] border border-white/10 bg-black/40 px-5 py-4 text-left backdrop-blur-sm lg:mt-0 lg:w-auto lg:min-w-[160px] sm:text-center">
               <p className="text-[9px] font-extrabold uppercase tracking-wide text-slate-300">
                 Survey Completion
               </p>

@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 
 import { useSourcingAnalytics } from "../../../services/context/SourcingContext";
+import MetricCard, { MetricGrid } from "../../ui/MetricCard";
 import ModalShell from "../../ui/ModalShell";
 
 const EMPTY_EXPENSE_FORM = {
@@ -251,41 +252,6 @@ function ModalMessage({ type = "error", children }) {
     >
       {children}
     </div>
-  );
-}
-
-function MetricTile({
-  label,
-  value,
-  helper,
-  icon: Icon = Activity,
-  accentClassName = "text-white",
-  iconClassName = "text-slate-300",
-  className = "",
-}) {
-  return (
-    <article
-      className={`min-w-0 rounded-[14px] border border-sibs-navy bg-sibs-navy p-3.5 shadow-sm transition hover:border-sibs-orange/40 ${className}`}
-    >
-      <div className="flex items-center justify-between gap-2">
-        <p className={`text-[10px] font-extrabold uppercase tracking-wide ${accentClassName}`}>
-          {label}
-        </p>
-
-        {Icon ? <Icon size={14} className={iconClassName} /> : null}
-      </div>
-
-      <p
-        className={`mt-1.5 truncate font-heading text-xl 2xl:text-2xl font-bold tabular-nums leading-none ${accentClassName}`}
-        title={typeof value === "string" ? value : undefined}
-      >
-        {value}
-      </p>
-
-      <p className="mt-1.5 truncate text-[10px] font-semibold text-slate-300/80">
-        {helper}
-      </p>
-    </article>
   );
 }
 
@@ -713,8 +679,6 @@ export default function SourceDetailsModal({
         onClose={onClose}
         variant="navy"
         maxWidth="max-w-[1180px]"
-        className="rounded-[14px] text-slate-900"
-        headerClassName="rounded-t-[14px]"
         icon={Compass}
         title={liveSource.source || "—"}
         headerMeta={
@@ -736,10 +700,10 @@ export default function SourceDetailsModal({
         }
         closeOnBackdrop={!expenseMode && !removingEntry}
         closeOnEscape={!expenseMode && !removingEntry}
-        bodyClassName="p-3 sm:p-4 2xl:p-5 bg-white"
+        bodyClassName="overscroll-contain bg-sibs-surface p-4 sm:p-6"
         footerMeta={
-          <div className="flex items-center gap-2 text-[10px] font-semibold text-slate-500">
-            <Sparkles size={15} className="text-sibs-orange" />
+          <div className="flex items-center gap-2 sibs-text-xs text-sibs-muted">
+            <Sparkles size={15} aria-hidden="true" className="shrink-0 text-sibs-orange" />
             <span>Live ROI metrics refresh after each database update.</span>
           </div>
         }
@@ -748,14 +712,14 @@ export default function SourceDetailsModal({
             type="button"
             onClick={onClose}
             disabled={mutating || isSaving || isRemoving}
-            className="inline-flex h-9 items-center justify-center rounded-[10px] bg-sibs-navy px-5 text-xs font-extrabold text-white transition hover:bg-sibs-orange disabled:cursor-not-allowed disabled:opacity-50"
+            className="sibs-modal-btn-secondary"
           >
             Done
           </button>
         }
       >
-        <div className="space-y-5">
-              <div className="space-y-3">
+        <div className="space-y-4 sm:space-y-5">
+              {(actionMessage || (actionError && !expenseMode && !removingEntry)) && <div className="space-y-3">
                 <ModalMessage type="success">
                   {actionMessage}
                 </ModalMessage>
@@ -763,71 +727,70 @@ export default function SourceDetailsModal({
                 {!expenseMode && !removingEntry ? (
                   <ModalMessage>{actionError}</ModalMessage>
                 ) : null}
-              </div>
+              </div>}
 
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
-                <MetricTile
+              <MetricGrid columns={5}>
+                <MetricCard
                   label="Applicants"
                   value={Number(
                     liveSource.volume || 0,
                   ).toLocaleString("en-PH")}
-                  helper="Total submissions"
+                  description="Total submissions"
                   icon={UsersRound}
+                  tone="navy"
                 />
 
-                <MetricTile
+                <MetricCard
                   label="Hired"
                   value={Number(
                     liveSource.hired || 0,
                   ).toLocaleString("en-PH")}
-                  helper="Current hires"
+                  description="Current hires"
                   icon={Award}
-                  accentClassName="text-emerald-400"
-                  iconClassName="text-emerald-400"
+                  tone="green"
                 />
 
-                <MetricTile
+                <MetricCard
                   label="Conversion"
                   value={`${conversionRate.toFixed(1)}%`}
-                  helper="Hired / applicants"
+                  description="Hired / applicants"
                   icon={Activity}
-                  accentClassName="text-indigo-300"
-                  iconClassName="text-indigo-300"
+                  tone="indigo"
                 />
 
-                <MetricTile
+                <MetricCard
                   label="Total Cost"
                   value={formatCurrency(totalCost)}
-                  helper={`${costEntries.length} expense logs`}
+                  description={`${costEntries.length} expense ${costEntries.length === 1 ? "log" : "logs"}`}
                   icon={DollarSign}
-                  accentClassName="text-amber-300"
-                  iconClassName="text-amber-300"
+                  tone="amber"
+                  truncateValue
                 />
 
-                <MetricTile
+                <MetricCard
                   label="Cost / Hire"
                   value={formatCostPerHire(
                     liveSource.costPerHire,
                     liveSource.hired,
                   )}
-                  helper="Total cost / hires"
+                  description="Total cost / hires"
                   icon={TrendingUp}
-                  accentClassName="text-sibs-orange"
-                  iconClassName="text-sibs-orange"
-                  className="col-span-2 sm:col-span-1"
+                  tone="orange"
+                  truncateValue
+                  className="col-span-2 md:col-span-1"
                 />
-              </div>
+              </MetricGrid>
 
-              <section className="rounded-[14px] border border-slate-200/80 bg-slate-50 p-4 sm:p-5">
-                <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <section className="sibs-card p-4 sm:p-5">
+                <div className="mb-4 flex flex-wrap items-center justify-between gap-2 border-b border-sibs-border pb-3">
                   <div className="flex items-center gap-2">
-                    <BarChart3 size={16} className="text-sibs-navy" />
-                    <h3 className="text-xs font-black uppercase tracking-wide text-sibs-navy">
+                    <BarChart3 size={16} aria-hidden="true" className="shrink-0 text-sibs-orange" />
+                    <h3 className="sibs-modal-section-title">
                       Candidate Recruitment Funnel
                     </h3>
                   </div>
 
-                  <p className="text-[10px] font-semibold text-slate-500">
+                  <p className="sibs-modal-section-subtitle">
                     Stage progression from submission to confirmed hire
                   </p>
                 </div>
@@ -842,15 +805,15 @@ export default function SourceDetailsModal({
                 </div>
               </section>
 
-              <section className="space-y-3">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+              <section className="sibs-card min-w-0 space-y-4 p-4 sm:p-5">
+                <div className="flex flex-wrap items-start justify-between gap-3 border-b border-sibs-border pb-3 sm:items-center">
                   <div>
-                    <h3 className="flex items-center gap-2 text-xs font-black uppercase tracking-wide text-sibs-navy">
-                      <DollarSign size={16} className="text-sibs-orange" />
+                    <h3 className="sibs-modal-section-title flex items-center gap-2">
+                      <DollarSign size={16} aria-hidden="true" className="shrink-0 text-sibs-orange" />
                       Channel Expense Entries & Budget Logs
                     </h3>
 
-                    <p className="mt-1 text-[10px] font-semibold text-slate-500">
+                    <p className="sibs-modal-section-subtitle mt-1">
                       Track campaigns, subscriptions, advertising boosts, and direct channel outlays.
                     </p>
                   </div>
@@ -859,28 +822,28 @@ export default function SourceDetailsModal({
                     type="button"
                     onClick={openAddExpense}
                     disabled={mutating}
-                    className="inline-flex h-9 items-center justify-center gap-1.5 rounded-[10px] bg-sibs-navy px-3.5 text-xs font-extrabold text-white shadow-sm transition hover:bg-sibs-orange disabled:cursor-not-allowed disabled:opacity-50"
+                    className="sibs-modal-btn-primary"
                   >
                     <Plus size={14} />
                     Add Expense Entry
                   </button>
                 </div>
 
-                <div className="overflow-hidden rounded-[14px] border border-slate-200 bg-white shadow-sm">
-                  <div className="overflow-x-auto">
+                <div className="overflow-hidden rounded-xl border border-sibs-border">
+                  <div className="sibs-scrollbar overflow-x-auto">
                     <table className="w-full min-w-[900px] border-collapse text-left text-xs">
-                      <thead className="bg-slate-50 text-[10px] font-extrabold uppercase tracking-wide text-slate-600">
-                        <tr className="border-b border-slate-200">
-                          <th className="px-3 py-3">Entry ID</th>
-                          <th className="px-3 py-3">Expense Notes & Campaign</th>
-                          <th className="px-3 py-3">Covered Date Range</th>
-                          <th className="px-3 py-3 text-right">Amount</th>
-                          <th className="px-3 py-3 text-center">Status</th>
-                          <th className="px-3 py-3 text-right">Actions</th>
+                      <thead className="bg-sibs-surface">
+                        <tr className="sibs-data-table-head-row">
+                          <th scope="col" className="sibs-data-table-th">Entry ID</th>
+                          <th scope="col" className="sibs-data-table-th">Expense Notes &amp; Campaign</th>
+                          <th scope="col" className="sibs-data-table-th">Covered Date Range</th>
+                          <th scope="col" className="sibs-data-table-th text-right">Amount</th>
+                          <th scope="col" className="sibs-data-table-th text-center">Status</th>
+                          <th scope="col" className="sibs-data-table-th text-right">Actions</th>
                         </tr>
                       </thead>
 
-                      <tbody className="divide-y divide-slate-100 text-slate-700">
+                      <tbody className="divide-y divide-sibs-border bg-white text-sibs-navy">
                         {costEntries.length > 0 ? (
                           costEntries.map((entry) => (
                             <tr
@@ -966,7 +929,7 @@ export default function SourceDetailsModal({
               </section>
 
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                <article className="rounded-[14px] border border-slate-200/80 bg-slate-50 p-4">
+                <article className="sibs-card p-4">
                   <p className="text-[10px] font-extrabold uppercase tracking-wide text-slate-400">
                     Latest Applicant
                   </p>
@@ -983,7 +946,7 @@ export default function SourceDetailsModal({
                   </p>
                 </article>
 
-                <article className="rounded-[14px] border border-slate-200/80 bg-slate-50 p-4">
+                <article className="sibs-card p-4">
                   <p className="text-[10px] font-extrabold uppercase tracking-wide text-slate-400">
                     Last Activity
                   </p>

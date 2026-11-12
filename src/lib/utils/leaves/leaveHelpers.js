@@ -1,4 +1,4 @@
-import { formatHrisDateLocalized, formatHrisDateTimeLocalized, getTodayDate } from "@/lib/axios/dateFormatter";
+import { formatHrisDateLocalized, formatHrisDateTimeLocalized } from "@/lib/axios/dateFormatter";
 export const PAGE_LIMIT = 15;
 export const LEAVES_STATE_KEY = "leavesPageState";
 
@@ -42,18 +42,17 @@ function leavesShiftDate(isoDate, days) {
   return toLocalDateKey(date);
 }
 
-function isValidLeavesDate(value, today) {
+function isValidLeavesDate(value) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(String(value || ""))) return false;
   const parsed = new Date(`${value}T12:00:00`);
   return !Number.isNaN(parsed.getTime()) &&
     toLocalDateKey(parsed) === value &&
-    value >= LEAVES_MIN_DATE && value <= today;
+    value >= LEAVES_MIN_DATE;
 }
 
 export function sanitizeLeavesDateRange(range = {}, {
   changed = "", allowEmpty = false, maxDays = LEAVES_MAX_RANGE_DAYS,
 } = {}) {
-  const today = maxDays === SUPER_ADMIN_LEAVES_RANGE_DAYS ? getTodayDate() : toLocalDateKey(new Date());
   const fallback = getLeavesInitialDateRange(false);
   const rawFrom = String(range?.dateFrom || "");
   const rawTo = String(range?.dateTo || "");
@@ -62,15 +61,14 @@ export function sanitizeLeavesDateRange(range = {}, {
   if (allowEmpty && !rawFrom && !rawTo) return { dateFrom: "", dateTo: "" };
 
   // Reset legacy 1990 filters and invalid/cleared values to a safe short range.
-  if (changed === "from" && isValidLeavesDate(rawFrom, today) && !rawTo) {
-    return { dateFrom: rawFrom, dateTo: leavesShiftDate(rawFrom, maxDays - 1) > today
-      ? today : leavesShiftDate(rawFrom, maxDays - 1) };
+  if (changed === "from" && isValidLeavesDate(rawFrom) && !rawTo) {
+    return { dateFrom: rawFrom, dateTo: leavesShiftDate(rawFrom, maxDays - 1) };
   }
-  if (changed === "to" && isValidLeavesDate(rawTo, today) && !rawFrom) {
+  if (changed === "to" && isValidLeavesDate(rawTo) && !rawFrom) {
     const start = leavesShiftDate(rawTo, -(maxDays - 1));
     return { dateFrom: start < LEAVES_MIN_DATE ? LEAVES_MIN_DATE : start, dateTo: rawTo };
   }
-  if (!isValidLeavesDate(rawFrom, today) || !isValidLeavesDate(rawTo, today)) {
+  if (!isValidLeavesDate(rawFrom) || !isValidLeavesDate(rawTo)) {
     return fallback;
   }
 

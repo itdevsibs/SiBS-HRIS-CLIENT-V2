@@ -59,9 +59,10 @@ docs/superpowers/
 .worktrees/
 
 # Tests & test setups
-test/
-src/test/
-tests/
+/test/
+/src/test/*
+!src/test/remediation.test.jsx
+/tests/
 *.test.*
 !src/lib/axios/hrisQueryCache.test.jsx
 !src/lib/axios/apiTemplateCoalescing.test.jsx
@@ -99,6 +100,7 @@ tests/
 !src/lib/utils/journey/trainerMonitoringValidation.test.mjs
 !src/pages/dashboard/QDSDashboard/QDSDashboardPage.test.jsx
 !src/pages/helpdesk/HelpdeskSupportPage.test.jsx
+!src/test/remediation.test.jsx
 
 
 # Temporary migration & scratch scripts

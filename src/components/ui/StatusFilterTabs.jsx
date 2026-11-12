@@ -34,12 +34,30 @@ export default function StatusFilterTabs({
   const resolvedActive = activeValue !== undefined ? activeValue : activeTab;
   const handleSelect = onChange || onTabChange;
 
+  const handleKeyDown = (e, currentIndex) => {
+    if (e.key === "ArrowRight") {
+      e.preventDefault();
+      const nextIndex = (currentIndex + 1) % tabs.length;
+      const nextTab = tabs[nextIndex];
+      const nextKey =
+        nextTab?.value ?? nextTab?.key ?? nextTab?.id ?? nextTab?.label ?? nextTab;
+      handleSelect?.(nextKey);
+    } else if (e.key === "ArrowLeft") {
+      e.preventDefault();
+      const prevIndex = (currentIndex - 1 + tabs.length) % tabs.length;
+      const prevTab = tabs[prevIndex];
+      const prevKey =
+        prevTab?.value ?? prevTab?.key ?? prevTab?.id ?? prevTab?.label ?? prevTab;
+      handleSelect?.(prevKey);
+    }
+  };
+
   return (
     <div
       role="tablist"
       className={`flex overflow-x-auto border-b border-sibs-border bg-sibs-surface px-3 pt-2.5 sibs-no-scrollbar sm:px-4 font-jakarta ${className}`}
     >
-      {tabs.map((tab) => {
+      {tabs.map((tab, index) => {
         const tabKey = tab?.value ?? tab?.key ?? tab?.id ?? tab?.label ?? tab;
         const tabLabel = tab?.label ?? tab?.name ?? tab?.title ?? String(tabKey);
         const TabIcon = tab?.icon;
@@ -70,6 +88,8 @@ export default function StatusFilterTabs({
             type="button"
             role="tab"
             aria-selected={active}
+            tabIndex={active ? 0 : -1}
+            onKeyDown={(e) => handleKeyDown(e, index)}
             onClick={() => handleSelect?.(tabKey)}
             className={`relative inline-flex h-8.5 2xl:h-9 shrink-0 items-center gap-1.5 2xl:gap-2 px-3.5 2xl:px-4 sibs-text-micro font-extrabold uppercase tracking-wide transition-colors ${
               active

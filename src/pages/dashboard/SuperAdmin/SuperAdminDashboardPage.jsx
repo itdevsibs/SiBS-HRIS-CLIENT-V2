@@ -5,13 +5,13 @@ import Header from "../../../components/layout/Header";
 import { useUser } from "../../../services/context/UserContext";
 import { usePagination } from "../../../services/context/PaginationContext";
 import useRefetchOnFocus from "../../../hooks/useRefetchOnFocus";
+import useRecentPendingLeaves from "./useRecentPendingLeaves";
 import {
   getHrDashboardFeed,
   getHrDashboardOverview,
 } from "../../../lib/axios/getHrDashboard";
 import { getEmployee } from "../../../lib/axios/getEmployee";
 import { getApprovalRequestCounts } from "../../../lib/axios/getApprovalRequest";
-import { getLeavesSummary } from "../../../lib/axios/getLeaves";
 import {
   getActiveCandidateCountCacheKey,
   getActiveCandidatePipelineCount,
@@ -62,6 +62,7 @@ const SUPER_ADMIN_ENTITY = "super-admin-dashboard";
 export default function SuperAdminDashboardPage() {
   const navigate = useNavigate();
   const { user } = useUser();
+  const { metrics: leaveMetrics, refresh: refreshPendingLeaves } = useRecentPendingLeaves(user);
   const activeCountCacheKey = getActiveCandidateCountCacheKey(user);
   const subscribeToActiveCount = useCallback(
     (listener) => subscribeActiveCandidatePipelineCount(activeCountCacheKey, listener),
@@ -97,8 +98,6 @@ export default function SuperAdminDashboardPage() {
     departmentsTotal: null,
     approvalsTotal: null,
     approvalsLoading: true,
-    leavesTotal: null,
-    leavesStatus: "updating",
     recruitmentTotal: null,
   });
   const [notice, setNotice] = useState("");
@@ -124,20 +123,6 @@ export default function SuperAdminDashboardPage() {
   const module = filterValues?.module || "All Modules";
   const account = filterValues?.account || "All Accounts";
   const status = filterValues?.status || "All Statuses";
-  const leaveSummaryKey = `${activeCountCacheKey}|${user?.admin_access ?? user?.adminAccess ?? ""}|${user?.role ?? user?.userRole ?? user?.tokenType ?? ""}`;
-
-  const refreshPendingLeaves = useCallback(async () => {
-    const result = await getLeavesSummary({ cacheKey: leaveSummaryKey });
-    const { leavesTotal, leavesStatus, leavesDateRange } = normalizeSuperAdminQueueMetrics(null, result);
-    setExtraCounts((current) => ({ ...current, leavesTotal, leavesStatus, leavesDateRange }));
-  }, [leaveSummaryKey]);
-
-  useEffect(() => {
-    if (extraCounts.leavesStatus !== "updating") return undefined;
-    const timer = window.setInterval(() => void refreshPendingLeaves(), 10_000);
-    return () => window.clearInterval(timer);
-  }, [extraCounts.leavesStatus, refreshPendingLeaves]);
-
   const fetchDashboardData = useCallback(
     function fetchDashboardData({ forceRefresh = false } = {}) {
       const pending = pendingRequest.current;
@@ -232,8 +217,6 @@ export default function SuperAdminDashboardPage() {
               const { approvalsTotal } = normalizeSuperAdminQueueMetrics(result);
               setExtraCounts((current) => ({ ...current, approvalsTotal, approvalsLoading: false }));
             });
-          const leavesPromise = refreshPendingLeaves();
-
           const adminsPromise = (async () => {
             const [assignedUsersData] = await Promise.allSettled([assignedUsersPromise]);
             if (
@@ -277,7 +260,6 @@ export default function SuperAdminDashboardPage() {
           await Promise.allSettled([
             metricsPromise,
             approvalsPromise,
-            leavesPromise,
             adminsPromise,
             feedPromise,
             countPromise,
@@ -295,7 +277,7 @@ export default function SuperAdminDashboardPage() {
       })();
       return request.promise;
     },
-    [setLoading, activeCountCacheKey, refreshPendingLeaves],
+    [setLoading, activeCountCacheKey],
   );
 
   useEffect(() => {
@@ -308,7 +290,10 @@ export default function SuperAdminDashboardPage() {
     if (isManualRefreshing) return;
     setIsManualRefreshing(true);
     try {
-      await fetchDashboardData({ forceRefresh: true });
+      await Promise.all([
+        fetchDashboardData({ forceRefresh: true }),
+        refreshPendingLeaves({ forceRefresh: true }),
+      ]);
       setNotice("Refresh finished. Check the cards for the latest source status.");
     } catch {
       setNotice("Failed to refresh dashboard data.");
@@ -321,20 +306,22 @@ export default function SuperAdminDashboardPage() {
     () =>
       normalizeSuperAdminMetrics(backendOverview, {
         ...extraCounts,
+        ...leaveMetrics,
         recruitmentTotal: quickActiveCount ?? extraCounts.recruitmentTotal,
         adminCount: adminUsers.length,
       }),
-    [backendOverview, extraCounts, adminUsers.length, quickActiveCount],
+    [backendOverview, extraCounts, leaveMetrics, adminUsers.length, quickActiveCount],
   );
+  const { leavesTotal, leavesDateRange } = leaveMetrics;
   const exceptions = useMemo(
     () => deriveLiveExceptions({
       approvalsTotal: extraCounts.approvalsTotal,
-      leavesTotal: extraCounts.leavesTotal,
-      leavesDateRange: extraCounts.leavesDateRange,
+      leavesTotal,
+      leavesDateRange,
     }),
-    [extraCounts.approvalsTotal, extraCounts.leavesTotal, extraCounts.leavesDateRange],
+    [extraCounts.approvalsTotal, leavesTotal, leavesDateRange],
   );
-  const queuesIncomplete = extraCounts.approvalsTotal === null || extraCounts.leavesTotal === null;
+  const queuesIncomplete = extraCounts.approvalsTotal === null || leavesTotal === null;
 
   const dynamicSummaryCards = useMemo(
     () => buildDynamicSummaryCards(liveMetrics),
@@ -492,8 +479,8 @@ export default function SuperAdminDashboardPage() {
       return;
     }
     if (metric.key === "leaves") {
-      if (extraCounts.leavesDateRange) {
-        navigate("/leaves", { state: getSuperAdminPendingLeavesState(extraCounts.leavesDateRange) });
+      if (leavesDateRange) {
+        navigate("/leaves", { state: getSuperAdminPendingLeavesState(leavesDateRange) });
       }
       return;
     }

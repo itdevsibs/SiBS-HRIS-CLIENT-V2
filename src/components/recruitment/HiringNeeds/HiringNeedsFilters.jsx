@@ -38,7 +38,9 @@ function uniqueFilterOptions(items, getter, allLabel) {
 
 export default function HiringNeedsFilters() {
   const {
+    search,
     searchInput,
+    setSearch,
     setSearchInput,
     commitSearch,
     resetFilters,
@@ -76,6 +78,7 @@ export default function HiringNeedsFilters() {
   );
 
   const hasActiveFilters =
+    Boolean(String(search || "").trim()) ||
     Boolean(String(searchInput || "").trim()) ||
     status !== "All" ||
     site !== "All" ||
@@ -89,6 +92,7 @@ export default function HiringNeedsFilters() {
   }
 
   function handleClearAll() {
+    setSearch?.("");
     setSearchInput("");
     resetFilters();
     setFilter("status", "All");

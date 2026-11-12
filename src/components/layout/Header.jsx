@@ -1002,7 +1002,7 @@ function HeaderContent() {
   const [activeCategory, setActiveCategory] = useState("all");
   const [employeeResults, setEmployeeResults] = useState([]);
   const [employeeLoading, setEmployeeLoading] = useState(false);
-  const [employeeError, setEmployeeError] = useState("");
+  const [_employeeError, setEmployeeError] = useState("");
   const [profilePictureUrl, setProfilePictureUrl] = useState("");
   const [activeIndex, setActiveIndex] = useState(-1);
   const [compactSearch, setCompactSearch] = useState(() =>
@@ -1543,7 +1543,7 @@ function HeaderContent() {
               className="fixed inset-x-3 top-[110px] sm:top-[70px] z-[9999] max-h-[80vh] overflow-hidden rounded-2xl border border-sibs-border-subtle bg-white p-3 shadow-2xl lg:absolute lg:inset-auto lg:left-0 lg:top-[calc(100%+10px)] lg:max-h-[540px] lg:w-[560px] lg:p-3.5 lg:shadow-2xl"
             >
               {isQueryEmpty ? (
-                <div className="space-y-4">
+                <div className="space-y-4 max-h-[calc(100dvh-130px)] overflow-y-auto thin-scroll sm:max-h-[75vh] lg:max-h-[500px]">
                   {recentProfiles.length > 0 ? (
                     <div>
                       <div className="mb-2 flex items-center justify-between">
@@ -1600,10 +1600,10 @@ function HeaderContent() {
                                 const updated = removeRecentProfileFromStorage(prof.sibsId);
                                 setRecentProfiles(updated);
                               }}
-                              className="text-sibs-faint hover:text-sibs-navy"
+                              className="flex h-7 w-7 items-center justify-center rounded-lg text-sibs-faint transition hover:bg-white hover:text-sibs-navy"
                               aria-label={`Remove ${prof.label}`}
                             >
-                              <X size={13} />
+                              <X size={14} />
                             </button>
                           </div>
                         ))}
@@ -1642,10 +1642,10 @@ function HeaderContent() {
                             <button
                               type="button"
                               onClick={(e) => handleRemoveRecent(term, e)}
-                              className="text-sibs-faint hover:text-sibs-navy"
+                              className="flex h-7 w-7 items-center justify-center rounded-lg text-sibs-faint transition hover:bg-white hover:text-sibs-navy"
                               aria-label={`Remove ${term}`}
                             >
-                              <X size={13} />
+                              <X size={14} />
                             </button>
                           </span>
                         ))}

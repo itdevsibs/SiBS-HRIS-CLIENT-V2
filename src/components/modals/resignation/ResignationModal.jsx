@@ -1,5 +1,5 @@
 import { createSystemDateTimeFormatter, formatHrisDateLocalized } from "@/lib/axios/dateFormatter";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertTriangle,
   ArrowRight,
@@ -22,6 +22,45 @@ import {
 } from "../../../lib/axios/getResignation";
 import { useResignationList } from "../../../services/context/ResignationListContext";
 
+const FOCUSABLE_SELECTOR =
+  'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+function getFocusableElements(container) {
+  if (!container) return [];
+  return Array.from(container.querySelectorAll(FOCUSABLE_SELECTOR)).filter(
+    (el) =>
+      !el.closest("[inert]") &&
+      (el.offsetWidth || el.offsetHeight || el.getClientRects().length)
+  );
+}
+
+function trapFocus(event, container) {
+  if (event.key !== "Tab" || !container) return;
+  const items = getFocusableElements(container);
+  if (!items.length) {
+    event.preventDefault();
+    return;
+  }
+  const first = items[0];
+  const last = items[items.length - 1];
+  if (
+    event.shiftKey &&
+    (document.activeElement === first ||
+      document.activeElement === container ||
+      !container.contains(document.activeElement))
+  ) {
+    event.preventDefault();
+    last.focus();
+  } else if (
+    !event.shiftKey &&
+    (document.activeElement === last ||
+      !container.contains(document.activeElement))
+  ) {
+    event.preventDefault();
+    first.focus();
+  }
+}
+
 const resignationReasons = [
   "Career Change / Advancement",
   "Health",
@@ -34,8 +73,6 @@ const resignationReasons = [
   "Personal - Transportation",
   "Other",
 ];
-
-const resignationTypes = ["Formal", "Immediate"];
 
 const MONTH_LABELS = [
   "January",
@@ -229,7 +266,6 @@ function AnimatedCalendarDropdown({ open, children }) {
 function MiniCalendar({ value, min, max, onSelect, onClose }) {
   const selectedDate = parseDateKey(value);
   const minDate = parseDateKey(min);
-  const maxDate = parseDateKey(max);
   const today = new Date();
 
   const [viewDate, setViewDate] = useState(selectedDate || minDate || today);
@@ -501,6 +537,11 @@ export default function ResignationModal({
   const [newLastWorkingDate, setNewLastWorkingDate] = useState(null);
   const [reasonForExtending, setReasonForExtending] = useState("");
 
+  const modalRef = useRef(null);
+  const previousFocusRef = useRef(null);
+  const policyModalRef = useRef(null);
+  const policyPreviousFocusRef = useRef(null);
+
   const showStatus = (payload) => {
     if (typeof setStatusModal === "function") {
       setStatusModal(payload);
@@ -516,7 +557,7 @@ export default function ResignationModal({
     resignationId,
   } = useResignationList();
 
-  const resetForm = () => {
+  const resetForm = useCallback(() => {
     setForm(getInitialForm());
     setReasonOpen(false);
     setPolicyModalOpen(false);
@@ -527,9 +568,9 @@ export default function ResignationModal({
     setReasonForExtending("");
     setOriginalLastWorkingDate(null);
     setNewLastWorkingDate(null);
-  };
+  }, []);
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     if (isClosing || submitting) return;
 
     setReasonOpen(false);
@@ -542,31 +583,78 @@ export default function ResignationModal({
       setIsClosing(false);
       onClose?.();
     }, 220);
-  };
+  }, [isClosing, submitting, resetForm, setOpenEditResignationModal, onClose]);
 
   useEffect(() => {
     if (!open) return;
 
-    const handleEscape = (e) => {
-      if (e.key === "Escape") {
-        if (policyModalOpen) {
+    previousFocusRef.current = document.activeElement;
+    const frame = modalRef.current;
+    const items = getFocusableElements(frame);
+    const target = items[0] || frame;
+    target?.focus?.({ preventScroll: true });
+
+    return () => {
+      if (previousFocusRef.current?.isConnected) {
+        previousFocusRef.current.focus();
+      }
+    };
+  }, [open]);
+
+  useEffect(() => {
+    if (!policyModalOpen) return;
+
+    policyPreviousFocusRef.current = document.activeElement;
+    const frame = policyModalRef.current;
+    const items = getFocusableElements(frame);
+    const target = items[0] || frame;
+    target?.focus?.({ preventScroll: true });
+
+    return () => {
+      if (policyPreviousFocusRef.current?.isConnected) {
+        policyPreviousFocusRef.current.focus();
+      }
+    };
+  }, [policyModalOpen]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const handleKeyDown = (e) => {
+      if (policyModalOpen) {
+        if (e.key === "Escape") {
+          e.preventDefault();
+          e.stopPropagation();
           setPolicyModalOpen(false);
           return;
         }
 
-        handleClose();
+        if (e.key === "Tab") {
+          trapFocus(e, policyModalRef.current);
+          return;
+        }
+      } else {
+        if (e.key === "Escape") {
+          e.preventDefault();
+          e.stopPropagation();
+          handleClose();
+          return;
+        }
+
+        if (e.key === "Tab") {
+          trapFocus(e, modalRef.current);
+        }
       }
     };
 
-    document.addEventListener("keydown", handleEscape);
+    document.addEventListener("keydown", handleKeyDown);
     document.body.style.overflow = "hidden";
 
     return () => {
-      document.removeEventListener("keydown", handleEscape);
+      document.removeEventListener("keydown", handleKeyDown);
       document.body.style.overflow = "";
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, policyModalOpen, isClosing, submitting]);
+  }, [open, policyModalOpen, handleClose]);
 
   useEffect(() => {
     if (open) {
@@ -961,9 +1049,11 @@ export default function ResignationModal({
         }`}
       >
         <section
+          ref={modalRef}
           role="dialog"
           aria-modal="true"
           aria-labelledby="employee-resignation-title"
+          tabIndex={-1}
           className={`flex max-h-[calc(100dvh-1rem)] w-full max-w-[672px] flex-col overflow-hidden rounded-[14px] border border-white/70 bg-white shadow-[0_30px_90px_rgba(2,18,34,0.42)] sm:max-h-[calc(100dvh-2rem)] ${
             isClosing ? "sibs-modal-pop-out" : "sibs-modal-pop-in"
           }`}
@@ -1457,7 +1547,14 @@ export default function ResignationModal({
 
       {policyModalOpen && (
         <div className="sibs-modal-blur sibs-modal-backdrop-in fixed inset-0 z-[10001] flex items-center justify-center p-4 font-jakarta">
-          <section className="w-full max-w-md overflow-hidden rounded-[14px] border border-amber-200 bg-white shadow-2xl sibs-inner-modal-pop-in">
+          <section
+            ref={policyModalRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="resignation-policy-modal-title"
+            tabIndex={-1}
+            className="w-full max-w-md overflow-hidden rounded-[14px] border border-amber-200 bg-white shadow-2xl sibs-inner-modal-pop-in"
+          >
             <header className="flex items-start justify-between gap-3 border-b border-sibs-border px-5 py-4">
               <div className="flex min-w-0 items-start gap-3">
                 <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] bg-amber-100 text-amber-600">
@@ -1465,7 +1562,10 @@ export default function ResignationModal({
                 </span>
 
                 <div>
-                  <h3 className="sibs-modal-title text-sibs-navy">
+                  <h3
+                    id="resignation-policy-modal-title"
+                    className="sibs-modal-title text-sibs-navy"
+                  >
                     Immediate Resignation Policy
                   </h3>
                   <p className="sibs-modal-subtitle mt-0.5 text-amber-700">
@@ -1565,19 +1665,13 @@ function Field({ label, children }) {
 
 function ActionPanel({ title, description, checked, onToggle, children }) {
   return (
-    <div
-      role="button"
-      tabIndex={0}
-      onClick={onToggle}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          onToggle();
-        }
-      }}
-      className="rounded-[10px] border border-sibs-border bg-sibs-surface px-4 py-3 transition hover:border-sibs-orange/40 hover:bg-white"
-    >
-      <div className="flex items-center justify-between gap-4">
+    <div className="rounded-[10px] border border-sibs-border bg-sibs-surface transition hover:border-sibs-orange/40 hover:bg-white">
+      <button
+        type="button"
+        aria-expanded={checked}
+        onClick={onToggle}
+        className="flex w-full items-center justify-between gap-4 px-4 py-3 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-sibs-orange/30 rounded-[10px]"
+      >
         <div className="min-w-0">
           <p className="text-sm font-semibold text-sibs-navy">{title}</p>
 
@@ -1587,16 +1681,19 @@ function ActionPanel({ title, description, checked, onToggle, children }) {
         <input
           type="checkbox"
           checked={checked}
+          tabIndex={-1}
+          aria-hidden="true"
           readOnly
-          className="h-4 w-4 shrink-0 rounded border-sibs-border text-sibs-orange focus:ring-sibs-orange"
+          className="pointer-events-none h-4 w-4 shrink-0 rounded border-sibs-border text-sibs-orange focus:ring-sibs-orange"
         />
-      </div>
+      </button>
 
       <div
-        className={`grid transition-all duration-300 ease-in-out ${
+        inert={!checked || undefined}
+        className={`grid px-4 transition-all duration-300 ease-in-out ${
           checked
-            ? "mt-3 grid-rows-[1fr] opacity-100"
-            : "grid-rows-[0fr] opacity-0"
+            ? "pb-3 grid-rows-[1fr] opacity-100"
+            : "grid-rows-[0fr] opacity-0 pointer-events-none"
         }`}
       >
         <div
@@ -1605,7 +1702,6 @@ function ActionPanel({ title, description, checked, onToggle, children }) {
               ? "mt-2 translate-y-0 opacity-100"
               : "-translate-y-2 opacity-0"
           }`}
-          onClick={(e) => e.stopPropagation()}
         >
           {children}
         </div>

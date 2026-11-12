@@ -618,7 +618,7 @@ function StartDatePicker({ value, onChange, hasError = false, inputRef = null })
       </button>
 
       <div
-        className={`sibs-animated-dropdown absolute left-0 top-[calc(100%+8px)] z-[10150] w-full min-w-[310px] ${
+        className={`sibs-animated-dropdown absolute left-0 top-[calc(100%+8px)] z-[10150] w-full min-w-[310px] max-w-[calc(100vw-2rem)] ${
           open ? "open" : "closed"
         }`}
       >

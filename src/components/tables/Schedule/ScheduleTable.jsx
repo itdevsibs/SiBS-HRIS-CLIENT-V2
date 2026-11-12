@@ -153,18 +153,11 @@ export default function ScheduleTable({
     setPage?.(1);
     setSearchSubmitVersion((prev) => prev + 1);
 
-    if (cleanSearch === currentSearch) {
-      setSearchKeyword?.("");
-
-      window.setTimeout(() => {
-        setPage?.(1);
-        setSearchKeyword?.(cleanSearch);
-      }, 0);
-
-      return;
+    if (cleanSearch !== currentSearch) {
+      setSearchKeyword?.(cleanSearch);
+    } else if (typeof onRetry === "function") {
+      onRetry();
     }
-
-    setSearchKeyword?.(cleanSearch);
   }
 
   function handleSearchKeyDown(e) {

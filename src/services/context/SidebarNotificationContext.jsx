@@ -11,7 +11,10 @@ import {
 import { useLocation } from "react-router-dom";
 
 import { useUser } from "./UserContext";
-import { getLeavesSummary } from "../../lib/axios/getLeaves";
+import {
+  getLeavesSummary,
+  getLeaveSummaryCacheKey,
+} from "../../lib/axios/getLeaves";
 import { getCandidatePipelineCandidates } from "../../lib/axios/getCandidatePipeline";
 import { getHiringNeeds } from "../../lib/axios/getHiringNeeds";
 import {
@@ -236,7 +239,10 @@ export function SidebarNotificationProvider({ children }) {
   // notifications must not launch a competing leave-history scan on that page.
   const deferLeaveBadge = pathname === "/recruitment/workforce-hiring-overview";
   const hasAuthenticatedUser = Boolean(user);
-  const leaveSummaryIdentity = `${userNotificationId || ""}|${user?.admin_access ?? user?.adminAccess ?? ""}|${user?.role ?? user?.userRole ?? user?.tokenType ?? ""}`;
+  const leaveSummaryIdentity = useMemo(
+    () => getLeaveSummaryCacheKey(user),
+    [user],
+  );
   useEffect(() => {
     let cancelled = false;
     let inFlight = false;

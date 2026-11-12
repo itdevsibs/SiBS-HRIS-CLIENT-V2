@@ -1,13 +1,33 @@
-import React, { useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
+import React, { useCallback, useEffect, useMemo } from "react";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 
 import RecruitmentSettingsHero from "../../components/recruitment/settings/RecruitmentSettingsHero";
 import RecruitmentSettingsOverview from "../../components/recruitment/settings/RecruitmentSettingsOverview";
 import RecruitmentSettingsPanelRouter from "../../components/recruitment/settings/RecruitmentSettingsPanelRouter";
+import RecruitmentSettingsTabs from "../../components/recruitment/settings/RecruitmentSettingsTabs";
+import { RECRUITMENT_TABS } from "../../components/recruitment/settings/recruitmentSettingsConstants";
 import UpdateHeadcountsPanel from "../../components/recruitment/settings/headcounts/UpdateHeadcountsPanel";
 import Header from "../../components/layout/Header";
 import { useRecruitmentSettingsPage } from "../../hooks/recruitmentSettings/useRecruitmentSettingsPage";
+import { useRecruitmentSettings } from "../../services/context/RecruitmentSettingsContext";
+
+const SUBPANEL_MAP = {
+  headcounts: "Update Headcounts",
+  "screening-forms": "Application Screening Questionnaires",
+  "interview-forms": "Final Interview Form",
+  orientation: "Orientation Deck & Knowledge Check",
+  "approval-rules": "Approval Rules",
+  holidays: "Holiday Calendar",
+};
+
+const REVERSE_SUBPANEL_MAP = {
+  "Update Headcounts": "/settings/recruitment/headcounts",
+  "Application Screening Questionnaires": "/settings/recruitment/screening-forms",
+  "Final Interview Form": "/settings/recruitment/interview-forms",
+  "Orientation Deck & Knowledge Check": "/settings/recruitment/orientation",
+  "Approval Rules": "/settings/recruitment/approval-rules",
+  "Holiday Calendar": "/settings/recruitment/holidays",
+};
 
 const SETTING_META = {
   "Update Headcounts": {
@@ -57,57 +77,63 @@ const SETTING_META = {
   },
 };
 
-function RecruitmentSettingsDetailHeader({ activeTab, onBack }) {
-  const meta = SETTING_META[activeTab] || {
-    title: activeTab || "Recruitment Setting",
-    description: "Manage this recruitment configuration.",
-  };
+export default function RecruitmentSettingsPage({ subpanel: propSubpanel }) {
+  const navigate = useNavigate();
+  const params = useParams();
+  const [searchParams] = useSearchParams();
+  const { mainRef, scrollToTop } = useRecruitmentSettingsPage();
+  const { setActiveTab: setContextActiveTab } = useRecruitmentSettings();
 
-  return (
-    <section className="sibs-card overflow-hidden p-4 sm:p-5 2xl:p-6 sibs-page-header-in">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        <div className="min-w-0">
-          <p className="sibs-kicker">Settings / Recruitment</p>
-
-          <h1 className="mt-1 font-heading text-xl font-bold tracking-tight text-sibs-navy 2xl:text-2xl">
-            {meta.title}
-          </h1>
-
-          <p className="mt-1 max-w-4xl sibs-text-xs font-semibold leading-relaxed text-sibs-muted">
-            {meta.description}
-          </p>
-        </div>
-
-        <button
-          type="button"
-          onClick={onBack}
-          className="sibs-btn-secondary shrink-0"
-        >
-          <ArrowLeft size={15} />
-          Recruitment Settings
-        </button>
-      </div>
-    </section>
-  );
-}
-
-export default function RecruitmentSettingsPage() {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const {
-    activeTab,
-    handleBackToOverview,
-    handleOpenSetting,
-    mainRef,
-  } = useRecruitmentSettingsPage();
-
+  const splat = (params["*"] || params.subpanel || "").replace(/^\/+|\/+$/g, "");
+  const currentSubpanel = propSubpanel || splat;
   const panelParam = searchParams.get("panel");
 
-  useEffect(() => {
-    if (panelParam && SETTING_META[panelParam] && activeTab !== panelParam) {
-      handleOpenSetting(panelParam);
-      setSearchParams({}, { replace: true });
+  // Synchronous derivation of activeTab prevents multi-tick render flashing
+  const activeTab = useMemo(() => {
+    if (panelParam && SETTING_META[panelParam]) {
+      return panelParam;
     }
-  }, [panelParam, activeTab, handleOpenSetting, setSearchParams]);
+    if (currentSubpanel && SUBPANEL_MAP[currentSubpanel]) {
+      return SUBPANEL_MAP[currentSubpanel];
+    }
+    return "Overview";
+  }, [panelParam, currentSubpanel]);
+
+  // Keep Context in sync with the synchronous tab state
+  useEffect(() => {
+    setContextActiveTab?.(activeTab);
+  }, [activeTab, setContextActiveTab]);
+
+  // Ensure scroll position resets to top on activeTab change
+  useEffect(() => {
+    scrollToTop();
+  }, [activeTab, scrollToTop]);
+
+  const handleTabChange = useCallback(
+    (tab) => {
+      if (tab.key === "Overview") {
+        navigate("/settings/recruitment");
+        scrollToTop();
+      } else if (tab.subpanel) {
+        navigate(`/settings/recruitment/${tab.subpanel}`);
+        scrollToTop();
+      }
+    },
+    [navigate, scrollToTop],
+  );
+
+  const handleSelectSetting = useCallback(
+    (key) => {
+      const matchedTab = RECRUITMENT_TABS.find((t) => t.key === key);
+      if (matchedTab) {
+        handleTabChange(matchedTab);
+      } else if (REVERSE_SUBPANEL_MAP[key]) {
+        navigate(REVERSE_SUBPANEL_MAP[key]);
+        scrollToTop();
+      }
+    },
+    [handleTabChange, navigate, scrollToTop],
+  );
 
   const isOverview = activeTab === "Overview";
 
@@ -122,29 +148,27 @@ export default function RecruitmentSettingsPage() {
         data-recruitment-settings-main="true"
         className="sibs-dashboard-main-wide"
       >
-        <div className="mx-auto w-full max-w-[1700px] space-y-4 2xl:space-y-5">
+        <div className="mx-auto flex min-h-full w-full max-w-[1700px] flex-col gap-4 sm:gap-5">
+          {/* Header Hero displayed at top of Overview */}
+          {isOverview && <RecruitmentSettingsHero />}
+
+          {/* Persistent Horizontal Module Tabs */}
+          <RecruitmentSettingsTabs
+            activeTab={activeTab}
+            onTabChange={handleTabChange}
+          />
+
           {isOverview ? (
-            <>
-              <RecruitmentSettingsHero />
-
-              <RecruitmentSettingsOverview
-                onSelectSetting={handleOpenSetting}
-              />
-            </>
+            <RecruitmentSettingsOverview
+              onSelectSetting={handleSelectSetting}
+            />
           ) : (
-            <>
-              <RecruitmentSettingsDetailHeader
+            <section className="transition-all duration-150">
+              <RecruitmentSettingsPanelRouter
                 activeTab={activeTab}
-                onBack={handleBackToOverview}
+                UpdateHeadcountsPanel={UpdateHeadcountsPanel}
               />
-
-              <section className="sibs-page-card-in">
-                <RecruitmentSettingsPanelRouter
-                  activeTab={activeTab}
-                  UpdateHeadcountsPanel={UpdateHeadcountsPanel}
-                />
-              </section>
-            </>
+            </section>
           )}
         </div>
       </main>

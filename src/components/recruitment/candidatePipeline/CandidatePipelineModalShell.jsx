@@ -19,12 +19,14 @@ export function CandidateModalPrimaryButton({
   className = "",
   variant = "orange",
   icon = null,
+  type = "button",
   ...props
 }) {
   const variantClass = PRIMARY_VARIANTS[variant] || PRIMARY_VARIANTS.orange;
 
   return (
     <button
+      type={type}
       {...props}
       className={`sibs-modal-btn-primary w-full sm:w-auto justify-center gap-2 ${variant !== "orange" ? variantClass : ""} ${className}`}
     >
@@ -37,10 +39,12 @@ export function CandidateModalPrimaryButton({
 export function CandidateModalSecondaryButton({
   children,
   className = "",
+  type = "button",
   ...props
 }) {
   return (
     <button
+      type={type}
       {...props}
       className={`sibs-modal-btn-secondary w-full sm:w-auto justify-center gap-2 ${className}`}
     >
@@ -134,8 +138,10 @@ export default function CandidatePipelineModalShell({
   const pipeline = useCandidatePipeline();
   const selectedCandidate = pipeline?.selectedCandidate || null;
 
-  const candidateForMovementHistory =
-    realtimeCandidate || movementHistoryCandidate || selectedCandidate || {};
+  const candidateForMovementHistory = useMemo(
+    () => realtimeCandidate || movementHistoryCandidate || selectedCandidate || {},
+    [realtimeCandidate, movementHistoryCandidate, selectedCandidate],
+  );
 
   const movementHistoryEnabled =
     showMovementHistory === undefined
