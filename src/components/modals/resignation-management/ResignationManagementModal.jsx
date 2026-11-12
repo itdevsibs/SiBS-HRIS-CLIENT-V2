@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 
 import ConfirmModal from "@/components/ui/ConfirmModal";
+import api from "@/lib/axios/api-template";
 import { formatDate, formatDateTime } from "../../layout/FormatDateTime";
 import {
   convertHeicBlobToJpeg,
@@ -91,16 +92,24 @@ function getImmediateMaxDate(resignationDate) {
 
 function parseLocalDate(value) {
   if (!value) return null;
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? null : new Date(value.getTime());
+  }
 
-  const [year, month, day] = String(value).split("-").map(Number);
+  const str = String(value).trim();
+  const match = str.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
 
-  if (!year || !month || !day) return null;
+  if (match) {
+    const year = Number(match[1]);
+    const month = Number(match[2]);
+    const day = Number(match[3]);
+    const date = new Date(year, month - 1, day);
 
-  const date = new Date(year, month - 1, day);
+    return Number.isNaN(date.getTime()) ? null : date;
+  }
 
-  if (Number.isNaN(date.getTime())) return null;
-
-  return date;
+  const date = new Date(str);
+  return Number.isNaN(date.getTime()) ? null : date;
 }
 
 function toDateValue(date) {
@@ -168,6 +177,20 @@ function formatMonthYear(date) {
   });
 }
 
+function isResignationApproved(item) {
+  const status = normalizeStatus(item?.status);
+  if (status === "approved") return true;
+  if (item?.isApproved === true || Number(item?.isApproved || 0) === 1) return true;
+  if (Number(item?.somIsApproved || 0) === 1) return true;
+
+  const stages = buildResignationApprovalStages(item);
+  if (stages.length > 0 && stages.every((stage) => stage.status === "Approved")) {
+    return true;
+  }
+
+  return false;
+}
+
 function getResignationStatus(item) {
   const status = normalizeStatus(item?.status);
 
@@ -183,25 +206,31 @@ function getResignationStatus(item) {
   const isCompleted =
     status === "completed" ||
     status === "complete" ||
-    status === "approved" ||
     status === "cleared" ||
     Number(item?.isCompleted || 0) === 1;
 
   if (isCompleted) return "Completed";
 
-  const lastWorkingDate =
-    item?.lastWorkingDate || item?.last_working_date || item?.effectivityDate;
+  const isApproved = isResignationApproved(item);
 
-  if (lastWorkingDate) {
-    const today = new Date();
-    const lastDay = new Date(lastWorkingDate);
+  if (isApproved) {
+    const lastWorkingDate =
+      item?.lastWorkingDate || item?.last_working_date || item?.effectivityDate;
 
-    if (!Number.isNaN(lastDay.getTime())) {
-      today.setHours(0, 0, 0, 0);
-      lastDay.setHours(0, 0, 0, 0);
+    if (lastWorkingDate) {
+      const today = new Date();
+      const lastDay = parseLocalDate(lastWorkingDate);
 
-      if (lastDay >= today) return "In Notice Period";
+      if (lastDay && !Number.isNaN(lastDay.getTime())) {
+        today.setHours(0, 0, 0, 0);
+        lastDay.setHours(0, 0, 0, 0);
+
+        if (lastDay >= today) return "In Notice Period";
+        return "Completed";
+      }
     }
+
+    return "In Notice Period";
   }
 
   return "For Approval";
@@ -244,7 +273,7 @@ function getEmployeeDepartment(item) {
   );
 }
 
-function getEmployeePosition(item) {
+function _getEmployeePosition(item) {
   return (
     item?.position ||
     item?.jobTitle ||
@@ -290,7 +319,7 @@ function ProfileAvatar({ item, size = "md" }) {
   const sibsId = getEmployeeSibsId(item);
   const anchorRef = useRef(null);
   const [fetchedEmployee, setFetchedEmployee] = useState(null);
-  const [imageFailed, setImageFailed] = useState(false);
+  const [failedImageKey, setFailedImageKey] = useState("");
   const [preview, setPreview] = useState({
     open: false,
     top: 0,
@@ -303,6 +332,8 @@ function ProfileAvatar({ item, size = "md" }) {
   };
 
   const imageUrl = getProfileImageUrl(mergedItem);
+  const imageKey = `${sibsId || "employee"}::${imageUrl || "no-image"}`;
+  const imageFailed = failedImageKey === imageKey;
 
   const shouldFetchProfile =
     sibsId &&
@@ -311,38 +342,30 @@ function ProfileAvatar({ item, size = "md" }) {
     !fetchedEmployee;
 
   useEffect(() => {
-    setImageFailed(false);
-    setPreview((current) => ({
-      ...current,
-      open: false,
-    }));
-  }, [imageUrl, sibsId]);
-
-  useEffect(() => {
     if (!shouldFetchProfile) return undefined;
 
     const controller = new AbortController();
 
     async function fetchEmployeeProfile() {
       try {
-        const response = await fetch(
-          `${API_URL}/api/employees/${encodeURIComponent(sibsId)}`,
+        const response = await api.get(
+          `/api/employees/${encodeURIComponent(sibsId)}`,
           {
-            method: "GET",
-            credentials: "include",
             signal: controller.signal,
           },
         );
 
-        if (!response.ok) return;
-
-        const result = await response.json();
+        const result = response?.data;
 
         if (result?.success && result?.data) {
           setFetchedEmployee(result.data);
         }
       } catch (error) {
-        if (error?.name !== "AbortError") {
+        if (
+          error?.code !== "ERR_CANCELED" &&
+          error?.name !== "CanceledError" &&
+          error?.name !== "AbortError"
+        ) {
           console.error("PROFILE AVATAR FETCH ERROR:", error);
         }
       }
@@ -431,7 +454,7 @@ function ProfileAvatar({ item, size = "md" }) {
         alt="Profile"
         className="h-full w-full object-cover"
         onError={() => {
-          setImageFailed(true);
+          setFailedImageKey(imageKey);
           hideProfilePreview();
         }}
       />
@@ -480,7 +503,7 @@ function ProfileAvatar({ item, size = "md" }) {
   );
 }
 
-function getStatusClass(status) {
+function _getStatusClass(status) {
   switch (status) {
     case "Completed":
     case "Approved":
@@ -499,7 +522,7 @@ function getStatusClass(status) {
   }
 }
 
-function getStatusIcon(status) {
+function _getStatusIcon(status) {
   switch (status) {
     case "Completed":
     case "Approved":
@@ -3613,24 +3636,7 @@ export function ViewResignationModal({
   }
 
   useEffect(() => {
-    if (!open) {
-      setAttachmentPreview({
-        open: false,
-        fileName: "",
-        fileUrl: "",
-      });
-      setApprovalStageModal({
-        open: false,
-        stage: null,
-      });
-      setApprovalResultStatus({
-        open: false,
-        type: "success",
-        title: "",
-        message: "",
-      });
-      return undefined;
-    }
+    if (!open) return undefined;
 
     const previousBodyOverflow = document.body.style.overflow;
     const previousHtmlOverflow = document.documentElement.style.overflow;
@@ -3647,6 +3653,21 @@ export function ViewResignationModal({
       document.removeEventListener("keydown", handleEscape);
       document.body.style.overflow = previousBodyOverflow;
       document.documentElement.style.overflow = previousHtmlOverflow;
+      setAttachmentPreview({
+        open: false,
+        fileName: "",
+        fileUrl: "",
+      });
+      setApprovalStageModal({
+        open: false,
+        stage: null,
+      });
+      setApprovalResultStatus({
+        open: false,
+        type: "success",
+        title: "",
+        message: "",
+      });
     };
   }, [open, onClose]);
 

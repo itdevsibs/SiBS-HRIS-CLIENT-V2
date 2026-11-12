@@ -15,8 +15,12 @@ export default function SearchInput({
   inputRef = null,
   ariaLabel,
   "aria-label": ariaLabelProp,
+  id,
   ...props
 }) {
+  const generatedId = React.useId();
+  const inputId = id || (label ? generatedId : undefined);
+
   const handleChange = (e) => {
     onChange?.(e.target.value, e);
   };
@@ -35,6 +39,7 @@ export default function SearchInput({
     <div className={`w-full font-jakarta ${className}`.trim()}>
       {label && !hideLabel && (
         <label
+          htmlFor={inputId}
           className={`mb-1 block font-jakarta ${
             labelClassName || "sibs-text-xs font-bold text-sibs-navy"
           }`}
@@ -52,13 +57,14 @@ export default function SearchInput({
 
         <input
           ref={inputRef}
+          id={inputId}
           type="text"
           value={value}
           onChange={handleChange}
           placeholder={placeholder}
           disabled={disabled}
           aria-label={ariaLabelProp || ariaLabel || label || placeholder}
-          className={`sibs-dashboard-input h-8.5 2xl:h-10 w-full rounded-[10px] pl-9 pr-8 text-xs font-semibold text-sibs-navy placeholder:text-sibs-faint transition disabled:cursor-not-allowed disabled:opacity-50 ${inputClassName}`.trim()}
+          className={`sibs-dashboard-input h-8.5 sm:h-9 2xl:h-10 w-full rounded-[10px] pl-9 pr-9 text-xs font-semibold text-sibs-navy placeholder:text-sibs-faint transition disabled:cursor-not-allowed disabled:opacity-50 ${inputClassName}`.trim()}
           {...props}
         />
 
@@ -66,10 +72,10 @@ export default function SearchInput({
           <button
             type="button"
             onClick={handleClear}
-            className="absolute right-2.5 flex h-5 w-5 items-center justify-center rounded-full text-sibs-muted hover:bg-sibs-surface hover:text-sibs-orange transition"
+            className="absolute right-1.5 flex h-7 w-7 items-center justify-center rounded-full text-sibs-muted hover:bg-sibs-surface hover:text-sibs-orange transition"
             aria-label="Clear search input"
           >
-            <X size={12} strokeWidth={2.5} />
+            <X size={14} strokeWidth={2.5} />
           </button>
         )}
       </div>

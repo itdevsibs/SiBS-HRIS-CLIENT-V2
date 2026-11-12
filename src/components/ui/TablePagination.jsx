@@ -137,7 +137,7 @@ export default function TablePagination({
           title="First page"
           disabled={loading || !hasPrevious}
           onClick={() => onPageChange?.(1)}
-          className="inline-flex h-8 2xl:h-9 w-8 2xl:w-9 items-center justify-center rounded-lg border border-sibs-border-subtle bg-white text-sibs-navy transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
+          className="inline-flex h-8.5 sm:h-9 w-8.5 sm:w-9 items-center justify-center rounded-lg border border-sibs-border-subtle bg-white text-sibs-navy transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
         >
           <ChevronsLeft className="h-4 w-4" />
         </button>
@@ -149,14 +149,14 @@ export default function TablePagination({
           title="Previous"
           disabled={loading || !hasPrevious}
           onClick={() => onPageChange?.(safeCurrentPage - 1)}
-          className="inline-flex h-8 2xl:h-9 items-center gap-1 rounded-lg border border-sibs-border-subtle bg-white px-2.5 2xl:px-3 text-[11.5px] 2xl:text-[12px] font-extrabold text-sibs-navy transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
+          className="inline-flex h-8.5 sm:h-9 items-center gap-1 rounded-lg border border-sibs-border-subtle bg-white px-2.5 2xl:px-3 text-[11.5px] 2xl:text-[12px] font-extrabold text-sibs-navy transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
         >
           <ChevronLeft className="h-3.5 w-3.5" />
           <span className="hidden sm:inline">Previous</span>
         </button>
 
         {/* Mobile Compact Page Indicator */}
-        <span className="inline-flex h-8 items-center px-2 font-jakarta text-xs font-bold text-sibs-navy sm:hidden">
+        <span className="inline-flex h-8.5 sm:h-9 items-center px-2 font-jakarta text-xs font-bold text-sibs-navy sm:hidden">
           {totalIsKnown ? `${safeCurrentPage} / ${safeTotalPages}` : `Page ${safeCurrentPage}`}
         </span>
 
@@ -167,7 +167,7 @@ export default function TablePagination({
               return (
                 <span
                   key={`ellipsis-${idx}`}
-                  className="inline-flex h-8 2xl:h-9 min-w-6 items-center justify-center px-1 font-jakarta text-xs font-bold text-sibs-muted select-none"
+                  className="inline-flex h-8.5 sm:h-9 min-w-6 items-center justify-center px-1 font-jakarta text-xs font-bold text-sibs-muted select-none"
                   aria-hidden="true"
                 >
                   …
@@ -180,11 +180,11 @@ export default function TablePagination({
               <button
                 key={`page-${pageNum}`}
                 type="button"
-                aria-label={String(pageNum)}
+                aria-label={`Page ${pageNum}`}
                 aria-current={isActive ? "page" : undefined}
                 disabled={loading}
                 onClick={() => onPageChange?.(pageNum)}
-                className={`inline-flex h-8 2xl:h-9 min-w-8 2xl:min-w-9 items-center justify-center rounded-lg px-2 text-[11.5px] 2xl:text-[12px] font-extrabold transition ${
+                className={`inline-flex h-8.5 sm:h-9 min-w-8.5 sm:min-w-9 items-center justify-center rounded-lg px-2 text-[11.5px] 2xl:text-[12px] font-extrabold transition ${
                   isActive
                     ? "bg-sibs-orange text-white shadow-xs font-black"
                     : "border border-sibs-border-subtle bg-white text-sibs-navy hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange"
@@ -203,7 +203,7 @@ export default function TablePagination({
           title="Next"
           disabled={loading || !hasNext}
           onClick={() => onPageChange?.(safeCurrentPage + 1)}
-          className="inline-flex h-8 2xl:h-9 items-center gap-1 rounded-lg border border-sibs-border-subtle bg-white px-2.5 2xl:px-3 text-[11.5px] 2xl:text-[12px] font-extrabold text-sibs-navy transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
+          className="inline-flex h-8.5 sm:h-9 items-center gap-1 rounded-lg border border-sibs-border-subtle bg-white px-2.5 2xl:px-3 text-[11.5px] 2xl:text-[12px] font-extrabold text-sibs-navy transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
         >
           <span className="hidden sm:inline">Next</span>
           <ChevronRight className="h-3.5 w-3.5" />
@@ -216,7 +216,7 @@ export default function TablePagination({
           title="Last page"
           disabled={loading || !hasNext || !totalIsKnown}
           onClick={() => onPageChange?.(safeTotalPages)}
-          className="inline-flex h-8 2xl:h-9 w-8 2xl:w-9 items-center justify-center rounded-lg border border-sibs-border-subtle bg-white text-sibs-navy transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
+          className="inline-flex h-8.5 sm:h-9 w-8.5 sm:w-9 items-center justify-center rounded-lg border border-sibs-border-subtle bg-white text-sibs-navy transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
         >
           <ChevronsRight className="h-4 w-4" />
         </button>
@@ -225,7 +225,7 @@ export default function TablePagination({
       {/* Zone 3: Page Indicator Badge (Right - clear of bottom-right floating assistant) */}
       {showPageInfo ? (
         <div className="flex flex-1 items-center justify-center sm:justify-end">
-          <span className="inline-flex items-center gap-1 rounded-lg border border-sibs-border-subtle/80 bg-sibs-surface-ground/60 px-2.5 py-1 font-jakarta text-[11px] 2xl:text-[11.5px] font-bold text-sibs-navy">
+          <span className="inline-flex items-center gap-1 rounded-lg border border-sibs-border-subtle/80 bg-sibs-surface px-2.5 py-1 font-jakarta text-[11px] 2xl:text-[11.5px] font-bold text-sibs-navy">
             Page {safeCurrentPage.toLocaleString()}{totalIsKnown ? ` of ${safeTotalPages.toLocaleString()}` : ""}
           </span>
         </div>

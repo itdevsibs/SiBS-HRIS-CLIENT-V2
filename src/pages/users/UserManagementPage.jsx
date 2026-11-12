@@ -1,3 +1,8 @@
+/**
+ * @deprecated Legacy User Management Page.
+ * Superseded by src/pages/Settings/UserSettingsPage.jsx and the unified /settings/users route.
+ * Maintained only for fallback reference. Do not route in production router.
+ */
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
@@ -250,9 +255,16 @@ export default function UserManagementPage() {
   const { user, loading } = useUser();
 
   const [search, setSearch] = useState("");
+  const [searchInput, setSearchInput] = useState("");
+  const [summaryCounts, setSummaryCounts] = useState(null);
   const [users, setUsers] = useState([]);
   const [accountOptions, setAccountOptions] = useState([]);
   const [pageLoading, setPageLoading] = useState(true);
+
+  const searchDebounceTimerRef = useRef(null);
+  const userRequestSeqRef = useRef(0);
+  const employeeDebounceTimerRef = useRef(null);
+  const employeeSearchSeqRef = useRef(0);
 
   const [page, setPage] = useState(1);
   const [pagination, setPagination] = useState({
@@ -393,6 +405,17 @@ export default function UserManagementPage() {
   }, []);
 
   useEffect(() => {
+    return () => {
+      if (searchDebounceTimerRef.current) {
+        clearTimeout(searchDebounceTimerRef.current);
+      }
+      if (employeeDebounceTimerRef.current) {
+        clearTimeout(employeeDebounceTimerRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
     if (tableScrollRef.current) {
       tableScrollRef.current.scrollTo({
         top: 0,
@@ -410,10 +433,14 @@ export default function UserManagementPage() {
       return;
     }
 
+    const seq = ++userRequestSeqRef.current;
+
     try {
       setPageLoading(true);
 
       const result = await getUserAccess(currentPage, currentSearch);
+
+      if (seq !== userRequestSeqRef.current) return;
 
       if (!result?.success) {
         setUsers([]);
@@ -424,6 +451,7 @@ export default function UserManagementPage() {
           total: 0,
           totalPages: 1,
         });
+        setSummaryCounts(null);
         return;
       }
 
@@ -446,12 +474,28 @@ export default function UserManagementPage() {
           totalPages: 1,
         }
       );
+
+      const summary = result.summary || result.counts || null;
+      if (summary) {
+        setSummaryCounts({
+          total: summary.total ?? summary.totalUsers ?? result.pagination?.total ?? 0,
+          active: summary.active ?? summary.activeUsers ?? summary.activeAccounts ?? null,
+          superAdmin: summary.superAdmin ?? summary.superAdmins ?? null,
+          hrAdmin: summary.hrAdmin ?? summary.hrAdmins ?? null,
+        });
+      } else {
+        setSummaryCounts(null);
+      }
     } catch (error) {
+      if (seq !== userRequestSeqRef.current) return;
       console.error("Fetch management users error:", error);
       setUsers([]);
       setAccountOptions([]);
+      setSummaryCounts(null);
     } finally {
-      setPageLoading(false);
+      if (seq === userRequestSeqRef.current) {
+        setPageLoading(false);
+      }
     }
   };
 
@@ -463,8 +507,17 @@ export default function UserManagementPage() {
   }, [user?.role, page, search]);
 
   const handleSearchChange = (e) => {
-    setSearch(e.target.value);
-    setPage(1);
+    const value = e.target.value;
+    setSearchInput(value);
+
+    if (searchDebounceTimerRef.current) {
+      clearTimeout(searchDebounceTimerRef.current);
+    }
+
+    searchDebounceTimerRef.current = setTimeout(() => {
+      setPage(1);
+      setSearch(value);
+    }, 300);
   };
 
   const createPage = (p) => (
@@ -701,9 +754,13 @@ export default function UserManagementPage() {
   };
 
   const resetAddForm = () => {
+    if (employeeDebounceTimerRef.current) {
+      clearTimeout(employeeDebounceTimerRef.current);
+    }
     setEmployeeSearch("");
     setEmployeeResults([]);
     setShowEmployeeDropdown(false);
+    setSearchingEmployees(false);
     setAddForm({
       gyEmpId: "",
       sibsId: "",
@@ -727,15 +784,22 @@ export default function UserManagementPage() {
   const closeAddModal = () => {
     if (addSaving) return;
 
+    if (employeeDebounceTimerRef.current) {
+      clearTimeout(employeeDebounceTimerRef.current);
+    }
     setShowAddModal(false);
     resetAddForm();
   };
 
   const searchEmployees = async (keyword) => {
+    const seq = ++employeeSearchSeqRef.current;
+
     try {
       setSearchingEmployees(true);
 
       const result = await searchUserAccessEmployees(keyword);
+
+      if (seq !== employeeSearchSeqRef.current) return;
 
       if (!result?.success) {
         setEmployeeResults([]);
@@ -744,14 +808,17 @@ export default function UserManagementPage() {
 
       setEmployeeResults(result.data || []);
     } catch (error) {
+      if (seq !== employeeSearchSeqRef.current) return;
       console.error("Employee search error:", error);
       setEmployeeResults([]);
     } finally {
-      setSearchingEmployees(false);
+      if (seq === employeeSearchSeqRef.current) {
+        setSearchingEmployees(false);
+      }
     }
   };
 
-  const handleEmployeeSearchChange = async (e) => {
+  const handleEmployeeSearchChange = (e) => {
     const value = e.target.value;
 
     setEmployeeSearch(value);
@@ -771,17 +838,28 @@ export default function UserManagementPage() {
       department: "",
     }));
 
+    if (employeeDebounceTimerRef.current) {
+      clearTimeout(employeeDebounceTimerRef.current);
+    }
+
     if (!value.trim()) {
       setEmployeeResults([]);
+      setSearchingEmployees(false);
       return;
     }
 
-    await searchEmployees(value);
+    employeeDebounceTimerRef.current = setTimeout(() => {
+      searchEmployees(value);
+    }, 300);
   };
 
   const handleSelectEmployee = (employee) => {
+    if (employeeDebounceTimerRef.current) {
+      clearTimeout(employeeDebounceTimerRef.current);
+    }
     setEmployeeSearch(employee.sibsId || "");
     setShowEmployeeDropdown(false);
+    setSearchingEmployees(false);
 
     setAddForm((prev) => ({
       ...prev,
@@ -953,21 +1031,33 @@ export default function UserManagementPage() {
             <section className="grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-4">
               <SummaryCard
                 title="Total Users"
-                value={pagination.total}
+                value={summaryCounts?.total ?? pagination.total}
                 tone="navy"
                 delay={0}
               />
 
               <SummaryCard
-                title="Active Accounts"
-                value={users.filter((u) => u.status === "active").length}
+                title={
+                  summaryCounts?.active != null
+                    ? "Active Accounts"
+                    : "Active Accounts (Page)"
+                }
+                value={
+                  summaryCounts?.active ??
+                  users.filter((u) => u.status === "active").length
+                }
                 tone="emerald"
                 delay={60}
               />
 
               <SummaryCard
-                title="Super Admin"
+                title={
+                  summaryCounts?.superAdmin != null
+                    ? "Super Admin"
+                    : "Super Admin (Page)"
+                }
                 value={
+                  summaryCounts?.superAdmin ??
                   users.filter(
                     (u) => Number(getSingleAdminAccess(u.adminAccess)) === 7
                   ).length
@@ -977,8 +1067,13 @@ export default function UserManagementPage() {
               />
 
               <SummaryCard
-                title="HR Admin"
+                title={
+                  summaryCounts?.hrAdmin != null
+                    ? "HR Admin"
+                    : "HR Admin (Page)"
+                }
                 value={
+                  summaryCounts?.hrAdmin ??
                   users.filter(
                     (u) => Number(getSingleAdminAccess(u.adminAccess)) === 3
                   ).length
@@ -1002,7 +1097,7 @@ export default function UserManagementPage() {
                 <input
                   type="text"
                   placeholder="Search users..."
-                  value={search}
+                  value={searchInput}
                   onChange={handleSearchChange}
                   className="sibs-input-search"
                 />

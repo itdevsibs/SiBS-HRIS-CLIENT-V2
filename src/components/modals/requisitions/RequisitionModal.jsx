@@ -6,6 +6,45 @@ import {
   submitRequisition,
 } from "@/lib/axios/getRequisition";
 
+const FOCUSABLE_SELECTOR =
+  'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+function getFocusableElements(container) {
+  if (!container) return [];
+  return Array.from(container.querySelectorAll(FOCUSABLE_SELECTOR)).filter(
+    (el) =>
+      !el.closest("[inert]") &&
+      (el.offsetWidth || el.offsetHeight || el.getClientRects().length)
+  );
+}
+
+function trapFocus(event, container) {
+  if (event.key !== "Tab" || !container) return;
+  const items = getFocusableElements(container);
+  if (!items.length) {
+    event.preventDefault();
+    return;
+  }
+  const first = items[0];
+  const last = items[items.length - 1];
+  if (
+    event.shiftKey &&
+    (document.activeElement === first ||
+      document.activeElement === container ||
+      !container.contains(document.activeElement))
+  ) {
+    event.preventDefault();
+    last.focus();
+  } else if (
+    !event.shiftKey &&
+    (document.activeElement === last ||
+      !container.contains(document.activeElement))
+  ) {
+    event.preventDefault();
+    first.focus();
+  }
+}
+
 export default function RequisitionModal({ open, onClose, onSuccess }) {
   const [form, setForm] = useState({
     jobTitle: "",
@@ -34,6 +73,7 @@ export default function RequisitionModal({ open, onClose, onSuccess }) {
   const [submitLoading, setSubmitLoading] = useState(false);
 
   const modalRef = useRef(null);
+  const previousFocusRef = useRef(null);
 
   useEffect(() => {
     if (!open) return;
@@ -41,9 +81,22 @@ export default function RequisitionModal({ open, onClose, onSuccess }) {
     fetchDepartments();
     fetchHiringManagers();
 
+    previousFocusRef.current = document.activeElement;
+    const frame = modalRef.current;
+    const items = getFocusableElements(frame);
+    const target = items[0] || frame;
+    target?.focus?.({ preventScroll: true });
+
     const handleEscape = (e) => {
       if (e.key === "Escape" && !submitLoading) {
+        e.preventDefault();
+        e.stopPropagation();
         onClose?.();
+        return;
+      }
+
+      if (e.key === "Tab") {
+        trapFocus(e, modalRef.current);
       }
     };
 
@@ -53,6 +106,9 @@ export default function RequisitionModal({ open, onClose, onSuccess }) {
     return () => {
       document.removeEventListener("keydown", handleEscape);
       document.body.style.overflow = "";
+      if (previousFocusRef.current?.isConnected) {
+        previousFocusRef.current.focus();
+      }
     };
   }, [open, submitLoading, onClose]);
 
@@ -166,12 +222,16 @@ export default function RequisitionModal({ open, onClose, onSuccess }) {
     >
       <div
         ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="requisition-modal-title"
+        tabIndex={-1}
         onClick={(e) => e.stopPropagation()}
         className="sibs-modal-pop-in flex max-h-[90dvh] w-full max-w-5xl 2xl:max-w-6xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl font-jakarta"
       >
         <div className="flex shrink-0 items-center justify-between gap-4 bg-sibs-navy px-5 py-3 text-white sm:px-6 2xl:py-3.5">
           <div className="min-w-0">
-            <h2 className="sibs-modal-title truncate text-white">
+            <h2 id="requisition-modal-title" className="sibs-modal-title truncate text-white">
               Create Job Requisition
             </h2>
             <p className="sibs-modal-subtitle mt-0.5 text-white/75 truncate sm:text-clip">
@@ -303,12 +363,14 @@ export default function RequisitionModal({ open, onClose, onSuccess }) {
             </Section>
 
             <div className="rounded-xl border p-4">
-              <div
+              <button
+                type="button"
+                aria-expanded={showJobDetails}
                 onClick={() => setShowJobDetails((prev) => !prev)}
-                className="flex cursor-pointer select-none items-center justify-between rounded p-2 hover:bg-gray-50"
+                className="flex w-full cursor-pointer select-none items-center justify-between rounded p-2 text-left hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-sibs-orange/30"
               >
                 <div>
-                  <h2 className="font-semibold">Job Details</h2>
+                  <h3 className="font-semibold text-sibs-navy">Job Details</h3>
                   <p className="text-sm text-gray-500">
                     Generate a first draft for the fields below using the Job
                     Title and Position Rank.
@@ -318,13 +380,14 @@ export default function RequisitionModal({ open, onClose, onSuccess }) {
                 <span className="text-sm text-gray-400">
                   {showJobDetails ? "Hide ▲" : "Add ▼"}
                 </span>
-              </div>
+              </button>
 
               <div
+                inert={!showJobDetails || undefined}
                 className={`overflow-hidden transition-all duration-300 ${
                   showJobDetails
                     ? "mt-4 max-h-[2000px] opacity-100"
-                    : "max-h-0 opacity-0"
+                    : "max-h-0 opacity-0 pointer-events-none"
                 }`}
               >
                 <div className="space-y-4">
@@ -455,13 +518,20 @@ function SearchableSelect({
   placeholder = "SEARCH",
   disabled = false,
 }) {
-  const [search, setSearch] = useState("");
-  const [open, setOpen] = useState(false);
-  const wrapperRef = useRef(null);
-
   const selectedOption = options.find(
     (option) => String(option.value) === String(value)
   );
+
+  const [search, setSearch] = useState(selectedOption?.label || "");
+  const [prevSelectedOption, setPrevSelectedOption] = useState(selectedOption);
+
+  if (selectedOption !== prevSelectedOption) {
+    setPrevSelectedOption(selectedOption);
+    setSearch(selectedOption ? selectedOption.label : "");
+  }
+
+  const [open, setOpen] = useState(false);
+  const wrapperRef = useRef(null);
 
   const filteredOptions = options.filter((option) =>
     option.label.toUpperCase().includes(search.toUpperCase())
@@ -482,14 +552,6 @@ function SearchableSelect({
     setSearch(selected?.label || "");
     setOpen(false);
   };
-
-  useEffect(() => {
-    if (selectedOption) {
-      setSearch(selectedOption.label);
-    } else {
-      setSearch("");
-    }
-  }, [selectedOption]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {

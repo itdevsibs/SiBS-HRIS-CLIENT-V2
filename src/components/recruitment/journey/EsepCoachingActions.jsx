@@ -1,4 +1,4 @@
-import { ClipboardList } from "lucide-react";
+import { ClipboardList, Target } from "lucide-react";
 import { useState } from "react";
 import { ModalShell, SelectDropdown, DatePicker } from "@/components/ui";
 import { useJourney } from "./JourneyContext";
@@ -39,22 +39,54 @@ export default function EsepCoachingActions({ targetEmployee, actionOnly = false
       <button className="sibs-btn-primary" onClick={() => open("grow")} disabled={!journeys.length}>{actionOnly ? "+ Assign Action Item" : "Record GROW Coaching"}</button>
     </div>
     {notice && <p role="status" className="sibs-badge-success">{notice}</p>}
-    <ModalShell open={Boolean(mode)} onClose={() => setMode(null)} title={mode === "grow" ? (actionOnly ? "Assign Coaching Action Item" : "Record GROW Coaching") : mode === "evaluation" ? "Record Follow-Up Evaluation" : "TL End-of-Day Summary"} icon={ClipboardList} badge="ESEP Coaching" subtitle="Document the coaching goal, development needs, and agreed follow-up actions." maxWidth="max-w-4xl" bodyClassName="bg-sibs-surface p-4 sm:p-5" footer={<><button className="sibs-modal-btn-secondary" onClick={() => setMode(null)}>Close</button>{mode !== "eod" && <button className="sibs-modal-btn-primary" type="submit" form="esep-record-form">Save Record</button>}</>}>
+    <ModalShell
+      open={Boolean(mode)}
+      onClose={() => setMode(null)}
+      title={mode === "grow" ? (actionOnly ? "Assign Coaching Action Item" : "Record GROW Coaching") : mode === "evaluation" ? "Record Follow-Up Evaluation" : "TL End-of-Day Summary"}
+      icon={ClipboardList}
+      badge="ESEP Coaching"
+      subtitle="Document the coaching goal, development needs, and agreed follow-up actions."
+      maxWidth="max-w-4xl"
+      bodyClassName="overscroll-contain bg-sibs-surface p-4 sm:p-6"
+      footer={
+        <>
+          <button type="button" className="sibs-modal-btn-secondary" onClick={() => setMode(null)}>Close</button>
+          {mode !== "eod" && <button className="sibs-modal-btn-primary" type="submit" form="esep-record-form">Save Record</button>}
+        </>
+      }
+    >
       {mode === "eod" ? <div className="space-y-3"><p className="sibs-text-xs text-sibs-muted">Coaching records for {simulatedCurrentDate}. Frontend summary only.</p><p className="font-bold text-sibs-navy">{today.length} sessions recorded</p>{today.map((session) => <div key={session.id} className="rounded-xl border border-sibs-border bg-white p-3 sibs-text-xs"><strong>{journeys.find((journey) => (journey.sibsEmployeeId || journey.id) === session.emp)?.fullName || session.emp}</strong><p>{session.facilitator} · {session.type}</p><p>{session.goal}</p></div>)}{!today.length && <p className="sibs-text-xs text-sibs-muted">No coaching sessions recorded for this date.</p>}</div> : <form id="esep-record-form" onSubmit={save} className="space-y-4">
         {error && <p role="alert" className="sibs-badge-danger">{error}</p>}
-        {mode === "grow" ? <div className="space-y-4">
-          <section className="rounded-xl border border-sibs-border bg-white p-4 space-y-4"><h3 className="sibs-modal-section-title">Session Details</h3><div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <SelectDropdown labelClassName="sibs-modal-field-label" label="Coachee" value={form.emp || ""} onChange={(value) => field("emp", value)} searchable options={journeys.map((journey) => ({ value: journey.sibsEmployeeId || journey.id, label: journey.fullName }))} />
-          <SelectDropdown labelClassName="sibs-modal-field-label" label="Session Type" value={form.type} onChange={(value) => field("type", value)} options={["Weekly 1:1", "QA-triggered", "Ad-hoc Support"]} />
-          {textField("facilitator", "Facilitator")}
-          </div><div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <DatePicker labelClassName="sibs-modal-field-label" label="Session Date" value={form.date} onChange={(value) => field("date", value)} />
-          <DatePicker labelClassName="sibs-modal-field-label" label="Follow-up Due Date" value={form.due} onChange={(value) => field("due", value)} />
-          </div></section>
-          <section className="rounded-xl border border-sibs-border bg-white p-4 space-y-4"><div><h3 className="sibs-modal-section-title">GROW Coaching Plan</h3><p className="sibs-modal-section-subtitle mt-1">Record the current situation and agree on practical next steps.</p></div><div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          {notesField("goal", "G · Goal")}{notesField("reality", "R · Reality")}{notesField("options", "O · Options")}{notesField("will", "W · Way Forward / Agreed Action")}
-          </div></section>
-        </div> : <>
+        {mode === "grow" ? <>
+          <section className="sibs-card space-y-4 p-4 sm:p-5">
+            <h3 className="sibs-modal-section-title flex items-center gap-2 border-b border-sibs-border pb-3">
+              <ClipboardList size={16} aria-hidden="true" className="shrink-0 text-sibs-orange" />
+              Session Details
+            </h3>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <SelectDropdown labelClassName="sibs-modal-field-label" label="Coachee" value={form.emp || ""} onChange={(value) => field("emp", value)} searchable options={journeys.map((journey) => ({ value: journey.sibsEmployeeId || journey.id, label: journey.fullName }))} />
+              <SelectDropdown labelClassName="sibs-modal-field-label" label="Session Type" value={form.type} onChange={(value) => field("type", value)} options={["Weekly 1:1", "QA-triggered", "Ad-hoc Support"]} />
+              <div className="sm:col-span-2">{textField("facilitator", "Facilitator")}</div>
+              <DatePicker labelClassName="sibs-modal-field-label" label="Session Date" value={form.date} onChange={(value) => field("date", value)} />
+              <DatePicker labelClassName="sibs-modal-field-label" label="Follow-up Due Date" value={form.due} onChange={(value) => field("due", value)} />
+            </div>
+          </section>
+          <section className="sibs-card space-y-4 p-4 sm:p-5">
+            <div className="border-b border-sibs-border pb-3">
+              <h3 className="sibs-modal-section-title flex items-center gap-2">
+                <Target size={16} aria-hidden="true" className="shrink-0 text-sibs-orange" />
+                GROW Coaching Plan
+              </h3>
+              <p className="sibs-modal-section-subtitle mt-1">Record the current situation and agree on practical next steps.</p>
+            </div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              {notesField("goal", "G · Goal")}
+              {notesField("reality", "R · Reality")}
+              {notesField("options", "O · Options")}
+              {notesField("will", "W · Way Forward / Agreed Action")}
+            </div>
+          </section>
+        </> : <>
           <SelectDropdown label="Coaching Session" value={form.sessionId || ""} onChange={(value) => field("sessionId", value)} searchable options={pending.map((session) => ({ value: session.id, label: `${session.emp} · ${session.date} · ${session.goal}` }))} />
           <DatePicker label="Evaluation Date" value={form.date} onChange={(value) => field("date", value)} />
           {textField("owner", "Reviewer")}{textField("source", "Evidence / Source")}{textField("metric", "KPI / Metric")}{textField("unit", "Unit (e.g. %, seconds)")}

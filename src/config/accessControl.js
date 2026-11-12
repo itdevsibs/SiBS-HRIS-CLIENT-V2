@@ -283,6 +283,10 @@ export const ACCESS_RULES = [
     ],
   },
   {
+    paths: ["/users", "/settings/users", "/settings/user-settings"],
+    roles: ["super_admin"],
+  },
+  {
     paths: [
       "/recruitment/job-description",
       "/recruitment/available-positions",
@@ -298,6 +302,9 @@ export const ACCESS_RULES = [
       "/recruitment/action-items",
       "/recruitment/candidate-experience",
       "/recruitment/final-interview-form",
+      "/settings",
+      "/settings/overview",
+      "/settings/recruitment",
       "/settings/recruitment-settings",
     ],
     roles: ["ta", "hr", "hr_admin", "executive", "super_admin", "qds", "quality_development_specialist"],
@@ -337,10 +344,6 @@ export const ACCESS_RULES = [
       "executive",
       "super_admin",
     ],
-  },
-  {
-    paths: ["/users"],
-    roles: ["super_admin"],
   },
 ];
 

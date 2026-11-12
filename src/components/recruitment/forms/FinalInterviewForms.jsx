@@ -8,7 +8,7 @@ import React, {
 } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { ChevronDown, Loader2 } from "lucide-react";
-import { useCandidatePipeline } from "../../../services/context/CandidatePipelineContext";
+import CandidatePipelineContext from "../../../services/context/CandidatePipelineContext";
 
 import {
   deleteFinalInterviewDraft,
@@ -617,7 +617,7 @@ function getFormPositionName(form = {}) {
   );
 }
 
-function formMatchesPosition(form = {}, target = {}) {
+function _formMatchesPosition(form = {}, target = {}) {
   const targetPositionId = normalizeId(target.positionId);
   const targetPositionName = normalizeText(target.positionName);
 
@@ -1601,15 +1601,10 @@ function RecruitmentStyleDropdown({
 }) {
   const [open, setOpen] = useState(false);
   const dropdownRef = useRef(null);
+  const isOpen = open && !disabled;
 
   const selectedOption =
     options.find((option) => String(option.value) === String(value)) || null;
-
-  useEffect(() => {
-    if (disabled) {
-      setOpen(false);
-    }
-  }, [disabled]);
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -1640,14 +1635,14 @@ function RecruitmentStyleDropdown({
     <div
       ref={dropdownRef}
       className={`relative ${
-        open ? "z-[160]" : "z-10"
+        isOpen ? "z-[160]" : "z-10"
       } ${className}`}
     >
       <button
         type="button"
         aria-label={ariaLabel}
         aria-haspopup="listbox"
-        aria-expanded={open}
+        aria-expanded={isOpen}
         disabled={disabled}
         onClick={() => {
           if (disabled) return;
@@ -1666,12 +1661,12 @@ function RecruitmentStyleDropdown({
         <ChevronDown
           size={18}
           className={`shrink-0 text-sibs-tertiary-5 transition-transform duration-300 ${
-            open ? "rotate-180" : ""
+            isOpen ? "rotate-180" : ""
           }`}
         />
       </button>
 
-      <AnimatedRecruitmentDropdown open={open} className="z-[170]">
+      <AnimatedRecruitmentDropdown open={isOpen} className="z-[170]">
         <div
           role="listbox"
           aria-label={ariaLabel}
@@ -2042,11 +2037,12 @@ export default function FinalInterviewForms({ publicMode = false }) {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
+  const pipelineContext = React.useContext(CandidatePipelineContext) || {};
   const {
-    candidateList,
+    candidateList = [],
     handleSubmitFinalInterview,
     refreshCandidatePipeline,
-  } = useCandidatePipeline();
+  } = pipelineContext;
 
   const candidateId = searchParams.get("candidateId") || "—";
   const candidateApplicationIdFromUrl =

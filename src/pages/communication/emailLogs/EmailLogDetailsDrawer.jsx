@@ -563,12 +563,37 @@ export default function EmailLogDetailsDrawer({ record, onClose, onResend }) {
         </header>
 
         <nav className="overflow-x-auto border-b border-sibs-border bg-white px-4" aria-label="Email detail views">
-          <div className="flex min-w-max gap-5">
-            {TABS.map((tab) => {
+          <div
+            role="tablist"
+            className="flex min-w-max gap-5"
+          >
+            {TABS.map((tab, index) => {
               const Icon = tab.icon;
               const active = activeTab === tab.value;
+
+              const handleTabKeyDown = (e) => {
+                if (e.key === "ArrowRight") {
+                  e.preventDefault();
+                  const nextTab = TABS[(index + 1) % TABS.length];
+                  setActiveTab(nextTab.value);
+                } else if (e.key === "ArrowLeft") {
+                  e.preventDefault();
+                  const prevTab = TABS[(index - 1 + TABS.length) % TABS.length];
+                  setActiveTab(prevTab.value);
+                }
+              };
+
               return (
-                <button key={tab.value} type="button" onClick={() => setActiveTab(tab.value)} className={`relative flex h-11 items-center gap-1.5 text-[10px] font-extrabold transition ${active ? "text-sibs-navy" : "text-sibs-muted hover:text-sibs-orange"}`}>
+                <button
+                  key={tab.value}
+                  type="button"
+                  role="tab"
+                  aria-selected={active}
+                  tabIndex={active ? 0 : -1}
+                  onKeyDown={handleTabKeyDown}
+                  onClick={() => setActiveTab(tab.value)}
+                  className={`relative flex h-11 items-center gap-1.5 text-[10px] font-extrabold transition ${active ? "text-sibs-navy" : "text-sibs-muted hover:text-sibs-orange"}`}
+                >
                   <Icon className="h-3.5 w-3.5" />
                   {tab.label}{tab.value === "audit" ? ` (${auditEvents.length})` : ""}
                   {active ? <span className="absolute inset-x-0 bottom-0 h-0.5 bg-sibs-orange" /> : null}

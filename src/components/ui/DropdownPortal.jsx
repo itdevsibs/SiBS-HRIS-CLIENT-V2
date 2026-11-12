@@ -62,7 +62,8 @@ export default function DropdownPortal({
       if (event.key !== "Escape") return;
       if (topLayer) {
         event.preventDefault();
-        event.stopImmediatePropagation();
+        event.stopImmediatePropagation?.();
+        event.stopPropagation?.();
       }
       onClose?.(event);
     }

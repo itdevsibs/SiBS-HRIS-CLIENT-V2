@@ -272,7 +272,7 @@ export default function ResigneePage() {
                     value={draft}
                     onChange={setDraft}
                     onClear={() => setDraft("")}
-                    disabled={loading && rows.length === 0}
+                    disabled={loading}
                   />
                 </div>
 
@@ -287,7 +287,7 @@ export default function ResigneePage() {
                     searchable
                     searchPlaceholder="Search departments..."
                     clearable={false}
-                    disabled={loading && rows.length === 0}
+                    disabled={loading}
                   />
                 </div>
 
@@ -302,7 +302,7 @@ export default function ResigneePage() {
                     searchable
                     searchPlaceholder="Search accounts..."
                     clearable={false}
-                    disabled={loading && rows.length === 0}
+                    disabled={loading}
                   />
                 </div>
 
@@ -356,7 +356,7 @@ export default function ResigneePage() {
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-sibs-border" aria-busy={loading}>
-                          {loading && rows.length === 0 ? (
+                          {loading ? (
                             <TableSkeletonRows
                               count={PAGE_SIZE}
                               columns={7}
@@ -437,7 +437,7 @@ export default function ResigneePage() {
                 }
                 mobileContent={
                   <div>
-                    {loading && rows.length === 0 ? (
+                    {loading ? (
                       <DataCard.Skeleton count={5} lines={3} />
                     ) : rows.length === 0 ? (
                       <DataCard.Empty

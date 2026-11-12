@@ -156,6 +156,9 @@ export default function EmployeesPage() {
     setActiveEmployeeTab("Employees");
 
     try {
+      setSearch?.("");
+      setSearchInput?.("");
+
       const savedState = sessionStorage.getItem(EMPLOYEE_STATE_KEY);
 
       if (savedState) {
@@ -164,11 +167,7 @@ export default function EmployeesPage() {
         if (parsed?.page && Number(parsed.page) > 0) {
           setPage?.(Number(parsed.page));
         }
-
       }
-
-      setSearch?.("");
-      setSearchInput?.("");
     } catch (error) {
       console.error("Employee directory state restore error:", error);
     }

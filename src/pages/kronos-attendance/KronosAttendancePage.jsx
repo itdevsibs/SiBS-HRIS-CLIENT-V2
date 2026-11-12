@@ -490,7 +490,7 @@ function CustomCalendarPicker({
       </button>
 
       <div
-        className={`sibs-animated-dropdown absolute right-0 top-[calc(100%+8px)] z-[80] w-[310px] ${
+        className={`sibs-animated-dropdown absolute right-0 top-[calc(100%+8px)] z-[80] w-[310px] max-w-[calc(100vw-2rem)] ${
           isOpen ? "open" : "closed"
         }`}
       >

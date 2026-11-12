@@ -1288,7 +1288,8 @@ export default function ApprovalRequest() {
     DEFAULT_MODULE_NOTIFICATION_COUNTS,
   );
 
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const requestSequenceRef = useRef(0);
   const [selectedRequest, setSelectedRequest] = useState(null);
 
   const [decisionModal, setDecisionModal] = useState({
@@ -1609,8 +1610,13 @@ export default function ApprovalRequest() {
     closeJobDescriptionDetails,
   ]);
 
+  const defaultTypeFilter =
+    activeModule === "Attrition" ? "Resignation" : "All";
   const hasActiveFilters =
-    search || searchInput || statusFilter !== "All" || typeFilter !== "All";
+    Boolean(search) ||
+    Boolean(searchInput) ||
+    statusFilter !== "All" ||
+    typeFilter !== defaultTypeFilter;
 
   const loadApprovalTabNotifications = useCallback(async () => {
     try {
@@ -1634,12 +1640,15 @@ export default function ApprovalRequest() {
 
   const loadApprovalRequests = useCallback(
     async ({ showError = false } = {}) => {
+      const seq = ++requestSequenceRef.current;
+
       if (
         (activeModule === "Job Description" && !canViewJobDescriptionApproval) ||
         (activeModule === "Hiring Needs" && !canViewHiringNeedsApproval) ||
         (activeModule === "Available Positions" &&
           !canViewAvailablePositionApproval)
       ) {
+        if (seq !== requestSequenceRef.current) return;
         setRequests([]);
         setCounts(DEFAULT_COUNTS);
         setPagination({
@@ -1648,6 +1657,7 @@ export default function ApprovalRequest() {
           currentPage: 1,
           limit: 200,
         });
+        setLoading(false);
         return;
       }
 
@@ -1718,6 +1728,8 @@ export default function ApprovalRequest() {
           buildParams(),
         );
 
+        if (seq !== requestSequenceRef.current) return;
+
         let data = getResultData(result);
         let counts = result?.counts || DEFAULT_COUNTS;
         let paginationData = result?.pagination || {
@@ -1752,6 +1764,8 @@ export default function ApprovalRequest() {
             ),
           );
 
+          if (seq !== requestSequenceRef.current) return;
+
           const successfulResults = workforceResults
             .filter((item) => item.status === "fulfilled")
             .map((item) => item.value)
@@ -1779,6 +1793,7 @@ export default function ApprovalRequest() {
         }
 
         if (!result?.success) {
+          if (seq !== requestSequenceRef.current) return;
           setRequests([]);
           setCounts(DEFAULT_COUNTS);
           setPagination({
@@ -1801,10 +1816,12 @@ export default function ApprovalRequest() {
           return;
         }
 
+        if (seq !== requestSequenceRef.current) return;
         setRequests(data);
         setCounts(counts);
         setPagination(paginationData);
       } catch (error) {
+        if (seq !== requestSequenceRef.current) return;
         console.error("LOAD APPROVAL REQUESTS ERROR:", error);
 
         setRequests([]);
@@ -1829,7 +1846,9 @@ export default function ApprovalRequest() {
           });
         }
       } finally {
-        setLoading(false);
+        if (seq === requestSequenceRef.current) {
+          setLoading(false);
+        }
       }
     },
     [

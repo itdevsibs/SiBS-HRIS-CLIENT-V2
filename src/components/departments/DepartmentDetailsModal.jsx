@@ -1,7 +1,8 @@
-import { createElement, useCallback, useEffect, useRef, useState } from "react";
+import { createElement, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import {
   BriefcaseBusiness,
+  Building2,
   CheckCircle2,
   Layers3,
   Loader2,
@@ -29,7 +30,7 @@ function PersonChip({ person, fallbackTitle }) {
   const sibsId = person?.sibsId || "";
 
   return (
-    <div className="flex min-w-0 items-start gap-2.5 rounded-lg border border-sibs-border bg-white px-3 py-2.5">
+    <div className="flex min-w-0 items-start gap-2.5 rounded-lg border border-sibs-border bg-white px-3 py-2.5 shadow-2xs">
       <DepartmentProfileAvatar employee={person} size="sm" />
 
       <div className="min-w-0">
@@ -42,6 +43,35 @@ function PersonChip({ person, fallbackTitle }) {
         </p>
       </div>
     </div>
+  );
+}
+
+function SectionCard({ icon: Icon, title, subtitle, children, side }) {
+  return (
+    <section
+      className="sibs-card overflow-hidden rounded-2xl border border-sibs-border bg-white p-4 shadow-sm sm:p-5"
+      aria-label={title}
+    >
+      <div className="mb-4 flex flex-wrap items-start justify-between gap-3 border-b border-sibs-border pb-3.5">
+        <div className="flex min-w-0 items-start gap-2.5">
+          <span className="sibs-tone-navy-icon inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl">
+            {Icon ? <Icon size={17} /> : null}
+          </span>
+          <div>
+            <h3 className="sibs-modal-section-title font-extrabold text-sibs-navy">
+              {title}
+            </h3>
+            {subtitle && (
+              <p className="mt-0.5 sibs-modal-section-subtitle text-sibs-muted">
+                {subtitle}
+              </p>
+            )}
+          </div>
+        </div>
+        {side}
+      </div>
+      {children}
+    </section>
   );
 }
 
@@ -62,16 +92,16 @@ function LeadershipGroup({
         event.stopPropagation();
         onClick?.();
       }}
-      className="flex min-w-0 flex-col self-start rounded-[10px] text-left transition hover:bg-white/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-sibs-orange/20"
+      className="flex min-w-0 flex-col self-start rounded-xl p-2 -m-2 text-left transition hover:bg-sibs-surface focus:outline-none focus-visible:ring-2 focus-visible:ring-sibs-orange/20"
       title={`View ${title}`}
     >
-      <p className="mb-2 flex min-h-[20px] items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-wide text-sibs-faint">
-        {createElement(icon, { className: "h-3.5 w-3.5 shrink-0" })}
-        <span className="leading-none">{title}</span>
+      <p className="mb-2 flex min-h-[20px] items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-wide text-sibs-muted">
+        {createElement(icon, { className: "h-3.5 w-3.5 shrink-0 text-sibs-orange" })}
+        <span className="leading-none text-sibs-secondary">{title}</span>
       </p>
 
       {people.length ? (
-        <div className="grid content-start gap-2">
+        <div className="grid w-full content-start gap-2">
           {visiblePeople.map((person, index) => (
             <PersonChip
               key={`${person?.sibsId || person?.name || title}-${index}`}
@@ -81,13 +111,13 @@ function LeadershipGroup({
           ))}
 
           {remainingCount > 0 ? (
-            <div className="inline-flex w-fit items-center rounded-lg border border-sibs-border bg-white px-3 py-2 text-[11px] font-extrabold text-sibs-muted">
+            <div className="inline-flex w-fit items-center rounded-lg border border-sibs-border bg-white px-3 py-1.5 text-[11px] font-extrabold text-sibs-muted shadow-2xs transition hover:border-sibs-orange/40 hover:text-sibs-orange">
               +{remainingCount} more
             </div>
           ) : null}
         </div>
       ) : (
-        <div className="flex min-h-[44px] items-center rounded-lg border border-dashed border-sibs-border bg-white px-3 py-3 text-[11px] font-semibold text-sibs-muted">
+        <div className="flex min-h-[44px] w-full items-center rounded-lg border border-dashed border-sibs-border bg-white px-3 py-3 text-[11px] font-semibold text-sibs-muted">
           {emptyText}
         </div>
       )}
@@ -115,13 +145,16 @@ function LeadershipPeopleModal({
       icon={icon || UsersRound}
       badge={`${safePeople.length} ${safePeople.length === 1 ? "person" : "people"}`}
       maxWidth="max-w-3xl"
-      bodyClassName="max-h-[65vh] overflow-y-auto"
+      variant="navy"
+      className="rounded-[14px]"
+      headerClassName="bg-sibs-navy"
+      bodyClassName="max-h-[65vh] overflow-y-auto bg-sibs-surface p-4"
       closeOnBackdrop={false}
       footer={
         <div className="flex w-full justify-end">
           <button
             type="button"
-            className="sibs-btn-primary !text-sm"
+            className="sibs-modal-btn-secondary px-5"
             onClick={onClose}
           >
             Close
@@ -140,7 +173,7 @@ function LeadershipPeopleModal({
           ))}
         </div>
       ) : (
-        <div className="rounded-[10px] border border-dashed border-sibs-border p-8 text-center text-sm font-semibold text-sibs-muted">
+        <div className="rounded-xl border border-dashed border-sibs-border bg-white p-8 text-center text-sm font-semibold text-sibs-muted">
           No {title.toLowerCase()} resolved for this account.
         </div>
       )}
@@ -197,12 +230,15 @@ function AccountEmployeesModal({
   onClose,
 }) {
   const [siteFilter, setSiteFilter] = useState("All");
+  const [prevAccountLobKey, setPrevAccountLobKey] = useState(
+    () => `${account?.id}-${lobFilter}`,
+  );
+  const currentAccountLobKey = `${account?.id}-${lobFilter}`;
 
-  // Reset when changing accounts (or opening an account-specific LOB list).
-  // The account directory uses one shared modal component for every account.
-  useEffect(() => {
+  if (prevAccountLobKey !== currentAccountLobKey) {
+    setPrevAccountLobKey(currentAccountLobKey);
     setSiteFilter("All");
-  }, [account?.id, lobFilter]);
+  }
 
   // The global HRIS html scrollbar-gutter: stable leaves a white strip next
   // to portal-backed modal overlays in Chrome. Override it only while this
@@ -215,7 +251,7 @@ function AccountEmployeesModal({
     return () => {
       root.style.scrollbarGutter = priorGutter;
     };
-  }, [account?.id]);
+  }, [account]);
 
   if (!account) return null;
 
@@ -273,9 +309,10 @@ function AccountEmployeesModal({
           : "s"
       }`}
       maxWidth="max-w-5xl"
-      className="sibs-account-employees-modal"
-      headerClassName="sibs-account-employees-modal-header"
-      bodyClassName="max-h-[70vh] overflow-y-auto"
+      variant="navy"
+      className="rounded-[14px]"
+      headerClassName="bg-sibs-navy"
+      bodyClassName="max-h-[70vh] overflow-y-auto bg-sibs-surface p-3.5 sm:p-4"
       closeOnBackdrop={false}
       footer={
         <div className="flex w-full items-center justify-between gap-3">
@@ -289,32 +326,32 @@ function AccountEmployeesModal({
                     Math.max(0, employees.length - (summary.lobAssignedEmployees || 0))
                   } unassigned`}
           </span>
-          <button type="button" className="sibs-btn-primary !text-sm" onClick={onClose}>
+          <button type="button" className="sibs-modal-btn-secondary px-5" onClick={onClose}>
             Close Employees
           </button>
         </div>
       }
     >
       {assignmentError ? (
-        <div className="mb-3 rounded-[10px] border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-bold text-rose-700">
+        <div className="mb-3 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-bold text-rose-700">
           {assignmentError}
         </div>
       ) : null}
 
       {lobsLoading ? (
-        <div className="mb-3 flex items-center gap-2 rounded-[10px] border border-sibs-border bg-sibs-surface px-4 py-3 text-xs font-bold text-sibs-muted">
+        <div className="mb-3 flex items-center gap-2 rounded-xl border border-sibs-border bg-white px-4 py-3 text-xs font-bold text-sibs-muted shadow-2xs">
           <Loader2 className="h-3.5 w-3.5 animate-spin text-sibs-orange" />
           Loading account Lines of Business...
         </div>
       ) : !activeLobs.length ? (
-        <div className="mb-3 rounded-[10px] border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-bold text-amber-800">
+        <div className="mb-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-bold text-amber-800">
           No active LOBs are configured for this Account yet. Add an LOB from Account details before assigning employees.
         </div>
       ) : null}
 
       {/* Shared by every account, not just US Visa. This filters the visible
           employee cards without modifying account-specific LOB assignments. */}
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-sibs-border bg-sibs-surface px-3 py-2.5" role="group" aria-label="Filter account employees by assigned site">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-sibs-border bg-white px-3 py-2.5 shadow-2xs" role="group" aria-label="Filter account employees by assigned site">
         <span className="flex items-center gap-1.5 text-[11px] font-extrabold text-sibs-navy">
           <MapPin className="h-3.5 w-3.5 shrink-0 text-sibs-orange" />
           Assigned Site
@@ -343,7 +380,7 @@ function AccountEmployeesModal({
           {Array.from({ length: 6 }).map((_, index) => (
             <div
               key={`employee-card-skeleton-${index}`}
-              className="flex min-w-0 items-start gap-3 rounded-[10px] border border-sibs-border bg-white p-3"
+              className="flex min-w-0 items-start gap-3 rounded-xl border border-sibs-border bg-white p-3 shadow-2xs"
             >
               <Skeleton className="h-10 w-10 shrink-0 rounded-full" />
               <div className="min-w-0 flex-1 space-y-2">
@@ -358,7 +395,7 @@ function AccountEmployeesModal({
           ))}
         </div>
       ) : error ? (
-        <div className="rounded-[10px] border border-rose-200 bg-rose-50 p-6 text-center text-sm font-semibold text-rose-700">
+        <div className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-center text-sm font-semibold text-rose-700">
           {error}
         </div>
       ) : employeesWithinSite.length ? (
@@ -380,7 +417,7 @@ function AccountEmployeesModal({
             return (
               <article
                 key={`${employee.sibsId || employee.employeeId || employee.id || "employee"}-${index}`}
-                className="flex min-w-0 items-start gap-3 rounded-[10px] border border-sibs-border bg-white p-3"
+                className="flex min-w-0 items-start gap-3 rounded-xl border border-sibs-border bg-white p-3 shadow-2xs"
               >
                 <DepartmentProfileAvatar employee={employee} />
                 <div className="min-w-0 flex-1">
@@ -442,8 +479,8 @@ function AccountEmployeesModal({
                                 !lob.isActive && !currentLobIdSet.has(String(lob.id)),
                             })),
                           ]}
-                          buttonClassName="!h-9 2xl:!h-10 !rounded-[10px] !border-sibs-border !bg-sibs-surface !px-3 !text-xs !font-bold !text-sibs-navy hover:!border-sibs-orange/40 hover:!bg-white"
-                          menuClassName="sibs-employee-lob-dropdown !rounded-[10px] !border-sibs-border"
+                          buttonClassName="!h-9 2xl:!h-10 !rounded-xl !border-sibs-border !bg-sibs-surface !px-3 !text-xs !font-bold !text-sibs-navy hover:!border-sibs-orange/40 hover:!bg-white"
+                          menuClassName="sibs-employee-lob-dropdown !rounded-xl !border-sibs-border"
                         />
 
                         {selectedLobs.length ? (
@@ -451,7 +488,7 @@ function AccountEmployeesModal({
                             {selectedLobs.map((lob) => (
                               <span
                                 key={lob.id}
-                                className="inline-flex max-w-full items-center rounded-md border border-sibs-border bg-white px-2.5 py-1.5 text-[10px] font-bold text-sibs-secondary"
+                                className="inline-flex max-w-full items-center rounded-md border border-sibs-border bg-white px-2.5 py-1.5 text-[10px] font-bold text-sibs-secondary shadow-2xs"
                                 title={lob.lobName}
                               >
                                 <span className="truncate">{lob.lobName}</span>
@@ -477,7 +514,7 @@ function AccountEmployeesModal({
                           ).map((lob) => (
                             <span
                               key={lob.id || lob.lobName}
-                              className="rounded-md border border-sibs-border bg-white px-2.5 py-1.5 text-[10px] font-bold text-sibs-secondary"
+                              className="rounded-md border border-sibs-border bg-white px-2.5 py-1.5 text-[10px] font-bold text-sibs-secondary shadow-2xs"
                             >
                               {lob.lobName || "LOB"}
                               {lob.lobCode ? ` (${lob.lobCode})` : ""}
@@ -497,7 +534,7 @@ function AccountEmployeesModal({
           })}
         </div>
       ) : (
-        <div className="rounded-[10px] border border-dashed border-sibs-border p-8 text-center text-sm font-semibold text-sibs-muted">
+        <div className="rounded-xl border border-dashed border-sibs-border bg-white p-8 text-center text-sm font-semibold text-sibs-muted">
           {siteFilter !== "All"
             ? `No employees are assigned to ${siteFilter} for this ${filteredByLob ? "Line of Business" : "account"}.`
             : filteredByLob
@@ -645,7 +682,7 @@ function AccountCard({
         : "lg:grid-cols-3";
 
   return (
-    <article className="overflow-hidden rounded-[10px] border border-sibs-border bg-sibs-surface transition hover:border-sibs-orange/50 hover:shadow-xs">
+    <article className="overflow-hidden rounded-xl border border-sibs-border bg-white shadow-2xs transition hover:border-sibs-orange/50 hover:shadow-xs">
       <div
         title={bodAccount ? undefined : `View all ${account.name} employees`}
         onClick={() => {
@@ -654,7 +691,7 @@ function AccountCard({
         className={`flex flex-col gap-3 border-b border-sibs-border bg-white px-4 py-3 sm:flex-row sm:items-start sm:justify-between ${
           bodAccount
             ? ""
-            : "cursor-pointer transition hover:bg-sibs-orange/[0.02]"
+            : "cursor-pointer transition hover:bg-sibs-surface/60"
         }`}
       >
         <div className="min-w-0">
@@ -671,35 +708,37 @@ function AccountCard({
           {!bodAccount ? (
             <button
               type="button"
-              className="inline-flex items-center gap-1.5 rounded-lg border border-sibs-border bg-sibs-surface px-3 py-2 text-[11px] font-extrabold text-sibs-navy transition hover:border-sibs-orange/40 hover:bg-white hover:text-sibs-orange"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-sibs-border bg-sibs-surface px-3 py-1.5 text-xs font-extrabold text-sibs-navy shadow-2xs transition hover:border-sibs-orange/40 hover:bg-white hover:text-sibs-orange"
               onClick={(event) => {
                 event.stopPropagation();
                 onViewEmployees?.(account);
               }}
             >
-              <UsersRound className="h-3.5 w-3.5" />
-              {employeeCount} employee{employeeCount === 1 ? "" : "s"}
+              <UsersRound className="h-3.5 w-3.5 text-sibs-muted" />
+              <span>{employeeCount} employee{employeeCount === 1 ? "" : "s"}</span>
             </button>
           ) : null}
 
           <button
             type="button"
-            className="inline-flex items-center gap-1.5 rounded-lg border border-sibs-border bg-white px-3 py-2 text-[11px] font-extrabold text-sibs-navy transition hover:border-sibs-orange/40 hover:text-sibs-orange"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-sibs-border bg-sibs-surface px-3 py-1.5 text-xs font-extrabold text-sibs-navy shadow-2xs transition hover:border-sibs-orange/40 hover:bg-white hover:text-sibs-orange"
             onClick={(event) => {
               event.stopPropagation();
               onManageLobs?.(account);
             }}
           >
-            <BriefcaseBusiness className="h-3.5 w-3.5" />
-            {typeof lobCount === "number"
-              ? `${lobCount} LOB${lobCount === 1 ? "" : "s"}`
-              : canManageLobs
-                ? "Manage LOBs"
-                : "View LOBs"}
+            <BriefcaseBusiness className="h-3.5 w-3.5 text-sibs-orange" />
+            <span>
+              {typeof lobCount === "number"
+                ? `${lobCount} LOB${lobCount === 1 ? "" : "s"}`
+                : canManageLobs
+                  ? "Manage LOBs"
+                  : "View LOBs"}
+            </span>
           </button>
 
           <span
-            className={`inline-flex shrink-0 items-center gap-1 rounded-full border px-2.5 py-1.5 text-[10px] font-extrabold uppercase ${
+            className={`inline-flex shrink-0 items-center gap-1 rounded-full border px-2.5 py-1 text-[10px] font-extrabold uppercase ${
               active
                 ? "border-emerald-200 bg-emerald-50 text-emerald-700"
                 : "border-slate-200 bg-slate-100 text-slate-600"
@@ -720,14 +759,14 @@ function AccountCard({
         onClick={() => {
           if (!bodAccount) onViewEmployees?.(account);
         }}
-        className={`border-b border-sibs-border bg-white px-4 py-3 ${
+        className={`border-b border-sibs-border bg-sibs-surface/50 px-4 py-2.5 ${
           bodAccount
             ? ""
             : "cursor-pointer transition hover:bg-sibs-orange/[0.02]"
         }`}
       >
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-faint">
+          <span className="text-[10.5px] font-extrabold uppercase tracking-wide text-sibs-muted">
             Line of Business
           </span>
           {lobNames.length ? (
@@ -743,7 +782,7 @@ function AccountCard({
                       onViewLobEmployees?.(account, lobName);
                     }
                   }}
-                  className="cursor-pointer rounded-md border border-sibs-border bg-sibs-surface px-2.5 py-1.5 text-[10px] font-bold text-sibs-secondary transition hover:border-sibs-orange/40 hover:bg-sibs-orange/5 hover:text-sibs-orange focus:outline-none focus-visible:border-sibs-orange focus-visible:ring-2 focus-visible:ring-sibs-orange/20"
+                  className="cursor-pointer rounded-md border border-sibs-border bg-white px-2.5 py-1 text-[10.5px] font-bold text-sibs-secondary shadow-2xs transition hover:border-sibs-orange/40 hover:bg-sibs-orange/5 hover:text-sibs-orange focus:outline-none focus-visible:border-sibs-orange focus-visible:ring-2 focus-visible:ring-sibs-orange/20"
                 >
                   {lobName}
                 </button>
@@ -756,7 +795,7 @@ function AccountCard({
                     event.stopPropagation();
                     onManageLobs?.(account);
                   }}
-                  className="cursor-pointer rounded-md border border-sibs-border bg-sibs-surface px-2.5 py-1.5 text-[10px] font-bold text-sibs-muted transition hover:border-sibs-orange/40 hover:bg-white hover:text-sibs-orange focus:outline-none focus-visible:border-sibs-orange focus-visible:ring-2 focus-visible:ring-sibs-orange/20"
+                  className="cursor-pointer rounded-md border border-sibs-border bg-white px-2.5 py-1 text-[10.5px] font-bold text-sibs-muted shadow-2xs transition hover:border-sibs-orange/40 hover:text-sibs-orange focus:outline-none focus-visible:border-sibs-orange focus-visible:ring-2 focus-visible:ring-sibs-orange/20"
                 >
                   +{lobNames.length - 3} more
                 </button>
@@ -877,7 +916,10 @@ export default function DepartmentDetailsModal({
   const [assignmentError, setAssignmentError] = useState("");
 
   const active = department?.status === "active";
-  const accounts = Array.isArray(department?.accounts) ? department.accounts : [];
+  const accounts = useMemo(
+    () => (Array.isArray(department?.accounts) ? department.accounts : []),
+    [department?.accounts],
+  );
   const bodAccount = accounts.find(
     (account) => isBodAccount(account) || Number(account?.id) === 29,
   );
@@ -992,7 +1034,7 @@ export default function DepartmentDetailsModal({
     return () => {
       cancelled = true;
     };
-  }, [bodAccountKey]);
+  }, [bodAccountKey, accounts]);
 
   const handleLobsChanged = useCallback(
     (accountId, lobs) => {
@@ -1267,106 +1309,146 @@ export default function DepartmentDetailsModal({
       icon={Layers3}
       badge={`${department.code} · HRIS Department`}
       maxWidth="max-w-6xl"
-      className="sibs-department-details-modal"
-      headerClassName="sibs-department-details-modal-header"
-      bodyClassName="max-h-[72vh] overflow-y-auto"
+      variant="navy"
+      className="rounded-[14px]"
+      headerClassName="bg-sibs-navy"
+      bodyClassName="max-h-[75vh] overflow-y-auto bg-sibs-surface p-3.5 sm:p-4 2xl:p-5"
       closeOnBackdrop={false}
       footer={
         <div className="flex w-full items-center justify-between gap-3">
           <span className="inline-flex items-center gap-2 text-xs font-extrabold text-sibs-muted">
-            <WalletCards className="h-4 w-4 text-emerald-600" />
+            <Building2 className="h-4 w-4 text-sibs-orange" />
             Account and department master data from SiBS HRIS
           </span>
 
-          <button type="button" className="sibs-btn-primary !text-sm" onClick={onClose}>
+          <button
+            type="button"
+            className="sibs-modal-btn-secondary px-5"
+            onClick={onClose}
+          >
             Close Directory
           </button>
         </div>
       }
     >
-      <div className="space-y-5">
-        <div className="flex flex-col gap-3 rounded-[10px] border border-sibs-border bg-sibs-surface p-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex min-w-0 items-center gap-3">
+      <div className="space-y-4">
+        {/* Top Hero: 2-column layout */}
+        <div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,1fr)_340px]">
+          {/* Department Lead Card */}
+          <div className="sibs-card flex min-w-0 items-center gap-4 rounded-2xl border border-sibs-border bg-white px-4 py-5 sm:px-5">
             <DepartmentProfileAvatar
               employee={department.lead || {}}
               size="lg"
             />
 
             <div className="min-w-0">
-              <p className="sibs-field-label !text-xs">Department Lead</p>
-              <p className="truncate text-base font-extrabold text-sibs-navy">
-                {department.lead?.name || "Supervisor unavailable"}
+              <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-muted">
+                Department Lead
               </p>
+              <h2 className="truncate text-base font-extrabold text-sibs-navy sm:text-lg">
+                {department.lead?.name || "Supervisor unavailable"}
+              </h2>
               <p className="text-xs font-semibold text-sibs-muted">
                 {department.lead?.title || "No supervisor assignment found"}
               </p>
 
               {department.lead?.email ? (
-                <p className="mt-1 flex items-center gap-1 truncate text-[11px] font-bold text-sibs-orange">
-                  <Mail className="h-3 w-3" />
-                  {department.lead.email}
+                <p className="mt-1.5 flex items-center gap-1.5 truncate text-xs font-bold text-sibs-orange">
+                  <Mail className="h-3.5 w-3.5 shrink-0" />
+                  <span className="truncate">{department.lead.email}</span>
                 </p>
               ) : null}
             </div>
           </div>
 
-          <span
-            className={`inline-flex self-start items-center gap-1.5 rounded-full px-3.5 py-2 text-sm font-extrabold sm:self-auto ${
-              active
-                ? "bg-emerald-100 text-emerald-700"
-                : "bg-slate-200 text-slate-700"
-            }`}
-          >
-            {active ? (
-              <CheckCircle2 className="h-4 w-4" />
-            ) : (
-              <XCircle className="h-4 w-4" />
-            )}
-            {active ? "Active & Staffed" : "No Active Accounts"}
-          </span>
+          {/* Department Status & Staff Coverage milestone card */}
+          <div className="relative flex flex-col justify-between overflow-hidden rounded-2xl border border-orange-200 bg-orange-50/70 p-4 sm:p-5">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-muted">
+                Status & Coverage
+              </span>
+              <span
+                className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-extrabold ${
+                  active
+                    ? "border border-emerald-200 bg-emerald-50 text-emerald-700"
+                    : "border border-slate-200 bg-slate-100 text-slate-600"
+                }`}
+              >
+                {active ? (
+                  <CheckCircle2 className="h-3 w-3" />
+                ) : (
+                  <XCircle className="h-3 w-3" />
+                )}
+                {active ? "Active & Staffed" : "No Active Accounts"}
+              </span>
+            </div>
+
+            <div className="mt-3 flex items-baseline justify-between gap-2">
+              <div>
+                <p className="text-2xl font-black text-sibs-navy font-tabular">
+                  {department.staffCoverage ?? 0}%
+                </p>
+                <p className="text-[11px] font-semibold text-sibs-muted">Staff Coverage</p>
+              </div>
+              <div className="text-right">
+                <p className="text-sm font-extrabold text-sibs-secondary">
+                  {department.activeStaff ?? 0} / {department.totalStaff ?? 0}
+                </p>
+                <p className="text-[11px] font-semibold text-sibs-muted">Active / Total Staff</p>
+              </div>
+            </div>
+          </div>
         </div>
 
+        {/* 3 Metric Tiles */}
         <div className="grid gap-3 sm:grid-cols-3">
-          {[
-            ["Active Staff", department.activeStaff, "text-sibs-navy"],
-            ["Total Staff", department.totalStaff, "text-blue-700"],
-            [
-              "Staff Coverage",
-              `${department.staffCoverage}%`,
-              "text-emerald-700",
-            ],
-          ].map(([label, value, tone]) => (
-            <div
-              key={label}
-              className="rounded-[10px] border border-sibs-border bg-white p-4 text-center"
-            >
-              <p className="text-[11px] font-extrabold uppercase text-sibs-muted">
-                {label}
-              </p>
-              <p className={`mt-2 text-2xl font-extrabold ${tone}`}>{value}</p>
+          <div className="rounded-xl border border-sibs-border bg-white p-4 shadow-2xs">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-muted">Active Staff</span>
+              <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-sibs-border bg-sibs-surface text-sibs-navy">
+                <UsersRound className="h-4 w-4" />
+              </span>
             </div>
-          ))}
+            <p className="mt-2 text-2xl font-black text-sibs-navy font-tabular">{department.activeStaff ?? 0}</p>
+            <p className="mt-1 text-[11px] font-medium text-sibs-muted">Currently active personnel</p>
+          </div>
+
+          <div className="rounded-xl border border-sibs-border bg-white p-4 shadow-2xs">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-muted">Total Staff</span>
+              <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-blue-200 bg-blue-50 text-blue-700">
+                <Building2 className="h-4 w-4" />
+              </span>
+            </div>
+            <p className="mt-2 text-2xl font-black text-blue-700 font-tabular">{department.totalStaff ?? 0}</p>
+            <p className="mt-1 text-[11px] font-medium text-sibs-muted">Assigned workforce roster</p>
+          </div>
+
+          <div className="rounded-xl border border-sibs-border bg-white p-4 shadow-2xs">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-muted">Staff Coverage</span>
+              <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-700">
+                <CheckCircle2 className="h-4 w-4" />
+              </span>
+            </div>
+            <p className="mt-2 text-2xl font-black text-emerald-700 font-tabular">{department.staffCoverage ?? 0}%</p>
+            <p className="mt-1 text-[11px] font-medium text-sibs-muted">Overall staffing capacity</p>
+          </div>
         </div>
 
-        <section>
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <h3 className="flex items-center gap-2 text-base font-extrabold text-sibs-navy">
-                <BriefcaseBusiness className="h-4 w-4 text-sibs-orange" />
-                Accounts & Lines of Business
-              </h3>
-              <p className="mt-1 text-xs font-semibold text-sibs-muted">
-                Each Account can have multiple manually managed LOBs. Employees in the same Account can be assigned to different LOBs.
-              </p>
-            </div>
-
+        {/* Section 1: Accounts & Lines of Business wrapped in SectionCard */}
+        <SectionCard
+          icon={BriefcaseBusiness}
+          title="Accounts & Lines of Business"
+          subtitle="Each Account can have multiple manually managed LOBs. Employees in the same Account can be assigned to different LOBs."
+          side={
             <span className="rounded-lg border border-sibs-border bg-sibs-surface px-3 py-1.5 text-[11px] font-extrabold text-sibs-secondary">
               {accounts.length} account{accounts.length === 1 ? "" : "s"}
             </span>
-          </div>
-
+          }
+        >
           {accounts.length ? (
-            <div className="mt-3 space-y-3">
+            <div className="space-y-3">
               {accounts.map((account) => {
                 const cachedLobs = accountLobCache[String(account.id)];
                 const activeCachedLobs = Array.isArray(cachedLobs)
@@ -1412,24 +1494,24 @@ export default function DepartmentDetailsModal({
               })}
             </div>
           ) : (
-            <div className="mt-3 rounded-[10px] border border-dashed border-sibs-border p-7 text-center text-sm font-semibold text-sibs-muted">
+            <div className="rounded-xl border border-dashed border-sibs-border bg-sibs-surface p-7 text-center text-sm font-semibold text-sibs-muted">
               No accounts are linked to this department.
             </div>
           )}
-        </section>
+        </SectionCard>
 
-        <section>
-          <h3 className="flex items-center gap-2 text-base font-extrabold text-sibs-navy">
-            <MapPin className="h-4 w-4 text-sibs-orange" />
-            Site Allocation
-          </h3>
-
-          <div className="mt-3 flex flex-wrap gap-2 rounded-[10px] border border-sibs-border bg-sibs-surface p-4">
+        {/* Section 2: Site Allocation wrapped in SectionCard */}
+        <SectionCard
+          icon={MapPin}
+          title="Site Allocation"
+          subtitle="Physical operational locations assigned to this department"
+        >
+          <div className="flex flex-wrap gap-2">
             {department.locations.length ? (
               department.locations.map((location) => (
                 <span
                   key={location}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-sibs-border bg-white px-3.5 py-2.5 text-xs font-extrabold text-sibs-secondary"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-sibs-border bg-sibs-surface px-3.5 py-2 text-xs font-extrabold text-sibs-secondary shadow-2xs"
                 >
                   <MapPin className="h-3.5 w-3.5 text-sibs-orange" />
                   {location}
@@ -1441,7 +1523,7 @@ export default function DepartmentDetailsModal({
               </span>
             )}
           </div>
-        </section>
+        </SectionCard>
       </div>
 
       <LeadershipPeopleModal

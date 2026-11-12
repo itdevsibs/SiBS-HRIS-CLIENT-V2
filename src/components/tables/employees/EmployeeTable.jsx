@@ -1350,7 +1350,7 @@ export default function EmployeeTable({
           <ResponsiveTableShell
             mobileContent={
               <div ref={mobileScrollRef} className="p-3.5 sm:p-4">
-                {loading && employees.length === 0 ? (
+                {loading ? (
                   <DataCard.Skeleton count={5} lines={3} />
                 ) : employees.length === 0 ? (
                   <DataCard.Empty
@@ -1406,7 +1406,7 @@ export default function EmployeeTable({
                   </thead>
 
                   <tbody className="divide-y divide-sibs-border" aria-busy={loading}>
-                    {loading && employees.length === 0 ? (
+                    {loading ? (
                       <TableSkeletonRows
                         count={PAGE_LIMIT}
                         columns={columns.length}

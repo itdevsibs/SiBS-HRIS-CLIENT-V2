@@ -220,7 +220,28 @@ function OffersDecisionSkeleton() {
         </div>
 
         <div className="p-4 sm:p-5">
-          <div className="overflow-hidden rounded-[10px] border border-sibs-border">
+          {/* Mobile/Tablet Card Skeleton (< lg) */}
+          <div className="space-y-3 lg:hidden">
+            {Array.from({ length: 4 }).map((_, index) => (
+              <div
+                key={`offer-card-skeleton-${index}`}
+                className="rounded-[10px] border border-sibs-border bg-white p-4 space-y-3"
+              >
+                <div className="flex items-center justify-between">
+                  <OfferSkeletonBlock className="h-4 w-1/3" />
+                  <OfferSkeletonBlock className="h-4 w-1/5" />
+                </div>
+                <OfferSkeletonBlock className="h-3 w-1/2" />
+                <div className="flex items-center justify-between pt-2 border-t border-sibs-border">
+                  <OfferSkeletonBlock className="h-3 w-1/4" />
+                  <OfferSkeletonBlock className="h-3 w-1/4" />
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop Table Skeleton (>= lg) */}
+          <div className="hidden lg:block overflow-hidden rounded-[10px] border border-sibs-border">
             <div className="grid grid-cols-6 gap-4 border-b border-sibs-border bg-sibs-surface px-4 py-4">
               {Array.from({ length: 6 }).map((_, index) => (
                 <OfferSkeletonBlock

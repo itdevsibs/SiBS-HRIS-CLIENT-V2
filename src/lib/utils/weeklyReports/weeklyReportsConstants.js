@@ -20,7 +20,6 @@ export const WEEKLY_REPORT_STATUS_OPTIONS = [
 
 export const WEEKLY_REPORT_REFRESH_EVENTS = [
   "storage",
-  "focus",
   "ta-public-submission-created",
   "ta-pipeline-sync-updated",
   "ta-offers-updated",

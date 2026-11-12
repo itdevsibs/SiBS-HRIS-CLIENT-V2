@@ -1,6 +1,8 @@
 import { useLocation } from "react-router-dom";
 
-import { isStandalonePublicRoute } from "./config/publicRoutes";
+import { isStandalonePublicRoute, normalizePath } from "./config/publicRoutes";
+import { UserProvider } from "./services/context/UserContext";
+import { readCachedAuthSession } from "./services/auth/auth-session-cache";
 import AppShell from "./AppShell";
 import Router from "./router";
 import AppErrorBoundary from "./components/ui/AppErrorBoundary";
@@ -11,14 +13,26 @@ export default function App() {
   const hostname =
     typeof window !== "undefined" ? window.location.hostname : "";
 
+  const isLoginRoute = normalizePath(location.pathname) === "/login";
+  const hasActiveSession = Boolean(readCachedAuthSession()?.user);
+
   /*
-   * Candidate standalone experiences bypass AppShell so authenticated providers,
-   * user-session checks, admin login overlays, and sidebar logic are never mounted for candidates.
+   * Candidate standalone experiences and unauthenticated login bypass AppShell so
+   * authenticated providers (like OffersProvider), admin overlays, and sidebar logic
+   * are never mounted when unauthenticated.
+   * When an authenticated session is active, mount AppShell so normal dashboard
+   * and session redirection work cleanly.
    */
-  if (isStandalonePublicRoute(location.pathname, hostname)) {
+  const shouldBypassShell =
+    (isLoginRoute && !hasActiveSession) ||
+    (!isLoginRoute && isStandalonePublicRoute(location.pathname, hostname));
+
+  if (shouldBypassShell) {
     return (
       <AppErrorBoundary resetKey={location.pathname}>
-        <Router />
+        <UserProvider>
+          <Router />
+        </UserProvider>
       </AppErrorBoundary>
     );
   }

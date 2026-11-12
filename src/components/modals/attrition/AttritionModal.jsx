@@ -7,6 +7,45 @@ import { useUser } from "../../../services/context/UserContext";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
+const FOCUSABLE_SELECTOR =
+  'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+function getFocusableElements(container) {
+  if (!container) return [];
+  return Array.from(container.querySelectorAll(FOCUSABLE_SELECTOR)).filter(
+    (el) =>
+      !el.closest("[inert]") &&
+      (el.offsetWidth || el.offsetHeight || el.getClientRects().length)
+  );
+}
+
+function trapFocus(event, container) {
+  if (event.key !== "Tab" || !container) return;
+  const items = getFocusableElements(container);
+  if (!items.length) {
+    event.preventDefault();
+    return;
+  }
+  const first = items[0];
+  const last = items[items.length - 1];
+  if (
+    event.shiftKey &&
+    (document.activeElement === first ||
+      document.activeElement === container ||
+      !container.contains(document.activeElement))
+  ) {
+    event.preventDefault();
+    last.focus();
+  } else if (
+    !event.shiftKey &&
+    (document.activeElement === last ||
+      !container.contains(document.activeElement))
+  ) {
+    event.preventDefault();
+    first.focus();
+  }
+}
+
 const REASONS = [
   "Personal Reasons",
   "Career Growth",
@@ -280,6 +319,8 @@ export default function AttritionModal({
   const dropdownRef = useRef(null);
   const reasonDropdownRef = useRef(null);
   const lastWorkingDateRef = useRef(null);
+  const dialogRef = useRef(null);
+  const previousFocusRef = useRef(null);
 
   const loggedInSibsId = String(
     user?.username || user?.sibs_id || user?.sibsId || "",
@@ -368,9 +409,22 @@ export default function AttritionModal({
   useEffect(() => {
     if (!open) return;
 
+    previousFocusRef.current = document.activeElement;
+    const frame = dialogRef.current;
+    const items = getFocusableElements(frame);
+    const target = items[0] || frame;
+    target?.focus?.({ preventScroll: true });
+
     const handleEscape = (e) => {
       if (e.key === "Escape" && !submitting) {
+        e.preventDefault();
+        e.stopPropagation();
         onClose?.();
+        return;
+      }
+
+      if (e.key === "Tab") {
+        trapFocus(e, dialogRef.current);
       }
     };
 
@@ -408,6 +462,10 @@ export default function AttritionModal({
 
       document.body.style.overflow = previousBodyOverflow;
       document.documentElement.style.overflow = previousHtmlOverflow;
+
+      if (previousFocusRef.current?.isConnected) {
+        previousFocusRef.current.focus();
+      }
     };
   }, [open, onClose, selectedEmployee, submitting]);
 
@@ -712,6 +770,11 @@ export default function AttritionModal({
       }}
     >
       <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="attrition-modal-title"
+        tabIndex={-1}
         onClick={(e) => e.stopPropagation()}
         className={`sibs-modal-pop-in flex max-h-[90dvh] w-full flex-col overflow-hidden rounded-2xl bg-white shadow-2xl font-jakarta ${
           isView ? "max-w-2xl" : "max-w-3xl 2xl:max-w-4xl"
@@ -724,7 +787,10 @@ export default function AttritionModal({
             </span>
 
             <div className="min-w-0">
-              <h2 className="sibs-modal-title truncate text-white">
+              <h2
+                id="attrition-modal-title"
+                className="sibs-modal-title truncate text-white"
+              >
                 {title}
               </h2>
 

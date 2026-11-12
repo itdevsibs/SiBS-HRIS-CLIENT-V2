@@ -536,134 +536,138 @@ function NHOQDSDashboard({ subTab = "queue", onSubTabChange }) {
       /* Calendar Grid */
     }
           <div className="bg-white rounded-2xl border border-sibs-border shadow-xs overflow-hidden">
-            {
-      /* Weekday Header */
-    }
-            <div className="grid grid-cols-7 border-b border-sibs-border bg-sibs-surface text-center text-[11px] font-bold uppercase tracking-wider text-slate-500 py-2.5">
-              <span>Sun</span>
-              <span>Mon</span>
-              <span>Tue</span>
-              <span>Wed</span>
-              <span>Thu</span>
-              <span>Fri</span>
-              <span>Sat</span>
-            </div>
-
-            {
-      /* Month Day Cells */
-    }
-            {(() => {
-      const firstDayIndex = new Date(calendarYear, calendarMonth, 1).getDay();
-      const daysCount = new Date(calendarYear, calendarMonth + 1, 0).getDate();
-      const prevTotal = new Date(calendarYear, calendarMonth, 0).getDate();
-      const cells = [];
-      for (let i = firstDayIndex - 1; i >= 0; i--) {
-        const d = prevTotal - i;
-        const m = calendarMonth === 0 ? 12 : calendarMonth;
-        const y = calendarMonth === 0 ? calendarYear - 1 : calendarYear;
-        cells.push({
-          day: d,
-          isCurrent: false,
-          dateStr: `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`
-        });
-      }
-      for (let d = 1; d <= daysCount; d++) {
-        cells.push({
-          day: d,
-          isCurrent: true,
-          dateStr: `${calendarYear}-${String(calendarMonth + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`
-        });
-      }
-      const extra = (7 - cells.length % 7) % 7;
-      for (let d = 1; d <= extra; d++) {
-        const m = calendarMonth === 11 ? 1 : calendarMonth + 2;
-        const y = calendarMonth === 11 ? calendarYear + 1 : calendarYear;
-        cells.push({
-          day: d,
-          isCurrent: false,
-          dateStr: `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`
-        });
-      }
-      return <div className="grid grid-cols-7 divide-x divide-y divide-sibs-border">
-                  {cells.map((cell, idx) => {
-        const isToday = cell.dateStr === simulatedCurrentDate;
-        const sessions = postITApplicants.filter((a) => {
-          const sDate = a.qdsAssignedScheduleDate || a.scheduledNhoDate;
-          return sDate === cell.dateStr;
-        });
-        return <div
-          key={idx}
-          className={`min-h-[140px] p-2 flex flex-col justify-between transition-colors group relative ${cell.isCurrent ? "bg-white hover:bg-slate-50/60" : "bg-slate-50/40 text-slate-400"}`}
-        >
-                        <div className="flex items-center justify-between mb-1">
-                          <span
-          className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${isToday ? "bg-sibs-orange text-white shadow-2xs" : cell.isCurrent ? "text-sibs-navy" : "text-slate-400"}`}
-        >
-                            {cell.day}
-                          </span>
-
-                          {cell.isCurrent && <button
-          type="button"
-          onClick={() => handleOpenAssignScheduleModal(void 0, cell.dateStr)}
-          className="opacity-0 group-hover:opacity-100 p-1 rounded-md hover:bg-slate-100 text-slate-400 hover:text-sibs-navy transition-all cursor-pointer"
-          title={`Schedule training session on ${cell.dateStr}`}
-        >
-                              <Plus className="w-3.5 h-3.5" />
-                            </button>}
-                        </div>
-
-                        {
-          /* Sessions List */
+            <div className="overflow-x-auto thin-scroll">
+              <div className="min-w-[768px]">
+                {
+          /* Weekday Header */
         }
-                        <div className="space-y-1.5 flex-1 overflow-y-auto max-h-[120px]">
-                          {sessions.map((app) => {
-          const matCount = app.qdsMaterials?.length || 0;
-          const isFinal = app.qdsStatus === "Completed";
-          const hasTrainerRequest = app.trainerMaterialRequests?.some((r) => r.status === "Pending QDS Fulfillment");
-          return <div
-            key={app.id}
-            onClick={() => {
-              handleOpenApplicant(app);
-              setActiveViewMode("materials");
-            }}
-            className={`p-2 rounded-xl border text-left cursor-pointer transition-all hover:scale-[1.02] shadow-2xs space-y-1 ${isFinal ? "bg-green-50/70 border-green-200 hover:border-green-300" : "bg-orange-50/60 border-orange-200 hover:border-orange-300"}`}
-            title="Click to view session details and manage training materials"
-          >
-                                <div className="flex items-center justify-between gap-1">
-                                  <span className="font-bold text-sibs-navy text-[11px] truncate block max-w-[120px]">
-                                    {app.fullName.split(" ")[0]} {app.fullName.split(" ")[1] || ""}
-                                  </span>
-                                  <span className="font-mono text-[9px] px-1 py-0.2 rounded bg-white text-purple-900 border border-slate-200 font-bold shrink-0">
-                                    {app.officialKronosId || "IT Done"}
-                                  </span>
-                                </div>
+                <div className="grid grid-cols-7 border-b border-sibs-border bg-sibs-surface text-center text-[11px] font-bold uppercase tracking-wider text-slate-500 py-2.5">
+                  <span>Sun</span>
+                  <span>Mon</span>
+                  <span>Tue</span>
+                  <span>Wed</span>
+                  <span>Thu</span>
+                  <span>Fri</span>
+                  <span>Sat</span>
+                </div>
 
-                                <div className="text-[9.5px] text-slate-500 truncate">
-                                  {app.account || app.department}
-                                </div>
+                {
+          /* Month Day Cells */
+        }
+                {(() => {
+          const firstDayIndex = new Date(calendarYear, calendarMonth, 1).getDay();
+          const daysCount = new Date(calendarYear, calendarMonth + 1, 0).getDate();
+          const prevTotal = new Date(calendarYear, calendarMonth, 0).getDate();
+          const cells = [];
+          for (let i = firstDayIndex - 1; i >= 0; i--) {
+            const d = prevTotal - i;
+            const m = calendarMonth === 0 ? 12 : calendarMonth;
+            const y = calendarMonth === 0 ? calendarYear - 1 : calendarYear;
+            cells.push({
+              day: d,
+              isCurrent: false,
+              dateStr: `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`
+            });
+          }
+          for (let d = 1; d <= daysCount; d++) {
+            cells.push({
+              day: d,
+              isCurrent: true,
+              dateStr: `${calendarYear}-${String(calendarMonth + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`
+            });
+          }
+          const extra = (7 - cells.length % 7) % 7;
+          for (let d = 1; d <= extra; d++) {
+            const m = calendarMonth === 11 ? 1 : calendarMonth + 2;
+            const y = calendarMonth === 11 ? calendarYear + 1 : calendarYear;
+            cells.push({
+              day: d,
+              isCurrent: false,
+              dateStr: `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`
+            });
+          }
+          return <div className="grid grid-cols-7 divide-x divide-y divide-sibs-border">
+                      {cells.map((cell, idx) => {
+            const isToday = cell.dateStr === simulatedCurrentDate;
+            const sessions = postITApplicants.filter((a) => {
+              const sDate = a.qdsAssignedScheduleDate || a.scheduledNhoDate;
+              return sDate === cell.dateStr;
+            });
+            return <div
+              key={idx}
+              className={`min-h-[140px] p-2 flex flex-col justify-between transition-colors group relative ${cell.isCurrent ? "bg-white hover:bg-slate-50/60" : "bg-slate-50/40 text-slate-400"}`}
+            >
+                            <div className="flex items-center justify-between mb-1">
+                              <span
+              className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${isToday ? "bg-sibs-orange text-white shadow-2xs" : cell.isCurrent ? "text-sibs-navy" : "text-slate-400"}`}
+            >
+                                {cell.day}
+                              </span>
 
-                                <div className="flex items-center gap-1 text-[9.5px] text-sibs-navy font-medium">
-                                  <GraduationCap className="w-3 h-3 text-sibs-orange shrink-0" />
-                                  <span className="truncate">{app.assignedTrainerName ? app.assignedTrainerName.split(" ")[0] : "Trainer"}</span>
-                                </div>
+                              {cell.isCurrent && <button
+              type="button"
+              onClick={() => handleOpenAssignScheduleModal(void 0, cell.dateStr)}
+              className="opacity-0 group-hover:opacity-100 p-1 rounded-md hover:bg-slate-100 text-slate-400 hover:text-sibs-navy transition-all cursor-pointer"
+              title={`Schedule training session on ${cell.dateStr}`}
+            >
+                                  <Plus className="w-3.5 h-3.5" />
+                                </button>}
+                            </div>
 
-                                <div className="text-[9px] text-slate-400 flex items-center justify-between pt-0.5 border-t border-slate-200/60">
-                                  <span className="truncate">{app.qdsShiftHours ? app.qdsShiftHours.split("\u2013")[0].trim() : "08:00 AM"} • {app.qdsTrainingLocation ? app.qdsTrainingLocation.split(" ")[0] : "Room 4A"}</span>
-                                  <span className={`px-1 py-0.2 rounded font-bold text-[9px] ${isFinal ? "bg-green-200 text-green-900" : "bg-amber-200 text-amber-900"}`}>
-                                    {matCount} {matCount === 1 ? "Mat" : "Mats"}
-                                  </span>
-                                </div>
+                            {
+              /* Sessions List */
+            }
+                            <div className="space-y-1.5 flex-1 overflow-y-auto max-h-[120px]">
+                              {sessions.map((app) => {
+              const matCount = app.qdsMaterials?.length || 0;
+              const isFinal = app.qdsStatus === "Completed";
+              const hasTrainerRequest = app.trainerMaterialRequests?.some((r) => r.status === "Pending QDS Fulfillment");
+              return <div
+                key={app.id}
+                onClick={() => {
+                  handleOpenApplicant(app);
+                  setActiveViewMode("materials");
+                }}
+                className={`p-2 rounded-xl border text-left cursor-pointer transition-all hover:scale-[1.02] shadow-2xs space-y-1 ${isFinal ? "bg-green-50/70 border-green-200 hover:border-green-300" : "bg-orange-50/60 border-orange-200 hover:border-orange-300"}`}
+                title="Click to view session details and manage training materials"
+              >
+                                    <div className="flex items-center justify-between gap-1">
+                                      <span className="font-bold text-sibs-navy text-[11px] truncate block max-w-[120px]">
+                                        {app.fullName.split(" ")[0]} {app.fullName.split(" ")[1] || ""}
+                                      </span>
+                                      <span className="font-mono text-[9px] px-1 py-0.2 rounded bg-white text-purple-900 border border-slate-200 font-bold shrink-0">
+                                        {app.officialKronosId || "IT Done"}
+                                      </span>
+                                    </div>
 
-                                {hasTrainerRequest && <div className="text-[8.5px] font-bold text-orange-800 bg-orange-100 px-1 py-0.5 rounded flex items-center gap-1">
-                                    <span>⚠️ Material Requested</span>
-                                  </div>}
-                              </div>;
-        })}
-                        </div>
-                      </div>;
-      })}
-                </div>;
-    })()}
+                                    <div className="text-[9.5px] text-slate-500 truncate">
+                                      {app.account || app.department}
+                                    </div>
+
+                                    <div className="flex items-center gap-1 text-[9.5px] text-sibs-navy font-medium">
+                                      <GraduationCap className="w-3 h-3 text-sibs-orange shrink-0" />
+                                      <span className="truncate">{app.assignedTrainerName ? app.assignedTrainerName.split(" ")[0] : "Trainer"}</span>
+                                    </div>
+
+                                    <div className="text-[9px] text-slate-400 flex items-center justify-between pt-0.5 border-t border-slate-200/60">
+                                      <span className="truncate">{app.qdsShiftHours ? app.qdsShiftHours.split("\u2013")[0].trim() : "08:00 AM"} • {app.qdsTrainingLocation ? app.qdsTrainingLocation.split(" ")[0] : "Room 4A"}</span>
+                                      <span className={`px-1 py-0.2 rounded font-bold text-[9px] ${isFinal ? "bg-green-200 text-green-900" : "bg-amber-200 text-amber-900"}`}>
+                                        {matCount} {matCount === 1 ? "Mat" : "Mats"}
+                                      </span>
+                                    </div>
+
+                                    {hasTrainerRequest && <div className="text-[8.5px] font-bold text-orange-800 bg-orange-100 px-1 py-0.5 rounded flex items-center gap-1">
+                                        <span>⚠️ Material Requested</span>
+                                      </div>}
+                                  </div>;
+            })}
+                            </div>
+                          </div>;
+          })}
+                    </div>;
+        })()}
+              </div>
+            </div>
           </div>
         </div>
   ) : activeViewMode === "queue" ? (

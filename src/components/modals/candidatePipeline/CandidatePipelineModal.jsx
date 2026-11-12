@@ -4335,7 +4335,7 @@ function AssessmentDeadlineDatePicker({
       </button>
 
       <div
-        className={`sibs-animated-dropdown absolute left-0 top-[calc(100%+8px)] z-[99999] w-[340px] ${
+        className={`sibs-animated-dropdown absolute left-0 top-[calc(100%+8px)] z-[99999] w-[340px] max-w-[calc(100vw-2rem)] ${
           open && !disabled ? "open" : "closed"
         }`}
       >

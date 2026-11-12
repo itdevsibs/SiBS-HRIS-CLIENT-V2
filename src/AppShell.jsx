@@ -25,12 +25,18 @@ function LazyAdminLoginModal() {
 }
 
 function LazyChatSurface({ enabled, isOpen, onOpenChange }) {
-  const [hasMounted, setHasMounted] = useState(false);
+  const [hasMounted, setHasMounted] = useState(Boolean(isOpen));
   useEffect(() => {
-    if (isOpen) setHasMounted(true);
+    if (isOpen) {
+      const timer = setTimeout(() => {
+        setHasMounted(true);
+      }, 0);
+      return () => clearTimeout(timer);
+    }
+    return undefined;
   }, [isOpen]);
 
-  if (!enabled || !hasMounted) return null;
+  if (!enabled || (!hasMounted && !isOpen)) return null;
 
   return (
     <Suspense fallback={null}>
@@ -45,12 +51,18 @@ function LazyChatSurface({ enabled, isOpen, onOpenChange }) {
 }
 
 function LazyAiAssistantSurface({ enabled, isOpen, onOpenChange }) {
-  const [hasMounted, setHasMounted] = useState(false);
+  const [hasMounted, setHasMounted] = useState(Boolean(isOpen));
   useEffect(() => {
-    if (isOpen) setHasMounted(true);
+    if (isOpen) {
+      const timer = setTimeout(() => {
+        setHasMounted(true);
+      }, 0);
+      return () => clearTimeout(timer);
+    }
+    return undefined;
   }, [isOpen]);
 
-  if (!enabled || !hasMounted) return null;
+  if (!enabled || (!hasMounted && !isOpen)) return null;
 
   return (
     <Suspense fallback={null}>
@@ -94,9 +106,12 @@ export default function AppShell({ children }) {
   // A navigation from the header, sidebar, or browser Back/Forward should
   // minimize Chat without discarding the selected conversation or draft.
   useEffect(() => {
-    if (lastPathnameRef.current === location.pathname) return;
+    if (lastPathnameRef.current === location.pathname) return undefined;
     lastPathnameRef.current = location.pathname;
-    setChatOpen(false);
+    const timer = setTimeout(() => {
+      setChatOpen(false);
+    }, 0);
+    return () => clearTimeout(timer);
   }, [location.pathname]);
 
   useEffect(() => {

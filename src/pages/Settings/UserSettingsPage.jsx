@@ -44,13 +44,11 @@ import {
 } from "@/components/ui";
 import {
   formatCompactDate,
-  formatCompactDateTime,
   formatEmployeeName,
   formatNumber,
   formatDateTime,
   getAccountId,
   getAccountName,
-  getAdminAccess,
   getAuditDateValue,
   getAuditDisplayValue,
   getDepartmentName,
@@ -60,7 +58,6 @@ import {
   getStatusPillClass,
   isActiveAssignedUser,
   isSuperAdmin,
-  normalizeRole,
   safeText,
   ROLE_OPTIONS,
 } from "../../lib/utils/settings/userSettingsHelpers.js";
@@ -1632,7 +1629,35 @@ function MobileUserCard({
   );
 }
 
-function UserSettingsLoading() {
+function UserSettingsLoading({ embedded = false }) {
+  const content = (
+    <div className="mx-auto w-full max-w-[1700px] space-y-5 font-jakarta">
+      <section className="sibs-card relative overflow-hidden p-5 sm:p-6">
+        <span className="sibs-top-accent" aria-hidden="true" />
+        <div className="mt-1">
+          <div className="mb-3 h-6 w-56 animate-sibs-pulse rounded bg-gray-200" />
+          <div className="mb-2 h-8 w-64 max-w-full animate-sibs-pulse rounded bg-gray-200" />
+          <div className="h-4 w-96 max-w-full animate-sibs-pulse rounded bg-gray-200" />
+        </div>
+      </section>
+
+      <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
+        {[1, 2, 3, 4, 5].map((item) => (
+          <div
+            key={item}
+            className="sibs-card h-28 animate-sibs-pulse rounded-2xl bg-gray-100"
+          />
+        ))}
+      </section>
+
+      <section className="sibs-card h-[460px] animate-sibs-pulse rounded-2xl bg-white" />
+    </div>
+  );
+
+  if (embedded) {
+    return content;
+  }
+
   return (
     <div className="flex h-dvh min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-sibs-tertiary-10 font-jakarta">
       <div className="shrink-0">
@@ -1640,33 +1665,25 @@ function UserSettingsLoading() {
       </div>
 
       <main className="sibs-dashboard-main-wide">
-        <div className="mx-auto w-full max-w-[1700px] space-y-5">
-          <section className="sibs-card relative overflow-hidden p-5 sm:p-6">
-            <span className="sibs-top-accent" aria-hidden="true" />
-            <div className="mt-1">
-              <div className="mb-3 h-6 w-56 animate-sibs-pulse rounded bg-gray-200" />
-              <div className="mb-2 h-8 w-64 max-w-full animate-sibs-pulse rounded bg-gray-200" />
-              <div className="h-4 w-96 max-w-full animate-sibs-pulse rounded bg-gray-200" />
-            </div>
-          </section>
-
-          <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
-            {[1, 2, 3, 4, 5].map((item) => (
-              <div
-                key={item}
-                className="sibs-card h-28 animate-sibs-pulse rounded-2xl bg-gray-100"
-              />
-            ))}
-          </section>
-
-          <section className="sibs-card h-[460px] animate-sibs-pulse rounded-2xl bg-white" />
-        </div>
+        {content}
       </main>
     </div>
   );
 }
 
-export default function UserSettingsPage() {
+const normalizeSummary = (summaryData = {}, accounts = [], departments = []) => ({
+  totalAssignments: Number(summaryData?.totalAssignments ?? 0),
+  totalUsers: Number(summaryData?.totalUsers ?? 0),
+  assignedAccounts: Number(summaryData?.assignedAccounts ?? summaryData?.totalAccounts ?? 0),
+  assignedDepartments: Number(summaryData?.assignedDepartments ?? summaryData?.totalDepartments ?? 0),
+  superAdmins: Number(summaryData?.superAdmins ?? summaryData?.superAdminAssignments ?? 0),
+  administrators: Number(summaryData?.administrators ?? summaryData?.adminAssignments ?? 0),
+  employees: Number(summaryData?.employees ?? 0),
+  activeKronosAccounts: Array.isArray(accounts) && accounts.length > 0 ? accounts.length : Number(summaryData?.activeKronosAccounts ?? summaryData?.totalAccounts ?? 0),
+  kronosDepartments: Array.isArray(departments) && departments.length > 0 ? departments.length : Number(summaryData?.kronosDepartments ?? summaryData?.totalDepartments ?? 0),
+});
+
+export default function UserSettingsPage({ embedded = false }) {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, loading: userLoading } = useUser();
@@ -1764,7 +1781,7 @@ export default function UserSettingsPage() {
       getUserSettingsDepartments(),
     ]);
 
-    setSummary({ ...EMPTY_SUMMARY, ...summaryData });
+    setSummary(normalizeSummary(summaryData, accounts, departments));
     setAccountOptions(accounts);
     setDepartmentOptions(departments);
   }, []);
@@ -1932,7 +1949,7 @@ export default function UserSettingsPage() {
 
         const activeUsers = userResult.data.filter(isActiveAssignedUser);
 
-        setSummary({ ...EMPTY_SUMMARY, ...summaryData });
+        setSummary(normalizeSummary(summaryData, accounts, departments));
         setAccountOptions(accounts);
         setDepartmentOptions(departments);
         setUsers(activeUsers);
@@ -2109,11 +2126,11 @@ export default function UserSettingsPage() {
     !hasAuthenticatedUser ||
     !authorized
   ) {
-    return <UserSettingsLoading />;
+    return <UserSettingsLoading embedded={embedded} />;
   }
 
-  return (
-    <div className="flex h-dvh min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-sibs-tertiary-10 font-jakarta">
+  const content = (
+    <div className="mx-auto flex min-h-full w-full max-w-[1700px] flex-col gap-5">
       <style>{`
         @keyframes sibsUserSettingsRowReveal {
           from {
@@ -2139,27 +2156,22 @@ export default function UserSettingsPage() {
           }
         }
       `}</style>
-      <div className="shrink-0">
-        <Header />
-      </div>
 
-      <main className="sibs-dashboard-main-wide">
-        <div className="mx-auto flex min-h-full w-full max-w-[1700px] flex-col gap-5">
-          <PageHeaderHero
-            kicker="User Settings View"
-            title="User Settings"
-            description="Manage employee access levels, assigned accounts, and department access."
-            actions={
-              <button
-                type="button"
-                onClick={openAddModal}
-                className="sibs-btn-primary max-sm:w-full"
-              >
-                <Plus size={16} />
-                Add User Access
-              </button>
-            }
-          />
+      <PageHeaderHero
+        kicker="User Settings View"
+        title="User Settings"
+        description="Manage employee access levels, assigned accounts, and department access."
+        actions={
+          <button
+            type="button"
+            onClick={openAddModal}
+            className="sibs-btn-primary max-sm:w-full"
+          >
+            <Plus size={16} />
+            Add User Access
+          </button>
+        }
+      />
 
           {pageLoading ? (
             <MetricGridSkeleton
@@ -2570,9 +2582,11 @@ export default function UserSettingsPage() {
               />
             </div>
           </section>
-        </div>
-      </main>
+    </div>
+  );
 
+  const modals = (
+    <>
       <AccessDetailsModal
         target={detailsTarget}
         onClose={closeDetailsModal}
@@ -2606,6 +2620,29 @@ export default function UserSettingsPage() {
         onConfirm={closeStatus}
         onClose={closeStatus}
       />
+    </>
+  );
+
+  if (embedded) {
+    return (
+      <div className="w-full font-jakarta">
+        {content}
+        {modals}
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex h-dvh min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-sibs-tertiary-10 font-jakarta">
+      <div className="shrink-0">
+        <Header />
+      </div>
+
+      <main className="sibs-dashboard-main-wide">
+        {content}
+      </main>
+
+      {modals}
     </div>
   );
 }

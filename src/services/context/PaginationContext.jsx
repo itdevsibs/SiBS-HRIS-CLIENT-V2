@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import React, {
   createContext,
   useContext,
@@ -10,7 +11,7 @@ import DatePicker from "../../components/ui/DatePicker.jsx";
 
 const PaginationContext = createContext(null);
 
-function toDateKey(value = new Date()) {
+function _toDateKey(value = new Date()) {
   const date = value instanceof Date ? value : new Date(value);
   if (Number.isNaN(date.getTime())) return "";
 
@@ -38,10 +39,7 @@ const createDefaultPaginationState = () => ({
     searchPlaceholder: "Search...",
     filters: [],
   },
-  filterValues: {
-    dateFrom: "",
-    dateTo: "",
-  },
+  filterValues: {},
 });
 
 const isSameJson = (a, b) => JSON.stringify(a) === JSON.stringify(b);
@@ -129,12 +127,11 @@ export const PaginationProvider = ({ children }) => {
       const current = prev[entity] || createDefaultPaginationState();
       const cleanValue = String(value ?? "");
 
-      // Only refetch on clear if the applied query/page actually changes.
-      // Otherwise loading=true can remain set without a new request.
+      // Only refetch on clear if the applied query actually changes.
+      // Backspacing unsubmitted draft text when current.search is empty must not reset page or trigger loading.
       const clearChangesQuery =
         cleanValue.trim() === "" &&
-        (String(current.search ?? "").trim() !== "" ||
-          Number(current.page || 1) !== 1);
+        String(current.search ?? "").trim() !== "";
 
       const nextState = {
         ...current,
@@ -278,6 +275,8 @@ export const PaginationProvider = ({ children }) => {
           dateFrom: "",
           dateTo: "",
         },
+        search: "",
+        searchInput: "",
         page: 1,
         loading: true,
       });
@@ -506,19 +505,26 @@ export function PaginationDateRangeFilter({
 
   const defaultDateFrom =
     entity === "attendance"
-      ? toDateKey(today)
+      ? _toDateKey(today)
       : ["leaves", "schedule"].includes(entity)
-        ? toDateKey(sixDaysAgo)
+        ? _toDateKey(sixDaysAgo)
         : "";
   const defaultDateTo = ["attendance", "leaves", "schedule"].includes(entity)
-    ? toDateKey(today)
+    ? _toDateKey(today)
     : "";
-  const dateFrom = filterValues?.dateFrom || defaultDateFrom;
-  const dateTo = filterValues?.dateTo || defaultDateTo;
+
+  const dateFrom =
+    filterValues?.dateFrom !== undefined
+      ? filterValues.dateFrom
+      : defaultDateFrom;
+  const dateTo =
+    filterValues?.dateTo !== undefined
+      ? filterValues.dateTo
+      : defaultDateTo;
 
   function handleDateFromChange(value) {
     setDateRange({
-      dateFrom: value,
+      dateFrom: value ?? "",
       dateTo: dateTo && value && dateTo < value ? value : dateTo,
     });
   }
@@ -526,7 +532,7 @@ export function PaginationDateRangeFilter({
   function handleDateToChange(value) {
     setDateRange({
       dateFrom,
-      dateTo: value,
+      dateTo: value ?? "",
     });
   }
 

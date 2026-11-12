@@ -34,8 +34,8 @@ export default function SchedulePage() {
   const restoredRef = useRef(false);
   const mainScrollRef = useRef(null);
 
-  const dateFrom = filterValues?.dateFrom || "";
-  const dateTo = filterValues?.dateTo || "";
+  const dateFrom = filterValues?.dateFrom ?? "";
+  const dateTo = filterValues?.dateTo ?? "";
 
   useEffect(() => {
     if (restoredRef.current) return;
@@ -91,10 +91,13 @@ export default function SchedulePage() {
     setLoadError("");
     if (showLoading) setLoading(true);
 
+    const activeDateFrom = filterValues?.dateFrom ?? dateFrom;
+    const activeDateTo = filterValues?.dateTo ?? dateTo;
+
     try {
       const result = await getSchedule(page, search, {
-        dateFrom,
-        dateTo,
+        dateFrom: activeDateFrom,
+        dateTo: activeDateTo,
       });
 
       if (!result?.success) {

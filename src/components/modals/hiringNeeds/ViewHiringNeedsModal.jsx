@@ -455,13 +455,13 @@ function CompactDetail({
 
   return (
     <div className="min-w-0 font-jakarta">
-      <p className="text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-sibs-muted">
+      <p className="sibs-text-micro font-extrabold uppercase tracking-wide text-sibs-muted">
         {label}
       </p>
 
       {children || (
         <p
-          className={`mt-0.5 break-words text-[11px] 2xl:text-xs font-extrabold leading-tight ${valueClassName}`}
+          className={`mt-1 break-words text-xs font-bold leading-snug ${valueClassName}`}
         >
           {hasValue ? value : "—"}
         </p>
@@ -508,8 +508,9 @@ function SupportingFilePreview({ url, fileName, image }) {
 
 function AuditTrailSection({ entries = [] }) {
   return (
-    <section className="font-jakarta">
-      <h3 className="text-[10px] font-extrabold uppercase tracking-normal text-sibs-muted">
+    <section className="sibs-card p-4 font-jakarta sm:p-5">
+      <h3 className="sibs-modal-section-title flex items-center gap-2 border-b border-sibs-border pb-3">
+        <Clock size={16} aria-hidden="true" className="text-sibs-orange" />
         Form Action Audit Trail
       </h3>
 
@@ -913,7 +914,7 @@ export default function ViewHiringNeedsModal({
           </span>
         </div>
       }
-      bodyClassName="thin-scroll min-h-0 flex-1 overflow-y-auto bg-white p-5 sm:p-6"
+      bodyClassName="overscroll-contain bg-sibs-surface p-4 sm:p-6"
       footer={
         <>
           <button
@@ -976,7 +977,7 @@ export default function ViewHiringNeedsModal({
       <div
         ref={modalBodyRef}
         data-dropdown-boundary="true"
-        className="space-y-5"
+        className="space-y-4"
       >
             {isRelinkMode ? (
               <section className="rounded-[10px] border border-amber-400 bg-amber-50 p-4 sm:p-5">
@@ -1027,8 +1028,12 @@ export default function ViewHiringNeedsModal({
               </section>
             ) : null}
 
-            <section className="rounded-[10px] border border-sibs-border bg-slate-50 p-4 sm:p-5">
-              <div className="grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2">
+            <section className="sibs-card p-4 sm:p-5">
+              <h3 className="sibs-modal-section-title flex items-center gap-2 border-b border-sibs-border pb-3">
+                <FileText size={16} aria-hidden="true" className="text-sibs-orange" />
+                Requisition Details
+              </h3>
+              <div className="mt-4 grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2">
                 <CompactDetail
                   label="Department"
                   value={getDepartmentName(safeItem)}
@@ -1105,7 +1110,7 @@ export default function ViewHiringNeedsModal({
 
                 <CompactDetail
                   label="Location / Site Target"
-                  value={locationDisplay ? `${locationDisplay} Site` : "—"}
+                  value={locationDisplay}
                 />
 
                 <CompactDetail
@@ -1196,11 +1201,11 @@ export default function ViewHiringNeedsModal({
             <AuditTrailSection entries={auditTrail} />
 
             {!finalStatus && !isRelinkMode ? (
-              <section className="border-t border-sibs-border pt-4 font-jakarta">
+              <section className="sibs-card p-4 font-jakarta sm:p-5">
                 <div className="flex items-start gap-2.5">
-                  <Clock size={15} className="mt-0.5 shrink-0 text-sibs-navy" />
+                  <Clock size={16} aria-hidden="true" className="mt-0.5 shrink-0 text-sibs-orange" />
                   <div className="min-w-0">
-                    <h3 className="font-heading text-[10px] font-extrabold uppercase tracking-normal text-sibs-muted">
+                    <h3 className="sibs-modal-section-title">
                       Approval Action
                     </h3>
                     <p className="mt-1 text-xs font-semibold leading-5 text-sibs-muted">

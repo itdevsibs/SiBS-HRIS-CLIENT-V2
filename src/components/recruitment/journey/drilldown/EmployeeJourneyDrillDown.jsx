@@ -312,20 +312,16 @@ function EmployeeJourneyDrillDown({
           </button>
         ) : null
       }
-      bodyClassName="sibs-scrollbar min-h-0 flex-1 overflow-y-auto bg-sibs-surface p-0 font-jakarta flex flex-col"
+      bodyClassName="sibs-scrollbar flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain bg-sibs-surface p-0 font-jakarta"
+      footerMeta={
+        <p className="sibs-text-xs leading-relaxed text-sibs-muted">
+          Employee journey milestone records are authoritative across L&amp;D, QDS, and Operations.
+        </p>
+      }
       footer={
-        <div className="flex w-full flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between font-jakarta">
-          <p className="sibs-text-xs leading-relaxed text-sibs-muted sm:max-w-xl">
-            Employee journey milestone records are authoritative across L&amp;D, QDS, and Operations.
-          </p>
-          <button
-            type="button"
-            onClick={onClose}
-            className="sibs-modal-btn-secondary"
-          >
-            Close Journey
-          </button>
-        </div>
+        <button type="button" onClick={onClose} className="sibs-modal-btn-secondary">
+          Close Journey
+        </button>
       }
     >
       {/* 7 Horizontal Navigation Tabs */}
@@ -420,17 +416,20 @@ function EmployeeJourneyDrillDown({
     /* Overview belongs to Journey Timeline, not every drilldown tab. */
   }
           {profileMode && activeTab === "timeline" && <Review306090Modal journey={journey} isOpen={isOpen} onClose={onClose} embedded />}
-          {!profileMode && activeTab === "timeline" && <div className="bg-white rounded-2xl border border-sibs-border p-5 shadow-xs space-y-5">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
-              <div>
-                <span className="text-[10px] font-black uppercase text-sibs-orange tracking-widest block">EMPLOYEE PERFORMANCE RESULTS</span>
-                <h3 className="text-base font-extrabold text-sibs-navy">Training & Milestone Performance</h3>
-                <p className="text-xs text-slate-500">Phase assessment results, independent quality evidence, attendance, and 30–60–90 checkpoint trends for {journey.fullName}.</p>
+          {!profileMode && activeTab === "timeline" && <section className="sibs-card min-w-0 space-y-4 p-4 sm:p-5">
+            <div className="flex flex-wrap items-start justify-between gap-3 border-b border-sibs-border pb-3 sm:items-center">
+              <div className="min-w-0">
+                <h3 className="sibs-modal-section-title flex items-center gap-2">
+                  <TrendingUp size={16} aria-hidden="true" className="shrink-0 text-sibs-orange" />
+                  Training &amp; Milestone Performance
+                </h3>
+                <p className="sibs-modal-section-subtitle mt-1">Phase assessments, independent QA, attendance, and checkpoint trends.</p>
               </div>
               <button
-    onClick={() => setActiveTab("reviews")}
-    className="px-3 py-1.5 rounded-xl border border-sibs-border-subtle bg-sibs-surface hover:bg-slate-100 font-semibold text-xs text-sibs-navy cursor-pointer shadow-xs self-start sm:self-auto transition-colors"
-  >
+                type="button"
+                onClick={() => setActiveTab("reviews")}
+                className="sibs-modal-btn-secondary"
+              >
                 Open Checkpoint Reviews
               </button>
             </div>
@@ -472,13 +471,15 @@ function EmployeeJourneyDrillDown({
             {
     /* Main Viz & FST/PST Split */
   }
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+            <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
               {
     /* SVG Trend Line Panel */
   }
-              <div className="border border-sibs-border rounded-xl p-4 bg-sibs-surface space-y-3">
-                <h4 className="text-xs font-bold text-sibs-navy">30 / 60 / 90 Performance Trend</h4>
-                <p className="text-[11px] text-slate-500">Checkpoint composite scores from eligible, complete phase scorecards only.</p>
+              <section className="min-w-0 space-y-3 rounded-xl border border-sibs-border bg-sibs-surface p-3 sm:p-4">
+                <div className="border-b border-sibs-border pb-3">
+                  <h4 className="sibs-modal-section-title">30 / 60 / 90 Performance Trend</h4>
+                  <p className="sibs-modal-section-subtitle mt-1">Checkpoint composite scores from eligible, complete phase scorecards only.</p>
+                </div>
 
                 {
     /* SVG Chart */
@@ -526,17 +527,18 @@ function EmployeeJourneyDrillDown({
                 {
     /* Benchmark Strip */
   }
-                <div className="grid grid-cols-3 gap-2 pt-2">
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
                   {[
     { day: 30, score: day30Score, status: journey.day30.status },
     { day: 60, score: day60Score, status: journey.day60.status },
     { day: 90, score: day90Score, status: journey.day90.status }
   ].map((b) => <button
     key={b.day}
+    type="button"
     onClick={() => {
       setActiveTab("reviews");
     }}
-    className="p-2 border border-sibs-border rounded-lg bg-white text-left hover:bg-sibs-surface cursor-pointer transition-colors"
+    className="min-w-0 break-words rounded-lg border border-sibs-border bg-white p-2 text-left transition-colors hover:border-sibs-orange/40 focus-visible:outline-2 focus-visible:outline-sibs-orange"
   >
                       <span className="text-[10px] text-slate-500 font-bold block">DAY {b.day}</span>
                       <strong className="text-base font-extrabold text-sibs-navy block my-0.5">
@@ -548,29 +550,31 @@ function EmployeeJourneyDrillDown({
                       </div>
                     </button>)}
                 </div>
-              </div>
+              </section>
 
               {
     /* FST & PST Progress Bars Panel */
   }
-              <div className="border border-sibs-border rounded-xl p-4 bg-sibs-surface space-y-4 flex flex-col justify-between">
+              <section className="min-w-0 space-y-4 rounded-xl border border-sibs-border bg-sibs-surface p-3 sm:p-4">
                 <div>
-                  <h4 className="text-xs font-bold text-sibs-navy">First 30 Days • FST & PST</h4>
-                  <p className="text-[11px] text-slate-500">Individual training phase assessments. These remain separate from the Day 30 checkpoint composite.</p>
+                  <div className="border-b border-sibs-border pb-3">
+                    <h4 className="sibs-modal-section-title">First 30 Days • FST &amp; PST</h4>
+                    <p className="sibs-modal-section-subtitle mt-1">Individual training phase assessments, separate from the Day 30 checkpoint composite.</p>
+                  </div>
 
                   <div className="space-y-3 mt-3">
                     {
     /* FST */
   }
                     <div>
-                      <div className="flex justify-between items-center text-xs">
+                      <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
                         <strong className="text-sibs-navy">FST <span className="text-[10px] font-normal text-slate-500">Fundamental Skill Training</span></strong>
                         <div className="flex items-center gap-1.5">
                           <span className="font-extrabold text-sibs-navy">{fstScoreVal !== null ? fstScoreVal + "%" : "Not scored"}</span>
                           <button
     type="button"
     onClick={() => setSelectedProcessModal("FST")}
-    className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold text-sibs-navy bg-white border border-sibs-border-subtle hover:border-sibs-orange hover:text-sibs-orange shadow-2xs transition-colors cursor-pointer"
+    className="sibs-modal-btn-secondary whitespace-nowrap"
     title="Open Full View of FST Process"
   >
                             <Eye size={10} className="text-sibs-orange" />
@@ -588,14 +592,14 @@ function EmployeeJourneyDrillDown({
     /* PST */
   }
                     <div>
-                      <div className="flex justify-between items-center text-xs">
+                      <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
                         <strong className="text-sibs-navy">PST <span className="text-[10px] font-normal text-slate-500">Product Skills Training</span></strong>
                         <div className="flex items-center gap-1.5">
                           <span className="font-extrabold text-sibs-orange">{pstScoreVal !== null ? pstScoreVal + "%" : "Not scored"}</span>
                           <button
     type="button"
     onClick={() => setSelectedProcessModal("PST")}
-    className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold text-sibs-navy bg-white border border-sibs-border-subtle hover:border-sibs-orange hover:text-sibs-orange shadow-2xs transition-colors cursor-pointer"
+    className="sibs-modal-btn-secondary whitespace-nowrap"
     title="Open Full View of PST Process"
   >
                             <Eye size={10} className="text-sibs-orange" />
@@ -614,7 +618,7 @@ function EmployeeJourneyDrillDown({
                 {
     /* Verified Completion Bar */
   }
-                <div className="border-t border-slate-200 pt-3">
+                <div className="border-t border-sibs-border pt-3">
                   <div className="flex justify-between items-center text-xs mb-1">
                     <strong className="text-sibs-navy">Verified learning completion</strong>
                     <span className="font-bold text-sibs-orange">{learningPct}%</span>
@@ -626,9 +630,9 @@ function EmployeeJourneyDrillDown({
                     {verifiedAssigns} of {employeeAssignments.length} assigned activities verified by owner.
                   </span>
                 </div>
-              </div>
+              </section>
             </div>
-          </div>}
+          </section>}
 
           {
     /* TAB 1: JOURNEY TIMELINE (WITH 7 CLICKABLE TIMELINE PHASES) */

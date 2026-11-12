@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useId, useState } from "react";
 import {
   Award,
   CheckCircle2,
@@ -8,7 +8,8 @@ import {
   BookOpen,
   Target
 } from "lucide-react";
-import { ModalShell, MetricCard, MetricGrid } from "@/components/ui";
+import { ModalShell } from "@/components/ui";
+import StatusFilterTabs from "@/components/ui/StatusFilterTabs";
 function TrainingProcessDetailModal({
   isOpen,
   onClose,
@@ -19,6 +20,7 @@ function TrainingProcessDetailModal({
   items
 }) {
   const [activeTab, setActiveTab] = useState("syllabus");
+  const tabLayoutId = useId();
   if (!isOpen) return null;
   const isFST = processType === "FST";
   const phaseTitle = isFST ? "FST \u2014 Fundamental Skill Training" : "PST \u2014 Product Skills Training";
@@ -167,7 +169,7 @@ function TrainingProcessDetailModal({
     title={phaseTitle + " — Full Process View"}
     badge={phaseTimeline}
     subtitle={journey.fullName + " • " + (journey.sibsEmployeeId || journey.id) + " • " + journey.account}
-    bodyClassName="p-0 flex flex-col bg-sibs-surface"
+    bodyClassName="flex flex-col overscroll-contain bg-sibs-surface p-0"
     footerMeta={<p className="sibs-text-xs text-sibs-muted">{phaseTimeline} records are permanent audit artifacts under SiBS HRIS Talent Governance.</p>}
     footer={<>
       <button type="button" onClick={handlePrint} className="sibs-modal-btn-secondary"><Printer size={14} />Print Audit</button>
@@ -177,8 +179,8 @@ function TrainingProcessDetailModal({
         {
     /* KPI Strip */
   }
-        <div className="bg-sibs-surface border-b border-sibs-border p-4 sm:px-6 grid grid-cols-2 sm:grid-cols-4 gap-3 shrink-0">
-          <div className="p-3 bg-white rounded-xl border border-sibs-border shadow-2xs">
+        <div className="grid shrink-0 grid-cols-2 gap-3 p-4 sm:grid-cols-4 sm:px-6">
+          <div className="sibs-card min-w-0 p-3">
             <span className="text-[10px] font-bold text-sibs-muted uppercase tracking-wider block">Phase Score</span>
             <div className="flex items-baseline gap-1.5 mt-0.5">
               <strong className="text-xl font-black" style={{ color: brandColor }}>
@@ -188,7 +190,7 @@ function TrainingProcessDetailModal({
             </div>
           </div>
 
-          <div className="p-3 bg-white rounded-xl border border-sibs-border shadow-2xs">
+          <div className="sibs-card min-w-0 p-3">
             <span className="text-[10px] font-bold text-sibs-muted uppercase tracking-wider block">Process Status</span>
             <div className="flex items-center gap-1.5 mt-1">
               <span className="w-2 h-2 rounded-full bg-emerald-500" />
@@ -198,16 +200,16 @@ function TrainingProcessDetailModal({
             </div>
           </div>
 
-          <div className="p-3 bg-white rounded-xl border border-sibs-border shadow-2xs">
+          <div className="sibs-card min-w-0 p-3">
             <span className="text-[10px] font-bold text-sibs-muted uppercase tracking-wider block">Lead Evaluator</span>
-            <strong className="text-xs font-black text-sibs-navy mt-1 block truncate">
+            <strong className="mt-1 block break-words text-xs font-bold text-sibs-navy">
               {evaluatorName || (isFST ? "Maria Cruz" : "Anton Reyes")}
             </strong>
           </div>
 
-          <div className="p-3 bg-white rounded-xl border border-sibs-border shadow-2xs">
+          <div className="sibs-card min-w-0 p-3">
             <span className="text-[10px] font-bold text-sibs-muted uppercase tracking-wider block">Next Gate</span>
-            <strong className="text-xs font-black text-sibs-navy mt-1 block truncate">
+            <strong className="mt-1 block break-words text-xs font-bold text-sibs-navy">
               {isFST ? "Phase 2 (PST) Transition" : "Day 30 Operations Handoff"}
             </strong>
           </div>
@@ -216,45 +218,30 @@ function TrainingProcessDetailModal({
         {
     /* Tab Selection */
   }
-        <div className="px-6 pt-3 border-b border-sibs-border bg-white flex items-center gap-2 shrink-0">
-          <button
-    type="button"
-    onClick={() => setActiveTab("syllabus")}
-    className={`pb-2.5 px-3 text-xs font-bold border-b-2 transition-all cursor-pointer flex items-center gap-1.5 ${activeTab === "syllabus" ? "border-sibs-orange text-sibs-navy" : "border-transparent text-sibs-muted hover:text-sibs-navy"}`}
-  >
-            <BookOpen size={14} className={activeTab === "syllabus" ? "text-sibs-orange" : ""} />
-            <span>Curriculum Modules &amp; Practicals ({fullCurriculum.length})</span>
-          </button>
-          <button
-    type="button"
-    onClick={() => setActiveTab("rubric")}
-    className={`pb-2.5 px-3 text-xs font-bold border-b-2 transition-all cursor-pointer flex items-center gap-1.5 ${activeTab === "rubric" ? "border-sibs-orange text-sibs-navy" : "border-transparent text-sibs-muted hover:text-sibs-navy"}`}
-  >
-            <Target size={14} className={activeTab === "rubric" ? "text-sibs-orange" : ""} />
-            <span>Competency Rubric &amp; Benchmarks</span>
-          </button>
-          <button
-    type="button"
-    onClick={() => setActiveTab("endorsement")}
-    className={`pb-2.5 px-3 text-xs font-bold border-b-2 transition-all cursor-pointer flex items-center gap-1.5 ${activeTab === "endorsement" ? "border-sibs-orange text-sibs-navy" : "border-transparent text-sibs-muted hover:text-sibs-navy"}`}
-  >
-            <ShieldCheck size={14} className={activeTab === "endorsement" ? "text-sibs-orange" : ""} />
-            <span>Audit &amp; Trainer Endorsement</span>
-          </button>
-        </div>
+        <StatusFilterTabs
+          tabs={[
+            { id: "syllabus", label: "Curriculum Modules & Practicals", icon: BookOpen, count: fullCurriculum.length },
+            { id: "rubric", label: "Competency Rubric & Benchmarks", icon: Target },
+            { id: "endorsement", label: "Audit & Trainer Endorsement", icon: ShieldCheck },
+          ]}
+          activeValue={activeTab}
+          onChange={setActiveTab}
+          layoutId={`training-process-${tabLayoutId}`}
+          className="shrink-0"
+        />
 
         {
     /* Training detail content */
   }
-        <div className="p-4 sm:p-5 space-y-4">
+        <div className="sibs-card mx-4 my-4 min-w-0 space-y-4 p-4 sm:mx-6 sm:p-5">
 
           {
     /* TAB 1: CURRICULUM SYLLABUS & PRACTICALS */
   }
           {activeTab === "syllabus" && <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h4 className="text-sm font-extrabold text-sibs-navy">
+              <div className="flex flex-wrap items-start justify-between gap-2 border-b border-sibs-border pb-3">
+                <div className="min-w-0">
+                  <h4 className="sibs-modal-section-title">
                     {isFST ? "Fundamental Skills Modules & Practical Assessments" : "Product Skills Curriculum & Workflow Practicals"}
                   </h4>
                   <p className="text-xs text-sibs-muted mt-0.5">
@@ -266,17 +253,17 @@ function TrainingProcessDetailModal({
                 </span>
               </div>
 
-              <div className="overflow-x-auto rounded-xl border border-sibs-border shadow-2xs">
-                <table className="w-full text-left text-xs">
-                  <thead className="bg-sibs-navy text-white uppercase text-[10px] tracking-wider">
-                    <tr>
-                      <th className="py-2.5 px-3 font-bold">Module &amp; Practical Assessment</th>
-                      <th className="py-2.5 px-3 font-bold">Category</th>
-                      <th className="py-2.5 px-3 font-bold text-center">Weight</th>
-                      <th className="py-2.5 px-3 font-bold text-center">Score / Max</th>
-                      <th className="py-2.5 px-3 font-bold text-center">Target</th>
-                      <th className="py-2.5 px-3 font-bold">Evaluator</th>
-                      <th className="py-2.5 px-3 font-bold">Result</th>
+              <div className="sibs-scrollbar overflow-x-auto rounded-xl border border-sibs-border">
+                <table className="w-full min-w-[680px] text-left text-xs">
+                  <thead className="bg-sibs-surface">
+                    <tr className="sibs-data-table-head-row">
+                      <th scope="col" className="sibs-data-table-th">Module &amp; Practical Assessment</th>
+                      <th scope="col" className="sibs-data-table-th">Category</th>
+                      <th scope="col" className="sibs-data-table-th text-center">Weight</th>
+                      <th scope="col" className="sibs-data-table-th text-center">Score / Max</th>
+                      <th scope="col" className="sibs-data-table-th text-center">Target</th>
+                      <th scope="col" className="sibs-data-table-th">Evaluator</th>
+                      <th scope="col" className="sibs-data-table-th">Result</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-sibs-border bg-white">
@@ -352,7 +339,7 @@ function TrainingProcessDetailModal({
   }
           {activeTab === "rubric" && <div className="space-y-4">
               <div>
-                <h4 className="text-sm font-extrabold text-sibs-navy">
+                <h4 className="sibs-modal-section-title">
                   Competency Dimensions &amp; Behavior Matrix
                 </h4>
                 <p className="text-xs text-sibs-muted mt-0.5">
@@ -394,7 +381,7 @@ function TrainingProcessDetailModal({
   }
           {activeTab === "endorsement" && <div className="space-y-4">
               <div>
-                <h4 className="text-sm font-extrabold text-sibs-navy">
+                <h4 className="sibs-modal-section-title">
                   Trainer Audit Sign-off &amp; Formal Recommendation
                 </h4>
                 <p className="text-xs text-sibs-muted mt-0.5">
