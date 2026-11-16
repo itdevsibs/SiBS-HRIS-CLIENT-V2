@@ -14,6 +14,7 @@ import { useLocation } from "react-router-dom";
 import { shouldShowHelpdeskInSibsChat } from "@/lib/utils/chat/chatHelpdeskVisibility";
 import {
   ArrowLeft,
+  ArrowRight,
   Check,
   CheckCircle2,
   ChevronDown,
@@ -23,15 +24,19 @@ import {
   EyeOff,
   FileText,
   FileSpreadsheet,
+  FolderTree,
   Download,
   ImagePlus,
+  ListFilter,
   Loader2,
+  Lock,
   Maximize2,
   MessageCircleMore,
   Headset,
   MonitorCog,
   HeartHandshake,
   Minimize2,
+  Minus,
   MoreHorizontal,
   MapPin,
   Music,
@@ -44,6 +49,7 @@ import {
   Smile,
   Settings2,
   Trash2,
+  User,
   UserPlus,
   UsersRound,
   X,
@@ -96,6 +102,15 @@ import {
   checkIsNearBottom,
   shouldSnapToBottom,
 } from "@/lib/utils/chat/chatScroll";
+import {
+  loadSavedChatState,
+  saveChatState,
+  saveConversationDraft,
+  getConversationDraft,
+  clearConversationDraft,
+  clearChatState,
+  cleanupOtherEmployeeChatStates,
+} from "@/lib/utils/chat/chatStatePersistence";
 
 // These formatters are used for every message row. Constructing a new Intl
 // DateTimeFormat for every timestamp on every React render is expensive,
@@ -124,6 +139,9 @@ const chatCenterDateFormatter = createSystemDateTimeFormatter("en-PH", {
 });
 const chatCenterDateWithYearFormatter = createSystemDateTimeFormatter("en-PH", {
   timeZone: "Asia/Manila", month: "long", day: "numeric", year: "numeric",
+});
+const chatFullTooltipDateTimeFormatter = createSystemDateTimeFormatter("en-PH", {
+  timeZone: "Asia/Manila", month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit", hour12: true,
 });
 
 const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024;
@@ -780,6 +798,13 @@ function formatConversationTime(value, nowMs = Date.now()) {
   return chatConversationDateFormatter.format(date);
 }
 
+function formatConversationFullDate(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return chatFullTooltipDateTimeFormatter.format(date);
+}
+
 // The case starts at its first chat message, shown in Philippine time.
 // Use a relative date only for the current Manila calendar day; older cases
 // retain an absolute date so "Today" never mislabels a previous-day case.
@@ -802,6 +827,27 @@ function formatMessageDay(value) {
   if (Number.isNaN(date.getTime())) return "";
 
   return chatMessageDayFormatter.format(date);
+}
+
+function getConversationCategoryBadge(conversation = {}) {
+  const type = cleanText(conversation?.conversationType).toUpperCase();
+  if (conversation?.isHelpdesk || type === "HELPDESK") {
+    const cat = cleanText(conversation?.helpdeskCategory).toUpperCase();
+    return {
+      label: cat === "IT" ? "IT Support" : "TA/HR",
+      color: "text-amber-800 bg-amber-50 border-amber-200/90",
+    };
+  }
+  if (conversation?.isGroup || type === "GROUP") {
+    return {
+      label: "Group",
+      color: "text-blue-800 bg-blue-50 border-blue-200/90",
+    };
+  }
+  return {
+    label: "Direct",
+    color: "text-slate-700 bg-slate-100 border-slate-200/90",
+  };
 }
 
 function getUserSibsId(user = {}) {
@@ -1143,27 +1189,104 @@ function ChatFolderList({
   );
 }
 
-function EmptyChatState({ onNewChat }) {
+function EmptyChatState({
+  onNewPrivateChat,
+  onNewGroupChat,
+  onContactHelpdesk,
+  onNewChat,
+}) {
   return (
-    <div className="flex min-h-0 flex-1 items-center justify-center bg-sibs-canvas px-8 text-center">
-      <div className="max-w-sm">
-        <span className="mx-auto inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-sibs-cream-light border border-sibs-orange/20 text-sibs-orange">
-          <MessageCircleMore size={27} />
+    <div className="flex min-h-0 flex-1 items-center justify-center bg-sibs-canvas px-4 py-8 sm:px-8 text-center overflow-y-auto sibs-scrollbar">
+      <div className="w-full max-w-2xl flex flex-col items-center">
+        <span className="inline-flex h-16 w-16 items-center justify-center rounded-2xl border border-sibs-orange/20 bg-sibs-cream-light text-sibs-orange shadow-xs">
+          <MessageCircleMore size={30} />
         </span>
-        <h3 className="mt-4 font-heading text-lg font-extrabold text-sibs-navy">
-          SiBS Chat
+        <h3 className="mt-4 font-heading text-xl sm:text-2xl font-extrabold text-sibs-navy tracking-tight">
+          SiBS Chat Workspace
         </h3>
-        <p className="mt-2 text-sm font-medium leading-6 text-sibs-muted">
-          Send a private message or create a group chat with other HRIS users.
+        <p className="mt-2 max-w-md text-xs sm:text-sm font-medium leading-relaxed text-sibs-muted">
+          Connect directly with colleagues, collaborate in shift teams, or get real-time assistance from on-duty Helpdesk staff.
         </p>
-        <button
-          type="button"
-          onClick={onNewChat}
-          className="mt-5 inline-flex items-center gap-2 rounded-xl bg-sibs-orange px-4 py-2.5 text-sm font-extrabold text-white shadow-sm transition hover:brightness-95"
-        >
-          <Plus size={16} />
-          New Chat
-        </button>
+
+        <div className="mt-6 grid w-full grid-cols-1 gap-3 sm:grid-cols-3 text-left">
+          <button
+            type="button"
+            onClick={onNewPrivateChat || onNewChat}
+            className="group relative flex flex-col justify-between rounded-2xl border border-sibs-border bg-white p-4 shadow-xs transition hover:border-sibs-navy/30 hover:shadow-md active:scale-[0.99] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sibs-orange"
+          >
+            <div>
+              <div className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-sibs-navy transition group-hover:bg-sibs-navy group-hover:text-white">
+                <User size={19} />
+              </div>
+              <h4 className="mt-3 font-heading text-sm font-extrabold text-sibs-navy">
+                Direct Message
+              </h4>
+              <p className="mt-1 text-[11px] font-medium leading-4 text-sibs-muted">
+                1-on-1 private chat with any employee or supervisor.
+              </p>
+            </div>
+            <div className="mt-4 flex items-center gap-1 text-[11px] font-bold text-sibs-orange group-hover:translate-x-0.5 transition-transform">
+              <span>Start direct chat</span>
+              <ArrowRight size={13} />
+            </div>
+          </button>
+
+          <button
+            type="button"
+            onClick={onNewGroupChat || onNewChat}
+            className="group relative flex flex-col justify-between rounded-2xl border border-sibs-border bg-white p-4 shadow-xs transition hover:border-sibs-navy/30 hover:shadow-md active:scale-[0.99] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sibs-orange"
+          >
+            <div>
+              <div className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700 transition group-hover:bg-emerald-700 group-hover:text-white">
+                <UsersRound size={19} />
+              </div>
+              <h4 className="mt-3 font-heading text-sm font-extrabold text-sibs-navy">
+                Team Group
+              </h4>
+              <p className="mt-1 text-[11px] font-medium leading-4 text-sibs-muted">
+                Coordinate shifts, departments, and project handoffs.
+              </p>
+            </div>
+            <div className="mt-4 flex items-center gap-1 text-[11px] font-bold text-sibs-orange group-hover:translate-x-0.5 transition-transform">
+              <span>Create group</span>
+              <ArrowRight size={13} />
+            </div>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => onContactHelpdesk?.("IT")}
+            className="group relative flex flex-col justify-between rounded-2xl border border-sibs-border bg-white p-4 shadow-xs transition hover:border-sibs-navy/30 hover:shadow-md active:scale-[0.99] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sibs-orange"
+          >
+            <div>
+              <div className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-orange-50 text-sibs-orange transition group-hover:bg-sibs-orange group-hover:text-white">
+                <MonitorCog size={19} />
+              </div>
+              <h4 className="mt-3 font-heading text-sm font-extrabold text-sibs-navy">
+                IT & HR Helpdesk
+              </h4>
+              <p className="mt-1 text-[11px] font-medium leading-4 text-sibs-muted">
+                Directly route support requests to on-duty staff.
+              </p>
+            </div>
+            <div className="mt-4 flex items-center gap-1 text-[11px] font-bold text-sibs-orange group-hover:translate-x-0.5 transition-transform">
+              <span>Request support</span>
+              <ArrowRight size={13} />
+            </div>
+          </button>
+        </div>
+
+        <div className="mt-6 flex flex-wrap items-center justify-center gap-4 text-xs font-semibold text-sibs-muted">
+          <span className="inline-flex items-center gap-1.5 text-sibs-muted">
+            <Lock size={13} className="text-emerald-600" />
+            <span>Employee-isolated session drafts</span>
+          </span>
+          <span className="h-1 w-1 rounded-full bg-slate-300" aria-hidden="true" />
+          <span className="inline-flex items-center gap-1.5 text-sibs-muted">
+            <CheckCircle2 size={13} className="text-sibs-navy" />
+            <span>Live Kronos on-duty roster sync</span>
+          </span>
+        </div>
       </div>
     </div>
   );
@@ -1171,18 +1294,25 @@ function EmptyChatState({ onNewChat }) {
 
 function NewChatOverlay({
   open,
+  initialMode = "private",
   onClose,
   onPrivateChat,
   onCreateGroup,
   busy,
 }) {
-  const [mode, setMode] = useState("private");
+  const [mode, setMode] = useState(initialMode);
   const [query, setQuery] = useState("");
   const [participants, setParticipants] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedIds, setSelectedIds] = useState([]);
   const [groupName, setGroupName] = useState("");
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (open) {
+      setMode(initialMode);
+    }
+  }, [open, initialMode]);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -1970,6 +2100,13 @@ export default function SiBSChat({
   const isControlled = controlledOpen !== undefined;
   const open = isControlled ? controlledOpen : internalOpen;
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isMinimized, setIsMinimized] = useState(false);
+  const [activeCategoryTab, setActiveCategoryTab] = useState("all");
+  const [helpdeskSubfilter, setHelpdeskSubfilter] = useState("all");
+  const [inboxViewMode, setInboxViewMode] = useState("list");
+  const minimizedDockRef = useRef(null);
+  const previousActiveConversationIdRef = useRef(null);
+  const isInitialStateRestoredRef = useRef(false);
   const [expandedBounds, setExpandedBounds] = useState(null);
   const chatPanelRef = useRef(null);
   const layoutStartRef = useRef(null);
@@ -1987,6 +2124,7 @@ export default function SiBSChat({
     [isControlled, open, onOpenChange],
   );
   const [newChatOpen, setNewChatOpen] = useState(false);
+  const [newChatInitialMode, setNewChatInitialMode] = useState("private");
   const [isNavigatingBack, setIsNavigatingBack] = useState(false);
   const navigateBackTimerRef = useRef(null);
   const [groupInfoOpen, setGroupInfoOpen] = useState(false);
@@ -2122,6 +2260,48 @@ export default function SiBSChat({
   const canRequestHelpdesk = useCallback((category) =>
     Array.isArray(requestableHelpdeskCategories) && requestableHelpdeskCategories.includes(category),
   [requestableHelpdeskCategories]);
+
+  // Restore persisted state for the authenticated employee
+  useEffect(() => {
+    if (!currentSibsId) {
+      isInitialStateRestoredRef.current = false;
+      return;
+    }
+    if (isInitialStateRestoredRef.current) return;
+    isInitialStateRestoredRef.current = true;
+
+    cleanupOtherEmployeeChatStates(currentSibsId);
+    const saved = loadSavedChatState(currentSibsId);
+    if (!saved) return;
+
+    if (typeof saved.isExpanded === "boolean") {
+      setIsExpanded(saved.isExpanded);
+    }
+    if (typeof saved.isMinimized === "boolean") {
+      setIsMinimized(saved.isMinimized);
+    }
+    if (saved.activeCategoryTab) {
+      setActiveCategoryTab(saved.activeCategoryTab);
+    }
+    if (saved.inboxViewMode) {
+      setInboxViewMode(saved.inboxViewMode);
+    }
+    if (saved.activeConversationId && !chat?.activeConversationId) {
+      void chat?.selectConversation?.(saved.activeConversationId);
+    }
+  }, [currentSibsId, chat]);
+
+  // Wipe client-side session state on logout
+  useEffect(() => {
+    const handleLogout = () => {
+      clearChatState();
+      setIsMinimized(false);
+      setIsExpanded(false);
+      setDraft("");
+    };
+    window.addEventListener("sibs:auth:logout", handleLogout);
+    return () => window.removeEventListener("sibs:auth:logout", handleLogout);
+  }, []);
   const visible =
     enabled &&
     !userLoading &&
@@ -2280,6 +2460,7 @@ export default function SiBSChat({
   useEffect(() => {
     if (!open) {
       setIsExpanded(false);
+      setIsMinimized(false);
       setExpandedBounds(null);
       setIsNavigatingBack(false);
       explicitlyViewingListRef.current = true;
@@ -2349,12 +2530,58 @@ export default function SiBSChat({
 
     if (isExpanded) {
       setIsExpanded(false);
+      setExpandedBounds(null);
+      if (currentSibsId) {
+        saveChatState(currentSibsId, { isExpanded: false });
+      }
       return;
     }
 
     updateExpandedBounds();
     setIsExpanded(true);
-  }, [isExpanded, updateExpandedBounds]);
+    if (currentSibsId) {
+      saveChatState(currentSibsId, { isExpanded: true });
+    }
+  }, [currentSibsId, isExpanded, updateExpandedBounds]);
+
+  const handleMinimize = useCallback(() => {
+    setIsMinimized(true);
+    if (currentSibsId) {
+      saveChatState(currentSibsId, {
+        isMinimized: true,
+        isExpanded,
+        activeConversationId: chat?.activeConversationId || null,
+        activeCategoryTab,
+      });
+    }
+  }, [currentSibsId, isExpanded, chat?.activeConversationId, activeCategoryTab]);
+
+  const handleRestoreFromMinimized = useCallback(() => {
+    setIsMinimized(false);
+    if (!open) {
+      setOpen(true);
+    }
+    if (currentSibsId) {
+      saveChatState(currentSibsId, { isMinimized: false, isOpen: true });
+    }
+    window.requestAnimationFrame(() => {
+      chatPanelRef.current?.focus?.();
+    });
+  }, [currentSibsId, open, setOpen]);
+
+  const handleClose = useCallback(() => {
+    setOpen(false);
+    setIsMinimized(false);
+    if (currentSibsId) {
+      saveChatState(currentSibsId, { isOpen: false, isMinimized: false });
+    }
+    window.requestAnimationFrame(() => {
+      const launcherBtn =
+        document.querySelector('[data-sibs-assistant-trigger="true"]') ||
+        launcherRef.current;
+      launcherBtn?.focus?.();
+    });
+  }, [currentSibsId, setOpen]);
 
   useEffect(() => {
     setReplyingToMessage(null);
@@ -2740,10 +2967,11 @@ export default function SiBSChat({
     const textarea = textareaRef.current;
     if (!textarea) return;
     textarea.style.height = "auto";
-    const nextHeight = Math.min(Math.max(textarea.scrollHeight, 40), 112);
+    const minH = isExpanded ? 40 : 36;
+    const nextHeight = Math.min(Math.max(textarea.scrollHeight, minH), 112);
     textarea.style.height = `${nextHeight}px`;
     textarea.style.overflowY = textarea.scrollHeight > 112 ? "auto" : "hidden";
-  }, [draft]);
+  }, [draft, isExpanded]);
 
   useEffect(() => {
     if (!gifPickerOpen) return undefined;
@@ -2817,20 +3045,71 @@ export default function SiBSChat({
     });
   }, [chat?.conversations, conversationSearch, chatClockMs, currentSibsId, canRequestHelpdesk]);
 
-  const chatSidebarFolders = useMemo(() => {
-    const folders = { private: [], groups: [], it: [], taHr: [] };
+  const categoryConversations = useMemo(() => {
+    const privateChats = [];
+    const groupChats = [];
+    const itChats = [];
+    const taHrChats = [];
+
     for (const conversation of filteredConversations) {
       const type = cleanText(conversation?.conversationType).toUpperCase();
       if (conversation?.isHelpdesk || type === "HELPDESK") {
         const category = cleanText(conversation?.helpdeskCategory).toUpperCase();
-        folders[category === "IT" ? "it" : "taHr"].push(conversation);
+        if (category === "IT") {
+          itChats.push(conversation);
+        } else {
+          taHrChats.push(conversation);
+        }
       } else if (conversation?.isGroup || type === "GROUP") {
-        folders.groups.push(conversation);
+        groupChats.push(conversation);
       } else {
-        folders.private.push(conversation);
+        privateChats.push(conversation);
       }
     }
 
+    return {
+      all: filteredConversations,
+      private: privateChats,
+      groups: groupChats,
+      helpdesk: [...itChats, ...taHrChats],
+      it: itChats,
+      taHr: taHrChats,
+    };
+  }, [filteredConversations]);
+
+  const unreadCounts = useMemo(() => {
+    const sum = (items) =>
+      items.reduce(
+        (total, c) => total + Math.max(0, Number(c?.unreadCount) || 0),
+        0,
+      );
+
+    return {
+      all: sum(categoryConversations.all),
+      private: sum(categoryConversations.private),
+      groups: sum(categoryConversations.groups),
+      helpdesk: sum(categoryConversations.helpdesk),
+      it: sum(categoryConversations.it),
+      taHr: sum(categoryConversations.taHr),
+    };
+  }, [categoryConversations]);
+
+  const activeDisplayConversations = useMemo(() => {
+    if (activeCategoryTab === "private") {
+      return categoryConversations.private;
+    }
+    if (activeCategoryTab === "groups") {
+      return categoryConversations.groups;
+    }
+    if (activeCategoryTab === "helpdesk") {
+      if (helpdeskSubfilter === "it") return categoryConversations.it;
+      if (helpdeskSubfilter === "taHr") return categoryConversations.taHr;
+      return categoryConversations.helpdesk;
+    }
+    return categoryConversations.all;
+  }, [activeCategoryTab, categoryConversations, helpdeskSubfilter]);
+
+  const chatSidebarFolders = useMemo(() => {
     const makeFolder = (key, label, Icon, conversations, subfolders) => ({
       key, label, Icon, conversations, subfolders,
       unread: conversations.reduce((total, conversation) =>
@@ -2838,16 +3117,16 @@ export default function SiBSChat({
     });
     const isVisible = ({ conversations }) => !chatSearchActive || conversations.length > 0;
     const helpdeskSubfolders = [
-      makeFolder("it", "IT Support", MonitorCog, folders.it),
-      makeFolder("taHr", "TA/HR Concerns", HeartHandshake, folders.taHr),
+      makeFolder("it", "IT Support", MonitorCog, categoryConversations.it),
+      makeFolder("taHr", "TA/HR Concerns", HeartHandshake, categoryConversations.taHr),
     ].filter(isVisible);
 
     return [
-      makeFolder("private", "Private Messages", MessageCircleMore, folders.private),
-      makeFolder("groups", "Group Chats", UsersRound, folders.groups),
-      makeFolder("helpdesk", "Helpdesk", Headset, [...folders.it, ...folders.taHr], helpdeskSubfolders),
+      makeFolder("private", "Private Messages", MessageCircleMore, categoryConversations.private),
+      makeFolder("groups", "Group Chats", UsersRound, categoryConversations.groups),
+      makeFolder("helpdesk", "Helpdesk", Headset, categoryConversations.helpdesk, helpdeskSubfolders),
     ].filter(isVisible);
-  }, [filteredConversations, chatSearchActive]);
+  }, [categoryConversations, chatSearchActive]);
 
   // A support-account thread must not bypass the Helpdesk dashboard by
   // remaining selected in the shared ChatContext from an earlier visit.
@@ -2856,6 +3135,25 @@ export default function SiBSChat({
     (!candidateActiveConversation?.isHelpdesk ||
       canRequestHelpdesk(cleanText(candidateActiveConversation?.helpdeskCategory).toUpperCase()))
     ? candidateActiveConversation || null : null;
+
+  // Synchronize draft when active conversation changes
+  useEffect(() => {
+    const prevId = previousActiveConversationIdRef.current;
+    const currentId = activeConversation?.id;
+
+    if (prevId && prevId !== currentId && currentSibsId && cleanText(draft)) {
+      saveConversationDraft(currentSibsId, prevId, draft);
+    }
+
+    if (currentId && currentSibsId) {
+      const savedDraft = getConversationDraft(currentSibsId, currentId);
+      setDraft(savedDraft);
+    } else if (!currentId) {
+      setDraft("");
+    }
+
+    previousActiveConversationIdRef.current = currentId || null;
+  }, [activeConversation?.id, currentSibsId]);
 
   // The selected conversation can arrive before/after the refreshed list.
   // Compare IDs instead of depending on the entire conversation object so
@@ -2975,6 +3273,61 @@ export default function SiBSChat({
     document.addEventListener('keydown', handleCloseCaseEscape);
     return () => document.removeEventListener('keydown', handleCloseCaseEscape);
   }, [helpdeskCloseConfirm]);
+
+  useEffect(() => {
+    if (!open || isMinimized) return undefined;
+
+    function handlePanelEscapeKey(event) {
+      if (event.key !== "Escape") return;
+      if (
+        emojiPickerOpen ||
+        gifPickerOpen ||
+        helpdeskStatusMenuOpen ||
+        conversationActionId ||
+        messageActionId ||
+        reactionPickerMessageId ||
+        groupInfoOpen ||
+        themeModalOpen ||
+        newChatOpen ||
+        nicknameConversation ||
+        helpdeskCloseConfirm ||
+        deleteConversationConfirm ||
+        unsendConfirmMessage ||
+        documentPreview
+      ) {
+        return;
+      }
+      if (
+        document.activeElement &&
+        (document.activeElement.tagName === "TEXTAREA" ||
+          document.activeElement.tagName === "INPUT")
+      ) {
+        return;
+      }
+      handleMinimize();
+    }
+
+    window.addEventListener("keydown", handlePanelEscapeKey);
+    return () => window.removeEventListener("keydown", handlePanelEscapeKey);
+  }, [
+    open,
+    isMinimized,
+    emojiPickerOpen,
+    gifPickerOpen,
+    helpdeskStatusMenuOpen,
+    conversationActionId,
+    messageActionId,
+    reactionPickerMessageId,
+    groupInfoOpen,
+    themeModalOpen,
+    newChatOpen,
+    nicknameConversation,
+    helpdeskCloseConfirm,
+    deleteConversationConfirm,
+    unsendConfirmMessage,
+    documentPreview,
+    handleMinimize,
+  ]);
 
   const activeStatusTicket = helpdeskStatusTicket?.conversationId === activeHelpdeskId
     ? helpdeskStatusTicket : null;
@@ -3750,6 +4103,9 @@ export default function SiBSChat({
       selectedImagesRef.current = [];
       setSelectedImages([]);
       setDraft("");
+      if (currentSibsId && activeConversation?.id) {
+        clearConversationDraft(currentSibsId, activeConversation.id);
+      }
       stopTypingIndicator(activeConversation.id);
       setEmojiPickerOpen(false);
       setGifPickerOpen(false);
@@ -4157,14 +4513,14 @@ export default function SiBSChat({
       setGroupInfoOpen(false);
       return;
     }
+    if (currentSibsId && activeConversation?.id && cleanText(draft)) {
+      saveConversationDraft(currentSibsId, activeConversation.id, draft);
+    }
     explicitlyViewingListRef.current = true;
-    // Expanded mode must also fold back into the sidebar-only window.
-    setIsExpanded(false);
-    setExpandedBounds(null);
     setHelpdeskStatusMenuOpen(false);
     setHelpdeskCloseConfirm(false);
     setGroupInfoOpen(false);
-    // Keep the conversation mounted for the 300ms slide-out, then clear the
+    // Keep the conversation mounted for the slide-out, then clear the
     // selection. Without this, the right pane instantly swaps to an empty
     // state before the sidebar finishes expanding into view.
     setIsNavigatingBack(true);
@@ -4173,9 +4529,12 @@ export default function SiBSChat({
     }
     navigateBackTimerRef.current = setTimeout(() => {
       void chat?.selectConversation?.(null);
+      if (currentSibsId) {
+        saveChatState(currentSibsId, { activeConversationId: null });
+      }
       setIsNavigatingBack(false);
       navigateBackTimerRef.current = null;
-    }, 300);
+    }, 250);
   }
 
   function handleCloseNewChat() {
@@ -4240,6 +4599,9 @@ export default function SiBSChat({
   }
 
   function handleSelectConversation(conversationId) {
+    if (currentSibsId && activeConversation?.id && cleanText(draft)) {
+      saveConversationDraft(currentSibsId, activeConversation.id, draft);
+    }
     explicitlyViewingListRef.current = false;
     if (navigateBackTimerRef.current) {
       clearTimeout(navigateBackTimerRef.current);
@@ -4247,7 +4609,269 @@ export default function SiBSChat({
     }
     setIsNavigatingBack(false);
     setConversationActionId(null);
+    if (currentSibsId) {
+      saveChatState(currentSibsId, {
+        activeConversationId: conversationId,
+        isOpen: true,
+      });
+    }
     void chat?.selectConversation?.(conversationId);
+  }
+
+  function renderConversationRow(conversation, { nested = false, showCategoryBadge = false } = {}) {
+    const selected = Number(chat.activeConversationId) === Number(conversation.id);
+    const otherMember = conversation.otherMember;
+    const online = otherMember ? isMemberOnline(otherMember) : false;
+    const isHelpdeskThread = Boolean(conversation.isHelpdesk);
+    const helpdeskLabel = isHelpdeskThread
+      ? getHelpdeskCategoryLabel(conversation.helpdeskCategory) : "";
+    const conversationTypingIds = Array.isArray(
+      chat?.typingByConversation?.[Number(conversation.id)],
+    )
+      ? chat.typingByConversation[Number(conversation.id)]
+      : [];
+
+    const conversationMembers = Array.isArray(conversation?.members)
+      ? conversation.members
+      : [];
+
+    const conversationTypingNames = conversationTypingIds
+      .map((sibsId) =>
+        conversationMembers.find(
+          (member) =>
+            cleanText(member?.sibsId) === cleanText(sibsId),
+        ),
+      )
+      .filter(Boolean)
+      .filter(
+        (member) =>
+          cleanText(member?.sibsId) !== cleanText(currentSibsId),
+      )
+      .map((member) => getChatMemberDisplayName(member))
+      .filter(Boolean);
+
+    const conversationTypingLabel =
+      conversationTypingNames.length === 1
+        ? `${conversationTypingNames[0]} is typing...`
+        : conversationTypingNames.length === 2
+          ? `${conversationTypingNames[0]} and ${conversationTypingNames[1]} are typing...`
+          : conversationTypingNames.length > 2
+            ? `${conversationTypingNames[0]}, ${conversationTypingNames[1]}, and ${
+                conversationTypingNames.length - 2
+              } other${
+                conversationTypingNames.length - 2 === 1 ? "" : "s"
+              } are typing...`
+            : "";
+
+    const preview =
+      conversationTypingLabel ||
+      conversation.lastMessageText ||
+      (conversation.lastMessageType?.includes("DOCUMENT")
+        ? "Sent a document"
+        : conversation.lastMessageType?.includes("VIDEO")
+        ? "Sent a video"
+        : conversation.lastMessageType?.includes("MEDIA")
+          ? "Sent media"
+          : conversation.lastMessageType?.includes("IMAGE")
+            ? "Sent an image"
+            : conversation.lastMessageType === "GIF"
+              ? "GIF"
+              : "No messages yet");
+
+    const actionMenuOpen =
+      Number(conversationActionId) === Number(conversation.id);
+    const actionBusy =
+      Number(conversationActionBusyId) === Number(conversation.id);
+    const categoryBadge = showCategoryBadge ? getConversationCategoryBadge(conversation) : null;
+    const fullDateStr = formatConversationFullDate(conversation.lastMessageAt || conversation.updatedAt);
+
+    return (
+      <div
+        key={conversation.id}
+        role="listitem"
+        className={`group relative mb-1 flex items-center rounded-xl border-l-[3px] transition ${
+          nested ? "ml-2 w-[calc(100%-0.5rem)]" : "w-full"
+        } ${
+          selected
+            ? "border-l-sibs-orange bg-sibs-cream-subtle border-y border-r border-sibs-border/60"
+            : "border-l-transparent hover:bg-sibs-surface"
+        }`}
+      >
+        <button
+          type="button"
+          onClick={() => handleSelectConversation(conversation.id)}
+          aria-selected={selected}
+          className="flex min-w-0 flex-1 items-center gap-3 px-3 py-2.5 text-left"
+        >
+          {isHelpdeskThread ? (
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-sibs-cream-light text-sibs-orange">
+              {cleanText(conversation.helpdeskCategory).toUpperCase() === "IT"
+                ? <MonitorCog size={18} /> : <HeartHandshake size={18} />}
+            </span>
+          ) : (
+            <ChatAvatar
+              employee={conversation.isGroup ? null : otherMember}
+              initials={conversation.initials}
+              online={online}
+              group={conversation.isGroup}
+              size="md"
+            />
+          )}
+          <span className="min-w-0 flex-1">
+            {isHelpdeskThread ? (
+              <>
+                <span className="flex items-center justify-between gap-2">
+                  <span className="flex items-center gap-1.5 truncate">
+                    <span className="truncate text-[10px] font-extrabold text-sibs-orange">
+                      My {helpdeskLabel} request
+                    </span>
+                    {categoryBadge ? (
+                      <span className={`inline-flex shrink-0 items-center rounded-md border px-1.5 py-0.2 text-[9px] font-bold ${categoryBadge.color}`}>
+                        {categoryBadge.label}
+                      </span>
+                    ) : null}
+                  </span>
+                  <time
+                    dateTime={new Date(conversation.lastMessageAt || conversation.updatedAt || Date.now()).toISOString()}
+                    title={fullDateStr}
+                    className="shrink-0 text-[9px] font-medium text-sibs-faint"
+                  >
+                    {formatConversationTime(conversation.lastMessageAt || conversation.updatedAt, chatClockMs)}
+                  </time>
+                </span>
+                <span className="mt-0.5 block truncate text-xs font-extrabold text-sibs-navy">
+                  {getHelpdeskCaseLabel(conversation)}
+                </span>
+                <span className="mt-0.5 flex min-w-0 items-center gap-2">
+                  <span className={`min-w-0 flex-1 truncate text-[10px] ${conversationTypingLabel ? "font-bold text-sibs-orange" : "text-sibs-muted"}`}>
+                    {preview}
+                  </span>
+                  {conversation.unreadCount > 0 ? (
+                    <span className="inline-flex min-w-5 shrink-0 items-center justify-center rounded-full bg-sibs-orange px-1.5 py-0.5 text-[9px] font-black text-white">
+                      {conversation.unreadCount > 99 ? "99+" : conversation.unreadCount}
+                    </span>
+                  ) : null}
+                </span>
+              </>
+            ) : (
+              <>
+                <span className="flex items-center justify-between gap-2">
+                  <span className="flex items-center gap-1.5 truncate">
+                    <span className="truncate text-sm font-bold text-sibs-navy">
+                      {!conversation.isGroup
+                        ? cleanText(
+                            otherMember?.chatNickname ||
+                              otherMember?.chat_nickname,
+                          ) ||
+                          cleanText(otherMember?.displayName) ||
+                          conversation.title
+                        : conversation.title}
+                    </span>
+                    {categoryBadge ? (
+                      <span className={`inline-flex shrink-0 items-center rounded-md border px-1.5 py-0.2 text-[9px] font-bold ${categoryBadge.color}`}>
+                        {categoryBadge.label}
+                      </span>
+                    ) : null}
+                  </span>
+                  <time
+                    dateTime={new Date(conversation.lastMessageAt || conversation.updatedAt || Date.now()).toISOString()}
+                    title={fullDateStr}
+                    className="shrink-0 text-[11px] font-medium text-sibs-faint"
+                  >
+                    {formatConversationTime(conversation.lastMessageAt || conversation.updatedAt, chatClockMs)}
+                  </time>
+                </span>
+                <span className="mt-0.5 flex items-center gap-2">
+                  <span
+                    className={`min-w-0 flex-1 truncate text-xs ${
+                      conversationTypingLabel
+                        ? "font-extrabold text-sibs-orange"
+                        : conversation.unreadCount
+                          ? "font-extrabold text-sibs-navy"
+                          : "font-normal text-sibs-muted"
+                    }`}
+                  >
+                    {preview}
+                  </span>
+                  {conversation.unreadCount > 0 ? (
+                    <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-sibs-orange px-1.5 py-0.5 text-[9px] font-black text-white">
+                      {conversation.unreadCount > 99 ? "99+" : conversation.unreadCount}
+                    </span>
+                  ) : null}
+                </span>
+              </>
+            )}
+          </span>
+        </button>
+
+        {!conversation.isGroup ? (
+          <div
+            data-chat-conversation-actions
+            className="relative mr-1.5 shrink-0"
+          >
+            <button
+              type="button"
+              aria-label={`Conversation options for ${conversation.title}`}
+              aria-haspopup="menu"
+              aria-expanded={actionMenuOpen}
+              disabled={actionBusy}
+              onClick={() =>
+                setConversationActionId((current) =>
+                  Number(current) === Number(conversation.id)
+                    ? null
+                    : conversation.id,
+                )
+              }
+              className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-sibs-faint transition hover:bg-white hover:text-sibs-navy disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {actionBusy ? (
+                <Loader2 size={14} className="animate-spin" />
+              ) : (
+                <MoreHorizontal size={16} />
+              )}
+            </button>
+
+            {actionMenuOpen ? (
+              <div
+                role="menu"
+                className="absolute right-0 top-8 z-40 w-44 overflow-hidden rounded-xl border border-sibs-border bg-white p-1.5 shadow-[0_12px_32px_rgba(4,44,81,0.18)]"
+              >
+                <button
+                  type="button"
+                  role="menuitem"
+                  disabled={actionBusy}
+                  onClick={() => handleSetNickname(conversation)}
+                  className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-[10px] font-extrabold text-sibs-navy transition hover:bg-sibs-surface disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <Pencil size={14} />
+                  Set nickname
+                </button>
+                <button
+                  type="button"
+                  role="menuitem"
+                  disabled={actionBusy}
+                  onClick={() => void handleHideConversation(conversation)}
+                  className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-[10px] font-extrabold text-sibs-navy transition hover:bg-sibs-surface disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <EyeOff size={14} />
+                  Hide conversation
+                </button>
+                <button
+                  type="button"
+                  role="menuitem"
+                  disabled={actionBusy}
+                  onClick={() => handleDeleteConversation(conversation)}
+                  className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-[10px] font-extrabold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <Trash2 size={14} />
+                  Delete conversation
+                </button>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+      </div>
+    );
   }
 
   const chatUi = (
@@ -4267,6 +4891,69 @@ export default function SiBSChat({
             onDismiss={() => chat.dismissMembershipNotice?.()}
           />
         </div>
+      ) : null}
+
+      {/* Minimized Floating Dock Chip */}
+      {open && isMinimized ? (
+        <aside
+          ref={minimizedDockRef}
+          aria-label="Minimized SiBS Chat"
+          data-testid="sibs-chat-minimized-dock"
+          className="fixed z-[35] flex items-center gap-1.5 rounded-2xl border border-sibs-border bg-sibs-navy px-2.5 py-1.5 font-jakarta text-white shadow-2xl transition-all right-4 sm:right-6"
+          style={{
+            bottom: "calc(1.5rem + env(safe-area-inset-bottom, 0px))",
+          }}
+        >
+          <button
+            type="button"
+            onClick={handleRestoreFromMinimized}
+            title={
+              activeConversation
+                ? `Restore chat: ${activeConversation.title || "Conversation"}`
+                : "Restore SiBS Chat"
+            }
+            aria-label={
+              activeConversation
+                ? `Restore chat with ${activeConversation.title || "active conversation"}`
+                : "Restore SiBS Chat"
+            }
+            className="flex items-center gap-2 rounded-xl px-2 py-1 text-left text-xs font-bold text-white transition hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
+          >
+            <span className="relative inline-flex h-7 w-7 items-center justify-center rounded-lg bg-sibs-orange text-white">
+              <MessageCircleMore size={15} />
+              {chat.totalUnread > 0 ? (
+                <span className="absolute -right-1.5 -top-1.5 inline-flex min-h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[8px] font-black text-white">
+                  {chat.totalUnread > 99 ? "99+" : chat.totalUnread}
+                </span>
+              ) : null}
+            </span>
+            <span className="max-w-[160px] truncate sm:max-w-[200px]">
+              {activeConversation
+                ? (activeConversation.isHelpdesk
+                    ? getPersonalHelpdeskChatTitle(activeConversation.helpdeskCategory)
+                    : activeConversation.title)
+                : "SiBS Chat"}
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={handleRestoreFromMinimized}
+            title="Restore chat window"
+            aria-label="Restore chat window"
+            className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-white/75 transition hover:bg-white/10 hover:text-white"
+          >
+            <Maximize2 size={13} />
+          </button>
+          <button
+            type="button"
+            onClick={handleClose}
+            title="Close chat"
+            aria-label="Close chat"
+            className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-white/75 transition hover:bg-white/10 hover:text-white"
+          >
+            <X size={14} />
+          </button>
+        </aside>
       ) : null}
 
       {!hideTrigger && !open ? (
@@ -4315,28 +5002,26 @@ export default function SiBSChat({
       <section
         ref={chatPanelRef}
         id="sibs-chat-panel"
-        role={open ? "dialog" : undefined}
-        aria-modal={open ? "false" : undefined}
+        role="region"
         aria-label="SiBS Chat"
         data-expanded={isExpanded}
+        data-minimized={isMinimized}
         onDragEnter={handleChatDragOver}
         onDragOver={handleChatDragOver}
         onDragLeave={handleChatDragLeave}
         onDrop={handleChatDrop}
         onDragEnd={() => setDraggingAttachments(false)}
-        className={`font-jakarta t-resize fixed right-4 z-[35] flex transition-[width,transform,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none max-sm:!inset-0 max-sm:!h-[100dvh] max-sm:!w-screen max-sm:!rounded-none max-sm:!border-0 ${
-          hideTrigger
-            ? "h-[min(720px,calc(100dvh-3rem))]"
-            : "h-[min(720px,calc(100dvh-9rem))]"
+        className={`font-jakarta fixed z-[35] flex overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-2xl transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none max-sm:!inset-0 max-sm:!h-[100dvh] max-sm:!w-screen max-sm:!rounded-none max-sm:!border-0 ${
+          isMinimized
+            ? "pointer-events-none opacity-0 invisible translate-y-4 scale-95"
+            : open
+              ? "pointer-events-auto translate-y-0 scale-100 opacity-100"
+              : "pointer-events-none max-sm:translate-y-full max-sm:opacity-0 sm:translate-y-3 sm:scale-[0.98] sm:opacity-0 invisible"
         } ${
-          hasActiveMobileView ? "w-[min(960px,calc(100vw-2rem))]" : "w-[min(300px,calc(100vw-2rem))]"
-        } overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-2xl sm:right-6 ${
-          hideTrigger ? "" : "bottom-24"
-        } ${
-          open
-            ? "pointer-events-auto translate-y-0 scale-100 opacity-100"
-            : "pointer-events-none max-sm:translate-y-full max-sm:scale-100 max-sm:opacity-0 sm:translate-y-3 sm:scale-[0.98] sm:opacity-0"
-        }`}
+          isExpanded
+            ? "w-[min(1100px,calc(100vw-3rem))] h-[min(820px,calc(100dvh-5rem))]"
+            : "w-[min(440px,calc(100vw-2rem))] h-[min(680px,calc(100dvh-3rem))]"
+        } right-4 sm:right-6 bottom-4 sm:bottom-6`}
         style={
           isExpanded && expandedBounds && !(typeof window !== "undefined" && window.matchMedia("(max-width: 639px)").matches)
             ? {
@@ -4346,10 +5031,6 @@ export default function SiBSChat({
                 bottom: "auto",
                 width: `${expandedBounds.width}px`,
                 height: `${expandedBounds.height}px`,
-              }
-            : hideTrigger && !(typeof window !== "undefined" && window.matchMedia("(max-width: 639px)").matches)
-            ? {
-                bottom: "calc(1.5rem + env(safe-area-inset-bottom, 0px))",
               }
             : undefined
         }
@@ -4376,16 +5057,18 @@ export default function SiBSChat({
         ) : null}
 
         <aside
-          className={`w-[300px] shrink-0 flex flex-col border-r border-sibs-border bg-white max-sm:w-full max-sm:shrink-0 max-sm:border-r-0 max-sm:transition-transform max-sm:duration-300 max-sm:ease-[cubic-bezier(0.22,1,0.36,1)] max-sm:will-change-transform motion-reduce:transition-none sm:translate-x-0 ${
-            hasActiveMobileView
-              ? "max-sm:-translate-x-full max-sm:pointer-events-none"
-              : "max-sm:translate-x-0 max-sm:pointer-events-auto"
+          className={`flex flex-col bg-white overflow-hidden transition-all duration-200 ${
+            isExpanded
+              ? "w-[320px] shrink-0 border-r border-sibs-border h-full"
+              : hasActiveMobileView
+                ? "hidden"
+                : "w-full flex-1 h-full"
           }`}
         >
-          <header className="border-b border-white/10 bg-sibs-navy px-3 py-3.5 text-white sm:px-4">
-            <div className="flex items-center gap-2 sm:gap-3">
-              <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sibs-orange text-white shadow-xs">
-                <MessageCircleMore size={20} />
+          <header className="border-b border-white/10 bg-sibs-navy px-3 py-3 text-white sm:px-4">
+            <div className="flex items-center gap-2 sm:gap-2.5">
+              <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-sibs-orange text-white shadow-xs">
+                <MessageCircleMore size={18} />
               </span>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
@@ -4397,46 +5080,95 @@ export default function SiBSChat({
                   ) : null}
                 </div>
                 <p className="truncate text-[10px] font-semibold text-white/70">
-                  Private & group messaging
+                  {activeCategoryTab === "private"
+                    ? "Private Messages"
+                    : activeCategoryTab === "groups"
+                      ? "Group Chats"
+                      : activeCategoryTab === "helpdesk"
+                        ? "IT Support & TA/HR Concerns"
+                        : "Recent conversations"}
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={() => setNewChatOpen(true)}
-                title="New chat"
-                className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-white/75 transition hover:bg-white/10 hover:text-white"
-              >
-                <Plus size={17} />
-              </button>
-              <button
-                type="button"
-                onClick={toggleExpanded}
-                title={isExpanded ? "Restore chat size" : "Expand chat"}
-                aria-label={isExpanded ? "Restore chat size" : "Expand chat"}
-                aria-expanded={isExpanded}
-                aria-controls="sibs-chat-panel"
-                className="hidden h-8 w-8 shrink-0 items-center justify-center rounded-lg text-white/75 transition hover:bg-white/10 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white sm:inline-flex"
-              >
-                {isExpanded ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
-              </button>
-              {/* The sidebar Close control is only available when the conversation
-                  pane is hidden. The active conversation has its own Close and
-                  Back buttons, so avoid showing two close controls at once. */}
-              {showSidebarCloseButton ? (
+
+              {activeCategoryTab === "private" ? (
                 <button
                   type="button"
-                  onClick={() => setOpen(false)}
-                  title="Close SiBS Chat"
-                  aria-label="Close SiBS Chat"
-                  className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/10 text-white transition hover:bg-white/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+                  onClick={() => setNewChatOpen(true)}
+                  title="Start private message"
+                  aria-label="Start private message"
+                  className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-white/75 transition hover:bg-white/10 hover:text-white"
                 >
-                  <X size={17} />
+                  <Plus size={17} />
                 </button>
+              ) : activeCategoryTab === "groups" ? (
+                <button
+                  type="button"
+                  onClick={() => setNewChatOpen(true)}
+                  title="Create group chat"
+                  aria-label="Create group chat"
+                  className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-white/75 transition hover:bg-white/10 hover:text-white"
+                >
+                  <Plus size={17} />
+                </button>
+              ) : activeCategoryTab === "helpdesk" ? (
+                <button
+                  type="button"
+                  onClick={() => handleContactHelpdesk(helpdeskSubfilter === "taHr" ? "TA_HR" : "IT")}
+                  title={helpdeskSubfilter === "taHr" ? "New TA/HR concern" : "New IT Support request"}
+                  aria-label={helpdeskSubfilter === "taHr" ? "New TA/HR concern" : "New IT Support request"}
+                  className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-white/75 transition hover:bg-white/10 hover:text-white"
+                >
+                  <Plus size={17} />
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setNewChatOpen(true)}
+                  title="New chat"
+                  aria-label="New chat"
+                  className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-white/75 transition hover:bg-white/10 hover:text-white"
+                >
+                  <Plus size={17} />
+                </button>
+              )}
+
+              {(!isExpanded || !activeConversation) ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={handleMinimize}
+                    title="Minimize chat"
+                    aria-label="Minimize chat"
+                    className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-white/75 transition hover:bg-white/10 hover:text-white"
+                  >
+                    <Minus size={16} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={toggleExpanded}
+                    title={isExpanded ? "Restore compact size" : "Expand chat"}
+                    aria-label={isExpanded ? "Restore compact size" : "Expand chat"}
+                    aria-expanded={isExpanded}
+                    aria-controls="sibs-chat-panel"
+                    className="hidden h-8 w-8 shrink-0 items-center justify-center rounded-lg text-white/75 transition hover:bg-white/10 hover:text-white sm:inline-flex"
+                  >
+                    {isExpanded ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleClose}
+                    title="Close SiBS Chat"
+                    aria-label="Close SiBS Chat"
+                    className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-white/75 transition hover:bg-white/10 hover:text-white"
+                  >
+                    <X size={17} />
+                  </button>
+                </>
               ) : null}
             </div>
           </header>
 
-          <div className="border-b border-sibs-border px-3 py-3">
+          <div className="border-b border-sibs-border px-3 py-2.5">
             <label className="relative block">
               <Search size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sibs-faint" />
               <input
@@ -4444,9 +5176,107 @@ export default function SiBSChat({
                 value={conversationSearch}
                 onChange={(event) => setConversationSearch(event.target.value)}
                 placeholder="Search chats..."
-                className="h-10 w-full rounded-xl border border-sibs-border bg-sibs-surface pl-9 pr-3 text-xs font-semibold text-sibs-navy outline-none transition placeholder:text-sibs-faint hover:border-sibs-border focus:border-sibs-orange focus:bg-white focus:ring-2 focus:ring-sibs-orange/10"
+                aria-label="Search chats"
+                className="h-9 w-full rounded-xl border border-sibs-border bg-sibs-surface pl-9 pr-3 text-xs font-semibold text-sibs-navy outline-none transition placeholder:text-sibs-faint hover:border-sibs-border focus:border-sibs-orange focus:bg-white focus:ring-2 focus:ring-sibs-orange/10"
               />
             </label>
+          </div>
+
+          {/* Category Filter Tabs & View Mode Switcher */}
+          <div className="border-b border-sibs-border bg-sibs-surface/60 px-2.5 py-1.5">
+            <div className="flex items-center justify-between gap-1">
+              <div className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto no-scrollbar">
+                {[
+                  { id: "all", label: "Recent", count: unreadCounts.all },
+                  { id: "private", label: "Private", count: unreadCounts.private },
+                  { id: "groups", label: "Groups", count: unreadCounts.groups },
+                  { id: "helpdesk", label: "Helpdesk", count: unreadCounts.helpdesk },
+                ].map((tab) => {
+                  const active = activeCategoryTab === tab.id;
+                  return (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      onClick={() => {
+                        setActiveCategoryTab(tab.id);
+                        if (currentSibsId) {
+                          saveChatState(currentSibsId, { activeCategoryTab: tab.id });
+                        }
+                      }}
+                      aria-selected={active}
+                      className={`inline-flex shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-1 text-[11px] font-bold transition ${
+                        active
+                          ? "bg-white text-sibs-navy shadow-xs border border-sibs-border/80"
+                          : "text-sibs-muted hover:bg-white/60 hover:text-sibs-navy"
+                      }`}
+                    >
+                      <span>{tab.label}</span>
+                      {tab.count > 0 ? (
+                        <span className="inline-flex min-h-4 min-w-4 items-center justify-center rounded-full bg-sibs-orange px-1 text-[8px] font-black text-white">
+                          {tab.count > 99 ? "99+" : tab.count}
+                        </span>
+                      ) : null}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="flex shrink-0 items-center rounded-lg border border-sibs-border bg-white p-0.5">
+                <button
+                  type="button"
+                  onClick={() => setInboxViewMode("list")}
+                  title="List view"
+                  aria-label="List view"
+                  className={`inline-flex h-6 w-6 items-center justify-center rounded-md text-xs transition ${
+                    inboxViewMode === "list"
+                      ? "bg-sibs-navy text-white shadow-xs"
+                      : "text-sibs-muted hover:text-sibs-navy"
+                  }`}
+                >
+                  <ListFilter size={13} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setInboxViewMode("folders")}
+                  title="Folder view"
+                  aria-label="Folder view"
+                  className={`inline-flex h-6 w-6 items-center justify-center rounded-md text-xs transition ${
+                    inboxViewMode === "folders"
+                      ? "bg-sibs-navy text-white shadow-xs"
+                      : "text-sibs-muted hover:text-sibs-navy"
+                  }`}
+                >
+                  <FolderTree size={13} />
+                </button>
+              </div>
+            </div>
+
+            {activeCategoryTab === "helpdesk" ? (
+              <div className="mt-1.5 flex items-center gap-1.5 pt-1 border-t border-sibs-border/50">
+                {[
+                  { id: "all", label: "All Helpdesk", count: categoryConversations.helpdesk.length },
+                  { id: "it", label: "IT Support", count: categoryConversations.it.length },
+                  { id: "taHr", label: "TA/HR Concerns", count: categoryConversations.taHr.length },
+                ].map((sub) => {
+                  const subActive = helpdeskSubfilter === sub.id;
+                  return (
+                    <button
+                      key={sub.id}
+                      type="button"
+                      onClick={() => setHelpdeskSubfilter(sub.id)}
+                      className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[10px] font-semibold transition ${
+                        subActive
+                          ? "bg-sibs-orange/15 text-sibs-orange font-extrabold"
+                          : "text-sibs-muted hover:bg-white"
+                      }`}
+                    >
+                      <span>{sub.label}</span>
+                      <span className="text-[9px] opacity-75">({sub.count})</span>
+                    </button>
+                  );
+                })}
+              </div>
+            ) : null}
           </div>
 
           {helpdeskRequestScopeError ? (
@@ -4462,247 +5292,95 @@ export default function SiBSChat({
               {helpdeskStartError}
             </div>
           ) : null}
+
           <div className="sibs-scrollbar min-h-0 flex-1 overflow-y-auto p-2">
             {chat.conversationsLoading && !chat.conversations.length ? (
               <div className="flex items-center gap-2 px-3 py-2 text-[10px] font-semibold text-sibs-muted">
                 <Loader2 size={13} className="animate-spin" /> Loading conversations…
               </div>
             ) : null}
-            <ChatFolderList
-              folders={chatSidebarFolders}
-              expandedFolders={expandedChatFolders}
-              onFoldersChange={updateChatFolders}
-              onHelpdeskContact={handleContactHelpdesk}
-              canRequestHelpdesk={canRequestHelpdesk}
-              helpdeskStartingCategory={helpdeskStartingCategory}
-              helpdeskScopePending={!Array.isArray(requestableHelpdeskCategories)}
-            >{(conversation, nested) => {
-                const selected = Number(chat.activeConversationId) === Number(conversation.id);
-                const otherMember = conversation.otherMember;
-                const online = otherMember ? isMemberOnline(otherMember) : false;
-                const isHelpdeskThread = Boolean(conversation.isHelpdesk);
-                const helpdeskLabel = isHelpdeskThread
-                  ? getHelpdeskCategoryLabel(conversation.helpdeskCategory) : "";
-                const conversationTypingIds = Array.isArray(
-                  chat?.typingByConversation?.[Number(conversation.id)],
-                )
-                  ? chat.typingByConversation[Number(conversation.id)]
-                  : [];
 
-                const conversationMembers = Array.isArray(conversation?.members)
-                  ? conversation.members
-                  : [];
-
-                const conversationTypingNames = conversationTypingIds
-                  .map((sibsId) =>
-                    conversationMembers.find(
-                      (member) =>
-                        cleanText(member?.sibsId) === cleanText(sibsId),
-                    ),
-                  )
-                  .filter(Boolean)
-                  .filter(
-                    (member) =>
-                      cleanText(member?.sibsId) !== cleanText(currentSibsId),
-                  )
-                  .map((member) => getChatMemberDisplayName(member))
-                  .filter(Boolean);
-
-                const conversationTypingLabel =
-                  conversationTypingNames.length === 1
-                    ? `${conversationTypingNames[0]} is typing...`
-                    : conversationTypingNames.length === 2
-                      ? `${conversationTypingNames[0]} and ${conversationTypingNames[1]} are typing...`
-                      : conversationTypingNames.length > 2
-                        ? `${conversationTypingNames[0]}, ${conversationTypingNames[1]}, and ${
-                            conversationTypingNames.length - 2
-                          } other${
-                            conversationTypingNames.length - 2 === 1 ? "" : "s"
-                          } are typing...`
-                        : "";
-
-                const preview =
-                  conversationTypingLabel ||
-                  conversation.lastMessageText ||
-                  (conversation.lastMessageType?.includes("DOCUMENT")
-                    ? "Sent a document"
-                    : conversation.lastMessageType?.includes("VIDEO")
-                    ? "Sent a video"
-                    : conversation.lastMessageType?.includes("MEDIA")
-                      ? "Sent media"
-                      : conversation.lastMessageType?.includes("IMAGE")
-                        ? "Sent an image"
-                        : conversation.lastMessageType === "GIF"
-                          ? "GIF"
-                          : "No messages yet");
-
-                const actionMenuOpen =
-                  Number(conversationActionId) === Number(conversation.id);
-                const actionBusy =
-                  Number(conversationActionBusyId) === Number(conversation.id);
-
-                return (
-                  <div
-                    key={conversation.id}
-                    className={`group relative mb-1 flex items-center rounded-xl border-l-[3px] transition ${
-                      nested ? "ml-2 w-[calc(100%-0.5rem)]" : "w-full"
-                    } ${
-                      selected
-                        ? "border-l-sibs-orange bg-sibs-cream-subtle border-y border-r border-sibs-border/60"
-                        : "border-l-transparent hover:bg-sibs-surface"
-                    }`}
+            {inboxViewMode === "folders" ? (
+              <ChatFolderList
+                folders={chatSidebarFolders}
+                expandedFolders={expandedChatFolders}
+                onFoldersChange={updateChatFolders}
+                onHelpdeskContact={handleContactHelpdesk}
+                canRequestHelpdesk={canRequestHelpdesk}
+                helpdeskStartingCategory={helpdeskStartingCategory}
+                helpdeskScopePending={!Array.isArray(requestableHelpdeskCategories)}
+              >
+                {(conversation, nested) => renderConversationRow(conversation, { nested, showCategoryBadge: false })}
+              </ChatFolderList>
+            ) : (
+              <div className="space-y-0.5" role="list" aria-label="Conversation list">
+                {activeCategoryTab === "private" && (
+                  <button
+                    type="button"
+                    onClick={() => setNewChatOpen(true)}
+                    className="mb-2 flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-sibs-border bg-sibs-surface px-3 py-2 text-[11px] font-bold text-sibs-orange transition hover:border-sibs-orange hover:bg-sibs-cream-light"
                   >
-                    <button
-                      type="button"
-                      onClick={() => handleSelectConversation(conversation.id)}
-                      className="flex min-w-0 flex-1 items-center gap-3 px-3 py-2.5 text-left"
-                    >
-                      {isHelpdeskThread ? (
-                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-sibs-cream-light text-sibs-orange">
-                          {cleanText(conversation.helpdeskCategory).toUpperCase() === "IT"
-                            ? <MonitorCog size={18} /> : <HeartHandshake size={18} />}
-                        </span>
-                      ) : (
-                        <ChatAvatar
-                          employee={conversation.isGroup ? null : otherMember}
-                          initials={conversation.initials}
-                          online={online}
-                          group={conversation.isGroup}
-                          size="md"
-                        />
-                      )}
-                      <span className="min-w-0 flex-1">
-                        {isHelpdeskThread ? (
-                          <>
-                            <span className="block truncate text-[10px] font-extrabold text-sibs-orange">
-                              My {helpdeskLabel} request
-                            </span>
-                            <span className="mt-0.5 block truncate text-xs font-extrabold text-sibs-navy">
-                              {getHelpdeskCaseLabel(conversation)}
-                            </span>
-                            <span className="mt-0.5 flex min-w-0 items-center gap-2">
-                              <span className={`min-w-0 flex-1 truncate text-[10px] ${conversationTypingLabel ? "font-bold text-sibs-orange" : "text-sibs-muted"}`}>
-                                {preview}
-                              </span>
-                              {conversation.unreadCount > 0 ? (
-                                <span className="inline-flex min-w-5 shrink-0 items-center justify-center rounded-full bg-sibs-orange px-1.5 py-0.5 text-[9px] font-black text-white">
-                                  {conversation.unreadCount > 99 ? "99+" : conversation.unreadCount}
-                                </span>
-                              ) : null}
-                              <span className="shrink-0 text-[9px] font-medium text-sibs-faint">
-                                {formatConversationTime(conversation.lastMessageAt || conversation.updatedAt, chatClockMs)}
-                              </span>
-                            </span>
-                          </>
-                        ) : (
-                          <>
-                        <span className="flex items-center justify-between gap-2">
-                          <span className="truncate text-sm font-bold text-sibs-navy">
-                            {!conversation.isGroup
-                              ? cleanText(
-                                  otherMember?.chatNickname ||
-                                    otherMember?.chat_nickname,
-                                ) ||
-                                cleanText(otherMember?.displayName) ||
-                                conversation.title
-                              : conversation.title}
-                          </span>
-                          <span className="shrink-0 text-[11px] font-medium text-sibs-faint">
-                            {formatConversationTime(conversation.lastMessageAt || conversation.updatedAt, chatClockMs)}
-                          </span>
-                        </span>
-                        <span className="mt-0.5 flex items-center gap-2">
-                          <span
-                            className={`min-w-0 flex-1 truncate text-xs ${
-                              conversationTypingLabel
-                                ? "font-extrabold text-sibs-orange"
-                                : conversation.unreadCount
-                                  ? "font-extrabold text-sibs-navy"
-                                  : "font-normal text-sibs-muted"
-                            }`}
-                          >
-                            {preview}
-                          </span>
-                          {conversation.unreadCount > 0 ? (
-                            <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-sibs-orange px-1.5 py-0.5 text-[9px] font-black text-white">
-                              {conversation.unreadCount > 99 ? "99+" : conversation.unreadCount}
-                            </span>
-                          ) : null}
-                        </span>
-                          </>
-                        )}
-                      </span>
-                    </button>
-
-                    {!conversation.isGroup ? (
-                      <div
-                        data-chat-conversation-actions
-                        className="relative mr-1.5 shrink-0"
+                    <Plus size={14} /> Start private message
+                  </button>
+                )}
+                {activeCategoryTab === "groups" && (
+                  <button
+                    type="button"
+                    onClick={() => setNewChatOpen(true)}
+                    className="mb-2 flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-sibs-border bg-sibs-surface px-3 py-2 text-[11px] font-bold text-sibs-navy transition hover:border-sibs-navy hover:bg-slate-100"
+                  >
+                    <Plus size={14} /> Create group chat
+                  </button>
+                )}
+                {activeCategoryTab === "helpdesk" && (
+                  <div className="mb-2 grid grid-cols-2 gap-1.5">
+                    {canRequestHelpdesk("IT") && (
+                      <button
+                        type="button"
+                        onClick={() => handleContactHelpdesk("IT")}
+                        className="flex items-center justify-center gap-1 rounded-xl border border-amber-200 bg-amber-50/70 px-2 py-1.5 text-[10px] font-extrabold text-amber-800 transition hover:bg-amber-100"
                       >
-                        <button
-                          type="button"
-                          aria-label={`Conversation options for ${conversation.title}`}
-                          aria-haspopup="menu"
-                          aria-expanded={actionMenuOpen}
-                          disabled={actionBusy}
-                          onClick={() =>
-                            setConversationActionId((current) =>
-                              Number(current) === Number(conversation.id)
-                                ? null
-                                : conversation.id,
-                            )
-                          }
-                          className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-sibs-faint transition hover:bg-white hover:text-sibs-navy disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                          {actionBusy ? (
-                            <Loader2 size={14} className="animate-spin" />
-                          ) : (
-                            <MoreHorizontal size={16} />
-                          )}
-                        </button>
-
-                        {actionMenuOpen ? (
-                          <div
-                            role="menu"
-                            className="absolute right-0 top-8 z-40 w-44 overflow-hidden rounded-xl border border-sibs-border bg-white p-1.5 shadow-[0_12px_32px_rgba(4,44,81,0.18)]"
-                          >
-                            <button
-                              type="button"
-                              role="menuitem"
-                              disabled={actionBusy}
-                              onClick={() => handleSetNickname(conversation)}
-                              className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-[10px] font-extrabold text-sibs-navy transition hover:bg-sibs-surface disabled:cursor-not-allowed disabled:opacity-50"
-                            >
-                              <Pencil size={14} />
-                              Set nickname
-                            </button>
-                            <button
-                              type="button"
-                              role="menuitem"
-                              disabled={actionBusy}
-                              onClick={() => void handleHideConversation(conversation)}
-                              className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-[10px] font-extrabold text-sibs-navy transition hover:bg-sibs-surface disabled:cursor-not-allowed disabled:opacity-50"
-                            >
-                              <EyeOff size={14} />
-                              Hide conversation
-                            </button>
-                            <button
-                              type="button"
-                              role="menuitem"
-                              disabled={actionBusy}
-                              onClick={() => handleDeleteConversation(conversation)}
-                              className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-[10px] font-extrabold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
-                            >
-                              <Trash2 size={14} />
-                              Delete conversation
-                            </button>
-                          </div>
-                        ) : null}
-                      </div>
-                    ) : null}
+                        <Plus size={13} /> New IT Support
+                      </button>
+                    )}
+                    {canRequestHelpdesk("TA_HR") && (
+                      <button
+                        type="button"
+                        onClick={() => handleContactHelpdesk("TA_HR")}
+                        className="flex items-center justify-center gap-1 rounded-xl border border-blue-200 bg-blue-50/70 px-2 py-1.5 text-[10px] font-extrabold text-blue-800 transition hover:bg-blue-100"
+                      >
+                        <Plus size={13} /> New TA/HR concern
+                      </button>
+                    )}
                   </div>
-                );
-              }}</ChatFolderList>
+                )}
+
+                {activeDisplayConversations.length ? (
+                  activeDisplayConversations.map((conversation) =>
+                    renderConversationRow(conversation, {
+                      nested: false,
+                      showCategoryBadge: activeCategoryTab === "all",
+                    }),
+                  )
+                ) : (
+                  <div className="flex flex-col items-center justify-center px-4 py-8 text-center">
+                    <p className="text-xs font-bold text-sibs-navy">No conversations found</p>
+                    <p className="mt-1 text-[11px] text-sibs-muted">
+                      {conversationSearch
+                        ? "No chats matched your search query."
+                        : activeCategoryTab === "private"
+                          ? "Start a direct conversation with a colleague."
+                          : activeCategoryTab === "groups"
+                            ? "Create a group chat to collaborate."
+                            : activeCategoryTab === "helpdesk"
+                              ? "No Helpdesk cases submitted yet."
+                              : "Start a new conversation to get started."}
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
             {chatSearchActive && !filteredConversations.length ? (
               <p className="px-3 py-4 text-center text-[11px] font-semibold text-sibs-muted">
                 No matching conversations.
@@ -4712,50 +5390,58 @@ export default function SiBSChat({
         </aside>
 
         <div
-          className={`relative min-w-0 max-sm:flex-none sm:flex-1 flex flex-col max-sm:w-full max-sm:shrink-0 transition-[transform,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform motion-reduce:transition-none ${
-            hasActiveMobileView
-              ? "max-sm:-translate-x-full max-sm:pointer-events-auto sm:translate-x-0 sm:opacity-100 sm:pointer-events-auto"
-              : "max-sm:translate-x-0 max-sm:pointer-events-none sm:translate-x-6 sm:opacity-0 sm:pointer-events-none"
+          className={`relative flex min-w-0 flex-col bg-white overflow-hidden transition-all duration-200 ${
+            isExpanded
+              ? "flex-1 h-full"
+              : hasActiveMobileView
+                ? "w-full flex-1 h-full"
+                : "hidden"
           }`}
         >
           {activeConversation ? (
             <>
-              <header className="relative z-30 flex h-[68px] shrink-0 items-center gap-1.5 border-b border-white/10 bg-sibs-navy px-2 text-white shadow-xs sm:gap-3 sm:px-4">
+              <header className={`relative z-30 flex h-[68px] shrink-0 items-center border-b border-white/10 bg-sibs-navy text-white shadow-xs ${
+                isExpanded ? "gap-2.5 px-4" : "gap-1.5 px-3"
+              }`}>
                 <button
                   type="button"
                   onClick={handleBackToList}
                   title="Back to conversations"
                   aria-label="Back to conversations"
-                  className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-white/75 transition hover:bg-white/10 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+                  className={`inline-flex ${isExpanded ? "h-9 w-9" : "h-8 w-8"} shrink-0 items-center justify-center rounded-lg text-white/75 transition hover:bg-white/10 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white ${
+                    isExpanded ? "hidden sm:hidden" : ""
+                  }`}
                 >
                   <ArrowLeft size={18} />
                 </button>
                 {activeConversation.isHelpdesk ? (
                   <span
-                    className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/20 bg-white/10 text-sibs-orange"
+                    className={`inline-flex ${isExpanded ? "h-9 w-9" : "h-8 w-8"} shrink-0 items-center justify-center rounded-full border border-white/20 bg-white/10 text-sibs-orange`}
                     aria-hidden="true"
                   >
                     {cleanText(activeConversation.helpdeskCategory).toUpperCase() === "IT"
-                      ? <MonitorCog size={19} />
-                      : <HeartHandshake size={19} />}
+                      ? <MonitorCog size={18} />
+                      : <HeartHandshake size={18} />}
                   </span>
                 ) : (
-                  <ChatAvatar
-                    employee={activeConversation.isGroup ? null : activeOtherMember}
-                    initials={activeConversation.initials}
-                    online={activePrivateOnline}
-                    group={activeConversation.isGroup}
-                    size="sm"
-                  />
+                  <div className="shrink-0 rounded-full ring-1 ring-white/25 bg-white/10">
+                    <ChatAvatar
+                      employee={activeConversation.isGroup ? null : activeOtherMember}
+                      initials={activeConversation.initials}
+                      online={activePrivateOnline}
+                      group={activeConversation.isGroup}
+                      size="sm"
+                    />
+                  </div>
                 )}
-                <div className="min-w-0 flex-1">
-                  <h3 className="truncate font-heading text-sm sm:text-base font-extrabold text-white">
+                <div className="min-w-0 flex-1 flex flex-col justify-center">
+                  <h3 className={`truncate font-heading font-extrabold text-white leading-tight ${isExpanded ? "text-base" : "text-sm"}`}>
                     {activeConversation.isHelpdesk
                       ? getPersonalHelpdeskChatTitle(activeConversation.helpdeskCategory)
                       : activeConversation.title}
                   </h3>
                   {activeConversation.isHelpdesk ? (
-                    <p className="mt-1 truncate text-[10px] font-semibold text-white/75">
+                    <p className="mt-0.5 truncate text-[10px] font-semibold text-white/75 whitespace-nowrap">
                       Your request · {getHelpdeskCaseLabel(activeConversation)}
                     </p>
                   ) : activeConversation.isGroup ? (
@@ -4763,28 +5449,29 @@ export default function SiBSChat({
                       type="button"
                       onClick={() => setGroupInfoOpen(true)}
                       title="View group members"
-                      className="mt-0.5 inline-flex items-center gap-1 text-left text-[10px] font-semibold text-white/75 transition hover:text-white"
+                      className="mt-0.5 inline-flex items-center gap-1 text-left text-[10px] font-semibold text-white/75 transition hover:text-white truncate whitespace-nowrap"
                     >
-                      <span>
+                      <span className="truncate whitespace-nowrap">
                         {activeConversation.members?.length || 0} member
                         {(activeConversation.members?.length || 0) === 1 ? "" : "s"}
-
                       </span>
                     </button>
                   ) : (
-                    <p className="truncate text-[10px] font-semibold text-white/75">
+                    <p className="mt-0.5 truncate text-[10px] font-semibold text-white/75 whitespace-nowrap">
                       {activePrivateStatus}
                     </p>
                   )}
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setThemeModalOpen(true)}
-                  title="Chat theme & wallpaper"
-                  className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-white/75 transition hover:bg-white/10 hover:text-white"
-                >
-                  <Palette size={17} />
-                </button>
+                <div className="flex shrink-0 items-center gap-0.5 sm:gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setThemeModalOpen(true)}
+                    title="Chat theme & wallpaper"
+                    aria-label="Chat theme & wallpaper"
+                    className={`inline-flex ${isExpanded ? "h-9 w-9" : "h-8 w-8"} items-center justify-center rounded-lg text-white/75 transition hover:bg-white/10 hover:text-white`}
+                  >
+                    <Palette size={16} />
+                  </button>
                 {activeConversation.isHelpdesk ? (
                   activeConversation.caseCode ? (
                     <div className="relative shrink-0" ref={helpdeskStatusMenuRef}>
@@ -4805,7 +5492,7 @@ export default function SiBSChat({
                           setHelpdeskStatusMenuOpen((previous) => !previous);
                           setHelpdeskCloseConfirm(false);
                         }}
-                        className={`inline-flex min-h-8 max-w-[118px] items-center gap-1 rounded-lg border px-2 py-1 text-[10px] font-extrabold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white disabled:cursor-default sm:max-w-[140px] ${
+                        className={`inline-flex min-h-8 ${isExpanded ? "max-w-[140px]" : "max-w-[105px]"} items-center gap-1 rounded-lg border px-2 py-1 text-[10px] font-extrabold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white disabled:cursor-default ${
                           helpdeskCaseStatus === 'RESOLVED'
                             ? 'border-emerald-300/60 bg-emerald-900/40 text-emerald-100'
                             : helpdeskCaseStatus === 'PENDING'
@@ -4866,22 +5553,46 @@ export default function SiBSChat({
                     type="button"
                     onClick={() => setGroupInfoOpen(true)}
                     title="Group info"
-                    className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-white/75 transition hover:bg-white/10 hover:text-white"
+                    aria-label="Group info"
+                    className={`inline-flex ${isExpanded ? "h-9 w-9" : "h-8 w-8"} items-center justify-center rounded-lg text-white/75 transition hover:bg-white/10 hover:text-white`}
                   >
-                    <Settings2 size={17} />
+                    <Settings2 size={16} />
                   </button>
                 ) : (
-                  <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-white/50">
-                    <MoreHorizontal size={18} />
+                  <span className={`inline-flex ${isExpanded ? "h-9 w-9" : "h-8 w-8"} items-center justify-center rounded-lg text-white/40`}>
+                    <MoreHorizontal size={17} />
                   </span>
                 )}
-                <button
-                  type="button"
-                  onClick={() => setOpen(false)}
-                  className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-white/75 transition hover:bg-white/10 hover:text-white"
-                >
-                  <X size={17} />
-                </button>
+                  <button
+                    type="button"
+                    onClick={handleMinimize}
+                    title="Minimize chat"
+                    aria-label="Minimize chat"
+                    className={`inline-flex ${isExpanded ? "h-9 w-9" : "h-8 w-8"} shrink-0 items-center justify-center rounded-lg text-white/75 transition hover:bg-white/10 hover:text-white`}
+                  >
+                    <Minus size={15} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={toggleExpanded}
+                    title={isExpanded ? "Restore compact size" : "Expand chat"}
+                    aria-label={isExpanded ? "Restore compact size" : "Expand chat"}
+                    aria-expanded={isExpanded}
+                    aria-controls="sibs-chat-panel"
+                    className={`hidden ${isExpanded ? "h-9 w-9" : "h-8 w-8"} shrink-0 items-center justify-center rounded-lg text-white/75 transition hover:bg-white/10 hover:text-white sm:inline-flex`}
+                  >
+                    {isExpanded ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleClose}
+                    title="Close SiBS Chat"
+                    aria-label="Close SiBS Chat"
+                    className={`inline-flex ${isExpanded ? "h-9 w-9" : "h-8 w-8"} shrink-0 items-center justify-center rounded-lg text-white/75 transition hover:bg-white/10 hover:text-white`}
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
               </header>
 
 
@@ -5912,7 +6623,7 @@ export default function SiBSChat({
               </div>
             </div>
 
-              <footer className="shrink-0 border-t border-sibs-border bg-white px-3 py-3 max-sm:px-2 max-sm:py-2 max-sm:pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+              <footer className={`shrink-0 border-t border-sibs-border bg-white ${isExpanded ? "px-3.5 py-3" : "px-2.5 py-2.5"} max-sm:px-2 max-sm:py-2 max-sm:pb-[max(0.5rem,env(safe-area-inset-bottom))]`}>
                 {attachmentNotice ? (
                   <div
                     role="alert"
@@ -6047,7 +6758,7 @@ export default function SiBSChat({
                   </div>
                 ) : null}
 
-                <div className="relative flex items-end gap-2">
+                <div className={`relative flex items-end ${isExpanded ? "gap-2" : "gap-1.5"}`}>
                   <input
                     ref={fileInputRef}
                     type="file"
@@ -6062,12 +6773,12 @@ export default function SiBSChat({
                     disabled={sending || attachmentsLoading || selectedImages.length >= MAX_ATTACHMENTS_PER_MESSAGE}
                     title="Add or drop images, media, Word, Excel, or PDF · up to 5 files per send, 10 MB per file; paste screenshots with Ctrl+V"
                     aria-label="Add attachment"
-                    className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-sibs-orange transition hover:bg-sibs-cream-light active:scale-[0.96] disabled:opacity-40"
+                    className={`inline-flex ${isExpanded ? "h-10 w-10" : "h-9 w-9"} shrink-0 items-center justify-center rounded-xl text-sibs-orange transition hover:bg-sibs-cream-light active:scale-[0.96] disabled:opacity-40`}
                   >
-                    <Plus size={19} />
+                    <Plus size={18} />
                   </button>
 
-                  <div className="relative h-10 shrink-0">
+                  <div className={`relative ${isExpanded ? "h-10" : "h-9"} shrink-0`}>
                     <button
                       ref={emojiButtonRef}
                       type="button"
@@ -6079,13 +6790,13 @@ export default function SiBSChat({
                       title="Choose emoji"
                       aria-label="Choose emoji"
                       aria-expanded={emojiPickerOpen}
-                      className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition active:scale-[0.96] disabled:opacity-40 ${
+                      className={`inline-flex ${isExpanded ? "h-10 w-10" : "h-9 w-9"} shrink-0 items-center justify-center rounded-xl transition active:scale-[0.96] disabled:opacity-40 ${
                         emojiPickerOpen
                           ? "bg-sibs-cream-subtle text-sibs-orange border border-sibs-orange/30"
                           : "text-sibs-muted hover:bg-sibs-cream-light hover:text-sibs-orange"
                       }`}
                     >
-                      <Smile size={19} />
+                      <Smile size={18} />
                     </button>
 
                     {emojiPickerOpen ? (
@@ -6129,7 +6840,7 @@ export default function SiBSChat({
                     ) : null}
                   </div>
 
-                  <div className="relative h-10 shrink-0">
+                  <div className={`relative ${isExpanded ? "h-10" : "h-9"} shrink-0`}>
                     <button
                       ref={gifButtonRef}
                       type="button"
@@ -6149,7 +6860,7 @@ export default function SiBSChat({
                       title="Search GIFs online"
                       aria-label="Search GIFs online"
                       aria-expanded={gifPickerOpen}
-                      className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition active:scale-[0.96] disabled:opacity-40 ${
+                      className={`inline-flex ${isExpanded ? "h-10 w-10" : "h-9 w-9"} shrink-0 items-center justify-center rounded-xl transition active:scale-[0.96] disabled:opacity-40 ${
                         gifPickerOpen
                           ? "bg-sibs-cream-subtle text-sibs-orange border border-sibs-orange/30"
                           : "text-sibs-muted hover:bg-sibs-cream-light hover:text-sibs-orange"
@@ -6312,6 +7023,9 @@ export default function SiBSChat({
                       onChange={(event) => {
                         const nextValue = event.target.value.slice(0, 5000);
                         setDraft(nextValue);
+                        if (currentSibsId && activeConversation?.id) {
+                          saveConversationDraft(currentSibsId, activeConversation.id, nextValue);
+                        }
                         updateTypingIndicator(nextValue);
                         updateMentionPicker(
                           nextValue,
@@ -6338,11 +7052,11 @@ export default function SiBSChat({
                       onBlur={() => stopTypingIndicator(activeConversation?.id)}
                       rows={1}
                       placeholder={
-                        activeConversation?.isGroup
-                          ? "Type a message... use @ to tag"
+                        activeConversation?.isGroup && isExpanded
+                          ? "Type a message... (use @ to mention)"
                           : "Type a message..."
                       }
-                      className="block max-h-28 min-h-10 w-full resize-none rounded-xl border border-sibs-border-subtle bg-sibs-surface px-3.5 py-2 text-xs font-medium leading-5 text-sibs-navy outline-none transition placeholder:text-sibs-faint hover:border-sibs-border focus:border-sibs-orange focus:bg-white focus:ring-2 focus:ring-sibs-orange/10 overflow-y-hidden no-scrollbar sibs-no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+                      className={`block max-h-28 ${isExpanded ? "min-h-10" : "min-h-9"} w-full resize-none rounded-xl border border-sibs-border-subtle bg-sibs-surface px-3 py-2 text-xs font-medium leading-5 text-sibs-navy outline-none transition placeholder:text-sibs-faint hover:border-sibs-border focus:border-sibs-orange focus:bg-white focus:ring-2 focus:ring-sibs-orange/10 overflow-y-hidden no-scrollbar sibs-no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden`}
                     />
                   </div>
 
@@ -6351,19 +7065,83 @@ export default function SiBSChat({
                     onClick={submitMessage}
                     disabled={sending || attachmentsLoading || (!cleanText(draft) && !selectedImages.length) || (activeConversation?.isHelpdesk && (activeConversation.caseStatus === "REJECTED" || (activeConversation.caseStatus === "RESOLVED" && cleanText(activeConversation.createdBySibsId) !== currentSibsId)))}
                     aria-label={attachmentsLoading ? "Preparing attachments" : "Send message"}
-                    className="relative z-[1] inline-flex h-10 w-10 shrink-0 self-end items-center justify-center rounded-xl bg-sibs-orange text-white shadow-xs transition hover:bg-sibs-button-hover active:scale-[0.96] disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-sibs-faint disabled:shadow-none disabled:opacity-100"
+                    className={`relative z-[1] inline-flex ${isExpanded ? "h-10 w-10" : "h-9 w-9"} shrink-0 self-end items-center justify-center rounded-xl bg-sibs-orange text-white shadow-xs transition hover:bg-sibs-button-hover active:scale-[0.96] disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-sibs-faint disabled:shadow-none disabled:opacity-100`}
                   >
-                    {sending || attachmentsLoading ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
+                    {sending || attachmentsLoading ? <Loader2 size={17} className="animate-spin" /> : <Send size={17} />}
                   </button>
                 </div>
               </footer>
             </>
           ) : (
-            <EmptyChatState onNewChat={() => setNewChatOpen(true)} />
+            <div className="flex h-full flex-col bg-sibs-canvas">
+              <header className="flex h-[68px] shrink-0 items-center justify-between gap-1.5 border-b border-white/10 bg-sibs-navy px-4 text-white shadow-xs">
+                <div className="min-w-0 flex-1 flex items-center gap-2.5">
+                  <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/10 border border-white/15 text-sibs-orange shadow-xs">
+                    <MessageCircleMore size={18} />
+                  </span>
+                  <div>
+                    <h2 className="truncate font-heading text-sm font-extrabold text-white">
+                      SiBS Chat Workspace
+                    </h2>
+                    <p className="text-[10px] font-semibold text-white/70">
+                      Select a conversation or start a new request
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex shrink-0 items-center gap-0.5 sm:gap-1">
+                  <button
+                    type="button"
+                    onClick={handleMinimize}
+                    title="Minimize chat"
+                    aria-label="Minimize chat"
+                    className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-white/75 transition hover:bg-white/10 hover:text-white"
+                  >
+                    <Minus size={15} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={toggleExpanded}
+                    title="Restore compact size"
+                    aria-label="Restore compact size"
+                    className="hidden h-8 w-8 shrink-0 items-center justify-center rounded-lg text-white/75 transition hover:bg-white/10 hover:text-white sm:inline-flex"
+                  >
+                    <Minimize2 size={15} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleClose}
+                    title="Close SiBS Chat"
+                    aria-label="Close SiBS Chat"
+                    className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-white/75 transition hover:bg-white/10 hover:text-white"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+              </header>
+              <div className="flex-1 min-h-0 flex flex-col">
+                <EmptyChatState
+                  onNewPrivateChat={() => {
+                    setNewChatInitialMode("private");
+                    setNewChatOpen(true);
+                  }}
+                  onNewGroupChat={() => {
+                    setNewChatInitialMode("group");
+                    setNewChatOpen(true);
+                  }}
+                  onContactHelpdesk={(category) => handleContactHelpdesk(category || "IT")}
+                  onNewChat={() => {
+                    setNewChatInitialMode("private");
+                    setNewChatOpen(true);
+                  }}
+                />
+              </div>
+            </div>
           )}
 
           <NewChatOverlay
             open={newChatOpen}
+            initialMode={newChatInitialMode}
             busy={actionBusy}
             onClose={handleCloseNewChat}
             onPrivateChat={(sibsId) =>

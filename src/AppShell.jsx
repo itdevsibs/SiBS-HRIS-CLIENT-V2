@@ -1,4 +1,4 @@
-import { Suspense, lazy, useCallback, useEffect, useRef, useState } from "react";
+import { Suspense, lazy, useCallback, useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 
 import Providers from "@/services/providers";
@@ -87,41 +87,6 @@ export default function AppShell({ children }) {
 
   const [aiOpen, setAiOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
-  const pageSurfaceRef = useRef(null);
-  const lastPathnameRef = useRef(location.pathname);
-
-  // Lock only the current route's page content while Chat is expanded.
-  // Keep the persistent header and sidebar interactive for navigation.
-  useEffect(() => {
-    const surface = pageSurfaceRef.current;
-    if (!surface) return undefined;
-
-    const previousInert = surface.inert;
-    surface.inert = chatOpen;
-    return () => {
-      surface.inert = previousInert;
-    };
-  }, [chatOpen, hideSidebar, isFinalInterviewForm]);
-
-  // A navigation from the header, sidebar, or browser Back/Forward should
-  // minimize Chat without discarding the selected conversation or draft.
-  useEffect(() => {
-    if (lastPathnameRef.current === location.pathname) return undefined;
-    lastPathnameRef.current = location.pathname;
-    const timer = setTimeout(() => {
-      setChatOpen(false);
-    }, 0);
-    return () => clearTimeout(timer);
-  }, [location.pathname]);
-
-  useEffect(() => {
-    if (!chatOpen || hideSidebar || isFinalInterviewForm) return undefined;
-    const oldOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = oldOverflow;
-    };
-  }, [chatOpen, hideSidebar, isFinalInterviewForm]);
 
   // Pages can select a conversation through ChatContext and then request
   // the existing chat surface without creating another message renderer.
@@ -194,19 +159,9 @@ export default function AppShell({ children }) {
                 <Header persistent />
               </div>
 
-              <div ref={pageSurfaceRef} className="contents" aria-hidden={chatOpen ? "true" : undefined}>
+              <div className="contents">
                 {children}
               </div>
-
-              {chatOpen ? (
-                // Block clicks on route content only. The header (z-80) and
-                // sidebar remain above this layer and fully interactive.
-                <div
-                  aria-hidden="true"
-                  data-sibs-chat-page-lock="true"
-                  className="pointer-events-auto absolute inset-0 z-[30] cursor-default bg-slate-950/15 backdrop-blur-[1px]"
-                />
-              ) : null}
             </main>
           </div>
         </PersistentHeaderProvider>
