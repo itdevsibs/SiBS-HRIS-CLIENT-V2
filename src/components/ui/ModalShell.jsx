@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import ConfirmModal from "./ConfirmModal";
@@ -63,6 +63,7 @@ export default function ModalShell({
   dirtyCancelLabel = "Keep Editing",
   onDirtyDiscard = null,
 }) {
+  const titleId = useId();
   const dialogRef = useRef(null);
   const previouslyFocusedElementRef = useRef(null);
   const autoDirtyRef = useRef(false);
@@ -148,6 +149,7 @@ export default function ModalShell({
     if (!open || typeof document === "undefined") return undefined;
 
     previouslyFocusedElementRef.current = document.activeElement;
+    const fallback = returnFocusFallbackRef?.current;
 
     if (dialogRef.current) {
       if (initialFocusRef?.current) {
@@ -164,7 +166,7 @@ export default function ModalShell({
 
     return () => {
       const previous = previouslyFocusedElementRef.current;
-      const target = previous?.isConnected ? previous : returnFocusFallbackRef?.current;
+      const target = previous?.isConnected ? previous : fallback;
       if (typeof target?.focus === "function") {
         target.focus({ preventScroll: true });
       }
@@ -235,8 +237,10 @@ export default function ModalShell({
   return createPortal(
     <div
       role={role}
+      aria-labelledby={title ? titleId : undefined}
       aria-describedby={ariaDescribedBy}
       aria-modal="true"
+      inert={suspendFocusTrap || undefined}
       className={`fixed inset-0 ${zIndex} flex ${
         mobileBottomSheet
           ? "items-end sm:items-center justify-center p-0 sm:p-4"
@@ -291,6 +295,7 @@ export default function ModalShell({
                 <div className="flex flex-wrap items-center gap-1.5">
                   {title && (
                     <h2
+                      id={titleId}
                       className={`sibs-modal-title truncate ${
                         isNavy ? "text-white" : "text-sibs-navy"
                       }`}

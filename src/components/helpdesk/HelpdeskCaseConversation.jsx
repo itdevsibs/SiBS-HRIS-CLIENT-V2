@@ -121,6 +121,7 @@ function HelpdeskSenderAvatar({ employee, name, sibsId }) {
  */
 export default function HelpdeskCaseConversation({
   conversation, ticket, currentSibsId, onMessagesChanged,
+  conversationFocused = false, headingRef = null,
 }) {
   const conversationId = Number(conversation?.id || 0);
   // Retain per-conversation themes from the active chat snapshot, including
@@ -351,10 +352,10 @@ export default function HelpdeskCaseConversation({
   };
 
   return (
-    <div className="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-xs">
+    <div className={`flex min-h-0 flex-col overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-xs ${conversationFocused ? "h-full min-h-[420px] lg:min-h-[520px]" : ""}`}>
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-sibs-border px-4 py-3">
         <div>
-          <h3 className="sibs-modal-section-title">{isSpam ? "Request conversation" : "Case conversation"}</h3>
+          <h3 ref={headingRef} tabIndex={headingRef ? -1 : undefined} className="sibs-modal-section-title">{isSpam ? "Request conversation" : "Case conversation"}</h3>
           <p className="sibs-modal-section-subtitle mt-0.5">
             {isClosed ? "Archived conversation · read only" : canReply ? "Reply to the employee from this Helpdesk case" : "Case conversation · support access"}
           </p>
@@ -365,7 +366,11 @@ export default function HelpdeskCaseConversation({
       </div>
       <div ref={scrollRef} role="region" aria-label="Conversation messages" tabIndex={0}
         data-chat-custom-theme={isCustomTheme ? "true" : "false"}
-        className={`sibs-scrollbar min-h-44 max-h-[min(430px,45dvh)] flex-1 space-y-3 overflow-y-auto px-3 py-4 sm:px-4 lg:min-h-[280px] ${isCustomTheme ? "" : "bg-sibs-surface"}`}
+        className={`sibs-scrollbar flex-1 space-y-3 overflow-y-auto px-3 py-4 sm:px-4 ${
+          conversationFocused
+            ? "min-h-[260px] max-h-[56dvh] lg:max-h-[calc(86vh-270px)]"
+            : "min-h-44 max-h-[min(430px,45dvh)] lg:min-h-[280px]"
+        } ${isCustomTheme ? "" : "bg-sibs-surface"}`}
         style={themeBackgroundStyle}
         aria-live="polite" aria-busy={loading}>
         {loading && !messages.length ? (
