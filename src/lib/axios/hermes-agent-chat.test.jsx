@@ -30,3 +30,15 @@ it("sends prior Hermes turns for follow-up questions", async () => {
   await sendHermesAgentChat({ apiClient: { post }, message: "And last month?", conversation });
   expect(post).toHaveBeenCalledWith("/api/dev-ai/chat", { message: "And last month?", conversation }, expect.any(Object));
 });
+
+it("retains backend request identity and selected capability for UAT feedback", async () => {
+  const post = vi.fn().mockResolvedValue({ data: {
+    success: true, reply: "Verified answer", requestId: "request-123", durationMs: 42,
+    plan: { capability: "get_my_profile" }, status: "completed", finishReason: "stop",
+    uatExecution: { recordId: "execution-123", correlationId: "request-123" },
+  } });
+  const result = await sendHermesAgentChat({ apiClient: { post }, message: "My profile", includeReport: true, uatScenarioId: "OP-01" });
+  expect(result).toMatchObject({ requestId: "request-123", actualCapability: "get_my_profile", durationMs: 42, status: "completed" });
+  expect(result.uatExecution.recordId).toEqual("execution-123");
+  expect(post).toHaveBeenCalledWith("/api/dev-ai/chat", { message: "My profile", conversation: [], includeReport: true, uatScenarioId: "OP-01" }, expect.any(Object));
+});

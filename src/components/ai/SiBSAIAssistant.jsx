@@ -27,6 +27,7 @@ import {
 } from "@/lib/utils/ai/aiAssistantHelpers";
 import { useUser } from "@/services/context/UserContext";
 import HermesResponseRenderer from "./HermesResponseRenderer";
+import HrisUatPanel from "./HrisUatPanel";
 
 const SUGGESTED_PROMPTS = [
   "What is my profile?",
@@ -182,6 +183,7 @@ export default function SiBSAIAssistant({
   const [hydratedEmployeeKey, setHydratedEmployeeKey] = useState(loggedInEmployeeKey);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [uatSession, setUatSession] = useState(0);
   const [triggerPosition, setTriggerPosition] = useState(null);
   const [triggerDragging, setTriggerDragging] = useState(false);
 
@@ -421,17 +423,18 @@ export default function SiBSAIAssistant({
     setQuestion("");
     setError("");
     setSubmitting(false);
+    setUatSession((current) => current + 1);
     window.requestAnimationFrame(() => inputRef.current?.focus?.());
   }
 
-  async function submitQuestion(value = question) {
+  async function submitQuestion(value = question, uatScenario = null) {
     const cleanQuestion = String(value || "").trim();
     if (!cleanQuestion || submitting || requestInFlightRef.current || !loggedInEmployeeKey ||
         hydratedEmployeeKey !== loggedInEmployeeKey) return;
     requestInFlightRef.current = true;
 
     const requestEmployeeKey = loggedInEmployeeKey;
-    const conversation = buildConversationPayload(messages);
+    const conversation = uatScenario ? [] : buildConversationPayload(messages);
     const userMessage = {
       id: `user-${Date.now()}`,
       role: "user",
@@ -452,7 +455,6 @@ export default function SiBSAIAssistant({
     }, AI_CHAT_TIMEOUT_MS);
     try {
       if (hermes && import.meta.env.DEV) {
-        // eslint-disable-next-line react-hooks/purity -- timing starts on the submit event
         const startedAt = performance.now();
         const [{ default: api }, { sendHermesAgentChat }] = await Promise.all([
           import("@/lib/axios/api-template"),
@@ -463,19 +465,32 @@ export default function SiBSAIAssistant({
           message: cleanQuestion,
           conversation,
           includeReport: true,
+          ...(uatScenario ? { uatScenarioId: uatScenario.id } : {}),
           signal: controller.signal,
         });
+        if (controller.signal.aborted) return;
+        const responseMs = Math.round(performance.now() - startedAt);
         setMessages((current) => [...current, {
           id: `assistant-${Date.now()}`,
           role: "assistant",
           content: response.reply,
           status: response.status || "completed",
           finishReason: response.finishReason || "stop",
-          responseMs: Math.round(performance.now() - startedAt),
+          responseMs,
+          requestId: response.requestId,
+          actualCapability: response.actualCapability,
+          uatScenarioId: uatScenario?.id || null,
           report: response.report,
           verifiedData: response.verifiedData,
         }]);
-        return;
+        return {
+          correlationId: response.requestId || "",
+          actualCapability: response.actualCapability || null,
+          latencyMs: responseMs,
+          completionStatus: response.status || "completed",
+          uatEvidence: response.uatEvidence || null,
+          executionRecordId: response.uatExecution?.recordId || null,
+        };
       }
       const response = await askSibsAi({
         message: cleanQuestion,
@@ -520,6 +535,10 @@ export default function SiBSAIAssistant({
         setError(isTimeout
           ? "This request exceeded the 60-second limit and was stopped. Please try again or ask a more specific question."
           : getAiErrorMessage(requestError));
+      }
+      const failedReceipt = requestError?.response?.data?.uatExecution;
+      if (uatScenario && failedReceipt?.recordId && failedReceipt?.correlationId) {
+        return { executionRecordId: failedReceipt.recordId, correlationId: failedReceipt.correlationId, completionStatus: "error", latencyMs: null };
       }
     } finally {
       window.clearTimeout(deadlineTimer);
@@ -664,6 +683,13 @@ export default function SiBSAIAssistant({
             ref={scrollRef}
             className="sibs-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain bg-sibs-surface px-4 py-4 sm:px-5"
           >
+            {hermes && import.meta.env.DEV && open ? (
+              <HrisUatPanel
+                key={`${user?.sibsId || user?.sibs_id || user?.username || user?.id || "session"}:${user?.adminAccess || user?.admin_access || ""}:${user?.role || ""}:${uatSession}`}
+                submitting={submitting}
+                onRunScenario={(scenario) => submitQuestion(scenario.question, scenario)}
+              />
+            ) : null}
             {messages.length === 0 ? (
               <div className="space-y-4">
                 {/* Welcome Card */}

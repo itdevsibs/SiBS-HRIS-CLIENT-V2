@@ -65,6 +65,9 @@ docs/superpowers/
 /tests/
 *.test.*
 !src/components/ai/HermesAssistant.test.jsx
+!src/components/ai/HrisUatPanel.test.jsx
+!src/lib/axios/hris-uat.test.jsx
+!src/lib/axios/hris-uat-bridge.test.jsx
 !src/lib/axios/hermes-agent-chat.test.jsx
 !src/lib/axios/hrisQueryCache.test.jsx
 !src/lib/axios/apiTemplateCoalescing.test.jsx
