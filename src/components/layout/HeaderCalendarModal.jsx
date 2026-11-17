@@ -4457,56 +4457,59 @@ export default function HeaderCalendarModal({ open, user, onClose, onSyncComplet
 
   const modalContent = (
     <HeaderCalendarModalShell>
-        <div className="relative flex shrink-0 flex-col gap-3 border-b border-white/10 bg-sibs-navy px-4 py-3 text-white shadow-[0_10px_30px_rgba(0,0,0,0.12)] sm:flex-row sm:flex-wrap sm:items-center sm:justify-between 2xl:px-6 2xl:py-4">
-          <button
-            type="button"
-            onClick={onClose}
-            className="absolute right-3 top-3 z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/10 text-white transition hover:bg-white/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white sm:right-4 2xl:right-6 2xl:top-4"
-            aria-label="Close calendar modal"
-            title="Close SiBS Calendar"
-          >
-            <X size={18} />
-          </button>
-          <div className="flex w-full min-w-0 items-center gap-2.5 pr-10 sm:w-auto sm:gap-3 2xl:gap-4">
-            <div className="flex h-9 w-9 2xl:h-11 2xl:w-11 shrink-0 items-center justify-center rounded-lg 2xl:rounded-xl border border-white/20 bg-white/10 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.12)]">
-              <CalendarDays className="h-4.5 w-4.5 2xl:h-5.5 2xl:w-5.5" />
-            </div>
-
-            <div className="min-w-0 flex-1">
-              <div className="flex min-w-0 flex-wrap items-center gap-1.5 2xl:gap-2">
-                <span className="truncate text-[9px] 2xl:text-[11px] font-extrabold text-white/75">
-                  SiBS HRIS Operational Workspace
-                </span>
-
-                <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-white/35" />
-
-                <span
-                  className={[
-                    "inline-flex min-w-0 items-center gap-1.5 truncate text-[9px] 2xl:text-[11px] font-extrabold",
-                    calendarConnected ? "text-emerald-300" : "text-amber-300",
-                  ].join(" ")}
-                >
-                  <span
-                    className={[
-                      "h-1.5 w-1.5 2xl:h-2 2xl:w-2 shrink-0 rounded-full",
-                      calendarConnected ? "bg-emerald-300" : "bg-amber-300",
-                    ].join(" ")}
-                  />
-                  <span className="truncate">
-                    {calendarConnected
-                      ? googleCalendarEmail || "Google Calendar Sync"
-                      : "Calendar Not Connected"}
-                  </span>
-                </span>
+        <div className="flex shrink-0 flex-col gap-3 border-b border-white/10 bg-sibs-navy px-4 py-3 text-white shadow-[0_10px_30px_rgba(0,0,0,0.12)] sm:flex-row sm:items-center sm:justify-between sm:px-6 2xl:py-3.5">
+          <div className="flex w-full min-w-0 items-center justify-between gap-3 sm:w-auto">
+            <div className="flex min-w-0 flex-1 items-center gap-2.5 sm:gap-3 2xl:gap-4">
+              <div className="flex h-8 w-8 2xl:h-9 2xl:w-9 shrink-0 items-center justify-center rounded-lg bg-sibs-orange text-white shadow-sm">
+                <CalendarDays className="h-4.5 w-4.5 2xl:h-5 2xl:w-5" />
               </div>
 
-              <h2 className="sibs-modal-title mt-0.5 truncate text-white">
-                SiBS Calendar · HR &amp; Talent Acquisition
-              </h2>
-              <p className="mt-0.5 truncate text-[10px] font-semibold text-white/70">
-                Powered by Google Calendar · Asia/Manila
-              </p>
+              <div className="min-w-0 flex-1">
+                <div className="flex min-w-0 flex-wrap items-center gap-1.5 2xl:gap-2">
+                  <span className="truncate text-[9px] 2xl:text-[11px] font-extrabold text-white/75">
+                    SiBS HRIS Operational Workspace
+                  </span>
+
+                  <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-white/35" />
+
+                  <span
+                    className={[
+                      "inline-flex min-w-0 items-center gap-1.5 truncate text-[9px] 2xl:text-[11px] font-extrabold",
+                      calendarConnected ? "text-emerald-300" : "text-amber-300",
+                    ].join(" ")}
+                  >
+                    <span
+                      className={[
+                        "h-1.5 w-1.5 2xl:h-2 2xl:w-2 shrink-0 rounded-full",
+                        calendarConnected ? "bg-emerald-300" : "bg-amber-300",
+                      ].join(" ")}
+                    />
+                    <span className="truncate">
+                      {calendarConnected
+                        ? googleCalendarEmail || "Google Calendar Sync"
+                        : "Calendar Not Connected"}
+                    </span>
+                  </span>
+                </div>
+
+                <h2 className="sibs-modal-title mt-0.5 truncate text-white">
+                  SiBS Calendar · HR &amp; Talent Acquisition
+                </h2>
+                <p className="mt-0.5 truncate text-[10px] font-semibold text-white/70">
+                  Powered by Google Calendar · Asia/Manila
+                </p>
+              </div>
             </div>
+
+            <button
+              type="button"
+              onClick={onClose}
+              className="sibs-modal-close-btn sm:hidden focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+              aria-label="Close calendar modal"
+              title="Close SiBS Calendar"
+            >
+              <X size={18} />
+            </button>
           </div>
 
           <div className="flex w-full shrink-0 items-center gap-2 sm:w-auto sm:flex-wrap sm:justify-end sm:gap-2.5">
@@ -4590,6 +4593,15 @@ export default function HeaderCalendarModal({ open, user, onClose, onSyncComplet
               New Schedule
             </button>
 
+            <button
+              type="button"
+              onClick={onClose}
+              className="sibs-modal-close-btn hidden sm:inline-flex focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+              aria-label="Close calendar modal"
+              title="Close SiBS Calendar"
+            >
+              <X size={18} />
+            </button>
           </div>
         </div>
 
