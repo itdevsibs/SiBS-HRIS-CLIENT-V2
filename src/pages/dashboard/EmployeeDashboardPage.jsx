@@ -1,24 +1,22 @@
-import { createSystemDateTimeFormatter, formatHrisDateTimeLocalized } from "@/lib/axios/dateFormatter";
-import { Suspense, lazy, useCallback, useEffect, useMemo, useState } from "react";
+import { createSystemDateTimeFormatter } from "@/lib/axios/dateFormatter";
+import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   AlertCircle,
   ArrowUpRight,
   Bell,
-  Building2,
   CalendarDays,
-  CheckCircle2,
   ChevronRight,
   Clock,
   FileText,
   Gauge,
   LockKeyhole,
+  RefreshCw,
   ShieldCheck,
   Sparkles,
   TrendingUp,
   User,
   UserRoundX,
-  X,
 } from "lucide-react";
 
 import Header from "../../components/layout/Header";
@@ -31,8 +29,11 @@ const ViewResignationModal = lazy(() =>
   }))
 );
 import StatusModal from "../../components/modals/StatusModal";
-import { getMyEmployeeProfilePicture } from "../../lib/axios/employeeProfile";
-import { getEmployeeDashboardSources } from "../../lib/axios/getEmployeeDashboardData.js";
+import {
+  EMPLOYEE_DASHBOARD_SOURCE_KEYS,
+  fetchEmployeeDashboardSource,
+  getEmployeeDashboardSources,
+} from "../../lib/axios/getEmployeeDashboardData.js";
 import { getMyResignationStatus } from "../../lib/axios/getMyResignationStatus.js";
 import {
   cleanDashboardText,
@@ -44,7 +45,6 @@ import {
   getDashboardHolidays,
   getEmployeeDashboardProfile,
   getLeaveDashboardDataFromResponses,
-  getProgressPercent,
   getWeeklyScheduleFromResponse,
 } from "../../lib/utils/employeeDashboardHelpers.js";
 import { useAdmin } from "../../services/context/AdminContext";
@@ -60,6 +60,15 @@ const DASHBOARD_ROUTES = {
   leaves: "/leaves",
 };
 
+function createInitialSourceStates(loading = true) {
+  return Object.fromEntries(
+    EMPLOYEE_DASHBOARD_SOURCE_KEYS.map((key) => [
+      key,
+      { loading, available: false, data: null, error: null },
+    ]),
+  );
+}
+
 function getStatusTone(status = "") {
   const normalized = cleanDashboardText(status).toLowerCase();
 
@@ -67,6 +76,8 @@ function getStatusTone(status = "") {
     normalized.includes("not clocked") ||
     normalized.includes("logged out") ||
     normalized.includes("no punch") ||
+    normalized.includes("rest day") ||
+    normalized.includes("day off") ||
     !normalized
   ) {
     return {
@@ -75,24 +86,24 @@ function getStatusTone(status = "") {
     };
   }
 
-  if (normalized.includes("clocked in") || normalized.includes("present")) {
+  if (normalized.includes("late") || normalized.includes("missing") || normalized.includes("undertime")) {
     return {
-      wrapper: "border-emerald-200 bg-emerald-50 text-emerald-700",
-      dot: "bg-emerald-500",
+      wrapper: "border-rose-200 bg-rose-50 text-rose-700",
+      dot: "bg-rose-500",
     };
   }
 
-  if (normalized.includes("break")) {
+  if (normalized.includes("break") || normalized.includes("pending") || normalized.includes("holiday")) {
     return {
       wrapper: "border-amber-200 bg-amber-50 text-amber-700",
       dot: "bg-amber-500",
     };
   }
 
-  if (normalized.includes("late") || normalized.includes("missing")) {
+  if (normalized.includes("clocked in") || normalized.includes("present") || normalized.includes("active")) {
     return {
-      wrapper: "border-rose-200 bg-rose-50 text-rose-700",
-      dot: "bg-rose-500",
+      wrapper: "border-emerald-200 bg-emerald-50 text-emerald-700",
+      dot: "bg-emerald-500",
     };
   }
 
@@ -179,23 +190,6 @@ function formatLeaveValue(value) {
       });
 }
 
-function formatDashboardDateTime(value) {
-  if (!value) return "—";
-
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return String(value);
-
-  return formatHrisDateTimeLocalized(date, "en-PH", {
-    timeZone: "Asia/Manila",
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: true,
-  });
-}
-
 function EmployeeDashboardLiveClock() {
   const [clockNow, setClockNow] = useState(() => new Date());
 
@@ -226,15 +220,12 @@ function EmployeeDashboardLiveClock() {
 export default function EmployeeDashboardPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, loading } = useUser();
+  const { user, loading, isSwitchingRole = false } = useUser() || {};
   const { ADMIN_ROLES } = useAdmin();
 
   const [now, setNow] = useState(() => new Date());
-  const [profilePicture, setProfilePicture] = useState("");
-  const [liveSources, setLiveSources] = useState(null);
-  const [sourceAvailability, setSourceAvailability] = useState({});
-  const [sourceErrors, setSourceErrors] = useState({});
-  const [dashboardDataLoading, setDashboardDataLoading] = useState(true);
+  const [sourceStore, setSourceStore] = useState({});
+  const activeControllerRef = useRef(null);
   const [selectedAnnouncement, setSelectedAnnouncement] = useState(null);
   const [openResignation, setOpenResignation] = useState(false);
   const [openResignationDetails, setOpenResignationDetails] = useState(false);
@@ -251,7 +242,7 @@ export default function EmployeeDashboardPage() {
   });
 
   useEffect(() => {
-    if (loading) return;
+    if (loading || isSwitchingRole) return;
 
     if (!user) {
       navigate("/login", { replace: true });
@@ -266,7 +257,7 @@ export default function EmployeeDashboardPage() {
     if (user.role !== "employee") {
       navigate("/login", { replace: true });
     }
-  }, [user, loading, navigate, ADMIN_ROLES]);
+  }, [user, loading, isSwitchingRole, navigate, ADMIN_ROLES]);
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -325,23 +316,34 @@ export default function EmployeeDashboardPage() {
   );
 
   useEffect(() => {
-    void refreshMyResignationStatus();
+    let active = true;
+    const timer = window.setTimeout(() => {
+      if (active) {
+        void refreshMyResignationStatus();
+      }
+    }, 0);
+    return () => {
+      active = false;
+      window.clearTimeout(timer);
+    };
   }, [refreshMyResignationStatus]);
 
   useEffect(() => {
     if (!location.state?.openResignationDetails) return;
     if (resignationStatusState.loading) return;
 
-    if (resignationStatusState.item) {
-      setOpenResignationDetails(true);
-    } else if (resignationStatusState.error) {
-      setStatusModal({
-        open: true,
-        type: "error",
-        title: "Resignation Status Unavailable",
-        message: resignationStatusState.error,
-      });
-    }
+    const timer = window.setTimeout(() => {
+      if (resignationStatusState.item) {
+        setOpenResignationDetails(true);
+      } else if (resignationStatusState.error) {
+        setStatusModal({
+          open: true,
+          type: "error",
+          title: "Resignation Status Unavailable",
+          message: resignationStatusState.error,
+        });
+      }
+    }, 0);
 
     const nextState = { ...(location.state || {}) };
     delete nextState.openResignationDetails;
@@ -351,6 +353,8 @@ export default function EmployeeDashboardPage() {
       replace: true,
       state: Object.keys(nextState).length ? nextState : null,
     });
+
+    return () => window.clearTimeout(timer);
   }, [
     location.pathname,
     location.search,
@@ -385,6 +389,13 @@ export default function EmployeeDashboardPage() {
     () => getEmployeeDashboardProfile(user || {}),
     [user],
   );
+  const userIdentityKey = useMemo(
+    () =>
+      user
+        ? `${user.role || ""}|${authProfile.sibsId || user.username || ""}|${user.tokenType || ""}`
+        : "",
+    [user, authProfile.sibsId],
+  );
   const dashboardDateKey = useMemo(
     () =>
       createSystemDateTimeFormatter("en-CA", {
@@ -396,69 +407,123 @@ export default function EmployeeDashboardPage() {
     [now],
   );
 
+  const scopeKey =
+    user && user.role === "employee" ? `${userIdentityKey}|${dashboardDateKey}` : "";
+
+  const sourceStates = useMemo(
+    () =>
+      scopeKey && sourceStore[scopeKey]
+        ? sourceStore[scopeKey]
+        : createInitialSourceStates(Boolean(scopeKey)),
+    [scopeKey, sourceStore],
+  );
+
+  const [failedPictureUrl, setFailedPictureUrl] = useState("");
+  const profilePicture = useMemo(() => {
+    const picOutcome = sourceStates.profilePicture;
+    const rawUrl = picOutcome?.available
+      ? cleanDashboardText(picOutcome?.data?.data?.profilePictureUrl)
+      : "";
+    if (!rawUrl) return "";
+    const updatedTag = cleanDashboardText(picOutcome?.data?.data?.updatedAt);
+    const separator = rawUrl.includes("?") ? "&" : "?";
+    const resolvedUrl =
+      updatedTag && !rawUrl.includes("?v=")
+        ? `${rawUrl}${separator}v=${encodeURIComponent(updatedTag)}`
+        : rawUrl;
+    return resolvedUrl === failedPictureUrl ? "" : resolvedUrl;
+  }, [sourceStates.profilePicture, failedPictureUrl]);
+
   useEffect(() => {
-    if (!user || user.role !== "employee") {
-      setLiveSources(null);
-      setSourceAvailability({});
-      setSourceErrors({});
-      setDashboardDataLoading(false);
+    if (!scopeKey) {
+      if (activeControllerRef.current) {
+        activeControllerRef.current.abort();
+        activeControllerRef.current = null;
+      }
       return undefined;
     }
 
     const controller = new AbortController();
+    activeControllerRef.current = controller;
     let cancelled = false;
+    const requestNow = new Date();
 
-    async function loadDashboardSources() {
-      setDashboardDataLoading(true);
+    function applySettledSource(key, outcome) {
+      if (cancelled || controller.signal.aborted || outcome?.aborted) return;
 
-      try {
-        const result = await getEmployeeDashboardSources({
-          sibsId: authProfile.sibsId,
-          now,
-          signal: controller.signal,
-        });
-
-        if (cancelled) return;
-
-        setLiveSources(result?.data || {});
-        setSourceAvailability(result?.availability || {});
-        setSourceErrors(result?.errors || {});
-      } catch (error) {
-        if (
-          cancelled ||
-          error?.name === "CanceledError" ||
-          error?.name === "AbortError"
-        ) {
-          return;
-        }
-
-        console.error("EMPLOYEE DASHBOARD DATA ERROR:", error);
-        setLiveSources({});
-        setSourceAvailability({});
-        setSourceErrors({
-          dashboard: {
-            message:
-              error?.response?.data?.message ||
-              error?.message ||
-              "Employee dashboard data could not be loaded.",
+      setSourceStore((prev) => ({
+        ...prev,
+        [scopeKey]: {
+          ...(prev[scopeKey] || createInitialSourceStates(true)),
+          [key]: {
+            loading: false,
+            available: Boolean(outcome?.available),
+            data: outcome?.data ?? null,
+            error: outcome?.error ?? null,
           },
-        });
-      } finally {
-        if (!cancelled) setDashboardDataLoading(false);
-      }
+        },
+      }));
     }
 
-    void loadDashboardSources();
+    void getEmployeeDashboardSources({
+      sibsId: authProfile.sibsId,
+      now: requestNow,
+      signal: controller.signal,
+      onSourceSettled: applySettledSource,
+    });
 
     return () => {
       cancelled = true;
       controller.abort();
+      if (activeControllerRef.current === controller) {
+        activeControllerRef.current = null;
+      }
     };
-    // Refreshes when the Philippine calendar date changes or the signed-in employee changes.
-  }, [user, authProfile.sibsId, dashboardDateKey]);
+  }, [scopeKey, authProfile.sibsId]);
+
+  const retryDashboardSource = useCallback(
+    async (key) => {
+      if (!scopeKey) return;
+
+      const signal = activeControllerRef.current?.signal;
+      setSourceStore((prev) => ({
+        ...prev,
+        [scopeKey]: {
+          ...(prev[scopeKey] || createInitialSourceStates(false)),
+          [key]: {
+            ...(prev[scopeKey]?.[key] || { available: false, data: null }),
+            loading: true,
+            error: null,
+          },
+        },
+      }));
+
+      const outcome = await fetchEmployeeDashboardSource(key, {
+        sibsId: authProfile.sibsId,
+        now: new Date(),
+        signal,
+      });
+
+      if (signal?.aborted || outcome?.aborted) return;
+
+      setSourceStore((prev) => ({
+        ...prev,
+        [scopeKey]: {
+          ...(prev[scopeKey] || createInitialSourceStates(false)),
+          [key]: {
+            loading: false,
+            available: Boolean(outcome?.available),
+            data: outcome?.data ?? null,
+            error: outcome?.error ?? null,
+          },
+        },
+      }));
+    },
+    [scopeKey, authProfile.sibsId],
+  );
 
   const employeePayload = useMemo(() => {
-    const employeeSource = liveSources?.employee;
+    const employeeSource = sourceStates.employee?.data;
 
     if (employeeSource?.data && typeof employeeSource.data === "object") {
       return employeeSource.data;
@@ -474,103 +539,87 @@ export default function EmployeeDashboardPage() {
     return employeeSource && typeof employeeSource === "object"
       ? employeeSource
       : {};
-  }, [liveSources]);
+  }, [sourceStates.employee?.data]);
 
   const profileSource = useMemo(
     () => ({ ...(user || {}), ...(employeePayload || {}) }),
     [user, employeePayload],
   );
   const profile = useMemo(
-    () => getEmployeeDashboardProfile(profileSource),
-    [profileSource],
+    () =>
+      getEmployeeDashboardProfile(profileSource, {
+        employeeLoading: Boolean(sourceStates.employee?.loading),
+      }),
+    [profileSource, sourceStates.employee?.loading],
   );
-
-  useEffect(() => {
-    if (!user) {
-      setProfilePicture("");
-      return undefined;
-    }
-
-    let cancelled = false;
-
-    // The saved employee_profile picture is the source of truth for this
-    // avatar. Clear any previous URL so employees without one show initials.
-    setProfilePicture("");
-
-    async function loadProfilePicture() {
-      try {
-        const result = await getMyEmployeeProfilePicture();
-        if (cancelled) return;
-
-        const pictureUrl = result?.success
-          ? cleanDashboardText(result?.data?.profilePictureUrl)
-          : "";
-
-        if (!pictureUrl) {
-          setProfilePicture("");
-          return;
-        }
-
-        const separator = pictureUrl.includes("?") ? "&" : "?";
-        setProfilePicture(`${pictureUrl}${separator}v=${Date.now()}`);
-      } catch (error) {
-        if (!cancelled) {
-          setProfilePicture("");
-          console.warn(
-            "Employee dashboard profile picture was unavailable:",
-            error?.message || error,
-          );
-        }
-      }
-    }
-
-    void loadProfilePicture();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [user]);
 
   const attendance = useMemo(
     () =>
       getAttendanceSummaryFromResponses({
-        attendanceResponse: liveSources?.attendance,
-        scheduleResponse: liveSources?.schedule,
+        attendanceResponse: sourceStates.attendance?.data,
+        scheduleResponse: sourceStates.schedule?.data,
+        holidaysResponse: sourceStates.holidays?.data,
         user: profileSource,
         now,
       }),
     [
-      liveSources?.attendance,
-      liveSources?.schedule,
+      sourceStates.attendance?.data,
+      sourceStates.schedule?.data,
+      sourceStates.holidays?.data,
       profileSource,
-      dashboardDateKey,
+      now,
     ],
   );
   const weeklySchedule = useMemo(
     () =>
       getWeeklyScheduleFromResponse({
-        scheduleResponse: liveSources?.schedule,
+        scheduleResponse: sourceStates.schedule?.data,
+        holidaysResponse: sourceStates.holidays?.data,
+        scheduleAvailable: Boolean(sourceStates.schedule?.available),
+        scheduleLoading: Boolean(sourceStates.schedule?.loading),
         user: profileSource,
-        now,
+        now: dashboardDateKey,
       }),
-    [liveSources?.schedule, profileSource, dashboardDateKey],
+    [
+      sourceStates.schedule?.data,
+      sourceStates.schedule?.available,
+      sourceStates.schedule?.loading,
+      sourceStates.holidays?.data,
+      profileSource,
+      dashboardDateKey,
+    ],
   );
   const leaveData = useMemo(
     () =>
       getLeaveDashboardDataFromResponses({
-        leavesResponse: liveSources?.leaves,
-        summaryResponse: liveSources?.leaveSummary,
+        leavesResponse: sourceStates.leaves?.data,
+        balanceResponse: sourceStates.leaveBalance?.data,
+        leavesLoading: Boolean(sourceStates.leaves?.loading),
+        balanceLoading: Boolean(sourceStates.leaveBalance?.loading),
+        balanceAvailable: Boolean(sourceStates.leaveBalance?.available),
+        balanceError: sourceStates.leaveBalance?.error?.message || "",
+        sibsId: profile.sibsId || authProfile.sibsId,
         user: profileSource,
       }),
-    [liveSources?.leaves, liveSources?.leaveSummary, profileSource],
+    [
+      sourceStates.leaves?.data,
+      sourceStates.leaves?.loading,
+      sourceStates.leaveBalance?.data,
+      sourceStates.leaveBalance?.loading,
+      sourceStates.leaveBalance?.available,
+      sourceStates.leaveBalance?.error?.message,
+      profile.sibsId,
+      authProfile.sibsId,
+      profileSource,
+    ],
   );
   const announcements = useMemo(
     () => getDashboardAnnouncements(profileSource),
     [profileSource],
   );
   const holidays = useMemo(
-    () => getDashboardHolidays(liveSources?.holidays, dashboardDateKey),
-    [liveSources?.holidays, dashboardDateKey],
+    () => getDashboardHolidays(sourceStates.holidays?.data, dashboardDateKey),
+    [sourceStates.holidays?.data, dashboardDateKey],
   );
 
   if (loading || !user || user.role !== "employee") {
@@ -586,9 +635,22 @@ export default function EmployeeDashboardPage() {
     year: "numeric",
   }).format(now);
   const profileSubtitle = [
-    profile.position,
-    profile.department || profile.account,
-    [profile.location, profile.workSetup].filter(Boolean).join(" · "),
+    profile.position && !["Loading…", "Not specified"].includes(profile.position)
+      ? profile.position
+      : "",
+    profile.department && !["Loading…", "Not assigned"].includes(profile.department)
+      ? profile.department
+      : profile.account || "",
+    [
+      profile.location && !["Loading…", "Not specified"].includes(profile.location)
+        ? profile.location
+        : "",
+      profile.workSetup && !["Loading…", "Not specified"].includes(profile.workSetup)
+        ? profile.workSetup
+        : "",
+    ]
+      .filter(Boolean)
+      .join(" · "),
   ]
     .filter(Boolean)
     .join(" • ");
@@ -670,7 +732,7 @@ export default function EmployeeDashboardPage() {
                       src={profilePicture}
                       alt={`${profile.fullName} profile`}
                       className="h-full w-full object-cover"
-                      onError={() => setProfilePicture("")}
+                      onError={() => setFailedPictureUrl(profilePicture)}
                     />
                   ) : (
                     <span>{profile.initials}</span>
@@ -706,8 +768,11 @@ export default function EmployeeDashboardPage() {
             </div>
           </section>
 
-          {sourceErrors.dashboard ? (
-            <DashboardSourceNotice message={sourceErrors.dashboard.message} />
+          {sourceStates.employee?.error ? (
+            <DashboardSourceNotice
+              message={sourceStates.employee.error.message}
+              onRetry={() => retryDashboardSource("employee")}
+            />
           ) : null}
 
           <div className="grid grid-cols-1 items-start gap-4 sm:gap-5 lg:grid-cols-3">
@@ -724,34 +789,56 @@ export default function EmployeeDashboardPage() {
                       <span
                         className={`h-1.5 w-1.5 2xl:h-2 2xl:w-2 rounded-full ${attendanceTone.dot}`}
                       />
-                      {dashboardDataLoading
+                      {sourceStates.attendance?.loading
                         ? "Loading attendance…"
-                        : attendance.status}
+                        : !sourceStates.attendance?.available
+                          ? "Unavailable"
+                          : attendance.status}
                     </span>
                   }
                 />
 
-                {dashboardDataLoading ? (
+                {sourceStates.attendance?.loading ? (
                   <DashboardSourceNotice
                     message="Loading today’s attendance…"
                     loading
                   />
-                ) : !sourceAvailability.attendance ? (
+                ) : !sourceStates.attendance?.available ? (
                   <DashboardSourceNotice
                     message={
-                      sourceErrors.attendance?.message ||
+                      sourceStates.attendance?.error?.message ||
                       "Attendance data is currently unavailable."
                     }
+                    onRetry={() => retryDashboardSource("attendance")}
                   />
                 ) : null}
 
                 <div className="grid grid-cols-1 gap-3 rounded-xl border border-sibs-border bg-sibs-surface p-3 sm:p-3.5 2xl:p-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
                   <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-                    <MetricBox label="Today's Attendance" value={`In ${attendance.clockIn || "—"} · Out ${attendance.clockOut || "—"}`} />
+                    <MetricBox
+                      label="Today's Attendance"
+                      value={`In ${attendance.clockIn || "—"} · Out ${attendance.clockOut || "—"}`}
+                      detail={
+                        attendance.scheduledShift
+                          ? `Shift: ${attendance.scheduledShift}`
+                          : attendance.adjustmentSummary || ""
+                      }
+                    />
                     <MetricBox
                       label="Rendered Hours"
                       value={attendance.renderedHours}
-                      valueClassName="text-emerald-600"
+                      detail={
+                        attendance.renderedHoursDetail ||
+                        (attendance.scheduledShift ? attendance.adjustmentSummary : "")
+                      }
+                      valueClassName={
+                        attendance.isPendingHours
+                          ? "text-amber-600"
+                          : attendance.renderedHours === "—" ||
+                              attendance.renderedHours === "Unavailable"
+                            ? "text-slate-500"
+                            : "text-emerald-600"
+                      }
                     />
                   </div>
 
@@ -801,7 +888,7 @@ export default function EmployeeDashboardPage() {
                                 {log.type || "Activity"}
                               </td>
                               <td className="px-3 2xl:px-3.5 py-2 font-mono text-[10px] 2xl:text-[11px]">
-                                {formatDashboardDateTime(log.timestamp)}
+                                {log.timestamp || "—"}
                               </td>
                               <td className="px-3 2xl:px-3.5 py-2 text-[11px] 2xl:text-xs">
                                 {log.location || "—"}
@@ -846,17 +933,18 @@ export default function EmployeeDashboardPage() {
                   }
                 />
 
-                {dashboardDataLoading ? (
+                {sourceStates.schedule?.loading ? (
                   <DashboardSourceNotice
                     message="Loading this week’s employee schedule…"
                     loading
                   />
-                ) : !sourceAvailability.schedule ? (
+                ) : !sourceStates.schedule?.available ? (
                   <DashboardSourceNotice
                     message={
-                      sourceErrors.schedule?.message ||
+                      sourceStates.schedule?.error?.message ||
                       "The employee schedule source is currently unavailable."
                     }
+                    onRetry={() => retryDashboardSource("schedule")}
                   />
                 ) : null}
 
@@ -1098,36 +1186,56 @@ export default function EmployeeDashboardPage() {
                   }
                 />
 
-                {dashboardDataLoading ? (
+                {sourceStates.leaves?.loading ||
+                sourceStates.leaveBalance?.loading ? (
                   <DashboardSourceNotice
-                    message="Loading leave balances and recent requests…"
+                    message="Loading Kronos leave credits and recent requests…"
                     loading
                   />
-                ) : !sourceAvailability.leaves &&
-                  !sourceAvailability.leaveSummary ? (
+                ) : !sourceStates.leaves?.available &&
+                  !sourceStates.leaveBalance?.available ? (
                   <DashboardSourceNotice
                     message={
-                      sourceErrors.leaveSummary?.message ||
-                      sourceErrors.leaves?.message ||
+                      sourceStates.leaveBalance?.error?.message ||
+                      sourceStates.leaves?.error?.message ||
                       "Leave data is currently unavailable."
                     }
+                    onRetry={() => {
+                      void retryDashboardSource("leaveBalance");
+                      void retryDashboardSource("leaves");
+                    }}
+                  />
+                ) : !sourceStates.leaveBalance?.available ? (
+                  <DashboardSourceNotice
+                    message={
+                      sourceStates.leaveBalance?.error?.message ||
+                      "Kronos leave credits are currently unavailable."
+                    }
+                    onRetry={() => retryDashboardSource("leaveBalance")}
+                  />
+                ) : !sourceStates.leaves?.available ? (
+                  <DashboardSourceNotice
+                    message={
+                      sourceStates.leaves?.error?.message ||
+                      "Recent leave requests could not be loaded."
+                    }
+                    onRetry={() => retryDashboardSource("leaves")}
                   />
                 ) : null}
 
                 <div className="grid grid-cols-2 gap-2.5">
                   <LeaveBalanceCard
-                    label="Vacation Leave"
-                    code="VL"
-                    available={leaveData.vacation.available}
-                    total={leaveData.vacation.total}
+                    label="Leave Credits"
+                    code="KRONOS"
+                    status={leaveData.balanceStatus}
+                    credits={leaveData.creditsRemaining}
                     tone="navy"
                   />
-                  <LeaveBalanceCard
-                    label="Sick Leave"
-                    code="SL"
-                    available={leaveData.sick.available}
-                    total={leaveData.sick.total}
-                    tone="emerald"
+                  <LeaveRequestsSummaryCard
+                    loading={leaveData.requestSummary.loading}
+                    total={leaveData.requestSummary.total}
+                    approvedCount={leaveData.requestSummary.approvedCount}
+                    pendingCount={leaveData.requestSummary.pendingCount}
                   />
                 </div>
 
@@ -1221,8 +1329,8 @@ export default function EmployeeDashboardPage() {
                     <DashboardEmptyState
                       compact
                       icon={Bell}
-                      title="No announcements loaded"
-                      message="No announcements endpoint was provided. Notices will remain empty until that source is connected."
+                      title="No announcements available"
+                      message="HR announcements will appear here once an announcements feed is connected."
                     />
                   )}
                 </div>
@@ -1232,9 +1340,24 @@ export default function EmployeeDashboardPage() {
                     Upcoming Holidays
                   </p>
 
-                  {holidays.length ? (
+                  {sourceStates.holidays?.loading ? (
+                    <DashboardSourceNotice
+                      message="Loading upcoming holidays…"
+                      loading
+                    />
+                  ) : !sourceStates.holidays?.available ? (
+                    <DashboardSourceNotice
+                      message={
+                        sourceStates.holidays?.error?.message ||
+                        "Holiday calendar data is currently unavailable."
+                      }
+                      onRetry={() => retryDashboardSource("holidays")}
+                    />
+                  ) : holidays.length ? (
                     holidays.map((holiday) => {
-                      const date = holiday.date ? new Date(holiday.date) : null;
+                      const date = holiday.date
+                        ? new Date(`${holiday.date}T12:00:00+08:00`)
+                        : null;
                       const validDate = date && !Number.isNaN(date.getTime());
                       const dayLabel = validDate
                         ? createSystemDateTimeFormatter("en-PH", {
@@ -1379,22 +1502,34 @@ export default function EmployeeDashboardPage() {
   );
 }
 
-function DashboardSourceNotice({ message, loading = false }) {
+function DashboardSourceNotice({ message, loading = false, onRetry }) {
   return (
     <div
-      className={`flex items-start gap-2.5 rounded-xl border px-3 py-2.5 text-[11px] font-semibold leading-5 ${
+      className={`flex items-start justify-between gap-2.5 rounded-xl border px-3 py-2.5 text-[11px] font-semibold leading-5 ${
         loading
           ? "border-blue-200 bg-blue-50 text-blue-700"
           : "border-amber-200 bg-amber-50 text-amber-800"
       }`}
       role={loading ? "status" : "alert"}
     >
-      {loading ? (
-        <span className="mt-1 h-2 w-2 shrink-0 animate-pulse rounded-full bg-blue-500" />
-      ) : (
-        <AlertCircle size={15} className="mt-0.5 shrink-0" />
-      )}
-      <span>{message}</span>
+      <div className="flex min-w-0 items-start gap-2.5">
+        {loading ? (
+          <span className="mt-1 h-2 w-2 shrink-0 animate-pulse rounded-full bg-blue-500" />
+        ) : (
+          <AlertCircle size={15} className="mt-0.5 shrink-0" />
+        )}
+        <span>{message}</span>
+      </div>
+      {!loading && typeof onRetry === "function" ? (
+        <button
+          type="button"
+          onClick={onRetry}
+          className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-amber-300 bg-white px-2 py-0.5 text-[10px] font-extrabold text-amber-800 transition hover:bg-amber-100"
+        >
+          <RefreshCw size={11} />
+          Retry
+        </button>
+      ) : null}
     </div>
   );
 }
@@ -1428,7 +1563,7 @@ function DashboardCardHeader({ title, description, action }) {
   );
 }
 
-function MetricBox({ label, value, valueClassName = "text-sibs-navy" }) {
+function MetricBox({ label, value, detail = "", valueClassName = "text-sibs-navy" }) {
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-2.5 2xl:p-3">
       <p className="sibs-text-micro font-extrabold uppercase tracking-wide text-slate-400">
@@ -1437,6 +1572,11 @@ function MetricBox({ label, value, valueClassName = "text-sibs-navy" }) {
       <p className={`font-heading mt-0.5 text-xs 2xl:text-sm font-bold tabular-nums tracking-tight ${valueClassName}`}>
         {value || "—"}
       </p>
+      {detail ? (
+        <p className="mt-0.5 truncate text-[10px] font-semibold text-slate-500">
+          {detail}
+        </p>
+      ) : null}
     </div>
   );
 }
@@ -1483,7 +1623,9 @@ function SummaryTile({ tone = "light", label, value, detail, icon: Icon }) {
     </div>
   );
 }
+/* eslint-enable no-unused-vars */
 
+// eslint-disable-next-line no-unused-vars
 function FutureFeature({ icon: Icon, label }) {
   return (
     <div className="rounded-xl border border-amber-200/80 bg-white/80 p-3 2xl:p-3.5">
@@ -1519,6 +1661,7 @@ function ProfileSummaryRow({ label, value, mono = false, last = false }) {
   );
 }
 
+// eslint-disable-next-line no-unused-vars
 function QuickAction({ icon: Icon, label, onClick }) {
   return (
     <button
@@ -1532,9 +1675,14 @@ function QuickAction({ icon: Icon, label, onClick }) {
   );
 }
 
-function LeaveBalanceCard({ label, code, available, total, tone }) {
-  const progress = getProgressPercent(available, total);
+function LeaveBalanceCard({ label, code, status, credits, tone }) {
   const emerald = tone === "emerald";
+  const hasNumericBalance =
+    status === "verified" &&
+    typeof credits === "number" &&
+    Number.isFinite(credits);
+  const unitLabel =
+    hasNumericBalance && Math.abs(credits) === 1 ? "Day" : "Days";
 
   return (
     <div
@@ -1553,28 +1701,67 @@ function LeaveBalanceCard({ label, code, available, total, tone }) {
         <span className="font-mono">{code}</span>
       </div>
       <p className="font-heading mt-0.5 text-base 2xl:text-lg font-bold tabular-nums tracking-tight text-sibs-navy">
-        {formatLeaveValue(available)}
-        <span className="ml-1 sibs-text-micro font-normal text-slate-500">
-          / {formatLeaveValue(total)} Days
-        </span>
+        {status === "loading" ? (
+          "Loading…"
+        ) : hasNumericBalance ? (
+          <>
+            {formatLeaveValue(credits)}
+            <span className="ml-1 sibs-text-micro font-normal text-slate-500">
+              {unitLabel}
+            </span>
+          </>
+        ) : (
+          <span className="text-xs font-bold text-slate-500">
+            {status === "missing" ? "No allocation" : "Unavailable"}
+          </span>
+        )}
       </p>
-      <div
-        className={`mt-1.5 h-1.5 overflow-hidden rounded-full ${
-          emerald ? "bg-emerald-200" : "bg-blue-200"
-        }`}
-      >
-        <div
-          className={`h-full rounded-full ${
-            emerald ? "bg-emerald-600" : "bg-sibs-navy"
-          }`}
-          style={{ width: `${progress}%` }}
-        />
+      <p className="mt-1 sibs-text-micro font-semibold text-slate-500">
+        {status === "loading"
+          ? "Checking Kronos credits"
+          : hasNumericBalance
+            ? "Verified Kronos balance"
+            : "Current balance unavailable"}
+      </p>
+    </div>
+  );
+}
+
+function LeaveRequestsSummaryCard({
+  loading = false,
+  total = 0,
+  approvedCount = 0,
+  pendingCount = 0,
+}) {
+  return (
+    <div className="rounded-xl border border-emerald-200 bg-emerald-50/70 p-2.5 2xl:p-3">
+      <div className="flex items-center justify-between sibs-text-micro font-extrabold uppercase text-emerald-700">
+        <span>Filed Requests</span>
+        <span className="font-mono">RECENT</span>
       </div>
+      <p className="font-heading mt-0.5 text-base 2xl:text-lg font-bold tabular-nums tracking-tight text-sibs-navy">
+        {loading ? (
+          "Loading…"
+        ) : (
+          <>
+            {total}
+            <span className="ml-1 sibs-text-micro font-normal text-slate-500">
+              {total === 1 ? "Request" : "Requests"}
+            </span>
+          </>
+        )}
+      </p>
+      <p className="mt-1 sibs-text-micro font-semibold text-slate-500">
+        {loading
+          ? "Loading request history"
+          : `${approvedCount} Approved · ${pendingCount} Pending`}
+      </p>
     </div>
   );
 }
 
 function DashboardEmptyState({
+  // eslint-disable-next-line no-unused-vars
   icon: Icon = AlertCircle,
   title,
   message,

@@ -12,6 +12,7 @@ import {
   ArrowUpRight,
   CheckCircle,
   CheckCircle2,
+  ChevronDown,
   Clock3,
   CalendarClock,
   FolderOpen,
@@ -45,6 +46,7 @@ import HelpdeskCaseConversation from "@/components/helpdesk/HelpdeskCaseConversa
 import {
   getChatAttachmentUrl,
   getChatHelpdeskSupportScope,
+  getChatMessages,
   getHelpdeskTicketSummaries,
   getHelpdeskTicketDetails,
   getHelpdeskTicketEligibility,
@@ -427,7 +429,7 @@ function formatElapsed(value) {
 }
 
 function HelpdeskTicketModal({ conversation, ticket, loading, eligibility, eligibilityLoading, busy, error,
-  currentSibsId, onClose, onAccept, onUpdateStatus, onMessagesChanged, returnFocusFallbackRef }) {
+  currentSibsId, initialMessagesPromise, onInitialMessagesConsumed, onClose, onAccept, onUpdateStatus, onMessagesChanged, returnFocusFallbackRef }) {
   const requester = getRequester(conversation);
   const ticketStatus = ticket?.status;
   const isResolved = ticketStatus === "RESOLVED";
@@ -487,11 +489,13 @@ function HelpdeskTicketModal({ conversation, ticket, loading, eligibility, eligi
     <div role="alert" className="mb-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs font-bold text-rose-700">{error}</div>
   );
   const isClosedCase = isResolved || isSpam;
+  const queuedDisplay = ticket ? getQueuedDisplay(ticket, now) : { text: "—", pending: false };
+  const responseDisplay = ticket ? getResponseDisplay(ticket) : { text: "—", pending: false };
   const durations = ticket && !isSpam ? [
-    { label: "Queued time", value: getQueuedDisplay(ticket, now).text, detail: "First message to acceptance" },
-    { label: "Response time", value: getResponseDisplay(ticket).text, detail: "Acceptance to first support reply" },
-    { label: "Total resolution", value: getResolutionDisplay(ticket), detail: "Opening to closure", highlight: isResolved },
-    { label: "Handling time", value: ticket.resolvedAt ? formatElapsed(ticket.secondsToFinish) : "Pending", detail: "Acceptance to closure" },
+    { label: "Queued time", value: queuedDisplay.text, detail: "First message to acceptance", tone: queuedDisplay.pending ? "pending" : undefined },
+    { label: "Response time", value: responseDisplay.text, detail: "Acceptance to first support reply", tone: responseDisplay.pending ? "pending" : !ticket.acceptedAt ? "muted" : undefined },
+    { label: "Total resolution", value: getResolutionDisplay(ticket), detail: "Opening to closure", highlight: isResolved, tone: !ticket.resolvedAt ? "muted" : undefined },
+    { label: "Handling time", value: ticket.resolvedAt ? formatElapsed(ticket.secondsToFinish) : "Pending", detail: "Acceptance to closure", tone: !ticket.resolvedAt ? "muted" : undefined },
   ] : [];
   const milestones = ticket ? [
     { label: isSpam ? "Received" : "Opened", value: ticket.postedAt, icon: <CalendarClock size={16} /> },
@@ -506,22 +510,30 @@ function HelpdeskTicketModal({ conversation, ticket, loading, eligibility, eligi
   const assignmentSummary = ticket && (
     <>
       <p className="sibs-modal-section-subtitle mt-3 uppercase">Assigned support agent</p>
-      <div className="mt-1.5 flex items-center gap-2.5 rounded-xl border border-sibs-border bg-sibs-surface p-2.5">
-        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-sibs-navy text-white"><UserRound size={15} aria-hidden="true" /></span>
+      <div className={`mt-1.5 flex items-center gap-2.5 rounded-xl border p-2.5 ${acceptedBy ? "border-sibs-border bg-sibs-surface" : "border-dashed border-sibs-border-subtle bg-sibs-surface/75"}`}>
+        <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${acceptedBy ? "bg-sibs-navy text-white" : "bg-slate-200 text-sibs-muted"}`}>
+          <UserRound size={15} aria-hidden="true" />
+        </span>
         <div className="min-w-0">
-          <p className="wrap-anywhere text-xs font-extrabold text-sibs-navy">{assignee?.displayName || (acceptedBy ? "Support agent" : "Unassigned")}</p>
-          {acceptedBy && <p className="sibs-modal-section-subtitle">SiBS ID: {acceptedBy}</p>}
+          <p className={`wrap-anywhere text-xs font-extrabold ${acceptedBy ? "text-sibs-navy" : "text-sibs-muted"}`}>
+            {assignee?.displayName || (acceptedBy ? "Support agent" : "Unassigned")}
+          </p>
+          <p className="sibs-modal-section-subtitle tabular-nums">
+            {acceptedBy ? `SiBS ID: ${acceptedBy}` : "Waiting for an eligible support agent"}
+          </p>
         </div>
       </div>
       {ticket.status === "OPEN" && (
-        <div className="mt-4 space-y-2">
+        <div className="mt-3.5 space-y-2">
           <button type="button" onClick={onAccept} disabled={busy || eligibilityLoading || !eligibility?.eligible}
-            className="flex w-full items-center justify-center gap-2 rounded-lg bg-sibs-navy px-4 py-2.5 text-xs font-extrabold text-white hover:bg-sibs-navy-alt disabled:cursor-not-allowed disabled:opacity-50">
+            title={!eligibilityLoading && !eligibility?.eligible && eligibility?.reason ? eligibility.reason : undefined}
+            className="flex w-full items-center justify-center gap-2 rounded-[10px] bg-sibs-orange px-4 py-2.5 text-xs font-extrabold text-white shadow-xs transition hover:bg-sibs-button-hover active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500 disabled:shadow-none">
             {busy || eligibilityLoading ? <Loader2 size={14} className="motion-safe:animate-spin" /> : <CheckCircle2 size={14} />} Accept Request
           </button>
           <button type="button" onClick={openSpam}
             disabled={busy || eligibilityLoading || !eligibility?.eligible}
-            className="flex w-full items-center justify-center gap-2 rounded-lg border border-rose-200 bg-white px-4 py-2.5 text-xs font-extrabold text-rose-700 transition hover:bg-rose-50 disabled:opacity-50">
+            title={!eligibilityLoading && !eligibility?.eligible && eligibility?.reason ? eligibility.reason : undefined}
+            className="flex w-full items-center justify-center gap-2 rounded-[10px] border border-rose-200 bg-white px-4 py-2.5 text-xs font-extrabold text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50">
             <Flag size={14} /> Flag as Spam
           </button>
         </div>
@@ -541,7 +553,7 @@ function HelpdeskTicketModal({ conversation, ticket, loading, eligibility, eligi
               else onUpdateStatus(selectedStatus);
             }}
             disabled={busy || selectedStatus === ticket.status}
-            className="w-full rounded-lg bg-sibs-navy px-4 py-2.5 text-xs font-extrabold text-white hover:bg-sibs-navy-alt disabled:opacity-50">
+            className="w-full rounded-[10px] bg-sibs-navy px-4 py-2.5 text-xs font-extrabold text-white transition hover:bg-sibs-navy-alt disabled:cursor-not-allowed disabled:opacity-50">
             {busy ? "Saving…" : selectedStatus === "RESOLVED" ? "Close Case" : selectedStatus === "SPAM" ? "Flag as Spam" : "Save status"}
           </button>
         </div>
@@ -551,29 +563,42 @@ function HelpdeskTicketModal({ conversation, ticket, loading, eligibility, eligi
 
   const milestonesList = (
     <ol aria-label="Lifecycle milestones" className="mt-3 space-y-2">
-      {milestones.map(({ label, value, icon, highlight }, index) => (
-        <li key={label} className={`flex min-h-14 items-center gap-3 rounded-lg border px-3 py-3 ${highlight === "resolved" ? "border-emerald-200 bg-emerald-50 text-emerald-800" : highlight === "spam" ? "border-rose-200 bg-rose-50 text-rose-800" : "border-sibs-border bg-sibs-surface text-sibs-navy"}`}>
-          <div aria-hidden="true" className="flex shrink-0 items-center gap-1.5 text-xs font-bold tabular-nums">
-            <span>{String(index + 1).padStart(2, "0")}</span>{icon}
-          </div>
-          <div className="flex min-w-0 flex-1 flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
-            <p className="text-sm font-bold leading-tight">{label}</p>
-            <p className="text-xs font-semibold tabular-nums text-sibs-muted">{formatDate(value)}</p>
-          </div>
-        </li>
-      ))}
+      {milestones.map(({ label, value, icon, highlight }, index) => {
+        const completed = Boolean(value);
+        return (
+          <li key={label} className={`flex min-h-12 items-center gap-3 rounded-lg border px-3 py-2.5 ${
+            highlight === "resolved"
+              ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+              : highlight === "spam"
+                ? "border-rose-200 bg-rose-50 text-rose-800"
+                : completed
+                  ? "border-sibs-border bg-white text-sibs-navy"
+                  : "border-dashed border-sibs-border/80 bg-sibs-surface/60 text-sibs-muted"
+          }`}>
+            <div aria-hidden="true" className="flex shrink-0 items-center gap-1.5 text-xs font-bold tabular-nums">
+              <span>{String(index + 1).padStart(2, "0")}</span>{icon}
+            </div>
+            <div className="flex min-w-0 flex-1 flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
+              <p className="text-xs font-bold leading-tight">{label}</p>
+              <p className={`text-[11px] font-semibold tabular-nums ${completed ? "text-sibs-muted" : "text-sibs-faint"}`}>
+                {completed ? formatDate(value) : "Pending"}
+              </p>
+            </div>
+          </li>
+        );
+      })}
     </ol>
   );
 
   const auditLogList = ticket && (
-    <ol className="mt-3 space-y-3">
-      <li className="flex gap-2.5 text-xs text-sibs-navy"><CheckCircle2 size={16} className="mt-0.5 shrink-0 text-emerald-600" /><span><b>{isSpamStatus(ticket.status) ? "Request received · first message sent" : "Case opened · first message sent"}</b><span className="block text-sibs-muted">{formatDate(ticket.postedAt)}</span></span></li>
+    <ol className="mt-3 space-y-2.5">
+      <li className="flex gap-2.5 text-xs text-sibs-navy"><CheckCircle2 size={16} className="mt-0.5 shrink-0 text-emerald-600" /><span><b>{isSpamStatus(ticket.status) ? "Request received · first message sent" : "Case opened · first message sent"}</b><span className="mt-0.5 block text-[11px] font-semibold tabular-nums text-sibs-muted">{formatDate(ticket.postedAt)}</span></span></li>
       {(ticket.history || []).map((entry, index) => (
         <li key={`${entry.eventType}-${entry.occurredAt}-${index}`} className="flex gap-2.5 text-xs text-sibs-navy">
           <Clock3 size={16} className="mt-0.5 shrink-0 text-sibs-orange" />
           <span><b>{entry.eventType === "ACCEPTED" ? "Accepted and assigned" : entry.eventType === "RESOLVED" ? "Case closed" : isSpamStatus(entry.eventType) ? "Request flagged as Spam" : `Status changed to ${TICKET_STATUS_LABELS[entry.newStatus] || entry.newStatus}`}</b>
-            <span className="block text-sibs-muted">{formatDate(entry.occurredAt)}</span>
-            <span className="mt-0.5 block break-words text-sibs-muted">{getTimelineActorLabel(entry, conversation)}</span>
+            <span className="mt-0.5 block text-[11px] font-semibold tabular-nums text-sibs-muted">{formatDate(entry.occurredAt)}</span>
+            <span className="mt-0.5 block break-words text-[11px] text-sibs-muted">{getTimelineActorLabel(entry, conversation)}</span>
             {entry.reason && <span className="mt-0.5 block whitespace-pre-wrap break-words text-rose-700">Reason: {entry.reason}</span>}
           </span>
         </li>
@@ -599,7 +624,10 @@ function HelpdeskTicketModal({ conversation, ticket, loading, eligibility, eligi
         zIndex="z-[1600]"
         bodyClassName="overscroll-contain bg-sibs-surface px-4 py-4 sm:px-6"
         footerMeta={ticket && !loading ? (
-          <button type="button" className="sibs-modal-btn-secondary" onClick={() => chatHeadingRef.current?.focus()}>
+          <button type="button" className="sibs-modal-btn-secondary" onClick={() => {
+            chatHeadingRef.current?.scrollIntoView?.({ behavior: "smooth", block: "nearest" });
+            chatHeadingRef.current?.focus();
+          }}>
             <MessageSquare size={14} aria-hidden="true" /> Go to chat
           </button>
         ) : null}
@@ -621,7 +649,6 @@ function HelpdeskTicketModal({ conversation, ticket, loading, eligibility, eligi
                     </div>
                     <p className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs font-semibold text-sibs-muted">
                       <span className="inline-flex items-center gap-1.5"><MapPin size={14} aria-hidden="true" className="shrink-0 text-sibs-orange" />{ticket.requesterSite || requester.location}</span>
-                      <span>{categoryName}</span>
                     </p>
                   </div>
                 </section>
@@ -663,7 +690,6 @@ function HelpdeskTicketModal({ conversation, ticket, loading, eligibility, eligi
                     <h3 ref={chatHeadingRef} tabIndex={-1} className="sibs-modal-section-title flex items-center gap-2">
                       <MessageSquare size={16} aria-hidden="true" className="text-sibs-orange" /> Support Assignment &amp; Chat
                     </h3>
-                    <p className="sibs-modal-section-subtitle mt-1">Assigned agent and the full case conversation.</p>
                   </div>
                   {assignmentSummary}
                   <div className="mt-4">
@@ -672,6 +698,8 @@ function HelpdeskTicketModal({ conversation, ticket, loading, eligibility, eligi
                       conversation={conversation}
                       ticket={ticket}
                       currentSibsId={currentSibsId}
+                      initialMessagesPromise={initialMessagesPromise}
+                      onInitialMessagesConsumed={onInitialMessagesConsumed}
                       onMessagesChanged={onMessagesChanged}
                     />
                   </div>
@@ -696,13 +724,15 @@ function HelpdeskTicketModal({ conversation, ticket, loading, eligibility, eligi
               </div>
             </div>
           ) : (
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_330px] lg:items-start">
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-stretch">
               <div className="min-w-0">
                 <HelpdeskCaseConversation
                   key={conversation.id}
                   conversation={conversation}
                   ticket={ticket}
                   currentSibsId={currentSibsId}
+                  initialMessagesPromise={initialMessagesPromise}
+                  onInitialMessagesConsumed={onInitialMessagesConsumed}
                   onMessagesChanged={onMessagesChanged}
                   conversationFocused
                   headingRef={chatHeadingRef}
@@ -715,7 +745,7 @@ function HelpdeskTicketModal({ conversation, ticket, loading, eligibility, eligi
                     <RequesterAvatar requester={requester} />
                     <div className="min-w-0 flex-1">
                       <h3 className="font-heading text-sm font-bold wrap-anywhere text-sibs-navy">{requester.name}</h3>
-                      <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] font-semibold text-sibs-muted">
+                      <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] font-semibold tabular-nums text-sibs-muted">
                         {requester.sibsId && <span>SiBS ID: {requester.sibsId}</span>}
                         <span className="inline-flex items-center gap-1"><MapPin size={12} aria-hidden="true" className="shrink-0 text-sibs-orange" />{ticket.requesterSite || requester.location}</span>
                       </p>
@@ -734,24 +764,38 @@ function HelpdeskTicketModal({ conversation, ticket, loading, eligibility, eligi
                   {assignmentSummary}
                 </section>
 
-                <dl aria-label="Case durations" className="grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-sibs-border bg-sibs-border shadow-xs">
-                  {durations.map(({ label, value, detail }) => (
-                    <div key={label} className="bg-white p-2.5 text-center">
+                <dl aria-label="Case durations" className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-sibs-border bg-sibs-border shadow-xs">
+                  {durations.map(({ label, value, detail, tone }) => (
+                    <div key={label} className="bg-white px-3 py-2.5 text-left">
                       <dt className="sibs-modal-section-subtitle uppercase">{label}</dt>
-                      <dd className="mt-0.5 font-heading text-base font-bold tabular-nums text-sibs-navy">{value}</dd>
-                      <dd className="sibs-modal-section-subtitle mt-0.5">{detail}</dd>
+                      <dd className={`mt-0.5 font-heading text-base font-bold tabular-nums ${
+                        tone === "pending"
+                          ? "text-sibs-orange"
+                          : tone === "muted"
+                            ? "text-sibs-muted"
+                            : "text-sibs-navy"
+                      }`}>{value}</dd>
+                      <dd className="sibs-modal-section-subtitle mt-0.5 leading-snug">{detail}</dd>
                     </div>
                   ))}
                 </dl>
 
-                <details className="rounded-2xl border border-sibs-border bg-white p-4 shadow-xs">
-                  <summary className="flex cursor-pointer list-none items-center justify-between gap-2 text-xs font-extrabold text-sibs-navy">
-                    <span className="inline-flex items-center gap-2">
-                      <Clock3 size={15} aria-hidden="true" className="text-sibs-orange" /> Milestones &amp; Activity Log
+                <details className="group rounded-2xl border border-sibs-border bg-white shadow-xs">
+                  <summary className="flex cursor-pointer list-none items-center justify-between gap-2 rounded-2xl p-4 text-xs font-extrabold text-sibs-navy transition-colors hover:bg-sibs-surface/60 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-sibs-orange [&::-webkit-details-marker]:hidden">
+                    <span className="inline-flex min-w-0 items-center gap-2">
+                      <Clock3 size={15} aria-hidden="true" className="shrink-0 text-sibs-orange" />
+                      <span className="truncate">Milestones &amp; Activity Log</span>
                     </span>
-                    <span className="sibs-modal-section-subtitle">View</span>
+                    <span className="inline-flex shrink-0 items-center gap-1.5">
+                      <span className="rounded-full border border-sibs-border bg-sibs-surface px-1.5 py-0.5 text-[10px] font-bold tabular-nums text-sibs-muted">
+                        {(ticket.history?.length || 0) + 1}
+                      </span>
+                      <span className="sibs-modal-section-subtitle group-open:hidden">View</span>
+                      <span className="sibs-modal-section-subtitle hidden group-open:inline">Hide</span>
+                      <ChevronDown size={15} aria-hidden="true" className="text-sibs-muted transition-transform duration-200 group-open:rotate-180 motion-reduce:transition-none" />
+                    </span>
                   </summary>
-                  <div className="mt-3 border-t border-sibs-border pt-3">
+                  <div className="border-t border-sibs-border px-4 pb-4 pt-3">
                     {milestonesList}
                     <div className="mt-4 border-t border-sibs-border pt-3">
                       <h4 className="text-xs font-extrabold text-sibs-navy">Activity Audit Log</h4>
@@ -849,6 +893,7 @@ export default function HelpdeskSupportPage({ category = "IT" }) {
   const [ticketSummaries, setTicketSummaries] = useState({});
   const [ticketsError, setTicketsError] = useState("");
   const [activeRequest, setActiveRequest] = useState(null);
+  const [initialMessagesPromise, setInitialMessagesPromise] = useState(null);
   const [ticketDetails, setTicketDetails] = useState(null);
   const [ticketLoading, setTicketLoading] = useState(false);
   const [ticketEligibility, setTicketEligibility] = useState(null);
@@ -906,10 +951,20 @@ export default function HelpdeskSupportPage({ category = "IT" }) {
     setAuthorizedCategories([]);
     setAuthorizedLocationsByCategory({});
     setCheckingAccess(true);
+    setActiveRequest(null);
+    setInitialMessagesPromise(null);
+    setTicketDetails(null);
+    setTicketEligibility(null);
+    setTicketError("");
+    detailControllerRef.current?.abort();
     const controller = new AbortController();
     void loadAccess({ signal: controller.signal });
     return () => controller.abort();
   }, [loadAccess, userViewKey]);
+
+  useEffect(() => () => {
+    detailControllerRef.current?.abort();
+  }, []);
 
   useLayoutEffect(() => {
     mainScrollRef.current?.scrollTo({ top: 0, behavior: "auto" });
@@ -924,6 +979,7 @@ export default function HelpdeskSupportPage({ category = "IT" }) {
     setOpenError("");
     setStatusFilter("All");
     setActiveRequest(null);
+    setInitialMessagesPromise(null);
     detailControllerRef.current?.abort();
   }, [category]);
 
@@ -987,6 +1043,7 @@ export default function HelpdeskSupportPage({ category = "IT" }) {
     detailControllerRef.current?.abort();
     detailControllerRef.current = null;
     setActiveRequest(null);
+    setInitialMessagesPromise(null);
     setTicketDetails(null);
     setTicketEligibility(null);
     setTicketError("");
@@ -997,23 +1054,45 @@ export default function HelpdeskSupportPage({ category = "IT" }) {
     detailControllerRef.current?.abort();
     const controller = new AbortController();
     detailControllerRef.current = controller;
+    const summaryTicket = ticketSummaries[Number(conversation.id)] || null;
+    const summaryStatus = safeText(summaryTicket?.status || conversation?.caseStatus).toUpperCase();
+    const shouldPrefetchEligibility = summaryStatus === "OPEN";
+    const messagesPromise = getChatMessages(conversation.id, { limit: 75, signal: controller.signal });
+    // Prevent unhandled rejection before HelpdeskCaseConversation mounts and awaits it.
+    messagesPromise.catch(() => {});
+
     setActiveRequest(conversation);
+    setInitialMessagesPromise(messagesPromise);
     setTicketDetails(null);
     setTicketEligibility(null);
     setTicketError("");
     setTicketLoading(true);
-    setEligibilityLoading(false);
+    setEligibilityLoading(shouldPrefetchEligibility);
+
+    const fetchEligibility = () => {
+      setEligibilityLoading(true);
+      void getHelpdeskTicketEligibility(conversation.id, { signal: controller.signal })
+        .then((result) => { if (!controller.signal.aborted) setTicketEligibility(result); })
+        .catch((error) => { if (!controller.signal.aborted) setTicketEligibility({ eligible: false, reason: error?.response?.data?.message || "Unable to verify duty or site eligibility." }); })
+        .finally(() => { if (!controller.signal.aborted) setEligibilityLoading(false); });
+    };
+
+    if (shouldPrefetchEligibility) {
+      fetchEligibility();
+    }
+
     void getHelpdeskTicketDetails(conversation.id, { signal: controller.signal })
       .then((details) => {
         if (controller.signal.aborted) return;
         setTicketDetails(details);
         // Resolved/assigned requests never require a costly Kronos duty check.
-        if (details?.status !== "OPEN") return;
-        setEligibilityLoading(true);
-        void getHelpdeskTicketEligibility(conversation.id, { signal: controller.signal })
-          .then((result) => { if (!controller.signal.aborted) setTicketEligibility(result); })
-          .catch((error) => { if (!controller.signal.aborted) setTicketEligibility({ eligible: false, reason: error?.response?.data?.message || "Unable to verify duty or site eligibility." }); })
-          .finally(() => { if (!controller.signal.aborted) setEligibilityLoading(false); });
+        if (details?.status !== "OPEN") {
+          setEligibilityLoading(false);
+          return;
+        }
+        if (!shouldPrefetchEligibility) {
+          fetchEligibility();
+        }
       })
       .catch((error) => { if (!controller.signal.aborted) setTicketError(error?.response?.data?.message || "Unable to load this request."); })
       .finally(() => { if (!controller.signal.aborted) setTicketLoading(false); });
@@ -1021,20 +1100,25 @@ export default function HelpdeskSupportPage({ category = "IT" }) {
 
   const runTicketAction = async (action, status = "", reason = "") => {
     if (!activeRequest || ticketBusy) return;
+    const requestId = activeRequest.id;
+    const controller = detailControllerRef.current;
     setTicketBusy(true);
     setTicketError("");
     try {
       const next = action === "ACCEPT"
-        ? await acceptHelpdeskTicket(activeRequest.id)
-        : await updateHelpdeskTicketStatus(activeRequest.id, status, reason);
+        ? await acceptHelpdeskTicket(requestId)
+        : await updateHelpdeskTicketStatus(requestId, status, reason);
+      if (controller?.signal?.aborted) return;
       setTicketDetails(next);
       setTicketEligibility({ eligible: false, reason: "Request already assigned." });
       await loadTicketSummaries();
       void chat?.refreshConversations?.({ silent: true });
     } catch (error) {
+      if (controller?.signal?.aborted) return;
       setTicketError(error?.response?.data?.message || "Unable to update request. Refresh and retry.");
       try {
-        setTicketDetails(await getHelpdeskTicketDetails(activeRequest.id));
+        const refreshed = await getHelpdeskTicketDetails(requestId, { signal: controller?.signal });
+        if (!controller?.signal?.aborted && refreshed) setTicketDetails(refreshed);
       } catch {
         // Keep the original action error visible if the follow-up read also fails.
       }
@@ -1417,7 +1501,7 @@ export default function HelpdeskSupportPage({ category = "IT" }) {
           )}
         </div>
       </main>
-      {activeRequest && (
+      {allowed && activeRequest && (
         <HelpdeskTicketModal
           returnFocusFallbackRef={queueSearchRef}
           conversation={activeRequest}
@@ -1428,6 +1512,8 @@ export default function HelpdeskSupportPage({ category = "IT" }) {
           busy={ticketBusy}
           error={ticketError}
           currentSibsId={safeText(chat?.currentSibsId || user?.username || user?.sibs_id || user?.sibsId)}
+          initialMessagesPromise={initialMessagesPromise}
+          onInitialMessagesConsumed={() => setInitialMessagesPromise(null)}
           onClose={closeDetails}
           onAccept={() => runTicketAction("ACCEPT")}
           onUpdateStatus={(status, reason = "") => runTicketAction("STATUS", status, reason)}

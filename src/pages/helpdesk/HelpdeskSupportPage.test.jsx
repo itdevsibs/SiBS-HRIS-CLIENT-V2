@@ -1,7 +1,7 @@
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import HelpdeskSupportPage from "./HelpdeskSupportPage";
-import { getHelpdeskTicketDetails, getHelpdeskTicketSummaries, updateHelpdeskTicketStatus } from "@/lib/axios/sibsChat";
+import { getChatMessages, getHelpdeskTicketDetails, getHelpdeskTicketEligibility, getHelpdeskTicketSummaries, updateHelpdeskTicketStatus } from "@/lib/axios/sibsChat";
 
 const { conversation, ticket } = vi.hoisted(() => {
   const conversation = {
@@ -58,6 +58,9 @@ async function openConfirmation(dialog, option, action) {
 
 describe("Helpdesk case dialogs", () => {
   beforeEach(() => {
+    getChatMessages.mockClear();
+    getChatMessages.mockResolvedValue([]);
+    getHelpdeskTicketEligibility.mockClear();
     getHelpdeskTicketDetails.mockResolvedValue(ticket);
     updateHelpdeskTicketStatus.mockReset();
     vi.stubGlobal("matchMedia", () => ({ matches: true }));
@@ -142,6 +145,66 @@ describe("Helpdesk case dialogs", () => {
     expect(chatHeading).toHaveFocus();
   });
 
+  it("prefetches ticket details, messages, and open-case eligibility in parallel", async () => {
+    const openTicket = { ...ticket, status: "OPEN", acceptedBySibsId: null };
+    getHelpdeskTicketSummaries.mockResolvedValueOnce([openTicket]);
+    const callStarts = {};
+    const callEnds = {};
+    const delay = (ms, value, label) => new Promise((resolve) => setTimeout(() => {
+      callEnds[label] = performance.now();
+      resolve(value);
+    }, ms));
+
+    getHelpdeskTicketDetails.mockImplementationOnce(() => {
+      callStarts.details = performance.now();
+      return delay(80, openTicket, "details");
+    });
+    getChatMessages.mockImplementationOnce(() => {
+      callStarts.messages = performance.now();
+      return delay(80, [{ id: 901, senderSibsId: "1000", messageText: "Need laptop help", createdAt: "2026-11-17T08:00:00+08:00" }], "messages");
+    });
+    getHelpdeskTicketEligibility.mockImplementationOnce(() => {
+      callStarts.eligibility = performance.now();
+      return delay(80, { eligible: true, reason: "" }, "eligibility");
+    });
+
+    await openCase();
+    const dialog = await screen.findByRole("dialog", { name: "Case Opened #4 (Davao Site)" });
+    await within(dialog).findByText("Need laptop help");
+    const acceptBtn = await within(dialog).findByRole("button", { name: "Accept Request" });
+    await waitFor(() => expect(acceptBtn).toBeEnabled());
+
+    // All 3 requests started immediately in parallel before getHelpdeskTicketDetails resolved.
+    expect(callStarts.messages).toBeLessThan(callEnds.details);
+    expect(callStarts.eligibility).toBeLessThan(callEnds.details);
+    expect(Math.abs(callStarts.messages - callStarts.details)).toBeLessThan(40);
+    expect(Math.abs(callStarts.eligibility - callStarts.details)).toBeLessThan(40);
+    expect(getChatMessages).toHaveBeenCalledTimes(1);
+  });
+
+  it("skips eligibility fetch for non-OPEN cases and refreshes messages on open-to-closed transition", async () => {
+    getChatMessages
+      .mockResolvedValueOnce([{ id: 101, senderSibsId: "1000", messageText: "Initial issue", createdAt: "2026-11-17T08:00:00+08:00" }])
+      .mockResolvedValueOnce([
+        { id: 101, senderSibsId: "1000", messageText: "Initial issue", createdAt: "2026-11-17T08:00:00+08:00" },
+        { id: 102, senderSibsId: "2000", messageText: "Resolved reply", createdAt: "2026-11-17T08:05:00+08:00" },
+      ]);
+    await openCase();
+    const dialog = await screen.findByRole("dialog", { name: "Case Opened #4 (Davao Site)" });
+    await within(dialog).findByText("Initial issue");
+    expect(getHelpdeskTicketEligibility).not.toHaveBeenCalled();
+
+    const resolved = { ...ticket, status: "RESOLVED" };
+    updateHelpdeskTicketStatus.mockResolvedValueOnce(resolved);
+    getHelpdeskTicketSummaries.mockResolvedValueOnce([resolved]);
+    await openConfirmation(dialog, "Closed", "Close Case");
+    fireEvent.click(within(screen.getByRole("alertdialog", { name: "Close this case?" })).getByRole("button", { name: "Close Case" }));
+
+    const archived = await screen.findByRole("dialog", { name: "Case Closed #4 (Davao Site)" });
+    await within(archived).findByText("Resolved reply");
+    expect(within(archived).getByText("Initial issue")).toBeVisible();
+  });
+
   it("keeps the confirmation open while saving and returns focus to the queue after archival", async () => {
     let complete;
     updateHelpdeskTicketStatus.mockReturnValue(new Promise((resolve) => { complete = resolve; }));
@@ -174,5 +237,23 @@ describe("Helpdesk case dialogs", () => {
     fireEvent.keyDown(document.activeElement, { key: "Escape" });
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     expect(screen.getByRole("textbox", { name: "Search" })).toHaveFocus();
+  });
+
+  it("disables OPEN case actions when ineligible without showing department restriction banner", async () => {
+    const openTicket = { conversationId: 42, status: "OPEN", caseCode: "IT-4", acceptedBySibsId: null };
+    getHelpdeskTicketSummaries.mockResolvedValueOnce([openTicket]);
+    getHelpdeskTicketDetails.mockResolvedValueOnce(openTicket);
+    getHelpdeskTicketEligibility.mockResolvedValueOnce({
+      eligible: false,
+      reason: "Only staff from this Helpdesk department can accept requests.",
+    });
+
+    await openCase();
+    const dialog = await screen.findByRole("dialog", { name: "Case Opened #4 (Davao Site)" });
+    await waitFor(() => {
+      expect(within(dialog).getByRole("button", { name: "Accept Request" })).toBeDisabled();
+    });
+    expect(within(dialog).getByRole("button", { name: "Flag as Spam" })).toBeDisabled();
+    expect(within(dialog).queryByText("Only staff from this Helpdesk department can accept requests.")).not.toBeInTheDocument();
   });
 });

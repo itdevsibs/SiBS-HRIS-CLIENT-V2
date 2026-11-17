@@ -3,20 +3,28 @@ import api from "./api-template";
 
 const MANILA_TIME_ZONE = "Asia/Manila";
 
-function getManilaDateKey(value = new Date()) {
+export function getManilaDateKey(value = new Date()) {
+  const target =
+    value instanceof Date && !Number.isNaN(value.getTime()) ? value : new Date();
   const parts = createSystemDateTimeFormatter("en-CA", {
     timeZone: MANILA_TIME_ZONE,
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
-  }).formatToParts(value);
+  }).formatToParts(target);
   const record = Object.fromEntries(parts.map((part) => [part.type, part.value]));
   return `${record.year}-${record.month}-${record.day}`;
 }
 
-function getManilaWeekRange(value = new Date()) {
+export function shiftManilaDateKey(dateKey, deltaDays = 0) {
+  const anchor = new Date(`${dateKey}T12:00:00.000Z`);
+  anchor.setUTCDate(anchor.getUTCDate() + deltaDays);
+  return anchor.toISOString().slice(0, 10);
+}
+
+export function getManilaWeekRange(value = new Date()) {
   const dateKey = getManilaDateKey(value);
-  const anchor = new Date(`${dateKey}T00:00:00.000Z`);
+  const anchor = new Date(`${dateKey}T12:00:00.000Z`);
   const dayIndex = anchor.getUTCDay();
   const offsetToMonday = dayIndex === 0 ? 6 : dayIndex - 1;
   const monday = new Date(anchor);
@@ -30,6 +38,14 @@ function getManilaWeekRange(value = new Date()) {
   };
 }
 
+function isCanceledError(error) {
+  return (
+    error?.code === "ERR_CANCELED" ||
+    error?.name === "CanceledError" ||
+    error?.name === "AbortError"
+  );
+}
+
 function normalizeFailure(error, fallbackMessage) {
   return {
     status: error?.response?.status || 0,
@@ -41,129 +57,191 @@ function normalizeFailure(error, fallbackMessage) {
   };
 }
 
-function unwrapSettled(result, fallbackMessage) {
-  if (result.status === "fulfilled") {
-    const payload = result.value?.data ?? result.value;
-    const success = payload?.success !== false;
-
-    return {
-      available: success,
-      data: payload,
-      error: success
-        ? null
-        : {
-            status: result.value?.status || 0,
-            message: payload?.message || payload?.error || fallbackMessage,
-          },
-    };
-  }
+function unwrapResponse(response, fallbackMessage) {
+  const payload = response?.data ?? response;
+  const success = payload?.success !== false;
 
   return {
-    available: false,
-    data: null,
-    error: normalizeFailure(result.reason, fallbackMessage),
+    available: success,
+    data: payload,
+    error: success
+      ? null
+      : {
+          status: response?.status || 0,
+          message: payload?.message || payload?.error || fallbackMessage,
+        },
   };
+}
+
+const SOURCE_CONFIG = {
+  attendance: {
+    fallbackError: "Attendance data is unavailable.",
+    run: ({ yesterday, today, signal }) =>
+      api.get("/api/attendance", {
+        params: {
+          page: 1,
+          limit: 10,
+          search: "",
+          dateFrom: yesterday,
+          dateTo: today,
+          department: "All",
+          account: "All",
+          includeDepartments: 0,
+          includeAccounts: 0,
+          fast: 1,
+        },
+        withCredentials: true,
+        timeout: 30000,
+        signal,
+      }),
+  },
+  schedule: {
+    fallbackError: "Schedule data is unavailable.",
+    run: ({ week, signal }) =>
+      api.get("/api/employee-schedule", {
+        params: {
+          page: 1,
+          limit: 50,
+          search: "",
+          dateFrom: week.dateFrom,
+          dateTo: week.dateTo,
+        },
+        withCredentials: true,
+        signal,
+      }),
+  },
+  leaves: {
+    fallbackError: "Leave records are unavailable.",
+    run: ({ signal }) =>
+      api.get("/api/leaves", {
+        params: {
+          page: 1,
+          limit: 10,
+          search: "",
+          status: "All",
+          department: "All",
+          account: "All",
+          dateFrom: "",
+          dateTo: "",
+          includeDepartments: 0,
+          includeAccounts: 0,
+        },
+        withCredentials: true,
+        timeout: 30000,
+        signal,
+      }),
+  },
+  leaveBalance: {
+    fallbackError: "Kronos leave credits are unavailable.",
+    run: ({ signal }) =>
+      api.get("/api/leaves/my-balance", {
+        withCredentials: true,
+        timeout: 30000,
+        signal,
+      }),
+  },
+  holidays: {
+    fallbackError: "Holiday calendar data is unavailable.",
+    run: ({ signal }) =>
+      api.get("/api/recruitment-settings/holidays", {
+        params: {
+          includeInactive: "0",
+        },
+        withCredentials: true,
+        signal,
+      }),
+  },
+  employee: {
+    fallbackError: "Employee profile data is unavailable.",
+    run: ({ employeeId, signal }) =>
+      employeeId
+        ? api.get(`/api/employees/${encodeURIComponent(employeeId)}`, {
+            withCredentials: true,
+            signal,
+          })
+        : Promise.resolve({
+            data: {
+              success: false,
+              message: "The logged-in account has no employee SIBS ID.",
+            },
+          }),
+  },
+  profilePicture: {
+    fallbackError: "Employee profile photo could not be loaded.",
+    run: ({ signal }) =>
+      api.get("/api/employee-profile", {
+        withCredentials: true,
+        signal,
+      }),
+  },
+};
+
+export const EMPLOYEE_DASHBOARD_SOURCE_KEYS = Object.freeze(
+  Object.keys(SOURCE_CONFIG),
+);
+
+export async function fetchEmployeeDashboardSource(
+  key,
+  { sibsId = "", now = new Date(), signal } = {},
+) {
+  const config = SOURCE_CONFIG[key];
+  if (!config) {
+    throw new Error(`Unknown employee dashboard source: ${key}`);
+  }
+
+  const employeeId = String(sibsId || "").trim();
+  const today = getManilaDateKey(now);
+  const yesterday = shiftManilaDateKey(today, -1);
+  const week = getManilaWeekRange(now);
+
+  try {
+    const response = await config.run({
+      employeeId,
+      today,
+      yesterday,
+      week,
+      signal,
+    });
+    return unwrapResponse(response, config.fallbackError);
+  } catch (error) {
+    if (isCanceledError(error) || signal?.aborted) {
+      return { aborted: true, available: false, data: null, error: null };
+    }
+    return {
+      available: false,
+      data: null,
+      error: normalizeFailure(error, config.fallbackError),
+    };
+  }
 }
 
 export async function getEmployeeDashboardSources({
   sibsId = "",
   now = new Date(),
   signal,
+  onSourceSettled,
 } = {}) {
   const employeeId = String(sibsId || "").trim();
   const today = getManilaDateKey(now);
   const week = getManilaWeekRange(now);
-  const commonEmployeeSearch = employeeId;
 
-  const requests = [
-    api.get("/api/attendance", {
-      params: {
-        page: 1,
-        limit: 10,
-        search: commonEmployeeSearch,
-        dateFrom: "",
-        dateTo: "",
-        department: "All",
-        account: "All",
-        includeDepartments: 0,
-        includeAccounts: 0,
-      },
-      withCredentials: true,
-      signal,
-    }),
-    api.get("/api/employee-schedule", {
-      params: {
-        page: 1,
-        limit: 50,
-        search: "",
-        dateFrom: "",
-        dateTo: "",
-      },
-      withCredentials: true,
-      signal,
-    }),
-    api.get("/api/leaves", {
-      params: {
-        page: 1,
-        limit: 10,
-        search: "",
-        status: "All",
-        department: "All",
-        account: "All",
-        dateFrom: "",
-        dateTo: "",
-      },
-      withCredentials: true,
-      signal,
-    }),
-    api.get("/api/leaves/summary", {
-      withCredentials: true,
-      signal,
-    }),
-    api.get("/api/recruitment-settings/holidays", {
-      params: {
-        includeInactive: "0",
-        _t: Date.now(),
-      },
-      withCredentials: true,
-      signal,
-    }),
-    employeeId
-      ? api.get(`/api/employees/${encodeURIComponent(employeeId)}`, {
-          withCredentials: true,
-          signal,
-        })
-      : Promise.resolve({
-          data: {
-            success: false,
-            message: "The logged-in account has no employee SIBS ID.",
-          },
-        }),
-  ];
+  const entries = await Promise.all(
+    EMPLOYEE_DASHBOARD_SOURCE_KEYS.map(async (key) => {
+      const outcome = await fetchEmployeeDashboardSource(key, {
+        sibsId: employeeId,
+        now,
+        signal,
+      });
 
-  const [
-    attendance,
-    schedule,
-    leaves,
-    leaveSummary,
-    holidays,
-    employee,
-  ] = await Promise.allSettled(requests);
+      if (!outcome.aborted && !signal?.aborted && typeof onSourceSettled === "function") {
+        onSourceSettled(key, outcome);
+      }
 
-  const sourceResults = {
-    attendance: unwrapSettled(attendance, "Attendance data is unavailable."),
-    schedule: unwrapSettled(schedule, "Schedule data is unavailable."),
-    leaves: unwrapSettled(leaves, "Leave records are unavailable."),
-    leaveSummary: unwrapSettled(
-      leaveSummary,
-      "Leave balances are unavailable.",
-    ),
-    holidays: unwrapSettled(
-      holidays,
-      "Holiday calendar data is unavailable.",
-    ),
-    employee: unwrapSettled(employee, "Employee profile data is unavailable."),
-  };
+      return [key, outcome];
+    }),
+  );
+
+  const sourceResults = Object.fromEntries(entries);
 
   return {
     success: Object.values(sourceResults).some((source) => source.available),
@@ -174,13 +252,13 @@ export async function getEmployeeDashboardSources({
       weekEnd: week.dateTo,
     },
     data: Object.fromEntries(
-      Object.entries(sourceResults).map(([key, source]) => [key, source.data]),
+      entries.map(([key, source]) => [key, source.data]),
     ),
     availability: Object.fromEntries(
-      Object.entries(sourceResults).map(([key, source]) => [key, source.available]),
+      entries.map(([key, source]) => [key, source.available]),
     ),
     errors: Object.fromEntries(
-      Object.entries(sourceResults)
+      entries
         .filter(([, source]) => source.error)
         .map(([key, source]) => [key, source.error]),
     ),
