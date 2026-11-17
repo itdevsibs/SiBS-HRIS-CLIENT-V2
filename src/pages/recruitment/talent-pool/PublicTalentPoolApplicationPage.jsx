@@ -1525,7 +1525,7 @@ function SectionCard({
   return (
     <section
       data-testid="public-application-section-card"
-      className="sibs-page-card-in relative overflow-visible rounded-2xl border border-sibs-border bg-white shadow-[0_8px_24px_rgba(4,44,81,0.05)]"
+      className="sibs-page-card-in relative min-w-0 overflow-visible rounded-2xl border border-sibs-border bg-white shadow-[0_8px_24px_rgba(4,44,81,0.05)]"
     >
       <div className="flex flex-col gap-2.5 border-b border-sibs-border px-4 py-3 sm:flex-row sm:items-start sm:justify-between sm:px-5 sm:py-3.5 2xl:gap-3 2xl:px-6 2xl:py-4">
         <div className="flex min-w-0 items-start gap-2.5 2xl:gap-3">
@@ -5642,7 +5642,7 @@ export default function PublicTalentPoolApplicationPage() {
 
           <fieldset
             disabled={isApplicantNameGateLocked}
-            className={isApplicantNameGateLocked ? "space-y-6 opacity-60" : "space-y-6"}
+            className={`min-w-0 w-full space-y-6 ${isApplicantNameGateLocked ? "opacity-60" : ""}`}
           >
           <SectionCard
             icon={BriefcaseBusiness}
