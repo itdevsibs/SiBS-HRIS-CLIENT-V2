@@ -13,7 +13,8 @@ import {
   UserRound,
 } from "lucide-react";
 
-import { getLeaves } from "@/lib/axios/getLeaves";
+import { getLeaves, getMyLeaveBalance } from "@/lib/axios/getLeaves";
+import { normalizeVerifiedPersonalBalance } from "@/lib/utils/leaves/leaveBalanceDisplayClient";
 import { useUser } from "../../services/context/UserContext";
 import { useSidebarNotifications } from "../../services/context/SidebarNotificationContext";
 import { usePagination } from "@/services/context/PaginationContext";
@@ -23,6 +24,7 @@ import {
   PAGE_LIMIT,
   canViewLeaveFilters,
   getLeaveTypeLabel,
+  formatDate,
   getLeavesInitialDateRange,
   sanitizeLeavesDateRange,
   normalizeStatus,
@@ -41,6 +43,13 @@ export default function LeavesPage() {
 
   const [leaves, setLeaves] = useState([]);
   const [recordScope, setRecordScope] = useState("all");
+  const [personalBalance, setPersonalBalance] = useState(null);
+  const [personalBalanceLoading, setPersonalBalanceLoading] = useState(false);
+  const [personalBalanceError, setPersonalBalanceError] = useState("");
+  const [balanceRefreshKey, setBalanceRefreshKey] = useState(0);
+  const authenticatedSibsId = String(
+    user?.username || user?.sibs_id || user?.sibsId || user?.gy_user_code || "",
+  ).trim();
 
   const [statusFilter, setStatusFilter] = useState("All");
   const [allDatesView, setAllDatesView] = useState(false);
@@ -266,6 +275,7 @@ export default function LeavesPage() {
     location.pathname,
     location.state,
     navigate,
+    initialLeavesDateRange,
     setDateRange,
     setPage,
     setSearch,
@@ -327,22 +337,55 @@ export default function LeavesPage() {
     setPage(1);
   }
 
+  const isPersonalView = isEmployeeAccount || recordScope === "personal";
+
+  useEffect(() => {
+    if (!isPersonalView || !authenticatedSibsId) {
+      setPersonalBalance(null);
+      setPersonalBalanceError("");
+      setPersonalBalanceLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    setPersonalBalance(null);
+    setPersonalBalanceError("");
+    setPersonalBalanceLoading(true);
+    getMyLeaveBalance().then((result) => {
+      if (cancelled) return;
+      const verified = normalizeVerifiedPersonalBalance(result, authenticatedSibsId);
+      setPersonalBalance(verified);
+      if (!verified) {
+        setPersonalBalanceError(
+          result?.success === true
+            ? "Kronos has not returned a verifiable balance for your account."
+            : result?.message || "Kronos leave credits are currently unavailable.",
+        );
+      }
+    }).catch(() => {
+      if (!cancelled) {
+        setPersonalBalance(null);
+        setPersonalBalanceError("Unable to retrieve your Kronos leave balance.");
+      }
+    }).finally(() => {
+      if (!cancelled) setPersonalBalanceLoading(false);
+    });
+    return () => { cancelled = true; };
+  }, [isPersonalView, authenticatedSibsId, balanceRefreshKey]);
+
   const paginatedLeaves = useMemo(() => {
     return leaves.map((item) => {
-      const leaveCredit = Number(
-        item.leave_credit || item.gy_leave_avail_approved || 0,
-      );
+      const rawCredit = item.leave_credit ?? item.gy_leave_avail_approved;
+      const rawPlotted = item.leave_plotted ?? item.gy_leave_avail_plotted;
+      const leaveCredit = rawCredit === undefined || rawCredit === null ? null : Number(rawCredit);
+      const leavePlotted = rawPlotted === undefined || rawPlotted === null ? null : Number(rawPlotted);
+      const leaveRemaining = item.leave_remaining != null
+        ? Number(item.leave_remaining)
+        : leaveCredit !== null && leavePlotted !== null
+          ? leaveCredit - leavePlotted
+          : null;
 
-      const leavePlotted = Number(
-        item.leave_plotted || item.gy_leave_avail_plotted || 0,
-      );
-
-      const leaveRemaining =
-        item.leave_remaining !== undefined && item.leave_remaining !== null
-          ? Number(item.leave_remaining || 0)
-          : leaveCredit - leavePlotted;
-
-      return {
+      const normalized = {
         ...item,
         leave_credit: leaveCredit,
         leave_plotted: leavePlotted,
@@ -353,14 +396,14 @@ export default function LeavesPage() {
           item.leave_type_label,
         ),
       };
+      // Historical leave rows retain their per-transaction balance.
+      return normalized;
     });
   }, [leaves]);
 
   const handleDateFilterChange = () => {
     setAllDatesView(false);
   };
-
-  const isPersonalView = isEmployeeAccount || recordScope === "personal";
 
   const departmentDropdownOptions = useMemo(() => {
     return (Array.isArray(departmentOptions) ? departmentOptions : [])
@@ -397,6 +440,7 @@ export default function LeavesPage() {
   const [isManualRefreshing, setIsManualRefreshing] = useState(false);
 
   async function handleManualRefresh() {
+    setBalanceRefreshKey((value) => value + 1);
     setIsManualRefreshing(true);
     await fetchLeaves({
       pageValue: 1,
@@ -424,7 +468,7 @@ export default function LeavesPage() {
             title={isPersonalView ? "My Leaves" : "Leaves"}
             description={
               isPersonalView
-                ? "View your leave requests, credits, plotted leaves, and remaining balance."
+                ? "View leave requests and current leave credits from your Kronos employee record."
                 : "Review employee leave requests, credits, plotted leaves, and remaining balances."
             }
             actions={
@@ -472,6 +516,7 @@ export default function LeavesPage() {
             <LeavesTable
               leaves={paginatedLeaves}
               loading={loading}
+              error={loadError}
               page={page}
               searchInput={searchInput}
               searchKeyword={search}
@@ -490,6 +535,9 @@ export default function LeavesPage() {
               onAccountSelect={handleAccountSelect}
               accountDropdownOptions={accountDropdownOptions}
               isPersonalView={isPersonalView}
+              remainingLeaveCredits={personalBalance?.leave_remaining ?? null}
+              remainingLeaveCreditsLoading={personalBalanceLoading}
+              remainingLeaveCreditsError={personalBalanceError}
               filterValues={filterValues}
               allDatesView={allDatesView}
               onDateFilterChange={handleDateFilterChange}

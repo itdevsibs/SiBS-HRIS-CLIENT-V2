@@ -8,7 +8,7 @@ import {
 } from "@/components/ui";
 
 import PositionMobileCard from "../../recruitment/availablePositions/PositionMobileCard";
-import StatusFilterTabs from "../../recruitment/StatusFilterTabs";
+import StatusFilterTabs from "../../recruitment/RecruitmentStatusFilterTabs";
 import { formatDate } from "../../layout/FormatDateTime";
 import { formatPersonName } from "../../../lib/utils/availablePositions/availablePositionsHelpers";
 import { StatusBadge } from "../../../lib/utils/availablePositions/reactComponents/reactHelpers";

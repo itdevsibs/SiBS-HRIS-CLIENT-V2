@@ -1,6 +1,6 @@
 import React from "react";
 import { UserRoundCheck } from "lucide-react";
-import StatusFilterTabs from "@/components/recruitment/StatusFilterTabs";
+import StatusFilterTabs from "@/components/recruitment/RecruitmentStatusFilterTabs";
 
 export default function EmployeeDirectoryTabs({ tabs, activeTab, onTabChange }) {
   if (!Array.isArray(tabs) || tabs.length === 0) return null;

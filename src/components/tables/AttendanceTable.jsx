@@ -1423,7 +1423,6 @@ export default function AttendanceTable() {
 
         .sibs-attendance-row-reveal {
           animation: sibsAttendanceRowReveal 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
-          will-change: opacity, transform;
         }
 
         @media (prefers-reduced-motion: reduce) {
@@ -1706,10 +1705,13 @@ export default function AttendanceTable() {
                         const ot = getNumberValue(item.gy_tracker_ot);
                         const ath = getNumberValue(item.gy_tracker_ath);
 
+                        // These rows mount only after the foreground request completes;
+                        // stable tracker keys prevent live refreshes from replaying animations.
                         return (
                           <tr
                             key={attendanceRowKeys[index]}
-                            className={`sibs-data-table-row transition-colors ${canOpenAttendanceDetails ? "cursor-pointer hover:bg-sibs-cream-light focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-sibs-orange" : "hover:bg-sibs-cream-light"}`}
+                            className={`sibs-data-table-row sibs-attendance-row-reveal transition-colors ${canOpenAttendanceDetails ? "cursor-pointer hover:bg-sibs-cream-light focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-sibs-orange" : "hover:bg-sibs-cream-light"}`}
+                            style={{ animationDelay: `${Math.min(index, 12) * 30}ms` }}
                             role={canOpenAttendanceDetails ? "button" : undefined}
                             tabIndex={canOpenAttendanceDetails ? 0 : undefined}
                             aria-label={canOpenAttendanceDetails ? `View schedule and employee information for ${employeeName} on ${formatDate(item.gy_tracker_date)}` : undefined}

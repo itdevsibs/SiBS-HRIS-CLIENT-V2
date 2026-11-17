@@ -1,5 +1,6 @@
 import axios from "axios";
 import { currentHrisCacheScope, hrisQueryCache } from "./hrisQueryCache";
+import { clearAiConversationsOnLogoutClient } from "../utils/ai/aiConversationStorageClient";
 
 function getBaseURL() {
   const rawBaseURL =
@@ -346,6 +347,7 @@ export function getInFlightKey(config) {
 }
 
 function clearClientSession() {
+  clearAiConversationsOnLogoutClient();
   inFlightRequests.clear();
   clearAuthCredentialRegistry();
   hrisQueryCache.invalidate();

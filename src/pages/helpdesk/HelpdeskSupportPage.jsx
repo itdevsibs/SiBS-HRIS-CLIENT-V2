@@ -15,7 +15,7 @@ import {
   Clock3,
   ClipboardList,
   FolderOpen,
-  Ban,
+  Flag,
   Loader2,
   X,
   Headset,
@@ -91,7 +91,12 @@ function getCaseStatus(ticket, conversation = {}) {
   const status = safeText(ticket?.status || conversation?.caseStatus).toUpperCase();
   // Accept old CLOSED values in case the conversation cache predates the
   // ticket API's RESOLVED status without changing persistent records.
-  return status === "CLOSED" ? "RESOLVED" : status;
+  return status === "CLOSED" ? "RESOLVED" : isSpamStatus(status) ? "SPAM" : status;
+}
+
+// Older rejected request records are retained and displayed as Spam.
+function isSpamStatus(status) {
+  return ["SPAM", "REJECTED"].includes(safeText(status).toUpperCase());
 }
 
 function safeText(value) {
@@ -120,7 +125,7 @@ function getRequester(conversation = {}) {
     ...info,
     sibsId,
     name: safeText(info.displayName) || savedName || `SIBS ID ${sibsId || "Unknown"}`,
-    location: safeText(info.assignedLocationLabel) || "Not assigned",
+    location: safeText(conversation.requestSite) || safeText(info.assignedLocationLabel) || "Not assigned",
     initials: safeText(info.initials) || "EMP",
   };
 }
@@ -141,7 +146,7 @@ function getCaseNumber(ticket, conversation = {}) {
 function getCaseDisplayLabel(ticket, conversation = {}) {
   const caseNumber = getCaseNumber(ticket, conversation);
   const status = getCaseStatus(ticket, conversation);
-  if (status === "REJECTED") return "Rejected request";
+  if (status === "SPAM") return "Spam request";
   if (!caseNumber) return "Case pending";
   return `Case ${status === "RESOLVED" ? "Closed" : "Opened"} #${caseNumber}`;
 }
@@ -152,7 +157,7 @@ function getCaseDisplayLabel(ticket, conversation = {}) {
 function getCaseModalTitle(ticket, conversation = {}) {
   const caseLabel = getCaseDisplayLabel(ticket, conversation);
   const requester = getRequester(conversation);
-  const rawSite = safeText(ticket?.requesterSite || requester.location)
+  const rawSite = safeText(ticket?.requestSite || ticket?.requesterSite || requester.location)
     .replace(/\s+site$/i, "").trim().toLowerCase();
   const site = rawSite === "davao" ? "Davao" : rawSite === "tagum" ? "Tagum" : "";
   return site ? `${caseLabel} (${site} Site)` : caseLabel;
@@ -379,13 +384,15 @@ const TICKET_STATUS_LABELS = {
   IN_PROGRESS: "In Progress",
   PENDING: "Pending",
   RESOLVED: "Closed",
-  REJECTED: "Rejected",
+  SPAM: "Spam",
+  REJECTED: "Spam", // Legacy records retained without rewriting their audit history.
 };
 const TICKET_STATUS_COLORS = {
   OPEN: "bg-blue-50 text-blue-700 border-blue-200",
   IN_PROGRESS: "bg-orange-50 text-orange-700 border-orange-200",
   PENDING: "bg-amber-50 text-amber-700 border-amber-200",
   RESOLVED: "bg-emerald-50 text-emerald-700 border-emerald-200",
+  SPAM: "bg-rose-50 text-rose-700 border-rose-200",
   REJECTED: "bg-rose-50 text-rose-700 border-rose-200",
 };
 
@@ -396,11 +403,12 @@ function TicketStatusBadge({ status }) {
     IN_PROGRESS: "bg-orange-500",
     PENDING: "bg-amber-500",
     RESOLVED: "bg-emerald-500",
+    SPAM: "bg-rose-500",
     REJECTED: "bg-rose-500",
   };
   return (
     <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-extrabold ${TICKET_STATUS_COLORS[status]}`}>
-      <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${statusDotColors[status]}`} aria-hidden="true" />
+      {isSpamStatus(status) ? <Flag size={11} className="shrink-0" aria-hidden="true" /> : <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${statusDotColors[status]}`} aria-hidden="true" />}
       {TICKET_STATUS_LABELS[status]}
     </span>
   );
@@ -435,8 +443,8 @@ function HelpdeskTicketModal({ conversation, ticket, loading, eligibility, eligi
   const [now, setNow] = useState(Date.now());
   const [selectedStatus, setSelectedStatus] = useState("IN_PROGRESS");
   const [confirmClose, setConfirmClose] = useState(false);
-  const [confirmReject, setConfirmReject] = useState(false);
-  const [rejectionReason, setRejectionReason] = useState("");
+  const [confirmSpam, setConfirmSpam] = useState(false);
+  const [spamReason, setSpamReason] = useState("");
 
   useEffect(() => {
     const id = window.setInterval(() => setNow(Date.now()), 60_000);
@@ -444,10 +452,10 @@ function HelpdeskTicketModal({ conversation, ticket, loading, eligibility, eligi
   }, []);
   useEffect(() => { setSelectedStatus(ticket?.status || "IN_PROGRESS"); }, [ticket?.status]);
   useEffect(() => {
-    if (["RESOLVED", "REJECTED"].includes(ticket?.status)) {
+    if (["RESOLVED", "SPAM", "REJECTED"].includes(ticket?.status)) {
       setConfirmClose(false);
-      setConfirmReject(false);
-      setRejectionReason("");
+      setConfirmSpam(false);
+      setSpamReason("");
     }
   }, [ticket?.status]);
   useEffect(() => {
@@ -456,13 +464,13 @@ function HelpdeskTicketModal({ conversation, ticket, loading, eligibility, eligi
     const handleEscape = (event) => {
       if (event.key !== "Escape" || busy) return;
       if (confirmClose) { setConfirmClose(false); return; }
-      if (confirmReject) { setConfirmReject(false); return; }
+      if (confirmSpam) { setConfirmSpam(false); return; }
       if (document.querySelector(".sibs-animated-dropdown.open")) return;
       onClose();
     };
     window.addEventListener("keydown", handleEscape);
     return () => { document.body.style.overflow = priorOverflow; window.removeEventListener("keydown", handleEscape); };
-  }, [busy, onClose, confirmClose, confirmReject]);
+  }, [busy, onClose, confirmClose, confirmSpam]);
 
   // The SiBS HRIS modal is intentionally not dismissed by backdrop clicks.
   // Saving/closing a case is a separate, confirmed support action.
@@ -507,23 +515,23 @@ function HelpdeskTicketModal({ conversation, ticket, loading, eligibility, eligi
                     <RequesterAvatar requester={requester} />
                     <div className="min-w-0">
                       <p className="break-words text-sm font-extrabold text-sibs-navy">{requester.name}</p>
-                      <p className="text-[11px] font-semibold text-sibs-muted">SiBS ID: {requester.sibsId} · Assigned site: {ticket.requesterSite || requester.location}</p>
+                      <p className="text-[11px] font-semibold text-sibs-muted">SiBS ID: {requester.sibsId} · Assigned site: {ticket.requestSite || ticket.requesterSite || requester.location}</p>
                     </div>
                   </div>
                   <dl className="mt-3 divide-y divide-sibs-border border-t border-sibs-border">
-                    <TicketTimestamp label={ticket.status === "REJECTED" ? "Received" : "Opened"} value={ticket.postedAt} />
+                    <TicketTimestamp label={isSpamStatus(ticket.status) ? "Received" : "Opened"} value={ticket.postedAt} />
                     <TicketTimestamp label="Assigned" value={ticket.assignedAt} />
                     <TicketTimestamp label="Accepted" value={ticket.acceptedAt} />
                     <TicketTimestamp label="First support reply" value={ticket.firstResponseAt} />
-                    {ticket.status === "REJECTED"
-                      ? <TicketTimestamp label="Rejected" value={ticket.rejectedAt} />
+                    {isSpamStatus(ticket.status)
+                      ? <TicketTimestamp label="Flagged as spam" value={ticket.rejectedAt} />
                       : <TicketTimestamp label="Closed" value={ticket.resolvedAt} />}
                   </dl>
-                  {ticket.status === "REJECTED" && (
+                  {isSpamStatus(ticket.status) && (
                     <div className="mt-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-3">
-                      <p className="text-[10px] font-extrabold uppercase text-rose-700">Rejection reason</p>
+                      <p className="text-[10px] font-extrabold uppercase text-rose-700">Reason for spam flag</p>
                       <p className="mt-1 whitespace-pre-wrap break-words text-xs font-semibold text-sibs-navy">{ticket.rejectionReason || "Not recorded"}</p>
-                      <p className="mt-1 text-[10px] font-medium text-sibs-muted">Rejected by SiBS ID {ticket.rejectedBySibsId || "—"}</p>
+                      <p className="mt-1 text-[10px] font-medium text-sibs-muted">Flagged by SiBS ID {ticket.rejectedBySibsId || "—"}</p>
                     </div>
                   )}
                                   </div>
@@ -544,35 +552,35 @@ function HelpdeskTicketModal({ conversation, ticket, loading, eligibility, eligi
                         {busy || eligibilityLoading ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle2 size={14} />} Accept Request
                       </button>
                       <p className="text-[11px] font-semibold leading-relaxed text-sibs-muted">{eligibilityLoading ? "Verifying today's Kronos attendance and assigned site..." : eligibility?.reason || "You are eligible to accept this request."}</p>
-                      <button type="button" onClick={() => { setRejectionReason(""); setConfirmReject(true); }}
+                      <button type="button" onClick={() => { setSpamReason(""); setConfirmSpam(true); }}
                         disabled={busy || eligibilityLoading || !eligibility?.eligible}
                         className="flex w-full items-center justify-center gap-2 rounded-lg border border-rose-200 bg-white px-4 py-2.5 text-xs font-extrabold text-rose-700 transition hover:bg-rose-50 disabled:opacity-50">
-                        <Ban size={14} /> Reject Request
+                        <Flag size={14} /> Flag as Spam
                       </button>
                     </div>
                   )}
-                  {isAssignee && !["RESOLVED", "REJECTED"].includes(ticket.status) && (
+                  {isAssignee && !["RESOLVED", "SPAM", "REJECTED"].includes(ticket.status) && (
                     <div className="mt-4 space-y-2">
                       <SelectDropdown label="Update status" labelClassName="text-[10px] font-extrabold uppercase text-sibs-muted"
                         value={selectedStatus}
-                        options={["IN_PROGRESS", "PENDING", "RESOLVED", "REJECTED"].map((status) => ({ value: status, label: TICKET_STATUS_LABELS[status] }))}
+                        options={["IN_PROGRESS", "PENDING", "RESOLVED", "SPAM"].map((status) => ({ value: status, label: TICKET_STATUS_LABELS[status] }))}
                         onChange={setSelectedStatus} clearable={false} disabled={busy} className="h-10 rounded-lg" />
                       <button type="button"
                         onClick={() => {
                           if (selectedStatus === "RESOLVED") setConfirmClose(true);
-                          else if (selectedStatus === "REJECTED") { setRejectionReason(""); setConfirmReject(true); }
+                          else if (selectedStatus === "SPAM") { setSpamReason(""); setConfirmSpam(true); }
                           else onUpdateStatus(selectedStatus);
                         }}
                         disabled={busy || selectedStatus === ticket.status}
                         className="w-full rounded-lg bg-sibs-orange px-4 py-2.5 text-xs font-extrabold text-white hover:brightness-95 disabled:opacity-50">
-                        {busy ? "Saving…" : selectedStatus === "RESOLVED" ? "Close Case" : selectedStatus === "REJECTED" ? "Reject Request" : "Save status"}
+                        {busy ? "Saving…" : selectedStatus === "RESOLVED" ? "Close Case" : selectedStatus === "SPAM" ? "Flag as Spam" : "Save status"}
                       </button>
                     </div>
                   )}
                   {ticket.status === "RESOLVED" && <p className="mt-3 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-[11px] font-bold text-emerald-700">This case is closed. Its conversation is archived and read-only.</p>}
-                  {ticket.status === "REJECTED" && <p className="mt-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-[11px] font-bold text-rose-700">This request was rejected and is not included in open or closed case counts. The conversation is read-only.</p>}
+                  {isSpamStatus(ticket.status) && <p className="mt-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-[11px] font-bold text-rose-700">This request was flagged as spam. It is excluded from open and closed cases, and its conversation is read-only.</p>}
                 </div>
-                {ticket.status !== "REJECTED" && <div className="rounded-2xl border border-sibs-border bg-white p-4 shadow-xs">
+                {!isSpamStatus(ticket.status) && <div className="rounded-2xl border border-sibs-border bg-white p-4 shadow-xs">
                   <div className="flex flex-wrap items-center justify-between gap-2 border-b border-sibs-border pb-3">
                     <h3 className="font-heading text-sm font-bold text-sibs-navy">Case durations</h3>
                     {ticket.status === "RESOLVED" && <span className="rounded-md bg-emerald-50 px-2 py-1 text-[10px] font-extrabold text-emerald-700">Final</span>}
@@ -598,11 +606,11 @@ function HelpdeskTicketModal({ conversation, ticket, loading, eligibility, eligi
                 <div className="rounded-2xl border border-sibs-border bg-white p-4 shadow-xs">
                   <h3 className="font-heading text-sm font-bold text-sibs-navy">Activity timeline</h3>
                   <ol className="mt-3 space-y-3">
-                    <li className="flex gap-2.5 text-xs text-sibs-navy"><CheckCircle2 size={16} className="mt-0.5 shrink-0 text-emerald-600" /><span><b>{ticket.status === "REJECTED" ? "Request received · first message sent" : "Case opened · first message sent"}</b><span className="block text-sibs-muted">{formatDate(ticket.postedAt)}</span></span></li>
+                    <li className="flex gap-2.5 text-xs text-sibs-navy"><CheckCircle2 size={16} className="mt-0.5 shrink-0 text-emerald-600" /><span><b>{isSpamStatus(ticket.status) ? "Request received · first message sent" : "Case opened · first message sent"}</b><span className="block text-sibs-muted">{formatDate(ticket.postedAt)}</span></span></li>
                     {(ticket.history || []).map((entry, index) => (
                       <li key={`${entry.eventType}-${entry.occurredAt}-${index}`} className="flex gap-2.5 text-xs text-sibs-navy">
                         <Clock3 size={16} className="mt-0.5 shrink-0 text-sibs-orange" />
-                        <span><b>{entry.eventType === "ACCEPTED" ? "Accepted and assigned" : entry.eventType === "RESOLVED" ? "Case closed" : entry.eventType === "REJECTED" ? "Request rejected" : `Status changed to ${TICKET_STATUS_LABELS[entry.newStatus] || entry.newStatus}`}</b>
+                        <span><b>{entry.eventType === "ACCEPTED" ? "Accepted and assigned" : entry.eventType === "RESOLVED" ? "Case closed" : ["SPAM_FLAGGED", "REJECTED"].includes(entry.eventType) ? "Flagged as spam" : `Status changed to ${TICKET_STATUS_LABELS[entry.newStatus] || entry.newStatus}`}</b>
                           <span className="block text-sibs-muted">{formatDate(entry.occurredAt)}</span>
                           <span className="mt-0.5 block break-words text-sibs-muted">{getTimelineActorLabel(entry, conversation)}</span>
                           {entry.reason && <span className="mt-0.5 block whitespace-pre-wrap break-words text-rose-700">Reason: {entry.reason}</span>}
@@ -638,33 +646,33 @@ function HelpdeskTicketModal({ conversation, ticket, loading, eligibility, eligi
           </section>
         </div>
       )}
-      {confirmReject && ticket?.status !== "REJECTED" && (isAssignee || (ticket?.status === "OPEN" && eligibility?.eligible)) && (
+      {confirmSpam && !isSpamStatus(ticket?.status) && (isAssignee || (ticket?.status === "OPEN" && eligibility?.eligible)) && (
         <div className="absolute inset-0 z-20 flex items-center justify-center bg-slate-950/55 px-4 backdrop-blur-[2px]" role="presentation" onMouseDown={(event) => event.stopPropagation()}>
-          <section role="alertdialog" aria-modal="true" aria-labelledby="support-reject-confirm-title"
-            aria-describedby="support-reject-confirm-description"
+          <section role="alertdialog" aria-modal="true" aria-labelledby="support-spam-confirm-title"
+            aria-describedby="support-spam-confirm-description"
             className="w-full max-w-[450px] overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-[0_24px_70px_rgba(4,44,81,0.3)]">
             <div className="border-t-[4px] border-sibs-orange bg-sibs-navy px-5 py-4 text-white">
-              <h3 id="support-reject-confirm-title" className="font-heading text-sm font-extrabold">Reject this request?</h3>
+              <h3 id="support-spam-confirm-title" className="font-heading text-sm font-extrabold">Flag this request as spam?</h3>
               <p className="mt-1 text-xs text-white/75">A reason is required and will be visible in the request record.</p>
             </div>
             <div className="space-y-2 px-5 py-4">
-              <p id="support-reject-confirm-description" className="text-xs font-semibold leading-relaxed text-sibs-muted">
-                Use Rejected only for requests that cannot be actioned by this Helpdesk team. Rejected requests do not count as open or closed cases.
+              <p id="support-spam-confirm-description" className="text-xs font-semibold leading-relaxed text-sibs-muted">
+                Flag spam, abusive, deliberately invalid, or clearly irrelevant requests. The employee's chat will disappear from SiBS Chat, while its messages and reason remain in the Spam tab for audit. Spam does not count as an open or closed case.
               </p>
-              <label htmlFor="support-rejection-reason" className="block text-[11px] font-extrabold text-sibs-navy">Reason for rejection *</label>
-              <textarea id="support-rejection-reason" value={rejectionReason} maxLength={1000} rows={4}
-                onChange={(event) => setRejectionReason(event.target.value)}
-                placeholder="Explain why this request cannot be processed (e.g. unrelated to workplace support)."
+              <label htmlFor="support-spam-reason" className="block text-[11px] font-extrabold text-sibs-navy">Reason for spam flag *</label>
+              <textarea id="support-spam-reason" value={spamReason} maxLength={1000} rows={4}
+                onChange={(event) => setSpamReason(event.target.value)}
+                placeholder="Explain why this request is spam (e.g. abusive, deliberately invalid, or irrelevant)."
                 disabled={busy} autoFocus
                 className="w-full resize-y rounded-xl border border-sibs-border bg-white px-3 py-2 text-xs text-sibs-navy outline-none focus:border-sibs-orange focus:ring-2 focus:ring-sibs-orange/20" />
-              <p className="text-[10px] text-sibs-muted">{rejectionReason.trim().length}/1000 characters · minimum 1</p>
+              <p className="text-[10px] text-sibs-muted">{spamReason.trim().length}/1000 characters · minimum 1</p>
             </div>
             <div className="flex justify-end gap-2 border-t border-sibs-border bg-sibs-surface px-5 py-3">
-              <button type="button" onClick={() => setConfirmReject(false)} disabled={busy}
+              <button type="button" onClick={() => setConfirmSpam(false)} disabled={busy}
                 className="rounded-xl border border-sibs-border bg-white px-4 py-2.5 text-xs font-extrabold text-sibs-navy">Cancel</button>
-              <button type="button" onClick={() => onUpdateStatus("REJECTED", rejectionReason.trim())}
-                disabled={busy || rejectionReason.trim().length < 1 || rejectionReason.trim().length > 1000}
-                className="rounded-xl bg-sibs-orange px-4 py-2.5 text-xs font-extrabold text-white disabled:cursor-not-allowed disabled:opacity-50">{busy ? "Rejecting…" : "Reject Request"}</button>
+              <button type="button" onClick={() => onUpdateStatus("SPAM", spamReason.trim())}
+                disabled={busy || spamReason.trim().length < 1 || spamReason.trim().length > 1000}
+                className="rounded-xl bg-sibs-orange px-4 py-2.5 text-xs font-extrabold text-white disabled:cursor-not-allowed disabled:opacity-50">{busy ? "Flagging…" : "Flag as Spam"}</button>
             </div>
           </section>
         </div>
@@ -894,9 +902,10 @@ export default function HelpdeskSupportPage({ category = "IT" }) {
     .filter((conversation) => conversation.isHelpdesk &&
       safeText(conversation.helpdeskCategory) === category &&
       conversation.isHelpdeskSupportMember === true &&
-      // A category selected without a first message is only a DRAFT; it is
-      // not a real case and must not count in the support request queue.
-      Boolean(conversation.caseCode || ticketSummaries[Number(conversation.id)]?.caseCode))
+      // Drafts never enter the queue. Spam has no case number by design,
+      // but its record MUST remain visible under the Spam tab for audit.
+      Boolean(conversation.caseCode || ticketSummaries[Number(conversation.id)]?.caseCode ||
+        isSpamStatus(ticketSummaries[Number(conversation.id)]?.status || conversation.caseStatus)))
     .sort((left, right) => {
       const a = Date.parse(left.lastMessageAt || left.updatedAt || left.createdAt || "") || 0;
       const b = Date.parse(right.lastMessageAt || right.updatedAt || right.createdAt || "") || 0;
@@ -905,13 +914,13 @@ export default function HelpdeskSupportPage({ category = "IT" }) {
 
   // Counts are scoped to this Helpdesk category and the conversations already
   // authorized by the server (including site and active-view restrictions).
-  const { openCases, closedCases, rejectedRequests } = useMemo(() => requests.reduce((counts, conversation) => {
+  const { openCases, closedCases, spamRequests } = useMemo(() => requests.reduce((counts, conversation) => {
     const status = getCaseStatus(ticketSummaries[Number(conversation.id)], conversation);
     if (ACTIVE_CASE_STATUSES.has(status)) counts.openCases += 1;
     else if (status === "RESOLVED") counts.closedCases += 1;
-    else if (status === "REJECTED") counts.rejectedRequests += 1;
+    else if (status === "SPAM") counts.spamRequests += 1;
     return counts;
-  }, { openCases: 0, closedCases: 0, rejectedRequests: 0 }), [requests, ticketSummaries]);
+  }, { openCases: 0, closedCases: 0, spamRequests: 0 }), [requests, ticketSummaries]);
 
   // Options reflect verified HRIS department/manager access, not only sites
   // represented in today's cases. Only the two approved operational locations
@@ -927,9 +936,9 @@ export default function HelpdeskSupportPage({ category = "IT" }) {
   const filtered = useMemo(() => requests.filter((conversation) => {
     const requester = getRequester(conversation);
     const caseStatus = getCaseStatus(ticketSummaries[Number(conversation.id)], conversation);
-    // Rejected is a separate request outcome and never enters either case tab.
-    if (activeTab === "Rejected") {
-      if (caseStatus !== "REJECTED") return false;
+    // Spam is a separate request outcome and never enters either case tab.
+    if (activeTab === "Spam") {
+      if (caseStatus !== "SPAM") return false;
     } else if (activeTab === "CaseClosed") {
       if (caseStatus !== "RESOLVED") return false;
     } else if (!ACTIVE_CASE_STATUSES.has(caseStatus)) {
@@ -989,11 +998,11 @@ export default function HelpdeskSupportPage({ category = "IT" }) {
   };
 
 
-  // Rejected requests have their own tab and are excluded from both case counts.
+  // Flagged spam requests have their own tab and are excluded from both case counts.
   const statusTabs = [
-    { key: "CaseOpen", label: "Case Open", icon: FolderOpen, count: openCases },
-    { key: "CaseClosed", label: "Case Closed", icon: CheckCircle, count: closedCases },
-    { key: "Rejected", label: "Rejected", icon: Ban, count: rejectedRequests },
+    { key: "CaseOpen", label: "Case Open", icon: FolderOpen, count: openCases, countColorMode: "red-when-positive" },
+    { key: "CaseClosed", label: "Case Closed", icon: CheckCircle, count: closedCases, countColorMode: "red-when-positive" },
+    { key: "Spam", label: "Spam", icon: Flag, count: spamRequests, countColorMode: "red-when-positive" },
   ];
 
   // Keep the Status dropdown consistent with the selected case tab and avoid
@@ -1002,7 +1011,7 @@ export default function HelpdeskSupportPage({ category = "IT" }) {
     { value: "All", label: "All Statuses" },
     ...Object.entries(TICKET_STATUS_LABELS)
       .filter(([status]) => activeTab === "CaseOpen" ? ACTIVE_CASE_STATUSES.has(status)
-        : activeTab === "CaseClosed" ? status === "RESOLVED" : status === "REJECTED")
+        : activeTab === "CaseClosed" ? status === "RESOLVED" : status === "SPAM")
       .map(([value, label]) => ({ value, label })),
   ];
   const selectRequestTab = (value) => {
@@ -1013,10 +1022,10 @@ export default function HelpdeskSupportPage({ category = "IT" }) {
   };
   const hasRequestFilters = Boolean(search.trim()) || assignedSite !== "All" || statusFilter !== "All";
   const emptyTitle = hasRequestFilters ? "No matching requests"
-    : activeTab === "Rejected" ? "No rejected requests"
+    : activeTab === "Spam" ? "No spam requests"
     : activeTab === "CaseClosed" ? "No closed cases" : "No open cases";
-  const emptyDescription = activeTab === "Rejected"
-    ? "Rejected concerns appear here separately and do not count as cases."
+  const emptyDescription = activeTab === "Spam"
+    ? "Flagged spam requests appear here separately and do not count as cases."
     : activeTab === "CaseClosed"
       ? "Cases marked Closed appear here."
       : "Open, In Progress, and Pending cases appear here.";
@@ -1197,7 +1206,7 @@ export default function HelpdeskSupportPage({ category = "IT" }) {
                                             <div className="min-w-0">
                                               <p className="break-words sibs-text-xs font-extrabold leading-tight text-sibs-navy transition-colors group-hover:text-sibs-orange">{requester.name}</p>
                                               {unread ? <p className="mt-1 flex items-center gap-1.5 sibs-text-micro font-bold text-sibs-orange"><UnreadBadge count={unread} /> Unread messages</p> : null}
-                                              {ticket?.status === "REJECTED" && <p className="mt-1 max-w-[300px] truncate text-[10px] font-semibold text-rose-700" title={ticket.rejectionReason || ""}>{ticket.rejectionReason || "Rejected"}</p>}
+                                              {isSpamStatus(ticket?.status) && <p className="mt-1 max-w-[300px] truncate text-[10px] font-semibold text-rose-700" title={ticket.rejectionReason || ""}>{ticket.rejectionReason || "Spam"}</p>}
                                             </div>
                                           </div>
                                         </td>
@@ -1206,13 +1215,13 @@ export default function HelpdeskSupportPage({ category = "IT" }) {
                                         </td>
                                         <td className="px-3 py-2 align-middle 2xl:px-4 2xl:py-2.5"><TicketStatusBadge status={ticket?.status} /></td>
                                         <td className="px-3 py-2 align-middle text-[11px] font-semibold text-sibs-muted 2xl:px-4 2xl:py-2.5">
-                                          <span title="Time elapsed from first message until support acceptance" className={queued.pending ? "font-extrabold text-sibs-orange" : ""}>{ticket?.status === "REJECTED" ? "—" : queued.text}</span>
-                                          {ticket?.status !== "REJECTED" && queued.pending && <span className="mt-0.5 block text-[10px] text-sibs-orange">Waiting for acceptance</span>}
+                                          <span title="Time elapsed from first message until support acceptance" className={queued.pending ? "font-extrabold text-sibs-orange" : ""}>{isSpamStatus(ticket?.status) ? "—" : queued.text}</span>
+                                          {!isSpamStatus(ticket?.status) && queued.pending && <span className="mt-0.5 block text-[10px] text-sibs-orange">Waiting for acceptance</span>}
                                         </td>
                                         <td className="px-3 py-2 align-middle text-[11px] font-semibold text-sibs-muted 2xl:px-4 2xl:py-2.5">
-                                          <span title="Time between request acceptance and first actual support reply" className={response.pending ? "font-bold text-sibs-orange" : ""}>{ticket?.status === "REJECTED" ? "—" : response.text}</span>
+                                          <span title="Time between request acceptance and first actual support reply" className={response.pending ? "font-bold text-sibs-orange" : ""}>{isSpamStatus(ticket?.status) ? "—" : response.text}</span>
                                         </td>
-                                        <td className="px-3 py-2 align-middle text-[11px] font-semibold text-sibs-muted 2xl:px-4 2xl:py-2.5">{ticket?.status === "REJECTED" ? "—" : getResolutionDisplay(ticket)}</td>
+                                        <td className="px-3 py-2 align-middle text-[11px] font-semibold text-sibs-muted 2xl:px-4 2xl:py-2.5">{isSpamStatus(ticket?.status) ? "—" : getResolutionDisplay(ticket)}</td>
                                         <td className="px-3 py-2 align-middle 2xl:px-4 2xl:py-2.5">
                                           <span className="text-[11px] font-semibold text-sibs-muted">{formatDate(ticket?.postedAt)}</span>
                                         </td>

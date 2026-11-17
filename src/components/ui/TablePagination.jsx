@@ -21,6 +21,9 @@ export default function TablePagination({
   itemName,   // alias
   onPageChange,
   loading = false,
+  // For tables that keep the previous page's rows visible while fetching a new
+  // page, allow navigation to a different page instead of freezing the pager.
+  allowNavigationWhileLoading = false,
   showCount = true,
   showPageInfo = true,
   className = "",
@@ -59,6 +62,7 @@ export default function TablePagination({
 
   const displayTotal = (rawTotal !== undefined ? safeTotal : safeTotalPages).toLocaleString();
   const hasPrevious = safeCurrentPage > 1;
+  const navigationLocked = loading && !allowNavigationWhileLoading;
   const hasNext = typeof hasNextPage === "boolean"
     ? hasNextPage
     : safeCurrentPage < safeTotalPages;
@@ -135,7 +139,7 @@ export default function TablePagination({
           type="button"
           aria-label="First page"
           title="First page"
-          disabled={loading || !hasPrevious}
+          disabled={navigationLocked || !hasPrevious}
           onClick={() => onPageChange?.(1)}
           className="inline-flex h-8 2xl:h-9 w-8 2xl:w-9 items-center justify-center rounded-lg border border-sibs-border-subtle bg-white text-sibs-navy transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
         >
@@ -147,7 +151,7 @@ export default function TablePagination({
           type="button"
           aria-label="Previous"
           title="Previous"
-          disabled={loading || !hasPrevious}
+          disabled={navigationLocked || !hasPrevious}
           onClick={() => onPageChange?.(safeCurrentPage - 1)}
           className="inline-flex h-8 2xl:h-9 items-center gap-1 rounded-lg border border-sibs-border-subtle bg-white px-2.5 2xl:px-3 text-[11.5px] 2xl:text-[12px] font-extrabold text-sibs-navy transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
         >
@@ -182,12 +186,12 @@ export default function TablePagination({
                 type="button"
                 aria-label={String(pageNum)}
                 aria-current={isActive ? "page" : undefined}
-                disabled={loading}
+                disabled={navigationLocked || isActive}
                 onClick={() => onPageChange?.(pageNum)}
                 className={`inline-flex h-8 2xl:h-9 min-w-8 2xl:min-w-9 items-center justify-center rounded-lg px-2 text-[11.5px] 2xl:text-[12px] font-extrabold transition ${
                   isActive
-                    ? "bg-sibs-orange text-white shadow-xs font-black"
-                    : "border border-sibs-border-subtle bg-white text-sibs-navy hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange"
+                    ? "cursor-default bg-sibs-orange text-white shadow-xs font-black"
+                    : "border border-sibs-border-subtle bg-white text-sibs-navy hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange disabled:cursor-not-allowed disabled:opacity-40"
                 }`}
               >
                 {pageNum.toLocaleString()}
@@ -201,7 +205,7 @@ export default function TablePagination({
           type="button"
           aria-label="Next"
           title="Next"
-          disabled={loading || !hasNext}
+          disabled={navigationLocked || !hasNext}
           onClick={() => onPageChange?.(safeCurrentPage + 1)}
           className="inline-flex h-8 2xl:h-9 items-center gap-1 rounded-lg border border-sibs-border-subtle bg-white px-2.5 2xl:px-3 text-[11.5px] 2xl:text-[12px] font-extrabold text-sibs-navy transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
         >
@@ -214,7 +218,7 @@ export default function TablePagination({
           type="button"
           aria-label="Last page"
           title="Last page"
-          disabled={loading || !hasNext || !totalIsKnown}
+          disabled={navigationLocked || !hasNext || !totalIsKnown}
           onClick={() => onPageChange?.(safeTotalPages)}
           className="inline-flex h-8 2xl:h-9 w-8 2xl:w-9 items-center justify-center rounded-lg border border-sibs-border-subtle bg-white text-sibs-navy transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
         >

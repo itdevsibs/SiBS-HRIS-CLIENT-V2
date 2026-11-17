@@ -7,7 +7,7 @@ import {
   UserRoundPlus,
   UserRoundX,
 } from "lucide-react";
-import StatusFilterTabs from "../StatusFilterTabs";
+import StatusFilterTabs from "../RecruitmentStatusFilterTabs";
 import { TALENT_POOL_TABS } from "../../../lib/utils/talentPool/talentPoolTabs";
 
 const tabs = [

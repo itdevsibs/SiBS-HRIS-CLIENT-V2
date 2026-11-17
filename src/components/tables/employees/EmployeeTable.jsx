@@ -967,7 +967,10 @@ export default function EmployeeTable({
 
   const safePagination = useMemo(
     () => ({
-      currentPage: Number(pagination?.currentPage || page || 1),
+      // The requested page is authoritative while the next fetch is pending.
+      // Old response metadata would otherwise keep the number buttons pointing
+      // to the previous page and make rapid Next/Previous clicks unreliable.
+      currentPage: Math.max(1, Number(page) || 1),
       totalPages: Math.max(Number(pagination?.totalPages || 1), 1),
       total: Number(pagination?.total || 0),
       limit: Number(pagination?.limit || PAGE_LIMIT),
@@ -1558,10 +1561,15 @@ export default function EmployeeTable({
               Math.max(Number(nextPage) || 1, 1),
               Math.max(totalPages, 1),
             );
-            setPage?.(safePage);
+            // Never arm the global loading flag for the already selected page.
+            if (safePage !== Number(page || 1)) setPage?.(safePage);
           }}
           recordLabel="employee records"
           loading={loading}
+          // The directory keeps its last loaded rows while requesting the next
+          // page. Let users choose another page if the network is slow; its
+          // effect cleanup prevents superseded responses from overwriting it.
+          allowNavigationWhileLoading={employees.length > 0}
         />
       </div>
 

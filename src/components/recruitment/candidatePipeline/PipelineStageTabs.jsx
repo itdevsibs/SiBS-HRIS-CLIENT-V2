@@ -10,7 +10,7 @@ import {
   UserCheck,
   UsersRound,
 } from "lucide-react";
-import StatusFilterTabs from "../StatusFilterTabs";
+import StatusFilterTabs from "../RecruitmentStatusFilterTabs";
 
 export const PIPELINE_STAGE_TABS = {
   ALL: "All",

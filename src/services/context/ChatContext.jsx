@@ -853,6 +853,22 @@ export function ChatProvider({ children }) {
   );
 
 
+  // A support employee may flag a Helpdesk request as spam while its
+  // requester is viewing it. Clear the selected chat and cached messages as
+  // soon as the DB-backed status changes (socket event or 2s fallback sync).
+  // Do NOT delete any persisted messages: the support Spam tab is the audit
+  // history, and the requester may start a fresh valid request afterwards.
+  useEffect(() => {
+    const selectedId = Number(activeConversationId || 0);
+    if (!selectedId) return;
+    const selected = conversations.find((entry) => Number(entry?.id || 0) === selectedId);
+    if (!selected || (!selected.isHelpdesk && cleanText(selected.conversationType).toUpperCase() !== 'HELPDESK')) return;
+    const status = cleanText(selected.caseStatus).toUpperCase();
+    if (status === 'SPAM' || status === 'REJECTED') {
+      void selectConversation(null);
+    }
+  }, [activeConversationId, conversations, selectConversation]);
+
   const loadOlderMessages = useCallback(async () => {
     const conversationId = Number(activeConversationIdRef.current || 0);
     if (!conversationId || loadingOlderMessages || !hasMoreMessages) return [];
@@ -927,8 +943,8 @@ export function ChatProvider({ children }) {
   );
 
   const startHelpdeskConversation = useCallback(
-    async (category) => {
-      const conversation = await createHelpdeskChat(category);
+    async (category, site = "") => {
+      const conversation = await createHelpdeskChat(category, site);
       const id = Number(conversation?.id || 0);
       await refreshConversations();
       if (id) await selectConversation(id);
@@ -1570,7 +1586,18 @@ export function ChatProvider({ children }) {
       typingExpiryTimersRef.current.set(timerKey, timerId);
     };
 
-    const handleConversationUpdate = () => {
+    const handleConversationUpdate = ({ conversationId, reason, caseStatus } = {}) => {
+      // The Helpdesk server emits a committed spam status. Hide the selected
+      // thread at once; the regular DB refresh still reconciles every field.
+      const id = Number(conversationId || 0);
+      if (id && reason === 'helpdesk-ticket-spam' &&
+          cleanText(caseStatus).toUpperCase() === 'SPAM') {
+        setConversations((current) => current.map((item) =>
+          Number(item?.id || 0) === id && item.isHelpdesk
+            ? { ...item, caseStatus: 'SPAM', unreadCount: 0 }
+            : item,
+        ));
+      }
       void syncChatWithoutRefresh();
     };
 

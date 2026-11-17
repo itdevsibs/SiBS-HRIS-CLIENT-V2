@@ -1,6 +1,8 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import chatSocket from "@/lib/axios/chatSocket";
+import { useChat } from "@/services/context/ChatContext";
+import { getChatThemeBackgroundStyle, isChatThemeCustom } from "@/lib/utils/chat/chatTheme";
 import {
   AlertCircle, ArrowDown, CheckCircle2, FileText, Loader2, Paperclip,
   RefreshCcw, Reply, Send, X,
@@ -122,7 +124,17 @@ export default function HelpdeskCaseConversation({
   conversation, ticket, currentSibsId, onMessagesChanged,
 }) {
   const conversationId = Number(conversation?.id || 0);
-  const isClosed = ["RESOLVED", "REJECTED"].includes(clean(ticket?.status).toUpperCase());
+  // The same conversation theme used by the employee in SiBS Chat must also
+  // appear to the support employee in the embedded Helpdesk transcript.
+  // Read the live ChatContext snapshot so a theme change updates an open modal.
+  const chat = useChat();
+  const liveConversation = (chat?.conversations || []).find((entry) =>
+    Number(entry?.id || 0) === conversationId);
+  const selectedTheme = liveConversation?.theme || conversation?.theme;
+  const isCustomTheme = isChatThemeCustom(selectedTheme);
+  const themeBackgroundStyle = useMemo(() =>
+    getChatThemeBackgroundStyle(selectedTheme), [selectedTheme]);
+  const isClosed = ["RESOLVED", "SPAM", "REJECTED"].includes(clean(ticket?.status).toUpperCase());
   const isAssignedSupport = Boolean(ticket?.acceptedBySibsId) &&
     clean(ticket.acceptedBySibsId) === clean(currentSibsId);
   const canReply = isAssignedSupport && !isClosed &&
@@ -311,7 +323,7 @@ export default function HelpdeskCaseConversation({
       // member must never accidentally open a new case by replying to one
       // which another session has already resolved.
       const freshTicket = await getHelpdeskTicketDetails(conversationId);
-      if (["RESOLVED", "REJECTED"].includes(clean(freshTicket?.status).toUpperCase()) ||
+      if (["RESOLVED", "SPAM", "REJECTED"].includes(clean(freshTicket?.status).toUpperCase()) ||
           clean(freshTicket?.acceptedBySibsId) !== clean(currentSibsId)) {
         onMessagesChangedRef.current?.({ refreshTicket: true, refreshConversationList: true });
         throw new Error("This request is finalized or no longer assigned to you. Refresh to continue.");
@@ -343,7 +355,7 @@ export default function HelpdeskCaseConversation({
     <div className="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-xs">
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-sibs-border px-4 py-3">
         <div>
-          <h3 className="font-heading text-sm font-extrabold text-sibs-navy">{isClosed && clean(ticket?.status).toUpperCase() === "REJECTED" ? "Request conversation" : "Case conversation"}</h3>
+          <h3 className="font-heading text-sm font-extrabold text-sibs-navy">{isClosed && ["SPAM", "REJECTED"].includes(clean(ticket?.status).toUpperCase()) ? "Request conversation" : "Case conversation"}</h3>
           <p className="mt-0.5 text-[10px] font-semibold text-sibs-muted">
             {isClosed ? "Archived conversation · read only" : canReply ? "Reply to the employee from this Helpdesk case" : "Case conversation · support access"}
           </p>
@@ -352,7 +364,14 @@ export default function HelpdeskCaseConversation({
           className="inline-flex items-center gap-1.5 rounded-lg border border-sibs-border px-2.5 py-1.5 text-[10px] font-bold text-sibs-navy hover:bg-sibs-surface disabled:opacity-50"
           title="Refresh messages"><RefreshCcw size={13} className={refreshing ? "animate-spin" : ""} /> Refresh</button>
       </div>
-      <div ref={scrollRef} className="sibs-scrollbar min-h-[280px] max-h-[430px] flex-1 space-y-3 overflow-y-auto bg-[#f6f8fb] px-3 py-4 sm:px-4" aria-live="polite" aria-busy={loading}>
+      <div
+        ref={scrollRef}
+        data-chat-custom-theme={isCustomTheme ? "true" : "false"}
+        className={`sibs-scrollbar relative min-h-[280px] max-h-[430px] flex-1 space-y-3 overflow-y-auto px-3 py-4 transition-colors duration-300 sm:px-4 ${isCustomTheme ? "" : "bg-[#f6f8fb]"}`}
+        style={themeBackgroundStyle}
+        aria-live="polite"
+        aria-busy={loading}
+      >
         {loading && !messages.length ? (
           <div className="flex h-40 items-center justify-center gap-2 text-xs font-semibold text-sibs-muted"><Loader2 className="animate-spin" size={17} /> Loading messages…</div>
         ) : (
@@ -376,7 +395,7 @@ export default function HelpdeskCaseConversation({
               const caseNumber = clean(ticket?.caseCode || conversation?.caseCode).split("-").at(-1);
               return (
                 <div key={message.id}>
-                  {day && day !== previousDay && <p className="my-2 text-center text-[10px] font-extrabold text-sibs-muted">{formatChatDate(message.createdAt)}</p>}
+                  {day && day !== previousDay && <p className={`mx-auto my-2 w-fit rounded-full px-2 py-1 text-center text-[10px] font-extrabold text-sibs-muted ${isCustomTheme ? "bg-white/90 shadow-xs" : ""}`}>{formatChatDate(message.createdAt)}</p>}
                   {isOpeningMessage && <p className="mx-auto mb-3 w-fit rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-center text-[10px] font-extrabold text-sibs-navy">Case Opened #{caseNumber || "—"} · {formatChatDate(ticket?.postedAt || message.createdAt)}</p>}
                   {systemMessage ? (
                     <p className="mx-auto max-w-[85%] rounded-full bg-slate-200/75 px-3 py-1 text-center text-[10px] text-sibs-muted">{clean(message.messageText)}</p>
@@ -385,7 +404,7 @@ export default function HelpdeskCaseConversation({
                       {!mine && <HelpdeskSenderAvatar employee={message.sender || member} name={senderName} sibsId={senderId} />}
                       <div className={`min-w-0 max-w-[80%] sm:max-w-[75%] ${mine ? "items-end" : "items-start"}`}>
                         <div className={`mb-1 flex flex-wrap items-center gap-1.5 ${mine ? "justify-end" : "justify-start"}`}>
-                          <span className="text-[10px] font-extrabold text-sibs-navy">{mine ? "You" : senderName}</span>
+                          <span className={`rounded-md text-[10px] font-extrabold text-sibs-navy ${isCustomTheme ? "bg-white/90 px-1.5 py-0.5 shadow-xs" : ""}`}>{mine ? "You" : senderName}</span>
                           {role && <span className="rounded-md border border-sibs-border bg-white px-1.5 py-0.5 text-[9px] font-bold text-sibs-muted">{role}</span>}
                         </div>
                         <div className={`rounded-2xl px-3 py-2 text-[11px] font-semibold leading-relaxed shadow-xs ${mine ? "rounded-br-sm bg-sibs-orange text-white" : "rounded-bl-sm border border-sibs-border bg-white text-sibs-navy"}`}>
@@ -407,7 +426,7 @@ export default function HelpdeskCaseConversation({
                             })}
                           </>}
                         </div>
-                        <div className={`mt-1 flex items-center gap-2 text-[9px] text-sibs-muted ${mine ? "justify-end" : "justify-start"}`}>
+                        <div className={`mt-1 flex items-center gap-2 rounded-md text-[9px] text-sibs-muted ${mine ? "justify-end" : "justify-start"} ${isCustomTheme ? "w-fit bg-white/90 px-1.5 py-0.5 shadow-xs" : ""}`}>
                           <span>{formatChatDate(message.createdAt)}</span>
                           {canReply && !unsent && <button type="button" onClick={() => setReplyTo(message)} className="inline-flex items-center gap-1 hover:text-sibs-orange"><Reply size={11} />Reply</button>}
                         </div>

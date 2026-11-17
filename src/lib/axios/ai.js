@@ -1,10 +1,13 @@
 import api from "./api-template";
 
+export const AI_CHAT_TIMEOUT_MS = 60_000;
+
 export async function askSibsAi({
   message,
   conversation = [],
   conversationId = "",
   context = {},
+  signal,
 }) {
   const payload = {
     message: String(message || "").trim(),
@@ -19,6 +22,9 @@ export async function askSibsAi({
     payload.conversationId = conversationId;
   }
 
-  const response = await api.post("/api/ai/chat", payload);
+  const response = await api.post("/api/ai/chat", payload, {
+    timeout: AI_CHAT_TIMEOUT_MS,
+    signal,
+  });
   return response?.data || {};
 }
