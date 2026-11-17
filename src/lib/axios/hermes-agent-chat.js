@@ -10,6 +10,7 @@ export const sendHermesAgentChat = async ({
   message,
   conversation = [],
   includeReport = false,
+  uatScenarioId,
   signal,
 }) => {
   const cleanedMessage = message?.trim();
@@ -26,6 +27,7 @@ export const sendHermesAgentChat = async ({
     message: cleanedMessage,
     conversation,
     ...(includeReport ? { includeReport: true } : {}),
+    ...(uatScenarioId ? { uatScenarioId } : {}),
   };
 
   const response = await apiClient.post(
@@ -56,5 +58,8 @@ export const sendHermesAgentChat = async ({
     ...(response.data?.durationMs != null ? { durationMs: response.data.durationMs } : {}),
     ...(response.data?.report ? { report: response.data.report } : {}),
     ...(response.data?.verifiedData ? { verifiedData: response.data.verifiedData } : {}),
+    ...(response.data?.plan?.capability ? { actualCapability: response.data.plan.capability } : {}),
+    ...(response.data?.uatEvidence ? { uatEvidence: response.data.uatEvidence } : {}),
+    ...(response.data?.uatExecution ? { uatExecution: response.data.uatExecution } : {}),
   };
 };

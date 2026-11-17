@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 import SiBSAIAssistant from "./SiBSAIAssistant";
 import { sendHermesAgentChat } from "@/lib/axios/hermes-agent-chat";
@@ -7,6 +7,9 @@ vi.mock("@/services/context/UserContext", () => ({
   useUser: () => ({ user: { firstName: "Sam" }, loading: false }),
 }));
 vi.mock("@/lib/axios/hermes-agent-chat", () => ({ sendHermesAgentChat: vi.fn() }));
+vi.mock("@/lib/axios/hris-uat", () => ({
+  getUatStatus: vi.fn().mockResolvedValue({ success: true, participant: false, reviewer: false }),
+}));
 
 afterEach(() => vi.clearAllMocks());
 
@@ -39,7 +42,7 @@ it("keeps Hermes messages across closing and reopening, and shows measured laten
   }));
 
   rerender(<SiBSAIAssistant variant="hermes" isOpen={false} hideTrigger />);
-  rerender(<SiBSAIAssistant variant="hermes" isOpen hideTrigger />);
+  await act(async () => rerender(<SiBSAIAssistant variant="hermes" isOpen hideTrigger />));
   expect(screen.getAllByText("Hermes answer")).toHaveLength(2);
 });
 
@@ -62,7 +65,7 @@ it("shows backend errors and clears Hermes history for a new chat", async () => 
   await waitFor(() => expect(screen.getByText("Recovered answer")).toBeInTheDocument());
   expect(screen.queryByText("Hermes unavailable")).not.toBeInTheDocument();
 
-  fireEvent.click(screen.getByRole("button", { name: /start a new ask sibs ai \(hermes\) chat/i }));
+  await act(async () => fireEvent.click(screen.getByRole("button", { name: /start a new ask sibs ai \(hermes\) chat/i })));
   expect(screen.queryByText("Recovered answer")).not.toBeInTheDocument();
 });
 
