@@ -14,6 +14,7 @@ import { useUser } from "../../../services/context/UserContext";
 import { useHeader } from "../../../services/context/HeaderContext";
 import { useAdmin } from "../../../services/context/AdminContext";
 import { getActiveCollectibleProfile } from "../../../config/developerBorders";
+import { getDefaultDashboardPath } from "../../../config/accessControl";
 import CollectibleAvatarFrame from "./CollectibleAvatarFrame.jsx";
 import DeveloperEasterEgg from "./DeveloperEasterEgg.jsx";
 
@@ -73,8 +74,17 @@ export default function UserDropdown({
   const dropdownRef = useRef(null);
   const avatarPreviewAnchorRef = useRef(null);
   const easterEggClicksRef = useRef({ count: 0, startedAt: 0, account: null });
+  const switchInFlightRef = useRef(false);
 
-  const { user, setUser, refetchUser } = useUser();
+  const {
+    user,
+    loading = false,
+    isSwitchingRole = false,
+    setUser,
+    refetchUser,
+    beginRoleSwitch,
+    endRoleSwitch,
+  } = useUser() || {};
   const { setAdminLogin } = useHeader();
   const { getAccessLabel, ADMIN_ROLES = [] } = useAdmin();
   const collectible = getActiveCollectibleProfile(user, formattedName);
@@ -223,7 +233,7 @@ export default function UserDropdown({
   };
 
   const handleSwitchToAdmin = () => {
-    if (actionLoading) return;
+    if (actionLoading || isSwitchingRole || loading) return;
 
     setOpen(false);
 
@@ -233,8 +243,9 @@ export default function UserDropdown({
   };
 
   const handleSwitchToEmployee = async () => {
-    if (actionLoading) return;
+    if (switchInFlightRef.current || actionLoading || isSwitchingRole || loading) return;
 
+    switchInFlightRef.current = true;
     try {
       setActionLoading("employee");
       setOpen(false);
@@ -247,27 +258,43 @@ export default function UserDropdown({
         },
       );
 
-      if (response.data?.expiresAt) {
-        sessionStorage.setItem(
-          "accessTokenExpiresAt",
-          String(response.data.expiresAt),
+      if (!response.data?.success || !response.data?.user) {
+        throw new Error(
+          response.data?.message || "Unable to switch to Employee view.",
         );
       }
 
-      if (response.data?.user) {
-        setUser(response.data.user);
-      }
+      const rawNextUser = response.data.user;
+      const fallbackAdminAccess = getAdminAccess(user);
+      const nextUser =
+        rawNextUser?.adminAccess == null &&
+        rawNextUser?.admin_access == null &&
+        fallbackAdminAccess > 0
+          ? {
+              ...rawNextUser,
+              adminAccess: fallbackAdminAccess,
+              admin_access: fallbackAdminAccess,
+            }
+          : rawNextUser;
+      const targetPath = getDefaultDashboardPath(nextUser);
 
+      beginRoleSwitch?.(targetPath);
+      setUser(
+        nextUser,
+        response.data?.expiresAt ?? null,
+        response.data?.expiresInMs ?? null,
+      );
       setAdminLogin(false);
+      navigate(targetPath, { replace: true });
 
       if (typeof refetchUser === "function") {
-        await refetchUser();
+        void refetchUser({ background: true });
       }
-
-      navigate("/dashboard/employee", { replace: true });
     } catch (error) {
+      endRoleSwitch?.();
       console.error("Switch to employee error:", error);
     } finally {
+      switchInFlightRef.current = false;
       setActionLoading("");
     }
   };
@@ -387,7 +414,7 @@ export default function UserDropdown({
                       title={switchToAdminLabel}
                       subtitle="Current role: Employee"
                       onClick={handleSwitchToAdmin}
-                      disabled={Boolean(actionLoading)}
+                      disabled={Boolean(actionLoading) || isSwitchingRole || loading}
                     />
                   )}
 
@@ -398,7 +425,7 @@ export default function UserDropdown({
                       subtitle={`Current role: ${currentAdminRoleLabel}`}
                       onClick={handleSwitchToEmployee}
                       loading={actionLoading === "employee"}
-                      disabled={Boolean(actionLoading)}
+                      disabled={Boolean(actionLoading) || isSwitchingRole || loading}
                     />
                   )}
 

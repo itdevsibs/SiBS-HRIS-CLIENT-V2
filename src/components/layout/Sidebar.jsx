@@ -558,7 +558,7 @@ function SibsLogo({ collapsed = false, isMobile = false }) {
 }
 
 export default function Sidebar() {
-  const { user, loading } = useUser();
+  const { user, loading, isSwitchingRole = false } = useUser() || {};
   const [helpdeskSupportCategories, setHelpdeskSupportCategories] = useState([]);
   const helpdeskUserSibsId = getCurrentUserSibsId(user);
   const helpdeskEmployeeView = normalizeRole(user?.role) === "employee";
@@ -1022,7 +1022,7 @@ export default function Sidebar() {
   }, [mounted, user, loading, navigate]);
 
   useEffect(() => {
-    if (!mounted || loading || !user) return;
+    if (!mounted || loading || isSwitchingRole || !user) return;
 
     if (normalizeRole(user.role) === "employee") {
       // Use the same central Employee portal allowlist as ProtectedRoute.
@@ -1042,7 +1042,7 @@ export default function Sidebar() {
     ) {
       navigate(getDefaultDashboardPath(user), { replace: true });
     }
-  }, [mounted, user, loading, pathname, navigate, ADMIN_ROLES]);
+  }, [mounted, user, loading, isSwitchingRole, pathname, navigate, ADMIN_ROLES]);
 
   useEffect(() => {
     if (isMobile) {
@@ -1104,7 +1104,7 @@ export default function Sidebar() {
   }, [flyoutGroupId]);
 
   useEffect(() => {
-    if (!mounted || loading || !user) return;
+    if (!mounted || loading || isSwitchingRole || !user) return;
 
     // Skip costly notification count reads on the Workforce Overview. They
     // fetch complete leads/position lists and contend with its Kronos load.
@@ -1150,6 +1150,7 @@ export default function Sidebar() {
   }, [
     mounted,
     loading,
+    isSwitchingRole,
     user,
     pathname,
     ADMIN_ROLES,
