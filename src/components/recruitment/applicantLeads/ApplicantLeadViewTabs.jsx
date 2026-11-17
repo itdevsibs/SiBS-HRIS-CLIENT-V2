@@ -9,7 +9,7 @@ import {
   UserX,
   UsersRound,
 } from "lucide-react";
-import StatusFilterTabs from "../StatusFilterTabs";
+import StatusFilterTabs from "../RecruitmentStatusFilterTabs";
 import { useApplicantLeadsPage } from "../../../hooks/applicantLeads/useApplicantLeadsPage";
 
 export default function ApplicantLeadViewTabs() {

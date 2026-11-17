@@ -61,6 +61,7 @@ import {
   getChatParticipants,
   getChatHelpdeskDuty,
   getChatHelpdeskRequestableCategories,
+  getChatHelpdeskRequestSiteOptions,
   getHelpdeskTicketDetails,
   updateHelpdeskTicketStatus,
   getChatThemeImageBlob,
@@ -458,7 +459,7 @@ function getHelpdeskCaseLabel(conversation = {}) {
   const match = caseCode.match(/^(?:IT|THR)-(\d+)$/i);
   const caseNumber = match ? String(Number(match[1])) : caseCode;
   const status = cleanText(conversation?.caseStatus).toUpperCase();
-  if (status === "REJECTED") return "Rejected request";
+  if (["SPAM", "REJECTED"].includes(status)) return "Spam request";
   const isResolved = status === "RESOLVED";
   return `Case ${isResolved ? "Closed" : "Opened"} #${caseNumber}`;
 }
@@ -720,7 +721,7 @@ function isHelpdeskConversationVisibleOnDay(conversation = {}, todayKey) {
   );
   if (isUnsentDraft) return true;
   // Do not lose an actionable case just because the calendar rolled over.
-  if (status && !["RESOLVED", "CLOSED", "REJECTED"].includes(status)) return true;
+  if (status && !["RESOLVED", "CLOSED", "SPAM", "REJECTED"].includes(status)) return true;
 
   const activityDates = [
     conversation.caseOpenedAt,
@@ -2106,7 +2107,7 @@ export default function SiBSChat({
   const [inboxViewMode, setInboxViewMode] = useState("list");
   const minimizedDockRef = useRef(null);
   const previousActiveConversationIdRef = useRef(null);
-  const isInitialStateRestoredRef = useRef(false);
+  const isInitialStateRestoredRef = useRef("");
   const [expandedBounds, setExpandedBounds] = useState(null);
   const chatPanelRef = useRef(null);
   const layoutStartRef = useRef(null);
@@ -2164,6 +2165,9 @@ export default function SiBSChat({
   const [sending, setSending] = useState(false);
   const [actionBusy, setActionBusy] = useState(false);
   const [helpdeskStartingCategory, setHelpdeskStartingCategory] = useState("");
+  const [helpdeskSiteOptions, setHelpdeskSiteOptions] = useState([]);
+  const [helpdeskSitePrompt, setHelpdeskSitePrompt] = useState("");
+  const [helpdeskSelectedSite, setHelpdeskSelectedSite] = useState("");
   const [helpdeskStartError, setHelpdeskStartError] = useState("");
   const helpdeskRequestPendingRef = useRef(false);
   const [localError, setLocalError] = useState("");
@@ -2239,16 +2243,22 @@ export default function SiBSChat({
   useEffect(() => {
     if (!open || !currentSibsId) {
       setRequestableHelpdeskCategories(null);
+      setHelpdeskSiteOptions([]);
+      setHelpdeskSitePrompt("");
       setHelpdeskRequestScopeError("");
       return undefined;
     }
     const controller = new AbortController();
     setRequestableHelpdeskCategories(null);
     setHelpdeskRequestScopeError("");
-    void getChatHelpdeskRequestableCategories({ signal: controller.signal })
-      .then((categories) => {
+    void Promise.all([
+      getChatHelpdeskRequestableCategories({ signal: controller.signal }),
+      getChatHelpdeskRequestSiteOptions({ signal: controller.signal }),
+    ])
+      .then(([categories, sites]) => {
         if (controller.signal.aborted) return;
         setRequestableHelpdeskCategories(categories);
+        setHelpdeskSiteOptions(sites);
       })
       .catch((error) => {
         if (controller.signal.aborted || error?.name === "AbortError" || error?.code === "ERR_CANCELED") return;
@@ -2264,11 +2274,11 @@ export default function SiBSChat({
   // Restore persisted state for the authenticated employee
   useEffect(() => {
     if (!currentSibsId) {
-      isInitialStateRestoredRef.current = false;
+      isInitialStateRestoredRef.current = "";
       return;
     }
-    if (isInitialStateRestoredRef.current) return;
-    isInitialStateRestoredRef.current = true;
+    if (isInitialStateRestoredRef.current === currentSibsId) return;
+    isInitialStateRestoredRef.current = currentSibsId;
 
     cleanupOtherEmployeeChatStates(currentSibsId);
     const saved = loadSavedChatState(currentSibsId);
@@ -3016,7 +3026,28 @@ export default function SiBSChat({
     const query = cleanText(conversationSearch).toLowerCase();
     const todayKey = getManilaDateKey(new Date(chatClockMs));
 
+    // Older versions could leave one unsent draft per SITE. Keep just the
+    // most recently used draft per category in the personal sidebar; never
+    // collapse actual opened cases or delete audit history.
+    const latestDraftByCategory = new Map();
+    for (const item of chat?.conversations || []) {
+      if (!item?.isHelpdesk || cleanText(item.createdBySibsId) !== currentSibsId ||
+          cleanText(item.caseStatus).toUpperCase() !== "DRAFT") continue;
+      const category = cleanText(item.helpdeskCategory).toUpperCase();
+      const previous = latestDraftByCategory.get(category);
+      const time = Date.parse(item.updatedAt || item.createdAt || "") || 0;
+      const oldTime = Date.parse(previous?.updatedAt || previous?.createdAt || "") || 0;
+      if (!previous || time > oldTime || (time === oldTime && Number(item.id) > Number(previous.id))) {
+        latestDraftByCategory.set(category, item);
+      }
+    }
+
     return (chat?.conversations || []).filter((conversation) => {
+      if (conversation?.isHelpdesk && cleanText(conversation.createdBySibsId) === currentSibsId &&
+          cleanText(conversation.caseStatus).toUpperCase() === "DRAFT") {
+        const category = cleanText(conversation.helpdeskCategory).toUpperCase();
+        if (latestDraftByCategory.get(category)?.id !== conversation.id) return false;
+      }
       // Scope only the IT / TA-HR Helpdesk folders to today's activity.
       // A case worked across midnight is counted on both Philippine dates.
       if (!shouldShowHelpdeskInSibsChat(conversation, currentSibsId)) return false;
@@ -3336,7 +3367,7 @@ export default function SiBSChat({
   ).toUpperCase();
   const helpdeskCaseStatusLabel = {
     OPEN: 'Open', IN_PROGRESS: 'In Progress', PENDING: 'Pending',
-    RESOLVED: 'Case Closed', REJECTED: 'Rejected',
+    RESOLVED: 'Case Closed', SPAM: 'Spam', REJECTED: 'Spam',
   }[helpdeskCaseStatus] || 'Status';
   const canChangeHelpdeskStatus = Boolean(activeHelpdeskId && activeStatusTicket &&
     cleanText(activeStatusTicket.acceptedBySibsId) === currentSibsId &&
@@ -3391,6 +3422,18 @@ export default function SiBSChat({
     cleanText(activeConversation.createdBySibsId) === currentSibsId);
   const visibleHelpdeskDuty = helpdeskDuty?.conversationId === activeHelpdeskId
     ? helpdeskDuty : null;
+
+  // The actual assigned handler comes from the persisted ticket, not from
+  // today's Kronos duty roster or chat online presence. Full HRIS names take
+  // priority over preferred names / nicknames.
+  const acceptedSupportSibsId = cleanText(activeStatusTicket?.acceptedBySibsId);
+  const acceptedSupportMember = acceptedSupportSibsId
+    ? (activeConversation?.members || []).find((member) =>
+        cleanText(member?.sibsId) === acceptedSupportSibsId)
+      || (visibleHelpdeskDuty?.members || []).find((member) =>
+        cleanText(member?.sibsId) === acceptedSupportSibsId)
+      || { sibsId: acceptedSupportSibsId }
+    : null;
 
   // Attendance is displayed to both the requester and support team. It is
   // NEVER inferred from chat-online presence: only Kronos clock-in without a
@@ -3463,12 +3506,22 @@ export default function SiBSChat({
       .map((member) => {
         const sibsId = cleanText(member.sibsId);
         return {
-          ...member,
           ...chatMembersById.get(sibsId),
+          ...member,
           sibsId,
         };
+      }).sort((a, b) => {
+        // Both-site manager views group Davao and Tagum staff consistently.
+        const siteRank = (value) => /davao/i.test(value || '') ? 0 : /tagum/i.test(value || '') ? 1 : 2;
+        return siteRank(a.assignedLocationLabel) - siteRank(b.assignedLocationLabel) ||
+          getChatMemberFullName(a).localeCompare(getChatMemberFullName(b));
       });
   }, [activeConversation?.members, visibleHelpdeskDuty]);
+  // Managers/TLs can see every clocked-in member at their assigned site;
+  // only Super Admins retain the optional manual site picker. Regular
+  // employees retain their compact three-person preview.
+  const showFullDutyRoster = ['BOTH_SITES', 'ASSIGNED_SITE_MANAGEMENT'].includes(visibleHelpdeskDuty?.scope) ||
+    (Boolean(activeConversation?.requestSite) && helpdeskSiteOptions.length > 0);
 
   const activeTypingMembers = useMemo(() => {
     const conversationId = Number(activeConversation?.id || 0);
@@ -4046,7 +4099,7 @@ export default function SiBSChat({
   async function submitGif(gif) {
     const gifUrl = cleanText(gif?.gifUrl);
     if (!gifUrl || sending || !activeConversation) return;
-    if (activeConversation?.isHelpdesk && (activeConversation.caseStatus === "REJECTED" ||
+    if (activeConversation?.isHelpdesk && (["SPAM", "REJECTED"].includes(activeConversation.caseStatus) ||
         (activeConversation.caseStatus === "RESOLVED" && cleanText(activeConversation.createdBySibsId) !== currentSibsId))) {
       setLocalError("This Helpdesk case is closed. Support replies are disabled.");
       return;
@@ -4081,7 +4134,7 @@ export default function SiBSChat({
 
   async function submitMessage() {
     const text = cleanText(draft);
-    if (activeConversation?.isHelpdesk && (activeConversation.caseStatus === "REJECTED" ||
+    if (activeConversation?.isHelpdesk && (["SPAM", "REJECTED"].includes(activeConversation.caseStatus) ||
         (activeConversation.caseStatus === "RESOLVED" && cleanText(activeConversation.createdBySibsId) !== currentSibsId))) {
       setLocalError("This case is closed. Support replies are disabled. The requester can open a new case.");
       return;
@@ -4497,7 +4550,7 @@ export default function SiBSChat({
   // Desktop and mobile use the same explicit selection rule. The desktop
   // window widens to reveal the messages; mobile slides between full panes.
   const hasActiveMobileView = Boolean(
-    (newChatOpen || (activeConversation && !explicitlyViewingListRef.current)) &&
+    (newChatOpen || helpdeskSitePrompt || (activeConversation && !explicitlyViewingListRef.current)) &&
       !isNavigatingBack,
   );
   // Preserve the v31 close-button rule in this updated SiBSChat version.
@@ -4506,6 +4559,19 @@ export default function SiBSChat({
   const showSidebarCloseButton = !hasActiveMobileView && !isNavigatingBack;
 
   function handleBackToList() {
+    if (helpdeskSitePrompt) {
+      // Slide out the pending site-choice screen just like a chat pane.
+      setIsNavigatingBack(true);
+      if (navigateBackTimerRef.current) clearTimeout(navigateBackTimerRef.current);
+      navigateBackTimerRef.current = setTimeout(() => {
+        setHelpdeskSitePrompt("");
+        setHelpdeskSelectedSite("");
+        setIsNavigatingBack(false);
+        explicitlyViewingListRef.current = true;
+        navigateBackTimerRef.current = null;
+      }, 300);
+      return;
+    }
     // If a Helpdesk/Group Info overlay is visible, Back first returns to the
     // conversation messages. This also protects keyboard/focus navigation if
     // the underlying conversation-header button receives a click.
@@ -4560,7 +4626,29 @@ export default function SiBSChat({
   // Direct Helpdesk contact from the sidebar. Opening an existing draft or
   // creating a thread does not open a case; the first message does that.
   // Use the same endpoint and permissions as the former New Chat Helpdesk tab.
-  async function handleContactHelpdesk(category) {
+  function handleContactHelpdesk(category) {
+    if (!canRequestHelpdesk(category)) return;
+    if (helpdeskSiteOptions.length) {
+      // Only verified Super Admins receive manual site options. Managers and
+      // TLs open the single draft directly using their assigned HRIS site.
+      setHelpdeskSelectedSite("");
+      setHelpdeskSitePrompt(category);
+      setHelpdeskStartError("");
+      setNewChatOpen(false);
+      setGroupInfoOpen(false);
+      explicitlyViewingListRef.current = false;
+      if (navigateBackTimerRef.current) {
+        clearTimeout(navigateBackTimerRef.current);
+        navigateBackTimerRef.current = null;
+      }
+      setIsNavigatingBack(false);
+      void chat?.selectConversation?.(null);
+      return;
+    }
+    void startHelpdeskAtSite(category);
+  }
+
+  async function startHelpdeskAtSite(category, site = "") {
     if (!canRequestHelpdesk(category)) {
       setHelpdeskStartError("This Helpdesk category is handled by your support team. Choose the other Helpdesk category for a personal request.");
       return;
@@ -4570,7 +4658,8 @@ export default function SiBSChat({
     setHelpdeskStartingCategory(category);
     setHelpdeskStartError("");
     try {
-      const result = await chat.startHelpdeskConversation(category);
+      const result = await chat.startHelpdeskConversation(category, site);
+      setHelpdeskSitePrompt("");
       if (!Number(result?.id)) {
         throw new Error("Unable to open the Helpdesk request.");
       }
@@ -5482,7 +5571,7 @@ export default function SiBSChat({
                         aria-expanded={canChangeHelpdeskStatus ? helpdeskStatusMenuOpen : undefined}
                         title={canChangeHelpdeskStatus
                           ? 'Update this case status'
-                          : ['RESOLVED', 'REJECTED'].includes(helpdeskCaseStatus)
+                          : ['RESOLVED', 'SPAM', 'REJECTED'].includes(helpdeskCaseStatus)
                             ? 'This case is closed'
                             : helpdeskStatusLoading
                               ? 'Checking the accepted support employee…'
@@ -5502,7 +5591,7 @@ export default function SiBSChat({
                       >
                         {helpdeskStatusSaving || helpdeskStatusLoading ? (
                           <Loader2 size={12} className="shrink-0 animate-spin" />
-                        ) : ['RESOLVED', 'REJECTED'].includes(helpdeskCaseStatus) ? (
+                        ) : ['RESOLVED', 'SPAM', 'REJECTED'].includes(helpdeskCaseStatus) ? (
                           <CheckCircle2 size={12} className="shrink-0" />
                         ) : null}
                         <span className="min-w-0 truncate">{helpdeskCaseStatusLabel}</span>
@@ -5616,7 +5705,7 @@ export default function SiBSChat({
                       <span className="col-span-3 font-semibold text-sibs-muted">Attendance temporarily unavailable</span>
                     ) : onDutySupportMembers.length ? (
                       <>
-                        {(dutyRosterExpanded ? onDutySupportMembers : onDutySupportMembers.slice(0, 3)).map((member) => (
+                        {(showFullDutyRoster || dutyRosterExpanded ? onDutySupportMembers : onDutySupportMembers.slice(0, 3)).map((member) => (
                           <span
                             key={member.sibsId}
                             className="flex min-w-0 items-start gap-1.5 rounded-lg border border-emerald-100 bg-white/80 px-2 py-1.5"
@@ -5642,7 +5731,7 @@ export default function SiBSChat({
                       <span className="col-span-3 font-semibold text-sibs-muted">No clocked-in support staff confirmed</span>
                     )}
                   </div>
-                  {onDutySupportMembers.length > 3 ? (
+                  {!showFullDutyRoster && onDutySupportMembers.length > 3 ? (
                     <button
                       type="button"
                       onClick={() => setDutyRosterExpanded((expanded) => !expanded)}
@@ -5660,22 +5749,47 @@ export default function SiBSChat({
               {isPersonalHelpdeskRequest ? (
                 <>
                   <div className="shrink-0 border-b border-sibs-border bg-sibs-cream-subtle px-4 py-2.5">
+                    {(activeConversation?.requestSite || visibleHelpdeskDuty?.requestSite) ? <p className="mb-1.5 flex items-center gap-1 text-[11px] font-extrabold text-sibs-navy"><MapPin size={12} /> Request location: {activeConversation?.requestSite || visibleHelpdeskDuty?.requestSite}{/site$/i.test(activeConversation?.requestSite || visibleHelpdeskDuty?.requestSite || '') ? '' : ' Site'}</p> : null}
                     <p className="text-[11px] font-semibold leading-relaxed text-sibs-navy">
                       <span className="font-extrabold text-sibs-orange">Helpdesk notice: </span>
-                      For employees with genuine work-related issues or concerns. Requests outside the team's support scope may be rejected with a reason.
+                      For employees with genuine work-related issues or concerns. Spam or deliberately invalid requests may be flagged with a reason.
                     </p>
-                    {cleanText(activeConversation?.caseStatus).toUpperCase() === "REJECTED" && (
+                    {["SPAM", "REJECTED"].includes(cleanText(activeConversation?.caseStatus).toUpperCase()) && (
                       <div role="status" className="mt-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-[11px] font-semibold text-rose-800">
-                        <strong>Request rejected.</strong> {activeConversation?.caseRejectionReason || "Contact the appropriate support team for your concern."}
+                        <strong>Request flagged as spam.</strong> {activeConversation?.caseRejectionReason || "Contact the appropriate support team for your concern."}
                         <span className="mt-1 block text-[10px]">This conversation is archived. Use Helpdesk on the left to start a new request.</span>
                       </div>
                     )}
                   </div>
+                  {acceptedSupportMember && (
+                    <section className="shrink-0 border-b border-blue-100 bg-blue-50/80 px-3 py-2.5 sm:px-4" aria-label="Support employee assigned to this case">
+                      <p className="mb-1.5 text-[10px] font-extrabold uppercase tracking-wide text-sibs-navy">
+                        {cleanText(activeConversation.helpdeskCategory).toUpperCase() === "IT"
+                          ? "IT Support handling this case"
+                          : "TA/HR Support handling this case"}
+                      </p>
+                      <div className="flex min-w-0 items-center gap-2.5">
+                        <ChatAvatar
+                          employee={acceptedSupportMember}
+                          initials={acceptedSupportMember.initials || acceptedSupportSibsId.slice(0, 2)}
+                          size="sm"
+                        />
+                        <div className="min-w-0 flex-1">
+                          <p className="break-words text-[11px] font-extrabold leading-snug text-sibs-navy">
+                            {getChatMemberFullName(acceptedSupportMember)}
+                          </p>
+                          <p className="mt-0.5 text-[10px] font-semibold text-sibs-muted">
+                            SiBS ID: {acceptedSupportSibsId} · Accepted your request
+                          </p>
+                        </div>
+                      </div>
+                    </section>
+                  )}
                   <section className="shrink-0 border-b border-emerald-100 bg-emerald-50/80 px-3 py-2.5 text-[11px] sm:px-4" aria-label="Live support attendance">
                     <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
                       <span className="inline-flex items-center gap-1.5 font-extrabold text-sibs-navy">
                         <span className="inline-block h-2 w-2 rounded-full bg-emerald-500" aria-hidden="true" />
-                        {cleanText(activeConversation.helpdeskCategory).toUpperCase() === 'IT' ? 'IT Support' : 'TA/HR Support'} on duty
+                        {cleanText(activeConversation.helpdeskCategory).toUpperCase() === 'IT' ? 'IT Support' : 'TA/HR Support'} on duty{activeConversation.requestSite ? ` · ${activeConversation.requestSite} Site` : showFullDutyRoster ? ' · Davao & Tagum' : ''}
                       </span>
                       <span className="text-[10px] font-semibold text-emerald-800">
                         {visibleHelpdeskDuty
@@ -5690,15 +5804,20 @@ export default function SiBSChat({
                         <span className="text-[10px] font-semibold text-sibs-muted">Support availability is temporarily unavailable. You can still send your concern.</span>
                       ) : onDutySupportMembers.length ? (
                         <div className="flex flex-wrap items-center gap-1.5">
-                          {(dutyRosterExpanded ? onDutySupportMembers : onDutySupportMembers.slice(0, 3)).map((member) => (
+                          {(showFullDutyRoster || dutyRosterExpanded ? onDutySupportMembers : onDutySupportMembers.slice(0, 3)).map((member) => (
                             <span key={member.sibsId} className="inline-flex max-w-full items-center gap-1.5 rounded-lg border border-emerald-200 bg-white px-2 py-1" title={`${getChatMemberFullName(member)} · Clocked in · SiBS ID ${member.sibsId}`}>
                               <span className="min-w-0 max-w-[260px] whitespace-normal break-words text-[10px] font-bold leading-4 text-sibs-navy">
                                 {getChatMemberFullName(member)}
                               </span>
+                              {showFullDutyRoster && member.assignedLocationLabel ? (
+                                <span className="shrink-0 text-[9px] font-semibold text-emerald-700">
+                                  · {member.assignedLocationLabel}
+                                </span>
+                              ) : null}
                               <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" aria-label="Clocked in" />
                             </span>
                           ))}
-                          {onDutySupportMembers.length > 3 && (
+                          {!showFullDutyRoster && onDutySupportMembers.length > 3 && (
                             <button
                               type="button"
                               onClick={() => setDutyRosterExpanded((expanded) => !expanded)}
@@ -7019,7 +7138,7 @@ export default function SiBSChat({
                     <textarea
                       ref={textareaRef}
                       value={draft}
-                      disabled={activeConversation?.isHelpdesk && (activeConversation.caseStatus === "REJECTED" || (activeConversation.caseStatus === "RESOLVED" && cleanText(activeConversation.createdBySibsId) !== currentSibsId))}
+                      disabled={activeConversation?.isHelpdesk && (["SPAM", "REJECTED"].includes(activeConversation.caseStatus) || (activeConversation.caseStatus === "RESOLVED" && cleanText(activeConversation.createdBySibsId) !== currentSibsId))}
                       onChange={(event) => {
                         const nextValue = event.target.value.slice(0, 5000);
                         setDraft(nextValue);
@@ -7063,7 +7182,7 @@ export default function SiBSChat({
                   <button
                     type="button"
                     onClick={submitMessage}
-                    disabled={sending || attachmentsLoading || (!cleanText(draft) && !selectedImages.length) || (activeConversation?.isHelpdesk && (activeConversation.caseStatus === "REJECTED" || (activeConversation.caseStatus === "RESOLVED" && cleanText(activeConversation.createdBySibsId) !== currentSibsId)))}
+                    disabled={sending || attachmentsLoading || (!cleanText(draft) && !selectedImages.length) || (activeConversation?.isHelpdesk && (["SPAM", "REJECTED"].includes(activeConversation.caseStatus) || (activeConversation.caseStatus === "RESOLVED" && cleanText(activeConversation.createdBySibsId) !== currentSibsId)))}
                     aria-label={attachmentsLoading ? "Preparing attachments" : "Send message"}
                     className={`relative z-[1] inline-flex ${isExpanded ? "h-10 w-10" : "h-9 w-9"} shrink-0 self-end items-center justify-center rounded-xl bg-sibs-orange text-white shadow-xs transition hover:bg-sibs-button-hover active:scale-[0.96] disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-sibs-faint disabled:shadow-none disabled:opacity-100`}
                   >

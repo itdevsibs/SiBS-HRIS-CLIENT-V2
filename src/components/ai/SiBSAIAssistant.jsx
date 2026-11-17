@@ -6,13 +6,19 @@ import {
   CheckCircle2,
   LoaderCircle,
   MessageCircleMore,
-  RefreshCw,
   Send,
   Sparkles,
   X,
 } from "lucide-react";
 
-import { askSibsAi } from "@/lib/axios/ai";
+import { AI_CHAT_TIMEOUT_MS, askSibsAi } from "@/lib/axios/ai";
+import AiResultCardsClient from "@/components/ai/AiResultCardsClient";
+import { formatAiDisplayDates } from "@/lib/utils/ai/aiDateDisplayClient";
+import {
+  readAiConversationClient,
+  writeAiConversationClient,
+} from "@/lib/utils/ai/aiConversationStorageClient";
+import { toPublicAiAnswerClient } from "@/lib/utils/ai/aiPublicAnswerClient";
 import {
   buildConversationPayload,
   getAiErrorMessage,
@@ -35,7 +41,8 @@ function clamp(value, min, max) {
 }
 
 function InsightList({ title, items, icon, tone = "default" }) {
-  if (!items?.length) return null;
+  const visibleItems = (items || []).map(toPublicAiAnswerClient).filter(Boolean);
+  if (!visibleItems.length) return null;
 
   const Icon = icon;
 
@@ -52,14 +59,14 @@ function InsightList({ title, items, icon, tone = "default" }) {
         {title}
       </div>
 
-      <ul className="space-y-1.5">
-        {items.map((item, index) => (
+      <ul className="grid gap-2">
+        {visibleItems.map((item, index) => (
           <li
             key={`${title}-${index}`}
-            className="flex gap-2 sibs-text-xs font-semibold leading-5 text-sibs-secondary"
+            className="flex items-start gap-2.5 rounded-xl border border-current/15 bg-white/75 px-3 py-2.5 sibs-text-xs font-semibold leading-5 text-sibs-secondary"
           >
-            <span className="mt-[8px] h-1.5 w-1.5 shrink-0 rounded-full bg-current opacity-70" />
-            <span>{item}</span>
+            <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md border border-current/20 bg-white/70 text-current"><CheckCircle2 size={12} aria-hidden="true" /></span>
+            <span>{formatAiDisplayDates(item)}</span>
           </li>
         ))}
       </ul>
@@ -67,10 +74,11 @@ function InsightList({ title, items, icon, tone = "default" }) {
   );
 }
 
+
 function AssistantMessage({ message }) {
   return (
     <div className="flex justify-start">
-      <div className="max-w-[92%] space-y-3 rounded-2xl rounded-bl-md border border-sibs-border bg-white px-3.5 py-3 shadow-xs">
+      <div className="min-w-0 w-full max-w-[96%] space-y-2.5 rounded-2xl rounded-bl-md border border-sibs-border bg-white px-3.5 py-3 shadow-xs">
         <div className="flex items-center gap-2 sibs-kicker text-sibs-muted">
           <span className="inline-flex h-6 w-6 items-center justify-center rounded-lg bg-sibs-navy text-white">
             <Bot size={13} />
@@ -78,9 +86,7 @@ function AssistantMessage({ message }) {
           SiBS AI
         </div>
 
-        <p className="whitespace-pre-wrap sibs-text-xs font-medium leading-6 text-sibs-navy">
-          {message.content}
-        </p>
+        <AiResultCardsClient content={message.content} />
 
         <InsightList
           title="Highlights"
@@ -100,11 +106,6 @@ function AssistantMessage({ message }) {
           tone="recommendation"
         />
 
-        {message.toolsUsed?.length ? (
-          <p className="border-t border-sibs-border pt-2 sibs-text-micro font-semibold text-sibs-faint">
-            Live HRIS data used: {message.toolsUsed.join(", ")}
-          </p>
-        ) : null}
       </div>
     </div>
   );
@@ -114,7 +115,7 @@ function UserMessage({ message }) {
   return (
     <div className="flex justify-end">
       <div className="max-w-[86%] rounded-2xl rounded-br-md bg-sibs-orange px-3.5 py-2.5 sibs-text-xs font-semibold leading-5 text-white shadow-xs">
-        {message.content}
+        {formatAiDisplayDates(message.content)}
       </div>
     </div>
   );
@@ -142,9 +143,18 @@ export default function SiBSAIAssistant({
     },
     [isControlled, open, onOpenChange],
   );
+  const loggedInEmployeeKey = String(
+    user?.username ?? user?.sibs_id ?? user?.sibsId ?? user?.gy_user_code ?? user?.gy_emp_id ?? "",
+  ).trim();
+  // Restore on mount (including a page refresh) before the first chat render.
+  const initialConversationRef = useRef(null);
+  if (initialConversationRef.current === null) {
+    initialConversationRef.current = readAiConversationClient(loggedInEmployeeKey);
+  }
   const [question, setQuestion] = useState("");
-  const [messages, setMessages] = useState([]);
-  const [conversationId, setConversationId] = useState("");
+  const [messages, setMessages] = useState(initialConversationRef.current.messages);
+  const [conversationId, setConversationId] = useState(initialConversationRef.current.conversationId);
+  const [hydratedEmployeeKey, setHydratedEmployeeKey] = useState(loggedInEmployeeKey);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [triggerPosition, setTriggerPosition] = useState(null);
@@ -155,9 +165,31 @@ export default function SiBSAIAssistant({
   const scrollRef = useRef(null);
   const dragStateRef = useRef(null);
   const suppressTriggerClickRef = useRef(false);
+  const requestInFlightRef = useRef(false);
 
-  const visible = enabled && !userLoading && Boolean(user);
+  // Hide the previous account's messages until the next account is hydrated.
+  const visible = enabled && !userLoading && Boolean(user) &&
+    hydratedEmployeeKey === loggedInEmployeeKey;
   const canSend = Boolean(question.trim()) && !submitting;
+  const activeEmployeeKeyRef = useRef(loggedInEmployeeKey);
+  activeEmployeeKeyRef.current = loggedInEmployeeKey;
+
+  useEffect(() => {
+    if (hydratedEmployeeKey === loggedInEmployeeKey) return;
+    const saved = readAiConversationClient(loggedInEmployeeKey);
+    setMessages(saved.messages);
+    setConversationId(saved.conversationId);
+    setQuestion("");
+    setError("");
+    setHydratedEmployeeKey(loggedInEmployeeKey);
+  }, [hydratedEmployeeKey, loggedInEmployeeKey]);
+
+  useEffect(() => {
+    // Never overwrite the incoming account's history with the previous user's
+    // messages during React's account-switch render.
+    if (!loggedInEmployeeKey || hydratedEmployeeKey !== loggedInEmployeeKey) return;
+    writeAiConversationClient(loggedInEmployeeKey, { messages, conversationId });
+  }, [loggedInEmployeeKey, hydratedEmployeeKey, messages, conversationId]);
 
   const welcomeName = useMemo(() => {
     const rawName =
@@ -334,20 +366,12 @@ export default function SiBSAIAssistant({
     window.requestAnimationFrame(() => triggerRef.current?.focus?.());
   }
 
-  function handleNewChat() {
-    if (submitting) return;
-
-    setMessages([]);
-    setConversationId("");
-    setQuestion("");
-    setError("");
-    window.requestAnimationFrame(() => inputRef.current?.focus?.());
-  }
-
   async function submitQuestion(value = question) {
     const cleanQuestion = String(value || "").trim();
-    if (!cleanQuestion || submitting) return;
+    if (!cleanQuestion || submitting || requestInFlightRef.current) return;
+    requestInFlightRef.current = true;
 
+    const requestEmployeeKey = loggedInEmployeeKey;
     const conversation = buildConversationPayload(messages);
     const userMessage = {
       id: `user-${Date.now()}`,
@@ -360,11 +384,18 @@ export default function SiBSAIAssistant({
     setError("");
     setSubmitting(true);
 
+    const controller = new AbortController();
+    let deadlineExpired = false;
+    const deadlineTimer = window.setTimeout(() => {
+      deadlineExpired = true;
+      controller.abort();
+    }, AI_CHAT_TIMEOUT_MS);
     try {
       const response = await askSibsAi({
         message: cleanQuestion,
         conversation,
         conversationId,
+        signal: controller.signal,
         context: {
           source: "global_assistant",
         },
@@ -376,6 +407,7 @@ export default function SiBSAIAssistant({
 
       const normalized = normalizeAiAnswerPayload(response);
 
+      if (activeEmployeeKeyRef.current !== requestEmployeeKey) return;
       setConversationId(normalized.conversationId || conversationId);
       setMessages((current) => [
         ...current,
@@ -390,10 +422,25 @@ export default function SiBSAIAssistant({
         },
       ]);
     } catch (requestError) {
-      setError(getAiErrorMessage(requestError));
+      if (activeEmployeeKeyRef.current === requestEmployeeKey) {
+        const isTimeout = deadlineExpired || requestError?.code === "ECONNABORTED" ||
+          requestError?.response?.data?.code === "AI_REQUEST_TIMEOUT";
+        setError(isTimeout
+          ? "This request exceeded the 60-second limit and was stopped. Please try again or ask a more specific question."
+          : getAiErrorMessage(requestError));
+      }
     } finally {
+      window.clearTimeout(deadlineTimer);
+      requestInFlightRef.current = false;
       setSubmitting(false);
     }
+  }
+
+  // Suggested questions use exactly the same authenticated request path as
+  // manually typed questions. Clicking a card submits it immediately.
+  function handleSuggestedPrompt(prompt) {
+    if (requestInFlightRef.current || submitting) return;
+    void submitQuestion(prompt);
   }
 
   const assistantUi = (
@@ -491,16 +538,6 @@ export default function SiBSAIAssistant({
               <div className="flex items-center gap-1">
                 <button
                   type="button"
-                  onClick={handleNewChat}
-                  disabled={submitting}
-                  title="New chat"
-                  aria-label="Start a new SiBS AI chat"
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-white/70 transition hover:bg-white/10 hover:text-white active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30 disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  <RefreshCw size={15} />
-                </button>
-                <button
-                  type="button"
                   onClick={handleClose}
                   title="Close"
                   aria-label="Close SiBS AI"
@@ -546,7 +583,8 @@ export default function SiBSAIAssistant({
                       <button
                         key={prompt}
                         type="button"
-                        onClick={() => submitQuestion(prompt)}
+                        onClick={() => handleSuggestedPrompt(prompt)}
+                        aria-label={`Ask SiBS AI: ${prompt}`}
                         disabled={submitting}
                         className="rounded-xl border border-sibs-border-subtle bg-white px-3.5 py-2.5 text-left sibs-text-xs font-bold leading-5 text-sibs-secondary shadow-xs transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60"
                       >
@@ -586,7 +624,7 @@ export default function SiBSAIAssistant({
                       SiBS AI could not complete that request
                     </p>
                     <p className="mt-1 sibs-text-micro font-semibold leading-5 text-rose-600">
-                      {error}
+                      {formatAiDisplayDates(error)}
                     </p>
                   </div>
                 </div>
@@ -596,7 +634,7 @@ export default function SiBSAIAssistant({
 
           {/* Footer Input Area */}
           <footer className="shrink-0 border-t border-sibs-border bg-white px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-5 sm:pb-3">
-            <div className="rounded-2xl border border-sibs-border-subtle bg-sibs-surface p-2 transition focus-within:border-sibs-orange focus-within:bg-white focus-within:ring-4 focus-within:ring-sibs-orange/10">
+            <div className="rounded-2xl border border-sibs-orange bg-sibs-surface p-2 transition-colors focus-within:border-sibs-orange focus-within:bg-white">
               <textarea
                 ref={inputRef}
                 value={question}
@@ -611,7 +649,7 @@ export default function SiBSAIAssistant({
                 rows={2}
                 maxLength={4000}
                 placeholder="Ask about your authorized HRIS data..."
-                className="max-h-32 min-h-[52px] w-full resize-none bg-transparent px-2 py-1.5 sibs-text-xs font-medium leading-5 text-sibs-navy outline-none placeholder:text-sibs-faint disabled:cursor-not-allowed disabled:opacity-60"
+                className="sibs-ai-composer-textarea max-h-32 min-h-[52px] w-full resize-none border-0 bg-transparent px-2 py-1.5 sibs-text-xs font-medium leading-5 text-sibs-navy outline-none shadow-none ring-0 placeholder:text-sibs-faint disabled:cursor-not-allowed disabled:opacity-60"
               />
 
               <div className="flex items-center justify-between gap-3 px-1 pb-0.5">

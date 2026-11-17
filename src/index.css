@@ -2534,3 +2534,20 @@ html.sibs-login-full-bleed body,
 html.sibs-login-full-bleed #root {
   background-color: var(--sibs-auth-bg);
 }
+
+/* Ask SiBS AI: remove the INNER textarea border/keyboard focus outline only.
+   Keep the surrounding rounded composer border untouched.
+   The global :focus-visible !important rule lives in @layer base; this scoped
+   override must be in that layer to win over the global orange outline. */
+@layer base {
+  textarea.sibs-ai-composer-textarea,
+  textarea.sibs-ai-composer-textarea:focus,
+  textarea.sibs-ai-composer-textarea:focus-visible {
+    border: 0 none !important;
+    outline: 0 none !important;
+    outline-offset: 0 !important;
+    box-shadow: none !important;
+    --tw-ring-shadow: 0 0 #0000 !important;
+    --tw-ring-offset-shadow: 0 0 #0000 !important;
+  }
+}

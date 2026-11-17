@@ -284,7 +284,35 @@ export default function SuperAdminDashboardPage() {
     fetchDashboardData();
   }, [fetchDashboardData]);
 
-  useRefetchOnFocus(fetchDashboardData);
+  const refreshDashboardOnFocus = useCallback(() =>
+    fetchDashboardData({ forceRefresh: true }), [fetchDashboardData]);
+  useRefetchOnFocus(refreshDashboardOnFocus);
+
+  // Refresh only the overview metrics while the dashboard is visible. The
+  // full admins/activity lists retain their existing refresh behavior.
+  // This prevents a stale employee total until the user logs in again.
+  useEffect(() => {
+    let cancelled = false;
+    let updating = false;
+    const updateMetrics = async () => {
+      if (cancelled || updating || document.visibilityState !== "visible" || pendingRequest.current) return;
+      updating = true;
+      try {
+        const data = await getHrDashboardOverview({ forceRefresh: true });
+        if (cancelled || !data) return;
+        const normalized = normalizeDashboardOverview(data);
+        setBackendOverview(normalized);
+        setExtraCounts((current) => ({ ...current,
+          employeeTotal: normalized.metrics.employees,
+          departmentsTotal: normalized.metrics.departments,
+        }));
+      } catch (error) {
+        console.warn("Super Admin live headcount refresh unavailable:", error?.message);
+      } finally { updating = false; }
+    };
+    const interval = window.setInterval(() => { void updateMetrics(); }, 60_000);
+    return () => { cancelled = true; window.clearInterval(interval); };
+  }, []);
 
   async function handleManualRefresh() {
     if (isManualRefreshing) return;

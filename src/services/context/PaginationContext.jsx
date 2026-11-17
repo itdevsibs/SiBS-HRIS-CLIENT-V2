@@ -88,9 +88,15 @@ export const PaginationProvider = ({ children }) => {
 
   const setPage = useCallback(
     (entity, page) => {
-      updateEntity(entity, {
-        page,
-        loading: true,
+      const requestedPage = Math.max(1, Math.floor(Number(page) || 1));
+      updateEntity(entity, (current) => {
+        // Re-selecting the already active page must not turn loading on:
+        // the page-dependent fetch effect would not run, so navigation could
+        // remain disabled indefinitely. Genuine page changes still fetch.
+        if (requestedPage === Math.max(1, Number(current.page) || 1)) {
+          return {};
+        }
+        return { page: requestedPage, loading: true };
       });
     },
     [updateEntity],

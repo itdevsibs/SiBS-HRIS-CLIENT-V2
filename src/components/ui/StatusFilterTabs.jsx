@@ -82,6 +82,23 @@ export default function StatusFilterTabs({
           tab?.tone === "alert" ||
           ALERT_TAB_KEYS.includes(tabKey);
 
+        // Opt-in styling for case queues: show a red count only when there are
+        // records. Zero remains neutral, regardless of which tab is selected.
+        // Other modules retain the original active/alert badge styles.
+        const countBadgeClass = tab?.countColorMode === "red-when-positive"
+          ? count > 0
+            ? active
+              ? "bg-rose-600 text-white shadow-[0_0_0_3px_rgba(225,29,72,0.12)]"
+              : "bg-rose-100 text-rose-700"
+            : "bg-slate-200 text-slate-600"
+          : isAlert
+            ? active
+              ? "bg-rose-600 text-white shadow-[0_0_0_3px_rgba(225,29,72,0.12)]"
+              : "bg-rose-100 text-rose-700"
+            : active
+              ? "bg-sibs-navy text-white"
+              : "bg-slate-200 text-slate-600";
+
         return (
           <button
             key={tabKey}
@@ -116,13 +133,7 @@ export default function StatusFilterTabs({
               <span
                 className={[
                   "inline-flex min-w-[20px] items-center justify-center rounded-full px-1.5 py-0.5 text-[9px] font-extrabold tabular-nums transition-all",
-                  isAlert
-                    ? active
-                      ? "bg-rose-600 text-white shadow-[0_0_0_3px_rgba(225,29,72,0.12)]"
-                      : "bg-rose-100 text-rose-700"
-                    : active
-                      ? "bg-sibs-navy text-white"
-                      : "bg-slate-200 text-slate-600",
+                  countBadgeClass,
                 ].join(" ")}
               >
                 {count}

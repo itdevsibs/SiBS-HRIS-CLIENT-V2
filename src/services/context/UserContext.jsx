@@ -14,6 +14,7 @@ import api, {
   handleLogout,
 } from "../../lib/axios/api-template";
 import { createBirthdayLoginEvent } from "../../lib/utils/birthdayCelebration.js";
+import { clearAiConversationsOnLogoutClient } from "../../lib/utils/ai/aiConversationStorageClient.js";
 
 
 import {
@@ -263,6 +264,7 @@ export function UserProvider({ children }) {
     clearLogoutTimer();
     clearServerRefreshTimer();
 
+    clearAiConversationsOnLogoutClient();
     clearCachedAuthSession();
     clearStoredServerTokenExpiry();
     justLoggedInRef.current = false;

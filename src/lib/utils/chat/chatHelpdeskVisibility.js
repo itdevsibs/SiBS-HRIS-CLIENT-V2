@@ -7,10 +7,10 @@ export function shouldShowHelpdeskInSibsChat(conversation = {}, currentSibsId = 
   if (!conversation?.isHelpdesk && type !== "HELPDESK") return true;
 
   const status = String(conversation?.caseStatus ?? "").trim().toUpperCase();
-  // Finalized Helpdesk records (both closed cases and rejected requests)
+  // Finalized Helpdesk records (both closed cases and spam requests (including legacy rejections))
   // belong in the dedicated support dashboards, not personal SiBS Chat.
-  // Rejected requests remain auditable in the Rejected tab with their reason.
-  if (["RESOLVED", "CLOSED", "REJECTED"].includes(status)) return false;
+  // Flagged spam remains auditable in the Spam tab with their reason.
+  if (["RESOLVED", "CLOSED", "SPAM", "REJECTED"].includes(status)) return false;
 
   const requesterId = String(conversation?.createdBySibsId ?? conversation?.requester?.sibsId ?? "").trim();
   const viewerId = String(currentSibsId ?? "").trim();

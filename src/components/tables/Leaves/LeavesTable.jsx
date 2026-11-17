@@ -790,6 +790,7 @@ export { LeaveDetailsModal };
 export default function LeavesTable({
   leaves = [],
   loading = false,
+  error = "",
   page = 1,
   searchInput = "",
   searchKeyword = "",
@@ -814,6 +815,9 @@ export default function LeavesTable({
   onAccountSelect,
   accountDropdownOptions = [],
   isPersonalView = false,
+  remainingLeaveCredits = null,
+  remainingLeaveCreditsLoading = false,
+  remainingLeaveCreditsError = "",
   filterValues = {},
   allDatesView = false,
   maxDateRangeDays,
@@ -955,14 +959,37 @@ export default function LeavesTable({
         style={{ animationDelay: "240ms", animationFillMode: "both" }}
       >
         <div className="border-b border-sibs-border p-4 sm:p-5 2xl:p-6 font-jakarta">
-          <h3 className="font-heading text-sm 2xl:text-base font-bold text-sibs-navy tracking-tight">
-            {isPersonalView ? "My Leave Records" : "Leave Records"}
-          </h3>
-          <p className="mt-1 sibs-text-xs font-semibold text-sibs-muted">
-            {isPersonalView
-              ? "Review your filed leaves, approval statuses, justifications, and attachment context."
-              : "Review employee leave requests, approval statuses, justifications, and attachment records."}
-          </p>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
+            <div className="min-w-0">
+              <h3 className="font-heading text-sm 2xl:text-base font-bold text-sibs-navy tracking-tight">
+                {isPersonalView ? "My Leave Records" : "Leave Records"}
+              </h3>
+              <p className="mt-1 sibs-text-xs font-semibold text-sibs-muted">
+                {isPersonalView
+                  ? "Review your filed leaves, approval statuses, justifications, and attachment context."
+                  : "Review employee leave requests, approval statuses, justifications, and attachment records."}
+              </p>
+            </div>
+            {isPersonalView ? (
+              <div
+                className="shrink-0 sm:ml-auto sm:text-right"
+                role="status"
+                aria-live="polite"
+                title={remainingLeaveCreditsError || "Current leave credits from Kronos"}
+              >
+                <p className="text-xs font-bold text-sibs-navy">
+                  Remaining Leave Credits
+                </p>
+                <p className="mt-1 text-2xl font-extrabold leading-tight tabular-nums text-emerald-700 sm:text-3xl">
+                  {remainingLeaveCreditsLoading
+                    ? "Loading…"
+                    : typeof remainingLeaveCredits === "number" && Number.isFinite(remainingLeaveCredits)
+                      ? `${remainingLeaveCredits.toLocaleString("en-PH", { maximumFractionDigits: 2 })} ${Math.abs(remainingLeaveCredits) === 1 ? "Day" : "Days"}`
+                      : "—"}
+                </p>
+              </div>
+            ) : null}
+          </div>
 
           <div className="mt-3.5 2xl:mt-4 flex flex-col gap-3 overflow-visible xl:flex-row xl:items-end">
             <div className="relative w-full min-w-0 xl:min-w-[180px] xl:flex-[1_1_220px] 2xl:min-w-[280px] 2xl:flex-[1_1_360px]">
@@ -1240,8 +1267,8 @@ export default function LeavesTable({
                         <TableEmptyRow
                           colSpan={12}
                           icon={CalendarDays}
-                          title="No leave records found"
-                          description="Adjust the search, status, department, account, or date range filters."
+                          title={error ? "Unable to load leave records" : "No leave records found"}
+                          description={error || "Adjust the search, status, department, account, or date range filters."}
                         />
                       )}
                     </tbody>
@@ -1359,16 +1386,17 @@ export default function LeavesTable({
                 ) : (
                   <DataCard.Empty
                     icon={<CalendarDays size={22} />}
-                    title="No leave records found"
-                    description="Adjust the search, status, department, account, or date range filters."
+                    title={error ? "Unable to load leave records" : "No leave records found"}
+                    description={error || "Adjust the search, status, department, account, or date range filters."}
                   />
                 )}
               </div>
             }
           />
 
-          <div className="mt-4 2xl:mt-5">
-            <TablePagination
+          {!(error && leaves.length === 0) ? (
+            <div className="mt-4 2xl:mt-5">
+              <TablePagination
               currentPage={currentPaginationPage}
               totalPages={totalPages}
               totalRecords={totalRecords}
@@ -1377,8 +1405,9 @@ export default function LeavesTable({
               onPageChange={(nextPage) => setPage(nextPage)}
               recordLabel="leave records"
               loading={loading}
-            />
-          </div>
+              />
+            </div>
+          ) : null}
         </div>
       </section>
 

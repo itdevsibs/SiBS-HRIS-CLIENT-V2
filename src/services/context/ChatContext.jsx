@@ -1014,8 +1014,8 @@ export function ChatProvider({ children }) {
   );
 
   const startHelpdeskConversation = useCallback(
-    async (category) => {
-      const conversation = await createHelpdeskChat(category);
+    async (category, site = "") => {
+      const conversation = await createHelpdeskChat(category, site);
       const id = Number(conversation?.id || 0);
       await refreshConversations();
       if (id) await selectConversation(id);
@@ -1648,7 +1648,18 @@ export function ChatProvider({ children }) {
       expiryTimers.set(timerKey, timerId);
     };
 
-    const handleConversationUpdate = () => {
+    const handleConversationUpdate = ({ conversationId, reason, caseStatus } = {}) => {
+      // The Helpdesk server emits a committed spam status. Hide the selected
+      // thread at once; the regular DB refresh still reconciles every field.
+      const id = Number(conversationId || 0);
+      if (id && reason === 'helpdesk-ticket-spam' &&
+          cleanText(caseStatus).toUpperCase() === 'SPAM') {
+        setConversations((current) => current.map((item) =>
+          Number(item?.id || 0) === id && item.isHelpdesk
+            ? { ...item, caseStatus: 'SPAM', unreadCount: 0 }
+            : item,
+        ));
+      }
       void syncChatWithoutRefresh();
     };
 

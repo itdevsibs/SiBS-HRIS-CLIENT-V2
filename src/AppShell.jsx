@@ -5,6 +5,7 @@ import Providers from "@/services/providers";
 import ConditionalSidebar from "@/components/layout/ConditionalSidebar";
 import Header from "@/components/layout/Header";
 import OfflineStatusBanner from "@/components/ui/OfflineStatusBanner";
+import GlobalTableRowReveal from "@/components/ui/GlobalTableRowReveal";
 import SiBSAssistantLauncher from "@/components/assistant/SiBSAssistantLauncher";
 import { isPublicPath } from "@/config/publicRoutes";
 import { PersistentHeaderProvider } from "@/services/context/PersistentHeaderContext";
@@ -135,6 +136,7 @@ export default function AppShell({ children }) {
 
   return (
     <Providers>
+      <GlobalTableRowReveal />
       <OfflineStatusBanner />
       {isFinalInterviewForm ? (
         <main className="h-dvh min-h-0 w-full overflow-y-auto overflow-x-hidden bg-sibs-canvas">

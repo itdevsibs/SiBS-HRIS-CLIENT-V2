@@ -91,7 +91,8 @@ export function sanitizeLeavesDateRange(range = {}, {
 }
 
 export function formatNumber(value) {
-  if (value === "..." || value === null || value === undefined) return "...";
+  if (value === "...") return "...";
+  if (value === null || value === undefined) return "—";
 
   const numberValue = Number(value || 0);
 

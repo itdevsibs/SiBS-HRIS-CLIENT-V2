@@ -99,11 +99,28 @@ export default function DropdownPortal({
         Math.max(topLayer ? 0 : 220, window.innerWidth - viewportPadding * 2),
       );
 
-      // Modal/dialog boundary awareness
+      // Keep dropdowns within their modal, but NEVER mistake a decorative
+      // border on the modal header (or a card inside its body) for its footer.
+      // The previous querySelector('[class*="border-t"]') matched the Helpdesk
+      // header's border-t-[3px], giving a false bottom boundary above the
+      // status selector and forcing its options over the modal title.
       const dialog = anchor.closest?.('[role="dialog"], .sibs-modal-shell, .sibs-modal-blur > div');
-      const dialogRect = dialog ? dialog.getBoundingClientRect() : null;
-      const footer = dialog ? dialog.querySelector?.('[class*="border-t"], .sibs-modal-footer, footer') : null;
-      const footerRect = footer ? footer.getBoundingClientRect() : null;
+      const dialogRect = dialog?.getBoundingClientRect() || null;
+      const footer = dialog
+        ? Array.from(dialog.querySelectorAll('footer, [data-sibs-modal-footer], .sibs-modal-footer, [class*="border-t"]'))
+          .reverse()
+          .find((candidate) => {
+            const candidateRect = candidate.getBoundingClientRect();
+            if (candidateRect.top <= rect.bottom + offset) return false;
+            if (candidate.matches('footer, [data-sibs-modal-footer], .sibs-modal-footer')) return true;
+            // A standard SiBS modal footer is the LAST direct child of the
+            // dialog itself, or of its direct dialog-content wrapper.
+            const parent = candidate.parentElement;
+            return candidate === parent?.lastElementChild &&
+              (parent === dialog || parent?.parentElement === dialog);
+          })
+        : null;
+      const footerRect = footer?.getBoundingClientRect() || null;
 
       const bottomBoundary = footerRect
         ? Math.min(window.innerHeight - viewportPadding, footerRect.top - offset)
@@ -111,15 +128,25 @@ export default function DropdownPortal({
           ? Math.min(window.innerHeight - viewportPadding, dialogRect.bottom - offset)
           : window.innerHeight - viewportPadding;
 
+      // If there isn't room to open below, an upward menu must still remain
+      // underneath the modal header rather than covering its title/close button.
+      const scrollBody = dialog ? anchor.closest('.sibs-scrollbar') : null;
+      const header = scrollBody?.previousElementSibling;
+      const headerBottom = header && scrollBody?.parentElement === header.parentElement &&
+        (scrollBody.parentElement === dialog || scrollBody.parentElement?.parentElement === dialog)
+        ? header.getBoundingClientRect().bottom + offset
+        : 0;
       const topBoundary = dialogRect
-        ? Math.max(viewportPadding, dialogRect.top + offset)
+        ? Math.max(viewportPadding, dialogRect.top + offset, headerBottom)
         : viewportPadding;
 
       const spaceBelow = Math.max(0, bottomBoundary - rect.bottom - offset);
       const spaceAbove = Math.max(0, rect.top - topBoundary - offset);
       const requiredHeight = Math.min(maxHeight, 260);
       const shouldFlipUp = spaceBelow < requiredHeight && spaceAbove > spaceBelow;
-      const availableHeight = Math.max(topLayer ? 0 : 140, shouldFlipUp ? spaceAbove : spaceBelow);
+      const availableHeight = dialog
+        ? Math.max(0, shouldFlipUp ? spaceAbove : spaceBelow)
+        : Math.max(topLayer ? 0 : 140, shouldFlipUp ? spaceAbove : spaceBelow);
       const resolvedMaxHeight = Math.min(maxHeight, availableHeight);
       const renderedHeight = Math.min(
         panelRef.current?.offsetHeight || resolvedMaxHeight,

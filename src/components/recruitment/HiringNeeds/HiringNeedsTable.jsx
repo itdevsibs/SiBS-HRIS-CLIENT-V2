@@ -9,7 +9,7 @@ import {
 import { useHiringNeeds } from "../../../services/context/HiringNeedsContext";
 import { usePagination } from "../../../services/context/PaginationContext";
 import HiringNeedsMobileCard from "./HiringNeedsMobileCard";
-import StatusFilterTabs from "../StatusFilterTabs";
+import StatusFilterTabs from "../RecruitmentStatusFilterTabs";
 import {
   DataCard,
   ResponsiveTableShell,

@@ -89,6 +89,13 @@ export async function getChatHelpdeskRequestableCategories({ signal } = {}) {
   return categories.filter((category) => category === "IT" || category === "TA_HR");
 }
 
+/** Additional location-choice metadata; the Server is the source of truth. */
+export async function getChatHelpdeskRequestSiteOptions({ signal } = {}) {
+  const response = await api.get("/chat/helpdesk/support-access", { signal });
+  const options = response.data?.data?.requestSiteOptions;
+  return Array.isArray(options) ? options.filter((site) => site === "Davao" || site === "Tagum") : [];
+}
+
 // Preserve the existing categories-only API for other chat consumers.
 export async function getChatHelpdeskSupportAccess({ signal } = {}) {
   const scope = await getChatHelpdeskSupportScope({ signal });
@@ -135,8 +142,8 @@ export async function createPrivateChat(sibsId) {
 }
 
 /** Open or create a Helpdesk thread for the selected support category. */
-export async function createHelpdeskChat(category) {
-  const response = await api.post("/chat/helpdesk/conversations", { category });
+export async function createHelpdeskChat(category, site = "") {
+  const response = await api.post("/chat/helpdesk/conversations", { category, ...(site ? { site } : {}) });
   return response.data?.data || null;
 }
 

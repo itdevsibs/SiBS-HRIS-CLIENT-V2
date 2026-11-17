@@ -57,8 +57,9 @@ export async function getLeaves({
       status: err?.response?.status || 500,
       message:
         err?.response?.data?.message ||
-        err?.message ||
-        "Failed to fetch leave records.",
+        (err?.code === "ECONNABORTED" || err?.code === "ETIMEDOUT"
+          ? "Kronos leave records took too long to respond. Please retry."
+          : err?.message || "Failed to fetch leave records."),
       data: [],
       departmentOptions: [],
       accountOptions: [],
@@ -192,4 +193,24 @@ export async function getLeavesSummary({
     });
   if (key && !recent) cache.set(key, { pending });
   return pending;
+}
+
+// Current employee credits from verified Kronos gy_employee. Missing credits
+// are unavailable, never an implied zero.
+export async function getMyLeaveBalance() {
+  try {
+    // Server checks the authenticated employee and gy_user; the Kronos
+    // employee endpoint returns stored current credits. Keep 30 seconds.
+    const res = await api.get("/api/leaves/my-balance", { timeout: 30000 });
+    return res.data;
+  } catch (err) {
+    return {
+      success: false,
+      message: err?.response?.data?.message ||
+        ((err?.code === "ECONNABORTED" || err?.code === "ETIMEDOUT")
+          ? "Kronos leave credits did not respond in time. Please try refreshing."
+          : err?.message || "Unable to load your Kronos leave credits."),
+      data: null,
+    };
+  }
 }
