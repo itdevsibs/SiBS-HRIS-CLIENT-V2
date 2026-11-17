@@ -112,19 +112,34 @@ describe("Helpdesk case dialogs", () => {
     expect(dialog).toBeInTheDocument();
   });
 
-  it("keeps a failed rejection visible in its confirmation and preserves the reason", async () => {
+  it("keeps a failed spam report visible in its confirmation and preserves the reason", async () => {
     updateHelpdeskTicketStatus.mockRejectedValue({ response: { data: { message: "Try again later." } } });
     await openCase();
     const dialog = await screen.findByRole("dialog");
-    await openConfirmation(dialog, "Rejected", "Reject Request");
-    const confirm = screen.getByRole("alertdialog", { name: "Reject this request?" });
-    const reason = within(confirm).getByRole("textbox", { name: /Reason for rejection/ });
+    await openConfirmation(dialog, "Spam", "Flag as Spam");
+    const confirm = screen.getByRole("alertdialog", { name: "Flag this request as Spam?" });
+    const reason = within(confirm).getByRole("textbox", { name: /Reason for flagging as Spam/ });
     expect(reason).toHaveFocus();
     fireEvent.change(reason, { target: { value: "Outside scope" } });
-    fireEvent.click(within(confirm).getByRole("button", { name: "Reject Request" }));
+    fireEvent.click(within(confirm).getByRole("button", { name: "Flag as Spam" }));
     expect(await within(confirm).findByRole("alert")).toHaveTextContent("Try again later.");
     expect(reason).toHaveValue("Outside scope");
-    await waitFor(() => expect(within(confirm).getByRole("button", { name: "Reject Request" })).toBeEnabled());
+    await waitFor(() => expect(within(confirm).getByRole("button", { name: "Flag as Spam" })).toBeEnabled());
+  });
+
+  it("renders open cases conversation-focused while keeping the four case duration reports", async () => {
+    await openCase();
+    const dialog = await screen.findByRole("dialog", { name: "Case Opened #4 (Davao Site)" });
+    const chatHeading = await within(dialog).findByRole("heading", { name: "Case conversation" });
+    expect(within(dialog).getByRole("region", { name: "Conversation messages" })).toBeVisible();
+    expect(within(dialog).getByRole("textbox", { name: "Support reply" })).toBeVisible();
+    expect(within(dialog).queryByRole("heading", { name: "Support Assignment & Chat" })).not.toBeInTheDocument();
+    expect(within(dialog).getByText("Queued time")).toBeVisible();
+    expect(within(dialog).getByText("Response time")).toBeVisible();
+    expect(within(dialog).getByText("Total resolution")).toBeVisible();
+    expect(within(dialog).getByText("Handling time")).toBeVisible();
+    fireEvent.click(within(dialog).getByRole("button", { name: "Go to chat" }));
+    expect(chatHeading).toHaveFocus();
   });
 
   it("keeps the confirmation open while saving and returns focus to the queue after archival", async () => {

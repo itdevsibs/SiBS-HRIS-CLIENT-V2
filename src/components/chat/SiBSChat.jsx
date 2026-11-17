@@ -1022,7 +1022,7 @@ function ChatAvatar({
     typeof document !== "undefined"
       ? createPortal(
           <span
-            className="pointer-events-none fixed z-[38] rounded-2xl border border-sibs-border bg-white p-2 shadow-2xl"
+            className="pointer-events-none fixed z-[115] rounded-2xl border border-sibs-border bg-white p-2 shadow-2xl"
             style={{
               left: previewPosition.left,
               top: previewPosition.top,
@@ -4967,7 +4967,7 @@ export default function SiBSChat({
     <>
       {chat?.membershipNotice && !open ? (
         <div
-          className="fixed right-4 z-[35] w-[min(340px,calc(100vw-2rem))] sm:right-6"
+          className="fixed right-4 z-[110] w-[min(340px,calc(100vw-2rem))] sm:right-6"
           style={{
             bottom: hideTrigger
               ? "calc(4.75rem + env(safe-area-inset-bottom, 0px))"
@@ -4988,7 +4988,7 @@ export default function SiBSChat({
           ref={minimizedDockRef}
           aria-label="Minimized SiBS Chat"
           data-testid="sibs-chat-minimized-dock"
-          className="fixed z-[35] flex items-center gap-1.5 rounded-2xl border border-sibs-border bg-sibs-navy px-2.5 py-1.5 font-jakarta text-white shadow-2xl transition-all right-4 sm:right-6"
+          className="fixed z-[110] flex items-center gap-1.5 rounded-2xl border border-sibs-border bg-sibs-navy px-2.5 py-1.5 font-jakarta text-white shadow-2xl transition-all right-4 sm:right-6"
           style={{
             bottom: "calc(1.5rem + env(safe-area-inset-bottom, 0px))",
           }}
@@ -5056,7 +5056,7 @@ export default function SiBSChat({
           onPointerCancel={finishLauncherDrag}
           aria-label={chat.totalUnread > 0 ? `Open SiBS Chat, ${chat.totalUnread} unread message${chat.totalUnread === 1 ? "" : "s"}` : "Open SiBS Chat"}
           aria-expanded={open}
-          className={`fixed z-[35] inline-flex select-none items-center gap-2 rounded-2xl border border-white/10 bg-sibs-navy px-3 py-2.5 font-jakarta text-sm font-extrabold text-white shadow-xl transition hover:bg-sibs-tertiary-2 ${
+          className={`fixed z-[110] inline-flex select-none items-center gap-2 rounded-2xl border border-white/10 bg-sibs-navy px-3 py-2.5 font-jakarta text-sm font-extrabold text-white shadow-xl transition hover:bg-sibs-tertiary-2 ${
             launcherPosition ? "" : "right-4 sm:right-6"
           } ${launcherDragging ? "cursor-grabbing" : "cursor-grab"} ${
             open ? "opacity-0 pointer-events-none" : "opacity-100"
@@ -5100,7 +5100,7 @@ export default function SiBSChat({
         onDragLeave={handleChatDragLeave}
         onDrop={handleChatDrop}
         onDragEnd={() => setDraggingAttachments(false)}
-        className={`font-jakarta fixed z-[35] flex overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-2xl transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none max-sm:!inset-0 max-sm:!h-[100dvh] max-sm:!w-screen max-sm:!rounded-none max-sm:!border-0 ${
+        className={`font-jakarta fixed z-[110] flex overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-2xl transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none max-sm:!inset-0 max-sm:!h-[100dvh] max-sm:!w-screen max-sm:!rounded-none max-sm:!border-0 ${
           isMinimized
             ? "pointer-events-none opacity-0 invisible translate-y-4 scale-95"
             : open
@@ -7316,7 +7316,7 @@ export default function SiBSChat({
       {nicknameConversation && typeof document !== "undefined"
         ? createPortal(
             <div
-              className="fixed inset-0 z-[39] flex items-center justify-center bg-slate-950/45 px-4 backdrop-blur-[1px]"
+              className="fixed inset-0 z-[118] flex items-center justify-center bg-slate-950/45 px-4 backdrop-blur-[1px]"
               role="presentation"
               onMouseDown={(event) => {
                 if (event.target === event.currentTarget && !nicknameSaving) {
@@ -7412,7 +7412,7 @@ export default function SiBSChat({
       {helpdeskCloseConfirm && activeConversation?.isHelpdesk && typeof document !== "undefined"
         ? createPortal(
             <div
-              className="fixed inset-0 z-[39] flex items-center justify-center bg-slate-950/55 px-4 backdrop-blur-[2px]"
+              className="fixed inset-0 z-[118] flex items-center justify-center bg-slate-950/55 px-4 backdrop-blur-[2px]"
               role="presentation"
               onMouseDown={(event) => event.stopPropagation()}
             >
@@ -7476,7 +7476,7 @@ export default function SiBSChat({
       {deleteConversationConfirm && typeof document !== "undefined"
         ? createPortal(
             <div
-              className="fixed inset-0 z-[39] flex items-center justify-center bg-slate-950/45 px-4 backdrop-blur-[1px]"
+              className="fixed inset-0 z-[118] flex items-center justify-center bg-slate-950/45 px-4 backdrop-blur-[1px]"
               role="presentation"
               onMouseDown={(event) => {
                 if (
@@ -7547,7 +7547,7 @@ export default function SiBSChat({
       {unsendConfirmMessage && typeof document !== "undefined"
         ? createPortal(
             <div
-              className="fixed inset-0 z-[39] flex items-center justify-center bg-slate-950/45 px-4 backdrop-blur-[1px]"
+              className="fixed inset-0 z-[118] flex items-center justify-center bg-slate-950/45 px-4 backdrop-blur-[1px]"
               role="presentation"
               onMouseDown={(event) => {
                 if (
@@ -7618,9 +7618,10 @@ export default function SiBSChat({
     </>
   );
 
-  // Keep the floating chat beneath HRIS dialogs and page overlays.
-  // Its photo hover and confirmations sit just above the chat panel, not over
-  // other modules. A body portal still avoids accidental clipping in AppShell.
+  // Keep the floating chat above page toolbars and sticky headers, but beneath
+  // HRIS dialogs and portal overlays. Its photo hover and confirmations sit
+  // just above the chat panel, not over other modules. A body portal still
+  // avoids accidental clipping in AppShell.
   return typeof document !== "undefined"
     ? createPortal(chatUi, document.body)
     : chatUi;
