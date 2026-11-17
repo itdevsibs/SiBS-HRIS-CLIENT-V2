@@ -203,13 +203,13 @@ function Review306090Modal({
       {
     /* 30/60/90 Navigation & Subheader */
   }
-        <div className={`flex flex-col gap-3 shrink-0 ${embedded ? "pb-4" : "border-b border-sibs-border bg-sibs-surface px-4 py-3 sm:px-5"}`}>
-          <div className="flex items-center gap-1.5">
-            <Award className="w-4 h-4 text-sibs-orange" />
+        <div className={`sibs-card flex min-w-0 shrink-0 flex-col gap-3 p-4 sm:p-5 ${embedded ? "mb-4" : "mx-4 mt-4 sm:mx-5"}`}>
+          <div className="flex items-center gap-2 border-b border-sibs-border pb-3">
+            <Award aria-hidden="true" className="h-4 w-4 shrink-0 text-sibs-orange" />
             <h3 className="sibs-modal-section-title text-sibs-navy">Milestone Evaluations</h3>
           </div>
 
-          <div className="flex flex-wrap items-center gap-1 bg-white p-1 rounded-xl border border-sibs-border shadow-xs">
+          <div className="flex flex-wrap items-center gap-1 rounded-xl border border-sibs-border bg-sibs-surface p-1">
             <button
     type="button"
     onClick={() => setActiveMilestoneTab("all")}
@@ -245,12 +245,12 @@ function Review306090Modal({
               Day 90 Regularization
               {journey.day90?.status === "Completed" && <Check className="w-3 h-3" />}
             </button>
-            <div className="h-4 w-px bg-slate-200 mx-1 shrink-0" />
+            <div aria-hidden="true" className="mx-1 hidden h-4 w-px shrink-0 bg-sibs-border lg:block" />
             <button
     type="button"
     onClick={() => setActiveMilestoneTab("calendar")}
     aria-pressed={activeMilestoneTab === "calendar"}
-    className={`min-h-9 px-3 py-1.5 rounded-lg sibs-text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${activeMilestoneTab === "calendar" ? "bg-sibs-orange text-white shadow-xs" : "text-sibs-navy hover:bg-orange-50 hover:text-sibs-orange"}`}
+    className={`flex min-h-9 max-w-full flex-wrap items-center gap-1.5 rounded-lg px-3 py-1.5 text-left sibs-text-xs font-bold transition-colors cursor-pointer ${activeMilestoneTab === "calendar" ? "bg-sibs-orange text-white shadow-xs" : "text-sibs-navy hover:bg-orange-50 hover:text-sibs-orange"}`}
     title="Daily Performance & 1-on-1 Check-Ins Calendar (Days 1–90)"
   >
               <Calendar className="w-3.5 h-3.5" />
@@ -399,15 +399,15 @@ function Review306090Modal({
           {
     /* ======================================================== */
   }
-          {(activeMilestoneTab === "all" || activeMilestoneTab === 30) && <div className="bg-white rounded-2xl border border-sibs-border p-5 shadow-xs space-y-4">
+          {(activeMilestoneTab === "all" || activeMilestoneTab === 30) && <section className="sibs-card space-y-4 p-4 sm:p-5">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-sibs-border pb-3">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-7 h-7 rounded-lg bg-sibs-navy text-white flex items-center justify-center font-black text-xs shadow-xs">
+                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-sibs-navy shadow-xs">
                     <BookOpen size={15} className="text-sibs-orange" />
                   </div>
                   <div>
                     <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className="text-sm font-extrabold text-sibs-navy">
+                      <h3 className="sibs-modal-section-title text-sibs-navy">
                         First 30 Days: FST &amp; PST Training Details
                       </h3>
                       <span className="px-2 py-0.5 rounded-full sibs-text-micro font-black uppercase tracking-wider bg-orange-100 text-sibs-orange border border-orange-200">
@@ -435,10 +435,10 @@ function Review306090Modal({
                 {
     /* 1. FST Card */
   }
-                <div className="p-4 rounded-xl border border-sibs-border bg-sibs-surface flex flex-col justify-between space-y-3.5">
+                <div className="flex min-w-0 flex-col justify-between space-y-3.5 rounded-xl border border-sibs-border bg-sibs-surface p-3 sm:p-4">
                   <div>
-                    <div className="flex items-center justify-between border-b border-sibs-border/70 pb-2.5">
-                      <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-sibs-border pb-2.5">
+                      <div className="flex min-w-0 flex-wrap items-center gap-2">
                         <span className="px-2 py-0.5 rounded text-[10px] font-black bg-sibs-navy text-white">
                           Phase 1 • Days 1–14
                         </span>
@@ -534,10 +534,10 @@ function Review306090Modal({
                 {
     /* 2. PST Card */
   }
-                <div className="p-4 rounded-xl border border-sibs-border bg-sibs-surface flex flex-col justify-between space-y-3.5">
+                <div className="flex min-w-0 flex-col justify-between space-y-3.5 rounded-xl border border-sibs-border bg-sibs-surface p-3 sm:p-4">
                   <div>
-                    <div className="flex items-center justify-between border-b border-sibs-border/70 pb-2.5">
-                      <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-sibs-border pb-2.5">
+                      <div className="flex min-w-0 flex-wrap items-center gap-2">
                         <span className="px-2 py-0.5 rounded text-[10px] font-black bg-sibs-orange text-white">
                           Phase 2 • Days 15–28
                         </span>
@@ -634,7 +634,7 @@ function Review306090Modal({
               {
     /* Explanatory footer linking FST/PST into Day 30 Nesting */
   }
-              <div className="p-3 bg-amber-50/70 border border-amber-200/80 rounded-xl flex items-center justify-between gap-3 text-xs text-amber-900">
+              <div className="flex flex-col gap-3 rounded-xl border border-amber-200/80 bg-amber-50/70 p-3 text-xs text-amber-900 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-center gap-2">
                   <ShieldCheck size={16} className="text-amber-700 shrink-0" />
                   <span>
@@ -645,7 +645,7 @@ function Review306090Modal({
                   Combined Avg: {Math.round(((fstScoreVal || 80) + (pstScoreVal || 80)) / 2)}%
                 </div>
               </div>
-            </div>}
+            </section>}
 
           {
     /* ======================================================== */

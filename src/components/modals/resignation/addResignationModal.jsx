@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ChevronDown,
   Paperclip,
@@ -14,6 +14,45 @@ import {
   updateResignation,
 } from "../../../lib/axios/getResignation";
 import { useResignationList } from "@/services/context/ResignationListContext";
+
+const FOCUSABLE_SELECTOR =
+  'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+function getFocusableElements(container) {
+  if (!container) return [];
+  return Array.from(container.querySelectorAll(FOCUSABLE_SELECTOR)).filter(
+    (el) =>
+      !el.closest("[inert]") &&
+      (el.offsetWidth || el.offsetHeight || el.getClientRects().length)
+  );
+}
+
+function trapFocus(event, container) {
+  if (event.key !== "Tab" || !container) return;
+  const items = getFocusableElements(container);
+  if (!items.length) {
+    event.preventDefault();
+    return;
+  }
+  const first = items[0];
+  const last = items[items.length - 1];
+  if (
+    event.shiftKey &&
+    (document.activeElement === first ||
+      document.activeElement === container ||
+      !container.contains(document.activeElement))
+  ) {
+    event.preventDefault();
+    last.focus();
+  } else if (
+    !event.shiftKey &&
+    (document.activeElement === last ||
+      !container.contains(document.activeElement))
+  ) {
+    event.preventDefault();
+    first.focus();
+  }
+}
 
 const resignationReasons = [
   "Career Change / Advancement",
@@ -150,7 +189,11 @@ export default function AddResignationModal({
   const [originalLastWorkingDate, setOriginalLastWorkingDate] = useState(null);
   const [newLastWorkingDate, setNewLastWorkingDate] = useState(null);
   const [reasonForExtending, setReasonForExtending] = useState("");
-  const [openRetractStatusModal, setRetractOpenStatusModal] = useState(false);
+
+  const modalRef = useRef(null);
+  const previousFocusRef = useRef(null);
+  const policyModalRef = useRef(null);
+  const policyPreviousFocusRef = useRef(null);
 
   const showStatus = (payload) => {
     if (typeof setStatusModal === "function") {
@@ -167,42 +210,90 @@ export default function AddResignationModal({
     resignationId,
   } = useResignationList();
 
-  const resetForm = () => {
+  const resetForm = useCallback(() => {
     setForm(getInitialForm());
     setReasonOpen(false);
     setTypeOpen(false);
     setPolicyModalOpen(false);
     setPolicyAccepted(false);
-  };
+  }, []);
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     resetForm();
     setOpenEditResignationModal(false);
     onClose?.();
-  };
+  }, [resetForm, setOpenEditResignationModal, onClose]);
 
   useEffect(() => {
     if (!open) return;
 
-    const handleEscape = (e) => {
-      if (e.key === "Escape") {
-        if (policyModalOpen) {
+    previousFocusRef.current = document.activeElement;
+    const frame = modalRef.current;
+    const items = getFocusableElements(frame);
+    const target = items[0] || frame;
+    target?.focus?.({ preventScroll: true });
+
+    return () => {
+      if (previousFocusRef.current?.isConnected) {
+        previousFocusRef.current.focus();
+      }
+    };
+  }, [open]);
+
+  useEffect(() => {
+    if (!policyModalOpen) return;
+
+    policyPreviousFocusRef.current = document.activeElement;
+    const frame = policyModalRef.current;
+    const items = getFocusableElements(frame);
+    const target = items[0] || frame;
+    target?.focus?.({ preventScroll: true });
+
+    return () => {
+      if (policyPreviousFocusRef.current?.isConnected) {
+        policyPreviousFocusRef.current.focus();
+      }
+    };
+  }, [policyModalOpen]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const handleKeyDown = (e) => {
+      if (policyModalOpen) {
+        if (e.key === "Escape") {
+          e.preventDefault();
+          e.stopPropagation();
           setPolicyModalOpen(false);
           return;
         }
 
-        handleClose();
+        if (e.key === "Tab") {
+          trapFocus(e, policyModalRef.current);
+          return;
+        }
+      } else {
+        if (e.key === "Escape") {
+          e.preventDefault();
+          e.stopPropagation();
+          handleClose();
+          return;
+        }
+
+        if (e.key === "Tab") {
+          trapFocus(e, modalRef.current);
+        }
       }
     };
 
-    document.addEventListener("keydown", handleEscape);
+    document.addEventListener("keydown", handleKeyDown);
     document.body.style.overflow = "hidden";
 
     return () => {
-      document.removeEventListener("keydown", handleEscape);
+      document.removeEventListener("keydown", handleKeyDown);
       document.body.style.overflow = "";
     };
-  }, [open, policyModalOpen]);
+  }, [open, policyModalOpen, handleClose]);
 
   useEffect(() => {
     if (open) {
@@ -505,10 +596,20 @@ export default function AddResignationModal({
   return (
     <>
       <div className="sibs-modal-blur sibs-modal-backdrop-in fixed inset-0 z-50 flex items-center justify-center p-2 font-jakarta sm:p-4">
-        <div className="sibs-modal-pop-in flex max-h-[90dvh] w-full max-w-2xl 2xl:max-w-3xl flex-col overflow-hidden rounded-[14px] bg-white shadow-2xl font-jakarta">
+        <div
+          ref={modalRef}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="add-resignation-title"
+          tabIndex={-1}
+          className="sibs-modal-pop-in flex max-h-[90dvh] w-full max-w-2xl 2xl:max-w-3xl flex-col overflow-hidden rounded-[14px] bg-white shadow-2xl font-jakarta"
+        >
           <div className="flex shrink-0 items-center justify-between gap-4 rounded-t-[14px] bg-sibs-navy px-5 py-3 text-white sm:px-6 2xl:py-3.5">
             <div className="min-w-0">
-              <h2 className="sibs-modal-title truncate text-white">
+              <h2
+                id="add-resignation-title"
+                className="sibs-modal-title truncate text-white"
+              >
                 {isEdit ? "Edit Resignation" : "Submit Resignation"}
               </h2>
 
@@ -636,13 +737,13 @@ export default function AddResignationModal({
             )}
 
             {isFormal && isEdit && (
-              <div
-                role="button"
-                tabIndex={0}
-                onClick={() => setExtendOpen((prev) => !prev)}
-                className="mt-5 rounded-[10px] border border-sibs-border bg-sibs-surface px-4 py-3 transition hover:border-sibs-orange/40 hover:bg-white"
-              >
-                <div className="flex items-center justify-between">
+              <div className="mt-5 rounded-[10px] border border-sibs-border bg-sibs-surface transition hover:border-sibs-orange/40 hover:bg-white">
+                <button
+                  type="button"
+                  aria-expanded={extendOpen}
+                  onClick={() => setExtendOpen((prev) => !prev)}
+                  className="flex w-full items-center justify-between px-4 py-3 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-sibs-orange/30 rounded-[10px]"
+                >
                   <div>
                     <p className="text-sm font-semibold text-sibs-navy">
                       Extend Working Date
@@ -659,13 +760,14 @@ export default function AddResignationModal({
                       extendOpen ? "rotate-180" : ""
                     }`}
                   />
-                </div>
+                </button>
 
                 <div
-                  className={`grid transition-all duration-300 ease-in-out ${
+                  inert={!extendOpen || undefined}
+                  className={`grid px-4 transition-all duration-300 ease-in-out ${
                     extendOpen
-                      ? "grid-rows-[1fr] opacity-100 mt-3"
-                      : "grid-rows-[0fr] opacity-0"
+                      ? "pb-3 grid-rows-[1fr] opacity-100"
+                      : "grid-rows-[0fr] opacity-0 pointer-events-none"
                   }`}
                 >
                   <div
@@ -682,7 +784,7 @@ export default function AddResignationModal({
                           name="resignationDate"
                           value={form.resignationDate}
                           readOnly
-                          required
+                          required={extendOpen}
                           className="pointer-events-none w-full rounded-[10px] border border-sibs-border bg-sibs-surface px-4 py-3 text-sm text-sibs-muted outline-none"
                         />
                       </Field>
@@ -694,7 +796,6 @@ export default function AddResignationModal({
                           value={newLastWorkingDate}
                           onChange={handleChange}
                           onClick={(e) => {
-                            e.stopPropagation();
                             e.target.showPicker?.();
                           }}
                           min={
@@ -702,13 +803,13 @@ export default function AddResignationModal({
                               ? addDays(originalLastWorkingDate, 1)
                               : undefined
                           }
-                          required
+                          required={extendOpen}
                           className="w-full rounded-[10px] border border-sibs-border bg-white px-4 py-3 text-sm text-sibs-navy outline-none transition focus:border-sibs-orange"
                         />
                       </Field>
                     </div>
 
-                    <div className="mt-5" onClick={(e) => e.stopPropagation()}>
+                    <div className="mt-5">
                       <Field label="Reason for Extending *">
                         <textarea
                           name="reasonForExtending"
@@ -718,7 +819,7 @@ export default function AddResignationModal({
                           }
                           rows={3}
                           placeholder="Enter the reason for extending your last working date"
-                          required
+                          required={extendOpen}
                           className="w-full resize-none rounded-[10px] border border-sibs-border bg-white px-4 py-3 text-sm text-sibs-navy placeholder:text-sibs-muted outline-none transition focus:border-sibs-orange"
                         />
                       </Field>
@@ -885,9 +986,10 @@ export default function AddResignationModal({
                   </div>
                 </Field>
               </div>
-            </div>
+            )}
+          </div>
 
-            <div className="flex shrink-0 items-center justify-end gap-2.5 border-t border-sibs-border bg-sibs-surface px-5 py-3 2xl:py-3.5 sm:px-6">
+          <div className="flex shrink-0 items-center justify-end gap-2.5 border-t border-sibs-border bg-sibs-surface px-5 py-3 2xl:py-3.5 sm:px-6">
               <button
                 type="button"
                 onClick={handleClose}
@@ -920,7 +1022,14 @@ export default function AddResignationModal({
 
       {policyModalOpen && (
         <div className="sibs-modal-blur sibs-modal-backdrop-in fixed inset-0 z-[60] flex items-center justify-center px-4 py-6">
-          <div className="sibs-modal-pop-in w-full max-w-lg rounded-[14px] bg-white shadow-2xl font-jakarta">
+          <div
+            ref={policyModalRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="resignation-policy-notice-title"
+            tabIndex={-1}
+            className="sibs-modal-pop-in w-full max-w-lg rounded-[14px] bg-white shadow-2xl font-jakarta"
+          >
             <div className="flex items-start justify-end px-5 pt-4">
               <button
                 type="button"
@@ -933,7 +1042,10 @@ export default function AddResignationModal({
             </div>
 
             <div className="px-6 pb-6 pt-1 text-center">
-              <h2 className="sibs-modal-title mx-auto max-w-[320px] leading-tight text-sibs-navy">
+              <h2
+                id="resignation-policy-notice-title"
+                className="sibs-modal-title mx-auto max-w-[320px] leading-tight text-sibs-navy"
+              >
                 Important Notice Regarding Company Policy:
               </h2>
 

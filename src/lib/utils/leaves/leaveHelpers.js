@@ -34,6 +34,7 @@ export function getLeavesInitialDateRange(
 // view is intentionally kept intact.
 export const LEAVES_MIN_DATE = "2011-01-01";
 export const LEAVES_MAX_RANGE_DAYS = 31;
+export const SUPER_ADMIN_LEAVES_RANGE_DAYS = 42;
 
 function leavesShiftDate(isoDate, days) {
   const date = new Date(`${isoDate}T12:00:00`);
@@ -41,16 +42,17 @@ function leavesShiftDate(isoDate, days) {
   return toLocalDateKey(date);
 }
 
-function isValidLeavesDate(value, today) {
+function isValidLeavesDate(value) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(String(value || ""))) return false;
   const parsed = new Date(`${value}T12:00:00`);
   return !Number.isNaN(parsed.getTime()) &&
     toLocalDateKey(parsed) === value &&
-    value >= LEAVES_MIN_DATE && value <= today;
+    value >= LEAVES_MIN_DATE;
 }
 
-export function sanitizeLeavesDateRange(range = {}, { changed = "", allowEmpty = false } = {}) {
-  const today = toLocalDateKey(new Date());
+export function sanitizeLeavesDateRange(range = {}, {
+  changed = "", allowEmpty = false, maxDays = LEAVES_MAX_RANGE_DAYS,
+} = {}) {
   const fallback = getLeavesInitialDateRange(false);
   const rawFrom = String(range?.dateFrom || "");
   const rawTo = String(range?.dateTo || "");
@@ -59,15 +61,14 @@ export function sanitizeLeavesDateRange(range = {}, { changed = "", allowEmpty =
   if (allowEmpty && !rawFrom && !rawTo) return { dateFrom: "", dateTo: "" };
 
   // Reset legacy 1990 filters and invalid/cleared values to a safe short range.
-  if (changed === "from" && isValidLeavesDate(rawFrom, today) && !rawTo) {
-    return { dateFrom: rawFrom, dateTo: leavesShiftDate(rawFrom, LEAVES_MAX_RANGE_DAYS - 1) > today
-      ? today : leavesShiftDate(rawFrom, LEAVES_MAX_RANGE_DAYS - 1) };
+  if (changed === "from" && isValidLeavesDate(rawFrom) && !rawTo) {
+    return { dateFrom: rawFrom, dateTo: leavesShiftDate(rawFrom, maxDays - 1) };
   }
-  if (changed === "to" && isValidLeavesDate(rawTo, today) && !rawFrom) {
-    const start = leavesShiftDate(rawTo, -(LEAVES_MAX_RANGE_DAYS - 1));
+  if (changed === "to" && isValidLeavesDate(rawTo) && !rawFrom) {
+    const start = leavesShiftDate(rawTo, -(maxDays - 1));
     return { dateFrom: start < LEAVES_MIN_DATE ? LEAVES_MIN_DATE : start, dateTo: rawTo };
   }
-  if (!isValidLeavesDate(rawFrom, today) || !isValidLeavesDate(rawTo, today)) {
+  if (!isValidLeavesDate(rawFrom) || !isValidLeavesDate(rawTo)) {
     return fallback;
   }
 
@@ -78,11 +79,11 @@ export function sanitizeLeavesDateRange(range = {}, { changed = "", allowEmpty =
     else dateTo = dateFrom;
   }
 
-  if (leavesShiftDate(dateFrom, LEAVES_MAX_RANGE_DAYS - 1) < dateTo) {
+  if (leavesShiftDate(dateFrom, maxDays - 1) < dateTo) {
     if (changed === "from") {
-      dateTo = leavesShiftDate(dateFrom, LEAVES_MAX_RANGE_DAYS - 1);
+      dateTo = leavesShiftDate(dateFrom, maxDays - 1);
     } else {
-      dateFrom = leavesShiftDate(dateTo, -(LEAVES_MAX_RANGE_DAYS - 1));
+      dateFrom = leavesShiftDate(dateTo, -(maxDays - 1));
     }
   }
   if (dateFrom < LEAVES_MIN_DATE) dateFrom = LEAVES_MIN_DATE;

@@ -23,7 +23,7 @@ export default function CandidateExperienceTable({ records = [], onSelect, loadi
   const paginatedRecords = records.slice(startIndex, startIndex + pageSize);
 
   return (
-    <div className="font-jakarta">
+    <div className="flex flex-1 flex-col font-jakarta">
       <ResponsiveTableShell
         mobileContent={
           <CandidateExperienceMobileCards
@@ -131,7 +131,7 @@ export default function CandidateExperienceTable({ records = [], onSelect, loadi
   />
 
 
-      <div className="mt-2 font-jakarta">
+      <div className="mt-auto pt-2 font-jakarta">
         <PaginationTable
           showSearch={false}
           recordLabel="candidate experience records"

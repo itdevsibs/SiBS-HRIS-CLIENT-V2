@@ -252,7 +252,7 @@ export default function AttritionReportsPage() {
       </div>
 
       <main ref={mainRef} className="sibs-dashboard-main-wide min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6 lg:p-7">
-        <div className="mx-auto w-full max-w-[1700px] space-y-3.5 sm:space-y-4 2xl:space-y-5">
+        <div className="mx-auto flex min-h-full w-full max-w-[1700px] flex-col gap-3.5 sm:gap-4 2xl:gap-5">
           {/* SECTION 1 — HEADER */}
           <AttritionReportsHeader
             filters={filters}

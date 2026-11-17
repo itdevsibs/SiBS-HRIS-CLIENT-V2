@@ -230,7 +230,14 @@ export const HiringNeedsProvider = ({ children }) => {
   const [jobDescriptionLoading, setJobDescriptionLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const { setSearchInput, setFilter } = usePagination("hiring-needs");
+  const {
+    search,
+    setSearch,
+    setSearchInput,
+    setFilter,
+    resetFilters,
+    filterValues,
+  } = usePagination("hiring-needs");
 
   const fetchList = useCallback(async () => {
     setLoading(true);
@@ -390,11 +397,19 @@ export const HiringNeedsProvider = ({ children }) => {
   }, [list]);
 
   const clearFilters = useCallback(() => {
+    setSearch?.("");
     setSearchInput("");
+    resetFilters?.();
     setFilter("status", "All");
     setFilter("site", "All");
     setFilter("reason", "All");
-  }, [setSearchInput, setFilter]);
+  }, [setSearch, setSearchInput, resetFilters, setFilter]);
+
+  const hasActiveFilters =
+    Boolean(String(search || "").trim()) ||
+    Boolean(String(filterValues?.status || "").trim() && filterValues?.status !== "All") ||
+    Boolean(String(filterValues?.site || "").trim() && filterValues?.site !== "All") ||
+    Boolean(String(filterValues?.reason || "").trim() && filterValues?.reason !== "All");
 
   const value = useMemo(
     () => ({
@@ -409,6 +424,7 @@ export const HiringNeedsProvider = ({ children }) => {
       requisitionByDepartment,
 
       clearFilters,
+      hasActiveFilters,
       fetchList,
       fetchJobDescriptions,
       approveHiringNeedRequest,
@@ -426,6 +442,7 @@ export const HiringNeedsProvider = ({ children }) => {
       requisitionByReason,
       requisitionByDepartment,
       clearFilters,
+      hasActiveFilters,
       fetchList,
       fetchJobDescriptions,
       approveHiringNeedRequest,

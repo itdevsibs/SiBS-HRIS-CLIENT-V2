@@ -28,11 +28,9 @@ const MoveToPipeLineModal = React.lazy(() => import("../../../components/modals/
 
 function LazyAddCandidateModal() {
   const { showAddModal } = useTalentPool();
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => {
-    if (showAddModal) setMounted(true);
-  }, [showAddModal]);
-  if (!mounted) return null;
+  const [hasEverOpened, setHasEverOpened] = useState(Boolean(showAddModal));
+  if (showAddModal && !hasEverOpened) setHasEverOpened(true);
+  if (!hasEverOpened) return null;
   return (
     <React.Suspense fallback={null}>
       <AddCandidateModal />
@@ -42,11 +40,9 @@ function LazyAddCandidateModal() {
 
 function LazyCandidateProfileModal() {
   const { selectedCandidate } = useTalentPool();
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => {
-    if (selectedCandidate) setMounted(true);
-  }, [selectedCandidate]);
-  if (!mounted) return null;
+  const [hasEverOpened, setHasEverOpened] = useState(Boolean(selectedCandidate));
+  if (selectedCandidate && !hasEverOpened) setHasEverOpened(true);
+  if (!hasEverOpened) return null;
   return (
     <React.Suspense fallback={null}>
       <CandidateProfileModal />
@@ -56,11 +52,9 @@ function LazyCandidateProfileModal() {
 
 function LazyUpdateStatusModal() {
   const { statusTarget } = useTalentPool();
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => {
-    if (statusTarget) setMounted(true);
-  }, [statusTarget]);
-  if (!mounted) return null;
+  const [hasEverOpened, setHasEverOpened] = useState(Boolean(statusTarget));
+  if (statusTarget && !hasEverOpened) setHasEverOpened(true);
+  if (!hasEverOpened) return null;
   return (
     <React.Suspense fallback={null}>
       <UpdateStatusModal />
@@ -70,11 +64,9 @@ function LazyUpdateStatusModal() {
 
 function LazyMoveToPipeLineModal() {
   const { pipelineTarget } = useTalentPool();
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => {
-    if (pipelineTarget) setMounted(true);
-  }, [pipelineTarget]);
-  if (!mounted) return null;
+  const [hasEverOpened, setHasEverOpened] = useState(Boolean(pipelineTarget));
+  if (pipelineTarget && !hasEverOpened) setHasEverOpened(true);
+  if (!hasEverOpened) return null;
   return (
     <React.Suspense fallback={null}>
       <MoveToPipeLineModal />
@@ -242,6 +234,88 @@ function mapConvertedLeadToTalentPoolCandidate(lead = {}, talentPoolCandidate = 
   };
 }
 
+function applyTalentPoolFilters(
+  candidates = [],
+  { search = "", positionFilter = "All", statusFilter = "All" } = {},
+) {
+  const keyword = String(search || "").trim().toLowerCase();
+  const normalizedPositionFilter = String(positionFilter || "All")
+    .trim()
+    .toLowerCase();
+
+  return (Array.isArray(candidates) ? candidates : []).filter((candidate) => {
+    if (!candidate) return false;
+
+    const roleValue =
+      candidate.openPosition ||
+      candidate.roleCapability ||
+      candidate.position ||
+      candidate.jobTitle ||
+      candidate.currentAppliedRole ||
+      "";
+    const normalizedRoleValue = String(roleValue).trim().toLowerCase();
+
+    const searchableText = [
+      candidate.candidateId,
+      candidate.id,
+      candidate.name,
+      candidate.fullName,
+      candidate.nickname,
+      candidate.email,
+      candidate.phoneNumber1,
+      candidate.phoneNumber2,
+      candidate.phone,
+      candidate.physicalAddress,
+      roleValue,
+      candidate.applyingLocation,
+      candidate.location,
+      candidate.source,
+      candidate.referredBy,
+      candidate.employeeId,
+      candidate.status,
+      candidate.pipelineStatus,
+      candidate.currentPipelineStage,
+      candidate.currentStage,
+      candidate.pipelineStage,
+      candidate.stage,
+      candidate.currentAppliedAccount,
+      candidate.currentAppliedRole,
+      candidate.currentTaOwner,
+      candidate.remarks,
+      candidate.dropOffReason,
+      candidate.reason,
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase();
+
+    const matchesSearch = !keyword || searchableText.includes(keyword);
+
+    const candidateStatusValues = [
+      candidate.status,
+      candidate.pipelineStatus,
+      candidate.currentPipelineStage,
+      candidate.currentStage,
+      candidate.pipelineStage,
+      candidate.stage,
+    ]
+      .filter(Boolean)
+      .map((s) => String(s).trim().toLowerCase());
+
+    const matchesStatus =
+      statusFilter === "All" ||
+      candidateStatusValues.includes(
+        String(statusFilter).trim().toLowerCase(),
+      );
+
+    const matchesPosition =
+      positionFilter === "All" ||
+      normalizedRoleValue === normalizedPositionFilter;
+
+    return matchesSearch && matchesStatus && matchesPosition;
+  });
+}
+
 function TalentPoolPageContent() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -253,6 +327,9 @@ function TalentPoolPageContent() {
     setSelectedCandidate,
     candidateList,
     filteredCandidates,
+    search,
+    positionFilter,
+    statusFilter,
     isLoading,
     isSaving,
     loadError,
@@ -360,7 +437,7 @@ function TalentPoolPageContent() {
     return lookup;
   }, [candidateList]);
 
-  const convertedLeadCandidates = useMemo(
+  const rawConvertedLeadCandidates = useMemo(
     () =>
       archivedLeads.map((lead) => {
         const talentPoolApplicationId = cleanText(
@@ -376,6 +453,26 @@ function TalentPoolPageContent() {
         );
       }),
     [archivedLeads, talentPoolCandidateByApplicationId],
+  );
+
+  const filteredDropOffCandidates = useMemo(
+    () =>
+      applyTalentPoolFilters(dropOffCandidates, {
+        search,
+        positionFilter,
+        statusFilter,
+      }),
+    [dropOffCandidates, search, positionFilter, statusFilter],
+  );
+
+  const convertedLeadCandidates = useMemo(
+    () =>
+      applyTalentPoolFilters(rawConvertedLeadCandidates, {
+        search,
+        positionFilter,
+        statusFilter,
+      }),
+    [rawConvertedLeadCandidates, search, positionFilter, statusFilter],
   );
 
   const activeTabCopy = {
@@ -420,7 +517,7 @@ function TalentPoolPageContent() {
       </div>
 
       <main className="sibs-dashboard-main-wide">
-        <div className="mx-auto w-full max-w-[1700px] space-y-4 sm:space-y-5 2xl:space-y-6">
+        <div className="mx-auto flex min-h-full w-full max-w-[1700px] flex-col gap-4 sm:gap-5 2xl:gap-6">
           <PageHeaderHero
             kicker="Recruitment View"
             title="Talent Pool / Candidate Database"
@@ -477,7 +574,7 @@ function TalentPoolPageContent() {
           <TalentPoolStats />
 
           <section
-            className="sibs-page-card-in sibs-card relative z-[10] overflow-hidden rounded-[14px] border border-sibs-border bg-white shadow-xs font-jakarta"
+            className="flex shrink-0 grow flex-col sibs-page-card-in sibs-card relative z-[10] overflow-hidden rounded-[14px] border border-sibs-border bg-white shadow-xs font-jakarta"
             style={{ animationDelay: "360ms", animationFillMode: "both" }}
           >
             <div className="border-b border-sibs-border p-4 sm:p-5 2xl:p-6 font-jakarta">
@@ -495,8 +592,8 @@ function TalentPoolPageContent() {
               </div>
             </div>
 
-            <div className="min-h-0 flex-1 p-4 sm:p-5 2xl:p-6">
-              <div className="overflow-hidden rounded-[14px] border border-sibs-border bg-white shadow-xs">
+            <div className="flex flex-1 flex-col p-4 sm:p-5 2xl:p-6">
+              <div className="flex flex-1 flex-col overflow-hidden rounded-[14px] border border-sibs-border bg-white shadow-xs">
                 <TalentPoolTabs
                   activeTab={activeTab}
                   onChange={setActiveTab}
@@ -506,7 +603,7 @@ function TalentPoolPageContent() {
                 {activeTab === TALENT_POOL_TABS.DROP_OFF ? (
                   <div className="p-4 sm:p-5">
                     <DropOffListSection
-                      candidates={dropOffCandidates}
+                      candidates={filteredDropOffCandidates}
                       isLoading={dropOffListLoading}
                       loadError={dropOffListError}
                       onViewCandidate={(candidate) => setSelectedCandidate(candidate)}

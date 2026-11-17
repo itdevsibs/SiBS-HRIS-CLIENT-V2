@@ -924,7 +924,7 @@ export default function EmployeeDashboardPage() {
               >
                 <div className="flex flex-col gap-2.5 border-b border-amber-200 pb-3 sm:flex-row sm:items-center sm:justify-between">
                   <div className="min-w-0">
-                    <h2 className="text-xs 2xl:text-sm font-extrabold uppercase tracking-wide text-sibs-navy">
+                    <h2 className="font-heading text-xs 2xl:text-sm font-extrabold uppercase tracking-wide text-sibs-navy">
                       Performance & Appraisal Center
                     </h2>
                     <p className="mt-0.5 text-[11px] 2xl:text-xs font-semibold text-sibs-muted">

@@ -35,6 +35,7 @@ const AUTO_GROW_TEXTAREA_CLASS =
 const UPPERCASE_INPUT_CLASS = `${INPUT_CLASS} uppercase placeholder:normal-case`;
 const UPPERCASE_TEXTAREA_CLASS = `${TEXTAREA_CLASS} uppercase placeholder:normal-case`;
 const AUTO_GROW_UPPERCASE_TEXTAREA_CLASS = `${AUTO_GROW_TEXTAREA_CLASS} uppercase placeholder:normal-case`;
+const FIELD_LABEL_CLASS = "mb-1.5 block sibs-text-micro font-extrabold uppercase tracking-wide text-sibs-muted";
 
 function cleanText(value) {
   return String(value ?? "").trim();
@@ -142,11 +143,12 @@ function EditedIndicator({ show }) {
 
 function FormSection({ title, subtitle, icon: SectionIcon, action, children }) {
   return (
-    <section className="rounded-2xl border border-sibs-border bg-white p-3.5 sm:p-4 2xl:p-5 shadow-[0_8px_24px_rgba(4,44,81,0.04)] font-jakarta">
-      <div className="mb-3 2xl:mb-4 flex items-start justify-between gap-2 border-b border-sibs-border pb-2.5 2xl:pb-3">
+    <section className="sibs-card p-4 font-jakarta sm:p-5">
+      <div className="mb-4 flex flex-wrap items-start justify-between gap-2 border-b border-sibs-border pb-3">
         <div className="flex min-w-0 items-start gap-2.5">
           {React.createElement(SectionIcon, {
             size: 16,
+            "aria-hidden": true,
             className: "mt-0.5 shrink-0 text-sibs-orange",
           })}
           <div className="min-w-0">
@@ -350,12 +352,12 @@ export default function ApplicantLeadModal() {
         }
         bodyClassName="p-0 overflow-hidden flex flex-col min-h-0"
         footer={
-          <footer className="flex items-center justify-end gap-2.5">
+          <div className="flex flex-wrap items-center justify-end gap-2.5">
             <button
               type="button"
               onClick={closeLeadModal}
               disabled={isSaving}
-              className="inline-flex h-8.5 2xl:h-10 items-center justify-center rounded-[10px] border border-sibs-border bg-sibs-surface px-3.5 2xl:px-4 sibs-text-xs font-extrabold text-sibs-navy transition hover:bg-white"
+              className="sibs-modal-btn-secondary"
             >
               Cancel
             </button>
@@ -365,7 +367,7 @@ export default function ApplicantLeadModal() {
                 type="submit"
                 form="applicant-lead-form"
                 disabled={isSubmitDisabled}
-                className="inline-flex h-8.5 2xl:h-10 items-center justify-center gap-1.5 2xl:gap-2 rounded-[10px] bg-sibs-orange px-4 2xl:px-5 sibs-text-xs font-extrabold text-white shadow-sm transition hover:bg-sibs-button-hover disabled:cursor-not-allowed disabled:border disabled:border-sibs-border disabled:bg-slate-100 disabled:text-sibs-muted disabled:shadow-none"
+                className="sibs-modal-btn-primary"
               >
                 {isSaving ? (
                   <Loader2 size={13} className="animate-spin text-white" />
@@ -379,7 +381,7 @@ export default function ApplicantLeadModal() {
                     : "Save Applicant Lead"}
               </button>
             )}
-          </footer>
+          </div>
         }
       >
         <form
@@ -389,53 +391,53 @@ export default function ApplicantLeadModal() {
         >
           <div
             data-dropdown-boundary="true"
-            className="sibs-scrollbar min-h-0 flex-1 space-y-3.5 2xl:space-y-4 overflow-y-auto overscroll-contain bg-sibs-surface p-3 sm:p-4 2xl:p-5"
+            className="sibs-scrollbar min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain bg-sibs-surface p-4 sm:p-6"
           >
-            {/* Auto Logging Account Info Bar */}
-            <div className="flex flex-col gap-2 rounded-xl border border-sibs-border bg-white p-3 text-xs sm:flex-row sm:items-center sm:justify-between shadow-xs">
-              <div className="flex items-center gap-2 font-extrabold text-sibs-navy">
-                <UserCheck size={16} className="text-sibs-orange" />
-                <span>Logging Account:</span>
-                <span className="rounded border border-sibs-border bg-sibs-surface px-2 py-0.5 text-sibs-navy font-bold">
-                  {loggingAccount}
-                </span>
-              </div>
-              <span className="text-[10px] font-semibold text-sibs-muted">
-                Auto-captured from active login
-              </span>
-            </div>
-
-            {/* Referral Code (Edit Mode) */}
-            {isEditMode ? (
-              <div className="flex flex-col gap-2 rounded-xl border border-sibs-border bg-white p-3 text-xs sm:flex-row sm:items-center sm:justify-between shadow-xs">
-                <div className="flex min-w-0 items-center gap-1.5 font-extrabold text-sibs-navy">
-                  <KeyRound size={16} className="shrink-0 text-sibs-orange" />
-                  <span className="mr-0.5 shrink-0">Referral Code:</span>
-                  <span className="min-w-0 truncate rounded border border-sibs-border bg-sibs-surface px-2.5 py-0.5 font-black tracking-[0.08em] text-sibs-navy">
-                    {referralCode || "Not generated"}
+            <div className={`sibs-card grid gap-3 p-4 text-xs ${isEditMode ? "sm:grid-cols-2 sm:divide-x sm:divide-sibs-border" : ""}`}>
+              <div className="min-w-0 space-y-1">
+                <div className="flex flex-wrap items-center gap-2 font-extrabold text-sibs-navy">
+                  <UserCheck size={16} aria-hidden="true" className="shrink-0 text-sibs-orange" />
+                  <span>Logging Account:</span>
+                  <span className="rounded border border-sibs-border bg-sibs-surface px-2 py-0.5 text-sibs-navy font-bold">
+                    {loggingAccount}
                   </span>
-                  <button
-                    type="button"
-                    disabled={!canCopyReferralCode}
-                    onClick={handleCopyReferralCode}
-                    title="Copy referral code"
-                    aria-label="Copy referral code"
-                    className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded text-sibs-muted transition hover:text-sibs-navy hover:cursor-pointer disabled:cursor-not-allowed disabled:text-sibs-muted"
-                  >
-                    <Copy size={13} strokeWidth={2.2} />
-                  </button>
-                  {copySuccessMessage ? (
-                    <span className="inline-flex shrink-0 items-center gap-1 text-[10px] font-extrabold text-emerald-600">
-                      <CircleCheckBig size={12} strokeWidth={2.4} />
-                      {copySuccessMessage}
-                    </span>
-                  ) : null}
                 </div>
-                <span className="text-[10px] font-semibold text-sibs-muted">
-                  Generated by HRIS
-                </span>
+                <p className="sibs-text-micro font-semibold text-sibs-muted">
+                  Auto-captured from active login
+                </p>
               </div>
-            ) : null}
+
+              {isEditMode ? (
+                <div className="min-w-0 space-y-1 border-t border-sibs-border pt-3 sm:border-t-0 sm:pl-4 sm:pt-0">
+                  <div className="flex min-w-0 flex-wrap items-center gap-1.5 font-extrabold text-sibs-navy">
+                    <KeyRound size={16} aria-hidden="true" className="shrink-0 text-sibs-orange" />
+                    <span className="mr-0.5 shrink-0">Referral Code:</span>
+                    <span className="min-w-0 break-all rounded border border-sibs-border bg-sibs-surface px-2.5 py-0.5 font-black tracking-[0.08em] text-sibs-navy">
+                      {referralCode || "Not generated"}
+                    </span>
+                    <button
+                      type="button"
+                      disabled={!canCopyReferralCode}
+                      onClick={handleCopyReferralCode}
+                      title="Copy referral code"
+                      aria-label="Copy referral code"
+                      className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded text-sibs-muted transition hover:text-sibs-navy hover:cursor-pointer disabled:cursor-not-allowed disabled:text-sibs-muted"
+                    >
+                      <Copy size={13} strokeWidth={2.2} />
+                    </button>
+                    {copySuccessMessage ? (
+                      <span className="inline-flex shrink-0 items-center gap-1 text-[10px] font-extrabold text-emerald-600">
+                        <CircleCheckBig size={12} strokeWidth={2.4} />
+                        {copySuccessMessage}
+                      </span>
+                    ) : null}
+                  </div>
+                  <p className="sibs-text-micro font-semibold text-sibs-muted">
+                    Generated by HRIS
+                  </p>
+                </div>
+              ) : null}
+            </div>
 
             {/* Section 1: Candidate Information */}
             <FormSection
@@ -445,7 +447,7 @@ export default function ApplicantLeadModal() {
             >
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <label className="block">
-                  <span className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-sibs-muted">
+                  <span className={FIELD_LABEL_CLASS}>
                     First Name <span className="text-sibs-orange">*</span>
                     <EditedIndicator show={editedFields.firstName} />
                   </span>
@@ -461,7 +463,7 @@ export default function ApplicantLeadModal() {
                 </label>
 
                 <label className="block">
-                  <span className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-sibs-muted">
+                  <span className={FIELD_LABEL_CLASS}>
                     Last Name <span className="text-sibs-orange">*</span>
                     <EditedIndicator show={editedFields.lastName} />
                   </span>
@@ -477,7 +479,7 @@ export default function ApplicantLeadModal() {
                 </label>
 
                 <label className="block">
-                  <span className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-sibs-muted">
+                  <span className={FIELD_LABEL_CLASS}>
                     Middle Name
                     <EditedIndicator show={editedFields.middleName} />
                   </span>
@@ -492,7 +494,7 @@ export default function ApplicantLeadModal() {
                 </label>
 
                 <label className="block">
-                  <span className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-sibs-muted">
+                  <span className={FIELD_LABEL_CLASS}>
                     Suffix
                     <EditedIndicator show={editedFields.suffix} />
                   </span>
@@ -507,7 +509,7 @@ export default function ApplicantLeadModal() {
                 </label>
 
                 <label className="block">
-                  <span className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-sibs-muted">
+                  <span className={FIELD_LABEL_CLASS}>
                     Cellphone / CP Number <span className="text-sibs-orange">*</span>
                     <EditedIndicator show={editedFields.cpNum} />
                   </span>
@@ -536,7 +538,7 @@ export default function ApplicantLeadModal() {
                 </label>
 
                 <label className="block">
-                  <span className="mb-1.5 block text-[8.5px] 2xl:text-[9px] font-extrabold uppercase tracking-wide text-sibs-muted">
+                  <span className={FIELD_LABEL_CLASS}>
                     Email Address <span className="text-sibs-orange">*</span>
                     <EditedIndicator show={editedFields.email} />
                   </span>
@@ -553,7 +555,7 @@ export default function ApplicantLeadModal() {
                 </label>
 
                 <div className="sm:col-span-2">
-                  <label className="mb-1.5 block text-xs font-extrabold text-sibs-navy">
+                  <label className={FIELD_LABEL_CLASS}>
                     Applicant Source <span className="text-sibs-orange">*</span>
                     <EditedIndicator show={editedFields.source} />
                   </label>
@@ -574,7 +576,7 @@ export default function ApplicantLeadModal() {
                 </div>
 
                 <label className="block">
-                  <span className="mb-1.5 block text-xs font-extrabold text-sibs-navy">
+                  <span className={FIELD_LABEL_CLASS}>
                     Facebook Name <span className="text-sibs-orange">*</span>
                     <EditedIndicator show={editedFields.facebookName} />
                   </span>
@@ -590,7 +592,7 @@ export default function ApplicantLeadModal() {
                 </label>
 
                 <label className="block">
-                  <span className="mb-1.5 block text-xs font-extrabold text-sibs-navy">
+                  <span className={FIELD_LABEL_CLASS}>
                     Facebook Link <span className="text-sibs-orange">*</span>
                     <EditedIndicator show={editedFields.facebookLink} />
                   </span>
@@ -606,7 +608,7 @@ export default function ApplicantLeadModal() {
                 </label>
 
                 <label className="block sm:col-span-2">
-                  <span className="mb-1.5 block text-xs font-extrabold text-sibs-navy">
+                  <span className={FIELD_LABEL_CLASS}>
                     School
                     <EditedIndicator show={editedFields.school} />
                   </span>

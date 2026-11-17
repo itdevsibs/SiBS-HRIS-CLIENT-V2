@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import { formatHrisDateLocalized } from "@/lib/axios/dateFormatter";
 import React, {
   createContext,
@@ -608,13 +609,31 @@ function getTalentPoolResponseCandidate(response = {}) {
 }
 
 function getCandidateIdentity(candidate = {}) {
+  const entityType = cleanText(
+    candidate.entityType ||
+      candidate.entity_type ||
+      candidate.__entity ||
+      (candidate.pipelineCandidateId ||
+      candidate.pipelineId ||
+      candidate.currentPipelineStage ||
+      candidate.current_pipeline_stage
+        ? "pipeline"
+        : candidate.talentPoolApplicationId ||
+          candidate.talent_pool_application_id
+        ? "talent_pool"
+        : ""),
+  );
+
   return {
+    entityType,
     id: cleanText(candidate.id || candidate.rawId),
     applicationId: cleanText(
       candidate.applicationId ||
         candidate.application_id ||
         candidate.candidateApplicationId ||
-        candidate.candidate_application_id,
+        candidate.candidate_application_id ||
+        candidate.talentPoolApplicationId ||
+        candidate.talent_pool_application_id,
     ),
     candidateId: cleanText(candidate.candidateId || candidate.candidate_id),
     pipelineId: cleanText(
@@ -637,20 +656,50 @@ function isSameTalentPoolCandidate(candidateA = {}, candidateB = {}) {
   const left = getCandidateIdentity(candidateA);
   const right = getCandidateIdentity(candidateB);
 
-  return Boolean(
-    (left.id && right.id && left.id === right.id) ||
-      (left.applicationId &&
-        right.applicationId &&
-        left.applicationId === right.applicationId) ||
-      (left.candidateId &&
-        right.candidateId &&
-        left.candidateId === right.candidateId) ||
-      (left.pipelineId &&
-        right.pipelineId &&
-        left.pipelineId === right.pipelineId) ||
-      (left.email && right.email && left.email === right.email) ||
-      (left.name && right.name && left.name === right.name),
-  );
+  // Exact application ID match
+  if (
+    left.applicationId &&
+    right.applicationId &&
+    left.applicationId === right.applicationId
+  ) {
+    return true;
+  }
+
+  // Exact candidate ID match
+  if (
+    left.candidateId &&
+    right.candidateId &&
+    left.candidateId === right.candidateId
+  ) {
+    return true;
+  }
+
+  // Exact pipeline ID match
+  if (
+    left.pipelineId &&
+    right.pipelineId &&
+    left.pipelineId === right.pipelineId
+  ) {
+    return true;
+  }
+
+  // Exact email match
+  if (left.email && right.email && left.email === right.email) {
+    return true;
+  }
+
+  // Match by raw ID only if entity types match or neither is a cross-entity pipeline event
+  if (left.id && right.id && left.id === right.id) {
+    if (left.entityType && right.entityType) {
+      return left.entityType === right.entityType;
+    }
+    if (Boolean(left.pipelineId) !== Boolean(right.pipelineId)) {
+      return false;
+    }
+    return true;
+  }
+
+  return false;
 }
 
 function isMeaningfulUpdateValue(value) {
@@ -780,8 +829,7 @@ function mergeUpdatedCandidateList(list = [], candidatePatch = {}) {
       identity.applicationId ||
       identity.candidateId ||
       identity.pipelineId ||
-      identity.email ||
-      identity.name,
+      identity.email,
   );
 
   if (!hasUsableIdentity) return nextList;

@@ -34,8 +34,8 @@ export default function SchedulePage() {
   const restoredRef = useRef(false);
   const mainScrollRef = useRef(null);
 
-  const dateFrom = filterValues?.dateFrom || "";
-  const dateTo = filterValues?.dateTo || "";
+  const dateFrom = filterValues?.dateFrom ?? "";
+  const dateTo = filterValues?.dateTo ?? "";
 
   useEffect(() => {
     if (restoredRef.current) return;
@@ -91,10 +91,13 @@ export default function SchedulePage() {
     setLoadError("");
     if (showLoading) setLoading(true);
 
+    const activeDateFrom = filterValues?.dateFrom ?? dateFrom;
+    const activeDateTo = filterValues?.dateTo ?? dateTo;
+
     try {
       const result = await getSchedule(page, search, {
-        dateFrom,
-        dateTo,
+        dateFrom: activeDateFrom,
+        dateTo: activeDateTo,
       });
 
       if (!result?.success) {
@@ -179,7 +182,7 @@ export default function SchedulePage() {
       </div>
 
       <main ref={mainScrollRef} className="sibs-dashboard-main-wide">
-        <div className="mx-auto w-full max-w-[1700px] space-y-4 sm:space-y-5">
+        <div className="mx-auto flex min-h-full w-full max-w-[1700px] flex-col gap-4 sm:gap-5">
           <PageHeaderHero
             kicker="Core HR View"
             title="My Schedule"

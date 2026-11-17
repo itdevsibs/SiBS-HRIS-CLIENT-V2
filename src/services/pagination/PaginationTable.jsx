@@ -11,6 +11,7 @@ import {
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import TablePagination from "@/components/ui/TablePagination";
 import DatePicker from "@/components/ui/DatePicker";
+import DropdownPortal from "@/components/ui/DropdownPortal";
 
 const EDGE = "rounded-[10px]";
 const INLINE_CONTROLS_CLASS =
@@ -22,7 +23,22 @@ const INLINE_SEARCHABLE_FILTER_CLASS = "w-full xl:w-[150px] 2xl:w-[210px] xl:fle
 const INLINE_RIGHT_CONTENT_CLASS =
   "flex w-full min-w-0 items-end xl:w-auto xl:flex-none";
 
-function AnimatedDropdown({ open, children, className = "" }) {
+function AnimatedDropdown({ open, anchorRef, onClose, children, className = "" }) {
+  if (anchorRef) {
+    return (
+      <DropdownPortal
+        open={open}
+        anchorRef={anchorRef}
+        onClose={onClose}
+        maxHeight={280}
+        topLayer
+        className={className}
+      >
+        {children}
+      </DropdownPortal>
+    );
+  }
+
   return (
     <div
       aria-hidden={!open}
@@ -98,6 +114,185 @@ function DateFilterField({ filter, isTaInlineLayout }) {
   );
 }
 
+function DropdownFilterItem({
+  filter,
+  isOpen,
+  options,
+  selectedLabel,
+  isSearchable,
+  label,
+  selectedValues,
+  searchValue,
+  onSearchChange,
+  onOpen,
+  onClose,
+  onToggle,
+  onSelectValue,
+  onKeyDown,
+}) {
+  const containerRef = useRef(null);
+
+  return (
+    <div
+      ref={containerRef}
+      className={`relative w-full overflow-visible ${
+        isOpen ? "z-[90]" : "z-[60]"
+      } ${filter.className || ""}`}
+    >
+      {label ? <FieldLabel>{label}</FieldLabel> : null}
+
+      {isSearchable ? (
+        <div className="group relative overflow-visible">
+          <input
+            type="text"
+            value={isOpen ? searchValue : selectedLabel}
+            onChange={(event) => onSearchChange(filter.key, event.target.value)}
+            onFocus={() => onOpen(filter.key)}
+            placeholder={filter.placeholder || "Search..."}
+            autoComplete="off"
+            role="combobox"
+            aria-expanded={isOpen}
+            aria-haspopup="listbox"
+            aria-label={label || filter.placeholder || filter.key}
+            onKeyDown={(e) => onKeyDown(e, filter.key)}
+            disabled={filter.disabled}
+            className={`w-full ${EDGE} border px-3 pr-10 font-jakarta sibs-text-xs font-bold text-sibs-navy outline-none transition placeholder:text-sibs-muted disabled:cursor-not-allowed disabled:opacity-50 ${
+              isOpen
+                ? "border-sibs-orange bg-white ring-4 ring-sibs-orange/10"
+                : "border-sibs-border bg-sibs-surface hover:border-sibs-orange/40 hover:bg-white focus:border-sibs-orange focus:bg-white focus:ring-4 focus:ring-sibs-orange/10"
+            } h-8.5 sm:h-9 2xl:h-10`}
+          />
+
+          <button
+            type="button"
+            onClick={() => onToggle(filter.key)}
+            disabled={filter.disabled}
+            className="absolute right-2 top-1/2 flex h-6.5 w-6.5 2xl:h-7 2xl:w-7 -translate-y-1/2 items-center justify-center rounded-md text-sibs-muted transition hover:bg-sibs-cream-light hover:text-sibs-orange disabled:cursor-not-allowed disabled:opacity-50"
+            aria-label={`Toggle ${label || filter.key} dropdown`}
+          >
+            <ChevronDown
+              size={17}
+              className={`transition-transform duration-300 ${
+                isOpen ? "rotate-180" : ""
+              }`}
+            />
+          </button>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => onToggle(filter.key)}
+          disabled={filter.disabled}
+          className={`flex w-full items-center justify-between ${EDGE} border px-3 text-left font-jakarta sibs-text-xs font-bold text-sibs-navy outline-none transition disabled:cursor-not-allowed disabled:opacity-50 ${
+            isOpen
+              ? "border-sibs-orange bg-white ring-4 ring-sibs-orange/10"
+              : "border-sibs-border bg-sibs-surface hover:border-sibs-orange/40 hover:bg-white focus:border-sibs-orange focus:bg-white focus:ring-4 focus:ring-sibs-orange/10"
+          } h-8.5 sm:h-9 2xl:h-10`}
+          aria-expanded={isOpen}
+          aria-haspopup="listbox"
+          aria-label={label || selectedLabel || filter.key}
+          onKeyDown={(e) => onKeyDown(e, filter.key)}
+        >
+          <span className="block min-w-0 truncate">{selectedLabel}</span>
+
+          <ChevronDown
+            size={17}
+            className={`shrink-0 text-sibs-muted transition-transform duration-300 ${
+              isOpen ? "rotate-180" : ""
+            }`}
+          />
+        </button>
+      )}
+
+      <AnimatedDropdown
+        open={isOpen}
+        anchorRef={containerRef}
+        onClose={() => onClose(filter.key)}
+      >
+        <div
+          id={`pagination-table-listbox-${filter.key}`}
+          role="listbox"
+          aria-multiselectable={filter.multiple || undefined}
+          onKeyDown={(e) => onKeyDown(e, filter.key)}
+          className="max-h-64 overflow-y-auto py-2 sibs-scrollbar font-jakarta"
+        >
+          {filter.includeAll ?? false ? (
+            <button
+              type="button"
+              onClick={() => onSelectValue(filter, "All")}
+              role="option"
+              className={`block w-full px-3 py-2 2xl:px-4 2xl:py-2.5 text-left sibs-text-xs transition ${
+                (filter.multiple
+                  ? selectedValues.length === 0
+                  : (!filter.value ||
+                     filter.value === "All" ||
+                     filter.value === filter.allLabel ||
+                     filter.value === "All Modules" ||
+                     filter.value === "All Accounts" ||
+                     filter.value === "All Statuses" ||
+                     filter.value === "All Access Levels"))
+                  ? "bg-sibs-cream-light font-extrabold text-sibs-orange"
+                  : "font-semibold text-sibs-text-secondary hover:bg-sibs-cream-subtle hover:text-sibs-orange"
+              }`}
+            >
+              <span className="block truncate">
+                {filter.allLabel || "All"}
+              </span>
+            </button>
+          ) : null}
+
+          {options.length > 0 ? (
+            options.map((option, index) => {
+              const optionValue = getOptionValue(option);
+              const optionLabel = getOptionLabel(option);
+              const cleanOptionValue = String(optionValue ?? "");
+              const checked = filter.multiple
+                ? selectedValues.includes(cleanOptionValue)
+                : filter.value === optionValue;
+
+              return (
+                <button
+                  key={`${filter.key}-${optionValue}-${index}`}
+                  role="option"
+                  aria-selected={checked}
+                  type="button"
+                  onClick={() => onSelectValue(filter, optionValue)}
+                  className={`flex w-full items-center gap-2 px-3 py-2 2xl:px-4 2xl:py-2.5 text-left sibs-text-xs transition ${
+                    checked
+                      ? "bg-sibs-cream-light font-extrabold text-sibs-orange"
+                      : "font-semibold text-sibs-text-secondary hover:bg-sibs-cream-subtle hover:text-sibs-orange"
+                  }`}
+                >
+                  {filter.multiple ? (
+                    <span
+                      className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${
+                        checked
+                          ? "border-sibs-orange bg-sibs-orange text-white"
+                          : "border-sibs-border bg-white text-transparent"
+                      }`}
+                      aria-hidden="true"
+                    >
+                      <Check size={11} strokeWidth={3} />
+                    </span>
+                  ) : null}
+
+                  <span className="block min-w-0 flex-1 truncate">
+                    {optionLabel}
+                  </span>
+                </button>
+              );
+            })
+          ) : (
+            <div className="px-4 py-4 text-xs font-semibold text-sibs-muted">
+              No options found.
+            </div>
+          )}
+        </div>
+      </AnimatedDropdown>
+    </div>
+  );
+}
+
 export default function PaginationTable({
   title = "",
   subtitle = "",
@@ -141,7 +336,6 @@ export default function PaginationTable({
   rightContentClassName = "",
   className = "",
 }) {
-  const dropdownRefs = useRef({});
   const [openDropdownKey, setOpenDropdownKey] = useState(null);
   const [dropdownSearch, setDropdownSearch] = useState({});
 
@@ -226,20 +420,6 @@ export default function PaginationTable({
     Boolean(title) || Boolean(subtitle) || hasFilterControls;
 
   useEffect(() => {
-    function handleClickOutside(event) {
-      if (!openDropdownKey) return;
-
-      const activeRef = dropdownRefs.current?.[openDropdownKey];
-
-      if (activeRef && !activeRef.contains(event.target)) {
-        setOpenDropdownKey(null);
-        setDropdownSearch((previous) => ({
-          ...previous,
-          [openDropdownKey]: "",
-        }));
-      }
-    }
-
     function handleKeyDown(event) {
       if (!openDropdownKey || event.key !== "Escape") return;
       setOpenDropdownKey(null);
@@ -249,11 +429,9 @@ export default function PaginationTable({
       }));
     }
 
-    document.addEventListener("mousedown", handleClickOutside);
     document.addEventListener("keydown", handleKeyDown);
 
     return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
       document.removeEventListener("keydown", handleKeyDown);
     };
   }, [openDropdownKey]);
@@ -427,9 +605,6 @@ export default function PaginationTable({
   }
 
   function handleDropdownKeyDown(event, filterKey) {
-    const container = dropdownRefs.current?.[filterKey];
-    if (!container) return;
-
     if (event.key === "Escape") {
       if (openDropdownKey === filterKey) {
         event.preventDefault();
@@ -444,8 +619,9 @@ export default function PaginationTable({
         openDropdown(filterKey);
         return;
       }
+      const listbox = document.getElementById(`pagination-table-listbox-${filterKey}`);
       const optionNodes = Array.from(
-        container.querySelectorAll('[role="option"]:not(:disabled)')
+        (listbox || document).querySelectorAll('[role="option"]:not(:disabled)')
       );
       if (optionNodes.length === 0) return;
       const currentIndex = optionNodes.indexOf(document.activeElement);
@@ -499,204 +675,37 @@ export default function PaginationTable({
                 onKeyDown={onSearchKeyDown}
                 placeholder={searchPlaceholder}
                 aria-label={searchLabel || searchPlaceholder || "Search table"}
-                className={`w-full ${EDGE} border border-sibs-border bg-sibs-surface px-3 pl-9 font-jakarta sibs-text-xs font-semibold text-sibs-navy outline-none transition placeholder:text-sibs-muted hover:border-sibs-orange/40 hover:bg-white focus:border-sibs-orange focus:bg-white focus:ring-4 focus:ring-sibs-orange/10 ${
-                  isTaInlineLayout ? "h-8.5 sm:h-9 2xl:h-10" : "h-9 2xl:h-11"
-                }`}
+                className={`w-full ${EDGE} border border-sibs-border bg-sibs-surface px-3 pl-9 font-jakarta sibs-text-xs font-semibold text-sibs-navy outline-none transition placeholder:text-sibs-muted hover:border-sibs-orange/40 hover:bg-white focus:border-sibs-orange focus:bg-white focus:ring-4 focus:ring-sibs-orange/10 h-8.5 sm:h-9 2xl:h-10`}
               />
             </div>
           </div>
         ) : null}
 
-        {combinedDropdownFilters.map((filter) => {
-          const isOpen = openDropdownKey === filter.key;
-          const options = getFilteredDropdownOptions(filter);
-          const selectedLabel = getDropdownLabel(filter);
-          const isSearchable = filter.searchable !== false;
-          const label = getDropdownControlLabel(filter);
-          const selectedValues = getSelectedDropdownValues(filter);
-
-          return (
-            <div
-              key={filter.key}
-              ref={(node) => {
-                dropdownRefs.current[filter.key] = node;
-              }}
-              className={`relative w-full overflow-visible ${
-                isOpen ? "z-[90]" : "z-[60]"
-              } ${
-                filter.className || ""
-              }`}
-            >
-              {label ? (
-                <FieldLabel>{label}</FieldLabel>
-              ) : null}
-
-              {isSearchable ? (
-                <div className="group relative overflow-visible">
-                  <input
-                    type="text"
-                    value={
-                      isOpen
-                        ? dropdownSearch?.[filter.key] || ""
-                        : selectedLabel
-                    }
-                    onChange={(event) => {
-                      setDropdownSearch((previous) => ({
-                        ...previous,
-                        [filter.key]: event.target.value,
-                      }));
-                      setOpenDropdownKey(filter.key);
-                    }}
-                    onFocus={() => openDropdown(filter.key)}
-                    placeholder={filter.placeholder || "Search..."}
-                    autoComplete="off"
-                    role="combobox"
-                    aria-expanded={isOpen}
-                    aria-haspopup="listbox"
-                    aria-label={label || filter.placeholder || filter.key}
-                    onKeyDown={(e) => handleDropdownKeyDown(e, filter.key)}
-                    disabled={filter.disabled}
-                    className={`w-full ${EDGE} border px-3 pr-10 font-jakarta sibs-text-xs font-bold text-sibs-navy outline-none transition placeholder:text-sibs-muted disabled:cursor-not-allowed disabled:opacity-50 ${
-                      isOpen
-                        ? "border-sibs-orange bg-white ring-4 ring-sibs-orange/10"
-                        : "border-sibs-border bg-sibs-surface hover:border-sibs-orange/40 hover:bg-white focus:border-sibs-orange focus:bg-white focus:ring-4 focus:ring-sibs-orange/10"
-                    } ${
-                      isTaInlineLayout ? "h-8.5 sm:h-9 2xl:h-10" : "h-9 2xl:h-11"
-                    }`}
-                  />
-
-                  <button
-                    type="button"
-                    onClick={() => toggleDropdown(filter.key)}
-                    disabled={filter.disabled}
-                    className="absolute right-2 top-1/2 flex h-6.5 w-6.5 2xl:h-7 2xl:w-7 -translate-y-1/2 items-center justify-center rounded-md text-sibs-muted transition hover:bg-sibs-cream-light hover:text-sibs-orange disabled:cursor-not-allowed disabled:opacity-50"
-                    aria-label={`Toggle ${label || filter.key} dropdown`}
-                  >
-                    <ChevronDown
-                      size={17}
-                      className={`transition-transform duration-300 ${
-                        isOpen ? "rotate-180" : ""
-                      }`}
-                    />
-                  </button>
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => toggleDropdown(filter.key)}
-                  disabled={filter.disabled}
-                  className={`flex w-full items-center justify-between ${EDGE} border px-3 text-left font-jakarta sibs-text-xs font-bold text-sibs-navy outline-none transition disabled:cursor-not-allowed disabled:opacity-50 ${
-                    isOpen
-                      ? "border-sibs-orange bg-white ring-4 ring-sibs-orange/10"
-                      : "border-sibs-border bg-sibs-surface hover:border-sibs-orange/40 hover:bg-white focus:border-sibs-orange focus:bg-white focus:ring-4 focus:ring-sibs-orange/10"
-                  } ${
-                    isTaInlineLayout ? "h-8.5 sm:h-9 2xl:h-10" : "h-9 2xl:h-11"
-                  }`}
-                  aria-expanded={isOpen}
-                  aria-haspopup="listbox"
-                  aria-label={label || selectedLabel || filter.key}
-                  onKeyDown={(e) => handleDropdownKeyDown(e, filter.key)}
-                >
-                  <span className="block min-w-0 truncate">
-                    {selectedLabel}
-                  </span>
-
-                  <ChevronDown
-                    size={17}
-                    className={`shrink-0 text-sibs-muted transition-transform duration-300 ${
-                      isOpen ? "rotate-180" : ""
-                    }`}
-                  />
-                </button>
-              )}
-
-              <AnimatedDropdown open={isOpen}>
-                <div
-                  role="listbox"
-                  aria-multiselectable={filter.multiple || undefined}
-                  onKeyDown={(e) => handleDropdownKeyDown(e, filter.key)}
-                  className="max-h-64 overflow-y-auto py-2 sibs-scrollbar"
-                >
-                  {filter.includeAll ?? false ? (
-                    <button
-                      type="button"
-                      onClick={() =>
-                        selectDropdownValue(filter, "All")
-                      }
-                      role="option"
-                      className={`block w-full px-3 py-2 2xl:px-4 2xl:py-2.5 text-left sibs-text-xs transition ${
-                        (filter.multiple
-                          ? selectedValues.length === 0
-                          : (!filter.value ||
-                             filter.value === "All" ||
-                             filter.value === filter.allLabel ||
-                             filter.value === "All Modules" ||
-                             filter.value === "All Accounts" ||
-                             filter.value === "All Statuses" ||
-                             filter.value === "All Access Levels"))
-                          ? "bg-sibs-cream-light font-extrabold text-sibs-orange"
-                          : "font-semibold text-sibs-text-secondary hover:bg-sibs-cream-subtle hover:text-sibs-orange"
-                      }`}
-                    >
-                      <span className="block truncate">
-                        {filter.allLabel || "All"}
-                      </span>
-                    </button>
-                  ) : null}
-
-                  {options.length > 0 ? (
-                    options.map((option, index) => {
-                      const optionValue = getOptionValue(option);
-                      const optionLabel = getOptionLabel(option);
-                      const cleanOptionValue = String(optionValue ?? "");
-                      const checked = filter.multiple
-                        ? selectedValues.includes(cleanOptionValue)
-                        : filter.value === optionValue;
-
-                      return (
-                        <button
-                          key={`${filter.key}-${optionValue}-${index}`}
-                          role="option"
-                          aria-selected={checked}
-                          type="button"
-                          onClick={() =>
-                            selectDropdownValue(filter, optionValue)
-                          }
-                          className={`flex w-full items-center gap-2 px-3 py-2 2xl:px-4 2xl:py-2.5 text-left sibs-text-xs transition ${
-                            checked
-                              ? "bg-sibs-cream-light font-extrabold text-sibs-orange"
-                              : "font-semibold text-sibs-text-secondary hover:bg-sibs-cream-subtle hover:text-sibs-orange"
-                          }`}
-                        >
-                          {filter.multiple ? (
-                            <span
-                              className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${
-                                checked
-                                  ? "border-sibs-orange bg-sibs-orange text-white"
-                                  : "border-sibs-border bg-white text-transparent"
-                              }`}
-                              aria-hidden="true"
-                            >
-                              <Check size={11} strokeWidth={3} />
-                            </span>
-                          ) : null}
-
-                          <span className="block min-w-0 flex-1 truncate">
-                            {optionLabel}
-                          </span>
-                        </button>
-                      );
-                    })
-                  ) : (
-                    <div className="px-4 py-4 text-xs font-semibold text-sibs-muted">
-                      No options found.
-                    </div>
-                  )}
-                </div>
-              </AnimatedDropdown>
-            </div>
-          );
-        })}
+        {combinedDropdownFilters.map((filter) => (
+          <DropdownFilterItem
+            key={filter.key}
+            filter={filter}
+            isOpen={openDropdownKey === filter.key}
+            options={getFilteredDropdownOptions(filter)}
+            selectedLabel={getDropdownLabel(filter)}
+            isSearchable={filter.searchable !== false}
+            label={getDropdownControlLabel(filter)}
+            selectedValues={getSelectedDropdownValues(filter)}
+            searchValue={dropdownSearch?.[filter.key] || ""}
+            onSearchChange={(key, val) => {
+              setDropdownSearch((previous) => ({
+                ...previous,
+                [key]: val,
+              }));
+              setOpenDropdownKey(key);
+            }}
+            onOpen={openDropdown}
+            onClose={closeDropdown}
+            onToggle={toggleDropdown}
+            onSelectValue={selectDropdownValue}
+            onKeyDown={handleDropdownKeyDown}
+          />
+        ))}
 
         {visibleDateFilters.map((filter, index) => (
           <DateFilterField

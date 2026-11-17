@@ -1242,7 +1242,7 @@ export default function EmployeeTable({
     currentTab?.description || "Employee master records";
 
   return (
-    <div className="flex h-full min-h-[520px] min-w-0 flex-col bg-white font-jakarta">
+    <div className="flex min-w-0 flex-1 flex-col bg-white font-jakarta">
 
       <div className="border-b border-sibs-border p-4 sm:p-5 2xl:p-6 font-jakarta">
         <h3 className="font-heading text-sm 2xl:text-base font-bold text-sibs-navy tracking-tight">
@@ -1353,7 +1353,7 @@ export default function EmployeeTable({
           <ResponsiveTableShell
             mobileContent={
               <div ref={mobileScrollRef} className="p-3.5 sm:p-4">
-                {loading && employees.length === 0 ? (
+                {loading ? (
                   <DataCard.Skeleton count={5} lines={3} />
                 ) : employees.length === 0 ? (
                   <DataCard.Empty
@@ -1409,7 +1409,7 @@ export default function EmployeeTable({
                   </thead>
 
                   <tbody className="divide-y divide-sibs-border" aria-busy={loading}>
-                    {loading && employees.length === 0 ? (
+                    {loading ? (
                       <TableSkeletonRows
                         count={PAGE_LIMIT}
                         columns={columns.length}

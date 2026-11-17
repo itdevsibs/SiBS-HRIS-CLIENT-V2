@@ -21,7 +21,7 @@ import {
 
 import Header from "../../../components/layout/Header";
 import RoleDashboardSkeleton from "../../../components/Dashboard/shared/RoleDashboardSkeleton";
-import { PageHeaderHero } from "../../../components/ui";
+import { PageHeaderHero, MetricCard, StatusBadge } from "../../../components/ui";
 import { getSomDashboardBootstrap } from "../../../lib/axios/getSomDashboard";
 
 const PAGE_SHELL_CLASS = "sibs-dashboard-shell";
@@ -194,7 +194,7 @@ function SomDashboardErrorState({ message, onRetry }) {
           <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-[10px] bg-rose-50 text-rose-600">
             <AlertCircle className="h-6 w-6" />
           </div>
-          <h2 className="mt-4 text-lg font-extrabold text-sibs-navy">
+          <h2 className="mt-4 font-heading text-lg font-extrabold text-sibs-navy">
             Unable to load SOM Dashboard
           </h2>
           <p className="mt-2 text-sm font-medium leading-6 text-sibs-muted">
@@ -211,99 +211,6 @@ function SomDashboardErrorState({ message, onRetry }) {
         </div>
       </main>
     </div>
-  );
-}
-
-function MetricCard({
-  label,
-  value,
-  description,
-  icon,
-  tone = "navy",
-  onClick,
-  actionLabel = "Open related records",
-  delay = 0,
-}) {
-  const Icon = icon;
-  const tones = {
-    navy: {
-      label: "text-sibs-navy",
-      value: "text-sibs-navy",
-      icon: "bg-sibs-cream-light text-sibs-navy",
-    },
-    amber: {
-      label: "text-amber-800",
-      value: "text-amber-600",
-      icon: "bg-amber-50 text-amber-600",
-    },
-    red: {
-      label: "text-rose-800",
-      value: "text-rose-600",
-      icon: "bg-rose-50 text-rose-600",
-    },
-    indigo: {
-      label: "text-indigo-800",
-      value: "text-indigo-600",
-      icon: "bg-indigo-50 text-indigo-600",
-    },
-    orange: {
-      label: "text-sibs-orange",
-      value: "text-sibs-orange",
-      icon: "bg-orange-50 text-sibs-orange",
-    },
-    slate: {
-      label: "text-slate-700",
-      value: "text-slate-700",
-      icon: "bg-slate-100 text-slate-700",
-    },
-  };
-
-  const classes = tones[tone] || tones.navy;
-
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="sibs-metric-card sibs-page-card-in font-jakarta group flex min-h-[112px] w-full flex-col justify-between overflow-hidden p-3.5 text-left transition hover:-translate-y-0.5 hover:border-sibs-orange/35 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-sibs-orange/20"
-      style={{ animationDelay: `${delay}ms`, animationFillMode: "both" }}
-      title={actionLabel}
-      aria-label={`${label}: ${actionLabel}`}
-    >
-      <div className="flex items-start justify-between gap-3">
-        <span className={`text-[10px] font-extrabold uppercase tracking-normal ${classes.label}`}>
-          {label}
-        </span>
-        <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition group-hover:scale-105 ${classes.icon}`}>
-          <Icon size={17} strokeWidth={2} />
-        </span>
-      </div>
-      <div className="mt-2">
-        <p className={`text-3xl font-extrabold leading-none tabular-nums tracking-tight ${classes.value}`}>
-          {value}
-        </p>
-        <div className="mt-1.5 flex items-end justify-between gap-2">
-          <p className="text-xs font-bold leading-4 text-sibs-muted">
-            {description}
-          </p>
-          <ArrowRight className="h-3.5 w-3.5 shrink-0 text-sibs-faint transition group-hover:translate-x-0.5 group-hover:text-sibs-orange" />
-        </div>
-      </div>
-    </button>
-  );
-}
-
-function StatusBadge({ status }) {
-  const classes =
-    status === "Delayed"
-      ? "border-rose-200 bg-rose-50 text-rose-700"
-      : status === "At Risk"
-        ? "border-amber-200 bg-amber-50 text-amber-700"
-        : "border-emerald-200 bg-emerald-50 text-emerald-700";
-
-  return (
-    <span className={`inline-flex whitespace-nowrap rounded border px-2 py-0.5 text-[10px] font-extrabold uppercase ${classes}`}>
-      {status}
-    </span>
   );
 }
 
@@ -603,7 +510,7 @@ export default function SOMDashboardPage() {
             <article className="sibs-page-card-in sibs-card p-5 sm:p-6 font-jakarta" style={{ animationDelay: "240ms", animationFillMode: "both" }}>
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <h2 className="sibs-section-title">Requirement vs Filled Progress</h2>
+                  <h2 className="sibs-section-title font-heading">Requirement vs Filled Progress</h2>
                   <p className="sibs-section-subtitle">
                     Largest approved hiring requirements within your assigned SOM scope.
                   </p>
@@ -676,7 +583,7 @@ export default function SOMDashboardPage() {
             </article>
 
             <article className="sibs-page-card-in sibs-card p-5 sm:p-6 font-jakarta" style={{ animationDelay: "240ms", animationFillMode: "both" }}>
-              <h2 className="sibs-section-title">Weekly Movement Pipeline</h2>
+              <h2 className="sibs-section-title font-heading">Weekly Movement Pipeline</h2>
               <p className="sibs-section-subtitle">
                 Candidate progression within your assigned SOM scope.
               </p>
@@ -723,7 +630,7 @@ export default function SOMDashboardPage() {
           <section className="sibs-page-card-in sibs-card p-5 sm:p-6 font-jakarta" style={{ animationDelay: "320ms", animationFillMode: "both" }}>
             <div className="flex items-start justify-between gap-3">
               <div>
-                <h2 className="sibs-section-title">SOM Quick Access</h2>
+                <h2 className="sibs-section-title font-heading">SOM Quick Access</h2>
                 <p className="sibs-section-subtitle">
                   Open the operational records available to Senior Operations Management.
                 </p>
@@ -764,7 +671,7 @@ export default function SOMDashboardPage() {
             <article className="sibs-page-card-in sibs-card p-5 sm:p-6 2xl:col-span-8 font-jakarta" style={{ animationDelay: "360ms", animationFillMode: "both" }}>
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <h2 className="sibs-section-title">Role Hiring Status</h2>
+                  <h2 className="sibs-section-title font-heading">Role Hiring Status</h2>
                   <p className="sibs-section-subtitle">
                     Highest-priority open and aging hiring roles within your SOM scope.
                   </p>
@@ -840,7 +747,7 @@ export default function SOMDashboardPage() {
             </article>
 
             <aside className="sibs-page-card-in sibs-card p-5 sm:p-6 2xl:col-span-4 font-jakarta" style={{ animationDelay: "400ms", animationFillMode: "both" }}>
-              <h2 className="sibs-section-title">Recruiter Load</h2>
+              <h2 className="sibs-section-title font-heading">Recruiter Load</h2>
               <p className="sibs-section-subtitle">
                 Active roles versus recruiter output within your assigned SOM scope.
               </p>

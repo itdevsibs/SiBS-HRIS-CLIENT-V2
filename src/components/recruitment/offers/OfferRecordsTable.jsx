@@ -173,7 +173,7 @@ export default function OfferRecordsTable({
   }
 
   return (
-    <div className="p-3.5 font-jakarta sm:p-4 2xl:p-5">
+    <div className="flex flex-1 flex-col p-3.5 font-jakarta sm:p-4 2xl:p-5">
       <ResponsiveTableShell
         mobileContent={
           <OfferMobileCards
@@ -383,7 +383,7 @@ export default function OfferRecordsTable({
         loadedCount={displayedOffers.length}
         totalRecords={totalOffers}
         recordLabel="offered candidates"
-        className="border-0 bg-transparent p-0 shadow-none"
+        className="mt-auto border-0 bg-transparent p-0 shadow-none"
       />
     </div>
   );

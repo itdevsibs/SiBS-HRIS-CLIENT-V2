@@ -322,14 +322,14 @@ function SixWeekTrendsCard() {
             aria-busy="true"
             aria-label="Loading six-week trends chart"
           >
-            <div className="flex flex-1 items-end justify-between gap-3 px-4 py-8">
+            <div className="grid flex-1 grid-cols-6 items-end gap-2 px-2 py-8 sm:gap-3 sm:px-4">
               {Array.from({ length: 6 }).map((_, idx) => (
-                <div key={idx} className="flex flex-1 flex-col items-center gap-2">
+                <div key={idx} className="flex min-w-0 flex-col items-center gap-2">
                   <Skeleton
                     className="w-full rounded-t"
                     style={{ height: `${60 + (idx % 3) * 40}px` }}
                   />
-                  <Skeleton className="h-2.5 w-12" />
+                  <Skeleton className="h-2.5 w-full max-w-12" />
                 </div>
               ))}
             </div>

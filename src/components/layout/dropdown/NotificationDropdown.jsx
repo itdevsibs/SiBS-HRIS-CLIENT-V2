@@ -82,24 +82,24 @@ export default function NotificationDropdown() {
   } = useSidebarNotifications() || {};
 
   const [open, setOpen] = useState(false);
-  const [notifMounted, setNotifMounted] = useState(false);
-  const [notifActive, setNotifActive] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     let timer;
     let frame;
     if (open) {
-      setNotifMounted(true);
-      frame = requestAnimationFrame(() => setNotifActive(true));
+      frame = requestAnimationFrame(() => setMounted(true));
     } else {
-      setNotifActive(false);
-      timer = setTimeout(() => setNotifMounted(false), 200);
+      timer = setTimeout(() => setMounted(false), 200);
     }
     return () => {
       if (frame) cancelAnimationFrame(frame);
       if (timer) clearTimeout(timer);
     };
   }, [open]);
+
+  const notifMounted = open || mounted;
+  const notifActive = open && mounted;
   const [activeCategory, setActiveCategory] = useState("all");
   const [expanded, setExpanded] = useState(false);
   const [dropdownPosition, setDropdownPosition] = useState({
@@ -118,7 +118,7 @@ export default function NotificationDropdown() {
     if (!buttonRef.current || typeof window === "undefined") return;
     const rect = buttonRef.current.getBoundingClientRect();
     const isMobile = window.innerWidth < 640;
-    const top = rect.bottom + 8;
+    const top = isMobile ? Math.max(rect.bottom + 8, 106) : rect.bottom + 8;
 
     if (isMobile) {
       setDropdownPosition({
@@ -157,7 +157,6 @@ export default function NotificationDropdown() {
 
   useLayoutEffect(() => {
     if (!open) return undefined;
-    calculatePosition();
 
     function handleResizeOrScroll() {
       calculatePosition();
@@ -531,9 +530,9 @@ export default function NotificationDropdown() {
                               }}
                               title="Dismiss"
                               aria-label={`Dismiss ${notif.title || "notification"}`}
-                              className="flex h-5.5 w-5.5 items-center justify-center rounded text-slate-400 opacity-60 hover:opacity-100 hover:bg-rose-50 hover:text-rose-600 active:bg-rose-100 transition-all focus:opacity-100 focus-visible:ring-1 focus-visible:ring-rose-400"
+                              className="flex h-7 w-7 items-center justify-center rounded text-sibs-muted hover:bg-rose-50 hover:text-rose-600 active:bg-rose-100 transition-all focus-visible:ring-1 focus-visible:ring-rose-400"
                             >
-                              <X size={12} strokeWidth={2.2} />
+                              <X size={14} strokeWidth={2.2} />
                             </button>
                           </div>
                         </div>

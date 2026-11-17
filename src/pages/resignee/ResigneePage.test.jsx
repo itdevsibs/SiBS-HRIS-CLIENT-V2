@@ -113,7 +113,7 @@ describe("ResigneePage - Global Standard Table Layout Conformance", () => {
     expect(content).not.toMatch(/md:items-end\s+md:justify-between[\s\S]*?<SearchInput/);
   });
 
-  it("places TablePagination directly below the table shell without double nested container", () => {
-    expect(content).toContain('<div className="mt-4 2xl:mt-5">');
+  it("anchors TablePagination at the bottom after the table shell", () => {
+    expect(content).toMatch(/\/>\s*<div className="mt-auto pt-4 2xl:pt-5">\s*<TablePagination/);
   });
 });

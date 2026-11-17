@@ -724,7 +724,7 @@ export default function ChwcpTable({
   }
 
   return (
-    <div className="flex h-full min-h-[520px] min-w-0 flex-col bg-white font-jakarta">
+    <div className="flex min-w-0 flex-1 flex-col bg-white font-jakarta">
       <style>{`
         @keyframes sibsEmployeeRowReveal {
           from {

@@ -10,7 +10,7 @@ const labelClass =
   "mb-1.5 flex items-center justify-between gap-3 text-xs font-extrabold text-sibs-primary-1";
 
 const inputClass =
-  "h-10 w-full rounded-[10px] border px-3 font-jakarta text-xs font-bold text-sibs-navy outline-none transition placeholder:text-sibs-muted disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-sibs-muted";
+  "h-8.5 sm:h-9 2xl:h-10 w-full rounded-[10px] border px-3 font-jakarta text-xs font-bold text-sibs-navy outline-none transition placeholder:text-sibs-muted disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-sibs-muted";
 
 function AnimatedDropdown({ open, anchorRef, onClose, topLayer, children }) {
   if (topLayer) {
@@ -49,7 +49,7 @@ export default function ThemedDropdown({
   emptyText = "No options found.",
   className = "",
   zIndex = "z-[60]",
-  topLayer = false,
+  topLayer = true,
   onBeforeOpen,
   onChange,
 }) {

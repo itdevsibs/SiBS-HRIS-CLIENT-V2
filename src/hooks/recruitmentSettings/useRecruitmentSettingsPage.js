@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef } from "react";
+import { useCallback, useLayoutEffect, useRef } from "react";
 
 import { useRecruitmentSettings } from "../../services/context/RecruitmentSettingsContext";
 
@@ -12,37 +12,26 @@ export function useRecruitmentSettingsPage() {
     setActiveTab,
   } = useRecruitmentSettings();
 
-  function scrollToTop(behavior = "auto") {
-    requestAnimationFrame(() => {
-      if (mainRef.current) {
-        mainRef.current.scrollTo({
-          top: 0,
-          left: 0,
-          behavior,
-        });
-      }
-    });
-  }
+  const scrollToTop = useCallback(() => {
+    if (mainRef.current) {
+      mainRef.current.scrollTop = 0;
+    }
+  }, []);
 
-  function forceScrollToTop() {
-    scrollToTop("auto");
+  const handleOpenSetting = useCallback(
+    (settingKey) => {
+      if (!settingKey) return;
 
-    window.setTimeout(() => {
-      scrollToTop("auto");
-    }, 0);
-  }
+      setActiveTab(settingKey);
+      scrollToTop();
+    },
+    [setActiveTab, scrollToTop],
+  );
 
-  function handleOpenSetting(settingKey) {
-    if (!settingKey) return;
-
-    setActiveTab(settingKey);
-    forceScrollToTop();
-  }
-
-  function handleBackToOverview() {
+  const handleBackToOverview = useCallback(() => {
     setActiveTab(RECRUITMENT_SETTINGS_OVERVIEW);
-    forceScrollToTop();
-  }
+    scrollToTop();
+  }, [setActiveTab, scrollToTop]);
 
   useLayoutEffect(() => {
     if (
@@ -51,18 +40,13 @@ export function useRecruitmentSettingsPage() {
     ) {
       window.history.scrollRestoration = "manual";
     }
-
-    forceScrollToTop();
   }, []);
-
-  useEffect(() => {
-    setActiveTab(RECRUITMENT_SETTINGS_OVERVIEW);
-  }, [setActiveTab]);
 
   return {
     activeTab,
     handleBackToOverview,
     handleOpenSetting,
     mainRef,
+    scrollToTop,
   };
 }

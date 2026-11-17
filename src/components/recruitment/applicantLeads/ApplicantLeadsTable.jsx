@@ -158,7 +158,7 @@ export default function ApplicantLeadsTable({
   const confirmationLeadPhone = cleanText(emailConfirmationLead?.cpNum);
 
   return (
-    <div className="w-full">
+    <div className="flex w-full flex-1 flex-col">
       {/* =====================================================
           TABLE SHELL (Seamlessly connected to tabs above)
       ===================================================== */}
@@ -440,7 +440,7 @@ export default function ApplicantLeadsTable({
     />
   </div>
 
-      <div className="px-4 pb-4 sm:px-5 sm:pb-5">
+      <div className="mt-auto px-4 pb-4 sm:px-5 sm:pb-5">
         <PaginationTable
           showSearch={false}
           showPagination

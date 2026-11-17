@@ -9,8 +9,6 @@ import {
   FileText,
   TrendingUp,
   ShieldCheck,
-  ChevronRight,
-  Eye,
   Check,
   Users,
   RotateCcw,
@@ -392,7 +390,6 @@ export default function ESEPCoachingTabView({
                 <th scope="col" className="sibs-data-table-th text-left px-3 2xl:px-4 py-2.5 2xl:py-3">LATEST RESULT</th>
                 <th scope="col" className="sibs-data-table-th text-left px-3 2xl:px-4 py-2.5 2xl:py-3">EFFECTIVENESS EVIDENCE</th>
                 <th scope="col" className="sibs-data-table-th text-left px-3 2xl:px-4 py-2.5 2xl:py-3">FOLLOW-UP</th>
-                <th scope="col" className="sibs-data-table-th text-right px-3 2xl:px-4 py-2.5 2xl:py-3">ACTION</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-sibs-border/60 text-sibs-navy">
@@ -406,15 +403,16 @@ export default function ESEPCoachingTabView({
                   const status = latestSession ? coachingStatus(latestSession, esepEvaluations, simulatedCurrentDate) : null;
                   const isSelected = (emp.sibsEmployeeId || emp.id) === selectedEmpId || emp.id === selectedEmpId;
                   const initials = emp.fullName.split(" ").map((n) => n[0]).slice(0, 2).join("");
+                  const openResults = () => {
+                    setSelectedEmpId(emp.sibsEmployeeId || emp.id);
+                    setViewResultModalEmployee(emp);
+                  };
 
                   return (
                     <tr
                       key={emp.id}
-                      onClick={() => {
-                        setSelectedEmpId(emp.sibsEmployeeId || emp.id);
-                        setViewResultModalEmployee(emp);
-                      }}
-                      className={`sibs-data-table-row transition-colors cursor-pointer ${
+                      onClick={openResults}
+                      className={`sibs-data-table-row focus-within:bg-sibs-cream-light ${
                         isSelected ? "bg-sibs-orange/5 border-l-4 border-l-sibs-orange" : "hover:bg-sibs-surface/60"
                       }`}
                     >
@@ -424,9 +422,17 @@ export default function ESEPCoachingTabView({
                             {initials}
                           </div>
                           <div className="min-w-0">
-                            <div className="font-extrabold text-sibs-navy sibs-text-xs leading-tight block hover:text-sibs-orange transition-colors truncate">
+                            <button
+                              type="button"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                openResults();
+                              }}
+                              className="block max-w-full cursor-pointer truncate text-left sibs-text-xs font-extrabold leading-tight text-sibs-navy underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-sibs-orange"
+                            >
                               {emp.fullName}
-                            </div>
+                              <span className="sr-only">, open coaching results</span>
+                            </button>
                             <div className="sibs-text-micro text-sibs-muted font-medium mt-0.5 truncate">
                               {emp.sibsEmployeeId || emp.id} • {emp.account} (TL: {emp.tl || "Anton Reyes"})
                             </div>
@@ -482,26 +488,12 @@ export default function ESEPCoachingTabView({
                         </span>
                       </td>
 
-                      <td className="px-3 2xl:px-4 py-2.5 2xl:py-3 text-right">
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedEmpId(emp.sibsEmployeeId || emp.id);
-                            setViewResultModalEmployee(emp);
-                          }}
-                          className="sibs-btn-secondary h-8 px-3 text-xs font-bold gap-1 cursor-pointer"
-                        >
-                          <span>View results</span>
-                          <ChevronRight size={13} />
-                        </button>
-                      </td>
                     </tr>
                   );
                 })
               ) : (
                 <TableEmptyRow
-                  colSpan={6}
+                  colSpan={5}
                   title="No employee results match search and filters"
                   description="Try adjusting your keyword, status, account, or team leader filters to view coachee performance."
                   actionLabel={hasOverviewActiveFilters ? "Clear Filters" : undefined}
@@ -775,7 +767,6 @@ export default function ESEPCoachingTabView({
                 <th scope="col" className="sibs-data-table-th text-left px-3 2xl:px-4 py-2.5 2xl:py-3">SESSION TYPE</th>
                 <th scope="col" className="sibs-data-table-th text-left px-3 2xl:px-4 py-2.5 2xl:py-3">GOAL &amp; ACTION PLAN</th>
                 <th scope="col" className="sibs-data-table-th text-left px-3 2xl:px-4 py-2.5 2xl:py-3">FOLLOW-UP</th>
-                <th scope="col" className="sibs-data-table-th text-right px-3 2xl:px-4 py-2.5 2xl:py-3">ACTION</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-sibs-border/60 text-sibs-navy">
@@ -790,9 +781,17 @@ export default function ESEPCoachingTabView({
                   const initials = empObj
                     ? empObj.fullName.split(" ").map((n) => n[0]).slice(0, 2).join("")
                     : "CS";
+                  const openSession = () => {
+                    setSelectedEmpId(session.emp);
+                    setActiveGrowModalSessionId(session.id);
+                  };
 
                   return (
-                    <tr key={session.id} className="sibs-data-table-row hover:bg-sibs-cream-light transition-colors">
+                    <tr
+                      key={session.id}
+                      onClick={openSession}
+                      className="sibs-data-table-row focus-within:bg-sibs-cream-light"
+                    >
                       <td className="px-3 2xl:px-4 py-2.5 2xl:py-3 whitespace-nowrap font-bold tabular-nums text-sibs-navy sibs-text-xs">
                         {session.date}
                       </td>
@@ -802,9 +801,17 @@ export default function ESEPCoachingTabView({
                             {initials}
                           </div>
                           <div>
-                            <strong className="font-extrabold text-sibs-navy sibs-text-xs leading-tight block">
+                            <button
+                              type="button"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                openSession();
+                              }}
+                              className="block cursor-pointer text-left sibs-text-xs font-extrabold leading-tight text-sibs-navy underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-sibs-orange"
+                            >
                               {empObj?.fullName || session.emp}
-                            </strong>
+                              <span className="sr-only">, open coaching session {session.id}</span>
+                            </button>
                             <span className="sibs-text-micro text-sibs-muted font-medium mt-0.5 block">
                               {session.emp}
                             </span>
@@ -845,25 +852,12 @@ export default function ESEPCoachingTabView({
                           </span>
                         )}
                       </td>
-                      <td className="px-3 2xl:px-4 py-2.5 2xl:py-3 text-right whitespace-nowrap">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setSelectedEmpId(session.emp);
-                            setActiveGrowModalSessionId(session.id);
-                          }}
-                          className="sibs-btn-secondary h-8 px-3 text-xs font-bold gap-1 cursor-pointer"
-                        >
-                          <Eye size={12} className="text-sibs-navy" />
-                          <span>View GROW</span>
-                        </button>
-                      </td>
                     </tr>
                   );
                 })
               ) : (
                 <TableEmptyRow
-                  colSpan={7}
+                  colSpan={6}
                   title="No GROW sessions match search and filters"
                   description="Try adjusting your keyword, session type, facilitator, or outcome filter."
                   actionLabel={hasHistoryActiveFilters ? "Clear Filters" : undefined}

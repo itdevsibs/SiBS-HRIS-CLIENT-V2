@@ -69,6 +69,7 @@ export default function MetricCard({
   delay = 0,
   loading = false,
   onClick,
+  truncateValue = false,
   className = "",
 }) {
   if (loading) {
@@ -112,7 +113,10 @@ export default function MetricCard({
             )}
 
             <div className="mt-1.5 2xl:mt-2 flex flex-wrap items-baseline gap-1.5 2xl:gap-2">
-              <span className="sibs-kpi-value tabular-nums">
+              <span
+                className={`sibs-kpi-value tabular-nums ${truncateValue ? "min-w-0 max-w-full truncate" : ""}`}
+                title={truncateValue ? String(value ?? "0") : undefined}
+              >
                 {value ?? "0"}
               </span>
 

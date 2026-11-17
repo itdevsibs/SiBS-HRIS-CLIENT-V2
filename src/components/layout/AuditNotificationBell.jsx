@@ -399,7 +399,7 @@ export default function AuditNotificationBell({ user }) {
         <section
           role="dialog"
           aria-label="Notifications"
-          className="fixed left-3 right-3 top-[68px] z-[10030] overflow-hidden rounded-2xl border border-sibs-border-subtle bg-white shadow-[0_18px_50px_rgba(4,44,81,0.2)] sm:absolute sm:left-auto sm:right-0 sm:top-[calc(100%+10px)] sm:w-[380px]"
+          className="fixed left-3 right-3 top-[106px] z-[10030] overflow-hidden rounded-2xl border border-sibs-border-subtle bg-white shadow-[0_18px_50px_rgba(4,44,81,0.2)] sm:absolute sm:left-auto sm:right-0 sm:top-[calc(100%+10px)] sm:w-[380px]"
         >
           <div className="flex items-center justify-between gap-3 border-b border-sibs-border px-4 py-3.5">
             <div className="min-w-0">

@@ -227,6 +227,8 @@ export default function SelectDropdown({
     <div ref={anchorRef} className="relative min-w-0 w-full font-jakarta">
       {label && !hideLabel ? (
         <label
+          id={`${dropdownId}-label`}
+          htmlFor={`${dropdownId}-trigger`}
           className={`mb-1 block ${
             labelClassName || "sibs-text-xs font-bold text-sibs-navy"
           }`}
@@ -240,6 +242,7 @@ export default function SelectDropdown({
         <div className={triggerClasses}>
           <input
             ref={searchInputRef}
+            id={`${dropdownId}-trigger`}
             type="text"
             role="combobox"
             aria-haspopup="listbox"
@@ -298,6 +301,7 @@ export default function SelectDropdown({
       ) : (
         <button
           ref={triggerButtonRef}
+          id={`${dropdownId}-trigger`}
           type="button"
           role="combobox"
           aria-haspopup="listbox"
@@ -344,6 +348,7 @@ export default function SelectDropdown({
         anchorRef={anchorRef}
         onClose={closeMenu}
         maxHeight={320}
+        topLayer={true}
         className={menuClassName}
       >
         <div

@@ -111,7 +111,7 @@ export default function RequisitionPage() {
       </div>
 
       <main className="sibs-dashboard-main-wide">
-        <div className="mx-auto w-full max-w-[1700px] space-y-3.5 sm:space-y-4 2xl:space-y-5">
+        <div className="mx-auto flex min-h-full w-full max-w-[1700px] flex-col gap-3.5 sm:gap-4 2xl:gap-5">
           {/* Header */}
           <PageHeaderHero
             kicker="Requisition Desk"
@@ -170,7 +170,7 @@ export default function RequisitionPage() {
 
           {/* Table / List Records Card */}
           <section
-            className="sibs-page-card-in sibs-card overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-xs font-jakarta"
+            className="flex shrink-0 grow flex-col sibs-page-card-in sibs-card overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-xs font-jakarta"
             style={{ animationDelay: "240ms", animationFillMode: "both" }}
           >
             <div className="border-b border-sibs-border p-4 sm:p-5 2xl:p-6 font-jakarta">
@@ -421,7 +421,7 @@ export default function RequisitionPage() {
             />
 
             {!loading && filteredRequisitions.length > 0 && (
-              <div className="border-t border-sibs-border px-4 py-3">
+              <div className="mt-auto border-t border-sibs-border px-4 py-3">
                 <TablePagination
                   currentPage={currentPage}
                   totalPages={Math.max(1, Math.ceil(filteredRequisitions.length / pageSize))}

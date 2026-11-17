@@ -38,7 +38,10 @@ export default function SurveyHeader({ completed = false, progressPercentage = 7
             <span className="rounded-full border border-sibs-orange/40 bg-sibs-orange/15 px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-sibs-orange sm:text-[10px]">
               Public Portal
             </span>
-            <p className="mt-1 truncate text-[10px] font-semibold text-slate-300 sm:text-[11px]">
+            <p
+              title="Voice of Candidate Experience Survey"
+              className="mt-1 line-clamp-2 sm:truncate text-[10px] font-semibold text-slate-300 sm:text-[11px]"
+            >
               Voice of Candidate Experience Survey
             </p>
           </div>

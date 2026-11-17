@@ -31,6 +31,7 @@ import { getWorkforceHiringPlanAccounts } from "../../lib/axios/getWorkforceHiri
 
 export default function useWeeklyReportsPage() {
   const mainRef = useRef(null);
+  const inFlightRef = useRef(false);
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All Status");
@@ -39,13 +40,18 @@ export default function useWeeklyReportsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [isManualRefreshing, setIsManualRefreshing] = useState(false);
   const [liveRecords, setLiveRecords] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
 
   const [savedReports, setSavedReports] = useState(() => {
     return safeReadArray(WEEKLY_REPORTS_STORAGE_KEY, []);
   });
+  const [isLoading, setIsLoading] = useState(() => {
+    return safeReadArray(WEEKLY_REPORTS_STORAGE_KEY, []).length === 0;
+  });
 
   const fetchLiveWeeklyReportData = useCallback(async () => {
+    if (inFlightRef.current) return;
+    inFlightRef.current = true;
+
     try {
       const [
         hiringNeedsRes,
@@ -58,7 +64,7 @@ export default function useWeeklyReportsPage() {
         getCandidatePipelineCandidates().catch(() => ({})),
         onboardingApi.getOnboardingRecords().catch(() => ({})),
         getSourcingAnalyticsData().catch(() => ({})),
-        getWorkforceHiringPlanAccounts().catch(() => ([])),
+        getWorkforceHiringPlanAccounts("All", "", "", "All", false).catch(() => ([])),
       ]);
 
       const hiringNeedsData =
@@ -203,6 +209,7 @@ export default function useWeeklyReportsPage() {
     } catch (err) {
       console.error("Failed to load live weekly report data:", err);
     } finally {
+      inFlightRef.current = false;
       setIsLoading(false);
     }
   }, []);
@@ -255,7 +262,6 @@ export default function useWeeklyReportsPage() {
     function refreshFromStorage() {
       fetchLiveWeeklyReportData();
       setRefreshKey((previous) => previous + 1);
-      scrollToTopAfterRender();
     }
 
     WEEKLY_REPORT_REFRESH_EVENTS.forEach((eventName) => {
@@ -267,7 +273,7 @@ export default function useWeeklyReportsPage() {
         window.removeEventListener(eventName, refreshFromStorage);
       });
     };
-  }, [scrollToTopAfterRender, fetchLiveWeeklyReportData]);
+  }, [fetchLiveWeeklyReportData]);
 
   const moduleContext = useMemo(
     () => buildModuleContext(liveRecords),

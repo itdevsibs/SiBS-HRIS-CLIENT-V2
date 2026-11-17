@@ -116,7 +116,7 @@ function filterRows(rows = [], searchValue = "") {
 function ForecastClusterAccountColGroup({ fitToScreen = false }) {
   return (
     <colgroup>
-      <col style={{ width: fitToScreen ? "9%" : "150px" }} />
+      <col style={{ width: fitToScreen ? "118px" : "150px" }} />
       <col style={{ width: fitToScreen ? "11.5%" : "190px" }} />
       <col style={{ width: fitToScreen ? "5.5%" : "115px" }} />
       <col style={{ width: fitToScreen ? "5%" : "105px" }} />
@@ -156,7 +156,7 @@ function ForecastClusterAccountTableView({
 }) {
   const headerScrollRef = useRef(null);
 
-  const accountStickyLeft = fitToScreen ? "9%" : "150px";
+  const accountStickyLeft = fitToScreen ? "118px" : "150px";
 
   const tableClassName = `table-fixed border-collapse font-jakarta whitespace-nowrap ${
     fitToScreen
@@ -269,11 +269,11 @@ function ForecastClusterAccountTableView({
       ) : (
         <div className="flex shrink-0 bg-sibs-surface">
           {/* These two headers are completely outside the horizontal-scroll header viewport. */}
-          <div className="flex h-[54px] w-[340px] shrink-0 2xl:h-[62px]">
-            <div className="flex w-[150px] shrink-0 items-center border-r border-sibs-border bg-sibs-surface px-2.5 text-left font-jakarta text-[9px] font-black uppercase tracking-wider text-sibs-primary-1 2xl:px-3 2xl:text-[10px]">
+          <div className="flex h-[54px] max-w-[calc(100vw-5rem)] sm:max-w-none w-[240px] sm:w-[340px] shrink-0 2xl:h-[62px]">
+            <div className="flex w-[100px] sm:w-[150px] shrink-0 items-center border-r border-sibs-border bg-sibs-surface px-2.5 text-left font-jakarta text-[9px] font-black uppercase tracking-wider text-sibs-primary-1 2xl:px-3 2xl:text-[10px]">
               Cluster
             </div>
-            <div className="flex w-[190px] shrink-0 items-center border-r border-slate-300 bg-sibs-surface px-2.5 text-left font-jakarta text-[9px] font-black uppercase tracking-wider text-sibs-primary-1 shadow-[8px_0_12px_-10px_rgba(15,23,42,0.55)] 2xl:px-3 2xl:text-[10px]">
+            <div className="flex min-w-0 flex-1 sm:w-[190px] sm:flex-none shrink-0 items-center border-r border-slate-300 bg-sibs-surface px-2.5 text-left font-jakarta text-[9px] font-black uppercase tracking-wider text-sibs-primary-1 shadow-[8px_0_12px_-10px_rgba(15,23,42,0.55)] 2xl:px-3 2xl:text-[10px]">
               Account
             </div>
           </div>

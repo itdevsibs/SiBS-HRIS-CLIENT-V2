@@ -9,7 +9,7 @@ import {
 
 import App from "./App.jsx";
 import PublicRouteFallback from "./components/ui/PublicRouteFallback.jsx";
-import { isStandalonePublicRoute } from "./config/publicRoutes";
+import { isStandalonePublicRoute, normalizePath } from "./config/publicRoutes";
 import "./index.css";
 import { startAnimatedHrisFavicon } from "./lib/utils/animatedFavicon.js";
 
@@ -52,6 +52,9 @@ const CandidateExperienceSurveyPage = lazyWithRetry(() =>
 );
 const FinalInterviewForms = lazyWithRetry(() =>
   import("./components/recruitment/forms/FinalInterviewForms.jsx")
+);
+const PublicApplicantPortalPage = lazyWithRetry(() =>
+  import("./pages/public/PublicApplicantPortalPage.jsx")
 );
 
 /* =====================================================
@@ -204,6 +207,20 @@ export function StandalonePublicApp() {
         />
 
         {/* =========================================
+            PUBLIC APPLICANT ONBOARDING PORTAL
+        ========================================= */}
+
+        <Route
+          path="/applicant-portal"
+          element={<PublicApplicantPortalPage />}
+        />
+
+        <Route
+          path="/public/applicant-portal"
+          element={<PublicApplicantPortalPage />}
+        />
+
+        {/* =========================================
             PUBLIC HOST FALLBACK
         ========================================= */}
 
@@ -223,21 +240,20 @@ export function StandalonePublicApp() {
 const pathname = window.location.pathname;
 const hostname = window.location.hostname;
 
-const isStandalonePublic = isStandalonePublicRoute(
-  pathname,
-  hostname,
-);
+const isCandidateStandalonePublic =
+  isStandalonePublicRoute(pathname, hostname) &&
+  normalizePath(pathname) !== "/login";
 
 // Browser-tab accent for private HRIS routes only. Public application routes
 // continue using the favicon in index.html unchanged.
-if (!isStandalonePublic) {
+if (!isCandidateStandalonePublic && normalizePath(pathname) !== "/login") {
   startAnimatedHrisFavicon();
 }
 
 createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <BrowserRouter>
-      {isStandalonePublic ? <StandalonePublicApp /> : <App />}
+      {isCandidateStandalonePublic ? <StandalonePublicApp /> : <App />}
     </BrowserRouter>
   </React.StrictMode>,
 );

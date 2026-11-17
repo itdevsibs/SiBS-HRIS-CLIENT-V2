@@ -7,7 +7,11 @@ import ProtectedRoute from "./components/auth/ProtectedRoute";
 import PageFallback from "@/components/ui/PageFallback";
 import { PublicRouteFallback } from "@/components/ui";
 import { useUser } from "./services/context/UserContext";
-import { getDefaultDashboardPath } from "./config/accessControl";
+import {
+  cleanRole,
+  getDefaultDashboardPath,
+  getRawAdminAccess,
+} from "./config/accessControl";
 import {
   isPublicApplicationHostname,
   isPublicOrExternalRoute,
@@ -90,6 +94,7 @@ const FinalInterviewForms = lazyWithRetry(() => import("./components/recruitment
 // Settings
 const RecruitmentSettingsPage = lazyWithRetry(() => import("./pages/Settings/RecruitmentSettingsPage"));
 const UserSettingsPage = lazyWithRetry(() => import("./pages/Settings/UserSettingsPage"));
+const LegacyRecruitmentSettingsAdapter = lazyWithRetry(() => import("./pages/Settings/LegacyRecruitmentSettingsAdapter"));
 
 // New Integrated Modules
 const PublicApplicantPortalPage = lazyWithRetry(() => import("./pages/public/PublicApplicantPortalPage"));
@@ -111,6 +116,20 @@ function DashboardRedirect() {
   const { user } = useUser();
   const targetPath = getDefaultDashboardPath(user);
   return <Navigate to={targetPath} replace />;
+}
+
+function SettingsRedirect() {
+  const { user } = useUser();
+  const rawAccess = getRawAdminAccess(user);
+  const role = cleanRole(user?.role);
+  const isSuperAdmin = rawAccess === 7 || role === "super_admin";
+
+  return (
+    <Navigate
+      to={isSuperAdmin ? "/settings/users" : "/settings/recruitment"}
+      replace
+    />
+  );
 }
 
 function PublicApplicationRoutes() {
@@ -685,7 +704,12 @@ function MainApplicationRoutes() {
 
       {/* SETTINGS */}
       <Route
-        path="/settings/recruitment-settings"
+        path="/settings"
+        element={<SettingsRedirect />}
+      />
+
+      <Route
+        path="/settings/recruitment/*"
         element={
           <PrivateRoute>
             <RecruitmentSettingsPage />
@@ -694,7 +718,7 @@ function MainApplicationRoutes() {
       />
 
       <Route
-        path="/settings/user-settings"
+        path="/settings/users"
         element={
           <PrivateRoute>
             <UserSettingsPage />
@@ -702,9 +726,26 @@ function MainApplicationRoutes() {
         }
       />
 
+      {/* Backward-compatible legacy settings routes and aliases */}
+      <Route
+        path="/settings/recruitment-settings"
+        element={
+          <PrivateRoute>
+            <LegacyRecruitmentSettingsAdapter />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/settings/user-settings"
+        element={<Navigate to="/settings/users" replace />}
+      />
       <Route
         path="/settings/account-settings"
-        element={<Navigate to="/settings/user-settings" replace />}
+        element={<Navigate to="/settings/users" replace />}
+      />
+      <Route
+        path="/users"
+        element={<Navigate to="/settings/users" replace />}
       />
 
       {/* COMMUNICATION */}

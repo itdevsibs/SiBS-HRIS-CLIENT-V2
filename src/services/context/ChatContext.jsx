@@ -5,6 +5,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -295,6 +296,13 @@ export function ChatProvider({ children }) {
 
   const activeConversationIdRef = useRef(null);
   const mountedRef = useRef(true);
+  const sessionRef = useRef(null);
+  const selectionEpochRef = useRef(0);
+  const latestReadRef = useRef(null);
+  const latestReadRevisionRef = useRef(0);
+  const olderReadRef = useRef(null);
+  const reloadOnOpenRef = useRef(false);
+  const userRole = cleanText(user?.role);
   const chatWindowUiOpenRef = useRef(false);
   // This flag is also cleared when the page is hidden, so backgrounded chats
   // can receive messages without being marked read.
@@ -305,7 +313,7 @@ export function ChatProvider({ children }) {
   const revokedConversationIdsRef = useRef(new Set());
   // Avoid another read-write every two seconds for an unchanged timeline.
   const acknowledgedReadIdsRef = useRef(new Map());
-  const fallbackSyncBusyRef = useRef(false);
+  const fallbackSyncBusyRef = useRef(null);
   const typingSyncBusyRef = useRef(false);
   const typingExpiryTimersRef = useRef(new Map());
   const notifiedMessageIdsRef = useRef(new Set());
@@ -315,9 +323,64 @@ export function ChatProvider({ children }) {
   // this on a thread switch avoids showing stale data from a previous chat.
   const timelineSyncRef = useRef({ conversationId: 0, version: "", at: 0 });
 
-  useEffect(() => {
-    activeConversationIdRef.current = activeConversationId;
-  }, [activeConversationId]);
+  const invalidateSelection = useCallback(() => {
+    selectionEpochRef.current += 1;
+    latestReadRef.current?.controller.abort();
+    olderReadRef.current?.abort();
+    latestReadRef.current = null;
+    olderReadRef.current = null;
+  }, []);
+
+  const isCurrentSession = useCallback(
+    (session) => Boolean(session && mountedRef.current && sessionRef.current === session),
+    [],
+  );
+
+  const isCurrentSelection = useCallback(
+    (epoch, id) => Boolean(mountedRef.current && sessionRef.current &&
+      selectionEpochRef.current === epoch && activeConversationIdRef.current === id),
+    [],
+  );
+
+  const resetChatSession = useCallback(() => {
+    sessionRef.current = null;
+    invalidateSelection();
+    reloadOnOpenRef.current = false;
+    activeConversationIdRef.current = null;
+    conversationsRef.current = [];
+    messagesRef.current = [];
+    fallbackSyncBusyRef.current = null;
+    revokedConversationIdsRef.current.clear();
+    acknowledgedReadIdsRef.current.clear();
+    typingExpiryTimersRef.current.forEach((timerId) => window.clearTimeout(timerId));
+    typingExpiryTimersRef.current.clear();
+    notifiedMessageIdsRef.current.clear();
+    conversationLastMessageIdsRef.current.clear();
+    conversationToneBaselineReadyRef.current = false;
+    timelineSyncRef.current = { conversationId: 0, version: "", at: 0 };
+    setActiveConversationId(null);
+    setConversations([]);
+    setConversationsLoading(false);
+    setMessages([]);
+    setMessagesLoading(false);
+    setHasMoreMessages(false);
+    setLoadingOlderMessages(false);
+    setPresence({});
+    setTypingByConversation({});
+    setError("");
+    setMembershipNotice(null);
+  }, [invalidateSelection]);
+
+  useLayoutEffect(() => {
+    resetChatSession();
+    sessionRef.current = !userLoading && currentSibsId ? {} : null;
+    window.addEventListener("sibs:auth:logout", resetChatSession);
+    return () => {
+      window.removeEventListener("sibs:auth:logout", resetChatSession);
+      sessionRef.current = null;
+      invalidateSelection();
+    };
+  }, [currentSibsId, invalidateSelection, resetChatSession, userLoading, userRole]);
 
   useEffect(() => {
     messagesRef.current = messages;
@@ -371,13 +434,6 @@ export function ChatProvider({ children }) {
     };
   }, []);
 
-  const setChatWindowOpen = useCallback((isOpen) => {
-    const nextState = Boolean(isOpen);
-    chatWindowUiOpenRef.current = nextState;
-    chatWindowOpenRef.current = nextState;
-    setIsChatWindowOpen(nextState);
-  }, []);
-
   const appendMessageToTimeline = useCallback((message) => {
     const messageId = Number(message?.id || 0);
     if (!messageId) return;
@@ -418,6 +474,9 @@ export function ChatProvider({ children }) {
     });
 
     if (Number(activeConversationIdRef.current || 0) === id) {
+      invalidateSelection();
+      reloadOnOpenRef.current = false;
+      setLoadingOlderMessages(false);
       activeConversationIdRef.current = null;
       messagesRef.current = [];
       setActiveConversationId(null);
@@ -427,7 +486,7 @@ export function ChatProvider({ children }) {
       setHasMoreMessages(false);
       setError("");
     }
-  }, []);
+  }, [invalidateSelection]);
 
   const handleForbiddenConversationError = useCallback((conversationId, error) => {
     if (Number(error?.response?.status) !== 403) return false;
@@ -435,28 +494,34 @@ export function ChatProvider({ children }) {
     return true;
   }, [handleConversationAccessRevoked]);
 
-  const markReadOnce = useCallback(async (conversationId, messageId) => {
+  const markReadOnce = useCallback(async (conversationId, messageId, isRequestCurrent) => {
+    const session = sessionRef.current;
+    if (!session || (isRequestCurrent && !isRequestCurrent())) return;
     const id = Number(conversationId || 0);
     const latest = Number(messageId || 0);
     if (!id || !latest || revokedConversationIdsRef.current.has(id)) return;
 
-    if (latest <= Number(acknowledgedReadIdsRef.current.get(id) || 0)) return;
+    if (latest <= (acknowledgedReadIdsRef.current.get(id)?.messageId || 0)) return;
     // Mark optimistically while the request is in flight to deduplicate
     // overlapping socket events and the DB-backed 2-second safety poll.
-    acknowledgedReadIdsRef.current.set(id, latest);
+    const acknowledgement = { messageId: latest };
+    acknowledgedReadIdsRef.current.set(id, acknowledgement);
     try {
       await markChatRead(id, latest);
     } catch (error) {
-      if (acknowledgedReadIdsRef.current.get(id) === latest) {
+      if (acknowledgedReadIdsRef.current.get(id) === acknowledgement) {
         acknowledgedReadIdsRef.current.delete(id);
       }
-      handleForbiddenConversationError(id, error);
+      if (isCurrentSession(session) && (!isRequestCurrent || isRequestCurrent())) {
+        handleForbiddenConversationError(id, error);
+      }
       throw error;
     }
-  }, [handleForbiddenConversationError]);
+  }, [handleForbiddenConversationError, isCurrentSession]);
 
   const refreshPresence = useCallback((items = []) => {
-    if (!chatSocket.connected) return;
+    const session = sessionRef.current;
+    if (!session || !chatSocket.connected) return;
 
     const ids = [
       ...new Set(
@@ -470,7 +535,7 @@ export function ChatProvider({ children }) {
     if (!ids.length) return;
 
     chatSocket.emit("chat:presence:request", ids, (result) => {
-      if (!mountedRef.current || !result || typeof result !== "object") return;
+      if (!isCurrentSession(session) || !result || typeof result !== "object") return;
 
       setPresence((current) => {
         const changed = Object.entries(result).some(
@@ -479,7 +544,7 @@ export function ChatProvider({ children }) {
         return changed ? { ...current, ...result } : current;
       });
     });
-  }, []);
+  }, [isCurrentSession]);
 
   const notifyIncomingMessage = useCallback(
     (conversationId, message) => {
@@ -567,10 +632,8 @@ export function ChatProvider({ children }) {
   );
 
   const refreshConversations = useCallback(async ({ silent = false } = {}) => {
-    if (!currentSibsId || !chatAllowed) {
-      setConversations([]);
-      return [];
-    }
+    const session = sessionRef.current;
+    if (!session || !currentSibsId || !chatAllowed) return [];
 
     if (!silent) {
       setConversationsLoading(true);
@@ -578,6 +641,7 @@ export function ChatProvider({ children }) {
 
     try {
       const nextConversations = sortConversations(await getChatConversations());
+      if (!isCurrentSession(session)) return [];
       conversationsRef.current = nextConversations;
 
       const allowedIds = new Set(
@@ -641,11 +705,13 @@ export function ChatProvider({ children }) {
             );
             const latestLastMessageId = Number(conversation?.lastMessageId || 0);
 
+            const epoch = selectionEpochRef.current;
             try {
               const latestMessages = await getChatMessages(conversationId, {
                 limit: 75,
               });
 
+              if (!isCurrentSession(session)) return;
               (latestMessages || [])
                 .filter((message) => {
                   const messageId = Number(message?.id || 0);
@@ -659,7 +725,9 @@ export function ChatProvider({ children }) {
                   notifyIncomingMessage(conversationId, message);
                 });
             } catch (error) {
-              handleForbiddenConversationError(conversationId, error);
+              if (isCurrentSession(session) && selectionEpochRef.current === epoch) {
+                handleForbiddenConversationError(conversationId, error);
+              }
               // A temporary network issue can retry on the next sync.
             }
           }),
@@ -668,11 +736,12 @@ export function ChatProvider({ children }) {
 
       // A 403 may have arrived while the snapshot was being processed.
       // Never reinsert those threads into the visible list during this sync.
+      if (!isCurrentSession(session)) return [];
       const visibleConversations = nextConversations.filter(
         (item) => !revokedConversationIdsRef.current.has(Number(item?.id || 0)),
       );
       conversationsRef.current = visibleConversations;
-      if (mountedRef.current) {
+      if (isCurrentSession(session)) {
         setConversations((current) =>
           sameChatSnapshot(current, visibleConversations) ? current : visibleConversations,
         );
@@ -733,7 +802,7 @@ export function ChatProvider({ children }) {
       refreshPresence(visibleConversations);
       return visibleConversations;
     } catch (requestError) {
-      if (mountedRef.current) {
+      if (isCurrentSession(session)) {
         setError(
           requestError?.response?.data?.message ||
             requestError?.message ||
@@ -742,7 +811,7 @@ export function ChatProvider({ children }) {
       }
       return [];
     } finally {
-      if (!silent && mountedRef.current) {
+      if (!silent && isCurrentSession(session)) {
         setConversationsLoading(false);
       }
     }
@@ -751,92 +820,110 @@ export function ChatProvider({ children }) {
     currentSibsId,
     handleConversationAccessRevoked,
     handleForbiddenConversationError,
+    isCurrentSession,
     notifyIncomingMessage,
     refreshPresence,
   ]);
 
   const loadConversationMessages = useCallback(
     async (conversationId) => {
-      if (!conversationId || !currentSibsId) {
-        setMessages([]);
-        return [];
-      }
+      const epoch = selectionEpochRef.current;
+      if (!isCurrentSelection(epoch, conversationId)) return [];
 
+      latestReadRef.current?.controller.abort();
+      const request = { controller: new AbortController() };
+      latestReadRef.current = request;
+      latestReadRevisionRef.current += 1;
+      const isCurrent = () => latestReadRef.current === request &&
+        isCurrentSelection(epoch, conversationId);
+      const previousMessages = new Map(messagesRef.current.map((message) => [Number(message.id), message]));
       setMessagesLoading(true);
 
       try {
         const nextMessages = await getChatMessages(conversationId, {
           limit: 75,
+          signal: request.controller.signal,
         });
+        if (!isCurrent()) return [];
 
-        if (mountedRef.current && Number(activeConversationIdRef.current) === Number(conversationId)) {
-          messagesRef.current = nextMessages;
-          setMessages((current) => sameMessageTimeline(current, nextMessages) ? current : nextMessages);
-          setHasMoreMessages(nextMessages.length >= 75);
-          timelineSyncRef.current = {
-            conversationId: Number(conversationId),
-            version: timelineVersion(conversationsRef.current.find(
-              (item) => Number(item?.id || 0) === Number(conversationId),
-            )),
-            at: Date.now(),
-          };
-          setError("");
+        const byId = new Map(nextMessages.map((message) => [Number(message.id), message]));
+        for (const message of messagesRef.current) {
+          const id = Number(message.id);
+          if (!byId.has(id) || previousMessages.get(id) !== message) byId.set(id, message);
         }
+        const reconciled = [...byId.values()].sort((first, second) => Number(first.id) - Number(second.id));
+        messagesRef.current = reconciled;
+        setMessages((current) => sameMessageTimeline(current, reconciled) ? current : reconciled);
+        // Refreshes of an existing timeline must preserve its older-page cursor state.
+        if (!previousMessages.size) setHasMoreMessages(nextMessages.length >= 75);
+        timelineSyncRef.current = {
+          conversationId,
+          version: timelineVersion(conversationsRef.current.find(
+            (item) => Number(item?.id || 0) === conversationId,
+          )),
+          at: Date.now(),
+        };
+        setError("");
 
         const latestId = Number(nextMessages.at(-1)?.id || 0);
-        const isActivelyViewed =
-          typeof document !== "undefined" &&
-          document.visibilityState === "visible" &&
-          chatWindowOpenRef.current &&
-          Number(activeConversationIdRef.current) === Number(conversationId);
-
-        // Loading/syncing a conversation in the background must never clear
-        // its unread badge. A conversation becomes read only after SiBS Chat
-        // is actually open and that conversation is the one being viewed.
-        if (isActivelyViewed) {
-          await markReadOnce(conversationId, latestId).catch(() => {});
-
-          if (mountedRef.current) {
-            setConversations((current) => {
-              if (!current.some((item) =>
-                Number(item.id) === Number(conversationId) && Number(item.unreadCount || 0) > 0
-              )) return current;
-              return current.map((conversation) =>
-                Number(conversation.id) === Number(conversationId)
-                  ? { ...conversation, unreadCount: 0 }
-                  : conversation,
-              );
-            });
-          }
+        if (document.visibilityState === "visible" && chatWindowOpenRef.current) {
+          await markReadOnce(conversationId, latestId, isCurrent).catch(() => {});
+          if (!isCurrent()) return [];
+          setConversations((current) => {
+            if (!current.some((item) =>
+              Number(item.id) === conversationId && Number(item.unreadCount || 0) > 0
+            )) return current;
+            return current.map((item) =>
+              Number(item.id) === conversationId ? { ...item, unreadCount: 0 } : item,
+            );
+          });
         }
 
         return nextMessages;
       } catch (requestError) {
-        if (handleForbiddenConversationError(conversationId, requestError)) {
-          return [];
-        }
-        if (mountedRef.current) {
-          setError(
-            requestError?.response?.data?.message ||
-              requestError?.message ||
-              "Unable to load chat messages.",
-          );
-        }
+        if (!isCurrent() || request.controller.signal.aborted ||
+            requestError?.code === "ERR_CANCELED" || requestError?.name === "AbortError") return [];
+        if (handleForbiddenConversationError(conversationId, requestError)) return [];
+        setError(
+          requestError?.response?.data?.message ||
+            requestError?.message ||
+            "Unable to load chat messages.",
+        );
         return [];
       } finally {
-        if (mountedRef.current) {
+        if (isCurrent()) {
+          latestReadRef.current = null;
           setMessagesLoading(false);
         }
       }
     },
-    [currentSibsId, handleForbiddenConversationError, markReadOnce],
+    [handleForbiddenConversationError, isCurrentSelection, markReadOnce],
   );
+
+  const setChatWindowOpen = useCallback((isOpen) => {
+    const nextState = Boolean(isOpen);
+    const wasOpen = chatWindowUiOpenRef.current;
+    chatWindowUiOpenRef.current = nextState;
+    chatWindowOpenRef.current = nextState;
+    setIsChatWindowOpen(nextState);
+    if (wasOpen && !nextState) {
+      reloadOnOpenRef.current = Boolean(latestReadRef.current);
+      invalidateSelection();
+      setMessagesLoading(false);
+      setLoadingOlderMessages(false);
+    } else if (nextState && reloadOnOpenRef.current) {
+      reloadOnOpenRef.current = false;
+      const id = activeConversationIdRef.current;
+      if (id) void loadConversationMessages(id);
+    }
+  }, [invalidateSelection, loadConversationMessages]);
 
   const selectConversation = useCallback(
     async (conversationId) => {
+      if (!sessionRef.current) return;
       const id = Number(conversationId || 0) || null;
-      // Only a newly selected conversation can undo a prior local revocation;
-      // its server-side membership will still be checked by the messages API.
+      invalidateSelection();
+      reloadOnOpenRef.current = false;
       if (id) revokedConversationIdsRef.current.delete(id);
       activeConversationIdRef.current = id;
       timelineSyncRef.current = { conversationId: 0, version: "", at: 0 };
@@ -844,73 +931,57 @@ export function ChatProvider({ children }) {
       messagesRef.current = [];
       setMessages([]);
       setHasMoreMessages(false);
+      setLoadingOlderMessages(false);
+      setMessagesLoading(false);
+      setError("");
 
-      if (id) {
-        await loadConversationMessages(id);
-      }
+      if (id) await loadConversationMessages(id);
     },
-    [loadConversationMessages],
+    [invalidateSelection, loadConversationMessages],
   );
 
-
-  // A support employee may flag a Helpdesk request as spam while its
-  // requester is viewing it. Clear the selected chat and cached messages as
-  // soon as the DB-backed status changes (socket event or 2s fallback sync).
-  // Do NOT delete any persisted messages: the support Spam tab is the audit
-  // history, and the requester may start a fresh valid request afterwards.
-  useEffect(() => {
-    const selectedId = Number(activeConversationId || 0);
-    if (!selectedId) return;
-    const selected = conversations.find((entry) => Number(entry?.id || 0) === selectedId);
-    if (!selected || (!selected.isHelpdesk && cleanText(selected.conversationType).toUpperCase() !== 'HELPDESK')) return;
-    const status = cleanText(selected.caseStatus).toUpperCase();
-    if (status === 'SPAM' || status === 'REJECTED') {
-      void selectConversation(null);
-    }
-  }, [activeConversationId, conversations, selectConversation]);
-
   const loadOlderMessages = useCallback(async () => {
-    const conversationId = Number(activeConversationIdRef.current || 0);
-    if (!conversationId || loadingOlderMessages || !hasMoreMessages) return [];
+    const conversationId = activeConversationIdRef.current;
+    const epoch = selectionEpochRef.current;
+    if (!conversationId || olderReadRef.current || !hasMoreMessages ||
+        !isCurrentSelection(epoch, conversationId)) return [];
 
-    const before = Number(messages[0]?.id || 0);
+    const before = Number(messagesRef.current[0]?.id || 0);
     if (!before) return [];
 
+    const controller = new AbortController();
+    olderReadRef.current = controller;
+    const isCurrent = () => olderReadRef.current === controller &&
+      isCurrentSelection(epoch, conversationId);
     setLoadingOlderMessages(true);
 
     try {
-      const older = await getChatMessages(conversationId, {
-        before,
-        limit: 75,
-      });
-
-      if (mountedRef.current && Number(activeConversationIdRef.current) === conversationId) {
-        setMessages((current) => {
-          const existingIds = new Set(current.map((item) => Number(item.id)));
-          return [
-            ...older.filter((item) => !existingIds.has(Number(item.id))),
-            ...current,
-          ];
-        });
-        setHasMoreMessages(older.length >= 75);
-      }
-
+      const older = await getChatMessages(conversationId, { before, limit: 75, signal: controller.signal });
+      if (!isCurrent()) return [];
+      const current = messagesRef.current;
+      const existingIds = new Set(current.map((message) => Number(message.id)));
+      const next = [...older.filter((message) => !existingIds.has(Number(message.id))), ...current];
+      messagesRef.current = next;
+      setMessages(next);
+      setHasMoreMessages(older.length >= 75);
       return older;
     } catch (requestError) {
-      if (mountedRef.current) {
-        setError(
-          requestError?.response?.data?.message ||
-            requestError?.message ||
-            "Unable to load earlier chat messages.",
-        );
-      }
+      if (!isCurrent() || controller.signal.aborted ||
+          requestError?.code === "ERR_CANCELED" || requestError?.name === "AbortError") return [];
+      if (handleForbiddenConversationError(conversationId, requestError)) return [];
+      setError(
+        requestError?.response?.data?.message ||
+          requestError?.message ||
+          "Unable to load earlier chat messages.",
+      );
       return [];
     } finally {
-      if (mountedRef.current) {
+      if (isCurrent()) {
+        olderReadRef.current = null;
         setLoadingOlderMessages(false);
       }
     }
-  }, [hasMoreMessages, loadingOlderMessages, messages]);
+  }, [handleForbiddenConversationError, hasMoreMessages, isCurrentSelection]);
 
   const startPrivateConversation = useCallback(
     async (sibsId) => {
@@ -1289,11 +1360,12 @@ export function ChatProvider({ children }) {
   );
 
   const syncTypingWithoutRefresh = useCallback(async () => {
+    const epoch = selectionEpochRef.current;
     const conversationId = Number(activeConversationIdRef.current || 0);
 
     if (
       typingSyncBusyRef.current ||
-      !mountedRef.current ||
+      !isCurrentSelection(epoch, conversationId) ||
       !currentSibsId ||
       !chatAllowed ||
       !chatWindowOpenRef.current ||
@@ -1344,16 +1416,18 @@ export function ChatProvider({ children }) {
         return next;
       });
     } catch (error) {
-      if (!handleForbiddenConversationError(conversationId, error)) {
-        // Socket.IO remains primary. Temporary network failures can retry.
+      if (isCurrentSelection(epoch, conversationId)) {
+        handleForbiddenConversationError(conversationId, error);
       }
     } finally {
       typingSyncBusyRef.current = false;
     }
-  }, [chatAllowed, currentSibsId, handleForbiddenConversationError]);
+  }, [chatAllowed, currentSibsId, handleForbiddenConversationError, isCurrentSelection]);
 
   const syncChatWithoutRefresh = useCallback(async () => {
+    const session = sessionRef.current;
     if (
+      !session ||
       fallbackSyncBusyRef.current ||
       !mountedRef.current ||
       !currentSibsId ||
@@ -1362,19 +1436,25 @@ export function ChatProvider({ children }) {
       return;
     }
 
-    fallbackSyncBusyRef.current = true;
+    const sync = {};
+    fallbackSyncBusyRef.current = sync;
     let polledConversationId = 0;
+    const epoch = selectionEpochRef.current;
+    const readRevision = latestReadRevisionRef.current;
+    const isCurrent = () => isCurrentSelection(epoch, polledConversationId) &&
+      latestReadRevisionRef.current === readRevision && !latestReadRef.current;
 
     try {
       await refreshConversations({ silent: true });
 
+      if (!isCurrentSession(session)) return;
       const conversationId = Number(activeConversationIdRef.current || 0);
       polledConversationId = conversationId;
       const visibleConversation = conversationsRef.current.find(
         (item) => Number(item?.id || 0) === conversationId,
       );
       if (
-        !conversationId || !chatWindowUiOpenRef.current ||
+        !conversationId || !isCurrent() || !chatWindowUiOpenRef.current ||
         revokedConversationIdsRef.current.has(conversationId) ||
         !visibleConversation
       ) return;
@@ -1395,12 +1475,7 @@ export function ChatProvider({ children }) {
         limit: 75,
       });
 
-      if (
-        !mountedRef.current ||
-        Number(activeConversationIdRef.current) !== conversationId
-      ) {
-        return;
-      }
+      if (!isCurrent()) return;
 
       const currentMessages = messagesRef.current || [];
       const currentIds = new Set(
@@ -1467,9 +1542,9 @@ export function ChatProvider({ children }) {
         Number(activeConversationIdRef.current) === conversationId;
 
       if (latestMessageId && isStillActivelyViewed) {
-        await markReadOnce(conversationId, latestMessageId).catch(() => {});
+        await markReadOnce(conversationId, latestMessageId, isCurrent).catch(() => {});
 
-        if (mountedRef.current) {
+        if (isCurrent()) {
           setConversations((current) => {
             if (!current.some((item) =>
               Number(item.id) === conversationId && Number(item.unreadCount || 0) > 0
@@ -1484,15 +1559,17 @@ export function ChatProvider({ children }) {
       }
     } catch (error) {
       // A reply for an old thread must never revoke a newly selected thread.
-      handleForbiddenConversationError(polledConversationId, error);
+      if (isCurrent()) handleForbiddenConversationError(polledConversationId, error);
       // The next Socket.IO event / fallback sync retries transient failures.
     } finally {
-      fallbackSyncBusyRef.current = false;
+      if (fallbackSyncBusyRef.current === sync) fallbackSyncBusyRef.current = null;
     }
   }, [
     chatAllowed,
     currentSibsId,
     handleForbiddenConversationError,
+    isCurrentSelection,
+    isCurrentSession,
     markReadOnce,
     notifyIncomingMessage,
     refreshConversations,
@@ -1500,29 +1577,12 @@ export function ChatProvider({ children }) {
 
   useEffect(() => {
     if (userLoading || !currentSibsId || !chatAllowed) {
-      setConversations([]);
-      conversationsRef.current = [];
-      revokedConversationIdsRef.current.clear();
-      acknowledgedReadIdsRef.current.clear();
-      setMessages([]);
-      messagesRef.current = [];
-      setHasMoreMessages(false);
-      setActiveConversationId(null);
-      activeConversationIdRef.current = null;
-      setPresence({});
-      setTypingByConversation({});
-      typingExpiryTimersRef.current.forEach((timerId) => {
-        window.clearTimeout(timerId);
-      });
-      typingExpiryTimersRef.current.clear();
-      notifiedMessageIdsRef.current.clear();
-      conversationLastMessageIdsRef.current.clear();
-      conversationToneBaselineReadyRef.current = false;
-      timelineSyncRef.current = { conversationId: 0, version: "", at: 0 };
-      setMembershipNotice(null);
       chatSocket.disconnect();
       return undefined;
     }
+
+    const session = sessionRef.current;
+    const expiryTimers = typingExpiryTimersRef.current;
 
     const handleConnect = () => {
       void syncChatWithoutRefresh();
@@ -1537,6 +1597,7 @@ export function ChatProvider({ children }) {
     };
 
     const handlePresence = ({ sibsId, online } = {}) => {
+      if (!isCurrentSession(session)) return;
       const id = cleanText(sibsId);
       if (!id) return;
 
@@ -1548,17 +1609,18 @@ export function ChatProvider({ children }) {
     };
 
     const handleTyping = ({ conversationId, sibsId, isTyping } = {}) => {
+      if (!isCurrentSession(session)) return;
       const id = Number(conversationId || 0);
       const memberId = cleanText(sibsId);
 
       if (!id || !memberId || memberId === currentSibsId) return;
 
       const timerKey = `${id}:${memberId}`;
-      const previousTimer = typingExpiryTimersRef.current.get(timerKey);
+      const previousTimer = expiryTimers.get(timerKey);
 
       if (previousTimer) {
         window.clearTimeout(previousTimer);
-        typingExpiryTimersRef.current.delete(timerKey);
+        expiryTimers.delete(timerKey);
       }
 
       if (!isTyping) {
@@ -1583,7 +1645,7 @@ export function ChatProvider({ children }) {
         clearTypingMember(id, memberId);
       }, 5000);
 
-      typingExpiryTimersRef.current.set(timerKey, timerId);
+      expiryTimers.set(timerKey, timerId);
     };
 
     const handleConversationUpdate = ({ conversationId, reason, caseStatus } = {}) => {
@@ -1602,6 +1664,7 @@ export function ChatProvider({ children }) {
     };
 
     const handleThemeUpdate = ({ conversationId, theme } = {}) => {
+      if (!isCurrentSession(session)) return;
       const targetId = Number(conversationId || 0);
       if (!targetId || !theme) return;
 
@@ -1617,6 +1680,7 @@ export function ChatProvider({ children }) {
     };
 
     const handleMembershipNotification = (payload = {}) => {
+      if (!isCurrentSession(session)) return;
       const action = cleanText(payload?.action).toLowerCase();
       const conversationId = Number(payload?.conversationId || 0);
       const groupName = cleanText(payload?.groupName) || "Group Chat";
@@ -1649,6 +1713,7 @@ export function ChatProvider({ children }) {
     };
 
     const handleNewMessage = ({ conversationId, message } = {}) => {
+      if (!isCurrentSession(session)) return;
       const id = Number(conversationId || 0);
       const senderSibsId = cleanText(
         message?.senderSibsId || message?.sender_sibs_id,
@@ -1693,8 +1758,11 @@ export function ChatProvider({ children }) {
             );
           });
 
-          void markReadOnce(id, message.id)
-            .then(() => refreshConversations({ silent: true }))
+          const epoch = selectionEpochRef.current;
+          void markReadOnce(id, message.id, () => isCurrentSelection(epoch, id))
+            .then(() => {
+              if (isCurrentSession(session)) return refreshConversations({ silent: true });
+            })
             .catch(() => {});
         } else {
           // Keep the message visible in the selected conversation, but don't
@@ -1710,6 +1778,7 @@ export function ChatProvider({ children }) {
     };
 
     const handleMessageUnsent = ({ conversationId, message } = {}) => {
+      if (!isCurrentSession(session)) return;
       const id = Number(conversationId || 0);
 
       if (
@@ -1728,6 +1797,7 @@ export function ChatProvider({ children }) {
     };
 
     const handleRead = ({ conversationId, sibsId, messageId } = {}) => {
+      if (!isCurrentSession(session)) return;
       const id = Number(conversationId || 0);
       const readerSibsId = cleanText(sibsId);
       const lastReadMessageId = Number(messageId || 0);
@@ -1765,6 +1835,8 @@ export function ChatProvider({ children }) {
     };
 
     const handleReaction = ({ conversationId, messageId } = {}) => {
+      if (!isCurrentSession(session)) return;
+      const epoch = selectionEpochRef.current;
       const id = Number(conversationId || 0);
       const targetMessageId = Number(messageId || 0);
 
@@ -1785,7 +1857,7 @@ export function ChatProvider({ children }) {
       })
         .then((result) => {
           const updatedMessage = result?.[0];
-          if (!updatedMessage || !mountedRef.current) return;
+          if (!updatedMessage || !isCurrentSelection(epoch, id)) return;
 
           setMessages((current) =>
             current.map((item) =>
@@ -1881,10 +1953,10 @@ export function ChatProvider({ children }) {
       chatSocket.off("chat:read", handleRead);
       chatSocket.off("chat:conversation:theme", handleThemeUpdate);
 
-      typingExpiryTimersRef.current.forEach((timerId) => {
+      expiryTimers.forEach((timerId) => {
         window.clearTimeout(timerId);
       });
-      typingExpiryTimersRef.current.clear();
+      expiryTimers.clear();
 
       chatSocket.disconnect();
     };
@@ -1894,12 +1966,15 @@ export function ChatProvider({ children }) {
     clearTypingMember,
     currentSibsId,
     handleConversationAccessRevoked,
+    isCurrentSelection,
+    isCurrentSession,
     markReadOnce,
     notifyIncomingMessage,
     refreshConversations,
     syncChatWithoutRefresh,
     syncTypingWithoutRefresh,
     userLoading,
+    userRole,
   ]);
 
   const activeConversation = useMemo(

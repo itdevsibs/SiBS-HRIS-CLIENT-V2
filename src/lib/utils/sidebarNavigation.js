@@ -12,6 +12,9 @@ export function getVisibleSidebarGroups(groups, adminAccess) {
 }
 
 export function isSidebarGroupActive(group, pathname) {
+  if (group.id === "settings" && (pathname === "/settings" || pathname.startsWith("/settings/"))) {
+    return true;
+  }
   return group.items.some(
     (item) => pathname === item.path || pathname.startsWith(`${item.path}/`),
   );

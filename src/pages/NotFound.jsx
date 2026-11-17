@@ -42,7 +42,7 @@ export default function NotFound() {
           404 — Not Found
         </span>
 
-        <h1 className="mt-3 text-xl font-bold tracking-tight text-sibs-navy sm:text-2xl">
+        <h1 className="mt-3 font-heading text-xl font-bold tracking-tight text-sibs-navy sm:text-2xl">
           Page Not Found
         </h1>
 

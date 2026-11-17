@@ -1,5 +1,6 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { motion as framerMotion } from "framer-motion";
 import {
   Activity,
@@ -614,6 +615,7 @@ export default function Sidebar() {
   const activeCandidateCountRef = useRef(null);
   const [closedActiveGroup, setClosedActiveGroup] = useState(null);
   const [flyoutGroupId, setFlyoutGroupId] = useState(null);
+  const [flyoutPosition, setFlyoutPosition] = useState({ top: 96 });
   const flyoutRef = useRef(null);
   const sidebarRef = useRef(null);
   const [isMobile, setIsMobile] = useState(() =>
@@ -1446,13 +1448,13 @@ export default function Sidebar() {
     {
       name: "Recruitment Settings",
       icon: FileCog,
-      path: "/settings/recruitment-settings",
+      path: "/settings/recruitment",
       allowedUsers: [1, 2, 3, 6, 7],
     },
     {
       name: "User Settings",
       icon: UserCog,
-      path: "/settings/user-settings",
+      path: "/settings/users",
       allowedUsers: [7],
     },
   ];
@@ -1670,6 +1672,7 @@ export default function Sidebar() {
           key={`${item.name}-${index}`}
           to={item.path}
           draggable={false}
+          aria-current={isActive ? "page" : undefined}
           onDragStart={(event) => event.preventDefault()}
           onClick={handleLinkClick}
           title={
@@ -1844,9 +1847,18 @@ export default function Sidebar() {
     );
     const groupContentId = `sidebar-group-${group.id}`;
 
-    const toggleGroup = () => {
+    const toggleGroup = (event) => {
       if (isCollapsedMode) {
-        setFlyoutGroupId((current) => (current === group.id ? null : group.id));
+        if (flyoutGroupId === group.id) {
+          setFlyoutGroupId(null);
+        } else {
+          const rect = event?.currentTarget?.getBoundingClientRect();
+          if (rect) {
+            const preferredTop = Math.max(16, Math.min(rect.top, window.innerHeight - 340));
+            setFlyoutPosition({ top: preferredTop });
+          }
+          setFlyoutGroupId(group.id);
+        }
         return;
       }
 
@@ -1873,7 +1885,7 @@ export default function Sidebar() {
 
       if (event.key === "ArrowDown" && !isCollapsedMode) {
         event.preventDefault();
-        if (!isOpen) toggleGroup();
+        if (!isOpen) toggleGroup(event);
         window.setTimeout(() => {
           document.getElementById(groupContentId)?.querySelector("a")?.focus();
         }, 0);
@@ -1932,34 +1944,35 @@ export default function Sidebar() {
             }`}
           >
             <div className="min-h-0 overflow-hidden">
-              <div className="ml-4 mt-1 border-l ring-sibs-primary-1 pl-2">
+              <div className="ml-4 mt-1 border-l border-sibs-tertiary-2 pl-2">
                 {renderMenu(group.items, { nested: true })}
               </div>
             </div>
           </div>
         )}
 
-        {isCollapsedMode && flyoutGroupId === group.id && (
-          <div
-            ref={flyoutRef}
-            id={groupContentId}
-            className="fixed left-[96px] top-24 z-[2000] w-[245px] rounded-xl border border-sibs-tertiary-2 bg-sibs-primary-1 p-2 shadow-2xl 2xl:left-[102px]"
-            onKeyDown={(event) => {
-              if (event.key === "Escape") {
-                event.preventDefault();
-                setFlyoutGroupId(null);
-                event.currentTarget.parentElement
-                  ?.querySelector("button")
-                  ?.focus();
-              }
-            }}
-          >
-            <p className="px-2 py-1.5 sibs-text-micro font-bold uppercase tracking-wider text-slate-400">
-              {group.name}
-            </p>
-            {renderMenu(group.items, { forceExpanded: true })}
-          </div>
-        )}
+        {isCollapsedMode &&
+          flyoutGroupId === group.id &&
+          createPortal(
+            <div
+              ref={flyoutRef}
+              id={groupContentId}
+              style={{ top: `${flyoutPosition.top}px` }}
+              className="fixed left-[96px] 2xl:left-[102px] z-[99999] w-[245px] max-h-[calc(100dvh-7rem)] overflow-y-auto thin-scroll rounded-xl border border-sibs-tertiary-2 bg-sibs-primary-1 p-2 shadow-2xl"
+              onKeyDown={(event) => {
+                if (event.key === "Escape") {
+                  event.preventDefault();
+                  setFlyoutGroupId(null);
+                }
+              }}
+            >
+              <p className="px-2 py-1.5 sibs-text-micro font-bold uppercase tracking-wider text-slate-400">
+                {group.name}
+              </p>
+              {renderMenu(group.items, { forceExpanded: true })}
+            </div>,
+            document.body,
+          )}
       </div>
     );
   };
@@ -2001,19 +2014,21 @@ export default function Sidebar() {
               : "justify-between px-3.5 2xl:px-4 py-3",
           ].join(" ")}
         >
-          <div
-            onClick={
-              !isMobile && collapsed ? () => setCollapsed(false) : undefined
-            }
-            className={
-              !isMobile && collapsed
-                ? "cursor-pointer select-none"
-                : "min-w-0 select-none flex-1"
-            }
-            title={!isMobile && collapsed ? "Expand sidebar" : undefined}
-          >
-            <SibsLogo collapsed={!isMobile && collapsed} isMobile={isMobile} />
-          </div>
+          {!isMobile && collapsed ? (
+            <button
+              type="button"
+              onClick={() => setCollapsed(false)}
+              aria-label="Expand sidebar"
+              title="Expand sidebar"
+              className="flex items-center justify-center rounded-lg p-1 text-slate-300 transition hover:bg-sibs-tertiary-2 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-sibs-orange"
+            >
+              <SibsLogo collapsed={true} isMobile={false} />
+            </button>
+          ) : (
+            <div className="min-w-0 select-none flex-1">
+              <SibsLogo collapsed={false} isMobile={isMobile} />
+            </div>
+          )}
 
           {isMobile && (
             <button
@@ -2097,6 +2112,7 @@ function Section({ title, collapsed, children }) {
       </div>
 
       <nav
+        aria-label={title || "Navigation"}
         className={
           collapsed ? "flex flex-col items-center space-y-1.5" : "space-y-1"
         }

@@ -93,17 +93,11 @@ function TrainerCoachingDetailsModal({
       title={employee.fullName}
       badge={employee.sibsEmployeeId || employee.id}
       subtitle={`${employee.account || "Operations"} • Coaching forms and recorded follow-up evaluations`}
-      bodyClassName="sibs-scrollbar min-h-0 flex-1 overflow-y-auto bg-sibs-surface p-4 sm:p-5 2xl:p-6 font-jakarta space-y-4 sm:space-y-5"
+      bodyClassName="space-y-4 overscroll-contain bg-sibs-surface p-4 font-jakarta sm:space-y-5 sm:p-6"
       footer={
-        <div className="flex items-center justify-end gap-2.5">
-          <button
-            type="button"
-            onClick={onClose}
-            className="sibs-modal-btn-secondary"
-          >
-            Close
-          </button>
-        </div>
+        <button type="button" onClick={onClose} className="sibs-modal-btn-secondary">
+          Close
+        </button>
       }
     >
       {/* 1. Summary Metric Strip */}
@@ -144,12 +138,13 @@ function TrainerCoachingDetailsModal({
           {/* Left Column: Coaching Session History */}
           <aside
             aria-label="Coaching session history"
-            className="sibs-card overflow-hidden rounded-xl border border-sibs-border bg-white p-3 space-y-2.5 self-start w-full shadow-2xs"
+            className="sibs-card min-w-0 space-y-3 p-4"
           >
-            <div className="sibs-modal-section-title px-1 py-0.5 text-xs">
+            <h3 className="sibs-modal-section-title flex items-center gap-2 border-b border-sibs-border pb-3">
+              <Clock size={16} aria-hidden="true" className="shrink-0 text-sibs-orange" />
               Coaching Session History
-            </div>
-            <div className="space-y-2">
+            </h3>
+            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-1">
               {displayedRecords.map((s) => {
                 const isSelected = s.id === session.id;
                 const sStatus = coachingStatus(s, evaluations, asOf);
@@ -159,10 +154,10 @@ function TrainerCoachingDetailsModal({
                     type="button"
                     onClick={() => setSessionId(s.id)}
                     aria-pressed={isSelected}
-                    className={`w-full text-left transition-all cursor-pointer rounded-xl p-3 space-y-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sibs-orange ${
+                    className={`min-w-0 space-y-1.5 break-words rounded-xl border border-sibs-border p-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sibs-orange ${
                       isSelected
-                        ? "bg-sibs-cream-light border-l-4 border-l-sibs-orange border border-sibs-border/60 shadow-2xs"
-                        : "bg-white border border-sibs-border hover:bg-sibs-surface"
+                        ? "border-l-4 border-l-sibs-orange bg-sibs-cream-light"
+                        : "bg-sibs-surface hover:bg-white"
                     }`}
                   >
                     <span className="block text-xs font-bold text-sibs-navy">{s.type}</span>
@@ -191,10 +186,10 @@ function TrainerCoachingDetailsModal({
           </aside>
 
           {/* Right Column: Completed Coaching Form Card */}
-          <article className="sibs-card min-w-0 space-y-5 rounded-xl border border-sibs-border bg-white p-4 sm:p-5 2xl:p-6 shadow-2xs">
+          <article className="min-w-0 space-y-4">
             {/* Form Header */}
-            <header className="flex flex-wrap items-start justify-between gap-3 border-b border-sibs-border pb-3.5">
-              <div>
+            <header className="sibs-card flex flex-wrap items-start justify-between gap-3 p-4 sm:p-5">
+              <div className="min-w-0 break-words">
                 <span className="sibs-text-micro font-extrabold text-sibs-orange uppercase tracking-wider block">
                   ESEP-{session.id} • COMPLETED COACHING FORM
                 </span>
@@ -220,8 +215,8 @@ function TrainerCoachingDetailsModal({
             </header>
 
             {/* Section 1: COACHING INFORMATION */}
-            <section className="space-y-2.5">
-              <h4 className="sibs-modal-section-title text-xs">
+            <section className="sibs-card space-y-3 p-4 sm:p-5">
+              <h4 className="sibs-modal-section-title border-b border-sibs-border pb-3">
                 Coaching Information
               </h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
@@ -259,8 +254,8 @@ function TrainerCoachingDetailsModal({
 
             {/* Section 2: QA SCORE DETAILS */}
             {hasQaDetails && (
-              <section className="space-y-3 pt-3 border-t border-sibs-border">
-                <h4 className="sibs-modal-section-title text-xs">
+              <section className="sibs-card space-y-3 p-4 sm:p-5">
+                <h4 className="sibs-modal-section-title border-b border-sibs-border pb-3">
                   QA Score Details
                 </h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
@@ -307,8 +302,8 @@ function TrainerCoachingDetailsModal({
             )}
 
             {/* Section 3: GROW COACHING RECORD */}
-            <section className="space-y-2.5 pt-3 border-t border-sibs-border">
-              <h4 className="sibs-modal-section-title text-xs">
+            <section className="sibs-card space-y-3 p-4 sm:p-5">
+              <h4 className="sibs-modal-section-title border-b border-sibs-border pb-3">
                 GROW Framework Breakdown
               </h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
@@ -348,8 +343,8 @@ function TrainerCoachingDetailsModal({
             </section>
 
             {/* Section 4: ACTION PLAN & COMMITMENT */}
-            <section className="space-y-2.5 pt-3 border-t border-sibs-border">
-              <h4 className="sibs-modal-section-title text-xs">
+            <section className="sibs-card space-y-3 p-4 sm:p-5">
+              <h4 className="sibs-modal-section-title border-b border-sibs-border pb-3">
                 Coaching Overview, Action Plan & Commitment
               </h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
@@ -367,8 +362,8 @@ function TrainerCoachingDetailsModal({
             </section>
 
             {/* Section 5: COACHING EFFECTIVENESS / FOLLOW-UP */}
-            <section className="space-y-2.5 pt-3 border-t border-sibs-border">
-              <h4 className="sibs-modal-section-title text-xs">
+            <section className="sibs-card space-y-3 p-4 sm:p-5">
+              <h4 className="sibs-modal-section-title border-b border-sibs-border pb-3">
                 Coaching Effectiveness & Follow-up Evaluation
               </h4>
               {evaluation ? (

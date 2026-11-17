@@ -61,13 +61,15 @@ export const STANDALONE_PUBLIC_PATHS = [
   // 8. Applicant Onboarding Portal
   "/applicant-portal",
   "/public/applicant-portal",
+
+  // 9. Authentication & Entry
+  "/login",
 ];
 
 export const PUBLIC_EXTERNAL_PATHS = [
   ...STANDALONE_PUBLIC_PATHS,
 
-  // 8. Authentication & Entry
-  "/login",
+  // Entry root
   "/",
 ];
 
@@ -82,6 +84,13 @@ function matchesPathPattern(normalized, pattern) {
     return normalized === "/";
   }
   return normalized === pattern || normalized.startsWith(`${pattern}/`);
+}
+
+export function isStandalonePublicPath(pathname = "") {
+  const normalized = normalizePath(pathname);
+  return STANDALONE_PUBLIC_PATHS.some((pattern) =>
+    matchesPathPattern(normalized, pattern)
+  );
 }
 
 export function isPublicPath(pathname = "") {

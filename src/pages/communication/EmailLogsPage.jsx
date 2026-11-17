@@ -385,12 +385,12 @@ export default function EmailLogsPage() {
     <div className="sibs-dashboard-shell">
       <Header />
 
-      <main className="sibs-dashboard-main-wide">
+      <main className="sibs-dashboard-main-wide flex flex-col">
         <PageHeaderHero
           kicker="Communication & Workflows"
           title="Email Logs & Delivery Tracking"
           description="Audit trail, dispatch status, candidate correspondence, and delivery tracking across automated and manual recruitment communications."
-          className="mb-5"
+          className="mb-5 shrink-0"
           actions={
             <>
               <button type="button" className="sibs-btn-icon" title="Refresh email logs" onClick={logs.refresh} disabled={logs.refreshing}>
@@ -412,9 +412,10 @@ export default function EmailLogsPage() {
             count={5}
             labels={["Total Emails", "Delivered", "Opened", "Clicked CTA", "Bounce Rate"]}
             ariaLabel="Loading email metrics"
+            className="shrink-0"
           />
         ) : (
-          <MetricGrid columns={5}>
+          <MetricGrid columns={5} className="shrink-0">
             <MetricCard
               title="Total Emails"
               value={logs.metrics.total}
@@ -459,7 +460,7 @@ export default function EmailLogsPage() {
         )}
 
         <section
-          className="sibs-page-card-in sibs-card mt-5 overflow-visible rounded-[14px] border border-sibs-border bg-white font-jakarta shadow-xs"
+          className="flex shrink-0 grow flex-col sibs-page-card-in sibs-card mt-5 overflow-visible rounded-[14px] border border-sibs-border bg-white font-jakarta shadow-xs"
           style={{ animationDelay: "240ms", animationFillMode: "both" }}
         >
           <div className="border-b border-sibs-border p-4 sm:p-5 2xl:p-6 font-jakarta">
@@ -530,7 +531,7 @@ export default function EmailLogsPage() {
             </div>
           </div>
 
-          <div className="min-h-0 flex-1 p-4 sm:p-5 2xl:p-6 font-jakarta">
+          <div className="flex flex-1 flex-col p-4 sm:p-5 2xl:p-6 font-jakarta">
             <div className="overflow-hidden rounded-[10px] border border-sibs-border bg-white shadow-xs">
               <StatusFilterTabs
                 tabs={STATUS_FILTER_TABS}
@@ -573,7 +574,7 @@ export default function EmailLogsPage() {
               )}
             </div>
 
-            <div className="pt-4">
+            <div className="mt-auto pt-4">
               <TablePagination
                 currentPage={logs.page}
                 totalPages={logs.totalPages}

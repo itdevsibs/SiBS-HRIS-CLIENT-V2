@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import { formatHrisDateLocalized } from "@/lib/axios/dateFormatter";
 import React, {
   useCallback,
@@ -60,6 +61,7 @@ const ViewResignationModal = React.lazy(() =>
     default: m.ViewResignationModal,
   }))
 );
+import api from "@/lib/axios/api-template";
 import {
   getManagedEmployees,
   getResignationCase,
@@ -76,6 +78,7 @@ import {
   getAttachmentCount,
   getAttachmentCountLabel,
 } from "../../lib/utils/resignation/attachmentUtils";
+import { buildResignationApprovalStages } from "../../lib/utils/resignation/resignationApprovalProgress";
 
 const EDGE = "rounded-[14px]";
 const PANEL_BORDER = "border border-sibs-border";
@@ -149,7 +152,43 @@ function normalizeStatus(value) {
   return String(value || "").trim().toLowerCase();
 }
 
-function getResignationStatus(item) {
+export function parseLocalDate(value) {
+  if (!value) return null;
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? null : new Date(value.getTime());
+  }
+
+  const str = String(value).trim();
+  const match = str.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+
+  if (match) {
+    const year = Number(match[1]);
+    const month = Number(match[2]);
+    const day = Number(match[3]);
+    const date = new Date(year, month - 1, day);
+
+    return Number.isNaN(date.getTime()) ? null : date;
+  }
+
+  const date = new Date(str);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+export function isResignationApproved(item) {
+  const status = normalizeStatus(item?.status);
+  if (status === "approved") return true;
+  if (item?.isApproved === true || Number(item?.isApproved || 0) === 1) return true;
+  if (Number(item?.somIsApproved || 0) === 1) return true;
+
+  const stages = buildResignationApprovalStages(item);
+  if (stages.length > 0 && stages.every((stage) => stage.status === "Approved")) {
+    return true;
+  }
+
+  return false;
+}
+
+export function getResignationStatus(item) {
   const status = normalizeStatus(item?.status);
 
   const isDeclined =
@@ -164,25 +203,31 @@ function getResignationStatus(item) {
   const isCompleted =
     status === "completed" ||
     status === "complete" ||
-    status === "approved" ||
     status === "cleared" ||
     Number(item?.isCompleted || 0) === 1;
 
   if (isCompleted) return "Completed";
 
-  const lastWorkingDate =
-    item?.lastWorkingDate || item?.last_working_date || item?.effectivityDate;
+  const isApproved = isResignationApproved(item);
 
-  if (lastWorkingDate) {
-    const today = new Date();
-    const lastDay = new Date(lastWorkingDate);
+  if (isApproved) {
+    const lastWorkingDate =
+      item?.lastWorkingDate || item?.last_working_date || item?.effectivityDate;
 
-    if (!Number.isNaN(lastDay.getTime())) {
-      today.setHours(0, 0, 0, 0);
-      lastDay.setHours(0, 0, 0, 0);
+    if (lastWorkingDate) {
+      const today = new Date();
+      const lastDay = parseLocalDate(lastWorkingDate);
 
-      if (lastDay >= today) return "In Notice Period";
+      if (lastDay && !Number.isNaN(lastDay.getTime())) {
+        today.setHours(0, 0, 0, 0);
+        lastDay.setHours(0, 0, 0, 0);
+
+        if (lastDay >= today) return "In Notice Period";
+        return "Completed";
+      }
     }
+
+    return "In Notice Period";
   }
 
   return "For Approval";
@@ -315,27 +360,24 @@ function ProfileAvatar({ item, size = "md" }) {
 
     async function fetchEmployeeProfile() {
       try {
-        const response = await fetch(
-          `${String(API_URL).replace(
-            /\/$/,
-            "",
-          )}/api/employees/${encodeURIComponent(sibsId)}`,
+        const response = await api.get(
+          `/api/employees/${encodeURIComponent(sibsId)}`,
           {
-            method: "GET",
-            credentials: "include",
             signal: controller.signal,
           },
         );
 
-        if (!response.ok) return;
-
-        const result = await response.json();
+        const result = response?.data;
 
         if (result?.success && result?.data) {
           setFetchedEmployee(result.data);
         }
       } catch (error) {
-        if (error?.name !== "AbortError") {
+        if (
+          error?.code !== "ERR_CANCELED" &&
+          error?.name !== "CanceledError" &&
+          error?.name !== "AbortError"
+        ) {
           console.error("PROFILE AVATAR FETCH ERROR:", error);
         }
       }
@@ -1316,7 +1358,7 @@ function ResignationTableCard({
 
   return (
     <section
-      className="sibs-page-card-in sibs-card min-w-0 overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-xs font-jakarta"
+      className="sibs-page-card-in sibs-card flex min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-xs font-jakarta"
       style={{ animationDelay: "240ms", animationFillMode: "both" }}
     >
       <div className="border-b border-sibs-border p-4 sm:p-5 2xl:p-6 font-jakarta">
@@ -1412,7 +1454,7 @@ function ResignationTableCard({
         ) : null}
       </div>
 
-      <div className="p-3 sm:p-5 2xl:p-6 font-jakarta">
+      <div className="flex flex-1 flex-col p-3 sm:p-5 2xl:p-6 font-jakarta">
         {loadError ? (
           <div
             role="alert"
@@ -1516,7 +1558,7 @@ function ResignationTableCard({
           }
         />
 
-        <div className="mt-4 2xl:mt-5">
+        <div className="mt-auto pt-4 2xl:pt-5">
           <TablePagination
             loading={loading}
             currentPage={currentPage}
@@ -2184,13 +2226,6 @@ export default function ResignationManagementPage() {
     resignationsLoaded,
   ]);
 
-  function forceUnlockPageScroll() {
-    window.setTimeout(() => {
-      document.body.style.overflow = "";
-      document.documentElement.style.overflow = "";
-    }, 0);
-  }
-
   function closeStatusModal() {
     setStatusModal({
       open: false,
@@ -2254,7 +2289,6 @@ export default function ResignationManagementPage() {
     setEmployeePickerError("");
     setEmployeePickerOpen(false);
     resetResignationForm();
-    forceUnlockPageScroll();
   }
 
   function clearSelectedEmployee() {
@@ -2398,10 +2432,12 @@ export default function ResignationManagementPage() {
       }
     }
 
-    const resignationDate = new Date(`${resignationForm.resignationDate}T00:00:00`);
-    const lastWorkingDate = new Date(`${resignationForm.lastWorkingDate}T00:00:00`);
+    const resignationDate = parseLocalDate(resignationForm.resignationDate);
+    const lastWorkingDate = parseLocalDate(resignationForm.lastWorkingDate);
 
     if (
+      !resignationDate ||
+      !lastWorkingDate ||
       Number.isNaN(resignationDate.getTime()) ||
       Number.isNaN(lastWorkingDate.getTime())
     ) {
@@ -2506,8 +2542,6 @@ export default function ResignationManagementPage() {
           result?.message ||
           "The resignation request has been submitted successfully and will now appear in Approval Request.",
       });
-
-      forceUnlockPageScroll();
     } catch (error) {
       console.error("SUBMIT RESIGNATION ERROR:", error);
 
@@ -2533,7 +2567,7 @@ export default function ResignationManagementPage() {
         ref={mainScrollRef}
         className="sibs-dashboard-main-wide"
       >
-        <div className="mx-auto w-full max-w-[1700px] space-y-4 sm:space-y-5">
+        <div className="mx-auto flex min-h-full w-full max-w-[1700px] flex-col gap-4 sm:gap-5">
           <PageHeaderHero
             kicker={
               <div className="flex flex-wrap items-center gap-2">
@@ -2599,7 +2633,7 @@ export default function ResignationManagementPage() {
             />
           </div>
 
-          <div className="relative z-[10]">
+          <div className="relative z-[10] flex shrink-0 grow flex-col">
             <ResignationTableCard
               data={filteredResignations}
               loading={resignationLoading}

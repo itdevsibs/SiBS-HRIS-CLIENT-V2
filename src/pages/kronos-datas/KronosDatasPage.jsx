@@ -568,7 +568,7 @@ export default function KronosDatasPage() {
         ref={mainScrollRef}
         className="sibs-dashboard-main-wide"
       >
-        <div className="mx-auto w-full max-w-[1700px] space-y-5">
+        <div className="mx-auto flex min-h-full w-full max-w-[1700px] flex-col gap-5">
           <PageHeaderHero
             kicker={
               <div className="flex flex-wrap items-center gap-2">
@@ -659,7 +659,7 @@ export default function KronosDatasPage() {
           </section>
 
           <section
-            className="sibs-profile-tab-panel min-h-[520px] overflow-hidden rounded-[14px] border border-sibs-border bg-white shadow-sm transition-all duration-200 hover:border-sibs-navy/20 hover:shadow-md"
+            className="sibs-profile-tab-panel flex shrink-0 grow flex-col overflow-hidden rounded-[14px] border border-sibs-border bg-white shadow-sm transition-all duration-200 hover:border-sibs-navy/20 hover:shadow-md"
             style={getAnimationStyle(animationTiming.table)}
           >
             <div className="border-b border-sibs-border bg-white px-4 py-4 sm:px-5">
@@ -776,7 +776,7 @@ export default function KronosDatasPage() {
               </div>
             ) : null}
 
-            <div className="sibs-page-card-in font-jakarta" style={getAnimationStyle(60)}>
+            <div className="sibs-page-card-in flex flex-1 flex-col font-jakarta" style={getAnimationStyle(60)}>
               <ResponsiveTableShell
                 breakpoint="lg"
                 mobileContent={
@@ -958,6 +958,7 @@ export default function KronosDatasPage() {
               />
 
               <TablePagination
+                className="mt-auto"
                 currentPage={pagination.currentPage}
                 totalPages={pagination.totalPages}
                 totalItems={pagination.total}

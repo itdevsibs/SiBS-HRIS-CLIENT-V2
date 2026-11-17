@@ -264,11 +264,12 @@ export async function sendChatTypingStatus(
 
 export async function getChatMessages(
   conversationId,
-  { before = "", limit = 50 } = {},
+  { before = "", limit = 50, signal } = {},
 ) {
   const response = await api.get(
     `/chat/conversations/${encodeURIComponent(conversationId)}/messages`,
     {
+      signal,
       params: {
         before: before || undefined,
         limit,

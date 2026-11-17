@@ -212,8 +212,8 @@ function NHOTADashboard({
             </span>
           </div>
 
-          <div className="min-w-0">
-            <table className="w-full table-fixed border-collapse text-left sibs-text-xs [&_td]:break-words">
+          <div className="min-w-0 overflow-x-auto thin-scroll">
+            <table className="w-full min-w-[1040px] table-fixed border-collapse text-left sibs-text-xs [&_td]:break-words">
               <colgroup>{[12, 13, 8, 9, 6, 10, 7, 9, 8, 18].map((width, index) => <col key={index} style={{ width: `${width}%` }} />)}</colgroup>
               <thead className="sibs-data-table-head sticky top-0 z-10 bg-sibs-surface">
                 <tr className="sibs-data-table-head-row">

@@ -39,7 +39,6 @@
   --color-sibs-warning: #e67e22;
   --color-sibs-danger: #e74c3c;
 
-  --color-sibs-surface: #f7f9fc;
   --color-sibs-card: #ffffff;
   --color-sibs-subtle-border: #d7dee8;
 
@@ -209,12 +208,17 @@
     outline-offset: 0 !important;
   }
 
-  .jd-rich-text-editor [contenteditable="true"]:focus,
-  .jd-rich-text-editor [contenteditable="true"]:focus-visible {
+  .jd-rich-text-editor [contenteditable="true"]:focus {
     border-color: transparent !important;
     outline: 0 !important;
     outline-offset: 0 !important;
     box-shadow: none !important;
+  }
+
+  .jd-rich-text-editor [contenteditable="true"]:focus-visible {
+    outline: 2px solid #ff5c28 !important;
+    outline-offset: 2px !important;
+    box-shadow: 0 0 0 2px rgba(255, 92, 40, 0.3) !important;
   }
 
   body.public-talent-pool-form-page input.public-referral-code-input {
@@ -440,53 +444,6 @@
   }
 
   /* =========================
-     CENTRALIZED RESPONSIVE TYPOGRAPHY
-  ========================= */
-  .sibs-text-micro {
-    font-size: 8.5px;
-    line-height: 1.2;
-  }
-  @media (min-width: 1536px) {
-    .sibs-text-micro {
-      font-size: 10px;
-      line-height: 1.25;
-    }
-  }
-
-  .sibs-text-xs {
-    font-size: 10.5px;
-    line-height: 1.3;
-  }
-  @media (min-width: 1536px) {
-    .sibs-text-xs {
-      font-size: 12px;
-      line-height: 1.5;
-    }
-  }
-
-  .sibs-text-sm {
-    font-size: 12.5px;
-    line-height: 1.4;
-  }
-  @media (min-width: 1536px) {
-    .sibs-text-sm {
-      font-size: 14px;
-      line-height: 1.5;
-    }
-  }
-
-  .sibs-text-base {
-    font-size: 15px;
-    line-height: 1.35;
-  }
-  @media (min-width: 1536px) {
-    .sibs-text-base {
-      font-size: 16px;
-      line-height: 1.5;
-    }
-  }
-
-  /* =========================
      GLOBAL MODAL INPUT & FIELD STYLES
   ========================= */
   .sibs-modal-field-label {
@@ -661,22 +618,6 @@
     }
   }
 
-  /* Shared KPI / Metric Card Base */
-  .sibs-metric-card {
-    border-radius: 1rem;
-    border: 1px solid #dce6f1;
-    background-color: #ffffff;
-    padding: 1.25rem;
-    box-shadow: 0 8px 24px rgba(4, 44, 81, 0.04);
-    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  }
-
-  .sibs-metric-card:hover {
-    border-color: #c1d3e6;
-    box-shadow: 0 12px 30px rgba(4, 44, 81, 0.08);
-    transform: translateY(-2px);
-  }
-
   /* ==========================================================================
      GLOBAL CARD, TABLE, LABEL & KPI HIERARCHY SYSTEM
      ========================================================================== */
@@ -836,20 +777,6 @@
     }
   }
 
-  /* Global Metric Card Tone Modifiers */
-  .sibs-tone-orange-label { color: #ff5c28; }
-  .sibs-tone-orange-icon  { background-color: #fff0eb; color: #ff5c28; }
-  .sibs-tone-navy-label   { color: #042c51; }
-  .sibs-tone-navy-icon    { background-color: #e9f0fc; color: #042c51; }
-  .sibs-tone-green-label  { color: #047857; }
-  .sibs-tone-green-icon   { background-color: #ecfdf5; color: #059669; }
-  .sibs-tone-indigo-label { color: #4338ca; }
-  .sibs-tone-indigo-icon  { background-color: #eef2ff; color: #4f46e5; }
-  .sibs-tone-amber-label  { color: #b45309; }
-  .sibs-tone-amber-icon   { background-color: #fffbeb; color: #d97706; }
-  .sibs-tone-red-label    { color: #be123c; }
-  .sibs-tone-red-icon     { background-color: #fff1f2; color: #e11d48; }
-
   .animate-slide-in {
     animation: slide-in 0.3s ease-out;
   }
@@ -978,6 +905,12 @@
       border: 0;
       outline: none;
       box-shadow: none;
+    }
+
+    .sibs-profile-subtopic:focus-visible {
+      outline: 2px solid var(--sibs-primary-1);
+      outline-offset: 1px;
+      box-shadow: 0 0 0 2px rgba(4, 44, 81, 0.15);
     }
   }
 
@@ -1294,10 +1227,6 @@
   /* =========================
      SIBS METRIC CARD TONES & ICON BACKGROUNDS
   ========================= */
-  .sibs-metric-card {
-    @apply rounded-2xl border border-slate-200 bg-white p-3 2xl:p-4 shadow-sm transition hover:shadow-md;
-  }
-
   .sibs-tone-navy-label {
     @apply text-[#042C51];
   }
@@ -1470,7 +1399,7 @@
   }
 
   .sibs-data-table-th {
-    @apply px-4 py-3.5 text-[10px] font-extrabold uppercase tracking-normal text-sibs-muted;
+    @apply px-3 py-2 2xl:px-4 2xl:py-3.5 text-[8.5px] 2xl:text-[10px] font-extrabold uppercase tracking-wide text-sibs-muted;
   }
 
   .sibs-data-table-row {
@@ -1913,10 +1842,6 @@
 
   .table-footer {
     @apply rounded-b-2xl bg-white px-3 py-2.5 2xl:px-4 2xl:py-4;
-  }
-
-  .sibs-data-table-th {
-    @apply px-3 py-2 2xl:px-4 2xl:py-3.5 text-[8.5px] 2xl:text-[10px] font-extrabold uppercase tracking-wide text-[#042C51];
   }
 
   .sibs-data-table-td {
