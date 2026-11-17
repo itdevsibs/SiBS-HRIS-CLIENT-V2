@@ -2107,7 +2107,7 @@ export default function SiBSChat({
   const [inboxViewMode, setInboxViewMode] = useState("list");
   const minimizedDockRef = useRef(null);
   const previousActiveConversationIdRef = useRef(null);
-  const isInitialStateRestoredRef = useRef(false);
+  const isInitialStateRestoredRef = useRef("");
   const [expandedBounds, setExpandedBounds] = useState(null);
   const chatPanelRef = useRef(null);
   const layoutStartRef = useRef(null);
@@ -2274,11 +2274,11 @@ export default function SiBSChat({
   // Restore persisted state for the authenticated employee
   useEffect(() => {
     if (!currentSibsId) {
-      isInitialStateRestoredRef.current = false;
+      isInitialStateRestoredRef.current = "";
       return;
     }
-    if (isInitialStateRestoredRef.current) return;
-    isInitialStateRestoredRef.current = true;
+    if (isInitialStateRestoredRef.current === currentSibsId) return;
+    isInitialStateRestoredRef.current = currentSibsId;
 
     cleanupOtherEmployeeChatStates(currentSibsId);
     const saved = loadSavedChatState(currentSibsId);

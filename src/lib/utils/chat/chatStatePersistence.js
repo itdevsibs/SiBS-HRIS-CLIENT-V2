@@ -1,164 +1,117 @@
 /**
- * Pure utility functions for employee-scoped SiBS Chat UI state and draft persistence.
+ * SiBS Chat UI preferences and unsent drafts for the signed-in employee.
+ * Messages and the conversation roster remain server-owned; only the small
+ * window state and text drafts are cached in this browser.
  *
- * All state is strictly namespaced by the authenticated employee's sibsId in sessionStorage,
- * ensuring:
- * 1. Drafts, window mode, and active conversation survive open/close, navigation, and page refreshes.
- * 2. No employee's drafts or conversations are ever exposed to another signed-in user on the same machine.
- * 3. Clearing or logging out wipes the client-side session state without modifying server-side history.
+ * The HRIS logout event calls clearChatState() to remove all saved employees'
+ * chat state from the browser. Never use an unscoped shared draft key.
  */
+const STORAGE_PREFIX = "sibs:hris:chat:ui:v1:";
 
-export const CHAT_STORAGE_PREFIX = "sibs_chat_v2_";
-
-/**
- * Returns the storage key for a specific employee's session chat state.
- *
- * @param {string} sibsId
- * @returns {string|null}
- */
-export function getChatStorageKey(sibsId) {
-  const cleanId = String(sibsId || "").trim();
-  return cleanId ? `${CHAT_STORAGE_PREFIX}${cleanId}` : null;
-}
-
-/**
- * Loads the saved chat UI state for an employee.
- *
- * @param {string} sibsId
- * @returns {object|null}
- */
-export function loadSavedChatState(sibsId) {
-  if (typeof window === "undefined" || !sibsId) return null;
-  const key = getChatStorageKey(sibsId);
-  if (!key) return null;
-
+function getStorage() {
+  if (typeof window === "undefined") return null;
   try {
-    const raw = window.sessionStorage.getItem(key);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    return parsed && typeof parsed === "object" ? parsed : null;
+    return window.localStorage;
   } catch {
     return null;
   }
 }
 
-/**
- * Saves a partial chat UI state for an employee.
- *
- * @param {string} sibsId
- * @param {object} partialState
- */
-export function saveChatState(sibsId, partialState = {}) {
-  if (typeof window === "undefined" || !sibsId) return;
-  const key = getChatStorageKey(sibsId);
-  if (!key) return;
+function employeePrefix(sibsId) {
+  const id = String(sibsId ?? "").trim();
+  if (!id || id.length > 128) return "";
+  return `${STORAGE_PREFIX}${encodeURIComponent(id)}:`;
+}
 
+function draftKey(sibsId, conversationId) {
+  const prefix = employeePrefix(sibsId);
+  const id = Number(conversationId);
+  return prefix && Number.isSafeInteger(id) && id > 0 ? `${prefix}draft:${id}` : "";
+}
+
+export function loadSavedChatState(sibsId) {
+  const storage = getStorage();
+  const prefix = employeePrefix(sibsId);
+  if (!storage || !prefix) return null;
   try {
-    const current = loadSavedChatState(sibsId) || {};
-    const merged = {
-      ...current,
-      ...partialState,
-      updatedAt: Date.now(),
-    };
-    window.sessionStorage.setItem(key, JSON.stringify(merged));
+    const saved = storage.getItem(`${prefix}state`);
+    if (!saved) return null;
+    const parsed = JSON.parse(saved);
+    return parsed && !Array.isArray(parsed) && typeof parsed === "object" ? parsed : null;
   } catch {
-    // Storage quota exceeded or disabled
+    return null;
   }
 }
 
-/**
- * Saves an unsent draft for a specific conversation.
- *
- * @param {string} sibsId
- * @param {number|string} conversationId
- * @param {string} draftText
- */
-export function saveConversationDraft(sibsId, conversationId, draftText) {
-  if (typeof window === "undefined" || !sibsId) return;
-  const cid = String(conversationId || "general");
-  const current = loadSavedChatState(sibsId) || {};
-  const drafts = { ...(current.draftsByConversation || {}) };
-
-  const cleanDraft = String(draftText || "");
-  if (cleanDraft.trim()) {
-    drafts[cid] = cleanDraft;
-  } else {
-    delete drafts[cid];
+export function saveChatState(sibsId, changes = {}) {
+  const storage = getStorage();
+  const prefix = employeePrefix(sibsId);
+  if (!storage || !prefix || !changes || typeof changes !== "object" || Array.isArray(changes)) return;
+  try {
+    const previous = loadSavedChatState(sibsId) || {};
+    // Partial updates must not erase unrelated chat window preferences.
+    storage.setItem(`${prefix}state`, JSON.stringify({ ...previous, ...changes }));
+  } catch {
+    // Storage may be unavailable or full; Chat continues without persistence.
   }
-
-  saveChatState(sibsId, { draftsByConversation: drafts });
 }
 
-/**
- * Retrieves an unsent draft for a specific conversation.
- *
- * @param {string} sibsId
- * @param {number|string} conversationId
- * @returns {string}
- */
 export function getConversationDraft(sibsId, conversationId) {
-  const current = loadSavedChatState(sibsId);
-  if (!current?.draftsByConversation) return "";
-  const cid = String(conversationId || "general");
-  return String(current.draftsByConversation[cid] || "");
+  const storage = getStorage();
+  const key = draftKey(sibsId, conversationId);
+  if (!storage || !key) return "";
+  try {
+    return storage.getItem(key) || "";
+  } catch {
+    return "";
+  }
 }
 
-/**
- * Clears an unsent draft for a conversation (e.g. after message is sent).
- *
- * @param {string} sibsId
- * @param {number|string} conversationId
- */
+export function saveConversationDraft(sibsId, conversationId, text) {
+  const storage = getStorage();
+  const key = draftKey(sibsId, conversationId);
+  if (!storage || !key) return;
+  try {
+    const draft = String(text ?? "").slice(0, 10000);
+    if (!draft) storage.removeItem(key);
+    else storage.setItem(key, draft);
+  } catch {
+    // Never block typing or sending because browser storage failed.
+  }
+}
+
 export function clearConversationDraft(sibsId, conversationId) {
-  saveConversationDraft(sibsId, conversationId, "");
-}
-
-/**
- * Clears the chat UI state for an employee, or for all employees if sibsId is omitted.
- *
- * @param {string} [sibsId]
- */
-export function clearChatState(sibsId) {
-  if (typeof window === "undefined") return;
-
+  const storage = getStorage();
+  const key = draftKey(sibsId, conversationId);
+  if (!storage || !key) return;
   try {
-    if (sibsId) {
-      const key = getChatStorageKey(sibsId);
-      if (key) window.sessionStorage.removeItem(key);
-    } else {
-      const keysToRemove = [];
-      for (let i = 0; i < window.sessionStorage.length; i += 1) {
-        const k = window.sessionStorage.key(i);
-        if (k && k.startsWith(CHAT_STORAGE_PREFIX)) {
-          keysToRemove.push(k);
-        }
-      }
-      keysToRemove.forEach((k) => window.sessionStorage.removeItem(k));
-    }
+    storage.removeItem(key);
   } catch {
-    // Ignore
+    // Best-effort cleanup for browsers with restricted storage.
   }
 }
 
-/**
- * Purges any chat state keys belonging to other employees, ensuring complete account isolation.
- *
- * @param {string} currentSibsId
- */
-export function cleanupOtherEmployeeChatStates(currentSibsId) {
-  if (typeof window === "undefined" || !currentSibsId) return;
-  const currentKey = getChatStorageKey(currentSibsId);
-
+function clearKeysExcept(prefixToKeep = "") {
+  const storage = getStorage();
+  if (!storage) return;
   try {
-    const keysToRemove = [];
-    for (let i = 0; i < window.sessionStorage.length; i += 1) {
-      const k = window.sessionStorage.key(i);
-      if (k && k.startsWith(CHAT_STORAGE_PREFIX) && k !== currentKey) {
-        keysToRemove.push(k);
+    for (let index = storage.length - 1; index >= 0; index -= 1) {
+      const key = storage.key(index);
+      if (key?.startsWith(STORAGE_PREFIX) &&
+          (!prefixToKeep || !key.startsWith(prefixToKeep))) {
+        storage.removeItem(key);
       }
     }
-    keysToRemove.forEach((k) => window.sessionStorage.removeItem(k));
   } catch {
-    // Ignore
+    // Restricted storage must not affect the active HRIS session.
   }
+}
+
+export function cleanupOtherEmployeeChatStates(sibsId) {
+  const prefix = employeePrefix(sibsId);
+  if (prefix) clearKeysExcept(prefix);
+}
+
+export function clearChatState() {
+  clearKeysExcept();
 }

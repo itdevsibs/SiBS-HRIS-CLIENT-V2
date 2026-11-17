@@ -58,7 +58,6 @@ function HelpdeskSenderAvatar({ employee, name, sibsId }) {
   const initials = clean(employee?.initials) || clean(name).split(/[\s,]+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join("").toUpperCase() || clean(sibsId).slice(0, 2) || "?";
   const showImage = Boolean(imageUrl) && failedUrl !== imageUrl;
 
-  useEffect(() => { setFailedUrl(""); }, [imageUrl]);
   useEffect(() => {
     if (!visible) return undefined;
     const reposition = () => {
@@ -124,9 +123,18 @@ export default function HelpdeskCaseConversation({
   conversation, ticket, currentSibsId, onMessagesChanged,
 }) {
   const conversationId = Number(conversation?.id || 0);
+  // Retain per-conversation themes from the active chat snapshot, including
+  // customized employee Helpdesk themes, when rendering inside the support modal.
+  const chat = useChat();
+  const liveConversation = (chat?.conversations || []).find((entry) =>
+    Number(entry?.id || 0) === conversationId);
+  const selectedTheme = liveConversation?.theme || conversation?.theme;
+  const isCustomTheme = isChatThemeCustom(selectedTheme);
+  const themeBackgroundStyle = useMemo(() =>
+    getChatThemeBackgroundStyle(selectedTheme), [selectedTheme]);
   const status = clean(ticket?.status).toUpperCase();
-  const isRejected = status === "REJECTED";
-  const isClosed = status === "RESOLVED" || isRejected;
+  const isSpam = status === "SPAM" || status === "REJECTED";
+  const isClosed = status === "RESOLVED" || status === "CLOSED" || isSpam;
   const isAssignedSupport = Boolean(ticket?.acceptedBySibsId) &&
     clean(ticket.acceptedBySibsId) === clean(currentSibsId);
   const canReply = isAssignedSupport && ["IN_PROGRESS", "PENDING"].includes(status);
@@ -346,17 +354,19 @@ export default function HelpdeskCaseConversation({
     <div className="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-xs">
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-sibs-border px-4 py-3">
         <div>
-          <h3 className="sibs-modal-section-title">{isRejected ? "Request conversation" : "Case conversation"}</h3>
-          {!isClosed && <p className="sibs-modal-section-subtitle mt-0.5">
-            {canReply ? "Reply to the employee from this Helpdesk case" : "Case conversation · support access"}
-          </p>}
+          <h3 className="sibs-modal-section-title">{isSpam ? "Request conversation" : "Case conversation"}</h3>
+          <p className="sibs-modal-section-subtitle mt-0.5">
+            {isClosed ? "Archived conversation · read only" : canReply ? "Reply to the employee from this Helpdesk case" : "Case conversation · support access"}
+          </p>
         </div>
         <button type="button" onClick={() => void loadLatest({ manual: true })} disabled={loading || refreshing}
           className="sibs-modal-btn-secondary min-h-11 sm:min-h-0"
           title="Refresh messages"><RefreshCcw size={13} className={refreshing ? "motion-safe:animate-spin" : ""} /> Refresh</button>
       </div>
       <div ref={scrollRef} role="region" aria-label="Conversation messages" tabIndex={0}
-        className="sibs-scrollbar min-h-44 max-h-[min(430px,45dvh)] flex-1 space-y-3 overflow-y-auto bg-sibs-surface px-3 py-4 sm:px-4 lg:min-h-[280px]"
+        data-chat-custom-theme={isCustomTheme ? "true" : "false"}
+        className={`sibs-scrollbar min-h-44 max-h-[min(430px,45dvh)] flex-1 space-y-3 overflow-y-auto px-3 py-4 sm:px-4 lg:min-h-[280px] ${isCustomTheme ? "" : "bg-sibs-surface"}`}
+        style={themeBackgroundStyle}
         aria-live="polite" aria-busy={loading}>
         {loading && !messages.length ? (
           <div className="flex h-40 items-center justify-center gap-2 text-xs font-semibold text-sibs-muted"><Loader2 className="motion-safe:animate-spin" size={17} /> Loading messages…</div>

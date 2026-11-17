@@ -431,7 +431,7 @@ function HelpdeskTicketModal({ conversation, ticket, loading, eligibility, eligi
   const requester = getRequester(conversation);
   const ticketStatus = ticket?.status;
   const isResolved = ticketStatus === "RESOLVED";
-  const isRejected = ticketStatus === "REJECTED";
+  const isSpam = isSpamStatus(ticketStatus);
   const categoryName = safeText(conversation.helpdeskCategory) === "IT" ? "IT Support" : "TA/HR Concerns";
   const acceptedBy = safeText(ticket?.acceptedBySibsId);
   const isAssignee = Boolean(acceptedBy) && acceptedBy === currentSibsId;
@@ -440,24 +440,24 @@ function HelpdeskTicketModal({ conversation, ticket, loading, eligibility, eligi
   const [previousTicketStatus, setPreviousTicketStatus] = useState(ticketStatus);
   const [selectedStatus, setSelectedStatus] = useState(ticketStatus || "IN_PROGRESS");
   const [confirmClose, setConfirmClose] = useState(false);
-  const [confirmReject, setConfirmReject] = useState(false);
-  const [rejectionReason, setRejectionReason] = useState("");
+  const [confirmSpam, setConfirmSpam] = useState(false);
+  const [spamReason, setSpamReason] = useState("");
   const titleRef = useRef(null);
   const chatHeadingRef = useRef(null);
-  const rejectionReasonRef = useRef(null);
+  const spamReasonRef = useRef(null);
   const confirmationTriggerRef = useRef(null);
   const showCloseConfirmation = confirmClose && ticket?.status !== "RESOLVED" && isAssignee;
-  const showRejectConfirmation = confirmReject && ticket?.status !== "REJECTED" &&
+  const showSpamConfirmation = confirmSpam && !isSpamStatus(ticket?.status) &&
     (isAssignee || (ticket?.status === "OPEN" && eligibility?.eligible));
-  const confirmationOpen = showCloseConfirmation || showRejectConfirmation;
+  const confirmationOpen = showCloseConfirmation || showSpamConfirmation;
 
   if (ticketStatus !== previousTicketStatus) {
     setPreviousTicketStatus(ticketStatus);
     setSelectedStatus(ticketStatus || "IN_PROGRESS");
-    if (ticketStatus === "RESOLVED" || ticketStatus === "REJECTED") {
+    if (ticketStatus === "RESOLVED" || isSpamStatus(ticketStatus)) {
       setConfirmClose(false);
-      setConfirmReject(false);
-      setRejectionReason("");
+      setConfirmSpam(false);
+      setSpamReason("");
     }
   }
 
@@ -474,32 +474,32 @@ function HelpdeskTicketModal({ conversation, ticket, loading, eligibility, eligi
     target?.focus({ preventScroll: true });
   }, [confirmationOpen]);
 
-  const openRejection = (event) => {
+  const openSpam = (event) => {
     confirmationTriggerRef.current = event.currentTarget;
-    setRejectionReason("");
-    setConfirmReject(true);
+    setSpamReason("");
+    setConfirmSpam(true);
   };
   const dismissConfirmation = () => {
     setConfirmClose(false);
-    setConfirmReject(false);
+    setConfirmSpam(false);
   };
   const errorNotice = error && (
     <div role="alert" className="mb-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs font-bold text-rose-700">{error}</div>
   );
-  const durations = ticket && !isRejected ? [
+  const durations = ticket && !isSpam ? [
     { label: "Queued time", value: getQueuedDisplay(ticket, now).text, detail: "First message to acceptance" },
     { label: "Response time", value: getResponseDisplay(ticket).text, detail: "Acceptance to first support reply" },
     { label: "Total resolution", value: getResolutionDisplay(ticket), detail: "Opening to closure", highlight: isResolved },
     { label: "Handling time", value: ticket.resolvedAt ? formatElapsed(ticket.secondsToFinish) : "Pending", detail: "Acceptance to closure" },
   ] : [];
   const milestones = ticket ? [
-    { label: isRejected ? "Received" : "Opened", value: ticket.postedAt, icon: <CalendarClock size={16} /> },
+    { label: isSpam ? "Received" : "Opened", value: ticket.postedAt, icon: <CalendarClock size={16} /> },
     { label: "Assigned", value: ticket.assignedAt, icon: <UserRound size={16} /> },
     { label: "Accepted", value: ticket.acceptedAt, icon: <CheckCircle2 size={16} /> },
     { label: "First support reply", value: ticket.firstResponseAt, icon: <MessageSquare size={16} /> },
-    { label: isRejected ? "Rejected" : "Resolved", value: isRejected ? ticket.rejectedAt : ticket.resolvedAt,
-      icon: isRejected ? <Ban size={16} /> : <CheckCircle2 size={16} />,
-      highlight: isRejected ? "rejected" : isResolved ? "resolved" : null },
+    { label: isSpam ? "Flagged as Spam" : "Resolved", value: isSpam ? ticket.rejectedAt : ticket.resolvedAt,
+      icon: isSpam ? <Flag size={16} /> : <CheckCircle2 size={16} />,
+      highlight: isSpam ? "spam" : isResolved ? "resolved" : null },
   ] : [];
 
   return (
@@ -558,7 +558,7 @@ function HelpdeskTicketModal({ conversation, ticket, loading, eligibility, eligi
                 </section>
               </div>
 
-              {!isRejected && (
+              {!isSpam && (
                 <dl aria-label="Case durations" className="grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-sibs-border bg-sibs-border shadow-xs lg:grid-cols-4">
                   {durations.map(({ label, value, detail, highlight }) => (
                     <div key={label} className={highlight ? "bg-emerald-50 p-3 text-center" : "bg-white p-3 text-center"}>
@@ -570,11 +570,11 @@ function HelpdeskTicketModal({ conversation, ticket, loading, eligibility, eligi
                 </dl>
               )}
 
-              {isRejected && (
+              {isSpam && (
                 <section className="rounded-xl border border-rose-200 bg-rose-50 p-4">
-                  <h3 className="text-xs font-extrabold text-rose-800">Rejection reason</h3>
+                  <h3 className="text-xs font-extrabold text-rose-800">Spam reason</h3>
                   <p className="mt-1 whitespace-pre-wrap wrap-anywhere text-xs font-semibold text-sibs-navy">{ticket.rejectionReason || "Not recorded"}</p>
-                  <p className="sibs-modal-section-subtitle mt-1">Rejected by SiBS ID {ticket.rejectedBySibsId || "—"}. This request is excluded from open and closed case counts.</p>
+                  <p className="sibs-modal-section-subtitle mt-1">Flagged by SiBS ID {ticket.rejectedBySibsId || "—"}. This request is excluded from open and closed case counts.</p>
                 </section>
               )}
 
@@ -601,30 +601,30 @@ function HelpdeskTicketModal({ conversation, ticket, loading, eligibility, eligi
                       {busy || eligibilityLoading ? <Loader2 size={14} className="motion-safe:animate-spin" /> : <CheckCircle2 size={14} />} Accept Request
                     </button>
                     <p className="text-[11px] font-semibold leading-relaxed text-sibs-muted">{eligibilityLoading ? "Verifying today's Kronos attendance and assigned site..." : eligibility?.reason || "You are eligible to accept this request."}</p>
-                    <button type="button" onClick={openRejection}
+                    <button type="button" onClick={openSpam}
                       disabled={busy || eligibilityLoading || !eligibility?.eligible}
                       className="flex w-full items-center justify-center gap-2 rounded-lg border border-rose-200 bg-white px-4 py-2.5 text-xs font-extrabold text-rose-700 transition hover:bg-rose-50 disabled:opacity-50">
-                      <Ban size={14} /> Reject Request
+                      <Flag size={14} /> Flag as Spam
                     </button>
                   </div>
                 )}
-                {isAssignee && !["RESOLVED", "REJECTED"].includes(ticket.status) && (
+                {isAssignee && !["RESOLVED", "SPAM", "REJECTED"].includes(ticket.status) && (
                   <div className="mt-4 space-y-2">
                     <SelectDropdown label="Update status" labelClassName="text-[10px] font-extrabold uppercase text-sibs-muted"
                       value={selectedStatus}
-                      options={["IN_PROGRESS", "PENDING", "RESOLVED", "REJECTED"].map((status) => ({ value: status, label: TICKET_STATUS_LABELS[status] }))}
+                      options={["IN_PROGRESS", "PENDING", "RESOLVED", "SPAM"].map((status) => ({ value: status, label: TICKET_STATUS_LABELS[status] }))}
                       onChange={setSelectedStatus} clearable={false} disabled={busy} className="h-10 rounded-lg" />
                     <button type="button"
                       onClick={(event) => {
                         if (selectedStatus === "RESOLVED") {
                           confirmationTriggerRef.current = event.currentTarget;
                           setConfirmClose(true);
-                        } else if (selectedStatus === "REJECTED") openRejection(event);
+                        } else if (selectedStatus === "SPAM") openSpam(event);
                         else onUpdateStatus(selectedStatus);
                       }}
                       disabled={busy || selectedStatus === ticket.status}
                       className="w-full rounded-lg bg-sibs-navy px-4 py-2.5 text-xs font-extrabold text-white hover:bg-sibs-navy-alt disabled:opacity-50">
-                      {busy ? "Saving…" : selectedStatus === "RESOLVED" ? "Close Case" : selectedStatus === "REJECTED" ? "Reject Request" : "Save status"}
+                      {busy ? "Saving…" : selectedStatus === "RESOLVED" ? "Close Case" : selectedStatus === "SPAM" ? "Flag as Spam" : "Save status"}
                     </button>
                   </div>
                 )}
@@ -646,7 +646,7 @@ function HelpdeskTicketModal({ conversation, ticket, loading, eligibility, eligi
                     </h3>
                     <ol aria-label="Lifecycle milestones" className="mt-3 space-y-2">
                       {milestones.map(({ label, value, icon, highlight }, index) => (
-                        <li key={label} className={`flex min-h-14 items-center gap-3 rounded-lg border px-3 py-3 ${highlight === "resolved" ? "border-emerald-200 bg-emerald-50 text-emerald-800" : highlight === "rejected" ? "border-rose-200 bg-rose-50 text-rose-800" : "border-sibs-border bg-sibs-surface text-sibs-navy"}`}>
+                        <li key={label} className={`flex min-h-14 items-center gap-3 rounded-lg border px-3 py-3 ${highlight === "resolved" ? "border-emerald-200 bg-emerald-50 text-emerald-800" : highlight === "spam" ? "border-rose-200 bg-rose-50 text-rose-800" : "border-sibs-border bg-sibs-surface text-sibs-navy"}`}>
                           <div aria-hidden="true" className="flex shrink-0 items-center gap-1.5 text-xs font-bold tabular-nums">
                             <span>{String(index + 1).padStart(2, "0")}</span>{icon}
                           </div>
@@ -665,11 +665,11 @@ function HelpdeskTicketModal({ conversation, ticket, loading, eligibility, eligi
                       <p className="sibs-modal-section-subtitle mt-1">Case activity recorded in the support queue.</p>
                     </div>
                     <ol className="mt-3 space-y-3">
-                      <li className="flex gap-2.5 text-xs text-sibs-navy"><CheckCircle2 size={16} className="mt-0.5 shrink-0 text-emerald-600" /><span><b>{ticket.status === "REJECTED" ? "Request received · first message sent" : "Case opened · first message sent"}</b><span className="block text-sibs-muted">{formatDate(ticket.postedAt)}</span></span></li>
+                      <li className="flex gap-2.5 text-xs text-sibs-navy"><CheckCircle2 size={16} className="mt-0.5 shrink-0 text-emerald-600" /><span><b>{isSpamStatus(ticket.status) ? "Request received · first message sent" : "Case opened · first message sent"}</b><span className="block text-sibs-muted">{formatDate(ticket.postedAt)}</span></span></li>
                       {(ticket.history || []).map((entry, index) => (
                         <li key={`${entry.eventType}-${entry.occurredAt}-${index}`} className="flex gap-2.5 text-xs text-sibs-navy">
                           <Clock3 size={16} className="mt-0.5 shrink-0 text-sibs-orange" />
-                          <span><b>{entry.eventType === "ACCEPTED" ? "Accepted and assigned" : entry.eventType === "RESOLVED" ? "Case closed" : entry.eventType === "REJECTED" ? "Request rejected" : `Status changed to ${TICKET_STATUS_LABELS[entry.newStatus] || entry.newStatus}`}</b>
+                          <span><b>{entry.eventType === "ACCEPTED" ? "Accepted and assigned" : entry.eventType === "RESOLVED" ? "Case closed" : isSpamStatus(entry.eventType) ? "Request flagged as Spam" : `Status changed to ${TICKET_STATUS_LABELS[entry.newStatus] || entry.newStatus}`}</b>
                             <span className="block text-sibs-muted">{formatDate(entry.occurredAt)}</span>
                             <span className="mt-0.5 block break-words text-sibs-muted">{getTimelineActorLabel(entry, conversation)}</span>
                             {entry.reason && <span className="mt-0.5 block whitespace-pre-wrap break-words text-rose-700">Reason: {entry.reason}</span>}
@@ -688,26 +688,26 @@ function HelpdeskTicketModal({ conversation, ticket, loading, eligibility, eligi
           open
           role="alertdialog"
           aria-describedby="helpdesk-confirm-description"
-          title={showRejectConfirmation ? "Reject this request?" : "Close this case?"}
-          subtitle={showRejectConfirmation
-            ? "A reason is required and will be visible in the request record."
+          title={showSpamConfirmation ? "Flag this request as Spam?" : "Close this case?"}
+          subtitle={showSpamConfirmation
+            ? "A reason is required and will be retained for audit."
             : "Confirm that the employee's concern is resolved."}
-          icon={showRejectConfirmation ? Ban : CheckCircle2}
+          icon={showSpamConfirmation ? Flag : CheckCircle2}
           onClose={dismissConfirmation}
           closeDisabled={busy}
           closeOnBackdrop={false}
           hideCloseButton
           autoDetectDirty={false}
-          initialFocusRef={showRejectConfirmation ? rejectionReasonRef : null}
+          initialFocusRef={showSpamConfirmation ? spamReasonRef : null}
           maxWidth="max-w-md"
           zIndex="z-[2000000]"
           footer={
             <>
               <button type="button" onClick={dismissConfirmation} disabled={busy} className="sibs-modal-btn-secondary">Cancel</button>
-              {showRejectConfirmation ? (
-                <button type="button" onClick={() => onUpdateStatus("REJECTED", rejectionReason.trim())}
-                  disabled={busy || rejectionReason.trim().length < 1 || rejectionReason.trim().length > 1000}
-                  className="sibs-btn-danger min-h-9">{busy ? "Rejecting…" : "Reject Request"}</button>
+              {showSpamConfirmation ? (
+                <button type="button" onClick={() => onUpdateStatus("SPAM", spamReason.trim())}
+                  disabled={busy || spamReason.trim().length < 1 || spamReason.trim().length > 1000}
+                  className="sibs-btn-danger min-h-9">{busy ? "Flagging…" : "Flag as Spam"}</button>
               ) : (
                 <button type="button" onClick={() => onUpdateStatus("RESOLVED")} disabled={busy}
                   className="inline-flex min-h-9 items-center justify-center rounded-[10px] bg-sibs-navy px-4 text-xs font-extrabold text-white hover:bg-sibs-navy-alt disabled:opacity-50">
@@ -719,19 +719,19 @@ function HelpdeskTicketModal({ conversation, ticket, loading, eligibility, eligi
         >
           {errorNotice}
           <p id="helpdesk-confirm-description" className="text-xs font-semibold leading-relaxed text-sibs-muted">
-            {showRejectConfirmation
-              ? "Use Rejected only for requests that cannot be actioned by this Helpdesk team. Rejected requests do not count as open or closed cases."
+            {showSpamConfirmation
+              ? "Flag spam, abusive, deliberately invalid, or clearly irrelevant requests. This request will disappear from the employee’s SiBS Chat, but remain under Spam for support audit. Spam does not count as an open or closed case."
               : "Only close the case when the problem is fixed. This action cannot be undone, and the conversation will become read-only."}
           </p>
-          {showRejectConfirmation && (
+          {showSpamConfirmation && (
             <div className="mt-3 space-y-2">
-              <label htmlFor="support-rejection-reason" className="block text-xs font-extrabold text-sibs-navy">Reason for rejection *</label>
-              <textarea id="support-rejection-reason" ref={rejectionReasonRef} value={rejectionReason} maxLength={1000} rows={4}
-                onChange={(event) => setRejectionReason(event.target.value)}
-                placeholder="Explain why this request cannot be processed (e.g. unrelated to workplace support)."
+              <label htmlFor="support-spam-reason" className="block text-xs font-extrabold text-sibs-navy">Reason for flagging as Spam *</label>
+              <textarea id="support-spam-reason" ref={spamReasonRef} value={spamReason} maxLength={1000} rows={4}
+                onChange={(event) => setSpamReason(event.target.value)}
+                placeholder="Explain why this request should be marked as Spam."
                 disabled={busy} required
                 className="sibs-input min-h-24 w-full resize-y px-3 py-2" />
-              <p className="sibs-modal-section-subtitle">{rejectionReason.trim().length}/1000 characters · minimum 1</p>
+              <p className="sibs-modal-section-subtitle">{spamReason.trim().length}/1000 characters · minimum 1</p>
             </div>
           )}
         </ModalShell>
