@@ -5,7 +5,7 @@
  */
 const BULLET_LINE = /^(\s*)(?:[-•*–—]\s+|\d{1,3}[.)]\s+)(\S[\s\S]*)$/;
 const MARKDOWN_HEADING = /^\s*#{1,4}\s+(.+)$/;
-const EMPLOYEE_PROFILE_LINE = /^(.+?)\s+\(SiBS\s*ID:\s*(\d+)\)\s+(is listed in (?:the )?(?:HRIS )?employee directory\.?)$/iu;
+const EMPLOYEE_PROFILE_LINE = /^(.+?)\s+\(SiBS\s*ID:?\s*(\d+)\)\s+(is listed in (?:the )?(?:HRIS )?employee directory\.?)$/iu;
 const FACT_LINE = /^\s*([\p{L}][\p{L}\p{N}\s/().,&'’\-]{1,55}):\s+(\S.*)$/u;
 
 // A markdown two-column profile table is presentation, not natural prose.
@@ -105,6 +105,47 @@ function profileFromFacts(items) {
 }
 
 /**
+ * Presentation-only fallback for a schedule returned as natural-language prose.
+ * Read only facts explicitly present in the SAME message. A partial or
+ * unrecognized response keeps the original paragraph; no schedule lookup,
+ * clock-out, break, or identity is inferred from conversation history.
+ */
+function narrativeEmployeeScheduleCard(content) {
+  const source = String(content ?? "").replace(/\r\n?/g, "\n").trim();
+  if (!source || source.length > 1700 || source.includes("###")) return null;
+  const sentence = source.replace(/\s+/g, " ").trim();
+  const intro = sentence.match(
+    /^Here(?:'s| is)\s+([\p{L}][\p{L}\p{M} .,'’\-]{1,100}?)['’]s schedule for (?:today,?\s*)?((?:(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday),?\s+)?(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},\s+\d{4}):/iu,
+  );
+  if (!intro) return null;
+  const name = safeProfileName(intro[1]);
+  const sibsId = sentence.match(/\(SiBS\s*ID:?\s*(\d{2,12})\)/i)?.[1];
+  const login = sentence.match(/\bscheduled login time is\s+((?:0?[1-9]|1[0-2]):[0-5]\d\s*[AP]M)\b/i)?.[1];
+  // Only recognize the particular prose shape that asserts these are schedule
+  // facts, not a quoted example or a guessed time in another sentence.
+  if (!name || !sibsId || !login) return null;
+  const departmentAccount = sentence.match(
+    /\bin the ([\p{L}\p{N}][\p{L}\p{N} &/.'’\-]{0,100}?) department under the ([\p{L}\p{N}][\p{L}\p{N} &/.'’\-]{0,100}?) account\s*\(SiBS\s*ID:?\s*\d{2,12}\)/iu,
+  );
+  // Distinguish "not set" from a known schedule time. Don't fabricate a
+  // break duration or an end-of-shift time when they were not provided.
+  const noBreak = /\b(?:with )?no break\b/i.test(sentence);
+  const noLogout = /\bno logout time (?:set|recorded|specified|listed)\b/i.test(sentence);
+  return {
+    type: "narrativeSchedule",
+    employee: { name, sibsId },
+    date: intro[2].trim(),
+    loginTime: login.replace(/\s+/g, " "),
+    breakStatus: noBreak ? "No break listed" : null,
+    logoutStatus: noLogout ? "Not set" : null,
+    ...(departmentAccount ? {
+      department: departmentAccount[1].trim(),
+      account: departmentAccount[2].trim(),
+    } : {}),
+  };
+}
+
+/**
  * A narrow text contract from the authenticated HRIS reporting-line lookup.
  * This changes presentation only; it never resolves a manager from a name or
  * prior conversation, and cannot infer an ID that is not in the answer.
@@ -120,7 +161,7 @@ function reportingLineCard(content) {
   if (!employeeText || !managerText) return null;
 
   const readPerson = (value) => {
-    const parsed = value.match(/^(.+?)(?:\s+\(SiBS\s*ID:\s*(\d{1,16})\))?$/i);
+    const parsed = value.match(/^(.+?)(?:\s+\(SiBS\s*ID:?\s*(\d{1,16})\))?$/i);
     if (!parsed) return null;
     const name = parsed[1].trim();
     if (!name || name.length > 160 || !/[\p{L}]/u.test(name)) return null;
@@ -192,7 +233,7 @@ function employeeAttendanceStatusCard(content) {
   if (!source || source.length > 2000) return null;
   const lines = source.split("\n").map((line) => line.trim()).filter(Boolean);
   if (lines.length < 5 || lines.length > 16 || !/^#{1,4}\s+Attendance Check$/i.test(lines[0])) return null;
-  const person = lines[1].match(/^Employee:\s*(.+?)\s+\(SiBS\s*ID:\s*(\d{2,12})\)$/i);
+  const person = lines[1].match(/^Employee:\s*(.+?)\s+\(SiBS\s*ID:?\s*(\d{2,12})\)$/i);
   const date = lines[2].match(/^Date:\s*(.+)$/i)?.[1];
   const status = lines[3].match(/^Status:\s*(Attendance recorded|No attendance recorded|Unable to verify)$/i)?.[1];
   const note = lines[4].match(/^Note:\s*(.+)$/i)?.[1];
@@ -226,7 +267,7 @@ function employeeScheduleCheckCard(content) {
   const lines = source.split('\n').map((line) => line.trim()).filter(Boolean);
   if (lines.length < 4 || lines.length > 13 ||
       !/^#{1,4}\s+Schedule Check$/i.test(lines[0])) return null;
-  const person = lines[1].match(/^Employee:\s*(.+?)\s+\(SiBS\s*ID:\s*(\d{2,12})\)$/i);
+  const person = lines[1].match(/^Employee:\s*(.+?)\s+\(SiBS\s*ID:?\s*(\d{2,12})\)$/i);
   const date = lines[2].match(/^Date:\s*(.+)$/i)?.[1];
   if (!person || !date || date.length > 70) return null;
   const name = safeProfileName(person[1]);
@@ -565,6 +606,8 @@ export function parseAiResultBlocks(content) {
   if (summary) return [summary];
   const employeeSchedule = employeeScheduleCheckCard(content);
   if (employeeSchedule) return [employeeSchedule];
+  const narrativeSchedule = narrativeEmployeeScheduleCard(content);
+  if (narrativeSchedule) return [narrativeSchedule];
   const activeHeadcount = activeHeadcountCard(content);
   if (activeHeadcount) return [activeHeadcount];
   const attendanceStatus = employeeAttendanceStatusCard(content);

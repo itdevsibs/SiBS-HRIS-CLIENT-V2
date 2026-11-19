@@ -426,8 +426,8 @@ function formatElapsed(value) {
   return `${hours} hr${hours === 1 ? "" : "s"}${minutes % 60 ? ` ${minutes % 60} min` : ""}`;
 }
 
-function HelpdeskTicketModal({ conversation, ticket, loading, eligibility, eligibilityLoading, busy, error,
-  currentSibsId, initialMessagesPromise, onInitialMessagesConsumed, onClose, onAccept, onUpdateStatus, onMessagesChanged, returnFocusFallbackRef }) {
+function HelpdeskTicketModal({ conversation, ticket, loading, busy, error,
+  currentSibsId, initialMessagesPromise, onInitialMessagesConsumed, onClose, onUpdateStatus, onMessagesChanged, returnFocusFallbackRef }) {
   const requester = getRequester(conversation);
   const ticketStatus = ticket?.status;
   const isResolved = ticketStatus === "RESOLVED";
@@ -515,47 +515,57 @@ function HelpdeskTicketModal({ conversation, ticket, loading, eligibility, eligi
           <UserRound size={15} aria-hidden="true" />
         </span>
         <div className="min-w-0">
-          <p className={`wrap-anywhere text-xs font-extrabold ${acceptedBy ? "text-sibs-navy" : "text-sibs-muted"}`}>
-            {assignee?.displayName || (acceptedBy ? "Support agent" : "Unassigned")}
+          <p className={`wrap-anywhere text-xs font-extrabold ${assignedSibsId ? "text-sibs-navy" : "text-sibs-muted"}`}>
+            {assignee?.displayName || (assignedSibsId ? `SiBS ID ${assignedSibsId}` : "Awaiting on-duty agent")}
           </p>
           <p className="sibs-modal-section-subtitle tabular-nums">
-            {acceptedBy ? `SiBS ID: ${acceptedBy}` : "Waiting for an eligible support agent"}
+            {assignedSibsId ? `SiBS ID: ${assignedSibsId} · Automatic assignment` : "Waiting for an eligible support agent"}
           </p>
+          {Number.isFinite(nextRotationAt) && ["OPEN", "IN_PROGRESS", "PENDING"].includes(ticket.status) && (
+            <p className="mt-1 text-[11px] font-bold text-amber-700">
+              {nextRotationAt > now
+                ? `Automatic reassignment in ${Math.ceil((nextRotationAt - now) / 60_000)} min if pending`
+                : "Automatic reassignment is due"}
+            </p>
+          )}
+          {isResolved && <p className="mt-1 text-[11px] font-extrabold text-emerald-700">Resolution credit: {resolverName}</p>}
         </div>
       </div>
-      {ticket.status === "OPEN" && (
-        <div className="mt-3.5 space-y-2">
-          <button type="button" onClick={onAccept} disabled={busy || eligibilityLoading || !eligibility?.eligible}
-            title={!eligibilityLoading && !eligibility?.eligible && eligibility?.reason ? eligibility.reason : undefined}
-            className="flex w-full items-center justify-center gap-2 rounded-[10px] bg-sibs-orange px-4 py-2.5 text-xs font-extrabold text-white shadow-xs transition hover:bg-sibs-button-hover active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500 disabled:shadow-none">
-            {busy || eligibilityLoading ? <Loader2 size={14} className="motion-safe:animate-spin" /> : <CheckCircle2 size={14} />} Accept Request
-          </button>
-          <button type="button" onClick={openSpam}
-            disabled={busy || eligibilityLoading || !eligibility?.eligible}
-            title={!eligibilityLoading && !eligibility?.eligible && eligibility?.reason ? eligibility.reason : undefined}
-            className="flex w-full items-center justify-center gap-2 rounded-[10px] border border-rose-200 bg-white px-4 py-2.5 text-xs font-extrabold text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50">
-            <Flag size={14} /> Flag as Spam
-          </button>
+      {Array.isArray(ticket.assignmentHistory) && ticket.assignmentHistory.length > 1 && (
+        <div className="mt-3 rounded-lg border border-sibs-border bg-white p-3" aria-label="Assignment history">
+          <p className="text-[11px] font-extrabold text-sibs-navy">Assignment history</p>
+          <ol className="mt-2 space-y-1.5">
+            {ticket.assignmentHistory.map((item, index) => (
+              <li key={`${index}-${item.occurredAt}`} className="flex flex-wrap justify-between gap-x-2 text-[11px] text-sibs-muted">
+                <span>{item.eventType === "AUTO_ASSIGNED" ? "Initially assigned" : item.eventType === "LEGACY_ADOPTED" ? "Existing assignment retained" : "Reassigned after 10 minutes"} · SiBS ID {item.assignedSibsId}</span>
+                <span>{formatDate(item.occurredAt)}</span>
+              </li>
+            ))}
+          </ol>
         </div>
       )}
-      {ticket.status === "OPEN" && (
+      {ticket.status === "OPEN" && !assignedSibsId && (
         <p className="mt-3 rounded-lg border border-sibs-border bg-sibs-surface px-3 py-2 text-xs font-semibold text-sibs-muted">
           Awaiting an available on-duty agent. The ticket will automatically start In Progress when assigned.
         </p>
       )}
       {isAssignee && !["RESOLVED", "SPAM", "REJECTED"].includes(ticket.status) && (
         <div className="mt-4 space-y-2">
-          <button type="button"
-            onClick={(event) => {
-              if (selectedStatus === "RESOLVED") {
-                confirmationTriggerRef.current = event.currentTarget;
-                setConfirmClose(true);
-              } else if (selectedStatus === "SPAM") openSpam(event);
-              else onUpdateStatus(selectedStatus);
-            }}
-            disabled={busy || selectedStatus === ticket.status}
-            className="w-full rounded-[10px] bg-sibs-navy px-4 py-2.5 text-xs font-extrabold text-white transition hover:bg-sibs-navy-alt disabled:cursor-not-allowed disabled:opacity-50">
-            {busy ? "Saving…" : selectedStatus === "RESOLVED" ? "Close Case" : selectedStatus === "SPAM" ? "Flag as Spam" : "Save status"}
+          <button type="button" onClick={(event) => {
+            confirmationTriggerRef.current = event.currentTarget;
+            setConfirmClose(true);
+          }} disabled={busy}
+            className="flex w-full items-center justify-center gap-2 rounded-[10px] bg-emerald-700 px-4 py-2.5 text-xs font-extrabold text-white hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-50">
+            <CheckCircle2 size={16} /> {busy ? "Processing…" : "Resolve Case"}
+          </button>
+          <button type="button" onClick={() => onUpdateStatus("PENDING")}
+            disabled={busy || ticket.status === "PENDING"}
+            className="flex w-full items-center justify-center gap-2 rounded-[10px] border border-sibs-border bg-white px-4 py-2.5 text-xs font-bold text-sibs-navy hover:bg-sibs-surface disabled:cursor-not-allowed disabled:opacity-50">
+            <Clock3 size={14} /> {ticket.status === "PENDING" ? "Pending · automatic handoff active" : "Set Pending"}
+          </button>
+          <button type="button" onClick={openSpam} disabled={busy}
+            className="flex w-full items-center justify-center gap-1.5 rounded-[10px] px-3 py-2 text-[11px] font-semibold text-rose-700 hover:bg-rose-50 disabled:opacity-50">
+            <Flag size={13} /> Flag as Spam
           </button>
         </div>
       )}
@@ -953,7 +963,6 @@ export default function HelpdeskSupportPage({ category = "IT" }) {
     setActiveRequest(null);
     setInitialMessagesPromise(null);
     setTicketDetails(null);
-    setTicketEligibility(null);
     setTicketError("");
     detailControllerRef.current?.abort();
     const controller = new AbortController();
@@ -1052,9 +1061,6 @@ export default function HelpdeskSupportPage({ category = "IT" }) {
     detailControllerRef.current?.abort();
     const controller = new AbortController();
     detailControllerRef.current = controller;
-    const summaryTicket = ticketSummaries[Number(conversation.id)] || null;
-    const summaryStatus = safeText(summaryTicket?.status || conversation?.caseStatus).toUpperCase();
-    const shouldPrefetchEligibility = summaryStatus === "OPEN";
     const messagesPromise = getChatMessages(conversation.id, { limit: 75, signal: controller.signal });
     // Prevent unhandled rejection before HelpdeskCaseConversation mounts and awaits it.
     messagesPromise.catch(() => {});
@@ -1064,32 +1070,11 @@ export default function HelpdeskSupportPage({ category = "IT" }) {
     setTicketDetails(null);
     setTicketError("");
     setTicketLoading(true);
-    setEligibilityLoading(shouldPrefetchEligibility);
-
-    const fetchEligibility = () => {
-      setEligibilityLoading(true);
-      void getHelpdeskTicketEligibility(conversation.id, { signal: controller.signal })
-        .then((result) => { if (!controller.signal.aborted) setTicketEligibility(result); })
-        .catch((error) => { if (!controller.signal.aborted) setTicketEligibility({ eligible: false, reason: error?.response?.data?.message || "Unable to verify duty or site eligibility." }); })
-        .finally(() => { if (!controller.signal.aborted) setEligibilityLoading(false); });
-    };
-
-    if (shouldPrefetchEligibility) {
-      fetchEligibility();
-    }
 
     void getHelpdeskTicketDetails(conversation.id, { signal: controller.signal })
       .then((details) => {
         if (controller.signal.aborted) return;
         setTicketDetails(details);
-        // Resolved/assigned requests never require a costly Kronos duty check.
-        if (details?.status !== "OPEN") {
-          setEligibilityLoading(false);
-          return;
-        }
-        if (!shouldPrefetchEligibility) {
-          fetchEligibility();
-        }
       })
       .catch((error) => { if (!controller.signal.aborted) setTicketError(error?.response?.data?.message || "Unable to load this request."); })
       .finally(() => { if (!controller.signal.aborted) setTicketLoading(false); });
@@ -1102,15 +1087,19 @@ export default function HelpdeskSupportPage({ category = "IT" }) {
     setTicketBusy(true);
     setTicketError("");
     try {
-      const next = action === "ACCEPT"
-        ? await acceptHelpdeskTicket(requestId)
-        : await updateHelpdeskTicketStatus(requestId, status, reason);
+      const next = await updateHelpdeskTicketStatus(requestId, status, reason);
       if (controller?.signal?.aborted) return;
       setTicketDetails(next);
       await loadTicketSummaries();
       void chat?.refreshConversations?.({ silent: true });
     } catch (error) {
       if (controller?.signal?.aborted) return;
+      if (Number(error?.response?.status) === 403) {
+        closeDetails();
+        void chat?.refreshConversations?.({ silent: true });
+        void loadTicketSummaries();
+        return;
+      }
       setTicketError(error?.response?.data?.message || "Unable to update request. Refresh and retry.");
       try {
         const refreshed = await getHelpdeskTicketDetails(requestId, { signal: controller?.signal });
