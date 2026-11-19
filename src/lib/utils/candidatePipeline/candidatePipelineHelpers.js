@@ -277,59 +277,27 @@ export function isOfferApproved(candidate) {
   return getOfferApprovalSummary(candidate) === "Approved";
 }
 
-export function buildAssessmentLink(candidate) {
-  if (typeof window === "undefined") return "";
-
-  const candidateId = encodeURIComponent(
-    candidate?.candidateId || candidate?.id,
-  );
-
-  const email = encodeURIComponent(candidate?.email || "");
-
-  return `${window.location.origin}/online-assessment?candidateId=${candidateId}&email=${email}`;
+export function buildAssessmentLink() {
+  // Never copy stale/shared candidate links into new movement history entries.
+  return 'A unique CSR-Fit assessment link is provided in the invitation email.';
 }
 
 export async function triggerAssessmentEmail(candidate) {
-  const assessmentLink = buildAssessmentLink(candidate);
-
+  const candidateId = candidate?.candidateId || candidate?.candidate_id || candidate?.id;
+  if (!candidateId || !candidate?.email) return false;
   try {
-    await fetch("/api/assessment/send-invite", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        candidateId: candidate.candidateId,
-        candidateName: candidate.name,
-        candidateEmail: candidate.email,
-        roleAccount: candidate.roleAccount,
-        assessmentLink,
-      }),
+    const response = await fetch('/api/assessment/send-invite', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({candidateId,candidateEmail:candidate.email,roleAccount:candidate.roleAccount}),
     });
-
+    if (!response.ok) throw new Error('Unable to send CSR-Fit assessment invitation.');
     return true;
-  } catch {
-    const subject = encodeURIComponent(
-      `Online Assessment Invitation - ${getRoleTitle(candidate.roleAccount)}`,
-    );
-
-    const body = encodeURIComponent(
-      `Hi ${candidate.name},
-
-Thank you for passing the initial screening.
-
-Please take your online assessment using the link below:
-
-${assessmentLink}
-
-Once completed, our Talent Acquisition team will review your assessment result.
-
-Thank you,
-SIBS Talent Acquisition`,
-    );
-
-    window.location.href = `mailto:${candidate.email}?subject=${subject}&body=${body}`;
-    return true;
+  } catch (error) {
+    console.error('CSR-Fit assessment invite failed:', error);
+    // Never open a mailto fallback with an unissued assessment URL.
+    return false;
   }
 }
 

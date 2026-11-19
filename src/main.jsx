@@ -50,8 +50,8 @@ const PublicJobDescriptionPage = lazyWithRetry(() =>
 const CandidateExperienceSurveyPage = lazyWithRetry(() =>
   import("./pages/recruitment/candidateExperience/public/CandidateExperienceSurveyPage.jsx")
 );
-const FinalInterviewForms = lazyWithRetry(() =>
-  import("./components/recruitment/forms/FinalInterviewForms.jsx")
+const CsrFitAssessmentPage = lazyWithRetry(() =>
+  import("./pages/recruitment/CsrFitAssessmentPage.jsx")
 );
 const PublicApplicantPortalPage = lazyWithRetry(() =>
   import("./pages/public/PublicApplicantPortalPage.jsx")
@@ -203,7 +203,7 @@ export function StandalonePublicApp() {
 
         <Route
           path="/online-assessment"
-          element={<FinalInterviewForms publicMode />}
+          element={<CsrFitAssessmentPage />}
         />
 
         {/* =========================================

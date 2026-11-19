@@ -1,4 +1,4 @@
-import { CalendarDays, ChevronDown, ClipboardCheck, Clock3, Network, UserRound } from "lucide-react";
+import { Building2, CalendarDays, ChevronDown, ClipboardCheck, Clock3, Coffee, LogOut, Network, UserRound } from "lucide-react";
 
 import { formatAiDisplayDates } from "@/lib/utils/ai/aiDateDisplayClient";
 import { toPublicAiAnswerClient } from "@/lib/utils/ai/aiPublicAnswerClient";
@@ -249,6 +249,66 @@ function EmployeeScheduleCard({ employee, date, schedule }) {
   );
 }
 
+/** A concise, structured view of explicit schedule facts already in the answer. */
+function NarrativeScheduleCard({ employee, date, loginTime, breakStatus, logoutStatus, department, account }) {
+  return (
+    <section className="min-w-0 space-y-2" aria-label="Employee schedule details">
+      <h3 className="flex items-center gap-2 border-l-[3px] border-sibs-orange pl-2.5 text-[12px] font-bold leading-5 text-sibs-navy">
+        <Clock3 size={15} className="shrink-0" aria-hidden="true" /> Employee schedule
+      </h3>
+      <div className="min-w-0 overflow-hidden rounded-xl border border-sibs-border bg-white">
+        <div className="flex min-w-0 items-center gap-2.5 bg-sibs-surface/65 px-3 py-3">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-sibs-navy text-white" aria-hidden="true">
+            <UserRound size={17} />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="break-words text-[12px] font-bold leading-5 text-sibs-navy">{employee.name}</p>
+            <p className="text-[11px] font-medium text-sibs-secondary">SiBS ID: {employee.sibsId}</p>
+          </div>
+        </div>
+        <div className="flex min-w-0 items-center gap-2 border-y border-sibs-border-subtle px-3 py-2 text-sibs-secondary">
+          <CalendarDays size={14} className="shrink-0 text-sibs-navy" aria-hidden="true" />
+          <span className="min-w-0 break-words text-[11px] font-semibold">{date}</span>
+        </div>
+        <div className="grid grid-cols-2 gap-2 px-3 py-3">
+          <div className="col-span-2 flex min-w-0 items-center justify-between gap-3 rounded-lg border border-sibs-border-subtle bg-sibs-surface/50 px-3 py-3">
+            <div className="flex items-center gap-2 text-[11px] font-semibold text-sibs-muted">
+              <Clock3 size={14} className="shrink-0 text-sibs-navy" aria-hidden="true" /> Scheduled login
+            </div>
+            <strong className="shrink-0 text-[17px] font-extrabold tabular-nums text-sibs-navy">{loginTime}</strong>
+          </div>
+          {breakStatus && (
+            <div className="min-w-0 rounded-lg border border-sibs-border-subtle px-2.5 py-2.5">
+              <div className="flex items-center gap-1.5 text-[10px] font-medium text-sibs-muted"><Coffee size={13} aria-hidden="true" /> Break</div>
+              <p className="mt-1 break-words text-[11px] font-bold leading-4 text-sibs-navy">{breakStatus}</p>
+            </div>
+          )}
+          {logoutStatus && (
+            <div className="min-w-0 rounded-lg border border-sibs-border-subtle px-2.5 py-2.5">
+              <div className="flex items-center gap-1.5 text-[10px] font-medium text-sibs-muted"><LogOut size={13} aria-hidden="true" /> Logout</div>
+              <p className="mt-1 break-words text-[11px] font-bold leading-4 text-sibs-navy">{logoutStatus}</p>
+            </div>
+          )}
+        </div>
+        {(department || account) && (
+          <dl className="space-y-0 border-t border-sibs-border-subtle" aria-label="Employee organizational details">
+            {department && <div className="flex min-w-0 items-start gap-2.5 px-3 py-2.5">
+              <Building2 size={14} className="mt-0.5 shrink-0 text-sibs-muted" aria-hidden="true" />
+              <dt className="w-[74px] shrink-0 text-[11px] font-medium text-sibs-muted">Department</dt>
+              <dd className="min-w-0 flex-1 break-words text-right text-[11px] font-bold text-sibs-navy">{department}</dd>
+            </div>}
+            {account && <div className={`flex min-w-0 items-start gap-2.5 px-3 py-2.5 ${department ? "border-t border-sibs-border-subtle" : ""}`}>
+              <Building2 size={14} className="mt-0.5 shrink-0 text-sibs-muted" aria-hidden="true" />
+              <dt className="w-[74px] shrink-0 text-[11px] font-medium text-sibs-muted">Account</dt>
+              <dd className="min-w-0 flex-1 break-words text-right text-[11px] font-bold text-sibs-navy">{account}</dd>
+            </div>}
+          </dl>
+        )}
+      </div>
+    </section>
+  );
+}
+
 /** Department-first workforce summary. Uses native details for accessible
  * expand/collapse; all numbers were verified against the active directory. */
 function ActiveHeadcount({ total, date, departments }) {
@@ -451,6 +511,9 @@ export default function AiResultCardsClient({ content }) {
         }
         if (block.type === "employeeSchedule") {
           return <EmployeeScheduleCard key={`employee-schedule-${blockIndex}`} {...block} />;
+        }
+        if (block.type === "narrativeSchedule") {
+          return <NarrativeScheduleCard key={`narrative-schedule-${blockIndex}`} {...block} />;
         }
         if (block.type === "reportingLine") {
           return <EmployeeReportingLine key={`reporting-line-${blockIndex}`} {...block} />;

@@ -119,6 +119,7 @@ export default function CandidatePipelineModalShell({
   badge = "",
   onClose,
   closeDisabled = false,
+  suspendFocusTrap = false,
   maxWidth = "max-w-2xl",
   zIndex = "z-[10000]",
   footer = null,
@@ -287,6 +288,7 @@ export default function CandidatePipelineModalShell({
         zIndex={zIndex}
         footer={footer}
         closeOnBackdrop={closeOnBackdrop}
+        suspendFocusTrap={suspendFocusTrap}
         hideCloseButton={closeDisabled}
         variant="navy"
         headerActions={movementHistoryAction}

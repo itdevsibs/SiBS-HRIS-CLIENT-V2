@@ -90,6 +90,7 @@ const AvailablePositionsPage = lazyWithRetry(() => import("./pages/recruitment/A
 const ApplicantLeadsPage = lazyWithRetry(() => import("./pages/recruitment/ApplicantLeadsPage"));
 const PublicJobDescriptionPage = lazyWithRetry(() => import("./pages/recruitment/talent-pool/PublicJobDescriptionPage"));
 const FinalInterviewForms = lazyWithRetry(() => import("./components/recruitment/forms/FinalInterviewForms"));
+const CsrFitAssessmentPage = lazyWithRetry(() => import("./pages/recruitment/CsrFitAssessmentPage.jsx"));
 
 // Settings
 const RecruitmentSettingsPage = lazyWithRetry(() => import("./pages/Settings/RecruitmentSettingsPage"));
@@ -196,10 +197,10 @@ function MainApplicationRoutes() {
         element={<PublicNhoScheduleResponsePage />}
       />
 
-      {/* PUBLIC ONLINE ASSESSMENT / JOB EVALUATION FORM */}
+      {/* Public CSR-Fit battery. Keep Job Evaluation on the private Final Interview route. */}
       <Route
         path="/online-assessment"
-        element={<FinalInterviewForms publicMode />}
+        element={<CsrFitAssessmentPage />}
       />
 
       {/* PUBLIC CANDIDATE INTERVIEW SCHEDULING */}

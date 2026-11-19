@@ -22,12 +22,6 @@ const CHAT_TIME = new Intl.DateTimeFormat("en-PH", {
   timeZone: "Asia/Manila", month: "short", day: "numeric", year: "numeric",
   hour: "numeric", minute: "2-digit", hour12: true,
 });
-const CHAT_DAY = new Intl.DateTimeFormat("en-PH", {
-  timeZone: "Asia/Manila", month: "short", day: "numeric", year: "numeric",
-});
-const CHAT_CLOCK = new Intl.DateTimeFormat("en-PH", {
-  timeZone: "Asia/Manila", hour: "numeric", minute: "2-digit", hour12: true,
-});
 const PH_DAY = new Intl.DateTimeFormat("en-CA", {
   timeZone: "Asia/Manila", year: "numeric", month: "2-digit", day: "2-digit",
 });
@@ -40,14 +34,6 @@ const mergeMessages = (prior, incoming) => sortMessages(Array.from(
 const formatChatDate = (date) => {
   const timestamp = new Date(date);
   return Number.isFinite(timestamp.getTime()) ? CHAT_TIME.format(timestamp) : "";
-};
-const formatChatDay = (date) => {
-  const timestamp = new Date(date);
-  return Number.isFinite(timestamp.getTime()) ? CHAT_DAY.format(timestamp) : "";
-};
-const formatChatClock = (date) => {
-  const timestamp = new Date(date);
-  return Number.isFinite(timestamp.getTime()) ? CHAT_CLOCK.format(timestamp) : "";
 };
 const getDay = (date) => {
   const timestamp = new Date(date);
@@ -135,8 +121,10 @@ function HelpdeskSenderAvatar({ employee, name, sibsId }) {
  */
 export default function HelpdeskCaseConversation({
   conversation, ticket, currentSibsId, onMessagesChanged,
-  conversationFocused = false, headingRef = null, initialMessagesPromise = null,
-  onInitialMessagesConsumed = null,
+  // The parent can fetch the first page alongside ticket metadata. Consume it
+  // once here, so opening a Helpdesk ticket does not fetch the same messages twice.
+  initialMessagesPromise = null, onInitialMessagesConsumed = null,
+  conversationFocused = false, headingRef = null,
 }) {
   const conversationId = Number(conversation?.id || 0);
   // Retain per-conversation themes from the active chat snapshot, including
@@ -172,11 +160,11 @@ export default function HelpdeskCaseConversation({
   const needScrollToBottomRef = useRef(true);
   const sendingRef = useRef(false);
   const previousCountRef = useRef(0);
-  const initialMessagesPromiseRef = useRef(initialMessagesPromise);
-  const onInitialMessagesConsumedRef = useRef(onInitialMessagesConsumed);
-  onInitialMessagesConsumedRef.current = onInitialMessagesConsumed;
   const onMessagesChangedRef = useRef(onMessagesChanged);
   onMessagesChangedRef.current = onMessagesChanged;
+  const prefetchedMessagesRef = useRef(initialMessagesPromise);
+  const onPrefetchedMessagesConsumedRef = useRef(onInitialMessagesConsumed);
+  onPrefetchedMessagesConsumedRef.current = onInitialMessagesConsumed;
 
   // One mounted instance is always bound to a single case ID (keyed by parent).
   const loadLatest = useCallback(async ({ initial = false, manual = false } = {}) => {
@@ -184,16 +172,27 @@ export default function HelpdeskCaseConversation({
     fetchingRef.current = true;
     if (manual) setRefreshing(true);
     try {
-      const prefetchedPromise = initial ? initialMessagesPromiseRef.current : null;
-      if (initial && initialMessagesPromiseRef.current) {
-        initialMessagesPromiseRef.current = null;
-        onInitialMessagesConsumedRef.current?.();
+      let messagePage;
+      if (initial && prefetchedMessagesRef.current) {
+        // Take ownership of the in-flight request only for the first load;
+        // future socket/poll refreshes should use their normal API read.
+        const prefetched = prefetchedMessagesRef.current;
+        prefetchedMessagesRef.current = null;
+        onPrefetchedMessagesConsumedRef.current?.();
+        try {
+          messagePage = await prefetched;
+        } catch (prefetchError) {
+          // A cancelled case has unmounted its conversation. If the request
+          // merely failed while the case is still visible, retry normally.
+          if (prefetchError?.code === "ERR_CANCELED" || prefetchError?.name === "AbortError") {
+            throw prefetchError;
+          }
+          messagePage = await getChatMessages(conversationId, { limit: PAGE_SIZE });
+        }
+      } else {
+        messagePage = await getChatMessages(conversationId, { limit: PAGE_SIZE });
       }
-      const result = sortMessages(
-        prefetchedPromise
-          ? await prefetchedPromise
-          : await getChatMessages(conversationId, { limit: PAGE_SIZE }),
-      );
+      const result = sortMessages(Array.isArray(messagePage) ? messagePage : []);
       const latestId = toId(result.at(-1));
       const pane = scrollRef.current;
       const wasNearBottom = !pane || pane.scrollHeight - pane.scrollTop - pane.clientHeight < 96;
@@ -379,29 +378,23 @@ export default function HelpdeskCaseConversation({
   };
 
   return (
-    <div className={`flex min-h-0 flex-col overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-xs ${conversationFocused ? "h-[min(460px,62dvh)] lg:h-full lg:min-h-[480px]" : ""}`}>
-      <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-sibs-border px-4 py-3">
+    <div className={`flex min-h-0 flex-col overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-xs ${conversationFocused ? "h-full min-h-[420px] lg:min-h-[520px]" : ""}`}>
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-sibs-border px-4 py-3">
         <div>
           <h3 ref={headingRef} tabIndex={headingRef ? -1 : undefined} className="sibs-modal-section-title">{isSpam ? "Request conversation" : "Case conversation"}</h3>
           <p className="sibs-modal-section-subtitle mt-0.5">
-            {isClosed
-              ? "Archived conversation · read only"
-              : canReply
-                ? "Reply directly to the employee from this case"
-                : status === "OPEN"
-                  ? "Review the concern, then accept the request to reply"
-                  : "Assigned to another support member · read only"}
+            {isClosed ? "Archived conversation · read only" : canReply ? "Reply to the employee from this Helpdesk case" : "Case conversation · support access"}
           </p>
         </div>
         <button type="button" onClick={() => void loadLatest({ manual: true })} disabled={loading || refreshing}
-          className="sibs-modal-btn-secondary min-h-9"
+          className="sibs-modal-btn-secondary min-h-11 sm:min-h-0"
           title="Refresh messages"><RefreshCcw size={13} className={refreshing ? "motion-safe:animate-spin" : ""} /> Refresh</button>
       </div>
       <div ref={scrollRef} role="region" aria-label="Conversation messages" tabIndex={0}
         data-chat-custom-theme={isCustomTheme ? "true" : "false"}
-        className={`sibs-scrollbar min-h-0 flex-1 space-y-3 overflow-y-auto px-3 py-4 sm:px-4 ${
+        className={`sibs-scrollbar flex-1 space-y-3 overflow-y-auto px-3 py-4 sm:px-4 ${
           conversationFocused
-            ? ""
+            ? "min-h-[260px] max-h-[56dvh] lg:max-h-[calc(86vh-270px)]"
             : "min-h-44 max-h-[min(430px,45dvh)] lg:min-h-[280px]"
         } ${isCustomTheme ? "" : "bg-sibs-surface"}`}
         style={themeBackgroundStyle}
@@ -429,8 +422,8 @@ export default function HelpdeskCaseConversation({
               const caseNumber = clean(ticket?.caseCode || conversation?.caseCode).split("-").at(-1);
               return (
                 <div key={message.id}>
-                  {day && day !== previousDay && <p className={`mx-auto my-2 w-fit rounded-full border border-sibs-border/70 px-2.5 py-0.5 text-center text-[10px] font-extrabold text-sibs-muted ${isCustomTheme ? "bg-white/90 shadow-xs" : "bg-white/85"}`}>{formatChatDay(message.createdAt)}</p>}
-                  {isOpeningMessage && <p className="mx-auto mb-3 w-fit rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-center text-[10px] font-extrabold tabular-nums text-sibs-navy">Case Opened #{caseNumber || "—"} · {formatChatDate(ticket?.postedAt || message.createdAt)}</p>}
+                  {day && day !== previousDay && <p className={`mx-auto my-2 w-fit rounded-full px-2 py-1 text-center text-[10px] font-extrabold text-sibs-muted ${isCustomTheme ? "bg-white/90 shadow-xs" : ""}`}>{formatChatDate(message.createdAt)}</p>}
+                  {isOpeningMessage && <p className="mx-auto mb-3 w-fit rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-center text-[10px] font-extrabold text-sibs-navy">Case Opened #{caseNumber || "—"} · {formatChatDate(ticket?.postedAt || message.createdAt)}</p>}
                   {systemMessage ? (
                     <p className="mx-auto max-w-[85%] rounded-full bg-slate-200/75 px-3 py-1 text-center text-[10px] text-sibs-muted">{clean(message.messageText)}</p>
                   ) : (
@@ -440,44 +433,29 @@ export default function HelpdeskCaseConversation({
                         <div className={`mb-1 flex flex-wrap items-center gap-1.5 ${mine ? "justify-end" : "justify-start"}`}>
                           <span className="sibs-text-xs font-extrabold text-sibs-navy">{mine ? "You" : senderName}</span>
                           {role && <span className="sibs-modal-section-subtitle rounded-md border border-sibs-border bg-white px-1.5 py-0.5">{role}</span>}
-                          <time
-                            dateTime={message.createdAt || undefined}
-                            title={formatChatDate(message.createdAt)}
-                            className="text-[10px] font-semibold tabular-nums text-sibs-muted"
-                          >
-                            · {formatChatClock(message.createdAt) || formatChatDate(message.createdAt)}
-                          </time>
-                          {canReply && !unsent && (
-                            <button
-                              type="button"
-                              onClick={() => setReplyTo(message)}
-                              className="inline-flex min-h-5 items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-semibold text-sibs-muted opacity-0 transition-opacity hover:bg-white hover:text-sibs-orange focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-sibs-orange group-hover:opacity-100"
-                            >
-                              <Reply size={11} />Reply
-                            </button>
-                          )}
                         </div>
-                        <div
-                          title={formatChatDate(message.createdAt)}
-                          className={`sibs-text-xs rounded-2xl px-3.5 py-2 font-semibold leading-relaxed wrap-anywhere shadow-xs ${mine ? "rounded-br-sm bg-sibs-navy text-white" : "rounded-bl-sm border border-sibs-border bg-white text-sibs-navy"}`}
-                        >
+                        <div className={`sibs-text-xs rounded-2xl px-3 py-2 font-semibold leading-relaxed wrap-anywhere shadow-xs ${mine ? "rounded-br-sm bg-sibs-navy text-white" : "rounded-bl-sm border border-sibs-border bg-white text-sibs-navy"}`}>
                           {message.replyTo && <div className={`mb-2 rounded-lg border-l-[3px] px-2 py-1 text-[10px] ${mine ? "border-white/70 bg-white/10" : "border-sibs-orange bg-sibs-surface"}`}>
                             <b>{clean(message.replyTo.sender?.displayName) || `SiBS ID ${message.replyTo.senderSibsId}`}</b><p className="line-clamp-2">{clean(message.replyTo.messageText) || "Attachment"}</p>
                           </div>}
                           {unsent ? <span className="italic opacity-75">Message was unsent</span> : <>
                             {clean(message.messageText) && <p className="whitespace-pre-wrap break-words">{message.messageText}</p>}
-                            {clean(message.gifUrl) && <a href={getChatAttachmentUrl(message.gifUrl)} target="_blank" rel="noopener noreferrer"><img src={getChatAttachmentUrl(message.gifUrl)} alt="Shared GIF" className="mt-1 max-h-52 max-w-full rounded-lg object-contain" /></a>}
+                            {clean(message.gifUrl) && <a href={getChatAttachmentUrl(message.gifUrl)} target="_blank" rel="noreferrer"><img src={getChatAttachmentUrl(message.gifUrl)} alt="Shared GIF" className="mt-1 max-h-52 max-w-full rounded-lg object-contain" /></a>}
                             {(message.attachments || []).map((attachment) => {
                               const url = getChatAttachmentUrl(attachment.url);
                               if (!url) return null;
                               const attachmentName = clean(attachment.fileName || attachment.originalName || attachment.filename) || "Attachment";
                               const image = clean(attachment.mimeType).startsWith("image/");
-                              return <a key={attachment.id || url} href={url} target="_blank" rel="noopener noreferrer" className={`mt-1 block rounded-lg ${mine ? "text-white" : "text-sibs-navy"}`}>
+                              return <a key={attachment.id || url} href={url} target="_blank" rel="noreferrer" className={`mt-1 block rounded-lg ${mine ? "text-white" : "text-sibs-navy"}`}>
                                 {image ? <img src={url} alt={attachmentName} loading="lazy" className="max-h-56 max-w-full rounded-lg object-contain" />
                                   : <span className="flex items-center gap-1.5 underline"><FileText size={14} />{attachmentName}</span>}
                               </a>;
                             })}
                           </>}
+                        </div>
+                        <div className={`sibs-modal-section-subtitle mt-1 flex flex-wrap items-center gap-2 ${mine ? "justify-end" : "justify-start"}`}>
+                          <span>{formatChatDate(message.createdAt)}</span>
+                          {canReply && !unsent && <button type="button" onClick={() => setReplyTo(message)} className="inline-flex items-center gap-1 hover:text-sibs-orange"><Reply size={11} />Reply</button>}
                         </div>
                       </div>
                       {mine && <HelpdeskSenderAvatar employee={message.sender || member} name={senderName} sibsId={senderId} />}
@@ -491,9 +469,9 @@ export default function HelpdeskCaseConversation({
           </>
         )}
       </div>
-      {error && <div role="alert" className="flex shrink-0 items-start gap-2 border-t border-red-100 bg-red-50 px-4 py-2 text-[11px] font-bold text-red-700"><AlertCircle size={14} className="shrink-0" />{error}</div>}
+      {error && <div role="alert" className="flex items-start gap-2 border-t border-red-100 bg-red-50 px-4 py-2 text-[11px] font-bold text-red-700"><AlertCircle size={14} className="shrink-0" />{error}</div>}
       {canReply ? (
-        <form onSubmit={send} className="shrink-0 border-t border-sibs-border bg-white px-3 py-3">
+        <form onSubmit={send} className="border-t border-sibs-border bg-white px-3 py-3">
           {replyTo && <div className="mb-2 flex items-center justify-between rounded-lg border-l-[3px] border-sibs-orange bg-sibs-surface px-2.5 py-2 text-[10px] text-sibs-navy">
             <span className="min-w-0 truncate"><b>Replying to {clean(replyTo.sender?.displayName) || `SiBS ID ${replyTo.senderSibsId}`}</b> · {clean(replyTo.messageText) || "Attachment"}</span>
             <button type="button" onClick={() => setReplyTo(null)} aria-label="Remove reply reference"><X size={13} /></button>
@@ -501,7 +479,7 @@ export default function HelpdeskCaseConversation({
           {files.length > 0 && <div className="mb-2 flex flex-wrap gap-1.5">{files.map((file, i) => <span key={`${file.name}-${i}`} className="inline-flex items-center gap-1 rounded-md border border-sibs-border bg-sibs-surface px-2 py-1 text-[10px] font-semibold text-sibs-navy">{file.name}<button type="button" aria-label={`Remove ${file.name}`} onClick={() => setFiles((old) => old.filter((_, n) => n !== i))}><X size={12} /></button></span>)}</div>}
           <div className="flex items-end gap-2">
             <input ref={fileInputRef} type="file" multiple hidden accept="image/*,.heic,.heif,.gif,.pdf,.doc,.docx,.xls,.xlsx,.csv,.mp4,.webm,.mp3,.wav" onChange={chooseFiles} />
-            <button type="button" onClick={() => fileInputRef.current?.click()} disabled={sending} title="Add attachments" aria-label="Add attachments"
+            <button type="button" onClick={() => fileInputRef.current?.click()} disabled={sending} title="Add attachments"
               className="mb-1 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-sibs-border text-sibs-navy hover:border-sibs-orange hover:text-sibs-orange disabled:opacity-50"><Paperclip size={17} /></button>
             <textarea rows={2} value={draft} onChange={(event) => setDraft(event.target.value)} aria-label="Support reply" placeholder="Reply to this Helpdesk request…"
               onKeyDown={(event) => { if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); void send(); } }}
@@ -514,7 +492,7 @@ export default function HelpdeskCaseConversation({
           </div>
           <p className="mt-1.5 text-[10px] font-medium text-sibs-muted">Enter sends · Shift+Enter adds a new line · Up to five attachments</p>
         </form>
-      ) : <div className="flex shrink-0 items-center gap-2 border-t border-sibs-border bg-sibs-surface px-4 py-3 text-[11px] font-bold text-sibs-muted">
+      ) : <div className="flex items-center gap-2 border-t border-sibs-border bg-sibs-surface px-4 py-3 text-[11px] font-bold text-sibs-muted">
         {isClosed ? <CheckCircle2 size={15} className="text-emerald-600" /> : <AlertCircle size={15} className="text-sibs-orange" />}
         {isClosed ? "Archived conversation. Replies are disabled." : status === "OPEN"
           ? "Accept the request before sending a support reply."
