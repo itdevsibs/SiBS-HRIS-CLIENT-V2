@@ -125,7 +125,7 @@ const guideDefinitions = [
       {
         title: 'What Is Being Evaluated?',
         items: [
-          { label: 'Task 1 — File & Folder Management', text: 'Rename files accurately using the specified naming guidelines and move them into the correct folders in the simulated file manager.' },
+          { label: 'Task 1 — File & Folder Management', text: 'Open This PC and File Explorer, create the requested destination folder, rename the document accurately, and move it into the new folder.' },
           { label: 'Task 2 — Data Entry', text: 'Enter customer names, account numbers, callback information, and interaction notes accurately from the simulated support inbox.' },
           { label: 'Speed & Detail', text: 'Maintain accuracy and minimize errors while working under time pressure.' },
         ],

@@ -249,6 +249,55 @@ function EmployeeScheduleCard({ employee, date, schedule }) {
   );
 }
 
+function WeeklyNarrativeScheduleCard({ employee, period, rows, department, account }) {
+  const year = Number(period.match(/\d{4}/)?.[0]);
+  const today = new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Manila', year: 'numeric', month: 'long', day: 'numeric' }).format(new Date());
+  return (
+    <section className="min-w-0 overflow-hidden rounded-xl border border-sibs-border bg-white" aria-label="Weekly employee schedule">
+      <div className="flex items-center gap-2.5 border-b border-sibs-border-subtle bg-sibs-surface/60 px-3 py-3">
+        <CalendarDays size={17} className="shrink-0 text-sibs-navy" aria-hidden="true" />
+        <div className="min-w-0 flex-1"><h3 className="text-[12px] font-bold text-sibs-navy">Employee work schedule</h3><p className="text-[11px] text-sibs-secondary">{period}</p></div>
+      </div>
+      <div className="border-b border-sibs-border-subtle px-3 py-3">
+        <p className="text-[12px] font-bold text-sibs-navy">{employee.name}</p>
+        {(department || account) && <p className="mt-1 text-[11px] text-sibs-secondary">{[department, account].filter(Boolean).join(' · ')}</p>}
+        <p className="mt-1 text-[10px] font-semibold text-sibs-muted">Philippine Time (UTC+08:00)</p>
+      </div>
+      <div className="divide-y divide-sibs-border-subtle">
+        {rows.map((row, index) => {
+          const dateLabel = `${row.month} ${row.date}, ${year}`;
+          const isToday = dateLabel === today;
+          return <div key={`${dateLabel}-${index}`} className={`flex min-w-0 items-center justify-between gap-3 px-3 py-2.5 ${isToday ? 'bg-sibs-surface/60' : ''}`}>
+            <div className="min-w-0"><p className="text-[11px] font-semibold text-sibs-navy">{row.day}, {row.month} {row.date}</p>{isToday && <span className="text-[10px] font-bold text-sibs-orange">Today</span>}</div>
+            <p className={`shrink-0 text-right text-[11px] font-semibold tabular-nums ${row.isRest ? 'text-sibs-muted' : 'text-sibs-navy'}`}>{row.schedule}</p>
+          </div>;
+        })}
+      </div>
+    </section>
+  );
+}
+
+/** Professional single-day schedule card; only facts explicitly returned by Hermes. */
+function SingleDayNarrativeScheduleCard({ employee, date, shift, breakNote }) {
+  return (
+    <section className="min-w-0 overflow-hidden rounded-xl border border-sibs-border bg-white" aria-label="Employee schedule today">
+      <header className="flex items-center gap-2.5 border-b border-sibs-border-subtle bg-sibs-surface/60 px-3 py-3">
+        <CalendarDays size={17} className="shrink-0 text-sibs-navy" />
+        <div className="min-w-0"><h3 className="text-[12px] font-bold text-sibs-navy">Today's work schedule</h3><p className="text-[11px] text-sibs-secondary">{date}</p></div>
+      </header>
+      <div className="border-b border-sibs-border-subtle px-3 py-3">
+        <p className="break-words text-[12px] font-bold text-sibs-navy">{employee.name}</p>
+        <p className="mt-1 text-[10px] text-sibs-muted">Philippine Time (UTC+08:00)</p>
+      </div>
+      <div className="flex min-w-0 items-center justify-between gap-3 px-3 py-3">
+        <span className="flex items-center gap-1.5 text-[11px] text-sibs-secondary"><Clock3 size={14} /> Scheduled shift</span>
+        <strong className="text-right text-[12px] tabular-nums text-sibs-navy">{shift}</strong>
+      </div>
+      {breakNote && <p className="border-t border-sibs-border-subtle px-3 py-2.5 text-[11px] text-sibs-muted">{breakNote}</p>}
+    </section>
+  );
+}
+
 /** A concise, structured view of explicit schedule facts already in the answer. */
 function NarrativeScheduleCard({ employee, date, loginTime, breakStatus, logoutStatus, department, account }) {
   return (
@@ -342,6 +391,25 @@ function ActiveHeadcount({ total, date, departments }) {
       </div>
     </section>
   );
+}
+
+function NarrativeMonthlyAttendance({ tracked, present, late, absences, lateDetails = [], dayOffs, period, original }) {
+  const metrics = [
+    {label:'Present',value:present,color:'border-emerald-200 bg-emerald-50 text-emerald-800'},
+    {label:'Tracked days',value:tracked,color:'border-sky-200 bg-sky-50 text-sibs-navy'},
+    {label:'Late arrivals',value:late,color:'border-orange-200 bg-orange-50 text-orange-800'},
+    {label:'Absences',value:absences,color:'border-sibs-border bg-sibs-surface text-sibs-navy'},
+  ];
+  return <section aria-label="Monthly attendance overview" className="min-w-0 overflow-hidden rounded-xl border border-sibs-border bg-white">
+    <div className="bg-sibs-navy px-3 py-3 text-white">
+      <div className="flex items-center gap-2 text-[12px] font-bold"><ClipboardCheck size={16}/> Attendance overview</div>
+      <p className="mt-1 text-[10px] text-white/80">{period}</p>
+    </div>
+    <div className="grid grid-cols-2 gap-2 p-3">{metrics.map(({label,value,color})=><div key={label} className={`min-w-0 rounded-lg border px-3 py-2.5 ${color}`}><p className="text-[10px] font-semibold">{label}</p><p className="mt-1 text-[22px] font-bold tabular-nums">{value == null ? '—' : value}</p></div>)}</div>
+    {lateDetails.length > 0 && <div className="border-t border-sibs-border-subtle px-3 py-3"><h4 className="mb-2 flex items-center gap-2 text-[11px] font-bold text-sibs-navy"><Clock3 size={14} className="text-sibs-orange"/> Late clock-ins</h4><div className="space-y-2">{lateDetails.map((item,i)=><div key={`${item.date}-${i}`} className="rounded-lg border border-orange-200 bg-orange-50/60 px-3 py-2"><p className="text-[11px] font-bold text-sibs-navy">{item.date}</p><div className="mt-1 flex flex-wrap gap-x-3 text-[10px] text-sibs-secondary"><span>Clock-in: <b className="text-orange-800">{item.login}</b></span>{item.scheduled && <span>Scheduled: <b className="text-sibs-navy">{item.scheduled}</b></span>}</div></div>)}</div></div>}
+    {dayOffs && <div className="border-t border-sibs-border-subtle px-3 py-2.5 text-[11px] text-sibs-secondary"><b className="text-sibs-navy">Day-offs: </b>{dayOffs}</div>}
+    <details className="group border-t border-sibs-border-subtle"><summary className="flex cursor-pointer list-none items-center justify-between bg-sibs-surface/60 px-3 py-2.5 text-[11px] font-semibold text-sibs-navy [&::-webkit-details-marker]:hidden">Full attendance explanation <ChevronDown size={14} className="transition-transform group-open:rotate-180"/></summary><p className="px-3 py-3 text-[11px] leading-[1.7] text-sibs-secondary">{original}</p></details>
+  </section>;
 }
 
 /** Shared restrained styling for authorized summary cards. */
@@ -475,6 +543,60 @@ function ApplicantLeadsSummary({ total, period, statuses, note }) {
   );
 }
 
+
+function SupportDutyRoster({ category, reportedTotal, sections = [], context }) {
+  const listedTotal = sections.reduce((sum, section) => sum + section.employees.length, 0);
+  const countMismatch = listedTotal !== reportedTotal || sections.some(section => section.employees.length !== section.reportedCount);
+  return (
+    <section className="min-w-0 space-y-3" aria-label={`${category} on-duty employees`}>
+      <header className="flex min-w-0 items-center justify-between gap-3 rounded-lg bg-sibs-navy px-3 py-3 text-white">
+        <div className="min-w-0">
+          <div className="mb-1 flex items-center gap-1.5">
+            <span className="h-2 w-2 rounded-full bg-emerald-400" aria-hidden="true" />
+            <span className="text-[10px] font-bold uppercase tracking-wide text-orange-200">On duty now</span>
+          </div>
+          <p className="text-[13px] font-bold leading-5 text-white">{category}</p>
+          <p className="mt-0.5 text-[10px] text-blue-100">Philippine Time · UTC+08:00</p>
+        </div>
+        <div className="shrink-0 rounded-lg bg-sibs-orange px-3 py-1.5 text-center text-white shadow-sm">
+          <p className="text-[21px] font-extrabold tabular-nums leading-6">{reportedTotal}</p>
+          <p className="text-[10px] font-semibold">On duty</p>
+        </div>
+      </header>
+      {context && <p className="rounded-lg border-l-[3px] border-sibs-orange bg-orange-50 px-3 py-2 text-[11px] leading-[1.6] text-sibs-navy">{context}</p>}
+      <div className="space-y-3">
+        {sections.map(({ site, reportedCount, employees }) => {
+          const tagum = site.toLowerCase() === "tagum";
+          return (
+            <section key={site} className="min-w-0 overflow-hidden rounded-lg border border-sibs-border bg-white shadow-sm" aria-label={`${site} on-duty roster`}>
+              <div className={`flex items-center justify-between gap-2 border-b px-3 py-2.5 ${tagum ? "border-orange-200 bg-orange-50" : "border-blue-200 bg-blue-50"}`}>
+                <div className={`flex items-center gap-2 text-[12px] font-bold ${tagum ? "text-orange-800" : "text-blue-900"}`}>
+                  <span className={`flex h-7 w-7 items-center justify-center rounded-md ${tagum ? "bg-orange-100 text-sibs-orange" : "bg-blue-100 text-sibs-navy"}`}><Building2 size={15} aria-hidden="true" /></span>
+                  <span>{site}</span>
+                </div>
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-1 text-[10px] font-bold tabular-nums text-emerald-800"><span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />{reportedCount} on duty</span>
+              </div>
+              <ul className="divide-y divide-sibs-border-subtle">
+                {employees.map(({ name, sibsId }, index) => (
+                  <li key={`${site}-${sibsId}`} className="flex min-w-0 items-center gap-2.5 px-3 py-2.5 hover:bg-blue-50/50">
+                    <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${tagum ? "bg-orange-100 text-sibs-orange" : "bg-blue-100 text-sibs-navy"}`} aria-hidden="true"><UserRound size={15} /></span>
+                    <div className="min-w-0 flex-1">
+                      <p className="break-words text-[11px] font-bold leading-4 text-sibs-navy">{name}</p>
+                      <p className="mt-0.5 text-[10px] text-sibs-secondary">SiBS ID: {sibsId}</p>
+                    </div>
+                    <span className="h-2 w-2 shrink-0 rounded-full bg-emerald-500" title="Clocked in" aria-label="Clocked in" />
+                  </li>
+                ))}
+              </ul>
+            </section>
+          );
+        })}
+      </div>
+      {countMismatch && <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] leading-5 text-amber-900">Reported totals differ from the names listed. Verify against current HRIS records.</p>}
+    </section>
+  );
+}
+
 /** Readable, accessible chat content. Cards are reserved for real grouped facts. */
 export default function AiResultCardsClient({ content }) {
   const publicAnswer = formatAiDisplayDates(
@@ -486,6 +608,12 @@ export default function AiResultCardsClient({ content }) {
   return (
     <div className="min-w-0 space-y-3 text-sibs-navy" aria-label="AI response">
       {blocks.map((block, blockIndex) => {
+        if (block.type === "narrativeMonthlyAttendance") {
+          return <NarrativeMonthlyAttendance key={`narrative-attendance-${blockIndex}`} {...block} />;
+        }
+        if (block.type === "supportDutyRoster") {
+          return <SupportDutyRoster key={`support-duty-${blockIndex}`} {...block} />;
+        }
         if (block.type === "monthlyAttendanceSummary") {
           return <MonthlyAttendanceSummary key={`monthly-attendance-${blockIndex}`} {...block} />;
         }
@@ -511,6 +639,12 @@ export default function AiResultCardsClient({ content }) {
         }
         if (block.type === "employeeSchedule") {
           return <EmployeeScheduleCard key={`employee-schedule-${blockIndex}`} {...block} />;
+        }
+        if (block.type === "weeklyNarrativeSchedule") {
+          return <WeeklyNarrativeScheduleCard key={`weekly-schedule-${blockIndex}`} {...block} />;
+        }
+        if (block.type === "singleDayNarrativeSchedule") {
+          return <SingleDayNarrativeScheduleCard key={`single-day-${blockIndex}`} {...block} />;
         }
         if (block.type === "narrativeSchedule") {
           return <NarrativeScheduleCard key={`narrative-schedule-${blockIndex}`} {...block} />;
@@ -546,7 +680,7 @@ export default function AiResultCardsClient({ content }) {
         }
         if (block.type === "list") {
           return (
-            <ul key={`list-${blockIndex}`} className="space-y-2 pl-0.5" aria-label="AI result items">
+            <ul key={`list-${blockIndex}`} className="overflow-hidden rounded-xl border border-sibs-border bg-white divide-y divide-sibs-border-subtle" aria-label="AI result items">
               {block.items.map((item, itemIndex) => {
                 const label = typeof item === "string" ? item : item.text;
                 const children = typeof item === "string" ? [] : item.children || [];
@@ -583,7 +717,7 @@ export default function AiResultCardsClient({ content }) {
           );
         }
         return (
-          <p key={`paragraph-${blockIndex}`} className="min-w-0 whitespace-pre-wrap break-words text-[12px] font-medium leading-[1.7] text-sibs-secondary">
+          <p key={`paragraph-${blockIndex}`} className="min-w-0 whitespace-pre-wrap break-words rounded-lg border border-sibs-border border-l-[3px] border-l-sibs-orange bg-white px-3 py-3 text-[12px] font-medium leading-[1.7] text-sibs-secondary">
             <InlineEmphasis text={block.text} />
           </p>
         );
