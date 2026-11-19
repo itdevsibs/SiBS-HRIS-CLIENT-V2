@@ -5832,7 +5832,9 @@ export default function SiBSChat({
                         <span className="text-[10px] font-semibold text-sibs-muted">
                           {visibleHelpdeskDuty.unavailableCount > 0
                             ? 'Some attendance records could not be verified. Current availability is uncertain.'
-                            : 'No support members are currently confirmed clocked in. You can still send your concern.'}
+                            : visibleHelpdeskDuty.supportCount === 0
+                              ? 'No support staff are currently mapped to this site in HRIS. You can still send your concern.'
+                              : 'No support members are currently confirmed clocked in. You can still send your concern.'}
                         </span>
                       )}
                     </div>

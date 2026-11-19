@@ -56,6 +56,7 @@ import CandidateTalentPoolDetailsPanel from "../../recruitment/candidatePipeline
 import ExpandableCandidateRemark from "../../recruitment/candidatePipeline/ExpandableCandidateRemark";
 import NhoUploadModal from "./NhoUploadModal";
 import NhoGoogleCalendarMonth from "./NhoGoogleCalendarMonth";
+import CsrFitAssessmentResultModal from "./CsrFitAssessmentResultModal";
 
 import {
   offerApprovers,
@@ -1452,6 +1453,9 @@ function getAssessmentSummaryTestType(candidate = {}) {
 }
 
 function getAssessmentSummaryOutcome(candidate = {}) {
+  // CSR-Fit stores a *provisional behavioral* percentage, not a complete
+  // cognitive/overall grade. Never infer a Pass/Fail from that number.
+  if (cleanText(candidate.assessmentResult || candidate.assessment_result).toLowerCase() === 'submitted') return 'Submitted';
   const rawScore =
     candidate.assessmentScore ??
     candidate.assessment_score ??
@@ -5807,12 +5811,8 @@ function getAssessmentClientBaseUrl() {
   return "https://sibs-hris.getleadsource.com";
 }
 
-function buildAssessmentPreviewLink() {
-  return SIBS_ASSESSMENT_PUBLIC_LINK;
-}
-
-const SIBS_ASSESSMENT_PUBLIC_LINK =
-  "https://link.sibscareers.online/l/4HqL27kZ3";
+// Assessment links are issued securely by the HRIS Server for each candidate.
+// Never place a shared external assessment URL in the invitation payload.
 
 function getCurrentAppOrigin() {
   /*
@@ -6093,10 +6093,6 @@ function AssessmentEmailFormatModal({
   const candidateName = getAssessmentEmailCandidateName(candidate);
   const roleName = form.roleName || getAssessmentEmailRole(candidate);
   const deadlineText = formatPreviewDeadline(form.emailDeadline);
-  const assessmentLink = buildAssessmentPreviewLink(
-    candidate,
-    form.recipientEmail,
-  );
 
   const footer = (
     <div className="flex flex-col-reverse justify-end gap-2 sm:flex-row">
@@ -6262,14 +6258,9 @@ function AssessmentEmailFormatModal({
               <ol className="ml-5 list-decimal">
                 <li>
                   Click on the following link to access the assessment:{" "}
-                  <a
-                    href={assessmentLink}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-blue-700 underline"
-                  >
-                    SiBS - Online Assessment
-                  </a>
+                  <span className="font-semibold text-sibs-navy">
+                    SiBS CSR-Fit Online Assessment (a unique secure link is generated when sent)
+                  </span>
                 </li>
                 <li>Complete the assessment by {deadlineText}.</li>
                 <li>
@@ -6282,9 +6273,9 @@ function AssessmentEmailFormatModal({
               <ul className="ml-5 list-disc">
                 <li>Take your time to read each question carefully.</li>
                 <li>
-                  Keep your browser window open and stay within the assessment
-                  area during the test. Stepping away too many times could
-                  result in being locked out for security reasons.
+                  The cognitive module has a 60-minute timer. You may use a
+                  calculator, scratch paper, and pencil, but not AI,
+                  automated solvers or search engines.
                 </li>
                 <li>
                   For the best experience, use a laptop or computer in a
@@ -7106,6 +7097,10 @@ rawOpenedCandidate || {},
     roleName: "",
   });
   const [showAssessmentModal, setShowAssessmentModal] = useState(false);
+  const [csrFitResult, setCsrFitResult] = useState(null);
+  const [csrFitResultLoading, setCsrFitResultLoading] = useState(false);
+  const [csrFitResultError, setCsrFitResultError] = useState('');
+  const [showCsrFitResultModal, setShowCsrFitResultModal] = useState(false);
   const [showRevisedOfferModal, setShowRevisedOfferModal] = useState(false);
   const [isSubmittingRevisedOffer, setIsSubmittingRevisedOffer] = useState(false);
   const [loadedOfferVersions, setLoadedOfferVersions] = useState([]);
@@ -7884,6 +7879,53 @@ rawOpenedCandidate || {},
           activeCandidate.assessment_score,
       ));
 
+  // Read the authoritative submitted attempt, not an editable summary field.
+  // The candidate_pipeline primary key is deliberately distinct from the
+  // applicant's external candidateId (which may contain the same number).
+  const csrFitPipelineId = getCandidatePipelineRecordId(activeCandidate);
+  useEffect(() => {
+    if (!open || !hasAssessmentDetailAccess || !csrFitPipelineId) {
+      setCsrFitResult(null);
+      setCsrFitResultLoading(false);
+      setCsrFitResultError('');
+      setShowCsrFitResultModal(false);
+      return undefined;
+    }
+    let live = true;
+    let inFlight = false;
+    setCsrFitResult(null);
+    setCsrFitResultLoading(true);
+    setCsrFitResultError('');
+    const refresh = async () => {
+      if (inFlight) return;
+      inFlight = true;
+      try {
+        const { data } = await api.get(`/api/assessment/candidate/${encodeURIComponent(csrFitPipelineId)}/result`);
+        if (live) {
+          setCsrFitResult(data?.data?.available ? data.data : null);
+          setCsrFitResultError('');
+        }
+      } catch (error) {
+        if (live && Number(error?.response?.status) !== 404) {
+          setCsrFitResultError(error?.response?.data?.message || 'Unable to load submitted exam results.');
+        }
+      } finally {
+        inFlight = false;
+        if (live) setCsrFitResultLoading(false);
+      }
+    };
+    void refresh();
+    const poll = window.setInterval(() => {
+      if (document.visibilityState === 'visible') void refresh();
+    }, 30_000);
+    window.addEventListener('focus', refresh);
+    return () => {
+      live = false;
+      window.clearInterval(poll);
+      window.removeEventListener('focus', refresh);
+    };
+  }, [open, hasAssessmentDetailAccess, csrFitPipelineId]);
+
   const hasInterviewDetailAccess =
     !isInitialScreening &&
     !isOnlineAssessment &&
@@ -8546,9 +8588,23 @@ rawOpenedCandidate || {},
     }
 
     const confirmation = await confirmAction(
-      activePrfStatus === "Matched"
-        ? `Move ${activeCandidate?.name || "this candidate"} from Initial Screening to Online Assessment?`
-        : `Proceed with ${activeCandidate?.name || "this candidate"} from Initial Screening?`,
+      activePrfStatus === "Matched" ? (
+        <>
+          Move{" "}
+          <strong className="font-extrabold text-sibs-navy">
+            {activeCandidate?.name || "this candidate"}
+          </strong>{" "}
+          from Initial Screening to Online Assessment?
+        </>
+      ) : (
+        <>
+          Proceed with{" "}
+          <strong className="font-extrabold text-sibs-navy">
+            {activeCandidate?.name || "this candidate"}
+          </strong>{" "}
+          from Initial Screening?
+        </>
+      ),
     );
 
     if (!confirmation?.confirmed) return;
@@ -8604,7 +8660,6 @@ rawOpenedCandidate || {},
                   activeCandidate,
                 )}`,
           emailDeadline: addDaysToInputDate(7),
-          assessmentLink: SIBS_ASSESSMENT_PUBLIC_LINK,
         },
         {
           withCredentials: true,
@@ -8694,7 +8749,6 @@ rawOpenedCandidate || {},
           emailDeadline: addDaysToInputDate(7),
           deadline: addDaysToInputDate(7),
           roleName: getAssessmentEmailRole(activeCandidate),
-          assessmentLink: SIBS_ASSESSMENT_PUBLIC_LINK,
           resend: true,
         },
         {
@@ -8789,7 +8843,6 @@ rawOpenedCandidate || {},
           emailDeadline: assessmentEmailForm.emailDeadline,
           deadline: assessmentEmailForm.emailDeadline,
           roleName: assessmentEmailForm.roleName,
-          assessmentLink: SIBS_ASSESSMENT_PUBLIC_LINK,
         },
         {
           withCredentials: true,
@@ -11788,11 +11841,15 @@ const concretePreferredFinalInterviewFormId =
     </div>
   );
 
-  const assessmentSummaryScore =
-    formatAssessmentScoreDisplay(
-      activeCandidate.assessmentScore || activeCandidate.assessment_score,
+  const isCsrFitSubmitted = Boolean(csrFitResult?.available) ||
+    cleanText(activeCandidate.assessmentResult || activeCandidate.assessment_result).toLowerCase() === 'submitted';
+  const csrFitComposite = csrFitResult?.score?.behavioralComposite;
+  const assessmentSummaryScore = isCsrFitSubmitted && csrFitResult?.available
+    ? (csrFitComposite == null ? 'Pending review' : `${Number(csrFitComposite).toFixed(2)}%`)
+    : formatAssessmentScoreDisplay(
+      activeCandidate.assessmentScore ?? activeCandidate.assessment_score,
     ) || EMPTY_DISPLAY_VALUE;
-  const assessmentSummaryOutcome = getAssessmentSummaryOutcome(activeCandidate);
+  const assessmentSummaryOutcome = isCsrFitSubmitted ? 'Submitted' : getAssessmentSummaryOutcome(activeCandidate);
   const assessmentTone = getStatusTone(assessmentSummaryOutcome);
   const interviewSummaryScore =
     activeCandidate.finalInterviewScore !== null &&
@@ -12052,6 +12109,7 @@ const concretePreferredFinalInterviewFormId =
         }
         onClose={onClose}
         closeDisabled={isCandidateProcessRunning}
+        suspendFocusTrap={showCsrFitResultModal}
         maxWidth="max-w-[1180px]"
         zIndex="z-[9999]"
         movementHistoryCandidate={activeCandidate}
@@ -12292,7 +12350,7 @@ const concretePreferredFinalInterviewFormId =
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
                         <p className="text-[9.5px] font-semibold text-sibs-muted 2xl:text-[10px]">
-                          Assessment Score
+                          {isCsrFitSubmitted ? 'Behavioral Score · Provisional' : 'Assessment Score'}
                         </p>
                         {assessmentSummaryOutcome ? (
                           <span
@@ -12322,7 +12380,7 @@ const concretePreferredFinalInterviewFormId =
                       </p>
 
                       <p className="mt-1 text-[9.5px] font-semibold text-sibs-muted 2xl:text-[10px]">
-                        {getAssessmentSummaryTestType(activeCandidate)}
+                        {isCsrFitSubmitted ? 'CSR-Fit · Cognitive scoring pending' : getAssessmentSummaryTestType(activeCandidate)}
                       </p>
                     </div>
                   </div>
@@ -12379,6 +12437,17 @@ const concretePreferredFinalInterviewFormId =
                   </div>
                 </div>
               </div>
+              {csrFitResult?.available && (
+                <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-sibs-border bg-sibs-surface px-3 py-2.5">
+                  <p className="text-[11px] font-semibold text-sibs-muted">Submitted exam · Read-only questions, answers and pillar results</p>
+                  <button type="button" onClick={() => setShowCsrFitResultModal(true)}
+                    className="sibs-modal-btn-secondary inline-flex items-center gap-2">
+                    <Eye size={14}/> View Exam Results
+                  </button>
+                </div>
+              )}
+              {csrFitResultLoading && isCsrFitSubmitted && <p className="mt-2 flex items-center gap-2 text-xs text-sibs-muted"><Loader2 size={13} className="animate-spin"/>Loading submitted assessment results…</p>}
+              {csrFitResultError && isCsrFitSubmitted && <p role="alert" className="mt-2 text-xs text-rose-700">{csrFitResultError}</p>}
             </CandidateModalSection>
           )}
 
@@ -13059,6 +13128,13 @@ const concretePreferredFinalInterviewFormId =
           }
         }}
         onSubmit={handleConfirmNhoReschedule}
+      />
+
+      <CsrFitAssessmentResultModal
+        key={showCsrFitResultModal ? `view-${csrFitResult?.attemptId}` : 'closed'}
+        open={showCsrFitResultModal}
+        data={csrFitResult}
+        onClose={() => setShowCsrFitResultModal(false)}
       />
 
       <UpdateAssessmentModal
