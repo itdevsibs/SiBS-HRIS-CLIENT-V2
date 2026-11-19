@@ -104,6 +104,59 @@ function profileFromFacts(items) {
   return { type: "employeeCard", name, sibsId, items: details };
 }
 
+/** Convert an explicit HRIS wall-clock shift to 12-hour AM/PM without timezone shifting. */
+function formatWeeklyShiftAmPm(value) {
+  const raw = String(value ?? '').trim();
+  if (/^no scheduled hours$/i.test(raw)) return raw;
+  const match = raw.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?\s*(?:to|–|—|-)\s*(\d{1,2}):(\d{2})\s*(AM|PM)?$/i);
+  if (!match) return raw;
+  const formatPart = (hourText, minutes, meridiem) => {
+    let hour = Number(hourText);
+    if (!Number.isInteger(hour) || hour > 23 || Number(minutes) > 59) return null;
+    if (meridiem) {
+      if (hour < 1 || hour > 12) return null;
+      return `${hour}:${minutes} ${meridiem.toUpperCase()}`;
+    }
+    return `${hour % 12 || 12}:${minutes} ${hour >= 12 ? 'PM' : 'AM'}`;
+  };
+  const first = formatPart(match[1], match[2], match[3]);
+  const second = formatPart(match[4], match[5], match[6]);
+  return first && second ? `${first} – ${second}` : raw;
+}
+
+/** Weekly schedule formatter: display only explicit date/shift pairs from this answer. */
+function weeklyNarrativeScheduleCard(content) {
+  const source = String(content ?? '').replace(/\r\n?/g, '\n').trim();
+  if (!source || source.length > 3500) return null;
+  const plain = source.replace(/\*\*/g, '').replace(/\s+/g, ' ');
+  const intro = plain.match(/(?:Here(?:'s| is)\s+)?([\p{L}][\p{L}\p{M} .,'’-]{2,90}?)['’]s schedule for this week,?\s+((?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2}\s+to\s+\d{1,2},?\s+\d{4})/iu);
+  if (!intro) return null;
+  const name = safeProfileName(intro[1]);
+  if (!name) return null;
+  const datePattern = /(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday),?\s+((?:January|February|March|April|May|June|July|August|September|October|November|December))\s+(\d{1,2})(?:\s*\(today\))?\s*[—–-]\s*(no scheduled hours|\d{1,2}:\d{2}\s*(?:AM|PM)?\s*(?:to|–|—|-)\s*\d{1,2}:\d{2}\s*(?:AM|PM)?)/giu;
+  const rows = [];
+  for (const match of plain.matchAll(datePattern)) {
+    if (rows.length >= 14) break;
+    const raw = match[4].trim();
+    rows.push({ day: match[1], month: match[2], date: Number(match[3]), schedule: formatWeeklyShiftAmPm(raw), isRest: /^no scheduled hours$/i.test(raw) });
+  }
+  if (rows.length < 2) return null;
+  const department = plain.match(/\b(?:in the|from the)\s+([\p{L}\p{N} &/()'-]{2,90}?)\s+department/iu)?.[1]?.trim() || null;
+  const account = plain.match(/\b(Helpdesk and Support|[\p{L}\p{N} &/'-]{2,70}?)\s+account\b/iu)?.[1]?.trim() || null;
+  return { type: 'weeklyNarrativeSchedule', employee: { name }, period: intro[2], rows, department, account };
+}
+
+/** Only explicit same-message single-day shift facts become a card. */
+function singleDayNarrativeScheduleCard(content) {
+  const plain = String(content ?? "").replace(/\*\*/g, "").replace(/\s+/g, " ").trim();
+  if (!plain || plain.length > 1600) return null;
+  const match = plain.match(/^([\p{L}][\p{L}\p{M} .,'’-]{2,90}?)['’]s schedule for today,?\s+((?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday),?\s+)?((?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},?\s+\d{4}),?\s+is\s+(\d{1,2}:\d{2}\s*(?:AM|PM)?\s*(?:to|–|—|-)\s*\d{1,2}:\d{2}\s*(?:AM|PM)?)/iu);
+  if (!match) return null;
+  const name = safeProfileName(match[1]);
+  if (!name) return null;
+  return { type: "singleDayNarrativeSchedule", employee: { name }, date: `${match[2] || ""}${match[3]}`.trim(), shift: formatWeeklyShiftAmPm(match[4]), breakNote: /\bno break times? (?:are |were )?recorded\b/i.test(plain) ? "No break time recorded" : null };
+}
+
 /**
  * Presentation-only fallback for a schedule returned as natural-language prose.
  * Read only facts explicitly present in the SAME message. A partial or
@@ -601,11 +654,60 @@ function verifiedSummaryCard(content) {
  * Turn a response into presentational blocks (intro/tiles/facts), while
  * preserving the order and exact wording of the visible content.
  */
+
+/** Scoped on-duty support roster; display verified names without changing counts. */
+function supportDutyRosterCard(content) {
+  const raw = String(content ?? "").replace(/\r\n?/g, "\n");
+  const header = raw.match(/(?:^|\n)\s*(?:#{1,4}\s*)?(?:\*\*)?\s*(TA\s*\/\s*HR Concerns|IT Support)\s+on duty now\s*\((\d+)\)/i);
+  if (!header) return null;
+  const sections = [];
+  const sectionPattern = /(?:^|\n)\s*(?:#{1,4}\s*)?(?:\*\*)?\s*(Davao|Tagum)\s*\((\d+)\s+clocked\s+in\)/gi;
+  const hits = [...raw.matchAll(sectionPattern)];
+  if (!hits.length) return null;
+  for (let i = 0; i < hits.length; i++) {
+    const hit = hits[i];
+    const part = raw.slice(hit.index + hit[0].length, i + 1 < hits.length ? hits[i + 1].index : raw.length);
+    const employees = [];
+    for (const line of part.split("\n")) {
+      const cleaned = line.replace(/^\s*(?:[-*•]\s*)/, "").replace(/\*\*/g, "").trim();
+      const found = cleaned.match(/^([\p{L}\p{M}][\p{L}\p{M} .,'’-]{2,110}?)\s*\(\s*SiBS\s*ID\s*:\s*(\d+)\s*\)\s*$/iu);
+      if (found) employees.push({ name: found[1].trim(), sibsId: found[2] });
+    }
+    if (!employees.length) return null;
+    sections.push({ site: hit[1], reportedCount: Number(hit[2]), employees });
+  }
+  const context = raw.match(/Based on Kronos[\s\S]{0,220}?(?:Asia\/Manila|Philippine Time)[^.\n]*\.?/i)?.[0]?.replace(/\s+/g, " ").trim() || null;
+  return { type: "supportDutyRoster", category: header[1].replace(/\s*\/\s*/g, "/"), reportedTotal: Number(header[2]), sections, context };
+}
+
+// Convert only explicitly stated attendance counts into a visual overview.
+function narrativeMonthlyAttendanceCard(content) {
+  const raw = String(content ?? "").replace(/\s+/g, " ").trim();
+  if (raw.length < 90 || raw.length > 6000 || !/\b(this month|so far this month)\b/i.test(raw) || !/\b(attendance|working days|workdays)\b/i.test(raw)) return null;
+  const tracked = raw.match(/\b(?:all\s+)?(\d{1,2})\s+tracked\s+(?:working\s+)?days\b/i);
+  const present = raw.match(/\bpresent on all\s+(\d{1,2})\s+tracked\s+(?:working\s+)?days\b/i) || raw.match(/\b(\d{1,2})\s+(?:of\s+\d{1,2}\s+)?workdays?\s+present\b/i);
+  const late = raw.match(/\b(two|\d{1,2})\s+late\s+(?:arrivals?|days?)\b/i);
+  if (!tracked && !present && !late) return null;
+  const lateDetails = [];
+  for (const m of raw.matchAll(/\b(?:on\s+)?((?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},?\s+20\d{2})\s+when\s+you\s+logged\s+in\s+at\s+(\d{1,2}:\d{2}\s*[AP]M)(?:\s+against\s+an?\s+(\d{1,2}:\d{2}\s*[AP]M)\s+schedule)?/gi)) lateDetails.push({date:m[1],login:m[2],scheduled:m[3]||null});
+  const dayOffs = raw.match(/\b(?:weekend\s+)?day-offs?\s*\(([^)]{1,110})\)/i)?.[1] || null;
+  const month = raw.match(/\b(January|February|March|April|May|June|July|August|September|October|November|December)\s+20\d{2}\b/i)?.[0] || 'This month';
+  return {type:'narrativeMonthlyAttendance',tracked:tracked?Number(tracked[1]):null,present:present?Number(present[1]):null,late:late?(late[1].toLowerCase()==='two'?2:Number(late[1])):null,absences:/\bno\s+absences?\s+recorded\b/i.test(raw)?0:null,lateDetails,dayOffs,period:month,original:raw};
+}
+
 export function parseAiResultBlocks(content) {
+  const narrativeAttendance = narrativeMonthlyAttendanceCard(content);
+  if (narrativeAttendance) return [narrativeAttendance];
+  const dutyRoster = supportDutyRosterCard(content);
+  if (dutyRoster) return [dutyRoster];
   const summary = verifiedSummaryCard(content);
   if (summary) return [summary];
   const employeeSchedule = employeeScheduleCheckCard(content);
   if (employeeSchedule) return [employeeSchedule];
+  const weeklySchedule = weeklyNarrativeScheduleCard(content);
+  if (weeklySchedule) return [weeklySchedule];
+  const singleDaySchedule = singleDayNarrativeScheduleCard(content);
+  if (singleDaySchedule) return [singleDaySchedule];
   const narrativeSchedule = narrativeEmployeeScheduleCard(content);
   if (narrativeSchedule) return [narrativeSchedule];
   const activeHeadcount = activeHeadcountCard(content);
