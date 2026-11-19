@@ -136,7 +136,7 @@ function mergeDashboardFeed(previous, payload = {}) {
 export default function AdminDashboardPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, loading } = useUser();
+  const { user, loading, isSwitchingRole = false } = useUser() || {};
   const { ADMIN_ROLES } = useAdmin();
   const { markNotificationSeen, notificationsList } = useSidebarNotifications() || {};
 
@@ -369,7 +369,7 @@ export default function AdminDashboardPage() {
   }, []);
 
   useEffect(() => {
-    if (loading) return;
+    if (loading || isSwitchingRole) return;
 
     if (!user) {
       if (location.pathname !== "/login") {
@@ -391,7 +391,7 @@ export default function AdminDashboardPage() {
     if (userRole === "super_admin" || userRole === "superadmin") {
       navigate("/dashboard/super-admin", { replace: true });
     }
-  }, [loading, user, isAdminSide, userRole, location.pathname, navigate]);
+  }, [loading, isSwitchingRole, user, isAdminSide, userRole, location.pathname, navigate]);
 
   useEffect(() => {
     if (loading || !user || !isAdminSide) return;

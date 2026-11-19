@@ -1,20 +1,174 @@
-import { createSystemDateTimeFormatter, formatHrisDateLocalized } from "@/lib/axios/dateFormatter";
+import {
+  createSystemDateTimeFormatter,
+  formatHrisDateLocalized,
+} from "@/lib/axios/dateFormatter";
+import { getAssignedSite } from "@/lib/utils/attendance/attendanceHelpers";
+import { normalizeVerifiedPersonalBalance } from "@/lib/utils/leaves/leaveBalanceDisplayClient";
+
 const MANILA_TIME_ZONE = "Asia/Manila";
+const PLACEHOLDER_VALUES = new Set([
+  "",
+  "-",
+  "—",
+  "n/a",
+  "na",
+  "null",
+  "undefined",
+  "none",
+  "0000-00-00",
+  "0000-00-00 00:00:00",
+]);
 
 export function cleanDashboardText(value) {
   return String(value ?? "").trim();
+}
+
+export function isPlaceholderValue(value) {
+  const raw = cleanDashboardText(value);
+  if (!raw) return true;
+  if (raw.startsWith("0000-00-00")) return true;
+  return PLACEHOLDER_VALUES.has(raw.toLowerCase());
 }
 
 function firstValue(...values) {
   return values.find((value) => cleanDashboardText(value)) || "";
 }
 
+function firstDisplayValue(...values) {
+  for (const value of values) {
+    if (!isPlaceholderValue(value)) {
+      return cleanDashboardText(value);
+    }
+  }
+  return "";
+}
+
+export function formatAssignedLocation(value) {
+  if (isPlaceholderValue(value)) return "";
+  const resolved = getAssignedSite({ site: value });
+  return resolved === "—" ? "" : resolved;
+}
+
+export function toManilaDateKey(value = new Date()) {
+  if (value instanceof Date) {
+    if (Number.isNaN(value.getTime())) return "";
+    const parts = createSystemDateTimeFormatter("en-CA", {
+      timeZone: MANILA_TIME_ZONE,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).formatToParts(value);
+    const record = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+    return `${record.year}-${record.month}-${record.day}`;
+  }
+
+  const raw = cleanDashboardText(value);
+  if (!raw || raw.startsWith("0000-00-00")) return "";
+
+  if (/(?:Z|[+-]\d{2}:?\d{2})$/i.test(raw)) {
+    const parsed = new Date(raw);
+    return Number.isNaN(parsed.getTime()) ? "" : toManilaDateKey(parsed);
+  }
+
+  const dateMatch = raw.match(/^(\d{4}-\d{2}-\d{2})(?:$|[T\s])/);
+  if (dateMatch) return dateMatch[1];
+
+  const parsed = new Date(raw);
+  return Number.isNaN(parsed.getTime()) ? "" : toManilaDateKey(parsed);
+}
+
+function shiftDateKey(dateKey, deltaDays = 0) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(cleanDashboardText(dateKey))) return "";
+  const anchor = new Date(`${dateKey}T12:00:00.000Z`);
+  anchor.setUTCDate(anchor.getUTCDate() + deltaDays);
+  return anchor.toISOString().slice(0, 10);
+}
+
+function parseTimeStringParts(raw, { allowMidnight = false } = {}) {
+  const clean = cleanDashboardText(raw);
+  if (!clean || (!allowMidnight && clean === "00:00:00")) return null;
+
+  const amPmMatch = clean.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM)$/i);
+  if (amPmMatch) {
+    let hour = Number(amPmMatch[1]);
+    const minute = Number(amPmMatch[2]);
+    const second = Number(amPmMatch[3] || 0);
+    const meridiem = amPmMatch[4].toUpperCase();
+    if (hour < 1 || hour > 12 || minute > 59 || second > 59) return null;
+    if (meridiem === "PM" && hour !== 12) hour += 12;
+    if (meridiem === "AM" && hour === 12) hour = 0;
+    return { hour, minute, second };
+  }
+
+  const match24 = clean.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+  if (match24) {
+    const hour = Number(match24[1]);
+    const minute = Number(match24[2]);
+    const second = Number(match24[3] || 0);
+    if (hour > 23 || minute > 59 || second > 59) return null;
+    return { hour, minute, second };
+  }
+
+  return null;
+}
+
+export function parseManilaTimestamp(
+  value,
+  fallbackDateKey = "",
+  { allowMidnight = false } = {},
+) {
+  if (!value && value !== 0) return null;
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? null : value;
+  }
+
+  const raw = cleanDashboardText(value);
+  if (isPlaceholderValue(raw)) return null;
+
+  if (/(?:Z|[+-]\d{2}:?\d{2})$/i.test(raw)) {
+    const parsed = new Date(raw);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  }
+
+  const dateTimeMatch = raw.match(
+    /^(\d{4}-\d{2}-\d{2})[T\s](\d{2}:\d{2}(?::\d{2})?)$/,
+  );
+  if (dateTimeMatch) {
+    const timePart =
+      dateTimeMatch[2].length === 5 ? `${dateTimeMatch[2]}:00` : dateTimeMatch[2];
+    const parsed = new Date(`${dateTimeMatch[1]}T${timePart}+08:00`);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  }
+
+  const dateOnlyMatch = raw.match(/^(\d{4}-\d{2}-\d{2})$/);
+  if (dateOnlyMatch) {
+    const parsed = new Date(`${dateOnlyMatch[1]}T00:00:00+08:00`);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  }
+
+  const timeParts = parseTimeStringParts(raw, { allowMidnight });
+  if (timeParts && /^\d{4}-\d{2}-\d{2}$/.test(fallbackDateKey)) {
+    const hh = String(timeParts.hour).padStart(2, "0");
+    const mm = String(timeParts.minute).padStart(2, "0");
+    const ss = String(timeParts.second).padStart(2, "0");
+    const parsed = new Date(`${fallbackDateKey}T${hh}:${mm}:${ss}+08:00`);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  }
+
+  const fallbackParsed = new Date(raw);
+  return Number.isNaN(fallbackParsed.getTime()) ? null : fallbackParsed;
+}
+
 export function formatDashboardDate(value, fallback = "—") {
-  if (!value) return fallback;
+  if (isPlaceholderValue(value)) return fallback;
 
-  const date = new Date(value);
+  const raw = cleanDashboardText(value);
+  const dateOnly = raw.match(/^(\d{4}-\d{2}-\d{2})$/);
+  const date = dateOnly
+    ? new Date(`${dateOnly[1]}T12:00:00+08:00`)
+    : parseManilaTimestamp(raw);
 
-  if (Number.isNaN(date.getTime())) return String(value).trim() || fallback;
+  if (!date || Number.isNaN(date.getTime())) return raw || fallback;
 
   return formatHrisDateLocalized(date, "en-US", {
     timeZone: MANILA_TIME_ZONE,
@@ -25,7 +179,8 @@ export function formatDashboardDate(value, fallback = "—") {
 }
 
 export function formatPhtTime(date = new Date()) {
-  const targetDate = date instanceof Date && !Number.isNaN(date.getTime()) ? date : new Date();
+  const targetDate =
+    date instanceof Date && !Number.isNaN(date.getTime()) ? date : new Date();
 
   return createSystemDateTimeFormatter("en-US", {
     timeZone: MANILA_TIME_ZONE,
@@ -37,7 +192,8 @@ export function formatPhtTime(date = new Date()) {
 }
 
 export function formatPhtDate(date = new Date()) {
-  const targetDate = date instanceof Date && !Number.isNaN(date.getTime()) ? date : new Date();
+  const targetDate =
+    date instanceof Date && !Number.isNaN(date.getTime()) ? date : new Date();
 
   return createSystemDateTimeFormatter("en-US", {
     timeZone: MANILA_TIME_ZONE,
@@ -49,80 +205,140 @@ export function formatPhtDate(date = new Date()) {
 }
 
 export function getProgressPercent(value, max) {
-  const numValue = Number(value || 0);
-  const numMax = Number(max || 0);
+  const numValue = Number(value);
+  const numMax = Number(max);
 
-  if (numMax <= 0) return 0;
+  if (!Number.isFinite(numValue) || !Number.isFinite(numMax) || numMax <= 0) {
+    return 0;
+  }
 
   return Math.min(Math.max(Math.round((numValue / numMax) * 100), 0), 100);
 }
 
-export function getEmployeeDashboardProfile(user = {}) {
-  const firstName = firstValue(user?.firstName, user?.first_name, user?.gy_emp_fname, "Employee");
-  const lastName = firstValue(user?.lastName, user?.last_name, user?.gy_emp_lname, "");
-  const middleName = firstValue(user?.middleName, user?.middle_name, user?.gy_emp_mname, "");
+function resolveEmploymentStatusLabel(user = {}) {
+  const explicit = firstDisplayValue(
+    user?.employmentStatus,
+    user?.employment_status,
+  );
+  if (explicit) return explicit;
+
+  const empStatusRaw = cleanDashboardText(user?.gy_emp_status);
+  if (empStatusRaw && !["0", "1", "2"].includes(empStatusRaw)) {
+    return empStatusRaw;
+  }
+
+  const userStatus = user?.userStatus ?? user?.gy_user_status;
+  if (userStatus !== undefined && userStatus !== null && String(userStatus) !== "") {
+    return Number(userStatus) === 0 ? "Active" : "Inactive";
+  }
+
+  return cleanDashboardText(user?.role) ? "Active" : "Employee";
+}
+
+export function getEmployeeDashboardProfile(user = {}, { employeeLoading = false } = {}) {
+  const firstName = firstDisplayValue(
+    user?.firstName,
+    user?.first_name,
+    user?.gy_emp_fname,
+  ) || "Employee";
+  const middleName = firstDisplayValue(
+    user?.middleName,
+    user?.middle_name,
+    user?.gy_emp_mname,
+  );
+  const lastName = firstDisplayValue(
+    user?.lastName,
+    user?.last_name,
+    user?.gy_emp_lname,
+  );
 
   const fullName = [firstName, middleName, lastName].filter(Boolean).join(" ");
-  const sibsId = firstValue(user?.sibsId, user?.sibs_id, user?.employeeSibsId, user?.gy_emp_code, user?.username, "");
+  const sibsId = firstDisplayValue(
+    user?.sibsId,
+    user?.sibs_id,
+    user?.employeeSibsId,
+    user?.gy_emp_code,
+    user?.username,
+  );
 
-  const initials = [firstName[0], lastName[0]].filter(Boolean).join("").toUpperCase() || "EP";
+  const initials =
+    [firstName[0], lastName[0]].filter(Boolean).join("").toUpperCase() || "EP";
 
-  const position =
-    firstValue(
-      user?.position,
-      user?.positionTitle,
-      user?.position_title,
-      user?.designation,
-      user?.gy_emp_designation,
-      user?.jobTitle,
-      user?.job_title,
-      user?.roleTitle,
-      user?.role_title,
-    ) ||
-    (cleanDashboardText(user?.role).toLowerCase().includes("admin") ||
-    cleanDashboardText(user?.role).toLowerCase().includes("hr")
-      ? "HR Admin"
-      : "Employee");
+  const position = firstDisplayValue(
+    user?.position,
+    user?.positionTitle,
+    user?.position_title,
+    user?.designation,
+    user?.gy_emp_designation,
+    user?.jobTitle,
+    user?.job_title,
+    user?.roleTitle,
+    user?.role_title,
+  );
 
-  const department =
-    firstValue(
-      user?.department,
-      user?.departmentName,
-      user?.department_name,
-      user?.account,
-      user?.accountName,
-      user?.account_name,
-      user?.gy_acc_name,
-    ) || "Management Team";
+  const department = firstDisplayValue(
+    user?.department,
+    user?.departmentName,
+    user?.department_name,
+    user?.account,
+    user?.accountName,
+    user?.account_name,
+    user?.gy_acc_name,
+  );
+
+  const location =
+    formatAssignedLocation(
+      firstDisplayValue(
+        user?.site,
+        user?.location,
+        user?.gy_assignedloc,
+      ),
+    ) || "";
+
+  const workSetup =
+    firstDisplayValue(
+      user?.workSetup,
+      user?.work_setup,
+      user?.workArrangement,
+      user?.work_arrangement,
+    ) || (location === "Hybrid" ? "Hybrid" : "");
+
+  const manager = firstDisplayValue(
+    user?.immediateSupervisor,
+    user?.immediate_supervisor,
+    user?.supervisor,
+    user?.supervisorName,
+    user?.supervisor_name,
+    user?.manager,
+    user?.managerName,
+    user?.manager_name,
+    user?.reportsTo,
+    user?.reports_to,
+    user?.accountManager,
+    user?.account_manager,
+  );
+
+  const managerDisplay = manager || (employeeLoading ? "Loading…" : "Not assigned");
 
   return {
     firstName,
+    middleName,
     lastName,
     fullName,
     sibsId,
     initials,
-    position,
-    department,
-    account: firstValue(user?.account, user?.accountName, user?.account_name, "General Account"),
-    location: firstValue(user?.location, user?.site, user?.gy_assignedloc, "Davao"),
-    workSetup: firstValue(user?.workSetup, user?.work_setup, "On-site"),
-    status: firstValue(user?.status, user?.employmentStatus, "Regular"),
-    manager: firstValue(
-      user?.immediateSupervisor,
-      user?.immediate_supervisor,
-      user?.supervisor,
-      user?.supervisorName,
-      user?.supervisor_name,
-      user?.manager,
-      user?.managerName,
-      user?.manager_name,
-      user?.reportsTo,
-      user?.reports_to,
-      user?.accountManager,
-      user?.account_manager,
-      "—",
+    position: position || (employeeLoading ? "Loading…" : "Not specified"),
+    department: department || (employeeLoading ? "Loading…" : "Not assigned"),
+    account: firstDisplayValue(
+      user?.account,
+      user?.accountName,
+      user?.account_name,
     ),
-    managerPosition: firstValue(
+    location: location || (employeeLoading ? "Loading…" : "Not specified"),
+    workSetup: workSetup || (employeeLoading ? "Loading…" : "Not specified"),
+    status: resolveEmploymentStatusLabel(user),
+    manager: managerDisplay,
+    managerPosition: firstDisplayValue(
       user?.supervisorPosition,
       user?.supervisor_position,
       user?.managerPosition,
@@ -130,44 +346,27 @@ export function getEmployeeDashboardProfile(user = {}) {
       user?.supervisorDepartment,
       user?.supervisor_department,
       department,
-      "—",
     ),
-    profilePictureUrl: firstValue(user?.profilePictureUrl, user?.profile_picture_url, ""),
+    profilePictureUrl: firstDisplayValue(
+      user?.profilePictureUrl,
+      user?.profile_picture_url,
+    ),
   };
 }
 
-export function formatAttendanceTime(value) {
-  if (!value) return "";
-  const raw = String(value).trim();
-  if (
-    !raw ||
-    raw.startsWith("0000-00-00") ||
-    raw === "00:00:00" ||
-    raw === "—" ||
-    raw === "-"
-  ) {
-    return "";
+export function formatAttendanceTime(value, { allowMidnight = false } = {}) {
+  const raw = cleanDashboardText(value);
+  if (isPlaceholderValue(raw) || (!allowMidnight && raw === "00:00:00")) return "";
+
+  const timeParts = parseTimeStringParts(raw, { allowMidnight });
+  if (timeParts) {
+    const meridiem = timeParts.hour >= 12 ? "PM" : "AM";
+    const hour12 = timeParts.hour % 12 || 12;
+    return `${String(hour12).padStart(2, "0")}:${String(timeParts.minute).padStart(2, "0")} ${meridiem}`;
   }
 
-  const amPmMatch = raw.match(/^(\d{1,2}):(\d{2})(?::\d{2})?\s*(AM|PM)$/i);
-  if (amPmMatch) {
-    const hour = amPmMatch[1].padStart(2, "0");
-    const minute = amPmMatch[2];
-    const meridiem = amPmMatch[3].toUpperCase();
-    return `${hour}:${minute} ${meridiem}`;
-  }
-
-  const time24Match = raw.match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
-  if (time24Match) {
-    let hour = Number(time24Match[1]);
-    const minute = time24Match[2];
-    const meridiem = hour >= 12 ? "PM" : "AM";
-    hour = hour % 12 || 12;
-    return `${String(hour).padStart(2, "0")}:${minute} ${meridiem}`;
-  }
-
-  const parsed = new Date(raw);
-  if (Number.isNaN(parsed.getTime())) return raw;
+  const parsed = parseManilaTimestamp(raw, "", { allowMidnight });
+  if (!parsed) return "";
 
   return createSystemDateTimeFormatter("en-US", {
     timeZone: MANILA_TIME_ZONE,
@@ -177,257 +376,124 @@ export function formatAttendanceTime(value) {
   }).format(parsed);
 }
 
-export function getAttendanceSummaryFromResponses({
-  attendanceResponse,
-  kronosResponse,
-  scheduleResponse,
-  user = {},
-  now = new Date(),
-}) {
-  const rawRecords = [
-    ...(Array.isArray(attendanceResponse?.data)
-      ? attendanceResponse.data
-      : Array.isArray(attendanceResponse?.records)
-        ? attendanceResponse.records
-        : Array.isArray(attendanceResponse?.data?.records)
-          ? attendanceResponse.data.records
-          : Array.isArray(attendanceResponse)
-            ? attendanceResponse
-            : []),
-    ...(Array.isArray(kronosResponse?.data)
-      ? kronosResponse.data
-      : Array.isArray(kronosResponse?.records)
-        ? kronosResponse.records
-        : Array.isArray(kronosResponse?.data?.records)
-          ? kronosResponse.data.records
-          : Array.isArray(kronosResponse)
-            ? kronosResponse
-            : []),
-  ];
+function getFinitePositiveNumber(value) {
+  if (value === null || value === undefined || cleanDashboardText(value) === "") {
+    return null;
+  }
+  const num = Number(value);
+  if (!Number.isFinite(num) || num <= 0) return null;
+  return num;
+}
 
-  const rawSchedRecords = [
-    ...(Array.isArray(scheduleResponse?.data)
-      ? scheduleResponse.data
-      : Array.isArray(scheduleResponse?.data?.records)
-        ? scheduleResponse.data.records
-        : Array.isArray(scheduleResponse?.records)
-          ? scheduleResponse.records
-          : Array.isArray(scheduleResponse)
-            ? scheduleResponse
-            : []),
-  ];
+function calculateBreakHours(breakoutDate, breakinDate, rawBreakHours) {
+  if (breakoutDate && breakinDate) {
+    let diffMs = breakinDate.getTime() - breakoutDate.getTime();
+    if (diffMs < 0) diffMs += 24 * 60 * 60 * 1000;
+    if (Number.isFinite(diffMs) && diffMs >= 0 && diffMs <= 6 * 60 * 60 * 1000) {
+      return diffMs / (1000 * 60 * 60);
+    }
+  }
+  const fallbackBreak = getFinitePositiveNumber(rawBreakHours);
+  return fallbackBreak && fallbackBreak <= 6 ? fallbackBreak : 0;
+}
 
-  const schedRegular =
-    rawSchedRecords.find((item) => {
-      const mode = normalizeScheduleMode(item?.gy_sched_mode || item?.mode);
-      return (
-        mode.toLowerCase() === "regular" &&
-        (item?.gy_sched_logout || item?.logout || item?.gy_sched_end)
-      );
-    }) ||
-    rawSchedRecords.find(
-      (item) => item?.gy_sched_logout || item?.logout || item?.gy_sched_end,
-    ) ||
-    null;
+function computeElapsedHours(
+  startDate,
+  endDate,
+  breakHours = 0,
+  { allowOvernightWrap = false } = {},
+) {
+  if (!startDate || !endDate) return null;
+  let diffMs = endDate.getTime() - startDate.getTime();
+  if (diffMs < 0) {
+    if (!allowOvernightWrap) return 0;
+    diffMs += 24 * 60 * 60 * 1000;
+  }
+  if (!Number.isFinite(diffMs) || diffMs < 0 || diffMs > 24 * 60 * 60 * 1000) {
+    return null;
+  }
+  const netHours = Math.max(0, diffMs / (1000 * 60 * 60) - breakHours);
+  return Number.isFinite(netHours) ? netHours : null;
+}
 
-  const scheduledLogout = schedRegular
-    ? formatAttendanceTime(
-        schedRegular.gy_sched_logout ||
-          schedRegular.logout ||
-          schedRegular.gy_sched_end,
-      )
-    : "";
+function formatLoginPunchStatus(loginStatus, fallbackWorkflowStatus) {
+  const normalized = cleanDashboardText(loginStatus).toLowerCase();
+  if (normalized === "late") return "Late";
+  if (normalized === "on-time") return "On-Time";
+  return firstDisplayValue(fallbackWorkflowStatus) || "Recorded";
+}
 
-  const trackerLogs = Array.isArray(attendanceResponse?.logs)
-    ? attendanceResponse.logs
-    : Array.isArray(kronosResponse?.logs)
-      ? kronosResponse.logs
-      : null;
+function formatBreakPunchStatus(breakinStatus) {
+  const normalized = cleanDashboardText(breakinStatus).toLowerCase();
+  if (normalized === "over-break") return "Over Break";
+  if (normalized === "on-time") return "On-Time";
+  return "Logged";
+}
 
-  if (trackerLogs && trackerLogs.length > 0) {
-    const logs = trackerLogs.map((log, index) => ({
-      id: log.id || `log-${index}`,
-      type: log.type || log.event || "Activity",
-      timestamp: formatAttendanceTime(log.timestamp || log.time) || "—",
-      location: firstValue(log.location, user?.location, "Davao"),
-      status: firstValue(log.status, "Recorded"),
-      device: firstValue(log.device, "Biometrics / Web Portal"),
-    }));
+function formatLogoutPunchStatus(logoutStatus) {
+  const normalized = cleanDashboardText(logoutStatus).toLowerCase();
+  if (normalized === "early-out" || normalized === "early") return "Undertime";
+  if (normalized === "on-time") return "On-Time";
+  return "Recorded";
+}
 
-    const loginLog = logs.find((l) => /in|login/i.test(l.type)) || logs[0];
-    const logoutLog = logs.find((l) => /out|logout/i.test(l.type));
+function extractRecordsArray(response) {
+  if (Array.isArray(response?.data)) return response.data;
+  if (Array.isArray(response?.records)) return response.records;
+  if (Array.isArray(response?.data?.records)) return response.data.records;
+  if (Array.isArray(response)) return response;
+  return [];
+}
+
+function findMatchingScheduleForDate(scheduleRecords = [], dateKey) {
+  const matches = scheduleRecords.filter(
+    (item) =>
+      toManilaDateKey(item?.gy_sched_day || item?.date || item?.schedule_date) ===
+      dateKey,
+  );
+  if (!matches.length) return null;
+  return matches.reduce((best, candidate) =>
+    Number(candidate?.gy_sched_id || 0) >= Number(best?.gy_sched_id || 0)
+      ? candidate
+      : best,
+  );
+}
+
+function selectTodayOrOpenOvernightRecord(rawRecords = [], todayKey, yesterdayKey, now) {
+  const todayMatch = rawRecords.find(
+    (item) =>
+      item &&
+      toManilaDateKey(item.gy_tracker_date || item.gy_tracker_login) === todayKey,
+  );
+  if (todayMatch) {
+    return { record: todayMatch, isOvernight: false, recordDateKey: todayKey };
+  }
+
+  const yesterdayOpen = rawRecords.find((item) => {
+    if (!item) return false;
+    const itemDateKey = toManilaDateKey(item.gy_tracker_date || item.gy_tracker_login);
+    if (itemDateKey !== yesterdayKey) return false;
+
+    const loginRaw = firstDisplayValue(item.gy_tracker_login, item.login, item.clock_in);
+    const logoutRaw = firstDisplayValue(item.gy_tracker_logout, item.logout, item.clock_out);
+    if (!loginRaw || logoutRaw) return false;
+
+    const loginDate = parseManilaTimestamp(loginRaw, yesterdayKey);
+    if (!loginDate) return false;
+
+    const ageHours = (now.getTime() - loginDate.getTime()) / (1000 * 60 * 60);
+    return Number.isFinite(ageHours) && ageHours >= 0 && ageHours <= 20;
+  });
+
+  if (yesterdayOpen) {
     return {
-      status:
-        user?.todayAttendanceStatus ||
-        (logoutLog ? "Shift Completed" : "Clocked In · On Time"),
-      clockIn: loginLog?.timestamp || "—",
-      clockOut:
-        logoutLog?.timestamp ||
-        (scheduledLogout ? `${scheduledLogout} (Scheduled)` : "—"),
-      renderedHours: user?.todayRenderedHours || (logoutLog ? "8.00 hrs" : "—"),
-      logs,
+      record: yesterdayOpen,
+      isOvernight: true,
+      recordDateKey: yesterdayKey,
     };
   }
 
-  const record =
-    rawRecords.find(
-      (item) => item && (item.gy_tracker_login || item.login || item.gy_tracker_date),
-    ) ||
-    rawRecords[0] ||
-    null;
-
-  if (record) {
-    const rawLogin = firstValue(
-      record.gy_tracker_login,
-      record.login,
-      record.time_in,
-      record.clock_in,
-    );
-    const rawBreakout = firstValue(
-      record.gy_tracker_breakout,
-      record.breakout,
-      record.start_break,
-    );
-    const rawBreakin = firstValue(
-      record.gy_tracker_breakin,
-      record.breakin,
-      record.end_break,
-    );
-    const rawLogout = firstValue(
-      record.gy_tracker_logout,
-      record.logout,
-      record.time_out,
-      record.clock_out,
-    );
-
-    const clockIn = formatAttendanceTime(rawLogin);
-    const breakout = formatAttendanceTime(rawBreakout);
-    const breakin = formatAttendanceTime(rawBreakin);
-    const clockOut = formatAttendanceTime(rawLogout);
-
-    const location = firstValue(
-      record.gy_assignedloc,
-      record.location,
-      record.site,
-      user?.location,
-      "Davao",
-    );
-    const device = "Biometrics / Web Portal";
-
-    const logs = [];
-    if (clockIn) {
-      logs.push({
-        id: `punch-in-${record.gy_tracker_id || "1"}`,
-        type: "Clock In",
-        timestamp: clockIn,
-        location,
-        status: firstValue(record.gy_tracker_status, "On-Time"),
-        device,
-      });
-    }
-    if (breakout) {
-      logs.push({
-        id: `punch-bo-${record.gy_tracker_id || "2"}`,
-        type: "Start Break",
-        timestamp: breakout,
-        location,
-        status: "Logged",
-        device: "Web Portal",
-      });
-    }
-    if (breakin) {
-      logs.push({
-        id: `punch-bi-${record.gy_tracker_id || "3"}`,
-        type: "End Break",
-        timestamp: breakin,
-        location,
-        status: "Logged",
-        device: "Web Portal",
-      });
-    }
-    if (clockOut) {
-      logs.push({
-        id: `punch-out-${record.gy_tracker_id || "4"}`,
-        type: "Clock Out",
-        timestamp: clockOut,
-        location,
-        status: "Recorded",
-        device,
-      });
-    }
-
-    let status = "Not Clocked In";
-    if (clockOut) {
-      status = "Shift Completed";
-    } else if (breakout && !breakin) {
-      status = "On Break";
-    } else if (clockIn) {
-      status = firstValue(record.gy_tracker_status, "Clocked In · On Time");
-    }
-
-    let renderedHours = "0.00 hrs";
-    if (record.gy_tracker_wh && Number(record.gy_tracker_wh) > 0) {
-      renderedHours = `${Number(record.gy_tracker_wh).toFixed(2)} hrs`;
-    } else if (rawLogin) {
-      const loginDate = new Date(
-        rawLogin.includes("T") || rawLogin.includes("-")
-          ? rawLogin
-          : `${new Date().toISOString().slice(0, 10)}T${rawLogin}`,
-      );
-      if (!Number.isNaN(loginDate.getTime())) {
-        const isSameDay =
-          loginDate.toISOString().slice(0, 10) ===
-          now.toISOString().slice(0, 10);
-        const endDate = rawLogout
-          ? new Date(
-              rawLogout.includes("T") || rawLogout.includes("-")
-                ? rawLogout
-                : `${new Date().toISOString().slice(0, 10)}T${rawLogout}`,
-            )
-          : isSameDay
-            ? now
-            : new Date(loginDate.getTime() + 8 * 60 * 60 * 1000);
-        const diffHours = Math.min(
-          Math.max(
-            0,
-            (endDate.getTime() - loginDate.getTime()) / (1000 * 60 * 60),
-          ),
-          12,
-        );
-        renderedHours = `${diffHours.toFixed(2)} hrs`;
-      }
-    }
-
-    return {
-      status,
-      clockIn: clockIn || "—",
-      clockOut:
-        clockOut ||
-        (clockIn
-          ? scheduledLogout
-            ? `${scheduledLogout} (Scheduled)`
-            : "Pending"
-          : "—"),
-      renderedHours,
-      logs,
-    };
-  }
-
-  return {
-    status: firstValue(
-      attendanceResponse?.status,
-      user?.todayAttendanceStatus,
-      "Not Clocked In",
-    ),
-    clockIn: firstValue(attendanceResponse?.clockIn, user?.todayClockIn, "—"),
-    clockOut: firstValue(attendanceResponse?.clockOut, user?.todayClockOut, "—"),
-    renderedHours: firstValue(
-      attendanceResponse?.renderedHours,
-      user?.todayRenderedHours,
-      "0.00 hrs",
-    ),
-    logs: [],
-  };
+  return { record: null, isOvernight: false, recordDateKey: todayKey };
 }
 
 export function normalizeScheduleMode(mode) {
@@ -439,92 +505,358 @@ export function normalizeScheduleMode(mode) {
   return value || "—";
 }
 
-export function getWeeklyScheduleFromResponse({
+export function getAttendanceSummaryFromResponses({
+  attendanceResponse,
+  kronosResponse,
   scheduleResponse,
+  holidaysResponse,
   user = {},
   now = new Date(),
 }) {
-  const targetDate =
-    now instanceof Date && !Number.isNaN(now.getTime()) ? now : new Date();
+  const todayKey = toManilaDateKey(now);
+  const yesterdayKey = shiftDateKey(todayKey, -1);
 
-  // Get current Manila date key YYYY-MM-DD
-  const parts = createSystemDateTimeFormatter("en-CA", {
-    timeZone: MANILA_TIME_ZONE,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).formatToParts(targetDate);
-  const dateMap = Object.fromEntries(
-    parts.map((part) => [part.type, part.value]),
+  const rawRecords = [
+    ...extractRecordsArray(attendanceResponse),
+    ...extractRecordsArray(kronosResponse),
+  ];
+
+  const scheduleRecords = extractRecordsArray(scheduleResponse);
+  const holidayList = getDashboardHolidays(holidaysResponse, todayKey, {
+    limit: null,
+  });
+  const todayHoliday = holidayList.find((holiday) => holiday.date === todayKey) || null;
+  const todaySchedule = findMatchingScheduleForDate(scheduleRecords, todayKey);
+  const todayScheduleMode = todaySchedule
+    ? normalizeScheduleMode(todaySchedule.gy_sched_mode ?? todaySchedule.mode)
+    : "";
+
+  const schedLoginRaw = firstDisplayValue(
+    todaySchedule?.gy_sched_login,
+    todaySchedule?.login,
   );
-  const todayKey = `${dateMap.year}-${dateMap.month}-${dateMap.day}`;
+  const schedLogoutRaw = firstDisplayValue(
+    todaySchedule?.gy_sched_logout,
+    todaySchedule?.logout,
+  );
+  const allowMidnightForToday =
+    Boolean(schedLoginRaw && schedLogoutRaw) &&
+    (schedLoginRaw !== "00:00:00" || schedLogoutRaw !== "00:00:00");
 
-  const anchor = new Date(`${todayKey}T00:00:00.000Z`);
-  const dayIndex = anchor.getUTCDay(); // 0 = Sun, 1 = Mon, ..., 6 = Sat
+  const scheduledLogin = formatAttendanceTime(schedLoginRaw, {
+    allowMidnight: allowMidnightForToday,
+  });
+  const scheduledLogout = formatAttendanceTime(schedLogoutRaw, {
+    allowMidnight: allowMidnightForToday,
+  });
+
+  const { record, isOvernight, recordDateKey } = selectTodayOrOpenOvernightRecord(
+    rawRecords,
+    todayKey,
+    yesterdayKey,
+    now,
+  );
+
+  if (record) {
+    const rawLogin = firstDisplayValue(
+      record.gy_tracker_login,
+      record.login,
+      record.time_in,
+      record.clock_in,
+    );
+    const rawBreakout = firstDisplayValue(
+      record.gy_tracker_breakout,
+      record.breakout,
+      record.start_break,
+    );
+    const rawBreakin = firstDisplayValue(
+      record.gy_tracker_breakin,
+      record.breakin,
+      record.end_break,
+    );
+    const rawLogout = firstDisplayValue(
+      record.gy_tracker_logout,
+      record.logout,
+      record.time_out,
+      record.clock_out,
+    );
+
+    const clockIn = formatAttendanceTime(rawLogin);
+    const breakout = formatAttendanceTime(rawBreakout);
+    const breakin = formatAttendanceTime(rawBreakin);
+    const clockOut = formatAttendanceTime(rawLogout);
+
+    const loginDate = parseManilaTimestamp(rawLogin, recordDateKey);
+    const breakoutDate = parseManilaTimestamp(rawBreakout, recordDateKey);
+    const breakinDate = parseManilaTimestamp(rawBreakin, recordDateKey);
+    const logoutDate = parseManilaTimestamp(rawLogout, recordDateKey);
+
+    const location =
+      formatAssignedLocation(
+        firstDisplayValue(
+          record.site,
+          record.assignedSite,
+          record.location,
+          record.gy_assignedloc,
+          user?.site,
+          user?.location,
+          user?.gy_assignedloc,
+        ),
+      ) || "—";
+
+    const device = firstDisplayValue(record.device) || "Biometrics / Web Portal";
+    const workflowStatus = firstDisplayValue(record.gy_tracker_status);
+    const isLate = cleanDashboardText(record.login_status).toLowerCase() === "late";
+    const isUndertime =
+      cleanDashboardText(record.logout_status).toLowerCase() === "early-out" ||
+      cleanDashboardText(record.logout_status).toLowerCase() === "early";
+
+    const logCandidates = [];
+    if (clockIn) {
+      logCandidates.push({
+        id: `punch-in-${record.gy_tracker_id || "1"}`,
+        order: 1,
+        epochMs: loginDate?.getTime() ?? 0,
+        type: "Clock In",
+        timestamp: clockIn,
+        location,
+        status: formatLoginPunchStatus(record.login_status, workflowStatus),
+        device,
+      });
+    }
+    if (breakout) {
+      logCandidates.push({
+        id: `punch-bo-${record.gy_tracker_id || "2"}`,
+        order: 2,
+        epochMs: breakoutDate?.getTime() ?? 0,
+        type: "Start Break",
+        timestamp: breakout,
+        location,
+        status: "Logged",
+        device,
+      });
+    }
+    if (breakin) {
+      logCandidates.push({
+        id: `punch-bi-${record.gy_tracker_id || "3"}`,
+        order: 3,
+        epochMs: breakinDate?.getTime() ?? 0,
+        type: "End Break",
+        timestamp: breakin,
+        location,
+        status: formatBreakPunchStatus(record.breakin_status),
+        device,
+      });
+    }
+    if (clockOut) {
+      logCandidates.push({
+        id: `punch-out-${record.gy_tracker_id || "4"}`,
+        order: 4,
+        epochMs: logoutDate?.getTime() ?? 0,
+        type: "Clock Out",
+        timestamp: clockOut,
+        location,
+        status: formatLogoutPunchStatus(record.logout_status),
+        device,
+      });
+    }
+
+    const logs = logCandidates
+      .sort((a, b) => a.epochMs - b.epochMs || a.order - b.order)
+      .map(({ id, type, timestamp, location: logLocation, status: logStatus, device: logDevice }) => ({
+        id,
+        type,
+        timestamp,
+        location: logLocation,
+        status: logStatus,
+        device: logDevice,
+      }));
+
+    const breakHours = calculateBreakHours(
+      breakoutDate,
+      breakinDate,
+      record.gy_tracker_bh,
+    );
+    const verifiedWh = getFinitePositiveNumber(record.gy_tracker_wh);
+    const approvedOt = getFinitePositiveNumber(record.approved_ot_hours);
+
+    let status = "Not Clocked In";
+    let renderedHours = "—";
+    let renderedHoursDetail = "";
+    let isPendingHours = false;
+
+    if (clockIn && clockOut) {
+      status = isUndertime ? "Shift Completed · Undertime" : "Shift Completed";
+      const computed =
+        verifiedWh ??
+        computeElapsedHours(loginDate, logoutDate, breakHours, {
+          allowOvernightWrap: true,
+        });
+      if (computed !== null && Number.isFinite(computed)) {
+        renderedHours = `${computed.toFixed(2)} hrs`;
+        renderedHoursDetail =
+          approvedOt !== null ? `+${approvedOt.toFixed(2)} OT hrs approved` : "";
+      } else {
+        renderedHours = "Unavailable";
+      }
+    } else if (clockIn) {
+      isPendingHours = true;
+      if (breakout && !breakin) {
+        status = "On Break · Pending Out";
+      } else if (isOvernight) {
+        status = isLate ? "Overnight Shift · Late" : "Overnight Shift · Active";
+      } else if (isLate) {
+        status = "Clocked In · Late";
+      } else {
+        status = "Clocked In · Pending Out";
+      }
+
+      if (verifiedWh !== null) {
+        renderedHours = `${verifiedWh.toFixed(2)} hrs`;
+        renderedHoursDetail = "Pending clock-out";
+      } else {
+        renderedHours = "Pending clock-out";
+        const activeElapsed = computeElapsedHours(loginDate, now, breakHours, {
+          allowOvernightWrap: false,
+        });
+        if (activeElapsed !== null && Number.isFinite(activeElapsed)) {
+          renderedHoursDetail = `${activeElapsed.toFixed(2)} hrs elapsed`;
+        }
+      }
+    }
+
+    const adjustmentParts = [];
+    if (workflowStatus && workflowStatus !== "Approved") {
+      adjustmentParts.push(`Record: ${workflowStatus}`);
+    } else if (workflowStatus === "Approved") {
+      adjustmentParts.push("Daily Log: Approved");
+    }
+    if (record.ot_approval_status) {
+      adjustmentParts.push(`OT: ${record.ot_approval_status}`);
+    } else if (approvedOt !== null) {
+      adjustmentParts.push(`OT: ${approvedOt.toFixed(2)} hrs`);
+    }
+    if (
+      cleanDashboardText(record.attendance_status_source) === "schedule_adjustment"
+    ) {
+      adjustmentParts.push("Schedule Adjustment");
+    }
+    if (isLate) adjustmentParts.push("Late");
+    if (isUndertime) adjustmentParts.push("Undertime");
+
+    return {
+      status,
+      workflowStatus,
+      clockIn: clockIn || "—",
+      clockOut: clockOut || (clockIn ? "Pending" : "—"),
+      scheduledShift:
+        scheduledLogin && scheduledLogout
+          ? `${scheduledLogin} - ${scheduledLogout}`
+          : "",
+      renderedHours,
+      renderedHoursDetail,
+      isPendingHours,
+      isOvernight,
+      isLate,
+      isUndertime,
+      location,
+      adjustmentSummary: adjustmentParts.join(" · "),
+      logs,
+    };
+  }
+
+  const modeLower = todayScheduleMode.toLowerCase();
+  let emptyStatus = "Not Clocked In";
+  let emptyDetail = "";
+
+  if (modeLower === "rest day" || modeLower === "day off") {
+    emptyStatus = todayScheduleMode;
+    emptyDetail = "Scheduled rest day";
+  } else if (modeLower === "holiday" || todayHoliday) {
+    emptyStatus = "Holiday";
+    emptyDetail = todayHoliday?.name || "Scheduled holiday";
+  }
+
+  return {
+    status: emptyStatus,
+    workflowStatus: "",
+    clockIn: "—",
+    clockOut: "—",
+    scheduledShift:
+      scheduledLogin && scheduledLogout
+        ? `${scheduledLogin} - ${scheduledLogout}`
+        : "",
+    renderedHours: "—",
+    renderedHoursDetail: emptyDetail,
+    isPendingHours: false,
+    isOvernight: false,
+    isLate: false,
+    isUndertime: false,
+    location: formatAssignedLocation(
+      firstDisplayValue(user?.site, user?.location, user?.gy_assignedloc),
+    ) || "—",
+    adjustmentSummary: "",
+    logs: [],
+  };
+}
+
+function computeShiftHoursText(
+  rawLogin,
+  rawLogout,
+  rawBreakout,
+  rawBreakin,
+  dateKey,
+  { allowMidnight = false } = {},
+) {
+  const loginDate = parseManilaTimestamp(rawLogin, dateKey, { allowMidnight });
+  const logoutDate = parseManilaTimestamp(rawLogout, dateKey, { allowMidnight });
+  if (!loginDate || !logoutDate) return "";
+
+  const breakoutDate = parseManilaTimestamp(rawBreakout, dateKey);
+  const breakinDate = parseManilaTimestamp(rawBreakin, dateKey);
+  const breakHours =
+    breakoutDate && breakinDate
+      ? calculateBreakHours(breakoutDate, breakinDate, 0)
+      : 0;
+
+  const hours = computeElapsedHours(loginDate, logoutDate, breakHours, {
+    allowOvernightWrap: true,
+  });
+  if (hours === null || !Number.isFinite(hours)) return "";
+  return `${hours.toFixed(1)} hrs`;
+}
+
+export function getWeeklyScheduleFromResponse({
+  scheduleResponse,
+  holidaysResponse,
+  scheduleAvailable = true,
+  scheduleLoading = false,
+  user = {},
+  now = new Date(),
+}) {
+  const todayKey = toManilaDateKey(now);
+  const anchor = new Date(`${todayKey}T12:00:00.000Z`);
+  const dayIndex = anchor.getUTCDay();
   const offsetToMonday = dayIndex === 0 ? 6 : dayIndex - 1;
 
   const monday = new Date(anchor);
   monday.setUTCDate(anchor.getUTCDate() - offsetToMonday);
 
-  const rawRecords = [
-    ...(Array.isArray(scheduleResponse?.data)
-      ? scheduleResponse.data
-      : Array.isArray(scheduleResponse?.data?.records)
-        ? scheduleResponse.data.records
-        : Array.isArray(scheduleResponse?.records)
-          ? scheduleResponse.records
-          : Array.isArray(scheduleResponse)
-            ? scheduleResponse
-            : []),
-  ];
+  const rawRecords = extractRecordsArray(scheduleResponse);
+  const holidaysByDate = new Map(
+    getDashboardHolidays(holidaysResponse, monday.toISOString().slice(0, 10), {
+      limit: null,
+    }).map((h) => [h.date, h]),
+  );
 
-  // Extract employee's actual regular schedule timings from backend records (e.g. 11:00 AM - 08:00 PM, mode "1")
-  const regularRecord =
-    rawRecords.find((item) => {
-      const mode = normalizeScheduleMode(item?.gy_sched_mode || item?.mode);
-      return (
-        mode.toLowerCase() === "regular" &&
-        (item?.gy_sched_login || item?.login || item?.gy_sched_start)
-      );
-    }) ||
-    rawRecords.find(
-      (item) =>
-        item?.gy_sched_login || item?.login || item?.gy_sched_start,
-    ) ||
-    null;
-
-  const defaultLogin = regularRecord
-    ? formatAttendanceTime(
-        regularRecord.gy_sched_login ||
-          regularRecord.login ||
-          regularRecord.gy_sched_start,
-      )
-    : "09:00 AM";
-  const defaultLogout = regularRecord
-    ? formatAttendanceTime(
-        regularRecord.gy_sched_logout ||
-          regularRecord.logout ||
-          regularRecord.gy_sched_end,
-      )
-    : "06:00 PM";
-  const defaultShift =
-    defaultLogin && defaultLogout
-      ? `${defaultLogin} - ${defaultLogout}`
-      : "09:00 AM - 06:00 PM";
-
+  const workSetup = firstDisplayValue(user?.workSetup, user?.work_setup);
   const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
   return DAYS.map((dayName, index) => {
     const currentDay = new Date(monday);
     currentDay.setUTCDate(monday.getUTCDate() + index);
-
-    const yearStr = currentDay.getUTCFullYear();
-    const monthStr = String(currentDay.getUTCMonth() + 1).padStart(2, "0");
-    const dayStr = String(currentDay.getUTCDate()).padStart(2, "0");
-    const dateKey = `${yearStr}-${monthStr}-${dayStr}`;
-
+    const dateKey = currentDay.toISOString().slice(0, 10);
     const isToday = dateKey === todayKey;
-    const isWeekend = index === 5 || index === 6;
 
     const dateLabel = formatHrisDateLocalized(currentDay, "en-US", {
       timeZone: "UTC",
@@ -533,72 +865,123 @@ export function getWeeklyScheduleFromResponse({
       year: "numeric",
     });
 
-    // Find any backend record matching this date
-    const record = rawRecords.find((item) => {
-      const itemDateRaw = cleanDashboardText(
-        item?.gy_sched_day || item?.date || item?.schedule_date,
-      );
-      if (!itemDateRaw) return false;
-      const formattedItemDate = !Number.isNaN(new Date(itemDateRaw).getTime())
-        ? new Date(itemDateRaw).toISOString().slice(0, 10)
-        : "";
-      return (
-        itemDateRaw.slice(0, 10) === dateKey ||
-        formattedItemDate === dateKey
-      );
-    });
+    const record = findMatchingScheduleForDate(rawRecords, dateKey);
+    const holidayForDay = holidaysByDate.get(dateKey) || null;
 
     if (record) {
-      const mode = normalizeScheduleMode(record.gy_sched_mode || record.mode);
-      const isOff =
-        isWeekend ||
-        mode.toLowerCase().includes("off") ||
-        mode.toLowerCase().includes("rest");
+      const mode = normalizeScheduleMode(record.gy_sched_mode ?? record.mode);
+      const modeLower = mode.toLowerCase();
+      const isOff = modeLower === "day off" || modeLower === "rest day";
+      const isHolidayMode = modeLower === "holiday";
 
-      const rawLogin = firstValue(
+      const rawLogin = firstDisplayValue(
         record.gy_sched_login,
         record.login,
         record.time_in,
         record.gy_sched_start,
       );
-      const rawLogout = firstValue(
+      const rawLogout = firstDisplayValue(
         record.gy_sched_logout,
         record.logout,
         record.time_out,
         record.gy_sched_end,
       );
+      const rawBreakout = firstDisplayValue(
+        record.gy_sched_breakout,
+        record.breakout,
+      );
+      const rawBreakin = firstDisplayValue(
+        record.gy_sched_breakin,
+        record.breakin,
+      );
 
-      const login = formatAttendanceTime(rawLogin);
-      const logout = formatAttendanceTime(rawLogout);
+      const allowMidnight =
+        !isOff &&
+        Boolean(rawLogin && rawLogout) &&
+        (rawLogin !== "00:00:00" || rawLogout !== "00:00:00");
 
-      const shift = isOff
-        ? "REST DAY"
-        : login && logout
-          ? `${login} - ${logout}`
-          : defaultShift;
+      const login = formatAttendanceTime(rawLogin, { allowMidnight });
+      const logout = formatAttendanceTime(rawLogout, { allowMidnight });
+      const shiftText = login && logout ? `${login} - ${logout}` : "";
+
+      const hoursText = isOff
+        ? "0.0 hrs"
+        : computeShiftHoursText(
+            rawLogin,
+            rawLogout,
+            rawBreakout,
+            rawBreakin,
+            dateKey,
+            { allowMidnight },
+          ) || "—";
+
+      const isOvernight = (() => {
+        const start = parseManilaTimestamp(rawLogin, dateKey, { allowMidnight });
+        const end = parseManilaTimestamp(rawLogout, dateKey, { allowMidnight });
+        return Boolean(start && end && end.getTime() <= start.getTime());
+      })();
 
       return {
         id: `sched-${dateKey}`,
+        dateKey,
         day: dayName,
         date: dateLabel,
-        shift,
-        hours: isOff ? "0.0 hrs" : "9.0 hrs",
-        status: mode || (isOff ? "Off" : user?.workSetup || "On-site"),
+        shift: isOff
+          ? mode.toUpperCase()
+          : isHolidayMode && !shiftText
+            ? holidayForDay?.name || "HOLIDAY"
+            : shiftText || (holidayForDay ? holidayForDay.name : "Schedule posted"),
+        hours: hoursText,
+        status: isHolidayMode
+          ? "Holiday"
+          : isOff
+            ? mode
+            : [mode !== "—" ? mode : workSetup || "Regular", isOvernight ? "Overnight" : ""]
+                .filter(Boolean)
+                .join(" · "),
         isToday,
         isOff,
+        isHoliday: isHolidayMode || Boolean(holidayForDay),
+        isOvernight,
       };
     }
 
-    // Default weekday / weekend schedule using employee's actual shift hours
+    if (holidayForDay) {
+      return {
+        id: `sched-${dateKey}`,
+        dateKey,
+        day: dayName,
+        date: dateLabel,
+        shift: holidayForDay.name,
+        hours: "Holiday",
+        status: "Holiday",
+        isToday,
+        isOff: true,
+        isHoliday: true,
+        isOvernight: false,
+      };
+    }
+
     return {
       id: `sched-${dateKey}`,
+      dateKey,
       day: dayName,
       date: dateLabel,
-      shift: isWeekend ? "REST DAY" : defaultShift,
-      hours: isWeekend ? "0.0 hrs" : "9.0 hrs",
-      status: isWeekend ? "Off" : user?.workSetup || "On-site",
+      shift: scheduleLoading
+        ? "Loading…"
+        : scheduleAvailable
+          ? "No Shift Plotted"
+          : "Unavailable",
+      hours: scheduleLoading || !scheduleAvailable ? "—" : "0.0 hrs",
+      status: scheduleLoading
+        ? "Loading"
+        : scheduleAvailable
+          ? "Unscheduled"
+          : "Unavailable",
       isToday,
-      isOff: isWeekend,
+      isOff: true,
+      isHoliday: false,
+      isOvernight: false,
     };
   });
 }
@@ -630,11 +1013,15 @@ export function normalizeLeaveType(type) {
 }
 
 export function normalizeLeaveStatus(status) {
-  const value = String(status || "").trim();
-  if (!value) return "Pending";
+  const value = String(status ?? "").trim();
+  if (value === "") return "Pending";
   const lower = value.toLowerCase();
   if (["approved", "approve", "1"].includes(lower)) return "Approved";
-  if (["rejected", "declined", "not approved", "not_approved", "2"].includes(lower)) {
+  if (
+    ["rejected", "declined", "not approved", "not_approved", "2"].includes(
+      lower,
+    )
+  ) {
     return "Rejected";
   }
   if (["pending", "for approval", "for_approval", "0"].includes(lower)) {
@@ -643,53 +1030,137 @@ export function normalizeLeaveStatus(status) {
   return value;
 }
 
-export function getLeaveDashboardDataFromResponses({ leavesResponse, summaryResponse, user = {} }) {
-  const rawRecent = Array.isArray(leavesResponse?.data)
-    ? leavesResponse.data
-    : Array.isArray(leavesResponse?.records)
-      ? leavesResponse.records
-      : Array.isArray(user?.recentLeaves)
-        ? user.recentLeaves
-        : [];
+export function getLeaveDashboardDataFromResponses({
+  leavesResponse,
+  balanceResponse,
+  summaryResponse,
+  leavesLoading = false,
+  balanceLoading = false,
+  balanceAvailable = false,
+  balanceError = "",
+  sibsId = "",
+  user = {},
+}) {
+  const resolvedSibsId = firstDisplayValue(
+    sibsId,
+    user?.sibsId,
+    user?.sibs_id,
+    user?.gy_emp_code,
+    user?.username,
+  );
+  const rawRecent = extractRecordsArray(leavesResponse);
 
   const recent = rawRecent.map((item, index) => {
-    const rawType = firstValue(item.gy_leave_type, item.type, item.leave_type, item.leaveType);
-    const type = normalizeLeaveType(rawType);
-    const rawStatus = firstValue(item.gy_leave_status, item.status, item.leave_status, item.leaveStatus);
+    const rawType = firstDisplayValue(
+      item.leave_type_label,
+      item.gy_leave_type,
+      item.type,
+      item.leave_type,
+      item.leaveType,
+    );
+    const type = item.leave_type_label
+      ? cleanDashboardText(item.leave_type_label)
+      : normalizeLeaveType(rawType);
+    const rawStatus = firstValue(
+      item.gy_leave_status,
+      item.status,
+      item.leave_status,
+      item.leaveStatus,
+    );
     const status = normalizeLeaveStatus(rawStatus);
 
-    const dateFrom = firstValue(item.gy_leave_date_from, item.dates, item.date_from, item.dateFrom, item.start_date, item.leave_date);
-    const dateTo = firstValue(item.gy_leave_date_to, item.date_to, item.dateTo, item.end_date);
+    const dateFrom = firstDisplayValue(
+      item.gy_leave_date_from,
+      item.dates,
+      item.date_from,
+      item.dateFrom,
+      item.start_date,
+      item.leave_date,
+    );
+    const dateTo = firstDisplayValue(
+      item.gy_leave_date_to,
+      item.date_to,
+      item.dateTo,
+      item.end_date,
+    );
 
     const formattedFrom = formatDashboardDate(dateFrom, "");
     const formattedTo = formatDashboardDate(dateTo, "");
 
-    const dates = formattedFrom && formattedTo && formattedFrom !== formattedTo
-      ? `${formattedFrom} - ${formattedTo}`
-      : formattedFrom || formattedTo || cleanDashboardText(item.dates) || "Pending Review";
+    const dates =
+      formattedFrom && formattedTo && formattedFrom !== formattedTo
+        ? `${formattedFrom} - ${formattedTo}`
+        : formattedFrom ||
+          formattedTo ||
+          cleanDashboardText(item.dates) ||
+          "Pending Review";
 
-    const daysCount = item.gy_leave_day_type || item.days || item.leave_days || item.no_of_days || "";
-    const days = daysCount ? `${daysCount} ${Number(daysCount) === 1 ? "day" : "days"}` : "";
+    const rawDays =
+      item.gy_leave_day ??
+      item.gy_leave_day_type ??
+      item.days ??
+      item.leave_days ??
+      item.no_of_days ??
+      "";
+    const numDays = Number(rawDays);
+    const days =
+      rawDays !== "" && Number.isFinite(numDays) && numDays > 0
+        ? `${numDays} ${numDays === 1 ? "day" : "days"}`
+        : "";
 
     return {
       id: item.gy_leave_id || item.id || `leave-${index}`,
       type,
       dates,
       days,
+      numericDays: Number.isFinite(numDays) && numDays > 0 ? numDays : 0,
       status,
     };
   });
 
-  const summary = summaryResponse?.data || summaryResponse || {};
+  const verifiedBalance = normalizeVerifiedPersonalBalance(
+    balanceResponse ?? summaryResponse,
+    resolvedSibsId,
+  );
+
+  let balanceStatus = "unavailable";
+  if (balanceLoading) {
+    balanceStatus = "loading";
+  } else if (verifiedBalance) {
+    balanceStatus = "verified";
+  } else if (balanceAvailable && (balanceResponse?.success === true)) {
+    balanceStatus = "missing";
+  }
+
+  let approvedCount = 0;
+  let pendingCount = 0;
+  let rejectedCount = 0;
+  let approvedDays = 0;
+
+  for (const row of recent) {
+    if (row.status === "Approved") {
+      approvedCount += 1;
+      approvedDays += row.numericDays;
+    } else if (row.status === "Rejected") {
+      rejectedCount += 1;
+    } else {
+      pendingCount += 1;
+    }
+  }
 
   return {
-    vacation: {
-      available: Number(summary?.vacationAvailable ?? summary?.vacation_available ?? user?.vacationLeaveAvailable ?? 0),
-      total: Number(summary?.vacationTotal ?? summary?.vacation_total ?? user?.vacationLeaveTotal ?? 0),
-    },
-    sick: {
-      available: Number(summary?.sickAvailable ?? summary?.sick_available ?? user?.sickLeaveAvailable ?? 0),
-      total: Number(summary?.sickTotal ?? summary?.sick_total ?? user?.sickLeaveTotal ?? 0),
+    balanceStatus,
+    balanceError: balanceError || balanceResponse?.message || "",
+    creditsRemaining: verifiedBalance?.leave_remaining ?? null,
+    creditsTotal: verifiedBalance?.total_leave_credits ?? null,
+    creditSource: verifiedBalance ? "gy_employee" : "",
+    requestSummary: {
+      loading: leavesLoading,
+      total: recent.length,
+      approvedCount,
+      pendingCount,
+      rejectedCount,
+      approvedDays,
     },
     recent,
   };
@@ -698,63 +1169,33 @@ export function getLeaveDashboardDataFromResponses({ leavesResponse, summaryResp
 export function getDashboardAnnouncements(user = {}) {
   return Array.isArray(user?.announcements) && user.announcements.length
     ? user.announcements
-    : [
-        {
-          id: "anc-1",
-          category: "Company Announcement",
-          title: "Mid-Year Town Hall & Employee Appreciation Day",
-          summary: "Join us this Friday at 3:00 PM PHT for our virtual All-Hands meeting and employee awards presentation.",
-          date: new Date().toISOString(),
-          author: "HR Operations",
-        },
-        {
-          id: "anc-2",
-          category: "HR Policy Update",
-          title: "Updated HMO & Medical Benefit Guidelines",
-          summary: "Please review the updated dependent coverage and claim reimbursement procedures on the employee portal.",
-          date: new Date(Date.now() - 86400000 * 2).toISOString(),
-          author: "Benefits Team",
-        },
-      ];
-}
-
-function getManilaDateKey(value = new Date()) {
-  const targetDate =
-    value instanceof Date && !Number.isNaN(value.getTime()) ? value : new Date();
-  const parts = createSystemDateTimeFormatter("en-CA", {
-    timeZone: MANILA_TIME_ZONE,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).formatToParts(targetDate);
-  const record = Object.fromEntries(
-    parts.map((part) => [part.type, part.value]),
-  );
-
-  return `${record.year}-${record.month}-${record.day}`;
+    : [];
 }
 
 function normalizeDashboardHoliday(item = {}, index = 0) {
-  const date = firstValue(item?.date, item?.holidayDate, item?.holiday_date);
+  const date = firstDisplayValue(item?.date, item?.holidayDate, item?.holiday_date);
   const isActive = item?.isActive ?? item?.is_active ?? true;
 
   return {
-    id: firstValue(item?.id, item?.holidayId, item?.holiday_id, `holiday-${index}`),
-    name: firstValue(
+    id: firstDisplayValue(item?.id, item?.holidayId, item?.holiday_id) || `holiday-${index}`,
+    name: firstDisplayValue(
       item?.name,
       item?.holidayName,
       item?.holiday_name,
       item?.title,
-      "Holiday",
-    ),
-    type: firstValue(item?.type, item?.holidayType, item?.holiday_type),
-    date: String(date || "").slice(0, 10),
+    ) || "Holiday",
+    type: firstDisplayValue(item?.type, item?.holidayType, item?.holiday_type),
+    date: toManilaDateKey(date) || String(date || "").slice(0, 10),
     isActive: Boolean(isActive),
     upcoming: true,
   };
 }
 
-export function getDashboardHolidays(source = {}, now = new Date()) {
+export function getDashboardHolidays(
+  source = {},
+  now = new Date(),
+  { limit = 5 } = {},
+) {
   const rows = Array.isArray(source)
     ? source
     : Array.isArray(source?.data)
@@ -764,9 +1205,9 @@ export function getDashboardHolidays(source = {}, now = new Date()) {
         : [];
   const today = /^\d{4}-\d{2}-\d{2}$/.test(String(now || ""))
     ? String(now)
-    : getManilaDateKey(now);
+    : toManilaDateKey(now);
 
-  return rows
+  const sorted = rows
     .map(normalizeDashboardHoliday)
     .filter(
       (holiday) =>
@@ -774,6 +1215,9 @@ export function getDashboardHolidays(source = {}, now = new Date()) {
         /^\d{4}-\d{2}-\d{2}$/.test(holiday.date) &&
         holiday.date >= today,
     )
-    .sort((left, right) => left.date.localeCompare(right.date))
-    .slice(0, 5);
+    .sort((left, right) => left.date.localeCompare(right.date));
+
+  return Number.isInteger(limit) && limit >= 0
+    ? sorted.slice(0, limit)
+    : sorted;
 }

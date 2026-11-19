@@ -164,9 +164,11 @@ export function UserProvider({ children }) {
   const [postLoginCelebrationEvent, setPostLoginCelebrationEvent] = useState(null);
 
   const [loading, setLoading] = useState(!initialSession?.user);
+  const [isSwitchingRole, setIsSwitchingRole] = useState(false);
 
   const mountedRef = useRef(true);
   const userRef = useRef(initialSession?.user || null);
+  const roleSwitchTargetRef = useRef(null);
   const birthdayLoginSequenceRef = useRef(0);
 
   const logoutTimerRef = useRef(null);
@@ -268,10 +270,12 @@ export function UserProvider({ children }) {
     clearCachedAuthSession();
     clearStoredServerTokenExpiry();
     justLoggedInRef.current = false;
+    roleSwitchTargetRef.current = null;
     setPostLoginCelebrationEvent(null);
     replaceUser(null, { cache: false });
 
     if (mountedRef.current) {
+      setIsSwitchingRole(false);
       setLoading(false);
     }
   }, [
@@ -955,6 +959,41 @@ export function UserProvider({ children }) {
     [updateUser],
   );
 
+  const beginRoleSwitch = useCallback(
+    (targetPath = null) => {
+      abortUserFetch();
+      roleSwitchTargetRef.current = targetPath || null;
+
+      if (mountedRef.current) {
+        setIsSwitchingRole(true);
+      }
+    },
+    [abortUserFetch],
+  );
+
+  const endRoleSwitch = useCallback(() => {
+    roleSwitchTargetRef.current = null;
+
+    if (mountedRef.current) {
+      setIsSwitchingRole(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!isSwitchingRole) return;
+
+    const targetPath = roleSwitchTargetRef.current;
+    if (!targetPath || !userRef.current) return;
+
+    const normalizedCurrent = (location.pathname || "/").replace(/\/+$/, "") || "/";
+    const normalizedTarget = targetPath.replace(/\/+$/, "") || "/";
+
+    if (normalizedCurrent === normalizedTarget) {
+      roleSwitchTargetRef.current = null;
+      setIsSwitchingRole(false);
+    }
+  }, [isSwitchingRole, location.pathname, user]);
+
   const consumePostLoginCelebrationEvent = useCallback((eventId) => {
     setPostLoginCelebrationEvent((current) =>
       current?.id === eventId ? null : current,
@@ -966,6 +1005,9 @@ export function UserProvider({ children }) {
       value={{
         user,
         loading,
+        isSwitchingRole,
+        beginRoleSwitch,
+        endRoleSwitch,
         setUser: updateUser,
         completeInteractiveLogin,
         postLoginCelebrationEvent,

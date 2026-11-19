@@ -25,18 +25,18 @@ function isPublicPath(pathname = "") {
 }
 
 export default function ProtectedRoute({ children }) {
-  const { user, loading } = useUser();
+  const { user, loading, isSwitchingRole = false } = useUser() || {};
   const location = useLocation();
 
   if (isPublicPath(location.pathname)) {
     return children;
   }
 
-  if (loading) {
+  if (loading || isSwitchingRole) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-sibs-tertiary-10 font-jakarta">
         <div className="rounded-xl border border-sibs-tertiary-9 bg-white px-5 py-4 text-sm font-semibold text-sibs-primary-1 shadow-sm">
-          Loading...
+          {isSwitchingRole ? "Switching workspace..." : "Loading..."}
         </div>
       </div>
     );

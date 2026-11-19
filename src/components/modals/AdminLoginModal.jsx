@@ -52,7 +52,7 @@ export default function AdminLoginModal() {
   const navigate = useNavigate();
 
   const { adminLogin, setAdminLogin } = useHeader();
-  const { user, setUser } = useUser();
+  const { user, setUser, beginRoleSwitch, endRoleSwitch } = useUser() || {};
   const { getAccessLabel } = useAdmin();
 
   const [password, setPassword] = useState("");
@@ -81,6 +81,7 @@ export default function AdminLoginModal() {
 
   const dialogRef = useRef(null);
   const previousFocusRef = useRef(null);
+  const submitInFlightRef = useRef(false);
 
   const closeStatusModal = () => {
     setStatusModal({
@@ -139,6 +140,8 @@ export default function AdminLoginModal() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    if (submitInFlightRef.current || loading) return;
+
     if (!password.trim()) {
       showStatus({
         type: "error",
@@ -148,12 +151,13 @@ export default function AdminLoginModal() {
       return;
     }
 
+    submitInFlightRef.current = true;
     setLoading(true);
 
     try {
       const data = await getAdminLogin(password.trim());
 
-      if (!data?.success) {
+      if (!data?.success || !data?.user) {
         showStatus({
           type: "error",
           title: "Login Failed",
@@ -166,16 +170,16 @@ export default function AdminLoginModal() {
         return;
       }
 
-      if (data?.user) {
-        setUser(data.user, data.expiresAt);
-      }
+      const targetPath = getDefaultDashboardPath(data.user);
 
+      beginRoleSwitch?.(targetPath);
+      setUser(data.user, data.expiresAt);
       setPassword("");
       setAdminLogin(false);
 
-      const targetUser = data?.user || user;
-      navigate(getDefaultDashboardPath(targetUser), { replace: true });
+      navigate(targetPath, { replace: true });
     } catch (error) {
+      endRoleSwitch?.();
       showStatus({
         type: "error",
         title: "Login Failed",
@@ -188,6 +192,7 @@ export default function AdminLoginModal() {
 
       setPassword("");
     } finally {
+      submitInFlightRef.current = false;
       setLoading(false);
     }
   };
