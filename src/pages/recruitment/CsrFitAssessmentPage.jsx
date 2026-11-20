@@ -54,7 +54,7 @@ function VideoScenario({info,onComplete,completed=false}) {
   useEffect(()=>{if(completed)setDone(true);},[completed]);
   return <div className="space-y-3"><p className="text-xs leading-5 text-sibs-secondary">{info.scenario}</p>
     <video ref={ref} controls playsInline preload="metadata" controlsList="nodownload noplaybackrate" src={info.videoUrl}
-      className="aspect-video w-full rounded-xl bg-[#072b4c]"
+      className="aspect-video w-full max-w-[1280px] rounded-xl bg-[#072b4c]"
       onTimeUpdate={e=>{watched.current=Math.max(watched.current,e.currentTarget.currentTime);}}
       onSeeking={e=>{const video=e.currentTarget;if(video.currentTime>watched.current+1)video.currentTime=watched.current;}}
       onRateChange={e=>{if(e.currentTarget.playbackRate!==1)e.currentTarget.playbackRate=1;}}
@@ -72,8 +72,9 @@ export default function CsrFitAssessmentPage(){
     [intake,setIntake]=useState({firstName:'',middleName:'',lastName:'',email:'',yearOfBirth:'',gender:'',education:'',firstLanguage:'',industryBackground:''}),
     [draft,setDraft]=useState(makeEmpty),[typing,setTyping]=useState(null),[videoDone,setVideoDone]=useState(false),
     [mobile,setMobile]=useState(false),[moduleTransition,setModuleTransition]=useState(null),
-    [forwardSelection,setForwardSelection]=useState(null);
+    [forwardSelection,setForwardSelection]=useState(null),[expiredNotice,setExpiredNotice]=useState(null);
   const writeQueue=useRef(Promise.resolve()),saveBusy=useRef(false),clockOffset=useRef(0),expiryBusy=useRef(false),transitionInFlight=useRef(false);
+  const expiredNoticeKeys=useRef(new Set()),expiryActionRef=useRef(null);
   const startedTyping=useRef(new Set()),lastTyped=useRef(''),pendingTyping=useRef(null),draftTouched=useRef(new Set());
   const activeModule=Number(data?.session?.current||1),module=`module${activeModule}`;
   // Modules 1 and 2: candidates may change the current unsaved choice.
@@ -100,6 +101,7 @@ export default function CsrFitAssessmentPage(){
   // elapse. Do not show it as complete or unlock the next passage early.
   const countInfo={done:items.filter(p=>Boolean(answers[itemKey(module,p.id)]) &&
     (activeModule !== 5 || passageFinished(p))).length,total:items.length};
+  const currentModuleFinished = countInfo.total > 0 && countInfo.done === countInfo.total;
   const firstMissing=items.findIndex(p=>!answers[itemKey(module,p.id)]);
   const maxAllowed=firstMissing===-1?items.length-1:firstMissing;
   const index=Math.max(0,Math.min(cursor,items.length-1));
@@ -125,7 +127,7 @@ export default function CsrFitAssessmentPage(){
   const forwardSelectionCommitted=Boolean(pendingForward && pendingForward.status!=='draft');
   const typingRoundWaiting=activeModule===5&&!typingStartedAt;
   const typingRoundFinished=activeModule===5&&typingStartedAt&&typingLeft<=0;
-  const canChange=data?.status==='IN_PROGRESS'&&!busy&&!moduleExpired&&!overallExpired&&
+  const canChange=data?.status==='IN_PROGRESS'&&!busy&&!expiredNotice&&!moduleExpired&&!overallExpired&&
     !(forwardOnly&&(alreadyAnswered||forwardSelectionCommitted||forwardSaveInFlight.current));
   const answerSaving=forwardOnly&&(pendingForward?.status==='saving'||saved==='Saving…');
   const showModule5Next=activeModule===5&&typingDone&&alreadyAnswered;
@@ -181,7 +183,8 @@ export default function CsrFitAssessmentPage(){
     const forwardOnceAnswer=/^module[12]:/.test(keyValue);
     // For the first two modules, count an item as answered ONLY after a
     // successful Server save. An unsuccessful request must not unlock Next.
-    if(!oneTimeResponse&&!forwardOnceAnswer)setAnswers(prev=>({...prev,[keyValue]:value}));
+    // Module 4 must not disappear until the server actually confirms the save.
+    if(!oneTimeResponse&&!forwardOnceAnswer&&!keyValue.startsWith('module4:'))setAnswers(prev=>({...prev,[keyValue]:value}));
     setSaved('Saving…');
     const work=writeQueue.current.catch(()=>{}).then(async()=>{
       const r=await api.put(`/api/assessment/public/${token}/answer`,{key:keyValue,choice:value},{withCredentials:false});
@@ -190,7 +193,8 @@ export default function CsrFitAssessmentPage(){
         setAnswers(prev=>({...prev,[keyValue]:value}));
         setDraft({...makeEmpty(),...value});
         draftTouched.current.clear();
-      }else if(forwardOnceAnswer){
+      }else if(forwardOnceAnswer || keyValue.startsWith('module4:')){
+        // Only a confirmed response counts as a completed practical task.
         setAnswers(prev=>({...prev,[keyValue]:value}));
       }
       setError('');setSaved('Saved');
@@ -335,7 +339,8 @@ export default function CsrFitAssessmentPage(){
       await allowTransitionToRender(startedAt);
       hydrate(next.data);
       window.scrollTo({top:0,behavior:'instant'});
-    }catch(e){setError(errorLabel(e));}
+      return true;
+    }catch(e){setError(errorLabel(e));return false;}
     finally{setModuleTransition(null);setBusy(false);transitionInFlight.current=false;}
   }
   async function submit(){
@@ -352,17 +357,60 @@ export default function CsrFitAssessmentPage(){
       await allowTransitionToRender(startedAt);
       setData(old=>({...old,status:'SUBMITTED'}));
       window.scrollTo({top:0,behavior:'instant'});
-    }catch(e){setError(errorLabel(e));}
+      return true;
+    }catch(e){setError(errorLabel(e));return false;}
     finally{setModuleTransition(null);setBusy(false);transitionInFlight.current=false;}
   }
+  // Surface timeout before moving the candidate onward. The HRIS Server remains
+  // authoritative for all deadlines and marks unanswered items timed out.
+  // Module 5 uses individual 60-second passage clocks instead of a module deadline.
   useEffect(()=>{
-    if(data?.status!=='IN_PROGRESS'||expiryBusy.current||busy)return;
-    if(!overallExpired&&!moduleExpired)return;
+    if(data?.status!=='IN_PROGRESS'||busy||loading)return;
+    if(overallExpired){
+      const noticeKey=`overall:${Number(data.session?.totalDeadlineMs||0)}`;
+      if(expiredNotice?.kind!=='overall'){
+        expiredNoticeKeys.current.add(noticeKey);
+        setExpiredNotice({kind:'overall',moduleNumber:activeModule,key:noticeKey});
+      }
+      return;
+    }
+    if(expiredNotice)return;
+    let notice=null;
+    if(moduleExpired && activeModule!==5){
+      const noticeKey=`module:${activeModule}:${Number(data.session?.moduleDeadlineMs||0)}`;
+      notice={kind:'module',moduleNumber:activeModule,key:noticeKey};
+    }else if(activeModule===5 && typingStartedAt && typingDone && question){
+      const noticeKey=`typing:${question.id}:${typingStartedAt}`;
+      notice={kind:'typing',moduleNumber:5,passageNumber:index+1,key:noticeKey};
+    }
+    if(notice && !expiredNoticeKeys.current.has(notice.key)){
+      expiredNoticeKeys.current.add(notice.key);
+      setExpiredNotice(notice);
+    }
+  },[data?.status,data?.session?.moduleDeadlineMs,data?.session?.totalDeadlineMs,
+    activeModule,moduleExpired,overallExpired,typingStartedAt,typingDone,question?.id,
+    index,busy,loading,expiredNotice]);
+
+  useEffect(()=>{if(expiredNotice)expiryActionRef.current?.focus();},[expiredNotice?.key]);
+
+  async function acknowledgeExpiredNotice(){
+    if(!expiredNotice||expiryBusy.current||busy)return;
+    // The typing passage finishes on its own clock, but is not a module timeout.
+    // Preserve the existing save/Next behavior after explaining the expired round.
+    if(expiredNotice.kind==='typing'){
+      setExpiredNotice(null);
+      return;
+    }
     expiryBusy.current=true;
-    const operation=overallExpired?submit():activeModule===7?submit():advance();
-    Promise.resolve(operation).finally(()=>{expiryBusy.current=false;});
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  },[data?.status,activeModule,moduleExpired,overallExpired,busy]);
+    try{
+      const successful=expiredNotice.kind==='overall'||expiredNotice.moduleNumber===7
+        ? await submit()
+        : await advance();
+      if(successful)setExpiredNotice(null);
+    }finally{
+      expiryBusy.current=false;
+    }
+  }
   function goNext(){
     if(index>=items.length-1||(forwardOnly&&(!alreadyAnswered||forwardSaveInFlight.current)))return;
     forwardSelectionRef.current=null;setForwardSelection(null);
@@ -384,10 +432,11 @@ export default function CsrFitAssessmentPage(){
     </div>
     <div className="hidden items-center gap-1.5 rounded-lg border border-white/20 px-3 py-1.5 text-xs font-semibold sm:flex"><ShieldCheck size={14}/> Secure session</div>
   </header>;
-  // Keep the header and the content beneath it aligned at every stage.
-  // Retain the wider live-exam layout for the right-hand timer and navigator.
-  const layoutWidth = data?.status==='IN_PROGRESS' && !showingModuleInstructions ? 'max-w-[1340px]' : 'max-w-[1190px]';
-  return <main className="min-h-screen bg-[#f5f7fa] px-3 py-5 font-jakarta text-sibs-navy sm:px-6 sm:py-8"><div className={`mx-auto w-full ${layoutWidth}`}> 
+  // All seven live exams, their pre-module instructions, and the welcome
+  // screen share the full available browser width. The previous live-exam
+  // 1340px cap left unused space and made the question area unnecessarily narrow.
+  // This is layout-only; server-owned timers, question order and answers do not change.
+  return <main className="min-h-screen w-full bg-[#f5f7fa] px-3 py-4 font-jakarta text-sibs-navy sm:px-5 sm:py-5 lg:px-7 lg:py-6"><div className="mx-auto w-full min-w-0 max-w-none"> 
     {sectionTitle}
     {loading?<CsrFitAssessmentLoading mode="skeleton" />:
     error&&!data?<div role="alert" className="mt-5 rounded-xl border border-rose-200 bg-white p-6 text-sm text-rose-700">{error}</div>:
@@ -411,13 +460,41 @@ export default function CsrFitAssessmentPage(){
         <span className="text-xs font-semibold">{data.candidate?.name} · Module {activeModule} of 7</span>
       </div>
       {error&&<div role="alert" className="mt-3 flex gap-2 rounded-lg border border-rose-200 bg-rose-50 p-3 text-xs font-semibold text-rose-700"><AlertCircle size={16}/>{error}</div>}
-      <section className="mt-3 overflow-visible rounded-2xl border border-sibs-border bg-white shadow-sm"><div className="flex flex-wrap items-center justify-between gap-2 border-b border-sibs-border px-5 py-4">
+      <section className="mt-3 w-full min-w-0 overflow-visible rounded-2xl border border-sibs-border bg-white shadow-sm"><div className="flex flex-wrap items-center justify-between gap-2 border-b border-sibs-border px-5 py-4">
         <div><span className="text-[10px] font-bold text-sibs-orange">MODULE {activeModule}</span><h2 className="text-base font-extrabold sm:text-lg">{titles[activeModule-1]}</h2><p className="mt-0.5 text-[11px] text-sibs-muted">{activeModule === 1 ? `${items.length} questions` : labels[activeModule-1]} · Answer every item in sequence; skipping is disabled.</p></div>
         <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-sibs-muted">{saved==='Saving…'?<Loader2 size={13} className="animate-spin"/>:<Save size={13}/>} {saved||(forwardOnly?(pendingForward?.status==='draft'?'Not saved yet · Click Next':'Saved on Next'):'Automatic save')}</span>
       </div>
       {moduleExpired&&<div className="mx-5 mt-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-semibold text-amber-800">Module time has ended. Unanswered items are marked timed out; the assessment will move to the next module.</div>}
-      <div className="grid gap-5 p-4 sm:p-6 lg:grid-cols-[minmax(0,1fr)_270px]"><div className="min-w-0 space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-2"><p className="text-xs font-extrabold">{activeModule===5?'Passage':activeModule===4?'Task':'Question'} {index+1} of {items.length}</p><span className="text-[11px] font-semibold text-sibs-muted">{countInfo.done||0}/{countInfo.total||items.length} completed</span></div>
+      <div className="grid min-w-0 gap-5 p-4 sm:p-6 lg:grid-cols-[minmax(0,1fr)_270px] xl:grid-cols-[minmax(0,1fr)_310px] 2xl:grid-cols-[minmax(0,1fr)_340px] xl:gap-6 xl:p-7"><div className="min-w-0 space-y-4">
+        {/* Make the candidate's current page and saved progress immediately visible.
+            Keep the figures driven by the same server-confirmed counts as the navigator. */}
+        <div className="rounded-xl border border-[#ccdaea] bg-[#f4f8fc] px-4 py-3 shadow-sm sm:px-5 sm:py-4"
+          aria-label={`${activeModule===5?'Passage':activeModule===4?'Task':'Question'} ${index+1} of ${items.length}. ${countInfo.done||0} of ${countInfo.total||items.length} completed.`}>
+          <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
+            <div className="min-w-0">
+              <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-secondary">
+                Current {activeModule===5?'passage':activeModule===4?'task':'question'}
+              </p>
+              <p className="mt-1 text-2xl font-extrabold leading-none tracking-tight text-sibs-navy sm:text-3xl" aria-live="polite">
+                <span className="tabular-nums">{index+1}</span>
+                <span className="mx-1.5 text-lg font-semibold text-sibs-secondary sm:text-xl">of</span>
+                <span className="tabular-nums">{items.length}</span>
+              </p>
+            </div>
+            <div className={`min-w-[145px] rounded-lg border bg-white px-3 py-2 text-right sm:px-4 ${currentModuleFinished ? "border-emerald-300" : "border-[#ffd3c4]"}`}>
+              <p className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-secondary">Completed</p>
+              <p className={`mt-0.5 text-xl font-extrabold leading-none tabular-nums sm:text-2xl ${currentModuleFinished ? "text-emerald-700" : "text-sibs-orange"}`}>
+                {countInfo.done||0}<span className="mx-1 text-base text-sibs-secondary">/</span>{countInfo.total||items.length}
+              </p>
+            </div>
+          </div>
+          <div className="mt-3 h-2.5 overflow-hidden rounded-full bg-[#dce6f1]" role="progressbar"
+            aria-label="Completed assessment items" aria-valuemin={0} aria-valuemax={countInfo.total||items.length}
+            aria-valuenow={Math.max(0, Math.min(Number(countInfo.done)||0, countInfo.total||items.length))}>
+            <div className={`h-full rounded-full transition-[width] duration-200 ${currentModuleFinished ? "bg-emerald-600" : "bg-sibs-orange"}`}
+              style={{ width: `${Math.max(0, Math.min(100, ((Number(countInfo.done)||0) / Math.max(1, countInfo.total||items.length)) * 100))}%` }} />
+          </div>
+        </div>
         {(activeModule===1||activeModule===2||activeModule===7)&&question?<div><p className="text-[11px] font-semibold text-sibs-muted">{question.category}</p><h3 className="mt-1 whitespace-pre-wrap text-base font-extrabold leading-7">{question.stem}</h3><ChoiceGrid options={question.options} value={displayedAnswer} onSelect={select} locked={!canChange}/>
           {forwardOnly&&<div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-sibs-border pt-4">
             <p role="status" aria-live="polite" className="flex items-center gap-1.5 text-[11px] font-semibold text-sibs-muted">
@@ -443,10 +520,27 @@ export default function CsrFitAssessmentPage(){
             }catch(e){setError(`Unable to confirm the completed briefing: ${errorLabel(e)}`);}
           }}/>
           {videoDone||alreadyAnswered?<div><h3 className="text-sm font-extrabold">{bank.module3.stem}</h3><p className="mt-1 text-[11px] text-sibs-muted">Select all applicable responses.</p><ChoiceGrid options={bank.module3.options} value={currentAnswer} multiple onSelect={select} locked={!canChange}/></div>:null}</div>:null}
-        {activeModule===4&&question?<CsrFitAdministrativeSimulation
-          key={`${module}:${question.id}`} taskIndex={index} bank={bank.module4}
-          answer={currentAnswer} disabled={!canChange} saving={busy}
-          onSave={value=>canChange ? persist(key,value) : Promise.reject(new Error("Module is no longer accepting answers."))}/>:null}
+        {activeModule===4&&question?(alreadyAnswered ? (
+          <section role="status" aria-live="polite" className="overflow-hidden rounded-xl border border-emerald-200 bg-white shadow-sm" aria-label={`Task ${index+1} saved`}>
+            <div className="flex flex-wrap items-center gap-3 border-b border-emerald-100 bg-emerald-50 px-4 py-4">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-emerald-600 text-white"><CheckCircle2 size={21}/></span>
+              <div className="min-w-0 flex-1">
+                <h3 className="text-sm font-extrabold text-sibs-navy">Task {index+1} saved successfully</h3>
+                <p className="mt-1 text-[11px] leading-5 text-emerald-900">{index===0?'File and folder management completed.':'Customer data entry completed.'}</p>
+              </div>
+              <span className="rounded-md bg-white px-2.5 py-1 text-[10px] font-extrabold text-emerald-700">Saved</span>
+            </div>
+            <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-4 text-xs text-sibs-secondary">
+              <p>{index<items.length-1?'The Windows workspace is closed. Select Next to continue to Task 2.':'The customer data entry workspace is closed. You can proceed to the next module.'}</p>
+              <span className="inline-flex items-center gap-1.5 font-bold text-sibs-navy"><LockKeyhole size={13}/> Response recorded</span>
+            </div>
+          </section>
+        ) : (
+          <CsrFitAdministrativeSimulation
+            key={`${token}:${data?.attemptId || data?.attempt?.id || 'new'}:${module}:${question.id}`} taskIndex={index} bank={bank.module4}
+            answer={currentAnswer} disabled={!canChange} saving={busy}
+            onSave={value=>canChange ? persist(key,value) : Promise.reject(new Error("Module is no longer accepting answers."))}/>
+        )):null}
         {activeModule===5&&question?<CsrFitTypingGame
           key={`${module}:${question.id}`}
           title={question.title}
@@ -513,6 +607,59 @@ export default function CsrFitAssessmentPage(){
     </>:null}
     {mobile&&data?.status!=='SUBMITTED'?<div className="fixed inset-0 z-[1600] flex items-center justify-center bg-sibs-navy p-6 text-center text-white"><div className="max-w-sm"><Monitor size={48} className="mx-auto"/><h2 className="mt-4 text-xl font-extrabold">Desktop or laptop required</h2><p className="mt-3 text-sm leading-6">The assessment includes keyboard-based and timed activities. Return to a desktop or laptop with a physical keyboard. If already started, your original deadline continues.</p></div></div>:null}
     {confirm&&<div className="fixed inset-0 z-[1500] flex items-center justify-center bg-slate-950/60 p-4"><section role="dialog" aria-modal="true" aria-labelledby="assessment-submit-title" className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl"><h2 id="assessment-submit-title" className="text-lg font-extrabold">Submit completed assessment?</h2><p className="mt-2 text-xs leading-6 text-sibs-muted">Your seven modules will be submitted for HR review. Once submitted, answers cannot be changed.</p><div className="mt-5 flex justify-end gap-2"><button type="button" onClick={()=>setConfirm(false)} className={`${btn} border border-sibs-border bg-white`}>Review</button><button type="button" onClick={()=>void submit()} disabled={busy} className={`${btn} bg-sibs-navy text-white`}>Confirm Submit</button></div></section></div>}
+    {expiredNotice && data?.status==='IN_PROGRESS' && <div
+      className="fixed inset-0 z-[1500] flex items-center justify-center bg-slate-950/65 p-4 backdrop-blur-[3px]"
+      role="presentation">
+      <section role="dialog" aria-modal="true" aria-labelledby="csr-fit-time-expired-title"
+        aria-describedby="csr-fit-time-expired-description"
+        onKeyDown={event=>{
+          if(event.key==='Escape'||event.key==='Tab'){
+            event.preventDefault();expiryActionRef.current?.focus();
+          }
+        }}
+        className="w-full max-w-md overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-2xl">
+        <div className="border-b border-orange-100 bg-orange-50 px-5 py-5 text-center sm:px-7">
+          <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-sibs-orange shadow-sm">
+            <Clock3 size={28} aria-hidden="true"/>
+          </span>
+          <p className="mt-3 text-[10px] font-extrabold uppercase tracking-wide text-orange-800">
+            {expiredNotice.kind==='overall'?'Overall assessment timer':
+              expiredNotice.kind==='typing'?`Module 5 · Typing round ${expiredNotice.passageNumber}`:
+              `Module ${expiredNotice.moduleNumber} of 7`}
+          </p>
+          <h2 id="csr-fit-time-expired-title" className="mt-1 text-xl font-extrabold text-sibs-navy">
+            {expiredNotice.kind==='typing'?'Typing Round Finished':
+              expiredNotice.kind==='overall'?'Assessment Time Expired':'Module Time Expired'}
+          </h2>
+          <p id="csr-fit-time-expired-description" className="mx-auto mt-2 max-w-sm text-xs leading-5 text-sibs-secondary">
+            {expiredNotice.kind==='overall'
+              ? 'The total assessment time has ended. Your saved answers will be kept and any remaining modules will be marked as timed out.'
+              : expiredNotice.kind==='typing'
+                ? 'The 60-second passage timer has ended. The system will use your recorded typing response for scoring. You can review your saved progress before continuing.'
+                : `The allotted time for Module ${expiredNotice.moduleNumber} has ended. Previously saved answers are retained; unanswered items will be recorded as timed out.`}
+          </p>
+        </div>
+        <div className="px-5 py-5 sm:px-7">
+          {expiredNotice.kind!=='typing' && <div className="flex items-start gap-2 rounded-lg border border-blue-100 bg-blue-50/70 px-3 py-3 text-[11px] leading-5 text-sibs-navy">
+            <ShieldCheck size={17} className="mt-0.5 shrink-0" aria-hidden="true"/>
+            <span>Assessment progress and scoring are verified by the SiBS HRIS Server. This notice does not reset or extend the timer.</span>
+          </div>}
+          {error && <p role="alert" className="mt-3 rounded-lg border border-rose-200 bg-rose-50 p-3 text-xs font-semibold text-rose-700">
+            {error}
+          </p>}
+          <button ref={expiryActionRef} type="button"
+            onClick={()=>void acknowledgeExpiredNotice()} disabled={busy}
+            className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-sibs-orange px-4 text-xs font-extrabold text-white transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-50">
+            {expiredNotice.kind==='overall'||expiredNotice.moduleNumber===7
+              ? 'Submit timed-out assessment'
+              : expiredNotice.kind==='typing'
+                ? 'Review typing result'
+                : `Continue to Module ${expiredNotice.moduleNumber+1}`}
+            <ArrowRight size={15} aria-hidden="true"/>
+          </button>
+        </div>
+      </section>
+    </div>}
     {busy && (moduleTransition
       ? <CsrFitAssessmentLoading mode="module-transition" moduleNumber={moduleTransition.from}
           nextModuleNumber={moduleTransition.to} phase={moduleTransition.phase} />

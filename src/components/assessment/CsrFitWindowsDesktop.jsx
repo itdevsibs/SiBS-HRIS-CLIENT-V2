@@ -72,12 +72,12 @@ function storedFolders(answer, departments) {
   return actions.filter(action => action?.type === 'create_folder' && safeFolderName(action.folder) && action.parent)
     .map(action => ({ parent: action.parent, name: action.folder, id: makeFolderId(action.parent, action.folder, departments) }));
 }
-function knownItems(location, departments, requiredFolder, createdFolders, version) {
+function knownItems(location, departments, requiredFolder, createdFolders) {
   if (location === 'pc') return [...SYSTEM_FOLDERS, { id: 'disk', name: 'Local Disk (C:)' }];
   if (location === 'documents') return [{ id: 'shared', name: 'SiBS Shared Files' }];
   if (location === 'shared') {
     const standard = [{ id: 'incoming', name: 'Incoming Files' },
-      ...departments.filter(name => !(version >= 3 && name === requiredFolder))
+      ...departments.filter(name => name !== requiredFolder && !createdFolders.some(item => item.parent === 'shared' && item.name === name))
         .map(name => ({ id: `dept:${name}`, name }))];
     return [...standard, ...createdFolders.filter(item => item.parent === 'shared')];
   }
@@ -97,7 +97,8 @@ function WindowsClock() {
 export default function CsrFitWindowsDesktop({ info, answer, disabled = false, saving = false, onSave }) {
   const departments = Array.isArray(info?.folders) ? info.folders.filter(safeFolderName) : [];
   const simulationVersion = Number(info?.simulationVersion) === 3 ? 3 : 2;
-  const requiredFolder = trimName(info?.folderToCreate);
+  // Support new snapshots and existing attempts created before folderToCreate was added.
+  const requiredFolder = trimName(info?.folderToCreate || info?.fileNameRule?.match(/create a folder named\s+([^,.;]+)/i)?.[1]);
   const [fileName, setFileName] = useState(answer?.filename || info?.sourceFilename || 'Client_Report.txt');
   const [fileLocation, setFileLocation] = useState(answer?.folder && departments.includes(answer.folder) ? `dept:${answer.folder}` : 'incoming');
   const [actions, setActions] = useState(Array.isArray(answer?.simulation?.actions) ? answer.simulation.actions.slice(-20) : []);
@@ -130,7 +131,7 @@ export default function CsrFitWindowsDesktop({ info, answer, disabled = false, s
   const saved = Boolean(answer) && !dirty;
 
   useEffect(() => { if (edit) editingRef.current?.focus(); }, [edit]);
-  const folderItems = useMemo(() => knownItems(location, departments, requiredFolder, created, simulationVersion),
+  const folderItems = useMemo(() => knownItems(location, departments, requiredFolder, created),
     [location, departments.join('|'), requiredFolder, created, simulationVersion]);
   const visible = useMemo(() => {
     const entries = [...folderItems.map(item => ({ ...item, kind: 'folder' }))];
@@ -140,14 +141,10 @@ export default function CsrFitWindowsDesktop({ info, answer, disabled = false, s
 
   const lastRename = actions.findLast(action => action?.type === 'rename');
   const lastMove = actions.findLast(action => action?.type === 'move');
-  const createdIndex = actions.findIndex(action => action?.type === 'create_folder' && action.parent === 'shared');
-  const lastMoveIndex = actions.findLastIndex(action => action?.type === 'move' && action.folder === nameOf(fileLocation));
-  // Completion means the applicant performed the steps, not that the work is
-  // necessarily correct. Accuracy is graded on the server after submission.
-  const creationCompleted = simulationVersion < 3 || (createdIndex >= 0 && lastMoveIndex > createdIndex);
-  const validLocation = (fileLocation.startsWith('dept:') && departments.includes(fileLocation.slice(5))) ||
-    created.some(item => item.parent === 'shared' && item.id === fileLocation);
-  const ready = Boolean(lastRename?.filename === fileName && lastMove?.folder === nameOf(fileLocation) && validLocation && creationCompleted && safeFileName(fileName));
+  // Final submission is independent from the candidate's correctness.
+  // Saving is the candidate's FINAL answer, not a pass/fail correctness check.
+  // Missing or incorrect file actions are assessed only after submission.
+  const ready = !saved && !disabled && !saving && !submitting;
 
   function record(type, extra) {
     setActions(old => [...old, { type, ...extra }].slice(-20));
@@ -238,7 +235,7 @@ export default function CsrFitWindowsDesktop({ info, answer, disabled = false, s
     setSubmitting(true);
     try {
       await onSave({ filename: fileName, folder: nameOf(fileLocation), simulation: { version: simulationVersion, actions } });
-      setDirty(false); showMessage('File management task saved.');
+      setDirty(false); showMessage('Final answer submitted. This task cannot be edited or submitted again.');
     } catch { showMessage('Unable to save. Check the assessment message and retry.'); }
     finally { setSubmitting(false); }
   }
@@ -319,8 +316,8 @@ export default function CsrFitWindowsDesktop({ info, answer, disabled = false, s
           <div className="swin-sidebar-heading">This PC</div>
           {sideLink('pc')}{sideLink('shared',1)}
           {sideLink('incoming',2)}
-          {departments.filter(name => !(simulationVersion >= 3 && requiredFolder === name && !created.some(item=>item.name===name && item.parent==='shared'))).map(name=>sideLink(`dept:${name}`,2))}
-          {created.filter(item=>item.parent==='shared' && !departments.includes(item.name)).map(item=>sideLink(item.id,2))}
+          {departments.filter(name => name !== requiredFolder && !created.some(item=>item.name===name && item.parent==='shared')).map(name=>sideLink(`dept:${name}`,2))}
+          {created.filter(item=>item.parent==='shared' && (item.name===requiredFolder || !departments.includes(item.name))).map(item=>sideLink(item.id,2))}
         </aside><div className="swin-file-area" ref={fileAreaRef} onClick={e=>{if(e.target===e.currentTarget){setSelected('');setContext(null);}}} onContextMenu={e=>openContext(e,null)}>
           <div className="swin-location-heading">{location==='pc'?'Folders':location==='shared'?'Folders and documents':nameOf(location)}</div>
           {view==='details' && <div className="swin-list-header"><span>Name</span><span>Type</span><span>Size</span></div>}
@@ -348,13 +345,13 @@ export default function CsrFitWindowsDesktop({ info, answer, disabled = false, s
     {message && <p role="status" className="rounded-lg border border-blue-100 bg-blue-50/60 px-3 py-2 text-[11px] font-semibold text-sibs-navy">{message}</p>}
     <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-sibs-border bg-white px-3 py-3">
       <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-[11px] font-semibold text-sibs-secondary">
-        {simulationVersion>=3 && <span className={created.some(item=>item.parent==='shared')?'text-emerald-700':''}>{created.some(item=>item.parent==='shared')?'✓':'○'} Create folder</span>}
+        {Boolean(requiredFolder) && <span className={created.some(item=>item.parent==='shared')?'text-emerald-700':''}>{created.some(item=>item.parent==='shared')?'✓':'○'} Create folder</span>}
         <span className={lastRename?'text-emerald-700':''}>{lastRename?'✓':'○'} Rename file</span>
         <span className={lastMove?'text-emerald-700':''}>{lastMove?'✓':'○'} Move file</span>
         {saved&&<span className="text-emerald-700"><CheckCircle2 size={13} className="inline"/> Saved</span>}
       </div>
-      <button type="button" disabled={!ready||disabled||saving||submitting} onClick={saveTask} className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-sibs-navy px-4 text-xs font-extrabold text-white disabled:cursor-not-allowed disabled:opacity-40"><Save size={15}/>{submitting||saving?'Saving...':'Save task'}</button>
+      {!saved && <button type="button" disabled={!ready} onClick={saveTask} className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-sibs-navy px-4 text-xs font-extrabold text-white disabled:cursor-not-allowed disabled:opacity-40"><Save size={15}/>{submitting||saving?'Saving...':'Save task · Final'}</button>}
     </div>
-    <p className="text-[11px] leading-5 text-sibs-muted">Double-click folders to open them. Right-click for actions; press F2 to rename, Ctrl+X/Ctrl+V to move, or Ctrl+Shift+N to create a folder. Only simulated files are affected. The task is scored after submission, not while you work.</p>
+    <p className="text-[11px] leading-5 text-sibs-muted">Double-click folders to open them. Right-click for actions; press F2 to rename, Ctrl+X/Ctrl+V to move, or Ctrl+Shift+N to create a folder. Only simulated files are affected. Save Task is your final submission, even if your work is incorrect or incomplete. You cannot edit or save it again. The HRIS Server scores the submitted work afterward.</p>
   </div>;
 }

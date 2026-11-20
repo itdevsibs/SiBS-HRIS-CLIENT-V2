@@ -91,6 +91,8 @@ const ApplicantLeadsPage = lazyWithRetry(() => import("./pages/recruitment/Appli
 const PublicJobDescriptionPage = lazyWithRetry(() => import("./pages/recruitment/talent-pool/PublicJobDescriptionPage"));
 const FinalInterviewForms = lazyWithRetry(() => import("./components/recruitment/forms/FinalInterviewForms"));
 const CsrFitAssessmentPage = lazyWithRetry(() => import("./pages/recruitment/CsrFitAssessmentPage.jsx"));
+const PublicCsrFitRegistrationPage = lazyWithRetry(() => import("./pages/recruitment/PublicCsrFitRegistrationPage.jsx"));
+const PublicAssessmentApplicantsPage = lazyWithRetry(() => import("./pages/recruitment/PublicAssessmentApplicantsPage.jsx"));
 
 // Settings
 const RecruitmentSettingsPage = lazyWithRetry(() => import("./pages/Settings/RecruitmentSettingsPage"));
@@ -159,6 +161,9 @@ function PublicApplicationRoutes() {
       <Route path="/applicant-portal" element={<PublicApplicantPortalPage />} />
       <Route path="/public/applicant-portal" element={<PublicApplicantPortalPage />} />
 
+      <Route path="/public-assessment" element={<PublicCsrFitRegistrationPage />} />
+      <Route path="/online-assessment" element={<CsrFitAssessmentPage />} />
+
       {/* Keep old public application links working. */}
       <Route path="/apply" element={<Navigate to="/" replace />} />
       <Route
@@ -196,6 +201,8 @@ function MainApplicationRoutes() {
         path="/public/nho-schedule-response/:token"
         element={<PublicNhoScheduleResponsePage />}
       />
+
+      <Route path="/public-assessment" element={<PublicCsrFitRegistrationPage />} />
 
       {/* Public CSR-Fit battery. Keep Job Evaluation on the private Final Interview route. */}
       <Route
@@ -534,6 +541,11 @@ function MainApplicationRoutes() {
             <CandidatePipelinePage />
           </PrivateRoute>
         }
+      />
+
+      <Route
+        path="/recruitment/public-assessment"
+        element={<PrivateRoute><PublicAssessmentApplicantsPage /></PrivateRoute>}
       />
 
       <Route

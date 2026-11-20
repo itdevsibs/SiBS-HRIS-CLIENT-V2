@@ -283,6 +283,11 @@ export const ACCESS_RULES = [
     ],
   },
   {
+    paths: ["/recruitment/public-assessment"],
+    roles: ["ta", "hr", "hr_admin", "super_admin"],
+    adminAccess: [1, 2, 3, 7],
+  },
+  {
     paths: ["/users", "/settings/users", "/settings/user-settings"],
     roles: ["super_admin"],
   },

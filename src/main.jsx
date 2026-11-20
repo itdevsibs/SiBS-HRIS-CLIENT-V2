@@ -53,6 +53,10 @@ const CandidateExperienceSurveyPage = lazyWithRetry(() =>
 const CsrFitAssessmentPage = lazyWithRetry(() =>
   import("./pages/recruitment/CsrFitAssessmentPage.jsx")
 );
+// A standalone public URL is resolved by this entrypoint before src/router.jsx.
+const PublicCsrFitRegistrationPage = lazyWithRetry(() =>
+  import("./pages/recruitment/PublicCsrFitRegistrationPage.jsx")
+);
 const PublicApplicantPortalPage = lazyWithRetry(() =>
   import("./pages/public/PublicApplicantPortalPage.jsx")
 );
@@ -204,6 +208,15 @@ export function StandalonePublicApp() {
         <Route
           path="/online-assessment"
           element={<CsrFitAssessmentPage />}
+        />
+
+        {/* =========================================
+            PUBLIC CSR-FIT ASSESSMENT REGISTRATION
+            Works on localhost and the public application hostname.
+        ========================================= */}
+        <Route
+          path="/public-assessment"
+          element={<PublicCsrFitRegistrationPage />}
         />
 
         {/* =========================================

@@ -430,6 +430,51 @@ export function buildCsrFitPdfDocument(data, JsPDF, { logoDataUrl = null, fontDa
     y += height + 16;
   }
 
+  /** PDF radar chart uses the same server-verified category values as the UI.
+   * Hermes supplies only the chart recommendation and short interpretation. */
+  function cognitiveRadar(categories) {
+    const rows = (Array.isArray(categories) ? categories : []).filter(item =>
+      item && validPercent(item.score) && typeof item.category === 'string');
+    if (rows.length < 3) return;
+    const height = 285;
+    ensure(height + 25);
+    const top = y;
+    const cx = pageWidth / 2, cy = top + 132, radius = 94;
+    const point = (i,factor) => {
+      const a = -Math.PI/2 + i*2*Math.PI/rows.length;
+      return [cx+Math.cos(a)*radius*factor,cy+Math.sin(a)*radius*factor];
+    };
+    pdf.setDrawColor(218,228,237);pdf.setLineWidth(0.65);
+    for (const factor of [0.25,0.5,0.75,1]) for(let i=0;i<rows.length;i++) {
+      const [x1,y1] = point(i,factor);const [x2,y2] = point((i+1)%rows.length,factor);
+      pdf.line(x1,y1,x2,y2);
+    }
+    rows.forEach((row,i)=>{
+      const [x,vy] = point(i,1);
+      pdf.line(cx,cy,x,vy);
+      const [lx,ly] = point(i,1.18);
+      setBodyFont(true);pdf.setFontSize(8);pdf.setTextColor(...NAVY);
+      pdf.text(String(i+1),lx,ly+3,{align:'center'});
+    });
+    pdf.setLineWidth(1.8);pdf.setDrawColor(15,148,138);
+    rows.forEach((row,i)=>{
+      const a = point(i, Number(row.score)/100);
+      const b = point((i+1)%rows.length, Number(rows[(i+1)%rows.length].score)/100);
+      pdf.line(a[0],a[1],b[0],b[1]);
+      pdf.setFillColor(...ORANGE);pdf.circle(a[0],a[1],2.5,'F');
+    });
+    pdf.setLineWidth(0.2);
+    setBodyFont();pdf.setTextColor(...GREY);pdf.setFontSize(8);
+    pdf.text('0-100% per category  |  Numbers correspond to the detailed scores below',margin,top+270);
+    y += height + 6;
+  }
+  function verifiedHermesChartInsight(id) {
+    const state = data?.aiInterpretation;
+    if (state?.status !== 'READY') return null;
+    const chart = state.report?.chartPlan?.find?.(item => item?.id===id);
+    return typeof chart?.insight==='string' && chart.insight.trim() ? chart.insight.trim() : null;
+  }
+
   pdf.setProperties({ title: 'SiBS CSR-Fit Candidate Assessment Responses',
     subject: 'Confidential read-only candidate assessment record', author: 'SiBS HRIS' });
   header();
@@ -444,10 +489,15 @@ export function buildCsrFitPdfDocument(data, JsPDF, { logoDataUrl = null, fontDa
   rule();
 
   heading('Assessment score overview', 13);
+  scoreBar(`${MODULES[0][1]} (provisional)`, data.score?.module1Score);
+  if (data.score?.module1Correct != null && data.score?.module1Total != null) {
+    paragraph(`Module 1: ${data.score.module1Correct} correct / ${data.score.module1Total} administered questions. Provisional key; HR validation required.`,
+      { color: GREY, fontSize: 8.7, after: 8 });
+  }
   scoreBar(`${MODULES[1][1]} (provisional)`, data.score?.behavioralComposite);
   scoreBar(`${MODULES[6][1]} (provisional)`, data.sevenModule ? data.score?.module7Score : null,
     { accent: ORANGE });
-  paragraph(`${MODULES[0][1]}: Pending approved answer key / HR review.`,
+  paragraph('Module 1 note: Corrected PDF key is provisional; item 119 requires HR reconciliation.',
     { color: GREY, fontSize: 9, after: 9 });
   paragraph('Scores shown here are provisional, not a final hiring recommendation or pass/fail result. The report never discloses assessment answer keys.',
     { color: ORANGE, fontSize: 8.6, after: 10 });
@@ -479,10 +529,25 @@ export function buildCsrFitPdfDocument(data, JsPDF, { logoDataUrl = null, fontDa
   pdf.text('Saved assessment items - completion only, not a grade', completionInset, completedAtY + 60);
   y += 91;
 
+  if (Array.isArray(data.score?.module1Categories) && data.score.module1Categories.length) {
+    newPage();
+    heading('Cognitive competency scores (provisional)', 13);
+    paragraph("Based on the corrected PDF key and the candidate's administered questions; HR review required.",
+      { fontSize: 8.3, after: 13 });
+    cognitiveRadar(data.score.module1Categories);
+    const radarInsight = verifiedHermesChartInsight('cognitive_radar');
+    if (radarInsight) paragraph(`Hermes chart insight: ${radarInsight}`, {fontSize:8.3, after:13});
+    for (const category of data.score.module1Categories) {
+      scoreBar(`${category.category} (${category.correct}/${category.total} correct)`, category.score);
+    }
+  }
+
   if (Array.isArray(data.score?.behavioralPillars) && data.score.behavioralPillars.length) {
     newPage();
     heading('Behavioral competency scores', 13);
     paragraph('Each score is paired with its own clearly separated graph.', { fontSize: 8.3, after: 13 });
+    const behavioralInsight = verifiedHermesChartInsight('behavioral_bars');
+    if (behavioralInsight) paragraph(`Hermes chart insight: ${behavioralInsight}`, {fontSize:8.3, after:12});
     for (const pillar of data.score.behavioralPillars) {
       const itemCount = pillar.items == null ? '' : ` (${pillar.items} scored items)`;
       scoreBar(`${pillar.name}${itemCount}`, pillar.score);
@@ -492,6 +557,8 @@ export function buildCsrFitPdfDocument(data, JsPDF, { logoDataUrl = null, fontDa
   if (data.sevenModule) {
     newPage();
     heading('Typing & assessment metrics', 13);
+    const typingInsight = verifiedHermesChartInsight('typing_benchmarks');
+    if (typingInsight) paragraph(`Hermes chart insight: ${typingInsight}`, {fontSize:8.3, after:12});
     const typingMetrics = Array.isArray(data.objective?.module5) ? data.objective.module5 : [];
     if (typingMetrics.length) {
       const wpms = typingMetrics.map(entry => Number(entry?.wpm)).filter(n => Number.isFinite(n) && n >= 0);
@@ -543,6 +610,10 @@ export function buildCsrFitPdfDocument(data, JsPDF, { logoDataUrl = null, fontDa
           paragraph(`${chosen ? '[SELECTED] ' : ''}${option.key}. ${option.text}`,
             { indent: 10, fontSize: 9, bold: Boolean(chosen), color: chosen ? NAVY : GREY, after: 2 });
         });
+      }
+      if (key === 'module1' && typeof q.answerCorrect === 'boolean') {
+        paragraph(`Provisional scoring: ${q.answerCorrect ? 'Correct' : 'Incorrect'}`,
+          {fontSize: 8.2, color: q.answerCorrect ? NAVY : ORANGE, after: 4});
       }
       if (q.recordedResponse !== undefined && q.recordedResponse !== null) {
         paragraph('Saved candidate response:', { fontSize: 9, color: NAVY, bold: true, after: 3 });

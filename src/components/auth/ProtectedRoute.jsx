@@ -7,6 +7,7 @@ const PUBLIC_PATHS = [
   "/",
   "/login",
   "/online-assessment",
+  "/public-assessment",
   "/apply",
   "/public/talent-pool/apply",
   "/public/interview-date",

@@ -3,14 +3,12 @@ import {
   canScheduleInterview,
   getDisplayInterviewStatus,
   getDisplayInterviewType,
-  getNextStage,
   getRoleTitle,
   getPipelineAccountLabel,
   getPipelineAccountValue,
 } from "../../../lib/utils/candidatePipeline/candidatePipelineHelpers";
 import CandidateAvatar from "./CandidateAvatar";
 import {
-  ArrowRight,
   CalendarDays,
   CirclePlay,
   ClipboardCheck,
@@ -73,7 +71,6 @@ const PipelineCandidateCard = ({
   candidate,
   accountLabel = "Initial Account",
   onViewCandidate,
-  onOpenMoveModal,
   onOpenAssessmentModal,
   onOpenScheduleModal,
   onCancelInterview,
@@ -81,7 +78,6 @@ const PipelineCandidateCard = ({
   const { handleStartInterview, handleResendDropOffEmail } =
     useCandidatePipeline();
 
-  const nextStage = getNextStage(candidate.currentStage);
   const navigate = useNavigate();
 
   const latestTimeline =
@@ -99,14 +95,7 @@ const PipelineCandidateCard = ({
   const showAssessmentButton = candidate.currentStage === "Online Assessment";
   const showUpdateSchedule = candidate.currentStage === "Interview Scheduled";
 
-  const showMoveButton =
-    candidate.currentStage !== "Drop-off" &&
-    candidate.currentStage !== "Accepted" &&
-    candidate.currentStage !== "Online Assessment" &&
-    candidate.currentStage !== "Assessment Fit" &&
-    candidate.currentStage !== "Interview Scheduled" &&
-    candidate.currentStage !== "Offered" &&
-    Boolean(nextStage);
+
 
   const isInterviewInProgress =
     candidate.currentStage === "Interview Scheduled" &&
@@ -479,22 +468,7 @@ const PipelineCandidateCard = ({
             </>
           )}
 
-          {showMoveButton && (
-            <button
-              type="button"
-              disabled={isInterviewInProgress}
-              onClick={() => {
-                if (isInterviewInProgress) return;
-                onOpenMoveModal(candidate);
-              }}
-              className={`inline-flex h-6 items-center justify-center gap-0.5 rounded-[10px] bg-sibs-orange px-2 text-[8.5px] font-extrabold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-sibs-orange-hover ${disabledActionClass}`}
-              title={`Move to ${nextStage}`}
-              aria-label={`Move to ${nextStage}`}
-            >
-              <span>Advance</span>
-              <ArrowRight size={10} />
-            </button>
-          )}
+
         </div>
       </div>
     </article>
