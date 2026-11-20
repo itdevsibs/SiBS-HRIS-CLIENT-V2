@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import {
   Search, RefreshCw, ExternalLink, Eye, Clock3,
   CheckCircle2, Mail, Users, AlertCircle, FileClock, X, UserRound,
@@ -89,7 +88,6 @@ function PendingApplicantModal({ applicant, onClose }) {
 }
 
 export default function PublicAssessmentApplicantsPage() {
-  const navigate = useNavigate();
   const [items, setItems] = useState([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -175,9 +173,11 @@ export default function PublicAssessmentApplicantsPage() {
             <button type="button" onClick={copyPublicUrl} className="sibs-btn-secondary inline-flex items-center gap-2">
               <ExternalLink size={15} /> Copy public link
             </button>
-            <button type="button" onClick={() => navigate('/public-assessment')} className="sibs-btn-primary inline-flex items-center gap-2">
+            <a href="/public-assessment" target="_blank" rel="noopener noreferrer"
+              className="sibs-btn-primary inline-flex items-center gap-2"
+              aria-label="Open public assessment in a new tab">
               <ExternalLink size={15} /> Open public assessment
-            </button>
+            </a>
           </div>}
         />
 
