@@ -6712,6 +6712,91 @@ function CandidateDetailItem({
   );
 }
 
+/** Read-only HRIS session progress. "In progress" is not a live-presence indicator. */
+function CsrFitProgressPanel({ progress, loading, error }) {
+  const status = String(progress?.status || 'UNKNOWN');
+  const inProgress = status === 'IN_PROGRESS';
+  const moduleExpired = status === 'MODULE_TIME_EXPIRED';
+  const timedOut = status === 'TIME_EXPIRED';
+  const submitted = status === 'SUBMITTED';
+  const pending = status === 'INVITED';
+  const expiredInvite = status === 'INVITATION_EXPIRED';
+  const completedModules = Math.max(0, Math.min(7, Number(progress?.completedModules) || 0));
+  const totalModules = Number(progress?.totalModules) || 7;
+  const percent = Math.round(completedModules / Math.max(1, totalModules) * 100);
+  const moduleNumber = Number(progress?.moduleNumber);
+  const hasModule = moduleNumber >= 1 && moduleNumber <= 7 && !progress?.legacy;
+  const tone = submitted ? 'emerald' : (timedOut || expiredInvite) ? 'rose' : (inProgress || moduleExpired) ? 'orange' : 'slate';
+  const toneStyle = {
+    emerald: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+    rose: 'border-rose-200 bg-rose-50 text-rose-700',
+    orange: 'border-orange-200 bg-orange-50 text-orange-700',
+    slate: 'border-slate-200 bg-slate-50 text-slate-600',
+  }[tone];
+  const label = submitted ? 'Assessment submitted'
+    : timedOut ? 'Assessment time expired'
+    : moduleExpired ? 'Module time expired'
+    : inProgress ? 'Assessment in progress'
+    : pending ? 'Invitation sent'
+    : expiredInvite ? 'Invitation expired'
+    : status === 'NOT_INVITED' ? 'Awaiting invitation'
+    : 'Progress unavailable';
+  const details = hasModule
+    ? `Module ${moduleNumber} of ${totalModules} · ${progress.moduleName}`
+    : progress?.legacy ? 'Earlier assessment format'
+    : pending ? 'Waiting for candidate to start'
+    : submitted ? 'The submitted assessment is available for HR review'
+    : timedOut ? 'Awaiting completion of the timed-out submission'
+    : null;
+  const saved = Number.isInteger(progress?.answeredInModule) ? progress.answeredInModule : null;
+  const total = Number.isInteger(progress?.totalQuestionsInModule) ? progress.totalQuestionsInModule : null;
+
+  return (
+    <section className="sibs-card min-w-0 overflow-hidden p-3.5 sm:p-4" aria-label="Candidate online assessment progress" aria-live="polite">
+      <div className="flex flex-wrap items-start justify-between gap-2 border-b border-sibs-border pb-3">
+        <div className="flex min-w-0 items-center gap-2.5">
+          <span className="sibs-tone-navy-icon inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px]"><ClipboardCheck size={16}/></span>
+          <div className="min-w-0">
+            <h3 className="sibs-modal-section-title">Online Assessment Progress</h3>
+            <p className="sibs-modal-section-subtitle mt-0.5">Recorded exam status · Updated automatically</p>
+          </div>
+        </div>
+        {loading && !progress ? (
+          <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-sibs-muted"><Loader2 size={13} className="animate-spin"/> Checking progress</span>
+        ) : progress ? (
+          <span className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-[10px] font-extrabold ${toneStyle}`}>
+            {inProgress || moduleExpired ? <CirclePlay size={13}/> : submitted ? <CheckCircle2 size={13}/> : <ClipboardCheck size={13}/>}
+            {label}
+          </span>
+        ) : null}
+      </div>
+      {progress && (
+        <div className="pt-3">
+          {details && <p className="text-[12px] font-extrabold text-sibs-navy">{details}</p>}
+          {hasModule && (inProgress || moduleExpired || timedOut) && (
+            <p className="mt-1 text-[11px] font-semibold text-sibs-secondary">
+              {timedOut ? 'Overall assessment time has ended' : moduleExpired ? 'Module deadline reached · Awaiting next step' : progress.phase === 'QUESTIONS' ? 'Candidate is taking this module' : 'Candidate is viewing this module’s instructions'}
+              {saved !== null && total !== null ? ` · ${saved}/${total} items recorded` : ''}
+            </p>
+          )}
+          {hasModule && (
+            <div className="mt-3">
+              <div className="mb-1.5 flex items-center justify-between text-[10px] font-semibold text-sibs-secondary">
+                <span>Completed modules</span><span className="tabular-nums">{completedModules}/{totalModules}</span>
+              </div>
+              <div className="h-2 overflow-hidden rounded-full bg-slate-100" role="progressbar" aria-label="Completed assessment modules" aria-valuemin={0} aria-valuemax={totalModules} aria-valuenow={completedModules}>
+                <div className="h-full rounded-full bg-sibs-orange transition-[width]" style={{width:`${percent}%`}}/>
+              </div>
+            </div>
+          )}
+          {(inProgress || moduleExpired) && <p className="mt-2 text-[10px] text-sibs-muted">Based on saved assessment activity; this does not confirm the candidate is currently online.</p>}
+        </div>
+      )}
+      {error && <p role="status" className="pt-2 text-[11px] text-rose-700">Could not refresh assessment progress. The last recorded status may be outdated.</p>}
+    </section>
+  );
+}
+
 function CandidateStageJourney({ currentStage = "" }) {
   const stages = getJourneyStages();
   const normalizedCurrent =
@@ -7098,6 +7183,9 @@ rawOpenedCandidate || {},
   });
   const [showAssessmentModal, setShowAssessmentModal] = useState(false);
   const [csrFitResult, setCsrFitResult] = useState(null);
+  const [csrFitProgress, setCsrFitProgress] = useState(null);
+  const [csrFitProgressLoading, setCsrFitProgressLoading] = useState(false);
+  const [csrFitProgressError, setCsrFitProgressError] = useState(false);
   const [csrFitResultLoading, setCsrFitResultLoading] = useState(false);
   const [csrFitResultError, setCsrFitResultError] = useState('');
   const [showCsrFitResultModal, setShowCsrFitResultModal] = useState(false);
@@ -7923,6 +8011,53 @@ rawOpenedCandidate || {},
       live = false;
       window.clearInterval(poll);
       window.removeEventListener('focus', refresh);
+    };
+  }, [open, hasAssessmentDetailAccess, csrFitPipelineId]);
+
+  // Only authorized HR viewers receive a status-only, token-free progress summary.
+  // Does not request or expose candidate answers, scores, or question bank data.
+  useEffect(() => {
+    if (!open || !hasAssessmentDetailAccess || !csrFitPipelineId) {
+      setCsrFitProgress(null);
+      setCsrFitProgressLoading(false);
+      setCsrFitProgressError(false);
+      return undefined;
+    }
+    let live = true;
+    let inFlight = false;
+    setCsrFitProgress(null);
+    setCsrFitProgressError(false);
+    setCsrFitProgressLoading(true);
+    const refresh = async () => {
+      if (inFlight) return;
+      inFlight = true;
+      try {
+        const { data } = await api.get(`/api/assessment/candidate/${encodeURIComponent(csrFitPipelineId)}/progress`);
+        if (live) {
+          setCsrFitProgress(data?.data || null);
+          setCsrFitProgressError(false);
+        }
+      } catch (error) {
+        if (live) {
+          setCsrFitProgressError(true);
+          // An older HRIS server may not yet have the progress endpoint.
+          // Never misreport a candidate as "Not started" on a failed lookup.
+        }
+      } finally {
+        inFlight = false;
+        if (live) setCsrFitProgressLoading(false);
+      }
+    };
+    void refresh();
+    const timer = window.setInterval(() => {
+      if (document.visibilityState === 'visible') void refresh();
+    }, 15_000);
+    const onFocus = () => void refresh();
+    window.addEventListener('focus', onFocus);
+    return () => {
+      live = false;
+      window.clearInterval(timer);
+      window.removeEventListener('focus', onFocus);
     };
   }, [open, hasAssessmentDetailAccess, csrFitPipelineId]);
 
@@ -11843,6 +11978,17 @@ const concretePreferredFinalInterviewFormId =
 
   const isCsrFitSubmitted = Boolean(csrFitResult?.available) ||
     cleanText(activeCandidate.assessmentResult || activeCandidate.assessment_result).toLowerCase() === 'submitted';
+  // Only show results after completion. The submitted server attempt is the
+  // authoritative CSR-Fit signal; legacy records use Taken / Completed.
+  const assessmentCompletionStatus = cleanText(
+    activeCandidate.assessmentStatus || activeCandidate.assessment_status,
+  ).toLowerCase();
+  const assessmentCompletionResult = cleanText(
+    activeCandidate.assessmentResult || activeCandidate.assessment_result,
+  ).toLowerCase();
+  const hasCompletedAssessment = isCsrFitSubmitted ||
+    ['taken', 'completed', 'submitted'].includes(assessmentCompletionStatus) ||
+    ['taken', 'completed', 'submitted'].includes(assessmentCompletionResult);
   const csrFitComposite = csrFitResult?.score?.behavioralComposite;
   const assessmentSummaryScore = isCsrFitSubmitted && csrFitResult?.available
     ? (csrFitComposite == null ? 'Pending review' : `${Number(csrFitComposite).toFixed(2)}%`)
@@ -12167,6 +12313,10 @@ const concretePreferredFinalInterviewFormId =
           </div>
 
           <CandidateStageJourney currentStage={currentStage} />
+          {hasAssessmentDetailAccess && (isOnlineAssessment || ['IN_PROGRESS', 'MODULE_TIME_EXPIRED', 'TIME_EXPIRED'].includes(csrFitProgress?.status)) && !(hasCompletedAssessment && csrFitProgress?.status === 'NOT_INVITED') && (
+            <CsrFitProgressPanel progress={csrFitProgress} loading={csrFitProgressLoading} error={csrFitProgressError}/>
+          )}
+
 
           <CandidateModalSection
             icon={<UserCheck size={17} />}
@@ -12292,11 +12442,11 @@ const concretePreferredFinalInterviewFormId =
             </div>
           )}
 
-          {hasAssessmentDetailAccess && (
+          {hasAssessmentDetailAccess && hasCompletedAssessment && (
             <CandidateModalSection
               icon={<ClipboardCheck size={17} />}
               title="Assessment Summary"
-              subtitle="Online assessment result and attached files."
+              subtitle="Online assessment results and remarks."
               headerAction={
                 assessmentSummaryOutcome ? (
                   <span
@@ -12386,9 +12536,9 @@ const concretePreferredFinalInterviewFormId =
                   </div>
                 </div>
 
-                {/* Candidate Detail Items: Status, Attachment, Remarks */}
-                <div className="grid h-full grid-cols-1 items-center rounded-[10px] border border-sibs-border bg-gradient-to-r from-emerald-50/20 to-sky-50/20 px-3 py-2 sm:grid-cols-3 sm:px-4 sm:py-0">
-                  <div className="flex h-full min-w-0 items-center justify-start border-b border-sibs-border py-2 sm:border-b-0 sm:border-r sm:border-sibs-border sm:py-3 sm:pr-4 sm:justify-center">
+                {/* Candidate Detail Items: Status and Remarks */}
+                <div className="grid h-full grid-cols-1 items-center rounded-[10px] border border-sibs-border bg-gradient-to-r from-emerald-50/20 to-sky-50/20 px-3 py-2 sm:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] sm:px-4 sm:py-0">
+                  <div className="flex h-full min-w-0 items-center justify-start border-b border-sibs-border py-2 sm:border-b-0 sm:border-r sm:border-sibs-border sm:py-3 sm:pr-4 sm:justify-start">
                     <CandidateDetailItem
                       icon={CheckCircle2}
                       label="Status"
@@ -12406,22 +12556,8 @@ const concretePreferredFinalInterviewFormId =
                     />
                   </div>
 
-                  <div className="flex h-full min-w-0 items-center justify-start border-b border-sibs-border py-2 sm:border-b-0 sm:border-r sm:border-sibs-border sm:py-3 sm:px-4 sm:justify-center">
-                    <CandidateDetailItem
-                      icon={FileText}
-                      label="Attachment"
-                      value={
-                        activeCandidate.assessmentFileName ||
-                        activeCandidate.assessment_file_name ||
-                        activeCandidate.assessmentAttachmentName ||
-                        activeCandidate.assessment_attachment_name ||
-                        EMPTY_DISPLAY_VALUE
-                      }
-                      className="!py-0"
-                    />
-                  </div>
 
-                  <div className="flex h-full min-w-0 items-center justify-start py-2 sm:py-3 sm:pl-4 sm:justify-center">
+                  <div className="flex h-full min-w-0 items-center justify-start py-2 sm:py-3 sm:pl-4 sm:justify-start">
                     <CandidateDetailItem
                       icon={MessageSquareText}
                       label="Remarks"

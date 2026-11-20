@@ -14,7 +14,8 @@ function CustomerWorkspace({ info, answer, disabled, saving, onSave }) {
   const [dirty, setDirty] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [events, setEvents] = useState(Array.isArray(answer?.simulation?.actions) ? answer.simulation.actions : []);
-  const ready = opened && ['customerName','accountNumber','callbackNumber','category','notes'].every(k => String(values[k]||'').trim()) && (info.categories||[]).includes(values.category);
+  // Candidate may finalize inaccurate or incomplete work. Correctness is graded separately.
+  const ready = !answer && !disabled && !saving && !submitting;
   function openTicket() { if (disabled) return; setOpened(true); setEvents(old => [...old, event('open_request', { requestId: 'SIBS-INBOX-4910' })].slice(-20)); }
   function change(key, val) { setValues(old => ({...old,[key]:val})); setDirty(true); }
   async function save() { if (ready && !disabled && !saving && !submitting) {
@@ -54,7 +55,7 @@ function CustomerWorkspace({ info, answer, disabled, saving, onSave }) {
         </div>
       </div>
     </section>
-    <div className="flex flex-wrap items-center justify-between gap-3"><p className="text-[11px] text-sibs-muted">A completed record can be submitted even if some entries are inaccurate.</p><button type="button" disabled={!ready || disabled || saving || submitting} onClick={save} className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-sibs-navy px-4 text-xs font-extrabold text-white disabled:cursor-not-allowed disabled:opacity-40"><Save size={14}/> Save case record</button></div>
+    <div className="flex flex-wrap items-center justify-between gap-3"><p className="text-[11px] text-sibs-muted">Save is final, including incorrect or incomplete entries. It cannot be edited after submission.</p>{!answer && <button type="button" disabled={!ready} onClick={save} className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-sibs-navy px-4 text-xs font-extrabold text-white disabled:cursor-not-allowed disabled:opacity-40"><Save size={14}/> {submitting || saving ? 'Saving...' : 'Save case record · Final'}</button>}</div>
     {answer && !dirty && <p className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700"><CheckCircle2 size={14}/> Customer case saved</p>}
   </div>;
 }

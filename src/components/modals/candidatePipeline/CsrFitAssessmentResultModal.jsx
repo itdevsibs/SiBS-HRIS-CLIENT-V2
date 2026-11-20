@@ -1,10 +1,12 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { ClipboardCheck, Eye, FileQuestion, CheckCircle2, Download, Loader2 } from 'lucide-react';
+import { ClipboardCheck, Eye, FileQuestion, CheckCircle2, Download, Loader2, BrainCircuit, RefreshCw } from 'lucide-react';
 import ModalShell from '@/components/ui/ModalShell';
+import api from '@/lib/axios/api-template';
 import SelectDropdown from '@/components/ui/SelectDropdown';
 import { downloadCsrFitAssessmentPdf } from '@/lib/utils/csrFitAssessmentPdfClient';
 import { CSR_FIT_MODULE_NAMES } from '@/components/assessment/csrFitModuleGuides';
 import CsrFitReadOnlyResponse from './CsrFitReadOnlyResponse';
+import CsrFitHermesCharts from '@/components/assessment/CsrFitHermesCharts';
 
 const MODULE_LABELS = Object.fromEntries(
   CSR_FIT_MODULE_NAMES.map((title, index) => [`module${index + 1}`, title])
@@ -114,6 +116,11 @@ export default function CsrFitAssessmentResultModal({ open, data, onClose }) {
   const [filter, setFilter] = useState('all');
   const [pdfBusy, setPdfBusy] = useState(false);
   const [pdfError, setPdfError] = useState('');
+  const [hermesState, setHermesState] = useState(null);
+  const [hermesRetryBusy, setHermesRetryBusy] = useState(false);
+  const [hermesError, setHermesError] = useState('');
+  const [hermesPollCycle, setHermesPollCycle] = useState(0);
+
   const responseScrollRef = useRef(null);
   const responsesSectionRef = useRef(null);
   const previousModuleRef = useRef(module);
@@ -123,7 +130,73 @@ export default function CsrFitAssessmentResultModal({ open, data, onClose }) {
     if (!open) return;
     setModule('module1');
     setFilter('all');
+    setHermesState(data?.aiInterpretation || null);
+    setHermesError('');
   }, [open, data?.attemptId]);
+
+  // Poll only while the candidate result is open. Never silently spin forever:
+  // after repeated transport failures, offer an explicit Check status action.
+  useEffect(() => {
+    const id = Number(data?.candidatePipelineId);
+    if (!open || !Number.isSafeInteger(id) || id < 1) return;
+    let cancelled = false;
+    let timer;
+    let refreshing = false;
+    let failures = 0;
+    const refresh = async () => {
+      if (cancelled || refreshing) return;
+      refreshing = true;
+      let terminal = false;
+      try {
+        const response = await api.get(`/api/assessment/candidate/${id}/result/hermes-interpretation`);
+        if (cancelled) return;
+        const next = response?.data?.data;
+        if (!next || typeof next.status !== 'string') throw new Error('Invalid status response');
+        failures = 0;
+        setHermesError('');
+        setHermesState(next);
+        terminal = ['READY', 'FAILED', 'DISABLED', 'NOT_SUBMITTED'].includes(next.status);
+      } catch (error) {
+        if (cancelled) return;
+        failures += 1;
+        const code = Number(error?.response?.status || 0);
+        if ([401, 403].includes(code) || failures >= 3) {
+          terminal = true;
+          setHermesState(current => current?.status === 'READY' ? current : { status: 'UNAVAILABLE' });
+          setHermesError(code === 403 ? 'Your account is not authorized to view this interpretation.'
+            : code === 401 ? 'Your HRIS session has expired. Sign in to view the interpretation.'
+            : 'Could not refresh the Hermes status. Check the server connection, then select Check status.');
+        }
+      } finally {
+        refreshing = false;
+        if (!cancelled && !terminal) timer = setTimeout(refresh, 12_000);
+      }
+    };
+    void refresh();
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, [open, data?.candidatePipelineId, data?.attemptId, hermesPollCycle]);
+
+  const retryHermes = async () => {
+    const id = Number(data?.candidatePipelineId);
+    if (!Number.isSafeInteger(id) || id < 1 || hermesRetryBusy) return;
+    setHermesRetryBusy(true);
+    setHermesError('');
+    try {
+      const response = await api.post(`/api/assessment/candidate/${id}/result/hermes-interpretation`, { retry: true });
+      setHermesState(response?.data?.data || { status: 'PENDING' });
+      // A previous polling cycle may have stopped on FAILED; restart it now.
+      setHermesPollCycle(value => value + 1);
+    } catch (error) {
+      setHermesError(error?.response?.data?.message || 'Unable to request a Hermes review.');
+    } finally { setHermesRetryBusy(false); }
+  };
+
+  const hermesProcessing = ['PENDING', 'RUNNING'].includes(hermesState?.status);
+  const hermesSlow = hermesProcessing && Number(hermesState?.ageSeconds || 0) >= 90;
+  const refreshHermes = () => {
+    setHermesError('');
+    setHermesPollCycle(value => value + 1);
+  };
 
   const selectModule = (nextModule) => {
     if (!MODULE_LABELS[nextModule]) return;
@@ -152,7 +225,7 @@ export default function CsrFitAssessmentResultModal({ open, data, onClose }) {
   const handlePdfDownload = async () => {
     if (pdfBusy || !data?.available) return;
     setPdfBusy(true);setPdfError('');
-    try { await downloadCsrFitAssessmentPdf(data); }
+    try { await downloadCsrFitAssessmentPdf({...data, aiInterpretation:hermesState}); }
     catch (error) { setPdfError(error?.message || 'Unable to export the assessment PDF.'); }
     finally { setPdfBusy(false); }
   };
@@ -190,19 +263,75 @@ export default function CsrFitAssessmentResultModal({ open, data, onClose }) {
             <span className="text-xs font-extrabold text-sibs-navy">View only · Submitted answers cannot be changed</span></div>
           <span className="text-[11px] font-semibold text-sibs-muted">Submitted {formatDate(data.submittedAtMs)}</span>
         </div>
+        <section className="overflow-hidden rounded-xl border border-sibs-border bg-white" aria-label="Hermes HR assessment interpretation">
+          <header className="flex flex-wrap items-start justify-between gap-3 bg-sibs-navy px-4 py-3 text-white">
+            <div className="flex items-center gap-2"><BrainCircuit size={19} aria-hidden="true"/>
+              <div><h3 className="text-sm font-extrabold">Hermes AI · HR assessment interpretation</h3>
+                <p className="mt-0.5 text-[11px] text-white/75">Documentation-guided · Human HR review required</p></div>
+            </div>
+            <span className="rounded-md border border-white/20 px-2 py-1 text-[10px] font-bold">Advisory only</span>
+          </header>
+          <div className="space-y-3 p-4">
+            {hermesState?.status === 'READY' && hermesState.report ? <>
+              <p className="text-xs leading-6 text-sibs-secondary">{hermesState.report.executiveSummary || 'Interpretation available for HR review.'}</p>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {[
+                  ['Recorded strengths / capabilities', hermesState.report.observedCompetencies, 'border-blue-100 bg-blue-50/50'],
+                  ['Areas for HR review', hermesState.report.areasForReview, 'border-orange-100 bg-orange-50/50'],
+                  ['Assessment limitations', hermesState.report.assessmentLimitations, 'border-sibs-border bg-sibs-surface'],
+                  ['Suggested interview follow-ups', hermesState.report.interviewerQuestions, 'border-sibs-border bg-white'],
+                ].map(([heading,items,style]) => <div key={heading} className={`rounded-lg border p-3 ${style}`}>
+                  <h4 className="text-[11px] font-extrabold text-sibs-navy">{heading}</h4>
+                  {Array.isArray(items) && items.length ? <ul className="mt-2 space-y-2 text-[11px] leading-5 text-sibs-secondary">
+                    {items.map((item,index)=><li key={index} className="flex gap-2"><span className="mt-0.5 text-sibs-orange">•</span><span>{item}</span></li>)}
+                  </ul> : <p className="mt-2 text-[11px] text-sibs-muted">No additional findings recorded.</p>}
+                </div>)}
+              </div>
+              {hermesState.report.methodology && <p className="border-t border-sibs-border pt-3 text-[11px] leading-5 text-sibs-muted">Methodology: {hermesState.report.methodology}</p>}
+              <p className="text-[10px] font-semibold text-sibs-muted">Model: {hermesState.modelName || 'Hermes'} · No automatic hiring decision</p>
+            </> : hermesState?.status === 'DISABLED' ?
+              <p className="text-xs text-sibs-muted">Hermes assessment interpretation is not enabled on this HRIS environment. Stored module scores and answers remain available below.</p>
+            : <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex min-w-0 items-center gap-2 text-xs text-sibs-secondary">
+                  {hermesProcessing && !hermesSlow && <Loader2 size={15} className="shrink-0 animate-spin text-sibs-orange"/>}
+                  <span>{hermesState?.status === 'UNAVAILABLE' ? 'The interpretation status could not be refreshed. Your stored assessment scores remain available.' :
+                    hermesState?.status === 'FAILED' ? (hermesState?.message || 'Hermes could not complete the interpretation.') :
+                    hermesState?.status === 'NOT_SUBMITTED' ? 'No submitted assessment was found for this candidate.' :
+                    hermesSlow ? 'Hermes is taking longer than expected. The server will stop an unresponsive request and allow a retry.' :
+                    hermesState?.status === 'RUNNING' ? 'Hermes is interpreting the completed assessment.' :
+                    'Hermes analysis is queued. Verified scores are available below.'}</span>
+                </div>
+                {hermesState?.status === 'FAILED' && <button type="button" disabled={hermesRetryBusy}
+                  onClick={retryHermes} className="inline-flex items-center gap-2 rounded-lg bg-sibs-navy px-3 py-2 text-[11px] font-bold text-white disabled:opacity-60">
+                  {hermesRetryBusy ? <Loader2 size={13} className="animate-spin"/> : <RefreshCw size={13}/>}
+                  Retry analysis
+                </button>}
+                {(['UNAVAILABLE', 'PENDING', 'RUNNING'].includes(hermesState?.status) || !hermesState) &&
+                  <button type="button" onClick={refreshHermes} disabled={hermesRetryBusy}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-sibs-border bg-white px-3 py-2 text-[11px] font-bold text-sibs-navy hover:bg-sibs-surface disabled:opacity-50">
+                    <RefreshCw size={13}/> Check status
+                  </button>}
+              </div>}
+            {hermesError && <p role="alert" className="text-[11px] font-semibold text-rose-700">{hermesError}</p>}
+          </div>
+        </section>
         <section className="rounded-xl border border-sibs-border bg-white p-4">
           <h3 className="text-sm font-extrabold text-sibs-navy">Assessment score overview</h3>
           <p className="mt-1 text-[11px] text-sibs-muted">Stored assessment results · Read only</p>
           <div className="mt-3 grid items-stretch gap-3 sm:grid-cols-2">
-            <div className="h-full rounded-xl border border-sibs-border bg-sibs-surface p-3.5">
-              <div className="flex flex-wrap items-start justify-between gap-2">
-                <p className="text-xs font-bold leading-5 text-sibs-navy">{CSR_FIT_MODULE_NAMES[0]}</p>
-                <span className="inline-flex rounded-md border border-sibs-border bg-white px-2 py-1 text-[10px] font-bold text-sibs-secondary">Pending review</span>
+            <div className="space-y-2">
+              <MetricGraph label={CSR_FIT_MODULE_NAMES[0]} value={score.module1Score}
+                note="Provisional PDF answer key · Requires HR review" />
+              <div className="rounded-lg border border-sibs-border bg-white px-3 py-2 text-[11px] text-sibs-secondary">
+                <span className="font-bold text-sibs-navy">
+                  {score.module1Correct != null && Number.isFinite(Number(score.module1Total))
+                    ? `${score.module1Correct} / ${score.module1Total} correct`
+                    : `${cognitiveSaved} answers saved`}
+                </span>
+                {score.module1Answered != null && <span> · {score.module1Answered} submitted answers</span>}
+                {Array.isArray(score.module1DisputedQuestionIds) && score.module1DisputedQuestionIds.length > 0 &&
+                  <p className="mt-1 text-orange-700">Question 119 is flagged for answer-key review.</p>}
               </div>
-              <p className="mt-2 text-[11px] leading-5 text-sibs-muted">Answers are recorded. A grade will be available only after the cognitive answer key is approved.</p>
-              {Number.isFinite(cognitiveSaved) && cognitiveSaved >= 0 && <p className="mt-3 inline-flex items-center gap-1.5 text-[11px] font-bold text-sibs-navy">
-                <CheckCircle2 size={13} className="text-emerald-700"/> {cognitiveSaved} answers saved
-              </p>}
             </div>
             <MetricGraph label={CSR_FIT_MODULE_NAMES[1]} value={score.behavioralComposite}
               note="Provisional behavioral score · Requires HR review" />
@@ -229,10 +358,23 @@ export default function CsrFitAssessmentResultModal({ open, data, onClose }) {
             </div>
           </div>
         </section>
+        <CsrFitHermesCharts assessment={data} hermesReport={hermesState?.status === 'READY' ? hermesState.report : null} hermesStatus={hermesState?.status} />
+        {Array.isArray(score.module1Categories) && score.module1Categories.length > 0 && (
+          <details className="rounded-xl border border-sibs-border bg-white p-4" aria-label="Cognitive competency breakdown">
+            <summary className="cursor-pointer text-sm font-extrabold text-sibs-navy">View cognitive category scores (tabular breakdown)</summary>
+            <p className="mt-1 text-[11px] text-sibs-muted">Provisional PDF key · Score shown only to authorized HR reviewers</p>
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+              {score.module1Categories.map((item)=>(
+                <MetricGraph key={item.category} label={item.category} value={item.score}
+                  note={`${item.correct} of ${item.total} correct`} compact />
+              ))}
+            </div>
+          </details>
+        )}
         {Array.isArray(score.behavioralPillars) && score.behavioralPillars.length > 0 && (
-          <section className="rounded-xl border border-sibs-border bg-white p-4">
-            <h3 className="text-sm font-extrabold text-sibs-navy">Behavioral competency scores</h3>
-            <p className="mt-1 text-[11px] text-sibs-muted">Every competency has its own label, value, and graph.</p>
+          <details className="rounded-xl border border-sibs-border bg-white p-4">
+            <summary className="cursor-pointer text-sm font-extrabold text-sibs-navy">View behavioral pillar scores (tabular breakdown)</summary>
+            <p className="mt-1 text-[11px] text-sibs-muted">Provisional descriptive indices · Individual values remain available below.</p>
             <div className="mt-3 grid gap-3 sm:grid-cols-2">
               {score.behavioralPillars.map((pillar, index) => (
                 <MetricGraph key={pillar.key || `${pillar.name}-${index}`}
@@ -240,7 +382,7 @@ export default function CsrFitAssessmentResultModal({ open, data, onClose }) {
                   note={`${pillar.items ?? '—'} scored items`} compact />
               ))}
             </div>
-          </section>
+          </details>
         )}
         {data.sevenModule && (
           <>
@@ -311,7 +453,12 @@ export default function CsrFitAssessmentResultModal({ open, data, onClose }) {
               <article key={`${module}:${question.bankQuestionId}`} className="rounded-xl border border-sibs-border bg-white p-4">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <p className="text-[11px] font-extrabold text-sibs-muted">Question {question.number} <span className="font-medium">· {question.category}</span></p>
-                  {question.selectedKey ? <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700"><CheckCircle2 size={12}/> Answered</span>
+                  {module === 'module1' && typeof question.answerCorrect === 'boolean'
+                    ? <span className={`inline-flex items-center gap-1 text-[10px] font-bold ${question.answerCorrect ? 'text-emerald-700' : 'text-orange-700'}`}>
+                        {question.answerCorrect ? <CheckCircle2 size={12}/> : <FileQuestion size={12}/>}
+                        {question.answerCorrect ? 'Correct · Provisional' : 'Incorrect · Provisional'}
+                      </span>
+                    : question.selectedKey ? <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700"><CheckCircle2 size={12}/> Answered</span>
                     : <span className="text-[10px] font-bold text-sibs-muted">Not answered</span>}
                 </div>
                 <h4 className="mt-2 whitespace-pre-wrap text-sm font-bold leading-6 text-sibs-navy">{question.stem}</h4>
@@ -330,7 +477,7 @@ export default function CsrFitAssessmentResultModal({ open, data, onClose }) {
             {!visible.length && <p className="p-6 text-center text-xs font-semibold text-sibs-muted">No responses match this filter.</p>}
           </div>
         </section>
-        <p className="text-[11px] leading-5 text-sibs-muted">The behavioral score remains provisional, and the cognitive module has not been graded. Practical modules are summarized separately. Neither the results nor these responses constitute an automatic hiring decision.</p>
+        <p className="text-[11px] leading-5 text-sibs-muted">Module 1 and behavioral scores are provisional pending HR validation. Practical modules are summarized separately. These results do not constitute an automatic hiring decision.</p>
       </div>
     </ModalShell>
   );
