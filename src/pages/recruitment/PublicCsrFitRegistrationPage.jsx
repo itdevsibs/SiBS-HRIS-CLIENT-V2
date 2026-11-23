@@ -1,58 +1,60 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   AlertCircle,
   ArrowRight,
-  CheckCircle2,
   ClipboardCheck,
   LockKeyhole,
-  Mail,
   ShieldCheck,
 } from 'lucide-react';
 import api from '../../lib/axios/api-template';
 import CsrFitModuleJourney from '../../components/assessment/CsrFitModuleJourney';
 import PublicAssessmentDesktopOnly from '../../components/assessment/PublicAssessmentDesktopOnly';
 
-// Use the same seven-module roadmap and instructions as the invitation-based
-// CSR-Fit welcome page. This page only registers a public applicant and sends
-// their secure assessment link; it never creates or advances an exam locally.
+// The public assessment collects candidate identity only. The HRIS server
+// creates and begins the attempt, then returns a same-browser exam URL.
 const fields = [
   { key: 'firstName', label: 'First name', required: true, autoComplete: 'given-name' },
   { key: 'middleName', label: 'Middle name', required: false, autoComplete: 'additional-name' },
   { key: 'lastName', label: 'Last name', required: true, autoComplete: 'family-name' },
   { key: 'email', label: 'Email address', type: 'email', required: true, autoComplete: 'email' },
-  { key: 'desiredRole', label: 'Position applying for', required: true, autoComplete: 'organization-title' },
-  { key: 'location', label: 'Preferred work location', required: false, autoComplete: 'address-level2' },
 ];
 
 const initial = {
   firstName: '', middleName: '', lastName: '', email: '',
-  desiredRole: '', location: '', acceptPrivacy: false,
+  acceptPrivacy: false,
 };
 
 function PublicCsrFitRegistrationPageContent() {
+  const navigate = useNavigate();
   const [form, setForm] = useState(initial);
   const [submitting, setSubmitting] = useState(false);
-  const [complete, setComplete] = useState(false);
-  const [message, setMessage] = useState('');
+  const submitLock = useRef(false);
   const [error, setError] = useState('');
 
   const set = (key, value) => setForm(old => ({ ...old, [key]: value }));
 
   async function submit(event) {
     event.preventDefault();
-    if (submitting || complete) return;
+    if (submitLock.current) return;
+    submitLock.current = true;
     setError('');
     setSubmitting(true);
     try {
       const { data } = await api.post('/api/assessment/public-register', form, {
         withCredentials: false,
       });
-      if (data?.success === false) throw Error(data.message || 'Unable to register.');
-      setMessage(data?.message || 'Please check your email for your assessment link.');
-      setComplete(true);
+      if (data?.success === false) throw Error(data.message || 'Unable to begin assessment.');
+      // Do not accept arbitrary redirect URLs from the response. A valid
+      // 64-character bearer token is the only navigation input.
+      if (!/^[a-f0-9]{64}$/.test(String(data?.token || ''))) {
+        throw new Error('The assessment session could not be created. Please try again.');
+      }
+      navigate(`/online-assessment?token=${encodeURIComponent(data.token)}`, { replace: true });
     } catch (e) {
-      setError(e?.response?.data?.message || e.message || 'Unable to send your assessment link.');
+      setError(e?.response?.data?.message || e.message || 'Unable to begin the assessment.');
     } finally {
+      submitLock.current = false;
       setSubmitting(false);
     }
   }
@@ -73,7 +75,7 @@ function PublicCsrFitRegistrationPageContent() {
             </div>
             <div className="min-w-0">
               <h1 className="text-lg font-extrabold leading-tight sm:text-xl">SiBS CSR-Fit Public Assessment</h1>
-              <p className="mt-1 text-[11px] font-semibold text-white/75">Public registration · 7 modules · Secure assessment link by email</p>
+              <p className="mt-1 text-[11px] font-semibold text-white/75">Public registration · 7 modules · Start assessment directly</p>
             </div>
           </div>
           <span className="inline-flex items-center gap-1.5 rounded-lg border border-white/20 px-3 py-1.5 text-[11px] font-semibold text-white/90">
@@ -89,7 +91,7 @@ function PublicCsrFitRegistrationPageContent() {
               <div className="min-w-0">
                 <p className="text-[10px] font-extrabold uppercase tracking-[0.1em] text-[#ff5c28]">Before you begin</p>
                 <h2 id="public-assessment-heading" className="mt-1 text-xl font-extrabold tracking-tight text-[#082e53] sm:text-2xl">Prepare for your assessment</h2>
-                <p className="mt-2 text-[13px] leading-5 text-[#49647c]">Use a desktop or laptop computer to review the seven-module assessment and register for your private link. Mobile devices are not supported.</p>
+                <p className="mt-2 text-[13px] leading-5 text-[#49647c]">Use a desktop or laptop computer to register and begin your seven-module assessment. Mobile devices are not supported.</p>
               </div>
               <span className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-[#bad2e8] bg-white px-3 py-2 text-[11px] font-extrabold text-[#082e53]">
                 <LockKeyhole size={15} aria-hidden="true" /> Public registration
@@ -104,25 +106,15 @@ function PublicCsrFitRegistrationPageContent() {
 
           {/* Registration matches the candidate-verification section of the online welcome. */}
           <div className="border-t border-[#cbdceb] px-5 py-6 sm:px-7">
-            {complete ? (
-              <div role="status" className="mx-auto max-w-xl py-7 text-center">
-                <CheckCircle2 size={48} className="mx-auto text-emerald-600" aria-hidden="true" />
-                <h3 className="mt-4 text-xl font-extrabold text-[#082e53]">Check your email</h3>
-                <p className="mt-2 text-sm leading-6 text-[#49647c]">{message}</p>
-                <div className="mt-4 break-all rounded-lg border border-[#cbdceb] bg-[#f4f9fe] px-4 py-3 text-sm font-bold text-[#082e53]">{form.email}</div>
-                <p className="mt-3 text-xs leading-5 text-slate-500">Open your private link to complete candidate verification and begin the seven-module assessment. Check your spam folder if you do not see the email.</p>
-              </div>
-            ) : (
-              <>
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div>
-                    <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#ff5c28]">Pre-assessment verification</p>
-                    <h3 className="mt-1 text-lg font-extrabold text-[#082e53]">Verify your information</h3>
-                  </div>
-                  <span className="inline-flex items-center gap-2 rounded-lg border border-[#cbdceb] bg-[#f4f9fe] px-3 py-2 text-[11px] font-semibold text-[#082e53]">
-                    <Mail size={14} aria-hidden="true" /> Private link sent by email
-                  </span>
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#ff5c28]">Pre-assessment verification</p>
+                  <h3 className="mt-1 text-lg font-extrabold text-[#082e53]">Verify your information</h3>
                 </div>
+                <span className="inline-flex items-center gap-2 rounded-lg border border-[#cbdceb] bg-[#f4f9fe] px-3 py-2 text-[11px] font-semibold text-[#082e53]">
+                  <ShieldCheck size={14} aria-hidden="true" /> Start here — no email link required
+                </span>
+              </div>
 
                 <form onSubmit={submit} className="mt-5" aria-label="Public CSR-Fit registration form">
                   <div className="rounded-xl border border-[#cbdceb] bg-[#f4f9fe] p-4 sm:p-5">
@@ -130,9 +122,9 @@ function PublicCsrFitRegistrationPageContent() {
                       <ClipboardCheck size={17} aria-hidden="true" />
                       <h4 className="text-sm font-extrabold">Your candidate details</h4>
                     </div>
-                    <p className="mt-1 text-[11px] leading-5 text-slate-500">Enter your information accurately. The assessment link will be sent to the email below.</p>
+                    <p className="mt-1 text-[11px] leading-5 text-slate-500">Enter your name and email accurately. Your assessment starts after registration; no invitation email is required.</p>
 
-                    <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                    <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                       {fields.map(field => (
                         <label key={field.key} className="block min-w-0">
                           <span className="mb-1.5 block text-[11px] font-bold text-[#082e53]">
@@ -142,7 +134,7 @@ function PublicCsrFitRegistrationPageContent() {
                             name={field.key}
                             type={field.type || 'text'}
                             required={field.required}
-                            maxLength={field.key === 'email' ? 254 : field.key === 'desiredRole' ? 150 : 100}
+                            maxLength={field.key === 'email' ? 254 : 100}
                             autoComplete={field.autoComplete}
                             value={form[field.key]}
                             onChange={event => set(field.key, event.target.value)}
@@ -170,19 +162,17 @@ function PublicCsrFitRegistrationPageContent() {
                     </div>
                   )}
                   <footer className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-[#dbe5ee] pt-5">
-                    <p className="max-w-xl text-[11px] leading-5 text-slate-500">Your assessment does not start during registration. The timed exam begins only when you open your secure link and follow its start instructions.</p>
+                    <p className="max-w-xl text-[11px] leading-5 text-slate-500">Click Start assessment to begin your secure session. The seven modules run in sequence and cannot be restarted after beginning.</p>
                     <button
                       type="submit"
                       disabled={submitting}
                       className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-[#ff5c28] px-5 text-xs font-extrabold text-white transition hover:bg-[#e44b20] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ff5c28] disabled:cursor-not-allowed disabled:opacity-60"
                     >
-                      {submitting ? 'Sending your link…' : 'Send my assessment link'}
+                      {submitting ? 'Starting assessment…' : 'Start assessment'}
                       <ArrowRight size={15} aria-hidden="true" />
                     </button>
                   </footer>
                 </form>
-              </>
-            )}
           </div>
         </section>
       </div>
