@@ -4,7 +4,6 @@ import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import NotFound from "@/pages/NotFound";
 import LoginPage from "./pages/login/LoginPage";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
-import PublicAssessmentDesktopOnly from "./components/assessment/PublicAssessmentDesktopOnly";
 import PageFallback from "@/components/ui/PageFallback";
 import { PublicRouteFallback } from "@/components/ui";
 import { useUser } from "./services/context/UserContext";
@@ -93,6 +92,7 @@ const PublicJobDescriptionPage = lazyWithRetry(() => import("./pages/recruitment
 const FinalInterviewForms = lazyWithRetry(() => import("./components/recruitment/forms/FinalInterviewForms"));
 const CsrFitAssessmentPage = lazyWithRetry(() => import("./pages/recruitment/CsrFitAssessmentPage.jsx"));
 const PublicCsrFitRegistrationPage = lazyWithRetry(() => import("./pages/recruitment/PublicCsrFitRegistrationPage.jsx"));
+const PublicCsrFitAssessmentPage = lazyWithRetry(() => import("./pages/recruitment/PublicCsrFitAssessmentPage.jsx"));
 const PublicAssessmentApplicantsPage = lazyWithRetry(() => import("./pages/recruitment/PublicAssessmentApplicantsPage.jsx"));
 
 // Settings
@@ -111,6 +111,13 @@ const TraineeLearningPage = lazyWithRetry(() => import("./pages/learning/Trainee
 // Administration
 const DepartmentsPage = lazyWithRetry(() => import("./pages/administration/DepartmentsPage"));
 const OfficeLocationsPage = lazyWithRetry(() => import("./pages/administration/OfficeLocationsPage"));
+
+// The assessment portal has a separate root and session provider.  A full
+// document navigation is required when leaving the legacy HRIS shell.
+function PublicAssessmentPortalRedirect() {
+  React.useEffect(() => { window.location.replace('/assessment-admin/public-assessment'); }, []);
+  return <div className="p-6 text-sm text-sibs-secondary">Opening the Public Assessment administration portal…</div>;
+}
 
 function PrivateRoute({ children }) {
   return <ProtectedRoute>{children}</ProtectedRoute>;
@@ -162,8 +169,9 @@ function PublicApplicationRoutes() {
       <Route path="/applicant-portal" element={<PublicApplicantPortalPage />} />
       <Route path="/public/applicant-portal" element={<PublicApplicantPortalPage />} />
 
-      <Route path="/public-assessment" element={<PublicAssessmentDesktopOnly><PublicCsrFitRegistrationPage /></PublicAssessmentDesktopOnly>} />
-      <Route path="/online-assessment" element={<PublicAssessmentDesktopOnly><CsrFitAssessmentPage /></PublicAssessmentDesktopOnly>} />
+      <Route path="/public-assessment" element={<PublicCsrFitRegistrationPage />} />
+      <Route path="/public-assessment/session" element={<PublicCsrFitAssessmentPage />} />
+      <Route path="/online-assessment" element={<CsrFitAssessmentPage />} />
 
       {/* Keep old public application links working. */}
       <Route path="/apply" element={<Navigate to="/" replace />} />
@@ -203,12 +211,13 @@ function MainApplicationRoutes() {
         element={<PublicNhoScheduleResponsePage />}
       />
 
-      <Route path="/public-assessment" element={<PublicAssessmentDesktopOnly><PublicCsrFitRegistrationPage /></PublicAssessmentDesktopOnly>} />
+      <Route path="/public-assessment" element={<PublicCsrFitRegistrationPage />} />
+      <Route path="/public-assessment/session" element={<PublicCsrFitAssessmentPage />} />
 
       {/* Public CSR-Fit battery. Keep Job Evaluation on the private Final Interview route. */}
       <Route
         path="/online-assessment"
-        element={<PublicAssessmentDesktopOnly><CsrFitAssessmentPage /></PublicAssessmentDesktopOnly>}
+        element={<CsrFitAssessmentPage />}
       />
 
       {/* PUBLIC CANDIDATE INTERVIEW SCHEDULING */}
@@ -546,7 +555,7 @@ function MainApplicationRoutes() {
 
       <Route
         path="/recruitment/public-assessment"
-        element={<PrivateRoute><PublicAssessmentApplicantsPage /></PrivateRoute>}
+        element={<PublicAssessmentPortalRedirect />}
       />
 
       <Route

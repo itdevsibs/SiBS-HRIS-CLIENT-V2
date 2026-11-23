@@ -10,6 +10,7 @@ import {
 import api from '../../lib/axios/api-template';
 import CsrFitModuleJourney from '../../components/assessment/CsrFitModuleJourney';
 import PublicAssessmentDesktopOnly from '../../components/assessment/PublicAssessmentDesktopOnly';
+import { getPublicCsrFitResumeSession, rememberPublicCsrFitSession, forgetPublicCsrFitResumeSession, matchesPublicCsrFitIdentity } from '../../utils/assessment/csrFitResumeStorageClient';
 
 // The public assessment collects candidate identity only. The HRIS server
 // creates and begins the attempt, then returns a same-browser exam URL.
@@ -41,6 +42,62 @@ function PublicCsrFitRegistrationPageContent() {
     setError('');
     setSubmitting(true);
     try {
+      // Same-browser recovery happens BEFORE registration. A public name/email
+      // match alone is never enough to retrieve a token from the server.
+      const saved = getPublicCsrFitResumeSession(form);
+      if (saved) {
+        let sessionToken = saved.token;
+        let state;
+        try {
+          const response = await api.get(`/api/assessment/public/${sessionToken}`, { withCredentials: false });
+          state = response?.data?.data?.status ? response.data.data : response.data;
+        } catch (lookupError) {
+          if (Number(lookupError?.response?.status) === 404) {
+            // Previous public-registration versions could revoke a token
+            // while leaving the applicant's original attempt IN_PROGRESS.
+            // This exchanges only a known old token still held by this browser.
+            // It is not a name/email-only login and never resets the attempt.
+            try {
+              const repaired = await api.post(
+                `/api/assessment/public/${sessionToken}/restore-session`,
+                {
+                  firstName: form.firstName, middleName: form.middleName,
+                  lastName: form.lastName, email: form.email,
+                },
+                { withCredentials: false },
+              );
+              const exchanged = String(repaired?.data?.token || '');
+              if (!/^[a-f0-9]{64}$/.test(exchanged)) throw new Error('Invalid restored assessment credential.');
+              // The old bearer can no longer be reused after this exchange.
+              forgetPublicCsrFitResumeSession(sessionToken);
+              sessionToken = exchanged;
+              rememberPublicCsrFitSession(sessionToken, form);
+              const refreshed = await api.get(`/api/assessment/public/${sessionToken}`, { withCredentials: false });
+              state = refreshed?.data?.data?.status ? refreshed.data.data : refreshed.data;
+            } catch (repairError) {
+              // Keep the old credential for diagnosis; do not create another
+              // attempt or turn a server 404 into an unrelated registration.
+              const detail = repairError?.response?.data?.message;
+              throw new Error(detail || 'This older public assessment link cannot be recovered automatically. SiBS Recruitment can issue a replacement from Public Assessment > View details without resetting your answers.');
+            }
+          } else if (Number(lookupError?.response?.status) === 410) {
+            throw new Error('The original assessment access period has expired. Contact SiBS Recruitment; your answers remain saved.');
+          } else {
+            throw new Error('Unable to verify your saved assessment. Check your connection and try again; your original session has not been reset.');
+          }
+        }
+        if (!matchesPublicCsrFitIdentity(form, state?.candidate)) {
+          throw new Error('Saved assessment details do not match the registration information. Contact SiBS Recruitment for assistance.');
+        }
+        if (state?.status === 'SUBMITTED') {
+          throw new Error('This assessment has already been submitted. Contact SiBS Recruitment if you need assistance.');
+        }
+        if (!['IN_PROGRESS', 'NOT_STARTED'].includes(state?.status)) {
+          throw new Error('Your saved assessment cannot be resumed right now. Please contact SiBS Recruitment.');
+        }
+        navigate(`/public-assessment/session?token=${encodeURIComponent(sessionToken)}`, { replace: true });
+        return;
+      }
       const { data } = await api.post('/api/assessment/public-register', form, {
         withCredentials: false,
       });
@@ -50,9 +107,20 @@ function PublicCsrFitRegistrationPageContent() {
       if (!/^[a-f0-9]{64}$/.test(String(data?.token || ''))) {
         throw new Error('The assessment session could not be created. Please try again.');
       }
-      navigate(`/online-assessment?token=${encodeURIComponent(data.token)}`, { replace: true });
+      // Persist before navigation so a browser/tab crash immediately after
+      // registration can recover the same server-created attempt.
+      const persisted = rememberPublicCsrFitSession(data.token, form);
+      if (!persisted) {
+        // The assessment still works via its URL, but the browser could not
+        // preserve its recovery credential (e.g. private mode/storage disabled).
+        // Do not invalidate the newly created server attempt.
+        console.info('[CSR-Fit] Browser recovery storage unavailable; keep the assessment URL.');
+      }
+      navigate(`/public-assessment/session?token=${encodeURIComponent(data.token)}`, { replace: true });
     } catch (e) {
-      setError(e?.response?.data?.message || e.message || 'Unable to begin the assessment.');
+      setError(Number(e?.response?.status) === 409
+        ? 'An existing assessment is in progress for this email. If your saved link is unavailable, SiBS Recruitment can restore access from Public Assessment > View details. Your answers and timer have not been reset.'
+        : e?.response?.data?.message || e.message || 'Unable to begin the assessment.');
     } finally {
       submitLock.current = false;
       setSubmitting(false);
@@ -122,7 +190,7 @@ function PublicCsrFitRegistrationPageContent() {
                       <ClipboardCheck size={17} aria-hidden="true" />
                       <h4 className="text-sm font-extrabold">Your candidate details</h4>
                     </div>
-                    <p className="mt-1 text-[11px] leading-5 text-slate-500">Enter your name and email accurately. Your assessment starts after registration; no invitation email is required.</p>
+                    <p className="mt-1 text-[11px] leading-5 text-slate-500">Enter your name and email accurately. Returning applicants can enter the same information to continue a saved assessment in this browser. No invitation email is required.</p>
 
                     <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                       {fields.map(field => (
@@ -162,13 +230,13 @@ function PublicCsrFitRegistrationPageContent() {
                     </div>
                   )}
                   <footer className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-[#dbe5ee] pt-5">
-                    <p className="max-w-xl text-[11px] leading-5 text-slate-500">Click Start assessment to begin your secure session. The seven modules run in sequence and cannot be restarted after beginning.</p>
+                    <p className="max-w-xl text-[11px] leading-5 text-slate-500">Click below to begin or resume your saved attempt. Previously saved answers remain; the original assessment timer continues even after closing the browser.</p>
                     <button
                       type="submit"
                       disabled={submitting}
                       className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-[#ff5c28] px-5 text-xs font-extrabold text-white transition hover:bg-[#e44b20] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ff5c28] disabled:cursor-not-allowed disabled:opacity-60"
                     >
-                      {submitting ? 'Starting assessment…' : 'Start assessment'}
+                      {submitting ? 'Checking assessment…' : getPublicCsrFitResumeSession(form) ? 'Continue assessment' : 'Start assessment'}
                       <ArrowRight size={15} aria-hidden="true" />
                     </button>
                   </footer>

@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { ClipboardCheck, Eye, FileQuestion, CheckCircle2, Download, Loader2, BrainCircuit, RefreshCw, Mail, AlertCircle } from 'lucide-react';
 import ModalShell from '@/components/ui/ModalShell';
 import api from '@/lib/axios/api-template';
+import portalApi from '@/lib/assessment-admin/portalApi';
 import SelectDropdown from '@/components/ui/SelectDropdown';
 import { downloadCsrFitAssessmentPdf } from '@/lib/utils/csrFitAssessmentPdfClient';
 import { CSR_FIT_MODULE_NAMES } from '@/components/assessment/csrFitModuleGuides';
@@ -113,7 +114,7 @@ function QuantityGraph({ label, value, scale, unit = '', benchmark = null, note 
 }
 
 /** Submitted candidate answers only — no editable inputs or server write actions. */
-export default function CsrFitAssessmentResultModal({ open, data, onClose }) {
+export default function CsrFitAssessmentResultModal({ open, data, onClose, portalMode = false }) {
   const [module, setModule] = useState('module1');
   const [filter, setFilter] = useState('all');
   const [pdfBusy, setPdfBusy] = useState(false);
@@ -145,7 +146,7 @@ export default function CsrFitAssessmentResultModal({ open, data, onClose }) {
   // after repeated transport failures, offer an explicit Check status action.
   useEffect(() => {
     const id = Number(data?.candidatePipelineId);
-    if (!open || !Number.isSafeInteger(id) || id < 1) return;
+    if (portalMode || !open || !Number.isSafeInteger(id) || id < 1) return;
     let cancelled = false;
     let timer;
     let refreshing = false;
@@ -189,8 +190,10 @@ export default function CsrFitAssessmentResultModal({ open, data, onClose }) {
     setEmailBusy(true);
     setEmailError('');
     try {
-      const url = `/api/assessment/completion-email/${id}/${retry ? 'retry' : 'status'}`;
-      const response = retry ? await api.post(url) : await api.get(url);
+      const base = portalMode ? '/api/assessment-portal' : '/api/assessment';
+      const url = `${base}/completion-email/${id}/${retry ? 'retry' : 'status'}`;
+      const client = portalMode ? portalApi : api;
+      const response = retry ? await client.post(url) : await client.get(url);
       setEmailDelivery(response?.data?.data || {status:'NOT_QUEUED'});
     } catch (error) {
       setEmailError(error?.response?.data?.message || 'Could not check report email delivery.');
@@ -200,6 +203,7 @@ export default function CsrFitAssessmentResultModal({ open, data, onClose }) {
   };
 
   const retryHermes = async () => {
+    if (portalMode) return;
     const id = Number(data?.candidatePipelineId);
     if (!Number.isSafeInteger(id) || id < 1 || hermesRetryBusy) return;
     setHermesRetryBusy(true);
@@ -354,12 +358,12 @@ export default function CsrFitAssessmentResultModal({ open, data, onClose }) {
                     hermesState?.status === 'RUNNING' ? 'Hermes is interpreting the completed assessment.' :
                     'Hermes analysis is queued. Verified scores are available below.'}</span>
                 </div>
-                {hermesState?.status === 'FAILED' && <button type="button" disabled={hermesRetryBusy}
+                {!portalMode && hermesState?.status === 'FAILED' && <button type="button" disabled={hermesRetryBusy}
                   onClick={retryHermes} className="inline-flex items-center gap-2 rounded-lg bg-sibs-navy px-3 py-2 text-[11px] font-bold text-white disabled:opacity-60">
                   {hermesRetryBusy ? <Loader2 size={13} className="animate-spin"/> : <RefreshCw size={13}/>}
                   Retry analysis
                 </button>}
-                {(['UNAVAILABLE', 'PENDING', 'RUNNING'].includes(hermesState?.status) || !hermesState) &&
+                {!portalMode && (['UNAVAILABLE', 'PENDING', 'RUNNING'].includes(hermesState?.status) || !hermesState) &&
                   <button type="button" onClick={refreshHermes} disabled={hermesRetryBusy}
                     className="inline-flex items-center gap-1.5 rounded-lg border border-sibs-border bg-white px-3 py-2 text-[11px] font-bold text-sibs-navy hover:bg-sibs-surface disabled:opacity-50">
                     <RefreshCw size={13}/> Check status

@@ -1378,12 +1378,6 @@ export default function Sidebar() {
       notificationKey: "candidatePipelineActive",
     },
     {
-      name: "Public Assessment",
-      icon: ClipboardCheck,
-      path: "/recruitment/public-assessment",
-      allowedUsers: [1, 2, 3, 7],
-    },
-    {
       name: "Offers",
       icon: Gift,
       path: "/recruitment/offers",
@@ -1540,7 +1534,6 @@ export default function Sidebar() {
         recruitmentMenu.find((item) => item.path === "/recruitment/applicant-leads"),
         recruitmentMenu.find((item) => item.path === "/recruitment/talent-pool"),
         recruitmentMenu.find((item) => item.path === "/recruitment/candidate-pipeline"),
-        recruitmentMenu.find((item) => item.path === "/recruitment/public-assessment"),
         recruitmentMenu.find((item) => item.path === "/recruitment/offers"),
         recruitmentMenu.find((item) => item.path === "/recruitment/new-hire-orientation"),
         recruitmentMenu.find((item) => item.path === "/public/applicant-portal"),
