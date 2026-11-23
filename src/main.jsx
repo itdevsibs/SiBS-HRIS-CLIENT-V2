@@ -9,7 +9,7 @@ import {
 
 import App from "./App.jsx";
 import PublicRouteFallback from "./components/ui/PublicRouteFallback.jsx";
-import { isStandalonePublicRoute, normalizePath } from "./config/publicRoutes";
+import { isStandalonePublicRoute, isPublicApplicationHostname, normalizePath } from "./config/publicRoutes";
 import "./index.css";
 import { startAnimatedHrisFavicon } from "./lib/utils/animatedFavicon.js";
 
@@ -57,8 +57,15 @@ const CsrFitAssessmentPage = lazyWithRetry(() =>
 const PublicCsrFitRegistrationPage = lazyWithRetry(() =>
   import("./pages/recruitment/PublicCsrFitRegistrationPage.jsx")
 );
+// Public-only assessment exam; Candidate Pipeline keeps its own /online-assessment.
+const PublicCsrFitAssessmentPage = lazyWithRetry(() =>
+  import("./pages/recruitment/PublicCsrFitAssessmentPage.jsx")
+);
 const PublicApplicantPortalPage = lazyWithRetry(() =>
   import("./pages/public/PublicApplicantPortalPage.jsx")
+);
+const AssessmentAdminApp = lazyWithRetry(() =>
+  import("./pages/assessment-admin/AssessmentAdminApp.jsx")
 );
 
 /* =====================================================
@@ -218,6 +225,11 @@ export function StandalonePublicApp() {
           path="/public-assessment"
           element={<PublicCsrFitRegistrationPage />}
         />
+        {/* Public applicants take the exam here, never via /online-assessment. */}
+        <Route
+          path="/public-assessment/session"
+          element={<PublicCsrFitAssessmentPage />}
+        />
 
         {/* =========================================
             PUBLIC APPLICANT ONBOARDING PORTAL
@@ -253,6 +265,11 @@ export function StandalonePublicApp() {
 const pathname = window.location.pathname;
 const hostname = window.location.hostname;
 
+const isAssessmentAdminPortal =
+  !isPublicApplicationHostname(hostname) &&
+  (normalizePath(pathname) === "/assessment-admin" ||
+   normalizePath(pathname).startsWith("/assessment-admin/"));
+
 const isCandidateStandalonePublic =
   isStandalonePublicRoute(pathname, hostname) &&
   normalizePath(pathname) !== "/login";
@@ -266,7 +283,9 @@ if (!isCandidateStandalonePublic && normalizePath(pathname) !== "/login") {
 createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <BrowserRouter>
-      {isCandidateStandalonePublic ? <StandalonePublicApp /> : <App />}
+      {isAssessmentAdminPortal ? (
+        <Suspense fallback={<PublicRouteFallback />}><AssessmentAdminApp /></Suspense>
+      ) : isCandidateStandalonePublic ? <StandalonePublicApp /> : <App />}
     </BrowserRouter>
   </React.StrictMode>,
 );

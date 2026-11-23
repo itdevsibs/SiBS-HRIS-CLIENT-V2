@@ -1,14 +1,20 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  Search, RefreshCw, ExternalLink, Eye, Clock3,
-  CheckCircle2, Mail, Users, AlertCircle, FileClock, X, UserRound,
-  MapPin, BriefcaseBusiness,
+  RefreshCw, ExternalLink, Eye, Clock3,
+  CheckCircle2, Users, AlertCircle, FileClock, X, UserRound,
+  BriefcaseBusiness, KeyRound,
 } from 'lucide-react';
 import Header from '../../components/layout/Header';
 import api from '../../lib/axios/api-template';
+import socket from '../../lib/axios/socket';
+import portalSocket from '../../lib/assessment-admin/portalSocket';
+import portalApi from '../../lib/assessment-admin/portalApi';
 import ModalShell from '../../components/ui/ModalShell';
 import { PageHeaderHero } from '../../components/ui';
 import CsrFitAssessmentResultModal from '../../components/modals/candidatePipeline/CsrFitAssessmentResultModal';
+// Reuse the same HRIS controls used by Recruitment > Talent Pool.
+import PaginationTable from '../../services/pagination/PaginationTable';
+import StatusFilterTabs from '../../components/ui/StatusFilterTabs';
 
 const STATUS_STYLES = {
   INVITED: 'border-slate-200 bg-slate-50 text-slate-700',
@@ -16,16 +22,10 @@ const STATUS_STYLES = {
   SUBMITTED: 'border-emerald-200 bg-emerald-50 text-emerald-800',
 };
 const STATUS_LABELS = {
-  INVITED: 'Invitation sent',
+  INVITED: 'Not started',
   IN_PROGRESS: 'In progress',
   SUBMITTED: 'Submitted',
 };
-const FILTERS = [
-  { value: 'ALL', label: 'All statuses' },
-  { value: 'INVITED', label: 'Invitation sent' },
-  { value: 'IN_PROGRESS', label: 'In progress' },
-  { value: 'SUBMITTED', label: 'Submitted' },
-];
 const safeScore = (value) => value !== null && value !== undefined && value !== '' &&
   Number.isFinite(Number(value)) && Number(value) >= 0 && Number(value) <= 100
   ? `${Number(value).toFixed(2)}%` : '—';
@@ -36,8 +36,9 @@ const readableDate = (value) => {
     timeZone: 'Asia/Manila', month: 'long', day: 'numeric', year: 'numeric',
   }).format(date);
 };
-const initials = (name) => String(name || '').split(/\s+/).filter(Boolean).slice(0, 2)
-  .map(part => part[0].toUpperCase()).join('') || 'PA';
+// Name comes from the public directory in HRIS surname-first format.
+// Keep avatars in the normal SiBS HRIS given-name + surname initial order.
+
 
 function StatusLabel({ value }) {
   return <span className={`inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-[11px] font-bold ${STATUS_STYLES[value] || STATUS_STYLES.INVITED}`}>
@@ -55,7 +56,7 @@ function ProvisionalResults({ row }) {
   </div>;
 }
 
-function PendingApplicantModal({ applicant, onClose }) {
+function PendingApplicantModal({ applicant, onClose, onRestore, restoring }) {
   return <ModalShell open={Boolean(applicant)} onClose={onClose} title="Public Assessment Applicant"
     subtitle={applicant?.name || 'Applicant registration'} icon={UserRound}
     maxWidth="max-w-[650px]" autoDetectDirty={false} closeOnBackdrop={false}
@@ -67,10 +68,9 @@ function PendingApplicantModal({ applicant, onClose }) {
           <p className="mt-1 text-xs text-sibs-secondary">{applicant.email}</p></div>
         <StatusLabel value={applicant.status} />
       </div>
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid gap-3 sm:grid-cols-3">
         {[
-          [BriefcaseBusiness, 'Desired role', applicant.desiredRole || '—'],
-          [MapPin, 'Location', applicant.location || 'Not specified'],
+          [BriefcaseBusiness, 'Position', applicant.desiredRole || 'Not assigned'],
           [FileClock, 'Registered', readableDate(applicant.createdAt)],
           [Clock3, 'Assessment stage', applicant.status === 'IN_PROGRESS'
             ? `Module ${applicant.currentModule || 1} of 7 · ${applicant.completedModules || 0} completed`
@@ -83,11 +83,21 @@ function PendingApplicantModal({ applicant, onClose }) {
       <p className="rounded-lg border border-sibs-border bg-white px-3 py-3 text-xs leading-5 text-sibs-secondary">
         Assessment answers and scores become available only after the applicant submits the completed exam.
       </p>
+      {applicant.status !== 'SUBMITTED' && <div className="rounded-xl border border-blue-200 bg-blue-50/70 p-4">
+        <h4 className="flex items-center gap-2 text-xs font-extrabold text-sibs-navy"><KeyRound size={15}/> Restore public assessment access</h4>
+        <p className="mt-1.5 text-[11px] leading-5 text-sibs-secondary">If the applicant's old link returns 404, create a replacement link for this same assessment. Existing answers and the original timer are preserved. Share the link privately with the correct applicant.</p>
+        <button type="button" disabled={restoring} onClick={() => onRestore(applicant)}
+          className="mt-3 inline-flex items-center gap-2 rounded-lg bg-sibs-navy px-4 py-2.5 text-xs font-extrabold text-white disabled:opacity-50">
+          <KeyRound size={14}/>{restoring ? 'Restoring…' : 'Copy replacement public link'}
+        </button>
+      </div>}
     </div>}
   </ModalShell>;
 }
 
-export default function PublicAssessmentApplicantsPage() {
+export default function PublicAssessmentApplicantsPage({ portalMode = false, onUnauthorized }) {
+  const assessmentApi = portalMode ? portalApi : api;
+  const liveSocket = portalMode ? portalSocket : socket;
   const [items, setItems] = useState([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -100,35 +110,94 @@ export default function PublicAssessmentApplicantsPage() {
   const [assessmentResult, setAssessmentResult] = useState(null);
   const [resultLoadingId, setResultLoadingId] = useState(null);
   const [resultError, setResultError] = useState('');
+  const [restoringApplicantId, setRestoringApplicantId] = useState(null);
   const pageCount = Math.max(1, Math.ceil(total / 20));
-  const pageStats = useMemo(() => ({
-    progress: items.filter(item => item.status === 'IN_PROGRESS').length,
-    submitted: items.filter(item => item.status === 'SUBMITTED').length,
-  }), [items]);
+  const [summary, setSummary] = useState({ registered: 0, inProgress: 0, submitted: 0 });
+  const statusTabs = [
+    { value: 'ALL', label: 'All', icon: Users },
+    { value: 'INVITED', label: 'Not started', icon: FileClock },
+    { value: 'IN_PROGRESS', label: 'In progress', icon: Clock3, count: summary.inProgress },
+    { value: 'SUBMITTED', label: 'Submitted', icon: CheckCircle2, count: summary.submitted },
+  ];
+  const requestSequenceRef = useRef(0);
+  const debounceRef = useRef(null);
 
   const load = useCallback(async ({ silent = false } = {}) => {
+    const sequence = ++requestSequenceRef.current;
     if (!silent) setLoading(true);
     try {
-      const response = await api.get('/api/assessment/public-applicants', {
+      const response = await assessmentApi.get(portalMode ? '/api/assessment-portal/applicants' : '/api/assessment/public-applicants', {
         params: { page, limit: 20, search: query, status: statusFilter },
       });
-      setItems(Array.isArray(response.data?.data?.items) ? response.data.data.items : []);
-      setTotal(Number(response.data?.data?.total) || 0);
+      if (sequence !== requestSequenceRef.current) return;
+      const result = response.data?.data || {};
+      const newItems = Array.isArray(result.items) ? result.items : [];
+      setItems(newItems);
+      setSelectedApplicant(previous => {
+        if (!previous) return previous;
+        return newItems.find(item => item.id === previous.id) || previous;
+      });
+      setTotal(Number(result.total) || 0);
+      if (result.summary) setSummary({
+        registered: Number(result.summary.registered) || 0,
+        inProgress: Number(result.summary.inProgress) || 0,
+        submitted: Number(result.summary.submitted) || 0,
+      });
       setError('');
     } catch (cause) {
-      setError(cause?.response?.data?.message || 'Unable to retrieve public assessment applicants.');
+      if (portalMode && [401, 403].includes(Number(cause?.response?.status))) onUnauthorized?.();
+      if (sequence === requestSequenceRef.current)
+        setError(cause?.response?.data?.message || 'Unable to retrieve public assessment applicants.');
     } finally {
-      if (!silent) setLoading(false);
+      if (sequence === requestSequenceRef.current) setLoading(false);
     }
-  }, [page, query, statusFilter]);
+  }, [page, query, statusFilter, portalMode, onUnauthorized, assessmentApi]);
 
   useEffect(() => {
+    // When a live update removes the last record on the current page, return
+    // to the last existing page instead of showing a stale empty result.
+    if (page > pageCount) setPage(pageCount);
+  }, [page, pageCount]);
+
+  useEffect(() => {
+    // SiBS Chat pattern: Socket.IO is the primary update transport. Only an
+    // invalidation event is received; authorized HRIS GET supplies all details.
+    const isVisible = () => document.visibilityState === 'visible' && !document.hidden;
+    const refresh = () => {
+      if (!isVisible()) return;
+      if (debounceRef.current !== null) window.clearTimeout(debounceRef.current);
+      debounceRef.current = window.setTimeout(() => {
+        debounceRef.current = null;
+        void load({ silent: true });
+      }, 180);
+    };
+    const subscribe = () => {
+      liveSocket.emit('public-assessment:subscribe', (ack) => {
+        if (ack?.subscribed) refresh();
+      });
+    };
+    const handleVisibility = () => { if (isVisible()) refresh(); };
     void load();
-    const interval = window.setInterval(() => {
-      if (document.visibilityState === 'visible' && !document.hidden) void load({ silent: true });
-    }, 15000);
-    return () => window.clearInterval(interval);
-  }, [load]);
+    liveSocket.on('connect', subscribe);
+    liveSocket.on('public-assessment:changed', refresh);
+    if (!liveSocket.connected) liveSocket.connect();
+    else subscribe();
+    // Recovery for missed events (e.g. different Socket.IO processes behind
+    // the reverse proxy); do not repeatedly fetch while tab is hidden.
+    const recovery = window.setInterval(refresh, 60000);
+    document.addEventListener('visibilitychange', handleVisibility);
+    window.addEventListener('focus', handleVisibility);
+    return () => {
+      liveSocket.off('connect', subscribe);
+      liveSocket.off('public-assessment:changed', refresh);
+      if (liveSocket.connected) liveSocket.emit('public-assessment:unsubscribe');
+      window.clearInterval(recovery);
+      if (debounceRef.current !== null) window.clearTimeout(debounceRef.current);
+      document.removeEventListener('visibilitychange', handleVisibility);
+      window.removeEventListener('focus', handleVisibility);
+      // Shared socket also carries notifications: do not disconnect it.
+    };
+  }, [load, liveSocket]);
 
   async function openApplicant(applicant) {
     if (!applicant || resultLoadingId !== null) return;
@@ -139,14 +208,40 @@ export default function PublicAssessmentApplicantsPage() {
     }
     setResultLoadingId(applicant.id);
     try {
-      const response = await api.get(`/api/assessment/public-applicants/${applicant.id}/result`);
+      const response = await assessmentApi.get(portalMode ? `/api/assessment-portal/applicants/${applicant.id}/result` : `/api/assessment/public-applicants/${applicant.id}/result`);
       const data = response.data?.data;
       if (!data?.available) throw new Error('The completed assessment result is not available.');
       setAssessmentResult(data); // EXACT same read-only Candidate Pipeline results modal.
     } catch (cause) {
+      if (portalMode && [401, 403].includes(Number(cause?.response?.status))) onUnauthorized?.();
       setResultError(cause?.response?.data?.message || cause?.message || 'Could not open assessment results.');
     } finally {
       setResultLoadingId(null);
+    }
+  }
+
+  async function restoreApplicant(applicant) {
+    if (!applicant || restoringApplicantId !== null || applicant.status === 'SUBMITTED') return;
+    if (!window.confirm(`Restore public assessment access for ${applicant.name}?\n\nThis replaces the previous link, but keeps the same attempt, saved answers and original timer.`)) return;
+    setRestoringApplicantId(applicant.id);
+    setResultError('');
+    try {
+      const response = await assessmentApi.post(portalMode ? `/api/assessment-portal/applicants/${applicant.id}/reissue-session` : `/api/assessment/public-applicants/${applicant.id}/reissue-session`, {});
+      const token = String(response.data?.data?.token || '');
+      if (!/^[0-9a-f]{64}$/.test(token)) throw new Error('The server did not return a valid replacement token.');
+      const link = `${window.location.origin}/public-assessment/session?token=${encodeURIComponent(token)}`;
+      try {
+        await navigator.clipboard.writeText(link);
+        window.alert('Replacement public assessment link copied. Share it privately with the applicant.');
+      } catch {
+        window.prompt('Copy the replacement link and share it privately with the applicant:', link);
+      }
+      void load({silent:true});
+    } catch (cause) {
+      if (portalMode && [401, 403].includes(Number(cause?.response?.status))) onUnauthorized?.();
+      setResultError(cause?.response?.data?.message || cause?.message || 'Unable to restore assessment access.');
+    } finally {
+      setRestoringApplicantId(null);
     }
   }
 
@@ -160,11 +255,11 @@ export default function PublicAssessmentApplicantsPage() {
     }
   }
 
-  return <div className="sibs-dashboard-shell">
-    <div className="shrink-0"><Header /></div>
-    <main className="sibs-dashboard-main-wide">
+  return <div className={portalMode ? 'w-full' : 'sibs-dashboard-shell'}>
+    {!portalMode && <div className="shrink-0"><Header /></div>}
+    <main className={portalMode ? 'w-full px-1 py-1' : 'sibs-dashboard-main-wide'}>
       <div className="mx-auto flex w-full max-w-[1700px] flex-col gap-4 sm:gap-5">
-        <PageHeaderHero kicker="Recruitment Pipeline" title="Public Assessment"
+        <PageHeaderHero kicker={portalMode ? 'Assessment Administration' : 'Recruitment Pipeline'} title="Public Assessment"
           description="Public CSR-Fit registrations, assessment progress, and verified candidate results."
           actions={<div className="flex flex-wrap items-center gap-2">
             <button type="button" onClick={() => { void load(); }} className="sibs-btn-icon" title="Refresh records" aria-label="Refresh public assessment records">
@@ -183,9 +278,9 @@ export default function PublicAssessmentApplicantsPage() {
 
         <div className="grid gap-3 sm:grid-cols-3">
           {[
-            [Users, 'Registered applicants', total, 'All matching records'],
-            [Clock3, 'In progress', pageStats.progress, 'Current page'],
-            [CheckCircle2, 'Submitted', pageStats.submitted, 'Current page'],
+            [Users, 'Registered applicants', summary.registered, 'All matching records'],
+            [Clock3, 'In progress', summary.inProgress, 'All matching records'],
+            [CheckCircle2, 'Submitted', summary.submitted, 'All matching records'],
           ].map(([Icon, label, value, note]) => <div key={label} className="flex items-center gap-3 rounded-xl border border-sibs-border bg-white px-4 py-3.5 shadow-sm">
             <div className="rounded-lg bg-[#ecf3fa] p-2.5 text-sibs-navy"><Icon size={19} /></div>
             <div><p className="text-[11px] font-bold text-sibs-secondary">{label}</p>
@@ -194,97 +289,165 @@ export default function PublicAssessmentApplicantsPage() {
           </div>)}
         </div>
 
-        <section className="overflow-hidden rounded-xl border border-sibs-border bg-white shadow-sm" aria-label="Public assessment applicant directory">
-          <div className="flex flex-wrap items-end justify-between gap-3 border-b border-sibs-border px-4 py-4 sm:px-5">
-            <div><h2 className="text-sm font-extrabold text-sibs-navy">Applicant Directory</h2>
-              <p className="mt-1 text-[11px] text-sibs-muted">Click an applicant to view their record and, once submitted, the complete CSR-Fit results.</p></div>
-            <form className="flex flex-wrap items-center gap-2" onSubmit={event => {event.preventDefault();setPage(1);setQuery(searchInput.trim());}}>
-              <label className="flex h-10 items-center gap-2 rounded-lg border border-sibs-border px-3">
-                <Search size={15} className="text-sibs-muted" />
-                <input type="search" aria-label="Search public applicants" value={searchInput}
-                  onChange={event => setSearchInput(event.target.value)} placeholder="Search applicant or position"
-                  className="w-[170px] bg-transparent text-xs text-sibs-navy outline-none sm:w-[220px]" />
-              </label>
-              <label className="sr-only" htmlFor="public-assessment-status">Filter by assessment status</label>
-              <select id="public-assessment-status" value={statusFilter}
-                onChange={event => {setPage(1);setStatusFilter(event.target.value);}}
-                className="h-10 rounded-lg border border-sibs-border bg-white px-3 text-xs font-bold text-sibs-navy">
-                {FILTERS.map(item => <option key={item.value} value={item.value}>{item.label}</option>)}
-              </select>
-              <button type="submit" className="sibs-btn-primary h-10 px-4 text-xs">Search</button>
-              {query && <button type="button" onClick={() => {setQuery('');setSearchInput('');setPage(1);}} className="sibs-btn-secondary h-10 px-3" aria-label="Clear search"><X size={14} /></button>}
-            </form>
-          </div>
-          {error && <div role="alert" className="m-4 flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-xs font-semibold text-red-700">
-            <AlertCircle size={15} />{error}
-          </div>}
-          {resultError && <div role="alert" className="m-4 flex items-center justify-between gap-3 rounded-lg border border-red-200 bg-red-50 p-3 text-xs font-semibold text-red-700">
-            <span>{resultError}</span><button type="button" aria-label="Dismiss error" onClick={() => setResultError('')}><X size={15}/></button>
-          </div>}
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[1090px] border-collapse text-left">
-              <thead className="bg-[#f2f6fb] text-[11px] uppercase tracking-wide text-sibs-navy">
-                <tr>
-                  <th className="px-4 py-3 font-extrabold sm:px-5">Applicant</th>
-                  <th className="px-4 py-3 font-extrabold">Position / Location</th>
-                  <th className="px-4 py-3 font-extrabold">Registered</th>
-                  <th className="px-4 py-3 font-extrabold">Status</th>
-                  <th className="px-4 py-3 font-extrabold">Current stage</th>
-                  <th className="px-4 py-3 font-extrabold">Assessment results</th>
-                  <th className="px-4 py-3 text-right font-extrabold">View</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-sibs-border text-xs">
-                {loading && items.length === 0 && <tr><td colSpan={7} className="px-5 py-12 text-center text-sibs-secondary">Loading applicants…</td></tr>}
-                {!loading && items.length === 0 && <tr><td colSpan={7} className="px-5 py-12 text-center text-sibs-secondary">No public assessment applicants found.</td></tr>}
-                {items.map(applicant => <tr key={applicant.id} onClick={() => void openApplicant(applicant)}
-                  className="cursor-pointer transition-colors hover:bg-[#f6faff]">
-                  <td className="px-4 py-3 sm:px-5">
-                    <div className="flex items-center gap-2.5">
-                      <span aria-hidden="true" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[#cfdfef] bg-[#edf4fb] text-[11px] font-extrabold text-sibs-navy">{initials(applicant.name)}</span>
-                      <div className="min-w-0">
-                        <button type="button" onClick={event => {event.stopPropagation();void openApplicant(applicant);}}
-                          className="text-left text-xs font-extrabold text-sibs-navy hover:text-sibs-orange hover:underline">
-                          {applicant.name || 'Unnamed applicant'}
-                        </button>
-                        <p className="mt-1 flex items-center gap-1 text-[10px] text-sibs-muted"><Mail size={11}/>{applicant.email || '—'}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3"><p className="font-bold text-sibs-navy">{applicant.desiredRole || '—'}</p><p className="mt-1 text-[11px] text-sibs-muted">{applicant.location || 'Not specified'}</p></td>
-                  <td className="whitespace-nowrap px-4 py-3 text-sibs-secondary">{readableDate(applicant.createdAt)}</td>
-                  <td className="px-4 py-3"><StatusLabel value={applicant.status}/></td>
-                  <td className="px-4 py-3 text-sibs-secondary">
-                    {applicant.status === 'IN_PROGRESS' ? `Module ${applicant.currentModule || 1} of 7`
-                      : applicant.status === 'SUBMITTED' ? '7 of 7 completed' : 'Not started'}
-                    {applicant.status === 'IN_PROGRESS' && <p className="mt-1 text-[10px] text-sibs-muted">{applicant.completedModules || 0} completed</p>}
-                  </td>
-                  <td className="px-4 py-3"><ProvisionalResults row={applicant}/></td>
-                  <td className="px-4 py-3 text-right">
-                    <button type="button" disabled={resultLoadingId !== null}
-                      onClick={event => {event.stopPropagation();void openApplicant(applicant);}}
-                      className="inline-flex items-center gap-1.5 rounded-lg border border-sibs-border bg-white px-3 py-2 text-[11px] font-bold text-sibs-navy shadow-sm hover:border-sibs-orange hover:text-sibs-orange disabled:cursor-wait disabled:opacity-50">
-                      <Eye size={14}/>{resultLoadingId === applicant.id ? 'Opening…' : applicant.status === 'SUBMITTED' ? 'View results' : 'View details'}
+        {/* Same panel hierarchy, HRIS CSS classes and controls as Recruitment > Talent Pool. */}
+        <section
+          className="sibs-page-card-in sibs-card relative z-[10] flex flex-col overflow-hidden rounded-[14px] border border-sibs-border bg-white shadow-xs font-jakarta"
+          aria-label="Public assessment applicant directory"
+        >
+          <div className="border-b border-sibs-border p-4 sm:p-5 2xl:p-6">
+            <div className="flex flex-col gap-0.5">
+              <h2 className="sibs-card-title">Applicant Directory</h2>
+              <p className="sibs-card-subtitle">
+                Search applicants and review their saved assessment progress and results.
+              </p>
+            </div>
+            <div className="relative z-[90] mt-3.5 overflow-visible 2xl:mt-4">
+              <PaginationTable
+                filterLayout="ta-inline"
+                showFilterPanel={false}
+                showFilterHeader={false}
+                showPagination={false}
+                searchValue={searchInput}
+                searchLabel="Search"
+                searchPlaceholder="Search applicant name or email..."
+                onSearchChange={setSearchInput}
+                onSearchKeyDown={(event) => {
+                  if (event.key === 'Enter') {
+                    event.preventDefault();
+                    setPage(1);
+                    setQuery(searchInput.trim());
+                  }
+                }}
+                rightContent={
+                  <div className="flex w-full items-center gap-2 xl:w-auto">
+                    <button type="button" onClick={() => { setPage(1); setQuery(searchInput.trim()); }}
+                      className="sibs-btn-primary inline-flex h-9 items-center justify-center px-4 text-xs 2xl:h-10">
+                      Search
                     </button>
-                  </td>
-                </tr>)}
-              </tbody>
-            </table>
+                    <button type="button" disabled={!query && !searchInput}
+                      onClick={() => { setPage(1); setQuery(''); setSearchInput(''); }}
+                      className="sibs-btn-secondary inline-flex h-9 items-center justify-center gap-1.5 px-3 text-xs disabled:cursor-not-allowed disabled:opacity-40 2xl:h-10">
+                      <X size={14} /> Clear
+                    </button>
+                  </div>
+                }
+                className="border-0 bg-transparent p-0 shadow-none"
+              />
+            </div>
           </div>
-          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-sibs-border px-4 py-3 text-xs text-sibs-secondary sm:px-5">
-            <span>{total} matching applicant{total === 1 ? '' : 's'} · Page {Math.min(page, pageCount)} of {pageCount}</span>
-            <div className="flex items-center gap-2">
-              <button type="button" disabled={page <= 1} onClick={() => setPage(value => Math.max(1, value - 1))}
-                className="rounded-lg border border-sibs-border px-3 py-2 font-bold disabled:opacity-40">Previous</button>
-              <button type="button" disabled={page >= pageCount} onClick={() => setPage(value => value + 1)}
-                className="rounded-lg border border-sibs-border px-3 py-2 font-bold disabled:opacity-40">Next</button>
+
+          <div className="flex flex-1 flex-col p-4 sm:p-5 2xl:p-6">
+            <div className="flex flex-1 flex-col overflow-hidden rounded-[14px] border border-sibs-border bg-white shadow-xs">
+              <StatusFilterTabs
+                tabs={statusTabs}
+                activeValue={statusFilter}
+                layoutId="publicAssessmentApplicantStatusIndicator"
+                onChange={value => { setPage(1); setStatusFilter(value); }}
+              />
+              {error && <div role="alert" className="m-4 flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-xs font-semibold text-red-700">
+                <AlertCircle size={15} />{error}
+              </div>}
+              {resultError && <div role="alert" className="m-4 flex items-center justify-between gap-3 rounded-lg border border-red-200 bg-red-50 p-3 text-xs font-semibold text-red-700">
+                <span>{resultError}</span><button type="button" aria-label="Dismiss error" onClick={() => setResultError('')}><X size={15}/></button>
+              </div>}
+
+              <div className="max-h-[480px] overflow-x-auto overflow-y-auto bg-white sibs-scrollbar 2xl:max-h-[640px]">
+                <table className="w-full min-w-[1160px] table-fixed border-separate border-spacing-0 text-left 2xl:min-w-[1250px]">
+                  <thead className="sibs-data-table-head">
+                    <tr className="sibs-data-table-head-row">
+                      {[
+                        ['Applicant', 'w-[21%] text-left'],
+                        ['Position', 'w-[15%] text-left'],
+                        ['Registered', 'w-[14%] text-center'],
+                        ['Status', 'w-[12%] text-center'],
+                        ['Current stage', 'w-[13%] text-center'],
+                        ['Assessment results', 'w-[15%] text-left'],
+                        ['View', 'w-[10%] text-center'],
+                      ].map(([heading, width]) => <th key={heading}
+                        className={`sibs-data-table-th ${width} px-3 py-2.5 sibs-text-micro font-black uppercase tracking-wider text-sibs-navy 2xl:px-4 2xl:py-3.5`}>
+                        {heading}
+                      </th>)}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {loading && items.length === 0 && <tr><td colSpan={7} className="px-5 py-12 text-center sibs-text-xs font-semibold text-sibs-secondary">Loading applicants…</td></tr>}
+                    {!loading && items.length === 0 && <tr><td colSpan={7} className="px-5 py-12 text-center sibs-text-xs font-semibold text-sibs-secondary">No public assessment applicants found.</td></tr>}
+                    {items.map(applicant => <tr
+                      key={applicant.id}
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => void openApplicant(applicant)}
+                      onKeyDown={event => {
+                        if (event.key === 'Enter' || event.key === ' ') {
+                          event.preventDefault();
+                          void openApplicant(applicant);
+                        }
+                      }}
+                      className="cursor-pointer transition hover:bg-sibs-cream-light focus-visible:bg-sibs-cream-light/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sibs-orange/25"
+                    >
+                      <td className="border-b border-sibs-border px-3 py-2 align-middle 2xl:px-4 2xl:py-2.5">
+                        <p className="truncate sibs-text-xs font-extrabold tracking-tight text-sibs-navy" title={applicant.name}>
+                          {applicant.name || 'Unnamed applicant'}
+                        </p>
+                        <p className="mt-1 truncate text-[10px] font-semibold text-sibs-muted" title={applicant.email}>
+                          {applicant.email || '—'}
+                        </p>
+                      </td>
+                      <td className="border-b border-sibs-border px-3 py-2 align-middle 2xl:px-4 2xl:py-2.5">
+                        <p className="truncate sibs-text-xs font-extrabold text-sibs-navy" title={applicant.desiredRole || 'Not assigned'}>
+                          {applicant.desiredRole || 'Not assigned'}
+                        </p>
+                      </td>
+                      <td className="border-b border-sibs-border px-3 py-2 text-center align-middle 2xl:px-4 2xl:py-2.5">
+                        <p className="whitespace-nowrap sibs-text-xs font-semibold tabular-nums text-sibs-secondary">{readableDate(applicant.createdAt)}</p>
+                      </td>
+                      <td className="border-b border-sibs-border px-3 py-2 text-center align-middle 2xl:px-4 2xl:py-2.5">
+                        <StatusLabel value={applicant.status}/>
+                      </td>
+                      <td className="border-b border-sibs-border px-3 py-2 text-center align-middle 2xl:px-4 2xl:py-2.5">
+                        <p className="sibs-text-xs font-semibold text-sibs-secondary">
+                          {applicant.status === 'IN_PROGRESS' ? `Module ${applicant.currentModule || 1} of 7`
+                            : applicant.status === 'SUBMITTED' ? '7 of 7 completed' : 'Not started'}
+                        </p>
+                        {applicant.status === 'IN_PROGRESS' && <p className="mt-1 text-[10px] text-sibs-muted">{applicant.completedModules || 0} completed</p>}
+                      </td>
+                      <td className="border-b border-sibs-border px-3 py-2 align-middle 2xl:px-4 2xl:py-2.5">
+                        <ProvisionalResults row={applicant}/>
+                      </td>
+                      <td className="border-b border-sibs-border px-3 py-2 text-center align-middle 2xl:px-4 2xl:py-2.5">
+                        <button type="button" disabled={resultLoadingId !== null}
+                          onClick={event => { event.stopPropagation(); void openApplicant(applicant); }}
+                          className="sibs-btn-secondary inline-flex h-8 items-center justify-center gap-1.5 whitespace-nowrap px-2.5 sibs-text-micro disabled:cursor-wait disabled:opacity-50">
+                          <Eye size={14}/>{resultLoadingId === applicant.id ? 'Opening…' : applicant.status === 'SUBMITTED' ? 'View results' : 'View details'}
+                        </button>
+                      </td>
+                    </tr>)}
+                  </tbody>
+                </table>
+              </div>
+              <div className="mt-auto px-4 pb-4 sm:px-5 sm:pb-5">
+                <PaginationTable
+                  showSearch={false}
+                  showPagination
+                  showCount
+                  loading={loading}
+                  currentPage={Math.min(page, pageCount)}
+                  totalPages={pageCount}
+                  loadedCount={items.length}
+                  totalRecords={total}
+                  recordLabel="applicants"
+                  onPageChange={setPage}
+                  className="border-0 bg-transparent p-0 shadow-none"
+                />
+              </div>
             </div>
           </div>
         </section>
         <p className="text-[11px] text-sibs-muted">Assessment scores are provisional and intended for authorized HR review. They do not determine hiring outcomes automatically.</p>
       </div>
     </main>
-    <PendingApplicantModal applicant={selectedApplicant} onClose={() => setSelectedApplicant(null)}/>
-    <CsrFitAssessmentResultModal open={Boolean(assessmentResult)} data={assessmentResult} onClose={() => setAssessmentResult(null)}/>
+    <PendingApplicantModal applicant={selectedApplicant} onClose={() => setSelectedApplicant(null)}
+      onRestore={restoreApplicant} restoring={restoringApplicantId === selectedApplicant?.id}/>
+    <CsrFitAssessmentResultModal open={Boolean(assessmentResult)} data={assessmentResult} portalMode={portalMode} onClose={() => setAssessmentResult(null)}/>
   </div>;
 }

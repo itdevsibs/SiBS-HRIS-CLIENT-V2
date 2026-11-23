@@ -15,6 +15,7 @@ import CsrFitAdministrativeSimulation from '../../components/assessment/CsrFitAd
 import CsrFitTypingGame from '../../components/assessment/CsrFitTypingGame';
 import CsrFitOneTimeAudio from '../../components/assessment/CsrFitOneTimeAudio';
 import CsrFitAssessmentLoading from '../../components/assessment/CsrFitAssessmentLoading';
+import { rememberPublicCsrFitSession } from '../../utils/assessment/csrFitResumeStorageClient';
 import { CSR_FIT_MODULE_NAMES, CSR_FIT_MODULE_LIMITS, CSR_FIT_OVERALL_LIMIT_MINUTES } from '../../components/assessment/csrFitModuleGuides';
 
 const titles = CSR_FIT_MODULE_NAMES;
@@ -150,6 +151,12 @@ function CsrFitAssessmentPageContent(){
     const source=payload?.data?.status?payload.data:payload;
     if(source.serverNowMs)clockOffset.current=Date.now()-Number(source.serverNowMs);
     setData(source);setAnswers(source?.answers||{});
+    // Recover public attempts from the same browser only. Internal candidate
+    // invitation tokens are never saved into the public resume registry.
+    if (/^PA-\d+$/.test(String(source?.candidate?.candidateId || '')) &&
+        ['IN_PROGRESS', 'NOT_STARTED', 'SUBMITTED'].includes(source?.status)) {
+      rememberPublicCsrFitSession(token, source.candidate);
+    }
     // Candidate identity comes from the HRIS Server. Never derive editable
     // name fields from display text; the welcome screen renders them read-only.
     setIntake(old=>({...old,email:source?.candidate?.email||'',
@@ -164,10 +171,10 @@ function CsrFitAssessmentPageContent(){
     forwardSelectionRef.current=null;
     setForwardSelection(null);
     setVideoDone(Boolean(source?.session?.videoComplete));setTyping(null);setDraft(makeEmpty());draftTouched.current.clear();setSaved('');
-  },[]);
+  },[token]);
   const retrieve=useCallback(async()=>{
     setLoading(true);setError('');
-    try{if(!/^[a-f0-9]{64}$/.test(token))throw new Error('Open the secure assessment link from your email.');
+    try{if(!/^[a-f0-9]{64}$/.test(token))throw new Error('Open your existing assessment session, or return to Public Assessment to register or resume.');
       const response=await api.get(`/api/assessment/public/${token}`,{withCredentials:false});hydrate(response.data);
     }catch(e){setError(errorLabel(e));}finally{setLoading(false);}
   },[token,hydrate]);
