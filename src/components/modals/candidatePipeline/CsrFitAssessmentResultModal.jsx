@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { ClipboardCheck, Eye, FileQuestion, CheckCircle2, Download, Loader2, BrainCircuit, RefreshCw } from 'lucide-react';
+import { ClipboardCheck, Eye, FileQuestion, CheckCircle2, Download, Loader2, BrainCircuit, RefreshCw, Mail, AlertCircle } from 'lucide-react';
 import ModalShell from '@/components/ui/ModalShell';
 import api from '@/lib/axios/api-template';
 import SelectDropdown from '@/components/ui/SelectDropdown';
@@ -7,6 +7,8 @@ import { downloadCsrFitAssessmentPdf } from '@/lib/utils/csrFitAssessmentPdfClie
 import { CSR_FIT_MODULE_NAMES } from '@/components/assessment/csrFitModuleGuides';
 import CsrFitReadOnlyResponse from './CsrFitReadOnlyResponse';
 import CsrFitHermesCharts from '@/components/assessment/CsrFitHermesCharts';
+import CsrFitWeightedResults from '@/components/assessment/CsrFitWeightedResults';
+import CsrFitWorkplaceInsights from '@/components/assessment/CsrFitWorkplaceInsights';
 
 const MODULE_LABELS = Object.fromEntries(
   CSR_FIT_MODULE_NAMES.map((title, index) => [`module${index + 1}`, title])
@@ -116,6 +118,9 @@ export default function CsrFitAssessmentResultModal({ open, data, onClose }) {
   const [filter, setFilter] = useState('all');
   const [pdfBusy, setPdfBusy] = useState(false);
   const [pdfError, setPdfError] = useState('');
+  const [emailDelivery, setEmailDelivery] = useState(null);
+  const [emailBusy, setEmailBusy] = useState(false);
+  const [emailError, setEmailError] = useState('');
   const [hermesState, setHermesState] = useState(null);
   const [hermesRetryBusy, setHermesRetryBusy] = useState(false);
   const [hermesError, setHermesError] = useState('');
@@ -131,6 +136,8 @@ export default function CsrFitAssessmentResultModal({ open, data, onClose }) {
     setModule('module1');
     setFilter('all');
     setHermesState(data?.aiInterpretation || null);
+    setEmailDelivery(data?.email || null);
+    setEmailError('');
     setHermesError('');
   }, [open, data?.attemptId]);
 
@@ -175,6 +182,22 @@ export default function CsrFitAssessmentResultModal({ open, data, onClose }) {
     void refresh();
     return () => { cancelled = true; clearTimeout(timer); };
   }, [open, data?.candidatePipelineId, data?.attemptId, hermesPollCycle]);
+
+  const checkEmailStatus = async (retry = false) => {
+    const id = Number(data?.attemptId);
+    if (!Number.isSafeInteger(id) || id < 1 || emailBusy) return;
+    setEmailBusy(true);
+    setEmailError('');
+    try {
+      const url = `/api/assessment/completion-email/${id}/${retry ? 'retry' : 'status'}`;
+      const response = retry ? await api.post(url) : await api.get(url);
+      setEmailDelivery(response?.data?.data || {status:'NOT_QUEUED'});
+    } catch (error) {
+      setEmailError(error?.response?.data?.message || 'Could not check report email delivery.');
+    } finally {
+      setEmailBusy(false);
+    }
+  };
 
   const retryHermes = async () => {
     const id = Number(data?.candidatePipelineId);
@@ -263,6 +286,37 @@ export default function CsrFitAssessmentResultModal({ open, data, onClose }) {
             <span className="text-xs font-extrabold text-sibs-navy">View only · Submitted answers cannot be changed</span></div>
           <span className="text-[11px] font-semibold text-sibs-muted">Submitted {formatDate(data.submittedAtMs)}</span>
         </div>
+        {data.sevenModule && <section className="rounded-xl border border-sibs-border bg-white px-4 py-3" aria-label="Candidate PDF email delivery status">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex min-w-0 items-start gap-2">
+              <Mail size={16} className="mt-0.5 shrink-0 text-sibs-navy"/>
+              <div>
+                <h3 className="text-xs font-extrabold text-sibs-navy">Candidate report PDF email</h3>
+                <p className="mt-1 text-[11px] text-sibs-secondary">
+                  {emailDelivery?.status === 'SENT' ? 'Accepted by SMTP for delivery. Check recipient inbox or spam folder.' :
+                    emailDelivery?.status === 'SENDING' ? 'Email delivery in progress.' :
+                    emailDelivery?.status === 'FAILED' ? `Delivery failed after ${emailDelivery.attempts ?? 0} attempt(s).` :
+                    emailDelivery?.status === 'PENDING' ? 'Queued for delivery; please check status.' :
+                    'No delivery job found for this submitted assessment.'}
+                </p>
+                {emailDelivery?.status === 'FAILED' && emailDelivery?.error &&
+                  <p className="mt-1 max-w-[720px] break-words text-[11px] text-rose-700">Server response: {emailDelivery.error}</p>}
+                {emailError && <p role="alert" className="mt-1 flex items-start gap-1 text-[11px] font-semibold text-rose-700"><AlertCircle size={12} className="mt-0.5 shrink-0"/>{emailError}</p>}
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <button type="button" disabled={emailBusy} onClick={() => void checkEmailStatus(false)}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-sibs-border px-3 py-2 text-[11px] font-bold text-sibs-navy disabled:opacity-50">
+                {emailBusy ? <Loader2 size={13} className="animate-spin"/> : <RefreshCw size={13}/>} Check status
+              </button>
+              {['FAILED','NOT_QUEUED'].includes(emailDelivery?.status) &&
+                <button type="button" disabled={emailBusy} onClick={() => void checkEmailStatus(true)}
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-sibs-navy px-3 py-2 text-[11px] font-bold text-white disabled:opacity-50">
+                  <Mail size={13}/> Send report PDF
+                </button>}
+            </div>
+          </div>
+        </section>}
         <section className="overflow-hidden rounded-xl border border-sibs-border bg-white" aria-label="Hermes HR assessment interpretation">
           <header className="flex flex-wrap items-start justify-between gap-3 bg-sibs-navy px-4 py-3 text-white">
             <div className="flex items-center gap-2"><BrainCircuit size={19} aria-hidden="true"/>
@@ -274,10 +328,9 @@ export default function CsrFitAssessmentResultModal({ open, data, onClose }) {
           <div className="space-y-3 p-4">
             {hermesState?.status === 'READY' && hermesState.report ? <>
               <p className="text-xs leading-6 text-sibs-secondary">{hermesState.report.executiveSummary || 'Interpretation available for HR review.'}</p>
+              <CsrFitWorkplaceInsights assessment={data} report={hermesState.report} />
               <div className="grid gap-3 sm:grid-cols-2">
                 {[
-                  ['Recorded strengths / capabilities', hermesState.report.observedCompetencies, 'border-blue-100 bg-blue-50/50'],
-                  ['Areas for HR review', hermesState.report.areasForReview, 'border-orange-100 bg-orange-50/50'],
                   ['Assessment limitations', hermesState.report.assessmentLimitations, 'border-sibs-border bg-sibs-surface'],
                   ['Suggested interview follow-ups', hermesState.report.interviewerQuestions, 'border-sibs-border bg-white'],
                 ].map(([heading,items,style]) => <div key={heading} className={`rounded-lg border p-3 ${style}`}>
@@ -315,8 +368,9 @@ export default function CsrFitAssessmentResultModal({ open, data, onClose }) {
             {hermesError && <p role="alert" className="text-[11px] font-semibold text-rose-700">{hermesError}</p>}
           </div>
         </section>
+        {data.sevenModule && <CsrFitWeightedResults summary={score.weightedSummary} />}
         <section className="rounded-xl border border-sibs-border bg-white p-4">
-          <h3 className="text-sm font-extrabold text-sibs-navy">Assessment score overview</h3>
+          <h3 className="text-sm font-extrabold text-sibs-navy">Additional assessment metrics</h3>
           <p className="mt-1 text-[11px] text-sibs-muted">Stored assessment results · Read only</p>
           <div className="mt-3 grid items-stretch gap-3 sm:grid-cols-2">
             <div className="space-y-2">
