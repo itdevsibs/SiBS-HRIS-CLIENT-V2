@@ -488,7 +488,32 @@ export function buildCsrFitPdfDocument(data, JsPDF, { logoDataUrl = null, fontDa
   assessmentRecordValue('Submitted', formatDate(data.submittedAtMs));
   rule();
 
-  heading('Assessment score overview', 13);
+  // The server is the exclusive authority on official module weights and
+  // contribution totals. Never fabricate a zero for unscored modules.
+  const weighted = data.sevenModule ? data.score?.weightedSummary : null;
+  if (weighted?.modules?.length === 7) {
+    heading('Seven-module weighted assessment', 13);
+    paragraph('PROVISIONAL / HR REVIEW - These are assessment-specific descriptive scores, not population percentiles or automatic hiring decisions.',
+      {fontSize:8.6, color:ORANGE, after:11});
+    scoreBar('Overall weighted result / 100', weighted.overallScorePct,
+      {note: weighted.overallScorePct === null ? 'Unscored modules remain pending: no missing score is treated as zero.' :
+        'The sum of all seven module contributions using the approved weights.'});
+    heading('Official module weights and contributions', 11);
+    for (const [index, item] of weighted.modules.entries()) {
+      const title = `${index + 1}. ${item.name}`;
+      const moduleScore = validPercent(item.rawScorePct) ? formatPercent(item.rawScorePct) : 'Unscored';
+      const contribution = validPercent(item.weightedContributionPct) ? `${Number(item.weightedContributionPct).toFixed(2)} pts` : 'Pending';
+      paragraph(`${title}  |  Weight: ${item.weightPct}%  |  Module: ${moduleScore}  |  Contribution: ${contribution}`,
+        {fontSize:8.8, after:5, color:NAVY});
+    }
+    paragraph(`Total weight: ${weighted.totalWeightPct}%  |  Weighted result: ${validPercent(weighted.overallScorePct) ? formatPercent(weighted.overallScorePct) : 'Pending verification'}`,
+      {fontSize:9, bold:true, color:NAVY, after:12});
+    paragraph('Methodology: Module percentage multiplied by its fixed weight. Cognitive answer key and behavioral descriptive indices require HR validation. Practical-task rubrics are provisional.',
+      {fontSize:8.2, after:12});
+    rule();
+  }
+
+  heading('Additional module metrics', 13);
   scoreBar(`${MODULES[0][1]} (provisional)`, data.score?.module1Score);
   if (data.score?.module1Correct != null && data.score?.module1Total != null) {
     paragraph(`Module 1: ${data.score.module1Correct} correct / ${data.score.module1Total} administered questions. Provisional key; HR validation required.`,
@@ -529,6 +554,53 @@ export function buildCsrFitPdfDocument(data, JsPDF, { logoDataUrl = null, fontDa
   pdf.text('Saved assessment items - completion only, not a grade', completionInset, completedAtY + 60);
   y += 91;
 
+  // Mirrors the supplied Workplace Insights report's section structure
+  // without copying its individual personality traits or population norms.
+  const aiReport = data?.aiInterpretation?.status === 'READY' ? data.aiInterpretation.report : null;
+  if (aiReport) {
+    newPage();
+    heading('Workplace insights | Hermes AI', 14);
+    paragraph('Evidence-based interpretation of SiBS CSR-Fit results. Advisory only; the numeric result above is calculated by HRIS, never by Hermes.',
+      {fontSize:8.6, after:14});
+    heading('Assessment overview', 11);
+    paragraph(aiReport.executiveSummary || 'Interpretation recorded.', {fontSize:9.1, after:14});
+    const insights = aiReport.workplaceInsights || {};
+    if (insights.competencyStrength) {
+      heading('Competency strength', 11);
+      paragraph(insights.competencyStrength, {fontSize:9.1, after:11});
+    }
+    heading('Leveraging strengths and development suggestions', 12);
+    for (const [label, key] of [
+      ['Motivation and stressors', 'motivationAndStressors'],
+      ['Thinking style', 'thinkingStyle'],
+      ['Work style', 'workStyle'],
+      ['Interaction style', 'interactionStyle'],
+    ]) {
+      heading(label, 10.5);
+      paragraph(insights[key] || 'Insufficient assessment evidence for an interpretation; verify through a structured HR interview.',
+        {fontSize:8.9, after:10});
+    }
+    heading('Strengths and potential challenges', 12);
+    heading('Observed job-related strengths', 10.5);
+    for (const finding of Array.isArray(aiReport.observedCompetencies) ? aiReport.observedCompetencies : []) {
+      paragraph(`- ${finding}`, {fontSize:8.9, after:5});
+    }
+    heading('Areas requiring HR review', 10.5);
+    for (const finding of Array.isArray(aiReport.areasForReview) ? aiReport.areasForReview : []) {
+      paragraph(`- ${finding}`, {fontSize:8.9, after:5});
+    }
+    heading('Assessment limitations', 10.5);
+    for (const finding of Array.isArray(aiReport.assessmentLimitations) ? aiReport.assessmentLimitations : []) {
+      paragraph(`- ${finding}`, {fontSize:8.7, after:5});
+    }
+    heading('Structured interview follow-up', 10.5);
+    for (const finding of Array.isArray(aiReport.interviewerQuestions) ? aiReport.interviewerQuestions : []) {
+      paragraph(`- ${finding}`, {fontSize:8.9, after:5});
+    }
+    paragraph('This report is not a clinical, psychometric, population-normed or automatic employment decision.',
+      {color:ORANGE, fontSize:8.5, after:13});
+  }
+
   if (Array.isArray(data.score?.module1Categories) && data.score.module1Categories.length) {
     newPage();
     heading('Cognitive competency scores (provisional)', 13);
@@ -545,7 +617,8 @@ export function buildCsrFitPdfDocument(data, JsPDF, { logoDataUrl = null, fontDa
   if (Array.isArray(data.score?.behavioralPillars) && data.score.behavioralPillars.length) {
     newPage();
     heading('Behavioral competency scores', 13);
-    paragraph('Each score is paired with its own clearly separated graph.', { fontSize: 8.3, after: 13 });
+    paragraph('Five self-report indices - a descriptive workplace competency profile, not population norms.', { fontSize: 8.3, after: 13 });
+    cognitiveRadar(data.score.behavioralPillars.map(item => ({ category:item.name, score:item.score })));
     const behavioralInsight = verifiedHermesChartInsight('behavioral_bars');
     if (behavioralInsight) paragraph(`Hermes chart insight: ${behavioralInsight}`, {fontSize:8.3, after:12});
     for (const pillar of data.score.behavioralPillars) {

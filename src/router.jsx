@@ -4,6 +4,7 @@ import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import NotFound from "@/pages/NotFound";
 import LoginPage from "./pages/login/LoginPage";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
+import PublicAssessmentDesktopOnly from "./components/assessment/PublicAssessmentDesktopOnly";
 import PageFallback from "@/components/ui/PageFallback";
 import { PublicRouteFallback } from "@/components/ui";
 import { useUser } from "./services/context/UserContext";
@@ -161,8 +162,8 @@ function PublicApplicationRoutes() {
       <Route path="/applicant-portal" element={<PublicApplicantPortalPage />} />
       <Route path="/public/applicant-portal" element={<PublicApplicantPortalPage />} />
 
-      <Route path="/public-assessment" element={<PublicCsrFitRegistrationPage />} />
-      <Route path="/online-assessment" element={<CsrFitAssessmentPage />} />
+      <Route path="/public-assessment" element={<PublicAssessmentDesktopOnly><PublicCsrFitRegistrationPage /></PublicAssessmentDesktopOnly>} />
+      <Route path="/online-assessment" element={<PublicAssessmentDesktopOnly><CsrFitAssessmentPage /></PublicAssessmentDesktopOnly>} />
 
       {/* Keep old public application links working. */}
       <Route path="/apply" element={<Navigate to="/" replace />} />
@@ -202,12 +203,12 @@ function MainApplicationRoutes() {
         element={<PublicNhoScheduleResponsePage />}
       />
 
-      <Route path="/public-assessment" element={<PublicCsrFitRegistrationPage />} />
+      <Route path="/public-assessment" element={<PublicAssessmentDesktopOnly><PublicCsrFitRegistrationPage /></PublicAssessmentDesktopOnly>} />
 
       {/* Public CSR-Fit battery. Keep Job Evaluation on the private Final Interview route. */}
       <Route
         path="/online-assessment"
-        element={<CsrFitAssessmentPage />}
+        element={<PublicAssessmentDesktopOnly><CsrFitAssessmentPage /></PublicAssessmentDesktopOnly>}
       />
 
       {/* PUBLIC CANDIDATE INTERVIEW SCHEDULING */}

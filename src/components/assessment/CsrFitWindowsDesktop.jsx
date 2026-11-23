@@ -14,6 +14,21 @@ const SYSTEM_FOLDERS = [
   { id: 'downloads', name: 'Downloads' },
 ];
 const trimName = (value) => String(value || '').trim();
+// Keep the assessment's original wording and grading rules intact while
+// displaying each action as a separate, numbered instruction.
+function fileManagementSteps(instruction) {
+  const text = trimName(instruction);
+  if (!text) return [];
+  const segments = text
+    .replace(/,\s*then\s+(?=move it into\b)/i, ', ')
+    .split(/,\s*(?=go to\b|create a folder named\b|rename the document to\b|move it into\b)/i)
+    .map((segment) => segment.trim())
+    .filter(Boolean);
+  return segments.map((segment) => {
+    const normalized = segment.charAt(0).toUpperCase() + segment.slice(1);
+    return /[.!?]$/.test(normalized) ? normalized : `${normalized}.`;
+  });
+}
 const safeFolderName = (value) => {
   const name = trimName(value);
   return name.length > 0 && name.length <= 80 && name !== '.' && name !== '..' &&
@@ -274,8 +289,16 @@ export default function CsrFitWindowsDesktop({ info, answer, disabled = false, s
         <p className="mt-1 text-xs leading-5 text-sibs-muted">Work inside the Windows-style desktop below. Open This PC and use File Explorer to complete the task.</p></div>
       <span className="rounded-lg bg-sibs-surface px-2.5 py-1.5 text-[11px] font-bold text-sibs-muted">Windows simulation · no real files affected</span>
     </div>
-    <div className="rounded-xl border border-blue-100 bg-blue-50/70 px-3 py-2.5 text-xs text-sibs-navy">
-      <strong>Work instruction</strong><p className="mt-1 leading-5">{info.fileNameRule}</p>
+    <div className="rounded-xl border border-blue-100 bg-blue-50/70 px-4 py-3 text-xs text-sibs-navy">
+      <h4 className="font-extrabold">Work instructions</h4>
+      <ol className="mt-2 grid gap-2" aria-label="File and folder management steps">
+        {fileManagementSteps(info?.fileNameRule).map((instruction, index) => (
+          <li key={`${index}-${instruction}`} className="flex items-start gap-3 rounded-lg border border-blue-100 bg-white px-3 py-2.5">
+            <span className="shrink-0 rounded-md bg-[#0a3154] px-2 py-1 text-[11px] font-extrabold text-white">Step {index + 1}</span>
+            <span className="min-w-0 pt-0.5 leading-5">{instruction}</span>
+          </li>
+        ))}
+      </ol>
     </div>
     <section className="swin-shell" ref={desktopRef} tabIndex={0} onKeyDown={handleKeyDown} aria-label="Simulated Windows 10 desktop" onClick={() => { if(context) setContext(null); }}>
       <div className="swin-wallpaper" aria-hidden="true"><div className="swin-glow"/><div className="swin-orbit one"/><div className="swin-orbit two"/></div>

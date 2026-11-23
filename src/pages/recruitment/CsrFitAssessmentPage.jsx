@@ -10,6 +10,7 @@ import CsrFitLegacyAssessmentPage from './CsrFitLegacyAssessmentPage';
 import CsrFitModuleInstructions from '../../components/assessment/CsrFitModuleInstructions';
 import CsrFitCandidateWelcome from '../../components/assessment/CsrFitCandidateWelcome';
 import CsrFitModuleJourney from '../../components/assessment/CsrFitModuleJourney';
+import PublicAssessmentDesktopOnly from '../../components/assessment/PublicAssessmentDesktopOnly';
 import CsrFitAdministrativeSimulation from '../../components/assessment/CsrFitAdministrativeSimulation';
 import CsrFitTypingGame from '../../components/assessment/CsrFitTypingGame';
 import CsrFitOneTimeAudio from '../../components/assessment/CsrFitOneTimeAudio';
@@ -64,7 +65,7 @@ function VideoScenario({info,onComplete,completed=false}) {
     {done&&<span className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700"><CheckCircle2 size={14}/> Briefing completed</span>}
   </div>;
 }
-export default function CsrFitAssessmentPage(){
+function CsrFitAssessmentPageContent(){
   const [params]=useSearchParams();const token=String(params.get('token')||'').trim();
   const [data,setData]=useState(null),[busy,setBusy]=useState(false),[busyLabel,setBusyLabel]=useState(''),[loading,setLoading]=useState(true),
     [error,setError]=useState(''),[now,setNow]=useState(Date.now()),[cursor,setCursor]=useState(0),
@@ -441,7 +442,7 @@ export default function CsrFitAssessmentPage(){
     {loading?<CsrFitAssessmentLoading mode="skeleton" />:
     error&&!data?<div role="alert" className="mt-5 rounded-xl border border-rose-200 bg-white p-6 text-sm text-rose-700">{error}</div>:
     data?.legacy?<CsrFitLegacyAssessmentPage/>:
-    data?.status==='SUBMITTED'?<section className="mt-5 rounded-xl border border-sibs-border bg-white p-12 text-center"><CheckCircle2 size={46} className="mx-auto text-emerald-600"/><h2 className="mt-3 text-xl font-extrabold">Assessment submitted</h2><p className="mt-2 text-sm text-sibs-muted">Your responses are saved for Talent Acquisition review. A results email will be sent to your invitation address.</p></section>:
+    data?.status==='SUBMITTED'?<section className="mt-5 rounded-xl border border-sibs-border bg-white p-12 text-center"><CheckCircle2 size={46} className="mx-auto text-emerald-600"/><h2 className="mt-3 text-xl font-extrabold">Assessment submitted</h2><p className="mt-2 text-sm text-sibs-muted">Your responses are saved for Talent Acquisition review. A copy of your CSR-Fit assessment report (PDF) will be emailed to the address used for your assessment. Delivery may take a few minutes.</p></section>:
     data?.status==='NOT_STARTED'?<CsrFitCandidateWelcome candidate={data.candidate}
       busy={busy} error={error} mobile={mobile} overallLimitMinutes={data.overallLimitMinutes || CSR_FIT_OVERALL_LIMIT_MINUTES}
       onStart={() => void start()} />:
@@ -666,4 +667,10 @@ export default function CsrFitAssessmentPage(){
       : <CsrFitAssessmentLoading mode="overlay" label={busyLabel} />)}
     <p className="py-5 text-center text-[11px] text-sibs-muted">SiBS HRIS · CSR-Fit Assessment · Authorized candidates only</p>
   </div></main>;
+}
+
+// Guard direct/cross-app mounts, as well as the public router route. The exam
+// component is never mounted on a restricted device; timers remain on server.
+export default function CsrFitAssessmentPage(){
+  return <PublicAssessmentDesktopOnly><CsrFitAssessmentPageContent /></PublicAssessmentDesktopOnly>;
 }

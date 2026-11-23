@@ -279,10 +279,10 @@ export function csrFitGuideText(text, moduleOneCount = 70) {
 
 export const CSR_FIT_MODULE_NAMES = [
   'Cognitive & Logic Abilities',
-  'Work Attitudes, Habits & Behavioral-Cognitive Abilities',
+  'Work Attitudes, Habits & Behavioral-Cognitive',
   'Real-Time Coaching & Active Listening Challenge',
-  'Administrative & Data Entry Tasks',
-  'Typing & Keyboarding Skills Test',
+  'Administrative Task Simulation',
+  'Typing & Data Entry Test',
   'Audio Comprehension & Logging',
   'Computer Literacy & Essential Tools',
 ];

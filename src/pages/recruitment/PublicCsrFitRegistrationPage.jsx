@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import api from '../../lib/axios/api-template';
 import CsrFitModuleJourney from '../../components/assessment/CsrFitModuleJourney';
+import PublicAssessmentDesktopOnly from '../../components/assessment/PublicAssessmentDesktopOnly';
 
 // Use the same seven-module roadmap and instructions as the invitation-based
 // CSR-Fit welcome page. This page only registers a public applicant and sends
@@ -28,7 +29,7 @@ const initial = {
   desiredRole: '', location: '', acceptPrivacy: false,
 };
 
-export default function PublicCsrFitRegistrationPage() {
+function PublicCsrFitRegistrationPageContent() {
   const [form, setForm] = useState(initial);
   const [submitting, setSubmitting] = useState(false);
   const [complete, setComplete] = useState(false);
@@ -88,7 +89,7 @@ export default function PublicCsrFitRegistrationPage() {
               <div className="min-w-0">
                 <p className="text-[10px] font-extrabold uppercase tracking-[0.1em] text-[#ff5c28]">Before you begin</p>
                 <h2 id="public-assessment-heading" className="mt-1 text-xl font-extrabold tracking-tight text-[#082e53] sm:text-2xl">Prepare for your assessment</h2>
-                <p className="mt-2 text-[13px] leading-5 text-[#49647c]">Review the seven-module assessment and register to receive your private assessment link.</p>
+                <p className="mt-2 text-[13px] leading-5 text-[#49647c]">Use a desktop or laptop computer to review the seven-module assessment and register for your private link. Mobile devices are not supported.</p>
               </div>
               <span className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-[#bad2e8] bg-white px-3 py-2 text-[11px] font-extrabold text-[#082e53]">
                 <LockKeyhole size={15} aria-hidden="true" /> Public registration
@@ -187,4 +188,10 @@ export default function PublicCsrFitRegistrationPage() {
       </div>
     </main>
   );
+}
+
+// Also enforce at the page boundary if a custom route mounts this page without
+// the shared public assessment router guard.
+export default function PublicCsrFitRegistrationPage() {
+  return <PublicAssessmentDesktopOnly><PublicCsrFitRegistrationPageContent /></PublicAssessmentDesktopOnly>;
 }
