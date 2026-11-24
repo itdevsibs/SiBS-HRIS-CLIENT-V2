@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { ClipboardCheck, Eye, FileQuestion, CheckCircle2, Download, Loader2, BrainCircuit, RefreshCw, Mail, AlertCircle } from 'lucide-react';
+import { ClipboardCheck, Eye, FileQuestion, CheckCircle2, Download, Loader2, BrainCircuit, RefreshCw, Mail, AlertCircle, LayoutDashboard, Layers, BarChart3, ListChecks, FileText } from 'lucide-react';
 import ModalShell from '@/components/ui/ModalShell';
 import portalApi from '@/lib/assessment-admin/portalApi';
 import SelectDropdown from '@/components/ui/SelectDropdown';
@@ -9,6 +9,7 @@ import CsrFitReadOnlyResponse from '../candidatePipeline/CsrFitReadOnlyResponse'
 import CsrFitHermesCharts from '@/components/assessment/CsrFitHermesCharts';
 import CsrFitWeightedResults from '@/components/assessment/CsrFitWeightedResults';
 import CsrFitWorkplaceInsights from '@/components/assessment/CsrFitWorkplaceInsights';
+import PublicCsrFitVisualDashboard from '@/components/assessment/PublicCsrFitVisualDashboard';
 
 const MODULE_LABELS = Object.fromEntries(
   CSR_FIT_MODULE_NAMES.map((title, index) => [`module${index + 1}`, title])
@@ -114,6 +115,7 @@ function QuantityGraph({ label, value, scale, unit = '', benchmark = null, note 
 
 /** Submitted candidate answers only — no editable inputs or server write actions. */
 export default function PublicCsrFitAssessmentResultModal({ open, data, onClose }) {
+  const [activeTab, setActiveTab] = useState('overview');
   const [module, setModule] = useState('module1');
   const [filter, setFilter] = useState('all');
   const [pdfBusy, setPdfBusy] = useState(false);
@@ -133,6 +135,7 @@ export default function PublicCsrFitAssessmentResultModal({ open, data, onClose 
   // Opening another candidate's attempt must not retain the previous candidate's selected module.
   useEffect(() => {
     if (!open) return;
+    setActiveTab('overview');
     setModule('module1');
     setFilter('all');
     setHermesState(data?.aiInterpretation || null);
@@ -200,6 +203,9 @@ export default function PublicCsrFitAssessmentResultModal({ open, data, onClose 
   };
 
   const retryHermes = async () => {
+    // Re-analysis is a fresh, staff-authorized model request against the SAME
+    // submitted attempt. No scoring, answers or candidate records are changed.
+    if (['PENDING', 'RUNNING'].includes(hermesState?.status)) return;
     const id = Number(data?.publicApplicantId);
     if (!Number.isSafeInteger(id) || id < 1 || hermesRetryBusy) return;
     setHermesRetryBusy(true);
@@ -210,7 +216,7 @@ export default function PublicCsrFitAssessmentResultModal({ open, data, onClose 
       // A previous polling cycle may have stopped on FAILED; restart it now.
       setHermesPollCycle(value => value + 1);
     } catch (error) {
-      setHermesError(error?.response?.data?.message || 'Unable to request a Hermes review.');
+      setHermesError(error?.response?.data?.message || 'Unable to start a new Hermes interpretation.');
     } finally { setHermesRetryBusy(false); }
   };
 
@@ -252,6 +258,14 @@ export default function PublicCsrFitAssessmentResultModal({ open, data, onClose 
     catch (error) { setPdfError(error?.message || 'Unable to export the assessment PDF.'); }
     finally { setPdfBusy(false); }
   };
+  const reportTabs = [
+    { id: 'overview', label: 'Overview', icon: LayoutDashboard },
+    { id: 'modules', label: 'Seven Modules', icon: Layers },
+    { id: 'metrics', label: 'Additional Metrics', icon: ListChecks },
+    { id: 'visual', label: 'Visual Analysis', icon: BarChart3 },
+    { id: 'hermes', label: 'Hermes AI', icon: BrainCircuit },
+    { id: 'answers', label: 'Exam Responses', icon: FileText },
+  ];
   const questions = Array.isArray(data?.modules?.[module]) ? data.modules[module] : [];
   const availableModules = data?.sevenModule ? Object.entries(MODULE_LABELS) : Object.entries(MODULE_LABELS).slice(0,2);
   const itemProgress = (key) => { const v=data?.answered?.[key];return typeof v==='object'?`${v.done||0}/${v.total||0}`:`${v||0}/50`; };
@@ -281,11 +295,37 @@ export default function PublicCsrFitAssessmentResultModal({ open, data, onClose 
       </div>}>
       <div className="space-y-4">
         {pdfError && <div role="alert" className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-2 text-xs font-semibold text-rose-700">{pdfError}</div>}
+        <nav className="flex flex-wrap items-center gap-1.5 rounded-xl border border-sibs-border bg-white p-2" role="tablist" aria-label="CSR-Fit results sections">
+          {reportTabs.map(({ id, label, icon: Icon }) => <button key={id} type="button" role="tab"
+            aria-selected={activeTab === id} aria-controls={`public-csrfit-results-${id}`}
+            id={`public-csrfit-results-tab-${id}`}
+            onClick={() => setActiveTab(id)}
+            className={`inline-flex min-h-9 items-center justify-center gap-1.5 rounded-lg border px-3 py-2 text-[11px] font-extrabold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-sibs-orange ${activeTab === id ? 'border-sibs-navy bg-sibs-navy text-white shadow-sm' : 'border-transparent bg-white text-sibs-secondary hover:border-sibs-border hover:bg-sibs-surface'}`}>
+            <Icon size={14} aria-hidden="true" />{label}
+          </button>)}
+        </nav>
         <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-sibs-border bg-white p-3 sm:px-4">
           <div className="flex min-w-0 items-center gap-2"><Eye size={16} className="text-sibs-navy"/>
             <span className="text-xs font-extrabold text-sibs-navy">View only · Submitted answers cannot be changed</span></div>
           <span className="text-[11px] font-semibold text-sibs-muted">Submitted {formatDate(data.submittedAtMs)}</span>
         </div>
+        <div id="public-csrfit-results-overview" role="tabpanel" aria-labelledby="public-csrfit-results-tab-overview" className={activeTab === 'overview' ? 'space-y-4' : 'hidden'}>
+          <section className="rounded-xl border border-sibs-border bg-white p-4" aria-label="Verified submitted assessment overview">
+            <h3 className="text-sm font-extrabold text-sibs-navy">Assessment overview</h3>
+            <p className="mt-1 text-[11px] text-sibs-muted">Submitted results · The score is provisional and calculated by HRIS, not Hermes.</p>
+            <div className="mt-3 grid grid-cols-2 gap-3 lg:grid-cols-4">
+              {[
+                { label: 'Weighted result', value: isValidPercentage(score.weightedSummary?.overallScorePct) ? `${Number(score.weightedSummary.overallScorePct).toFixed(2)}%` : 'Pending review' },
+                { label: 'Assessment modules', value: data.sevenModule ? '7' : '2' },
+                { label: 'Recorded responses', value: totalMaximum > 0 ? `${totalProgress} / ${totalMaximum}` : 'Unavailable' },
+                { label: 'Interpretation', value: hermesState?.status === 'READY' ? 'Available' : hermesState?.status === 'FAILED' ? 'Needs retry' : hermesProcessing ? 'Processing' : 'Pending' },
+              ].map(item => <div key={item.label} className="rounded-lg border border-sibs-border bg-sibs-surface px-3 py-3">
+                <p className="text-[10px] font-semibold text-sibs-muted">{item.label}</p>
+                <p className="mt-1 text-base font-extrabold text-sibs-navy tabular-nums">{item.value}</p>
+              </div>)}
+            </div>
+            <p className="mt-3 text-[11px] text-sibs-muted">Module 1's answer key and Module 2's descriptive indices require human HR review. No automatic hiring decision is generated.</p>
+          </section>
         {data.sevenModule && <section className="rounded-xl border border-sibs-border bg-white px-4 py-3" aria-label="Candidate PDF email delivery status">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex min-w-0 items-start gap-2">
@@ -317,6 +357,8 @@ export default function PublicCsrFitAssessmentResultModal({ open, data, onClose 
             </div>
           </div>
         </section>}
+        </div>
+        <div id="public-csrfit-results-hermes" role="tabpanel" aria-labelledby="public-csrfit-results-tab-hermes" className={activeTab === 'hermes' ? 'space-y-4' : 'hidden'}>
         <section className="overflow-hidden rounded-xl border border-sibs-border bg-white" aria-label="Hermes HR assessment interpretation">
           <header className="flex flex-wrap items-start justify-between gap-3 bg-sibs-navy px-4 py-3 text-white">
             <div className="flex items-center gap-2"><BrainCircuit size={19} aria-hidden="true"/>
@@ -329,6 +371,29 @@ export default function PublicCsrFitAssessmentResultModal({ open, data, onClose 
             {hermesState?.status === 'READY' && hermesState.report ? <>
               <p className="text-xs leading-6 text-sibs-secondary">{hermesState.report.executiveSummary || 'Interpretation available for HR review.'}</p>
               <CsrFitWorkplaceInsights assessment={data} report={hermesState.report} />
+              {Array.isArray(hermesState.report.moduleAnalyses) && hermesState.report.moduleAnalyses.length > 0 &&
+                <section className="rounded-lg border border-sibs-border bg-sibs-surface p-3">
+                  <h4 className="text-xs font-extrabold text-sibs-navy">Evidence-based module interpretations</h4>
+                  <div className="mt-3 grid gap-3 lg:grid-cols-2">
+                    {hermesState.report.moduleAnalyses.map((entry, index) => <article key={`${entry.module}-${index}`} className="rounded-lg border border-sibs-border bg-white p-3">
+                      <h5 className="text-[11px] font-extrabold text-sibs-navy">Module {entry.module} · {CSR_FIT_MODULE_NAMES[Number(entry.module)-1] || 'Assessment evidence'}</h5>
+                      {entry.finding && <p className="mt-2 text-[11px] leading-5 text-sibs-secondary">{entry.finding}</p>}
+                      {entry.supportingEvidence && <p className="mt-2 text-[11px] leading-5 text-sibs-secondary"><strong className="text-sibs-navy">Verified evidence:</strong> {entry.supportingEvidence}</p>}
+                      {entry.limitation && <p className="mt-2 text-[11px] leading-5 text-sibs-muted"><strong>Limitation:</strong> {entry.limitation}</p>}
+                      {entry.hrFollowUp && <p className="mt-2 text-[11px] leading-5 text-sibs-secondary"><strong className="text-sibs-navy">HR follow-up:</strong> {entry.hrFollowUp}</p>}
+                    </article>)}
+                  </div>
+                </section>}
+              {[
+                ['Cross-module observations', hermesState.report.crossModuleObservations],
+                ['Development and training topics', hermesState.report.developmentTopics],
+                ['Evidence and data-quality flags', hermesState.report.dataQualityFlags],
+              ].filter(([,items]) => Array.isArray(items) && items.length > 0).map(([title,items]) =>
+                <div key={title} className="rounded-lg border border-sibs-border bg-white p-3">
+                  <h4 className="text-[11px] font-extrabold text-sibs-navy">{title}</h4>
+                  <ul className="mt-2 space-y-1 text-[11px] leading-5 text-sibs-secondary">{items.map((item,index)=><li key={index}>• {item}</li>)}</ul>
+                </div>)}
+              <CsrFitHermesCharts assessment={data} hermesReport={hermesState.report} hermesStatus="READY" />
               <div className="grid gap-3 sm:grid-cols-2">
                 {[
                   ['Assessment limitations', hermesState.report.assessmentLimitations, 'border-sibs-border bg-sibs-surface'],
@@ -354,21 +419,43 @@ export default function PublicCsrFitAssessmentResultModal({ open, data, onClose 
                     hermesState?.status === 'RUNNING' ? 'Hermes is interpreting the completed assessment.' :
                     'Hermes analysis is queued. Verified scores are available below.'}</span>
                 </div>
-                {hermesState?.status === 'FAILED' && <button type="button" disabled={hermesRetryBusy}
-                  onClick={retryHermes} className="inline-flex items-center gap-2 rounded-lg bg-sibs-navy px-3 py-2 text-[11px] font-bold text-white disabled:opacity-60">
-                  {hermesRetryBusy ? <Loader2 size={13} className="animate-spin"/> : <RefreshCw size={13}/>}
-                  Retry analysis
-                </button>}
                 {(['UNAVAILABLE', 'PENDING', 'RUNNING'].includes(hermesState?.status) || !hermesState) &&
                   <button type="button" onClick={refreshHermes} disabled={hermesRetryBusy}
                     className="inline-flex items-center gap-1.5 rounded-lg border border-sibs-border bg-white px-3 py-2 text-[11px] font-bold text-sibs-navy hover:bg-sibs-surface disabled:opacity-50">
                     <RefreshCw size={13}/> Check status
                   </button>}
               </div>}
+            {['READY','FAILED','DISABLED','NOT_SUBMITTED','UNAVAILABLE'].includes(hermesState?.status) &&
+              <div className="flex flex-wrap items-center gap-2 border-t border-sibs-border pt-3">
+                <button type="button" onClick={retryHermes} disabled={hermesRetryBusy || ['PENDING','RUNNING','DISABLED','NOT_SUBMITTED'].includes(hermesState?.status)}
+                  className="inline-flex items-center gap-2 rounded-lg bg-sibs-navy px-3 py-2 text-[11px] font-bold text-white disabled:cursor-not-allowed disabled:opacity-50">
+                  {hermesRetryBusy ? <Loader2 size={13} className="animate-spin" /> : <RefreshCw size={13} />}
+                  {hermesRetryBusy ? 'Requesting analysis…' : 'Re-analyze results'}
+                </button>
+                <button type="button" onClick={refreshHermes} disabled={hermesRetryBusy}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-sibs-border bg-white px-3 py-2 text-[11px] font-bold text-sibs-navy disabled:opacity-50">
+                  <RefreshCw size={13} /> Check status
+                </button>
+                <p className="text-[10px] leading-4 text-sibs-muted">A new Hermes report uses the same saved answers and does not change HRIS scores or resend emails.</p>
+              </div>}
+            {Array.isArray(hermesState?.history) && hermesState.history.length > 0 &&
+              <details className="rounded-lg border border-sibs-border bg-sibs-surface p-3">
+                <summary className="cursor-pointer text-[11px] font-bold text-sibs-navy">Previous interpretations ({hermesState.history.length} shown)</summary>
+                <div className="mt-3 space-y-3">{hermesState.history.map((version,index) =>
+                  <div key={version.id || index} className="rounded-lg border border-sibs-border bg-white p-3">
+                    <p className="text-[10px] font-bold text-sibs-muted">Archived {version.archivedAt || 'previous version'} · {version.modelName || 'Hermes'}</p>
+                    <p className="mt-2 text-[11px] leading-5 text-sibs-secondary">{version.report?.executiveSummary || 'No executive summary recorded.'}</p>
+                  </div>)}</div>
+              </details>}
             {hermesError && <p role="alert" className="text-[11px] font-semibold text-rose-700">{hermesError}</p>}
           </div>
         </section>
+        </div>
+        <div id="public-csrfit-results-modules" role="tabpanel" aria-labelledby="public-csrfit-results-tab-modules" className={activeTab === 'modules' ? 'space-y-4' : 'hidden'}>
         {data.sevenModule && <CsrFitWeightedResults summary={score.weightedSummary} />}
+        <p className="rounded-lg border border-sibs-border bg-white p-3 text-[11px] text-sibs-muted">Official module weights and scoring are supplied by HRIS. Missing values remain unscored and never become zero by default.</p>
+        </div>
+        <div id="public-csrfit-results-metrics" role="tabpanel" aria-labelledby="public-csrfit-results-tab-metrics" className={activeTab === 'metrics' ? 'space-y-4' : 'hidden'}>
         <section className="rounded-xl border border-sibs-border bg-white p-4">
           <h3 className="text-sm font-extrabold text-sibs-navy">Additional assessment metrics</h3>
           <p className="mt-1 text-[11px] text-sibs-muted">Stored assessment results · Read only</p>
@@ -407,12 +494,17 @@ export default function PublicCsrFitAssessmentResultModal({ open, data, onClose 
                 <div className="h-full rounded-full bg-sibs-navy" style={{width:`${completionPercent}%`}}/>
               </div>
               <p className="mt-2 text-[11px] leading-4 text-sibs-muted">
-                Completion, not a grade · Result email: {data.email?.status === 'SENT' ? 'Sent' : data.email?.status === 'FAILED' ? 'Retry scheduled' : 'Queued'}
+                Completion, not a grade · Result email: {emailDelivery?.status === 'SENT' ? 'Accepted by SMTP' : emailDelivery?.status === 'FAILED' ? 'Failed' : emailDelivery?.status === 'SENDING' ? 'Sending' : emailDelivery?.status === 'PENDING' ? 'Queued' : 'Not queued'}
               </p>
             </div>
           </div>
         </section>
+        </div>
+        <div id="public-csrfit-results-visual" role="tabpanel" aria-labelledby="public-csrfit-results-tab-visual" className={activeTab === 'visual' ? 'space-y-4' : 'hidden'}>
+        <PublicCsrFitVisualDashboard summary={score.weightedSummary} />
         <CsrFitHermesCharts assessment={data} hermesReport={hermesState?.status === 'READY' ? hermesState.report : null} hermesStatus={hermesState?.status} />
+        </div>
+        <div className={activeTab === 'modules' ? 'space-y-4' : 'hidden'}>
         {Array.isArray(score.module1Categories) && score.module1Categories.length > 0 && (
           <details className="rounded-xl border border-sibs-border bg-white p-4" aria-label="Cognitive competency breakdown">
             <summary className="cursor-pointer text-sm font-extrabold text-sibs-navy">View cognitive category scores (tabular breakdown)</summary>
@@ -438,6 +530,8 @@ export default function PublicCsrFitAssessmentResultModal({ open, data, onClose 
             </div>
           </details>
         )}
+        </div>
+        <div className={activeTab === 'metrics' ? 'space-y-4' : 'hidden'}>
         {data.sevenModule && (
           <>
             <section className="rounded-xl border border-sibs-border bg-white p-4">
@@ -450,8 +544,8 @@ export default function PublicCsrFitAssessmentResultModal({ open, data, onClose 
                   return <div key={index} className="rounded-xl border border-sibs-border p-3">
                     <p className="mb-3 text-xs font-extrabold text-sibs-navy">Passage {index+1}</p>
                     <div className="space-y-3">
-                      <QuantityGraph label="Typing speed" value={entry.wpm} scale={wpmScale} unit="WPM" benchmark={40}/>
-                      <QuantityGraph label="Accuracy" value={entry.accuracy} scale={100} unit="%" benchmark={90}/>
+                      <QuantityGraph label="Typing speed" value={entry.wpm} scale={wpmScale} unit="WPM"/>
+                      <QuantityGraph label="Accuracy" value={entry.accuracy} scale={100} unit="%"/>
                     </div>
                   </div>;
                 })}
@@ -472,6 +566,8 @@ export default function PublicCsrFitAssessmentResultModal({ open, data, onClose 
             </section>
           </>
         )}
+        </div>
+        <div id="public-csrfit-results-answers" role="tabpanel" aria-labelledby="public-csrfit-results-tab-answers" className={activeTab === 'answers' ? 'space-y-4' : 'hidden'}>
         <section ref={responsesSectionRef} className="overflow-hidden rounded-xl border border-sibs-border bg-white">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-sibs-border px-4 py-3">
             <div>
@@ -531,6 +627,7 @@ export default function PublicCsrFitAssessmentResultModal({ open, data, onClose 
             {!visible.length && <p className="p-6 text-center text-xs font-semibold text-sibs-muted">No responses match this filter.</p>}
           </div>
         </section>
+        </div>
         <p className="text-[11px] leading-5 text-sibs-muted">Module 1 and behavioral scores are provisional pending HR validation. Practical modules are summarized separately. These results do not constitute an automatic hiring decision.</p>
       </div>
     </ModalShell>
