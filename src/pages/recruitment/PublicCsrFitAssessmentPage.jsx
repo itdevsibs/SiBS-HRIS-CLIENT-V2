@@ -6,7 +6,6 @@ import {
 } from 'lucide-react';
 import api from '../../lib/axios/api-template';
 import SelectDropdown from '../../components/ui/SelectDropdown';
-import CsrFitLegacyAssessmentPage from './CsrFitLegacyAssessmentPage';
 import CsrFitModuleInstructions from '../../components/assessment/CsrFitModuleInstructions';
 import CsrFitCandidateWelcome from '../../components/assessment/CsrFitCandidateWelcome';
 import CsrFitModuleJourney from '../../components/assessment/CsrFitModuleJourney';
@@ -136,7 +135,7 @@ function PublicCsrFitAssessmentPageContent(){
 
   const record=useCallback((type)=>{
     if(!token||!data||data.status!=='IN_PROGRESS')return;
-    void api.post(`/api/assessment/public/${token}/integrity-event`,{type},{withCredentials:false}).catch(()=>{});
+    void api.post(`/api/public-assessment/session/${token}/integrity-event`,{type},{withCredentials:false}).catch(()=>{});
   },[data,token]);
   useEffect(()=>{const tick=setInterval(()=>setNow(Date.now()),1000);const resize=()=>setMobile(window.innerWidth<760);
     resize();window.addEventListener('resize',resize);return()=>{clearInterval(tick);window.removeEventListener('resize',resize);};},[]);
@@ -178,13 +177,13 @@ function PublicCsrFitAssessmentPageContent(){
   const retrieve=useCallback(async()=>{
     setLoading(true);setError('');
     try{if(!/^[a-f0-9]{64}$/.test(token))throw new Error('Open your existing assessment session, or return to Public Assessment to register or resume.');
-      const response=await api.get(`/api/assessment/public/${token}`,{withCredentials:false});hydrate(response.data);
+      const response=await api.get(`/api/public-assessment/session/${token}`,{withCredentials:true});hydrate(response.data);
     }catch(e){setError(errorLabel(e));}finally{setLoading(false);}
   },[token,hydrate]);
   useEffect(()=>{void retrieve();},[retrieve]);
   async function start(){
     if(busy)return;setBusy(true);setBusyLabel('Preparing your assessment…');setError('');try{
-      const r=await api.post(`/api/assessment/public/${token}/start`,{intake},{withCredentials:false});hydrate(r.data);
+      const r=await api.post(`/api/public-assessment/session/${token}/start`,{intake},{withCredentials:false});hydrate(r.data);
     }catch(e){setError(errorLabel(e));}finally{setBusy(false);}
   }
   function persist(keyValue,value){
@@ -198,7 +197,7 @@ function PublicCsrFitAssessmentPageContent(){
     if(!oneTimeResponse&&!forwardOnceAnswer&&!keyValue.startsWith('module4:'))setAnswers(prev=>({...prev,[keyValue]:value}));
     setSaved('Saving…');
     const work=writeQueue.current.catch(()=>{}).then(async()=>{
-      const r=await api.put(`/api/assessment/public/${token}/answer`,{key:keyValue,choice:value},{withCredentials:false});
+      const r=await api.put(`/api/public-assessment/session/${token}/answer`,{key:keyValue,choice:value},{withCredentials:false});
       if(r.data?.success===false)throw new Error(r.data.message);
       if(oneTimeResponse){
         setAnswers(prev=>({...prev,[keyValue]:value}));
@@ -293,7 +292,7 @@ function PublicCsrFitAssessmentPageContent(){
     if(startedTyping.current.has(passageId))return;
     startedTyping.current.add(passageId);
     try{
-      const r=await api.post(`/api/assessment/public/${token}/typing-start`,{passageId},{withCredentials:false});
+      const r=await api.post(`/api/public-assessment/session/${token}/typing-start`,{passageId},{withCredentials:false});
       // The typing passage has its own 60-second timer; starting it must NOT
       // overwrite the Server-issued deadline for the full Module 5.
       setData(old=>({...old,session:{...old.session,typingStarts:{...old.session.typingStarts,[passageId]:r.data.startedAtMs}}}));
@@ -320,8 +319,8 @@ function PublicCsrFitAssessmentPageContent(){
   async function beginModule(){
     if(busy)return;setBusy(true);setBusyLabel('Starting the module…');setError('');
     try{
-      await api.post(`/api/assessment/public/${token}/begin-module`,{moduleNumber:activeModule},{withCredentials:false});
-      const response=await api.get(`/api/assessment/public/${token}`,{withCredentials:false});
+      await api.post(`/api/public-assessment/session/${token}/begin-module`,{moduleNumber:activeModule},{withCredentials:false});
+      const response=await api.get(`/api/public-assessment/session/${token}`,{withCredentials:true});
       hydrate(response.data);
       window.scrollTo({top:0,behavior:'smooth'});
     }catch(e){setError(errorLabel(e));}finally{setBusy(false);}
@@ -343,9 +342,9 @@ function PublicCsrFitAssessmentPageContent(){
     try{
       await writeQueue.current;
       setModuleTransition({from:previous,to:nextNumber,phase:'preparing'});
-      const r=await api.post(`/api/assessment/public/${token}/advance`,{}, {withCredentials:false});
+      const r=await api.post(`/api/public-assessment/session/${token}/advance`,{}, {withCredentials:false});
       if(r.data?.success===false)throw new Error(r.data.message);
-      const next=await api.get(`/api/assessment/public/${token}`,{withCredentials:false});
+      const next=await api.get(`/api/public-assessment/session/${token}`,{withCredentials:true});
       setModuleTransition({from:previous,to:nextNumber,phase:'ready'});
       await allowTransitionToRender(startedAt);
       hydrate(next.data);
@@ -362,7 +361,7 @@ function PublicCsrFitAssessmentPageContent(){
     setBusy(true);setError('');setConfirm(false);
     try{
       await writeQueue.current;
-      const r=await api.post(`/api/assessment/public/${token}/submit`,{}, {withCredentials:false});
+      const r=await api.post(`/api/public-assessment/session/${token}/submit`,{}, {withCredentials:false});
       if(r.data?.success===false)throw new Error(r.data.message);
       setModuleTransition({from:7,to:null,phase:'ready'});
       await allowTransitionToRender(startedAt);
@@ -451,7 +450,7 @@ function PublicCsrFitAssessmentPageContent(){
     {sectionTitle}
     {loading?<CsrFitAssessmentLoading mode="skeleton" />:
     error&&!data?<div role="alert" className="mt-5 rounded-xl border border-rose-200 bg-white p-6 text-sm text-rose-700">{error}</div>:
-    data?.legacy?<CsrFitLegacyAssessmentPage/>:
+    data?.legacy?<div role="alert" className="mt-5 rounded-xl border border-rose-200 bg-white p-6 text-sm text-rose-700">This link is not a Public Assessment session. Contact SiBS Recruitment for the correct public assessment access.</div>:
     data?.status==='SUBMITTED'?<section className="mt-5 rounded-xl border border-sibs-border bg-white p-12 text-center"><CheckCircle2 size={46} className="mx-auto text-emerald-600"/><h2 className="mt-3 text-xl font-extrabold">Assessment submitted</h2><p className="mt-2 text-sm text-sibs-muted">Your responses are saved for Talent Acquisition review. A copy of your CSR-Fit assessment report (PDF) will be emailed to the address used for your assessment. Delivery may take a few minutes.</p></section>:
     data?.status==='NOT_STARTED'?<CsrFitCandidateWelcome candidate={data.candidate}
       busy={busy} error={error} mobile={mobile} overallLimitMinutes={data.overallLimitMinutes || CSR_FIT_OVERALL_LIMIT_MINUTES}
@@ -506,7 +505,7 @@ function PublicCsrFitAssessmentPageContent(){
               style={{ width: `${Math.max(0, Math.min(100, ((Number(countInfo.done)||0) / Math.max(1, countInfo.total||items.length)) * 100))}%` }} />
           </div>
         </div>
-        {(activeModule===1||activeModule===2||activeModule===7)&&question?<div><p className="text-[11px] font-semibold text-sibs-muted">{question.category}</p><h3 className="mt-1 whitespace-pre-wrap text-base font-extrabold leading-7">{question.stem}</h3><ChoiceGrid options={question.options} value={displayedAnswer} onSelect={select} locked={!canChange}/>
+        {(activeModule===1||activeModule===2||activeModule===7)&&question?<div>{activeModule!==2&&question.category&&<p className="text-[11px] font-semibold text-sibs-muted">{question.category}</p>}<h3 className={`${activeModule===2?"":"mt-1"} whitespace-pre-wrap text-base font-extrabold leading-7`}>{question.stem}</h3><ChoiceGrid options={question.options} value={displayedAnswer} onSelect={select} locked={!canChange}/>
           {forwardOnly&&<div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-sibs-border pt-4">
             <p role="status" aria-live="polite" className="flex items-center gap-1.5 text-[11px] font-semibold text-sibs-muted">
               {answerSaving?<Loader2 size={13} className="animate-spin"/>:<LockKeyhole size={13}/>}
@@ -526,7 +525,7 @@ function PublicCsrFitAssessmentPageContent(){
         </div>:null}
         {activeModule===3&&question?<div className="space-y-4"><VideoScenario info={bank.module3} completed={videoDone} onComplete={async()=>{
             try{
-              await api.post(`/api/assessment/public/${token}/integrity-event`,{type:'VIDEO_COMPLETED'},{withCredentials:false});
+              await api.post(`/api/public-assessment/session/${token}/integrity-event`,{type:'VIDEO_COMPLETED'},{withCredentials:false});
               setVideoDone(true);
             }catch(e){setError(`Unable to confirm the completed briefing: ${errorLabel(e)}`);}
           }}/>
@@ -549,7 +548,7 @@ function PublicCsrFitAssessmentPageContent(){
         ) : (
           <CsrFitAdministrativeSimulation
             key={`${token}:${data?.attemptId || data?.attempt?.id || 'new'}:${module}:${question.id}`} taskIndex={index} bank={bank.module4}
-            answer={currentAnswer} disabled={!canChange} saving={busy}
+            answer={currentAnswer} disabled={!canChange} saving={busy} publicAssessment
             onSave={value=>canChange ? persist(key,value) : Promise.reject(new Error("Module is no longer accepting answers."))}/>
         )):null}
         {activeModule===5&&question?<CsrFitTypingGame

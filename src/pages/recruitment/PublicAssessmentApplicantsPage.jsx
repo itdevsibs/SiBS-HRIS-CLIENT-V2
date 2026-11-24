@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   RefreshCw, ExternalLink, Eye, Clock3,
   CheckCircle2, Users, AlertCircle, FileClock, X, UserRound,
-  BriefcaseBusiness, KeyRound,
+  BriefcaseBusiness,
 } from 'lucide-react';
 import Header from '../../components/layout/Header';
 import api from '../../lib/axios/api-template';
@@ -12,6 +12,7 @@ import portalApi from '../../lib/assessment-admin/portalApi';
 import ModalShell from '../../components/ui/ModalShell';
 import { PageHeaderHero } from '../../components/ui';
 import CsrFitAssessmentResultModal from '../../components/modals/candidatePipeline/CsrFitAssessmentResultModal';
+import PublicCsrFitAssessmentResultModal from '../../components/modals/publicAssessment/PublicCsrFitAssessmentResultModal';
 // Reuse the same HRIS controls used by Recruitment > Talent Pool.
 import PaginationTable from '../../services/pagination/PaginationTable';
 import StatusFilterTabs from '../../components/ui/StatusFilterTabs';
@@ -39,6 +40,42 @@ const readableDate = (value) => {
 // Name comes from the public directory in HRIS surname-first format.
 // Keep avatars in the normal SiBS HRIS given-name + surname initial order.
 
+// This modal is read-only. All individual progress values come from the
+// authorized public applicant directory API, never browser-side guesses.
+const MODULE_NAMES = [
+  'Cognitive & Logic Abilities',
+  'Work Attitudes, Habits & Behavioral-Cognitive',
+  'Real-Time Coaching & Active Listening Challenge',
+  'Administrative Task Simulation',
+  'Typing & Data Entry Test',
+  'Audio Comprehension & Logging',
+  'Computer Literacy & Essential Tools',
+];
+const displayValue = (value, fallback = '—') => {
+  const text = String(value ?? '').trim();
+  return text && !/^(?:n\s*\/?\s*a\.?|not\s+applicable|null|undefined)$/i.test(text) ? text : fallback;
+};
+const readableTimestamp = (value) => {
+  if (value === null || value === undefined || value === '') return 'Not started';
+  const millis = Number(value);
+  if (!Number.isFinite(millis) || millis <= 0) return 'Not started';
+  const date = new Date(millis);
+  if (Number.isNaN(date.getTime())) return 'Not started';
+  return new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Asia/Manila', month: 'long', day: 'numeric', year: 'numeric',
+    hour: 'numeric', minute: '2-digit', hour12: true,
+  }).format(date);
+};
+const applicantProgress = (applicant) => {
+  const status = applicant?.status;
+  const completed = status === 'SUBMITTED' ? 7 : status === 'IN_PROGRESS'
+    ? Math.max(0, Math.min(7, Math.trunc(Number(applicant?.completedModules) || 0))) : 0;
+  const savedModule = Number(applicant?.currentModule);
+  const current = status === 'IN_PROGRESS' && Number.isInteger(savedModule)
+    && savedModule >= 1 && savedModule <= 7 ? savedModule : null;
+  return { completed, current, status };
+};
+
 
 function StatusLabel({ value }) {
   return <span className={`inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-[11px] font-bold ${STATUS_STYLES[value] || STATUS_STYLES.INVITED}`}>
@@ -56,42 +93,75 @@ function ProvisionalResults({ row }) {
   </div>;
 }
 
-function PendingApplicantModal({ applicant, onClose, onRestore, restoring }) {
-  return <ModalShell open={Boolean(applicant)} onClose={onClose} title="Public Assessment Applicant"
-    subtitle={applicant?.name || 'Applicant registration'} icon={UserRound}
-    maxWidth="max-w-[650px]" autoDetectDirty={false} closeOnBackdrop={false}
+function PendingApplicantModal({ applicant, onClose }) {
+  if (!applicant) return null;
+  const { completed, current, status } = applicantProgress(applicant);
+  const isInProgress = status === 'IN_PROGRESS';
+  const currentTitle = current ? MODULE_NAMES[current - 1] : 'Not started';
+
+  return <ModalShell open={true} onClose={onClose} title="Public Assessment Applicant"
+    subtitle={applicant.name || 'Applicant registration'} icon={UserRound}
+    maxWidth="max-w-[720px]" autoDetectDirty={false} closeOnBackdrop={false}
     bodyClassName="bg-sibs-surface px-4 py-5 sm:px-6"
     footer={<button type="button" onClick={onClose} className="sibs-modal-btn-secondary">Close</button>}>
-    {applicant && <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-sibs-border bg-white p-4">
-        <div><h3 className="text-sm font-extrabold text-sibs-navy">{applicant.name}</h3>
-          <p className="mt-1 text-xs text-sibs-secondary">{applicant.email}</p></div>
-        <StatusLabel value={applicant.status} />
-      </div>
-      <div className="grid gap-3 sm:grid-cols-3">
+    <div className="space-y-4">
+      <section className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-sibs-border bg-white p-4">
+        <div className="min-w-0">
+          <h3 className="break-words text-sm font-extrabold text-sibs-navy">{displayValue(applicant.name, 'Unnamed applicant')}</h3>
+          <p className="mt-1 break-all text-xs text-sibs-secondary">{displayValue(applicant.email)}</p>
+        </div>
+        <StatusLabel value={status}/>
+      </section>
+
+      <section aria-label="Applicant registration information" className="grid gap-3 sm:grid-cols-3">
         {[
-          [BriefcaseBusiness, 'Position', applicant.desiredRole || 'Not assigned'],
+          [BriefcaseBusiness, 'Position', displayValue(applicant.desiredRole, 'Not assigned')],
           [FileClock, 'Registered', readableDate(applicant.createdAt)],
-          [Clock3, 'Assessment stage', applicant.status === 'IN_PROGRESS'
-            ? `Module ${applicant.currentModule || 1} of 7 · ${applicant.completedModules || 0} completed`
-            : 'Not started'],
+          [Clock3, 'Assessment started', readableTimestamp(applicant.startedAtMs)],
         ].map(([Icon, label, value]) => <div key={label} className="rounded-xl border border-sibs-border bg-white p-3.5">
-          <div className="flex items-center gap-2 text-[11px] font-bold text-sibs-muted"><Icon size={14} /> {label}</div>
+          <div className="flex items-center gap-2 text-[11px] font-bold text-sibs-muted"><Icon size={14}/> {label}</div>
           <p className="mt-1.5 break-words text-xs font-extrabold text-sibs-navy">{value}</p>
         </div>)}
-      </div>
-      <p className="rounded-lg border border-sibs-border bg-white px-3 py-3 text-xs leading-5 text-sibs-secondary">
-        Assessment answers and scores become available only after the applicant submits the completed exam.
+      </section>
+
+      <section aria-label="Saved assessment progress" className="rounded-xl border border-sibs-border bg-white p-4">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h4 className="text-sm font-extrabold text-sibs-navy">Assessment progress</h4>
+            <p className="mt-1 text-xs text-sibs-secondary">{isInProgress
+              ? `Module ${current ?? '—'} of 7 · ${currentTitle}`
+              : status === 'SUBMITTED' ? 'All seven modules submitted' : 'Assessment not started'}</p>
+          </div>
+          <span className="whitespace-nowrap rounded-md bg-sibs-surface px-2.5 py-1 text-xs font-extrabold tabular-nums text-sibs-navy">
+            {completed} of 7 completed
+          </span>
+        </div>
+        <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-100" role="progressbar"
+          aria-label="Completed assessment modules" aria-valuemin={0} aria-valuemax={7} aria-valuenow={completed}>
+          <div className="h-full rounded-full bg-sibs-orange transition-[width] duration-300"
+            style={{ width: `${(completed / 7) * 100}%` }}/>
+        </div>
+        <div className="mt-4 grid gap-2 sm:grid-cols-2">
+          {MODULE_NAMES.map((name, index) => {
+            const moduleNumber = index + 1;
+            const done = moduleNumber <= completed;
+            const active = isInProgress && moduleNumber === current;
+            const stage = done ? 'Completed' : active ? 'Current module' : 'Not started';
+            return <div key={moduleNumber}
+              className={`flex min-w-0 items-start gap-2 rounded-lg border px-3 py-2.5 ${active ? 'border-orange-200 bg-orange-50/60' : 'border-sibs-border bg-sibs-surface'}`}>
+              <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md text-[10px] font-extrabold ${active ? 'bg-sibs-orange text-white' : done ? 'bg-emerald-100 text-emerald-800' : 'bg-white text-sibs-muted'}`}>{moduleNumber}</span>
+              <div className="min-w-0">
+                <p className="text-[11px] font-bold leading-4 text-sibs-navy">{name}</p>
+                <p className={`mt-1 text-[10px] font-semibold ${active ? 'text-sibs-orange' : done ? 'text-emerald-700' : 'text-sibs-muted'}`}>{stage}</p>
+              </div>
+            </div>;
+          })}
+        </div>
+      </section>
+      <p className="text-[11px] leading-5 text-sibs-secondary">
+        This view reflects the applicant's saved assessment status. Scores and detailed results become available after final submission.
       </p>
-      {applicant.status !== 'SUBMITTED' && <div className="rounded-xl border border-blue-200 bg-blue-50/70 p-4">
-        <h4 className="flex items-center gap-2 text-xs font-extrabold text-sibs-navy"><KeyRound size={15}/> Restore public assessment access</h4>
-        <p className="mt-1.5 text-[11px] leading-5 text-sibs-secondary">If the applicant's old link returns 404, create a replacement link for this same assessment. Existing answers and the original timer are preserved. Share the link privately with the correct applicant.</p>
-        <button type="button" disabled={restoring} onClick={() => onRestore(applicant)}
-          className="mt-3 inline-flex items-center gap-2 rounded-lg bg-sibs-navy px-4 py-2.5 text-xs font-extrabold text-white disabled:opacity-50">
-          <KeyRound size={14}/>{restoring ? 'Restoring…' : 'Copy replacement public link'}
-        </button>
-      </div>}
-    </div>}
+    </div>
   </ModalShell>;
 }
 
@@ -110,7 +180,6 @@ export default function PublicAssessmentApplicantsPage({ portalMode = false, onU
   const [assessmentResult, setAssessmentResult] = useState(null);
   const [resultLoadingId, setResultLoadingId] = useState(null);
   const [resultError, setResultError] = useState('');
-  const [restoringApplicantId, setRestoringApplicantId] = useState(null);
   const pageCount = Math.max(1, Math.ceil(total / 20));
   const [summary, setSummary] = useState({ registered: 0, inProgress: 0, submitted: 0 });
   const statusTabs = [
@@ -211,37 +280,12 @@ export default function PublicAssessmentApplicantsPage({ portalMode = false, onU
       const response = await assessmentApi.get(portalMode ? `/api/assessment-portal/applicants/${applicant.id}/result` : `/api/assessment/public-applicants/${applicant.id}/result`);
       const data = response.data?.data;
       if (!data?.available) throw new Error('The completed assessment result is not available.');
-      setAssessmentResult(data); // EXACT same read-only Candidate Pipeline results modal.
+      setAssessmentResult({ ...data, publicApplicantId: applicant.id }); // Keep portal identity separate from Candidate Pipeline.
     } catch (cause) {
       if (portalMode && [401, 403].includes(Number(cause?.response?.status))) onUnauthorized?.();
       setResultError(cause?.response?.data?.message || cause?.message || 'Could not open assessment results.');
     } finally {
       setResultLoadingId(null);
-    }
-  }
-
-  async function restoreApplicant(applicant) {
-    if (!applicant || restoringApplicantId !== null || applicant.status === 'SUBMITTED') return;
-    if (!window.confirm(`Restore public assessment access for ${applicant.name}?\n\nThis replaces the previous link, but keeps the same attempt, saved answers and original timer.`)) return;
-    setRestoringApplicantId(applicant.id);
-    setResultError('');
-    try {
-      const response = await assessmentApi.post(portalMode ? `/api/assessment-portal/applicants/${applicant.id}/reissue-session` : `/api/assessment/public-applicants/${applicant.id}/reissue-session`, {});
-      const token = String(response.data?.data?.token || '');
-      if (!/^[0-9a-f]{64}$/.test(token)) throw new Error('The server did not return a valid replacement token.');
-      const link = `${window.location.origin}/public-assessment/session?token=${encodeURIComponent(token)}`;
-      try {
-        await navigator.clipboard.writeText(link);
-        window.alert('Replacement public assessment link copied. Share it privately with the applicant.');
-      } catch {
-        window.prompt('Copy the replacement link and share it privately with the applicant:', link);
-      }
-      void load({silent:true});
-    } catch (cause) {
-      if (portalMode && [401, 403].includes(Number(cause?.response?.status))) onUnauthorized?.();
-      setResultError(cause?.response?.data?.message || cause?.message || 'Unable to restore assessment access.');
-    } finally {
-      setRestoringApplicantId(null);
     }
   }
 
@@ -446,8 +490,9 @@ export default function PublicAssessmentApplicantsPage({ portalMode = false, onU
         <p className="text-[11px] text-sibs-muted">Assessment scores are provisional and intended for authorized HR review. They do not determine hiring outcomes automatically.</p>
       </div>
     </main>
-    <PendingApplicantModal applicant={selectedApplicant} onClose={() => setSelectedApplicant(null)}
-      onRestore={restoreApplicant} restoring={restoringApplicantId === selectedApplicant?.id}/>
-    <CsrFitAssessmentResultModal open={Boolean(assessmentResult)} data={assessmentResult} portalMode={portalMode} onClose={() => setAssessmentResult(null)}/>
+    <PendingApplicantModal applicant={selectedApplicant} onClose={() => setSelectedApplicant(null)}/>
+    {portalMode ?
+      <PublicCsrFitAssessmentResultModal open={Boolean(assessmentResult)} data={assessmentResult} onClose={() => setAssessmentResult(null)}/> :
+      <CsrFitAssessmentResultModal open={Boolean(assessmentResult)} data={assessmentResult} onClose={() => setAssessmentResult(null)}/>}
   </div>;
 }

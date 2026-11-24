@@ -29,6 +29,23 @@ function fileManagementSteps(instruction) {
     return /[.!?]$/.test(normalized) ? normalized : `${normalized}.`;
   });
 }
+// Public Assessment uses a fully specified file-location instruction sequence.
+// The existing Candidate Pipeline assessment continues using fileManagementSteps.
+function publicFileManagementSteps(info, requiredFolder) {
+  const sourceFilename = trimName(info?.sourceFilename);
+  const targetFilename = trimName(info?.correctFilename || info?.fileNameRule?.match(/rename the document to\s+([^,.;]+)/i)?.[1]);
+  if (!sourceFilename || !targetFilename || !requiredFolder) {
+    return fileManagementSteps(info?.fileNameRule);
+  }
+  return [
+    'Open This PC to launch File Explorer.',
+    'Open Documents > SiBS Shared Files.',
+    `Inside SiBS Shared Files, create a new folder named ${requiredFolder}.`,
+    `Open SiBS Shared Files > Incoming Files and locate the document ${sourceFilename}.`,
+    `Rename ${sourceFilename} to ${targetFilename}.`,
+    `Move ${targetFilename} from Incoming Files into SiBS Shared Files > ${requiredFolder}.`,
+  ];
+}
 const safeFolderName = (value) => {
   const name = trimName(value);
   return name.length > 0 && name.length <= 80 && name !== '.' && name !== '..' &&
@@ -109,7 +126,7 @@ function WindowsClock() {
 
 /** All navigation, file operations, and window geometry are in React memory.
  * Never uses or exposes the candidate's real Windows filesystem. */
-export default function CsrFitWindowsDesktop({ info, answer, disabled = false, saving = false, onSave }) {
+export default function CsrFitWindowsDesktop({ info, answer, disabled = false, saving = false, onSave, publicAssessment = false }) {
   const departments = Array.isArray(info?.folders) ? info.folders.filter(safeFolderName) : [];
   const simulationVersion = Number(info?.simulationVersion) === 3 ? 3 : 2;
   // Support new snapshots and existing attempts created before folderToCreate was added.
@@ -292,7 +309,7 @@ export default function CsrFitWindowsDesktop({ info, answer, disabled = false, s
     <div className="rounded-xl border border-blue-100 bg-blue-50/70 px-4 py-3 text-xs text-sibs-navy">
       <h4 className="font-extrabold">Work instructions</h4>
       <ol className="mt-2 grid gap-2" aria-label="File and folder management steps">
-        {fileManagementSteps(info?.fileNameRule).map((instruction, index) => (
+        {(publicAssessment ? publicFileManagementSteps(info, requiredFolder) : fileManagementSteps(info?.fileNameRule)).map((instruction, index) => (
           <li key={`${index}-${instruction}`} className="flex items-start gap-3 rounded-lg border border-blue-100 bg-white px-3 py-2.5">
             <span className="shrink-0 rounded-md bg-[#0a3154] px-2 py-1 text-[11px] font-extrabold text-white">Step {index + 1}</span>
             <span className="min-w-0 pt-0.5 leading-5">{instruction}</span>
@@ -303,7 +320,10 @@ export default function CsrFitWindowsDesktop({ info, answer, disabled = false, s
     <section className="swin-shell" ref={desktopRef} tabIndex={0} onKeyDown={handleKeyDown} aria-label="Simulated Windows 10 desktop" onClick={() => { if(context) setContext(null); }}>
       <div className="swin-wallpaper" aria-hidden="true"><div className="swin-glow"/><div className="swin-orbit one"/><div className="swin-orbit two"/></div>
       <div className="swin-desktop-icons">
-        {[{ id:'pc', title:'This PC' },{ id:'bin', title:'Recycle Bin' },{ id:'desktop', title:'Desktop' },{ id:'documents', title:'Documents' },{ id:'shared', title:'SiBS Shared Files' }].map(({id,title}) =>
+        {(publicAssessment
+          ? [{ id:'pc', title:'This PC' }, { id:'bin', title:'Recycle Bin' }]
+          : [{ id:'pc', title:'This PC' },{ id:'bin', title:'Recycle Bin' },{ id:'desktop', title:'Desktop' },{ id:'documents', title:'Documents' },{ id:'shared', title:'SiBS Shared Files' }]
+        ).map(({id,title}) =>
           <button type="button" key={id} className="swin-desktop-icon" onDoubleClick={() => openExplorer(id)} onKeyDown={e => {if(e.key==='Enter') openExplorer(id);}}
             onPointerUp={e => {if(e.pointerType==='touch') openExplorer(id);}} title={`Double-click ${title}`}>
             <LocationIcon id={id} size={33}/><span>{title}</span></button>)}
