@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useLayoutEffect, useState } from 'react';
 import { Link, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import {
-  ClipboardCheck, Menu, X, Clock3, AlertCircle,
+  ClipboardCheck, Menu, X, Clock, CalendarDays, AlertCircle,
   Eye, EyeOff, ChevronLeft,
 } from 'lucide-react';
 import portalApi from '../../lib/assessment-admin/portalApi';
+import { createSystemDateTimeFormatter } from '../../lib/axios/dateFormatter';
 import portalSocket from '../../lib/assessment-admin/portalSocket';
 import PublicAssessmentApplicantsPage from '../recruitment/PublicAssessmentApplicantsPage';
 import { GradientWave } from '../../components/ui/gradient-wave';
@@ -12,6 +13,16 @@ import SibsAssessmentBrand from './SibsAssessmentBrand';
 import AssessmentAdminUserProfile from './AssessmentAdminUserProfile';
 
 const ROOT = '/assessment-admin';
+// Use the same locale, time zone and typography as the authenticated HRIS header.
+const dateFormatter = createSystemDateTimeFormatter('en-PH', {
+  timeZone: 'Asia/Manila', weekday: 'long', month: 'long', day: 'numeric', year: 'numeric',
+});
+const mobileDateFormatter = createSystemDateTimeFormatter('en-PH', {
+  timeZone: 'Asia/Manila', weekday: 'short', month: 'short', day: 'numeric',
+});
+const timeFormatter = createSystemDateTimeFormatter('en-PH', {
+  timeZone: 'Asia/Manila', hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true,
+});
 const NAV = [
   { title: 'Public Assessment', path: `${ROOT}/public-assessment`, icon: ClipboardCheck },
 ];
@@ -105,12 +116,9 @@ function Shell({ user, logout, onUnauthorized }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [now, setNow] = useState(() => new Date());
-  const dateDisplay = new Intl.DateTimeFormat('en-US', {
-    timeZone: 'Asia/Manila', weekday: 'long', month: 'long', day: 'numeric', year: 'numeric',
-  }).format(now);
-  const timeDisplay = new Intl.DateTimeFormat('en-US', {
-    timeZone: 'Asia/Manila', hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true,
-  }).format(now);
+  const dateDisplay = dateFormatter.format(now);
+  const mobileDateDisplay = mobileDateFormatter.format(now);
+  const timeDisplay = timeFormatter.format(now);
 
   useEffect(() => {
     const id = window.setInterval(() => setNow(new Date()), 1000);
@@ -163,8 +171,8 @@ function Shell({ user, logout, onUnauthorized }) {
       </aside>
       {sidebarOpen && <button type="button" aria-label="Close navigation" className="fixed inset-0 z-[75] bg-black/50 backdrop-blur-xs lg:hidden" onClick={() => setSidebarOpen(false)} />}
       <div className={`min-h-dvh transition-[padding] duration-300 ${collapsed ? 'lg:pl-[84px] 2xl:lg:pl-[90px]' : 'lg:pl-[245px] 2xl:lg:pl-[260px]'}`}>
-        <header className="sticky top-0 z-[70] flex h-[74px] items-center border-b border-sibs-border-subtle bg-sibs-surface px-4 font-jakarta shadow-xs sm:px-6 lg:px-7 2xl:h-[86px]">
-          <div className="mx-auto flex w-full max-w-[1700px] items-center justify-between gap-3">
+        <header className="sibs-dashboard-header font-jakarta">
+          <div className="sibs-dashboard-header-inner">
             <button type="button" onClick={() => setSidebarOpen(true)} aria-label="Open sidebar"
               className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-sibs-tertiary-2 bg-sibs-primary-1 text-white shadow-xs lg:hidden">
               <Menu size={18}/>
@@ -173,14 +181,36 @@ function Shell({ user, logout, onUnauthorized }) {
               <h1 className="truncate font-heading text-lg font-bold text-sibs-navy">Public Assessment</h1>
               <p className="truncate text-[10px] font-medium text-sibs-muted">Administration</p>
             </div>
-            <div className="hidden shrink-0 items-center gap-2 rounded-xl border border-sibs-border-subtle bg-white px-3 py-1.5 text-sibs-navy shadow-xs sm:flex">
-              <Clock3 size={15} className="text-sibs-orange"/>
-              <div className="text-center"><p className="text-[10px] font-semibold leading-4 text-sibs-muted">{dateDisplay}</p><p className="font-heading text-xs font-extrabold leading-4 tabular-nums">{timeDisplay} PHT</p></div>
+            <div
+              className="hidden min-w-0 shrink-0 items-center gap-2 rounded-xl border border-sibs-border-subtle bg-white px-3 py-1.5 font-jakarta sm:flex"
+              aria-label="Current Philippine date and time"
+              title="Philippine Standard Time (UTC+8)"
+            >
+              <Clock className="h-4 w-4 shrink-0 text-sibs-orange" aria-hidden="true" />
+              <div className="flex min-w-0 flex-col leading-tight text-left">
+                <span className="whitespace-nowrap text-[10px] font-semibold text-sibs-muted">{dateDisplay}</span>
+                <span className="whitespace-nowrap text-[12px] font-extrabold tabular-nums text-sibs-navy">
+                  <time>{timeDisplay}</time>
+                  <span className="ml-1.5 text-[9px] font-bold text-sibs-muted">PHT</span>
+                </span>
+              </div>
             </div>
             {/* Same slim separator used between HRIS header actions and the profile. */}
             <div aria-hidden="true" className="hidden h-5 w-px bg-sibs-border-subtle sm:block 2xl:h-6" />
             <AssessmentAdminUserProfile user={user} logout={logout}/>
 
+          </div>
+          <div className="flex w-full min-w-0 shrink-0 items-center gap-1.5 border-t border-sibs-border-subtle/70 pt-1.5 pb-1 font-jakarta sm:hidden" aria-label="Current Philippine date and time">
+            <div className="flex shrink-0 items-center gap-1">
+              <CalendarDays className="h-3.5 w-3.5 shrink-0 text-sibs-orange" aria-hidden="true" />
+              <span className="whitespace-nowrap text-[10.5px] font-semibold text-sibs-muted">{mobileDateDisplay}</span>
+            </div>
+            <span className="select-none text-[11px] text-sibs-border-subtle" aria-hidden="true">•</span>
+            <div className="flex shrink-0 items-center gap-1">
+              <Clock className="h-3.5 w-3.5 shrink-0 text-sibs-orange" aria-hidden="true" />
+              <time className="whitespace-nowrap text-[12px] font-extrabold tabular-nums text-sibs-navy">{timeDisplay}</time>
+              <span className="rounded border border-sibs-border-subtle bg-white px-1 py-0.5 text-[8.5px] font-extrabold leading-none text-sibs-muted">PHT</span>
+            </div>
           </div>
         </header>
         <main className="min-w-0 bg-sibs-tertiary-10 px-4 py-5 sm:px-6 lg:px-7">

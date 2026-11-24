@@ -431,7 +431,7 @@ export function buildCsrFitPdfDocument(data, JsPDF, { logoDataUrl = null, fontDa
   }
 
   /** PDF radar chart uses the same server-verified category values as the UI.
-   * Hermes supplies only the chart recommendation and short interpretation. */
+   * SiBS AI supplies only the chart recommendation and short interpretation. */
   function cognitiveRadar(categories) {
     const rows = (Array.isArray(categories) ? categories : []).filter(item =>
       item && validPercent(item.score) && typeof item.category === 'string');
@@ -559,8 +559,8 @@ export function buildCsrFitPdfDocument(data, JsPDF, { logoDataUrl = null, fontDa
   const aiReport = data?.aiInterpretation?.status === 'READY' ? data.aiInterpretation.report : null;
   if (aiReport) {
     newPage();
-    heading('Workplace insights | Hermes AI', 14);
-    paragraph('Evidence-based interpretation of SiBS CSR-Fit results. Advisory only; the numeric result above is calculated by HRIS, never by Hermes.',
+    heading('Workplace insights | SiBS AI', 14);
+    paragraph('Evidence-based interpretation of SiBS CSR-Fit results. Advisory only; the numeric result above is calculated by HRIS, never by SiBS AI.',
       {fontSize:8.6, after:14});
     heading('Assessment overview', 11);
     paragraph(aiReport.executiveSummary || 'Interpretation recorded.', {fontSize:9.1, after:14});
@@ -608,7 +608,7 @@ export function buildCsrFitPdfDocument(data, JsPDF, { logoDataUrl = null, fontDa
       { fontSize: 8.3, after: 13 });
     cognitiveRadar(data.score.module1Categories);
     const radarInsight = verifiedHermesChartInsight('cognitive_radar');
-    if (radarInsight) paragraph(`Hermes chart insight: ${radarInsight}`, {fontSize:8.3, after:13});
+    if (radarInsight) paragraph(`SiBS AI chart insight: ${radarInsight}`, {fontSize:8.3, after:13});
     for (const category of data.score.module1Categories) {
       scoreBar(`${category.category} (${category.correct}/${category.total} correct)`, category.score);
     }
@@ -620,7 +620,7 @@ export function buildCsrFitPdfDocument(data, JsPDF, { logoDataUrl = null, fontDa
     paragraph('Five self-report indices - a descriptive workplace competency profile, not population norms.', { fontSize: 8.3, after: 13 });
     cognitiveRadar(data.score.behavioralPillars.map(item => ({ category:item.name, score:item.score })));
     const behavioralInsight = verifiedHermesChartInsight('behavioral_bars');
-    if (behavioralInsight) paragraph(`Hermes chart insight: ${behavioralInsight}`, {fontSize:8.3, after:12});
+    if (behavioralInsight) paragraph(`SiBS AI chart insight: ${behavioralInsight}`, {fontSize:8.3, after:12});
     for (const pillar of data.score.behavioralPillars) {
       const itemCount = pillar.items == null ? '' : ` (${pillar.items} scored items)`;
       scoreBar(`${pillar.name}${itemCount}`, pillar.score);
@@ -631,7 +631,7 @@ export function buildCsrFitPdfDocument(data, JsPDF, { logoDataUrl = null, fontDa
     newPage();
     heading('Typing & assessment metrics', 13);
     const typingInsight = verifiedHermesChartInsight('typing_benchmarks');
-    if (typingInsight) paragraph(`Hermes chart insight: ${typingInsight}`, {fontSize:8.3, after:12});
+    if (typingInsight) paragraph(`SiBS AI chart insight: ${typingInsight}`, {fontSize:8.3, after:12});
     const typingMetrics = Array.isArray(data.objective?.module5) ? data.objective.module5 : [];
     if (typingMetrics.length) {
       const wpms = typingMetrics.map(entry => Number(entry?.wpm)).filter(n => Number.isFinite(n) && n >= 0);
