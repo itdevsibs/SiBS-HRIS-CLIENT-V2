@@ -219,7 +219,6 @@ export default function CsrFitAssessmentResultModal({ open, data, onClose, porta
   };
 
   const hermesProcessing = ['PENDING', 'RUNNING'].includes(hermesState?.status);
-  const hermesSlow = hermesProcessing && Number(hermesState?.ageSeconds || 0) >= 90;
   const refreshHermes = () => {
     setHermesError('');
     setHermesPollCycle(value => value + 1);
@@ -350,12 +349,11 @@ export default function CsrFitAssessmentResultModal({ open, data, onClose, porta
               <p className="text-xs text-sibs-muted">Hermes assessment interpretation is not enabled on this HRIS environment. Stored module scores and answers remain available below.</p>
             : <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="flex min-w-0 items-center gap-2 text-xs text-sibs-secondary">
-                  {hermesProcessing && !hermesSlow && <Loader2 size={15} className="shrink-0 animate-spin text-sibs-orange"/>}
+                  {hermesProcessing && <Loader2 size={15} className="shrink-0 animate-spin text-sibs-orange"/>}
                   <span>{hermesState?.status === 'UNAVAILABLE' ? 'The interpretation status could not be refreshed. Your stored assessment scores remain available.' :
                     hermesState?.status === 'FAILED' ? (hermesState?.message || 'Hermes could not complete the interpretation.') :
                     hermesState?.status === 'NOT_SUBMITTED' ? 'No submitted assessment was found for this candidate.' :
-                    hermesSlow ? 'Hermes is taking longer than expected. The server will stop an unresponsive request and allow a retry.' :
-                    hermesState?.status === 'RUNNING' ? 'Hermes is interpreting the completed assessment.' :
+                    hermesState?.status === 'RUNNING' ? 'Hermes is interpreting the completed assessment. Analysis continues until the agent responds; you can close this window and check again later.' :
                     'Hermes analysis is queued. Verified scores are available below.'}</span>
                 </div>
                 {!portalMode && hermesState?.status === 'FAILED' && <button type="button" disabled={hermesRetryBusy}

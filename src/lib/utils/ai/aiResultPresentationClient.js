@@ -208,9 +208,9 @@ function reportingLineCard(content) {
   const source = String(content ?? "").replace(/\r\n?/g, "\n").trim();
   if (!source || source.length > 900) return null;
   const lines = source.split("\n").map((line) => line.trim()).filter(Boolean);
-  if (lines.length !== 3 || !/^#{1,4}\s+Reporting Line$/i.test(lines[0])) return null;
+  if (lines.length < 3 || lines.length > 5 || !/^#{1,4}\s+Reporting Line$/i.test(lines[0])) return null;
   const employeeText = lines[1].match(/^Employee:\s*(.+)$/i)?.[1];
-  const managerText = lines[2].match(/^Direct Manager:\s*(.+)$/i)?.[1];
+  const managerText = lines.at(-1).match(/^Direct Manager:\s*(.+)$/i)?.[1];
   if (!employeeText || !managerText) return null;
 
   const readPerson = (value) => {
@@ -220,12 +220,21 @@ function reportingLineCard(content) {
     if (!name || name.length > 160 || !/[\p{L}]/u.test(name)) return null;
     return { name, sibsId: parsed[2] || null };
   };
+  const placement = {};
+  for (const line of lines.slice(2, -1)) {
+    const match = line.match(/^(Department|Account):\s*(.{1,160})$/);
+    if (!match) return null;
+    const key = match[1].toLowerCase();
+    if (Object.hasOwn(placement, key)) return null;
+    placement[key] = match[2].trim();
+    if (!placement[key]) return null;
+  }
   const employee = readPerson(employeeText);
   const manager = readPerson(managerText);
   if (!employee || !manager) return null;
   return {
     type: "reportingLine",
-    employee,
+    employee: { ...employee, ...placement },
     manager: {
       ...manager,
       unavailable: /^No verified manager information was returned$/i.test(manager.name),

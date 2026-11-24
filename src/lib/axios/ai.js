@@ -8,10 +8,14 @@ export async function askSibsAi({
   conversationId = "",
   context = {},
   signal,
+  expectedSibsId,
+  expectedEmployeeId,
 }) {
   const payload = {
     message: String(message || "").trim(),
     conversation,
+    ...(expectedSibsId !== undefined ? { expectedSibsId: String(expectedSibsId).trim() } : {}),
+    ...(expectedEmployeeId ? { expectedEmployeeId: String(expectedEmployeeId).trim() } : {}),
     context: {
       source: "global_assistant",
       ...context,

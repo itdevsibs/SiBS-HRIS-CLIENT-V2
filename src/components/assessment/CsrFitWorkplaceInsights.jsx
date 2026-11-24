@@ -30,10 +30,10 @@ function CompetencyProfile({ pillars }) {
 }
 
 const sections = [
-  ['Motivation & stressors','motivationAndStressors',Target],
-  ['Thinking style','thinkingStyle',BrainCircuit],
-  ['Work style','workStyle',BriefcaseBusiness],
-  ['Interaction style','interactionStyle',MessagesSquare],
+  ['Motivation & stressors','motivationAndStressors',Target,'Self-reported responses and work conditions'],
+  ['Thinking style','thinkingStyle',BrainCircuit,'Cognitive and problem-solving tasks'],
+  ['Work style','workStyle',BriefcaseBusiness,'Recorded practical task performance'],
+  ['Interaction style','interactionStyle',MessagesSquare,'Customer-handling and scenario responses'],
 ];
 const Findings = ({ title, icon: Icon, items }) => <div className="rounded-lg border border-sibs-border bg-sibs-surface/50 p-3.5">
   <h5 className="flex items-center gap-2 text-xs font-extrabold text-sibs-navy"><Icon size={15} className="text-sibs-orange"/>{title}</h5>
@@ -45,19 +45,30 @@ const Findings = ({ title, icon: Icon, items }) => <div className="rounded-lg bo
 export default function CsrFitWorkplaceInsights({ assessment, report }) {
   if (!report) return null;
   const insights = report.workplaceInsights || {};
+  const hasInsight = key => typeof insights[key] === 'string' && Boolean(insights[key].trim());
+  const missingCount = sections.filter(([,key]) => !hasInsight(key)).length;
   return <div className="space-y-4">
     <div className="rounded-xl border border-sibs-border bg-sibs-surface/50 p-4">
       <h4 className="text-xs font-extrabold text-sibs-navy">Competency profile</h4>
       <p className="mt-1 text-[11px] text-sibs-muted">Five HRIS-recorded work-attitude pillars; not population norms or validated personality percentiles</p>
       <div className="mt-3"><CompetencyProfile pillars={assessment?.score?.behavioralPillars}/></div>
-      {insights.competencyStrength && <p className="mt-3 border-t border-sibs-border pt-3 text-[11px] leading-5 text-sibs-secondary"><strong className="text-sibs-navy">Competency strength: </strong>{insights.competencyStrength}</p>}
+      {hasInsight('competencyStrength') && <p className="mt-3 border-t border-sibs-border pt-3 text-[11px] leading-5 text-sibs-secondary"><strong className="text-sibs-navy">Competency strength: </strong>{insights.competencyStrength}</p>}
     </div>
-    <div><h4 className="text-xs font-extrabold text-sibs-navy">Leveraging strengths & development suggestions</h4>
-      <div className="mt-3 grid gap-3 sm:grid-cols-2">{sections.map(([title,key,Icon])=><div key={key} className="rounded-lg border border-sibs-border bg-white p-3.5">
-        <h5 className="flex items-center gap-2 text-[11px] font-extrabold text-sibs-navy"><Icon size={15} className="text-sibs-orange" />{title}</h5>
-        <p className="mt-2 text-[11px] leading-5 text-sibs-secondary">{insights[key] || 'Available evidence does not support a reliable interpretation of this aspect. Verify through a structured HR interview.'}</p>
-      </div>)}</div>
-    </div>
+    <section aria-label="Workplace evidence and development suggestions">
+      <h4 className="text-xs font-extrabold text-sibs-navy">Leveraging strengths & development suggestions</h4>
+      <p className="mt-1 text-[11px] leading-5 text-sibs-muted">Hermes interpretation of recorded assessment responses and tasks, for human HR review only.</p>
+      {missingCount > 0 && <div role="status" className="mt-3 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-[11px] leading-5 text-amber-900">
+        <CircleAlert size={15} className="mt-0.5 shrink-0" aria-hidden="true" />
+        <p>{missingCount === sections.length ? 'This saved interpretation does not include workplace-insight sections.' : 'Some workplace-insight sections are missing from this saved interpretation.'} Use Re-analyze results where available to request an updated Hermes report. Missing report fields are not findings about the applicant.</p>
+      </div>}
+      {missingCount < sections.length && <div className="mt-3 grid gap-3 sm:grid-cols-2">{sections.filter(([,key])=>hasInsight(key)).map(([title,key,Icon,subtitle])=><article key={key} className="min-w-0 overflow-hidden rounded-xl border border-sibs-border bg-white">
+        <header className="flex items-center gap-2.5 border-b border-sibs-border bg-sibs-surface/60 px-3.5 py-3">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-sibs-navy text-white"><Icon size={16} aria-hidden="true" /></span>
+          <div className="min-w-0"><h5 className="text-xs font-extrabold text-sibs-navy">{title}</h5><p className="mt-0.5 text-[10px] leading-4 text-sibs-muted">{subtitle}</p></div>
+        </header>
+        <p className="break-words px-3.5 py-3 text-[11px] leading-5 text-sibs-secondary">{insights[key]}</p>
+      </article>)}</div>}
+    </section>
     <div className="grid gap-3 sm:grid-cols-2">
       <Findings title="Recorded strengths" icon={Lightbulb} items={report.observedCompetencies}/>
       <Findings title="Potential challenges / areas for review" icon={CircleAlert} items={report.areasForReview}/>
