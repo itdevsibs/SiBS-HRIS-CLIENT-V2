@@ -85,7 +85,7 @@ function EmployeeReportingLine({ employee, manager }) {
       </h3>
       <div className="min-w-0 overflow-hidden rounded-xl border border-sibs-border bg-white">
         <div className="flex min-w-0 items-start gap-2.5 px-3 py-3">
-          <span aria-hidden="true" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-sibs-surface text-sibs-navy">
+          <span aria-hidden="true" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-sibs-navy text-white">
             <UserRound size={17} />
           </span>
           <div className="min-w-0 flex-1">
@@ -94,12 +94,22 @@ function EmployeeReportingLine({ employee, manager }) {
             {employee.sibsId && <p className="mt-0.5 text-[11px] font-medium text-sibs-secondary">SiBS ID: {employee.sibsId}</p>}
           </div>
         </div>
-        <div className="flex items-center gap-2 border-y border-sibs-border-subtle bg-sibs-surface/50 px-3 py-1.5">
+        {(employee.department || employee.account) && (
+          <dl className="mx-3 mb-3 min-w-0 overflow-hidden rounded-lg border border-sibs-border bg-sibs-surface/50 text-[11px] leading-5">
+            {[['Department', employee.department], ['Account', employee.account]].filter(([, value]) => value).map(([label, value], index) => (
+              <div key={label} className={`grid min-w-0 grid-cols-[76px_minmax(0,1fr)] gap-2 px-2.5 py-2 ${index ? 'border-t border-sibs-border-subtle' : ''}`}>
+                <dt className="font-medium text-sibs-muted">{label}</dt>
+                <dd className="min-w-0 break-words font-semibold text-sibs-navy">{value}</dd>
+              </div>
+            ))}
+          </dl>
+        )}
+        <div className="flex items-center gap-2 border-y border-sibs-border-subtle bg-sibs-surface/70 px-3 py-2">
           <span aria-hidden="true" className="ml-[17px] h-3 border-l-2 border-sibs-orange" />
           <span className="text-[10px] font-semibold uppercase tracking-wide text-sibs-muted">Reports to</span>
         </div>
-        <div className="flex min-w-0 items-start gap-2.5 px-3 py-3">
-          <span aria-hidden="true" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-sibs-navy text-white">
+        <div className="flex min-w-0 items-start gap-2.5 bg-orange-50/40 px-3 py-3">
+          <span aria-hidden="true" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-sibs-orange text-white">
             <UserRound size={17} />
           </span>
           <div className="min-w-0 flex-1">
@@ -498,21 +508,39 @@ function MonthlyAttendanceSummary({ period, tracked, present, missing, late, lat
 }
 
 function LeaveBalanceSummary({ remaining, total, plotted, snapshot, note }) {
-  const fmt = (value) => value == null ? "Not verified" : `${value.toLocaleString("en-PH", { maximumFractionDigits: 2 })}`;
+  const fmt = (value) => value == null ? "Not verified" : value.toLocaleString("en-PH", { maximumFractionDigits: 2 });
+  const days = (value) => value == null ? "Not verified" : `${fmt(value)} ${value === 1 ? "day" : "days"}`;
   return (
     <section aria-label="Leave credit balance" className="min-w-0 space-y-2">
       <SummaryHeading icon={CalendarDays}>My leave balance</SummaryHeading>
       <div className="min-w-0 overflow-hidden rounded-xl border border-sibs-border bg-white">
-        <div className="px-3 py-3.5">
-          <p className="text-[10px] font-semibold uppercase tracking-wide text-sibs-muted">Remaining leave credits</p>
-          <p className="mt-1 text-[28px] font-bold leading-9 tabular-nums text-sibs-navy">{fmt(remaining)}</p>
+        <div className="bg-sibs-navy px-3.5 py-4 text-white">
+          <div className="flex items-center gap-2 text-[11px] font-semibold text-white/85">
+            <CalendarDays size={15} aria-hidden="true" className="shrink-0" />
+            Available leave credits
+          </div>
+          <div className="mt-2 flex flex-wrap items-baseline gap-x-2">
+            <span className={`${remaining == null ? "text-[18px]" : "text-[32px]"} break-words font-bold leading-9 tabular-nums`}>
+              {fmt(remaining)}
+            </span>
+            {remaining != null && <span className="text-[12px] font-medium text-white/80">{remaining === 1 ? "day remaining" : "days remaining"}</span>}
+          </div>
         </div>
-        <div className="grid grid-cols-2 gap-2 border-t border-sibs-border-subtle px-3 py-3">
-          <SummaryMetric label="Total leave credits" value={fmt(total)} />
-          <SummaryMetric label="Plotted leaves" value={fmt(plotted)} />
+        <div className="grid grid-cols-2 gap-2 px-3 py-3">
+          <SummaryMetric label="Total leave credits" value={days(total)} />
+          <SummaryMetric label="Plotted leaves" value={days(plotted)} />
         </div>
-        {snapshot && <div className="border-t border-sibs-border-subtle px-3 py-2 text-[11px] text-sibs-secondary">Snapshot date: {snapshot}</div>}
-        <p className="border-t border-sibs-border-subtle px-3 py-2.5 text-[11px] leading-[1.6] text-sibs-secondary">{note}</p>
+        <div className="flex items-start gap-2 border-t border-sibs-border-subtle bg-sibs-surface/40 px-3 py-2.5 text-[11px] leading-5 text-sibs-secondary">
+          <CalendarDays size={14} aria-hidden="true" className="mt-0.5 shrink-0 text-sibs-muted" />
+          <div className="min-w-0">
+            <p className="font-semibold text-sibs-navy">Balance snapshot</p>
+            <p className="break-words">{snapshot || "Date not provided"}</p>
+          </div>
+        </div>
+        <div className="border-t border-sibs-border-subtle px-3 py-2.5">
+          <p className="text-[10px] font-semibold uppercase tracking-wide text-sibs-muted">Record note</p>
+          <p className="mt-1 text-[11px] leading-[1.6] text-sibs-secondary">{note}</p>
+        </div>
       </div>
     </section>
   );

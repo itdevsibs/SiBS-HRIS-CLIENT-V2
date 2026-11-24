@@ -136,6 +136,9 @@ export default function SiBSAIAssistant({
     (nextOpen) => {
       const resolvedOpen =
         typeof nextOpen === "function" ? nextOpen(open) : nextOpen;
+      if (!resolvedOpen && drawerRef.current?.contains(document.activeElement)) {
+        document.activeElement?.blur?.();
+      }
       if (!isControlled) {
         setInternalOpen(resolvedOpen);
       }
@@ -144,7 +147,7 @@ export default function SiBSAIAssistant({
     [isControlled, open, onOpenChange],
   );
   const loggedInEmployeeKey = String(
-    user?.username ?? user?.sibs_id ?? user?.sibsId ?? user?.gy_user_code ?? user?.gy_emp_id ?? "",
+    user?.sibs_id || user?.sibsId || user?.username || user?.gy_user_code || "",
   ).trim();
   // Restore on mount (including a page refresh) before the first chat render.
   const initialConversationRef = useRef(null);
@@ -161,6 +164,10 @@ export default function SiBSAIAssistant({
   const [triggerDragging, setTriggerDragging] = useState(false);
 
   const triggerRef = useRef(null);
+  const drawerRef = useRef(null);
+  const openerRef = useRef(null);
+  const setOpenRef = useRef(setOpen);
+  setOpenRef.current = setOpen;
   const inputRef = useRef(null);
   const scrollRef = useRef(null);
   const dragStateRef = useRef(null);
@@ -168,7 +175,7 @@ export default function SiBSAIAssistant({
   const requestInFlightRef = useRef(false);
 
   // Hide the previous account's messages until the next account is hydrated.
-  const visible = enabled && !userLoading && Boolean(user) &&
+  const visible = enabled && !userLoading && Boolean(user) && Boolean(loggedInEmployeeKey) &&
     hydratedEmployeeKey === loggedInEmployeeKey;
   const canSend = Boolean(question.trim()) && !submitting;
   const activeEmployeeKeyRef = useRef(loggedInEmployeeKey);
@@ -203,22 +210,32 @@ export default function SiBSAIAssistant({
   }, [user]);
 
   useEffect(() => {
-    if (!open) return undefined;
-
+    if (!open) {
+      const opener = openerRef.current;
+      openerRef.current = null;
+      if (opener?.isConnected) {
+        const frame = window.requestAnimationFrame(() => opener.focus?.());
+        return () => window.cancelAnimationFrame(frame);
+      }
+      return undefined;
+    }
+    if (!drawerRef.current?.contains(document.activeElement)) {
+      openerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    }
     const handleKeyDown = (event) => {
       if (event.key === "Escape") {
         event.preventDefault();
         event.stopPropagation();
         event.stopImmediatePropagation?.();
-        setOpen(false);
-        window.requestAnimationFrame(() => triggerRef.current?.focus?.());
+        setOpenRef.current(false);
       }
     };
-
     document.addEventListener("keydown", handleKeyDown, true);
-    window.requestAnimationFrame(() => inputRef.current?.focus?.());
-
-    return () => document.removeEventListener("keydown", handleKeyDown, true);
+    const frame = window.requestAnimationFrame(() => inputRef.current?.focus?.());
+    return () => {
+      window.cancelAnimationFrame(frame);
+      document.removeEventListener("keydown", handleKeyDown, true);
+    };
   }, [open]);
 
   useEffect(() => {
@@ -363,12 +380,12 @@ export default function SiBSAIAssistant({
 
   function handleClose() {
     setOpen(false);
-    window.requestAnimationFrame(() => triggerRef.current?.focus?.());
   }
 
   async function submitQuestion(value = question) {
     const cleanQuestion = String(value || "").trim();
-    if (!cleanQuestion || submitting || requestInFlightRef.current) return;
+    if (!cleanQuestion || submitting || requestInFlightRef.current || !loggedInEmployeeKey ||
+        hydratedEmployeeKey !== loggedInEmployeeKey) return;
     requestInFlightRef.current = true;
 
     const requestEmployeeKey = loggedInEmployeeKey;
@@ -396,6 +413,8 @@ export default function SiBSAIAssistant({
         conversation,
         conversationId,
         signal: controller.signal,
+        expectedSibsId: requestEmployeeKey,
+        expectedEmployeeId: user?.gy_emp_id || user?.gyEmpId || "",
         context: {
           source: "global_assistant",
         },
@@ -405,9 +424,13 @@ export default function SiBSAIAssistant({
         throw new Error(response?.message || "SiBS AI could not complete the request.");
       }
 
-      const normalized = normalizeAiAnswerPayload(response);
-
       if (activeEmployeeKeyRef.current !== requestEmployeeKey) return;
+      // Do not render or persist any response that was not bound to the
+      // account visible in this tab. Cookies may be replaced in another tab.
+      if (String(response.authenticatedSibsId ?? "").trim().toLowerCase() !== requestEmployeeKey.toLowerCase()) {
+        throw new Error("SiBS AI could not verify your signed-in account. Please sign out and sign in again.");
+      }
+      const normalized = normalizeAiAnswerPayload(response);
       setConversationId(normalized.conversationId || conversationId);
       setMessages((current) => [
         ...current,
@@ -457,6 +480,7 @@ export default function SiBSAIAssistant({
           onPointerCancel={handleTriggerPointerCancel}
           aria-label="Open Ask SiBS AI"
           aria-expanded={open}
+          tabIndex={open ? -1 : 0}
           className={`font-jakarta fixed z-[120] transform-gpu inline-flex select-none items-center gap-2 sm:gap-2.5 rounded-2xl bg-sibs-navy p-2 sm:px-4 sm:py-3 font-heading text-sm font-bold tracking-tight text-white shadow-xl border border-white/10 transition-[transform,background-color,box-shadow,opacity] duration-200 hover:bg-sibs-tertiary-2 focus:outline-none focus:ring-4 focus:ring-sibs-orange/20 ${
             triggerPosition ? "" : "right-4 sm:right-6"
           } ${
@@ -491,12 +515,13 @@ export default function SiBSAIAssistant({
         className={`fixed inset-0 z-[2147483600] transition ${
           open ? "pointer-events-auto" : "pointer-events-none"
         }`}
-        aria-hidden={!open}
+        ref={drawerRef}
+        inert={!open}
       >
         {/* Backdrop */}
         <button
           type="button"
-          tabIndex={open ? 0 : -1}
+          tabIndex={-1}
           aria-label="Close SiBS AI"
           onClick={handleClose}
           className={`absolute inset-0 bg-sibs-navy/40 backdrop-blur-xs transition-opacity duration-300 ${
