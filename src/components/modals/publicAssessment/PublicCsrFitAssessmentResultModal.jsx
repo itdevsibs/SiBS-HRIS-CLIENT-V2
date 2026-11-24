@@ -8,7 +8,7 @@ import { CSR_FIT_MODULE_NAMES } from '@/components/assessment/csrFitModuleGuides
 import CsrFitReadOnlyResponse from '../candidatePipeline/CsrFitReadOnlyResponse';
 import CsrFitHermesCharts from '@/components/assessment/CsrFitHermesCharts';
 import CsrFitWeightedResults from '@/components/assessment/CsrFitWeightedResults';
-import CsrFitWorkplaceInsights from '@/components/assessment/CsrFitWorkplaceInsights';
+import CsrFitReadableReport from '@/components/assessment/CsrFitReadableReport';
 import PublicCsrFitVisualDashboard from '@/components/assessment/PublicCsrFitVisualDashboard';
 
 const MODULE_LABELS = Object.fromEntries(
@@ -175,7 +175,7 @@ export default function PublicCsrFitAssessmentResultModal({ open, data, onClose 
           setHermesState(current => current?.status === 'READY' ? current : { status: 'UNAVAILABLE' });
           setHermesError(code === 403 ? 'Your account is not authorized to view this interpretation.'
             : code === 401 ? 'Your Assessment Administration session has expired. Sign in to view the interpretation.'
-            : 'Could not refresh the Hermes status. Check the server connection, then select Check status.');
+            : 'Could not refresh the SiBS AI status. Check the server connection, then select Check status.');
         }
       } finally {
         refreshing = false;
@@ -216,7 +216,7 @@ export default function PublicCsrFitAssessmentResultModal({ open, data, onClose 
       // A previous polling cycle may have stopped on FAILED; restart it now.
       setHermesPollCycle(value => value + 1);
     } catch (error) {
-      setHermesError(error?.response?.data?.message || 'Unable to start a new Hermes interpretation.');
+      setHermesError(brandAssessmentMessage(error?.response?.data?.message) || 'Unable to start a new SiBS AI interpretation.');
     } finally { setHermesRetryBusy(false); }
   };
 
@@ -262,7 +262,7 @@ export default function PublicCsrFitAssessmentResultModal({ open, data, onClose 
     { id: 'modules', label: 'Seven Modules', icon: Layers },
     { id: 'metrics', label: 'Additional Metrics', icon: ListChecks },
     { id: 'visual', label: 'Visual Analysis', icon: BarChart3 },
-    { id: 'hermes', label: 'Hermes AI', icon: BrainCircuit },
+    { id: 'hermes', label: 'SiBS AI', icon: BrainCircuit },
     { id: 'answers', label: 'Exam Responses', icon: FileText },
   ];
   const questions = Array.isArray(data?.modules?.[module]) ? data.modules[module] : [];
@@ -311,7 +311,7 @@ export default function PublicCsrFitAssessmentResultModal({ open, data, onClose 
         <div id="public-csrfit-results-overview" role="tabpanel" aria-labelledby="public-csrfit-results-tab-overview" className={activeTab === 'overview' ? 'space-y-4' : 'hidden'}>
           <section className="rounded-xl border border-sibs-border bg-white p-4" aria-label="Verified submitted assessment overview">
             <h3 className="text-sm font-extrabold text-sibs-navy">Assessment overview</h3>
-            <p className="mt-1 text-[11px] text-sibs-muted">Submitted results · The score is provisional and calculated by HRIS, not Hermes.</p>
+            <p className="mt-1 text-[11px] text-sibs-muted">Submitted results · The score is provisional and calculated by HRIS, not SiBS AI.</p>
             <div className="mt-3 grid grid-cols-2 gap-3 lg:grid-cols-4">
               {[
                 { label: 'Weighted result', value: isValidPercentage(score.weightedSummary?.overallScorePct) ? `${Number(score.weightedSummary.overallScorePct).toFixed(2)}%` : 'Pending review' },
@@ -358,64 +358,27 @@ export default function PublicCsrFitAssessmentResultModal({ open, data, onClose 
         </section>}
         </div>
         <div id="public-csrfit-results-hermes" role="tabpanel" aria-labelledby="public-csrfit-results-tab-hermes" className={activeTab === 'hermes' ? 'space-y-4' : 'hidden'}>
-        <section className="overflow-hidden rounded-xl border border-sibs-border bg-white" aria-label="Hermes HR assessment interpretation">
+        <section className="overflow-hidden rounded-xl border border-sibs-border bg-white" aria-label="SiBS AI HR assessment interpretation">
           <header className="flex flex-wrap items-start justify-between gap-3 bg-sibs-navy px-4 py-3 text-white">
             <div className="flex items-center gap-2"><BrainCircuit size={19} aria-hidden="true"/>
-              <div><h3 className="text-sm font-extrabold">Hermes AI · HR assessment interpretation</h3>
+              <div><h3 className="text-sm font-extrabold">SiBS AI · HR assessment interpretation</h3>
                 <p className="mt-0.5 text-[11px] text-white/75">Documentation-guided · Human HR review required</p></div>
             </div>
             <span className="rounded-md border border-white/20 px-2 py-1 text-[10px] font-bold">Advisory only</span>
           </header>
           <div className="space-y-3 p-4">
             {hermesState?.status === 'READY' && hermesState.report ? <>
-              <p className="text-xs leading-6 text-sibs-secondary">{hermesState.report.executiveSummary || 'Interpretation available for HR review.'}</p>
-              <CsrFitWorkplaceInsights assessment={data} report={hermesState.report} />
-              {Array.isArray(hermesState.report.moduleAnalyses) && hermesState.report.moduleAnalyses.length > 0 &&
-                <section className="rounded-lg border border-sibs-border bg-sibs-surface p-3">
-                  <h4 className="text-xs font-extrabold text-sibs-navy">Evidence-based module interpretations</h4>
-                  <div className="mt-3 grid gap-3 lg:grid-cols-2">
-                    {hermesState.report.moduleAnalyses.map((entry, index) => <article key={`${entry.module}-${index}`} className="rounded-lg border border-sibs-border bg-white p-3">
-                      <h5 className="text-[11px] font-extrabold text-sibs-navy">Module {entry.module} · {CSR_FIT_MODULE_NAMES[Number(entry.module)-1] || 'Assessment evidence'}</h5>
-                      {entry.finding && <p className="mt-2 text-[11px] leading-5 text-sibs-secondary">{entry.finding}</p>}
-                      {entry.supportingEvidence && <p className="mt-2 text-[11px] leading-5 text-sibs-secondary"><strong className="text-sibs-navy">Verified evidence:</strong> {entry.supportingEvidence}</p>}
-                      {entry.limitation && <p className="mt-2 text-[11px] leading-5 text-sibs-muted"><strong>Limitation:</strong> {entry.limitation}</p>}
-                      {entry.hrFollowUp && <p className="mt-2 text-[11px] leading-5 text-sibs-secondary"><strong className="text-sibs-navy">HR follow-up:</strong> {entry.hrFollowUp}</p>}
-                    </article>)}
-                  </div>
-                </section>}
-              {[
-                ['Cross-module observations', hermesState.report.crossModuleObservations],
-                ['Development and training topics', hermesState.report.developmentTopics],
-                ['Evidence and data-quality flags', hermesState.report.dataQualityFlags],
-              ].filter(([,items]) => Array.isArray(items) && items.length > 0).map(([title,items]) =>
-                <div key={title} className="rounded-lg border border-sibs-border bg-white p-3">
-                  <h4 className="text-[11px] font-extrabold text-sibs-navy">{title}</h4>
-                  <ul className="mt-2 space-y-1 text-[11px] leading-5 text-sibs-secondary">{items.map((item,index)=><li key={index}>• {item}</li>)}</ul>
-                </div>)}
-              <CsrFitHermesCharts assessment={data} hermesReport={hermesState.report} hermesStatus="READY" />
-              <div className="grid gap-3 sm:grid-cols-2">
-                {[
-                  ['Assessment limitations', hermesState.report.assessmentLimitations, 'border-sibs-border bg-sibs-surface'],
-                  ['Suggested interview follow-ups', hermesState.report.interviewerQuestions, 'border-sibs-border bg-white'],
-                ].map(([heading,items,style]) => <div key={heading} className={`rounded-lg border p-3 ${style}`}>
-                  <h4 className="text-[11px] font-extrabold text-sibs-navy">{heading}</h4>
-                  {Array.isArray(items) && items.length ? <ul className="mt-2 space-y-2 text-[11px] leading-5 text-sibs-secondary">
-                    {items.map((item,index)=><li key={index} className="flex gap-2"><span className="mt-0.5 text-sibs-orange">•</span><span>{item}</span></li>)}
-                  </ul> : <p className="mt-2 text-[11px] text-sibs-muted">No additional findings recorded.</p>}
-                </div>)}
-              </div>
-              {hermesState.report.methodology && <p className="border-t border-sibs-border pt-3 text-[11px] leading-5 text-sibs-muted">Methodology: {hermesState.report.methodology}</p>}
-              <p className="text-[10px] font-semibold text-sibs-muted">Model: {hermesState.modelName || 'Hermes'} · No automatic hiring decision</p>
+              <CsrFitReadableReport assessment={data} report={hermesState.report} modelName={brandAssessmentMessage(hermesState.modelName)} showCharts />
             </> : hermesState?.status === 'DISABLED' ?
-              <p className="text-xs text-sibs-muted">Hermes assessment interpretation is not enabled on this HRIS environment. Stored module scores and answers remain available below.</p>
+              <p className="text-xs text-sibs-muted">SiBS AI assessment interpretation is not enabled on this HRIS environment. Stored module scores and answers remain available below.</p>
             : <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="flex min-w-0 items-center gap-2 text-xs text-sibs-secondary">
                   {hermesProcessing && <Loader2 size={15} className="shrink-0 animate-spin text-sibs-orange"/>}
                   <span>{hermesState?.status === 'UNAVAILABLE' ? 'The interpretation status could not be refreshed. Your stored assessment scores remain available.' :
-                    hermesState?.status === 'FAILED' ? (hermesState?.message || 'Hermes could not complete the interpretation.') :
+                    hermesState?.status === 'FAILED' ? (brandAssessmentMessage(hermesState?.message) || 'SiBS AI could not complete the interpretation.') :
                     hermesState?.status === 'NOT_SUBMITTED' ? 'No submitted public assessment was found for this applicant.' :
-                    hermesState?.status === 'RUNNING' ? 'Hermes is interpreting the completed assessment. Analysis continues until the agent responds; you can close this window and check again later.' :
-                    'Hermes analysis is queued. Verified scores are available below.'}</span>
+                    hermesState?.status === 'RUNNING' ? 'SiBS AI is interpreting the completed assessment. Analysis continues until the agent responds; you can close this window and check again later.' :
+                    'SiBS AI analysis is queued. Verified scores are available below.'}</span>
                 </div>
                 {(['UNAVAILABLE', 'PENDING', 'RUNNING'].includes(hermesState?.status) || !hermesState) &&
                   <button type="button" onClick={refreshHermes} disabled={hermesRetryBusy}
@@ -434,14 +397,14 @@ export default function PublicCsrFitAssessmentResultModal({ open, data, onClose 
                   className="inline-flex items-center gap-1.5 rounded-lg border border-sibs-border bg-white px-3 py-2 text-[11px] font-bold text-sibs-navy disabled:opacity-50">
                   <RefreshCw size={13} /> Check status
                 </button>
-                <p className="text-[10px] leading-4 text-sibs-muted">A new Hermes report uses the same saved answers and does not change HRIS scores or resend emails.</p>
+                <p className="text-[10px] leading-4 text-sibs-muted">A new SiBS AI report uses the same saved answers and does not change HRIS scores or resend emails.</p>
               </div>}
             {Array.isArray(hermesState?.history) && hermesState.history.length > 0 &&
               <details className="rounded-lg border border-sibs-border bg-sibs-surface p-3">
                 <summary className="cursor-pointer text-[11px] font-bold text-sibs-navy">Previous interpretations ({hermesState.history.length} shown)</summary>
                 <div className="mt-3 space-y-3">{hermesState.history.map((version,index) =>
                   <div key={version.id || index} className="rounded-lg border border-sibs-border bg-white p-3">
-                    <p className="text-[10px] font-bold text-sibs-muted">Archived {version.archivedAt || 'previous version'} · {version.modelName || 'Hermes'}</p>
+                    <p className="text-[10px] font-bold text-sibs-muted">Archived {version.archivedAt || 'previous version'} · {brandAssessmentMessage(version.modelName) || 'SiBS AI'}</p>
                     <p className="mt-2 text-[11px] leading-5 text-sibs-secondary">{version.report?.executiveSummary || 'No executive summary recorded.'}</p>
                   </div>)}</div>
               </details>}
@@ -630,4 +593,9 @@ export default function PublicCsrFitAssessmentResultModal({ open, data, onClose 
       </div>
     </ModalShell>
   );
+}
+
+// Present the product name without changing the stored engine metadata or API.
+function brandAssessmentMessage(value) {
+  return typeof value === "string" ? value.replace(/\bHermes(?: AI)?\b(?![-_])/gi, "SiBS AI") : "";
 }

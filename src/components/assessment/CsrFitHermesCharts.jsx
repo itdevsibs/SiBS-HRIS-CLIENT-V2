@@ -15,7 +15,7 @@ function ChartFrame({ title, subtitle, insight, children, icon: Icon = BarChart3
     </header>
     <div className="p-3 sm:p-4">{children}</div>
     {insight && <div className="border-t border-sibs-border bg-blue-50/45 px-3 py-3 text-[11px] leading-5 text-sibs-secondary sm:px-4">
-      <span className="font-extrabold text-sibs-navy">Hermes insight: </span>{insight}
+      <span className="font-extrabold text-sibs-navy">SiBS AI insight: </span>{insight}
     </div>}
   </article>;
 }
@@ -120,12 +120,12 @@ export default function CsrFitHermesCharts({ assessment, hermesReport, hermesSta
     practical_tasks:'Modules 3, 4, 6 and 7 · Different tasks; no combined total',
     typing_benchmarks:'Module 5 · Actual WPM and accuracy against configured benchmarks',
   };
-  return <section className="rounded-xl border border-sibs-border bg-white p-3 sm:p-4" aria-label="Hermes-guided CSR-Fit assessment charts">
+  return <section className="rounded-xl border border-sibs-border bg-white p-3 sm:p-4" aria-label="SiBS AI-guided CSR-Fit assessment charts">
     <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
       <div><h3 className="flex items-center gap-2 text-sm font-extrabold text-sibs-navy"><Gauge size={17} className="text-sibs-orange"/> Assessment visual analysis</h3>
-        <p className="mt-1 text-[11px] text-sibs-muted">Hermes selects charts and insights · Every plotted value comes from verified HRIS results</p></div>
+        <p className="mt-1 text-[11px] text-sibs-muted">SiBS AI selects charts and insights · Every plotted value comes from verified HRIS results</p></div>
       <span className="rounded border border-sibs-border bg-sibs-surface px-2 py-1 text-[10px] font-bold text-sibs-secondary">
-        {hermesStatus==='READY' && hermesReport?.chartPlan?.length ? 'Hermes-guided' : 'Verified data · AI insights pending'}
+        {hermesStatus==='READY' && hermesReport?.chartPlan?.length ? 'SiBS AI-guided' : 'Verified data · AI insights pending'}
       </span>
     </div>
     <div className="grid gap-3 lg:grid-cols-2">
