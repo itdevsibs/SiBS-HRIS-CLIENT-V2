@@ -8,10 +8,15 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  Clock3,
   Loader2,
   RotateCcw,
+  ShieldCheck,
 } from "lucide-react";
 import { useParams } from "react-router-dom";
+import PublicCandidateShell, {
+  PublicSectionCard,
+} from "@/components/layout/PublicCandidateShell";
 
 function getPublicApiBaseUrl() {
   const rawBaseUrl =
@@ -902,53 +907,68 @@ export default function PublicNhoScheduleResponsePage() {
     getEmploymentStartDateForNho(displayedNhoDate);
 
   return (
-    <main className="min-h-screen bg-sibs-canvas px-4 py-10 font-jakarta">
-      <section className="mx-auto max-w-3xl overflow-visible rounded-[14px] border border-sibs-border bg-white shadow-xl">
-        <header className="relative overflow-hidden rounded-t-[14px] border-t-4 border-sibs-orange bg-sibs-navy px-6 py-6 text-white">
-          <img
-            src="/SiBSLogoWhite.png"
-            alt="SiBS"
-            className="mx-auto h-24 w-auto max-w-[360px] sm:h-28"
-          />
-          <h1 className="mt-4 text-center text-2xl font-extrabold text-white">
-            NHO Schedule Response
-          </h1>
-        </header>
-
-        <div className="p-6 sm:p-8">
-          {state.loading && (
-            <div className="flex items-center justify-center gap-2 py-12 font-bold text-sibs-muted">
-              <Loader2 size={18} className="animate-spin" />
+    <PublicCandidateShell
+      skipLabel="Skip to NHO schedule"
+      subtitle="NHO schedule confirmation"
+      statusLabel={result ? "Response recorded" : "Confirmation pending"}
+      mobileStatusLabel={result ? "Recorded" : "Pending"}
+      hero={{
+        leadHighlight: "Confirm",
+        titleRest: "your NHO schedule",
+        description:
+          "Review your proposed New Hire Orientation schedule. You may accept the proposed Friday or choose another available Friday.",
+        badges: [
+          { icon: CalendarDays, label: "Friday-only orientation" },
+          { icon: Clock3, label: "8:00 AM – 6:00 PM" },
+          { icon: ShieldCheck, label: "Auto-calculated start date" },
+        ],
+      }}
+    >
+      <div className="mx-auto w-full max-w-[980px] space-y-4 px-4 pt-4 pb-8 sm:px-6 2xl:space-y-6 2xl:pt-6 2xl:pb-12">
+        {state.loading && (
+          <PublicSectionCard>
+            <div
+              role="status"
+              aria-live="polite"
+              className="flex items-center justify-center gap-2 py-12 font-bold text-sibs-muted"
+            >
+              <Loader2 size={18} className="animate-spin text-sibs-orange" aria-hidden="true" />
               Loading NHO schedule...
             </div>
-          )}
+          </PublicSectionCard>
+        )}
 
-          {state.error && (
-            <div className="mb-5 rounded-[10px] border border-red-200 bg-red-50 p-4 font-semibold text-red-700">
-              {state.error}
+        {state.error && (
+          <div
+            role="alert"
+            className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700 shadow-sm"
+          >
+            {state.error}
+          </div>
+        )}
+
+        {result && (
+          <PublicSectionCard>
+            <div
+              role="status"
+              aria-live="polite"
+              className="rounded-2xl border border-emerald-200 bg-emerald-50 p-6 text-center"
+            >
+              <CheckCircle2 className="mx-auto text-emerald-600" size={38} aria-hidden="true" />
+              <p className="mt-3 text-base font-extrabold text-emerald-800">{result}</p>
             </div>
-          )}
+          </PublicSectionCard>
+        )}
 
-          {result && (
-            <div className="rounded-[14px] border border-emerald-200 bg-emerald-50 p-6 text-center">
-              <CheckCircle2 className="mx-auto text-emerald-600" size={38} />
-              <p className="mt-3 font-extrabold text-emerald-800">{result}</p>
-            </div>
-          )}
-
-          {!state.loading && !result && state.data && (
-            <div className="space-y-6">
-              <div>
-                <p className="text-lg font-extrabold text-sibs-navy">
-                  Hi {state.data.candidateName},
-                </p>
-                <p className="mt-2 text-sm font-semibold leading-6 text-sibs-muted">
-                  Your New Hire Orientation has been scheduled. You may accept
-                  the proposed schedule or choose another available Friday.
-                </p>
-              </div>
-
-              <div className="rounded-[10px] border border-sibs-border bg-sibs-surface p-5">
+        {!state.loading && !result && state.data && (
+          <>
+            <PublicSectionCard
+              icon={CalendarDays}
+              title={`Hi ${state.data.candidateName}`}
+              description="Your New Hire Orientation has been scheduled. Review your proposed date and employment start date below."
+              badgeText={state.data.roleTitle || "NHO Schedule"}
+            >
+              <div className="rounded-2xl border border-sibs-border bg-sibs-surface p-4 sm:p-5">
                 <p className="text-xs font-extrabold uppercase tracking-wide text-sibs-muted">
                   {action === "reschedule" ? "Requested NHO Schedule" : "Proposed NHO Schedule"}
                 </p>
@@ -958,8 +978,8 @@ export default function PublicNhoScheduleResponsePage() {
                 <p className="mt-1 text-sm font-extrabold text-sibs-text-secondary">
                   {formatNhoTime(displayedNhoTime)}
                 </p>
-                <div className="mt-4 rounded-[10px] border border-sky-100 bg-sky-50/70 px-4 py-3">
-                  <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-muted">
+                <div className="mt-4 rounded-[10px] border border-sibs-orange/25 bg-sibs-cream-light px-4 py-3">
+                  <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-orange">
                     Employment Start Date
                   </p>
                   <p className="mt-1 text-base font-extrabold text-sibs-navy">
@@ -974,104 +994,122 @@ export default function PublicNhoScheduleResponsePage() {
                   {state.data.account ? ` · ${state.data.account}` : ""}
                 </p>
               </div>
+            </PublicSectionCard>
 
-              <div className="grid gap-3 sm:grid-cols-2">
-                <button
-                  type="button"
-                  disabled={submitting}
-                  onClick={() => setAction("accept")}
-                  className={`rounded-[10px] border-2 p-5 text-left transition ${
-                    action === "accept"
-                      ? "border-sibs-orange bg-sibs-cream-subtle text-sibs-navy"
-                      : "border-sibs-border bg-white text-sibs-navy hover:bg-sibs-surface"
-                  }`}
-                >
-                  <CheckCircle2 size={22} className={action === "accept" ? "text-sibs-orange" : "text-sibs-navy"} />
-                  <p className="mt-3 font-extrabold text-sibs-navy">
-                    Accept Schedule
-                  </p>
-                  <p className="mt-1 text-sm text-sibs-muted">
-                    Confirm the proposed Friday.
-                  </p>
-                </button>
-
-                <button
-                  type="button"
-                  disabled={submitting}
-                  onClick={() => setAction("reschedule")}
-                  className={`rounded-[10px] border-2 p-5 text-left transition ${
-                    action === "reschedule"
-                      ? "border-sibs-orange bg-sibs-cream-subtle text-sibs-navy"
-                      : "border-sibs-border bg-white text-sibs-navy hover:bg-sibs-surface"
-                  }`}
-                >
-                  <RotateCcw size={22} className={action === "reschedule" ? "text-sibs-orange" : "text-sibs-navy"} />
-                  <p className="mt-3 font-extrabold text-sibs-navy">
-                    Reschedule
-                  </p>
-                  <p className="mt-1 text-sm text-sibs-muted">
-                    Choose another Friday and available time.
-                  </p>
-                </button>
-              </div>
-
-              {action === "reschedule" && (
-                <div className="block">
-                  <span className="text-xs font-extrabold uppercase tracking-wide text-sibs-navy">
-                    Select another Friday
-                  </span>
-
-                  <NhoFridayDatePicker
-                    value={rescheduleDate}
-                    earliestFriday={state.data?.earliestFriday || ""}
+            <PublicSectionCard
+              icon={CheckCircle2}
+              title="Your Response"
+              description="Choose whether to confirm the proposed Friday or select another available Friday and time."
+            >
+              <div className="space-y-6">
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <button
+                    type="button"
                     disabled={submitting}
-                    onChange={(value) => {
-                      setRescheduleDate(value);
-                      setState((current) => ({ ...current, error: "" }));
-                    }}
-                  />
+                    aria-pressed={action === "accept"}
+                    onClick={() => setAction("accept")}
+                    className={`min-h-11 rounded-[10px] border p-5 text-left transition ${
+                      action === "accept"
+                        ? "border-sibs-orange bg-sibs-cream-light text-sibs-navy shadow-sm"
+                        : "border-sibs-border bg-white text-sibs-navy hover:border-sibs-orange/40 hover:bg-sibs-surface"
+                    }`}
+                  >
+                    <CheckCircle2
+                      size={22}
+                      aria-hidden="true"
+                      className={action === "accept" ? "text-sibs-orange" : "text-sibs-navy"}
+                    />
+                    <p className="mt-3 font-extrabold text-sibs-navy">
+                      Accept Schedule
+                    </p>
+                    <p className="mt-1 text-sm text-sibs-muted">
+                      Confirm the proposed Friday.
+                    </p>
+                  </button>
 
-                  <div className="mt-4">
-                    <PublicNhoTimePicker
-                      value={rescheduleTime}
+                  <button
+                    type="button"
+                    disabled={submitting}
+                    aria-pressed={action === "reschedule"}
+                    onClick={() => setAction("reschedule")}
+                    className={`min-h-11 rounded-[10px] border p-5 text-left transition ${
+                      action === "reschedule"
+                        ? "border-sibs-orange bg-sibs-cream-light text-sibs-navy shadow-sm"
+                        : "border-sibs-border bg-white text-sibs-navy hover:border-sibs-orange/40 hover:bg-sibs-surface"
+                    }`}
+                  >
+                    <RotateCcw
+                      size={22}
+                      aria-hidden="true"
+                      className={action === "reschedule" ? "text-sibs-orange" : "text-sibs-navy"}
+                    />
+                    <p className="mt-3 font-extrabold text-sibs-navy">
+                      Reschedule
+                    </p>
+                    <p className="mt-1 text-sm text-sibs-muted">
+                      Choose another Friday and available time.
+                    </p>
+                  </button>
+                </div>
+
+                {action === "reschedule" && (
+                  <div className="block">
+                    <span className="text-xs font-extrabold uppercase tracking-wide text-sibs-navy">
+                      Select another Friday
+                    </span>
+
+                    <NhoFridayDatePicker
+                      value={rescheduleDate}
+                      earliestFriday={state.data?.earliestFriday || ""}
                       disabled={submitting}
                       onChange={(value) => {
-                        setRescheduleTime(value);
-                        setState((current) => ({
-                          ...current,
-                          error: "",
-                        }));
+                        setRescheduleDate(value);
+                        setState((current) => ({ ...current, error: "" }));
                       }}
                     />
+
+                    <div className="mt-4">
+                      <PublicNhoTimePicker
+                        value={rescheduleTime}
+                        disabled={submitting}
+                        onChange={(value) => {
+                          setRescheduleTime(value);
+                          setState((current) => ({
+                            ...current,
+                            error: "",
+                          }));
+                        }}
+                      />
+                    </div>
+
+                    <p className="mt-2 text-xs font-semibold text-sibs-muted">
+                      NHO scheduling is available on Fridays only, from 8:00 AM through 6:00 PM. If the approved NHO date changes, your employment start date automatically moves to the following Monday.
+                    </p>
                   </div>
-
-                  <p className="mt-2 text-xs font-semibold text-sibs-muted">
-                    NHO scheduling is available on Fridays only, from 8:00 AM through 6:00 PM. If the approved NHO date changes, your employment start date automatically moves to the following Monday.
-                  </p>
-                </div>
-              )}
-
-              <button
-                type="button"
-                disabled={submitting}
-                onClick={submitResponse}
-                className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-[10px] bg-sibs-navy px-5 text-sm font-extrabold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {submitting ? (
-                  <Loader2 size={17} className="animate-spin" />
-                ) : (
-                  <CalendarDays size={17} />
                 )}
-                {submitting
-                  ? "Saving Response..."
-                  : action === "accept"
-                    ? "Confirm NHO Schedule"
-                    : "Confirm Reschedule"}
-              </button>
-            </div>
-          )}
-        </div>
-      </section>
-    </main>
+
+                <button
+                  type="button"
+                  disabled={submitting}
+                  onClick={submitResponse}
+                  className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-[10px] bg-sibs-navy px-5 text-sm font-extrabold text-white transition hover:bg-sibs-tertiary-2 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {submitting ? (
+                    <Loader2 size={17} className="animate-spin" aria-hidden="true" />
+                  ) : (
+                    <CalendarDays size={17} aria-hidden="true" />
+                  )}
+                  {submitting
+                    ? "Saving Response..."
+                    : action === "accept"
+                      ? "Confirm NHO Schedule"
+                      : "Confirm Reschedule"}
+                </button>
+              </div>
+            </PublicSectionCard>
+          </>
+        )}
+      </div>
+    </PublicCandidateShell>
   );
 }

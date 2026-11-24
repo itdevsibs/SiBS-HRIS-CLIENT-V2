@@ -101,6 +101,15 @@ function normalizeApiUrl(url = "") {
   return `/api/${textUrl}`;
 }
 
+export function buildBackendUrl(url = "") {
+  const normalized = normalizeApiUrl(url);
+  if (!normalized) return "";
+  if (normalized.startsWith("http://") || normalized.startsWith("https://")) {
+    return normalized;
+  }
+  return `${BASE_URL}${normalized.startsWith("/") ? "" : "/"}${normalized}`;
+}
+
 const api = axios.create({
   baseURL: BASE_URL,
   headers: {
