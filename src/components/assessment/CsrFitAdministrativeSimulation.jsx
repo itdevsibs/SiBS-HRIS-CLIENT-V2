@@ -61,8 +61,8 @@ function CustomerWorkspace({ info, answer, disabled, saving, onSave }) {
 }
 
 /** Assessment-only desktop simulation. Neither task accesses the candidate's actual files or inbox. */
-export default function CsrFitAdministrativeSimulation({ taskIndex, bank, answer, disabled=false, saving=false, onSave }) {
+export default function CsrFitAdministrativeSimulation({ taskIndex, bank, answer, disabled=false, saving=false, onSave, publicAssessment=false }) {
   if (!bank?.fileTask || !bank?.dataTask) return <div role="alert" className="rounded-lg border border-amber-200 p-4 text-xs">The administrative simulation could not be loaded. Please contact the assessment administrator.</div>;
-  if (taskIndex === 0) return <CsrFitWindowsDesktop key="file" info={bank.fileTask} answer={answer} disabled={disabled} saving={saving} onSave={onSave}/>;
+  if (taskIndex === 0) return <CsrFitWindowsDesktop key="file" info={bank.fileTask} answer={answer} disabled={disabled} saving={saving} onSave={onSave} publicAssessment={publicAssessment}/>;
   return <CustomerWorkspace key="customer" info={bank.dataTask} answer={answer} disabled={disabled} saving={saving} onSave={onSave}/>;
 }

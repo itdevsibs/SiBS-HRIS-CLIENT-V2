@@ -10,7 +10,7 @@ import {
 import api from '../../lib/axios/api-template';
 import CsrFitModuleJourney from '../../components/assessment/CsrFitModuleJourney';
 import PublicAssessmentDesktopOnly from '../../components/assessment/PublicAssessmentDesktopOnly';
-import { getPublicCsrFitResumeSession, rememberPublicCsrFitSession, forgetPublicCsrFitResumeSession, matchesPublicCsrFitIdentity } from '../../utils/assessment/csrFitResumeStorageClient';
+import { getPublicCsrFitResumeSession, rememberPublicCsrFitSession, forgetPublicCsrFitResumeSession } from '../../utils/assessment/csrFitResumeStorageClient';
 
 // The public assessment collects candidate identity only. The HRIS server
 // creates and begins the attempt, then returns a same-browser exam URL.
@@ -25,6 +25,19 @@ const initial = {
   firstName: '', middleName: '', lastName: '', email: '',
   acceptPrivacy: false,
 };
+
+// Distinguish a missing server route from an invalid or revoked old token.
+// This probe contains no applicant data or token and does not alter a session.
+async function publicAssessmentApiMounted() {
+  try {
+    const response = await api.get('/api/public-assessment/health', {
+      withCredentials: false, timeout: 8000,
+    });
+    return response?.data?.service === 'sibs-public-assessment';
+  } catch {
+    return false;
+  }
+}
 
 function PublicCsrFitRegistrationPageContent() {
   const navigate = useNavigate();
@@ -42,85 +55,58 @@ function PublicCsrFitRegistrationPageContent() {
     setError('');
     setSubmitting(true);
     try {
-      // Same-browser recovery happens BEFORE registration. A public name/email
-      // match alone is never enough to retrieve a token from the server.
-      const saved = getPublicCsrFitResumeSession(form);
-      if (saved) {
-        let sessionToken = saved.token;
-        let state;
-        try {
-          const response = await api.get(`/api/assessment/public/${sessionToken}`, { withCredentials: false });
-          state = response?.data?.data?.status ? response.data.data : response.data;
-        } catch (lookupError) {
-          if (Number(lookupError?.response?.status) === 404) {
-            // Previous public-registration versions could revoke a token
-            // while leaving the applicant's original attempt IN_PROGRESS.
-            // This exchanges only a known old token still held by this browser.
-            // It is not a name/email-only login and never resets the attempt.
-            try {
-              const repaired = await api.post(
-                `/api/assessment/public/${sessionToken}/restore-session`,
-                {
-                  firstName: form.firstName, middleName: form.middleName,
-                  lastName: form.lastName, email: form.email,
-                },
-                { withCredentials: false },
-              );
-              const exchanged = String(repaired?.data?.token || '');
-              if (!/^[a-f0-9]{64}$/.test(exchanged)) throw new Error('Invalid restored assessment credential.');
-              // The old bearer can no longer be reused after this exchange.
-              forgetPublicCsrFitResumeSession(sessionToken);
-              sessionToken = exchanged;
-              rememberPublicCsrFitSession(sessionToken, form);
-              const refreshed = await api.get(`/api/assessment/public/${sessionToken}`, { withCredentials: false });
-              state = refreshed?.data?.data?.status ? refreshed.data.data : refreshed.data;
-            } catch (repairError) {
-              // Keep the old credential for diagnosis; do not create another
-              // attempt or turn a server 404 into an unrelated registration.
-              const detail = repairError?.response?.data?.message;
-              throw new Error(detail || 'This older public assessment link cannot be recovered automatically. SiBS Recruitment can issue a replacement from Public Assessment > View details without resetting your answers.');
-            }
-          } else if (Number(lookupError?.response?.status) === 410) {
-            throw new Error('The original assessment access period has expired. Contact SiBS Recruitment; your answers remain saved.');
-          } else {
-            throw new Error('Unable to verify your saved assessment. Check your connection and try again; your original session has not been reset.');
+      // The database decides whether this email has a public applicant record.
+      // New applicants never need a token or an attempted resume/restore call.
+      const { data } = await api.post('/api/public-assessment/register', {
+        firstName: form.firstName, middleName: form.middleName,
+        lastName: form.lastName, email: form.email,
+        acceptPrivacy: form.acceptPrivacy,
+      }, { withCredentials: true });
+      if (data?.success === false) throw new Error(data.message || 'Unable to begin assessment.');
+
+      let nextToken = '';
+      if (data?.existing) {
+        // The registered email is not authorization. A returning applicant
+        // must present the protected browser cookie or previously issued token.
+        const saved = getPublicCsrFitResumeSession(form);
+        const { data: recovery } = await api.post('/api/public-assessment/resume', {
+          firstName: form.firstName, middleName: form.middleName,
+          lastName: form.lastName, email: form.email,
+          ...(saved?.token ? { savedToken: saved.token } : {}),
+        }, { withCredentials: true });
+        if (!recovery?.resumable || !/^[a-f0-9]{64}$/.test(String(recovery?.token || ''))) {
+          if (recovery?.reason === 'expired') {
+            throw new Error('The original assessment access period has expired. Contact SiBS Recruitment; saved answers are not reset.');
           }
+          if (recovery?.reason === 'already_submitted') {
+            throw new Error('This public assessment has already been submitted. Contact SiBS Recruitment for assistance.');
+          }
+          throw new Error('An existing public assessment was found, but this browser has no valid recovery credential. Contact SiBS Recruitment for authorized access restoration. Your saved answers and timer are unchanged.');
         }
-        if (!matchesPublicCsrFitIdentity(form, state?.candidate)) {
-          throw new Error('Saved assessment details do not match the registration information. Contact SiBS Recruitment for assistance.');
+        nextToken = recovery.token;
+        if (saved?.token && saved.token !== nextToken) {
+          forgetPublicCsrFitResumeSession(saved.token);
         }
-        if (state?.status === 'SUBMITTED') {
-          throw new Error('This assessment has already been submitted. Contact SiBS Recruitment if you need assistance.');
+      } else {
+        // The newly inserted public applicant now owns a unique public token.
+        nextToken = String(data?.token || '');
+        if (!/^[a-f0-9]{64}$/.test(nextToken)) {
+          throw new Error('The public assessment session could not be created. Contact SiBS Recruitment before retrying.');
         }
-        if (!['IN_PROGRESS', 'NOT_STARTED'].includes(state?.status)) {
-          throw new Error('Your saved assessment cannot be resumed right now. Please contact SiBS Recruitment.');
-        }
-        navigate(`/public-assessment/session?token=${encodeURIComponent(sessionToken)}`, { replace: true });
-        return;
       }
-      const { data } = await api.post('/api/assessment/public-register', form, {
-        withCredentials: false,
-      });
-      if (data?.success === false) throw Error(data.message || 'Unable to begin assessment.');
-      // Do not accept arbitrary redirect URLs from the response. A valid
-      // 64-character bearer token is the only navigation input.
-      if (!/^[a-f0-9]{64}$/.test(String(data?.token || ''))) {
-        throw new Error('The assessment session could not be created. Please try again.');
-      }
-      // Persist before navigation so a browser/tab crash immediately after
-      // registration can recover the same server-created attempt.
-      const persisted = rememberPublicCsrFitSession(data.token, form);
-      if (!persisted) {
-        // The assessment still works via its URL, but the browser could not
-        // preserve its recovery credential (e.g. private mode/storage disabled).
-        // Do not invalidate the newly created server attempt.
-        console.info('[CSR-Fit] Browser recovery storage unavailable; keep the assessment URL.');
-      }
-      navigate(`/public-assessment/session?token=${encodeURIComponent(data.token)}`, { replace: true });
+
+      rememberPublicCsrFitSession(nextToken, form);
+      navigate(`/public-assessment/session?token=${encodeURIComponent(nextToken)}`, { replace: true });
     } catch (e) {
-      setError(Number(e?.response?.status) === 409
-        ? 'An existing assessment is in progress for this email. If your saved link is unavailable, SiBS Recruitment can restore access from Public Assessment > View details. Your answers and timer have not been reset.'
-        : e?.response?.data?.message || e.message || 'Unable to begin the assessment.');
+      const code = Number(e?.response?.status || 0);
+      let message = e?.response?.data?.message || e.message || 'Unable to begin the public assessment.';
+      if (code === 404) {
+        const mounted = await publicAssessmentApiMounted();
+        message = mounted
+          ? 'Your public assessment session was not found. Contact SiBS Recruitment to restore the existing attempt.'
+          : 'The Public Assessment API is not mounted on the server. IT must enable /api/public-assessment before applicants can continue.';
+      }
+      setError(message);
     } finally {
       submitLock.current = false;
       setSubmitting(false);
@@ -236,7 +222,7 @@ function PublicCsrFitRegistrationPageContent() {
                       disabled={submitting}
                       className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-[#ff5c28] px-5 text-xs font-extrabold text-white transition hover:bg-[#e44b20] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ff5c28] disabled:cursor-not-allowed disabled:opacity-60"
                     >
-                      {submitting ? 'Checking assessment…' : getPublicCsrFitResumeSession(form) ? 'Continue assessment' : 'Start assessment'}
+                      {submitting ? 'Checking assessment…' : 'Start or continue assessment'}
                       <ArrowRight size={15} aria-hidden="true" />
                     </button>
                   </footer>
