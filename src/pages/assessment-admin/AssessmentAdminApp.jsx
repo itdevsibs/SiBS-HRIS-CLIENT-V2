@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Link, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import {
   ClipboardCheck, Menu, X, Clock, CalendarDays, AlertCircle,
@@ -7,6 +7,11 @@ import {
 import portalApi from '../../lib/assessment-admin/portalApi';
 import { createSystemDateTimeFormatter } from '../../lib/axios/dateFormatter';
 import portalSocket from '../../lib/assessment-admin/portalSocket';
+import {
+  PORTAL_SESSION_KEY, PORTAL_ACTIVITY_EVENTS, PORTAL_ACTIVITY_THROTTLE_MS,
+  PORTAL_REFRESH_TIMEOUT_MS, parsePortalSession, readPortalSession,
+  writePortalSession, clearPortalSession, isPortalAuthFailure, withPortalSessionLock,
+} from '../../lib/assessment-admin/portalSession';
 import PublicAssessmentApplicantsPage from '../recruitment/PublicAssessmentApplicantsPage';
 import { GradientWave } from '../../components/ui/gradient-wave';
 import SibsAssessmentBrand from './SibsAssessmentBrand';
@@ -51,11 +56,13 @@ function AdminLogin({ onLogin }) {
     setWorking(true);
     setError('');
     try {
-      const response = await portalApi.post('/api/assessment-portal/login', { sibsId: sibsId.trim(), password });
-      const user = response.data?.data?.user;
-      if (!user) throw new Error('Unable to validate your staff account.');
-      setPassword('');
-      onLogin(user);
+      await withPortalSessionLock(async () => {
+        const response = await portalApi.post('/api/assessment-portal/login', { sibsId: sibsId.trim(), password });
+        const data = response.data?.data;
+        if (!data?.user || !parsePortalSession(data)) throw new Error('Unable to validate your staff session.');
+        setPassword('');
+        onLogin(data);
+      });
     } catch (failure) {
       setError(failure?.response?.data?.message || failure?.message || 'Unable to sign in.');
       setPassword('');
@@ -228,37 +235,181 @@ function Shell({ user, logout, onUnauthorized }) {
 export default function AssessmentAdminApp() {
   const navigate = useNavigate();
   const location = useLocation();
+  const navigateRef = useRef(navigate);
+  navigateRef.current = navigate;
   const [user, setUser] = useState(null);
   const [checking, setChecking] = useState(true);
+  const sessionRef = useRef(null);
+  const timerRef = useRef(null);
+  const refreshRef = useRef(null);
+  const lastActivityRef = useRef(0);
+  const signingOutRef = useRef(false);
+  const expiryCheckRef = useRef(null);
+
+  const stopTimer = useCallback(() => {
+    window.clearTimeout(timerRef.current);
+    timerRef.current = null;
+  }, []);
+  const endSession = useCallback(({ publish = true } = {}) => {
+    const session = sessionRef.current;
+    sessionRef.current = null;
+    stopTimer();
+    if (publish && session) clearPortalSession(session.sessionId);
+    portalSocket.disconnect();
+    setUser(null);
+    navigateRef.current(`${ROOT}/login`, { replace: true });
+  }, [stopTimer]);
+  const unauthorized = useCallback(() => {
+    if (sessionRef.current && !signingOutRef.current) endSession();
+  }, [endSession]);
+  const scheduleExpiry = useCallback(() => {
+    stopTimer();
+    const session = sessionRef.current;
+    if (!session || signingOutRef.current) return;
+    const shared = readPortalSession();
+    if (shared?.sessionId === session.sessionId && shared.expiresAt > session.expiresAt) {
+      sessionRef.current = shared;
+    }
+    timerRef.current = window.setTimeout(() => expiryCheckRef.current?.(),
+      Math.min(2147483647, Math.max(0, sessionRef.current.expiresAt - Date.now())));
+  }, [stopTimer]);
+  const validateExpiry = useCallback(async () => {
+    const session = sessionRef.current;
+    if (!session || signingOutRef.current) return false;
+    const shared = readPortalSession();
+    if (shared && shared.sessionId !== session.sessionId) {
+      endSession({ publish: false });
+      return false;
+    }
+    if (shared?.expiresAt > session.expiresAt) sessionRef.current = shared;
+    if (sessionRef.current.expiresAt > Date.now()) { scheduleExpiry(); return true; }
+    // Let a refresh that began before expiry finish, then recheck its deadline.
+    if (refreshRef.current) {
+      await refreshRef.current;
+      if (sessionRef.current?.sessionId !== session.sessionId || signingOutRef.current) return false;
+      const latest = readPortalSession();
+      if (latest?.sessionId === session.sessionId && latest.expiresAt > sessionRef.current.expiresAt) sessionRef.current = latest;
+      if (sessionRef.current.expiresAt > Date.now()) { scheduleExpiry(); return true; }
+    }
+    endSession();
+    return false;
+  }, [endSession, scheduleExpiry]);
+  expiryCheckRef.current = validateExpiry;
+
+  const acceptSession = useCallback((data) => {
+    const session = parsePortalSession(data);
+    if (!session || session.expiresAt <= Date.now() || !data?.user) return false;
+    sessionRef.current = session;
+    lastActivityRef.current = 0;
+    writePortalSession(session);
+    setUser(data.user);
+    scheduleExpiry();
+    return true;
+  }, [scheduleExpiry]);
+
+  const refreshFromActivity = useCallback(async (event) => {
+    if (event?.isTrusted === false || signingOutRef.current || !sessionRef.current) return;
+    const now = Date.now();
+    if (now - lastActivityRef.current < PORTAL_ACTIVITY_THROTTLE_MS || refreshRef.current) return;
+    lastActivityRef.current = now;
+    if (!(await validateExpiry()) || refreshRef.current || signingOutRef.current) return;
+    const sessionId = sessionRef.current?.sessionId;
+    if (!sessionId) return;
+    const promise = withPortalSessionLock(async () => {
+      if (signingOutRef.current || sessionRef.current?.sessionId !== sessionId) return;
+      const shared = readPortalSession();
+      if (shared && shared.sessionId !== sessionId) { endSession({ publish: false }); return; }
+      // Re-read the deadline after acquiring the cross-tab lock. Never renew an expired JWT.
+      if (shared?.expiresAt > sessionRef.current.expiresAt) sessionRef.current = shared;
+      if (sessionRef.current.expiresAt <= Date.now()) { endSession(); return; }
+      try {
+        const response = await portalApi.post('/api/assessment-portal/refresh', { reason: 'user-activity', sessionId },
+          { timeout: PORTAL_REFRESH_TIMEOUT_MS });
+        const next = parsePortalSession(response.data?.data);
+        if (!next || next.sessionId !== sessionId || next.expiresAt <= Date.now()) throw new Error('Invalid session expiration.');
+        if (sessionRef.current?.sessionId !== sessionId) return;
+        sessionRef.current = next;
+        writePortalSession(next);
+        scheduleExpiry();
+      } catch (error) {
+        if (isPortalAuthFailure(error)) unauthorized();
+        else { lastActivityRef.current = 0; }
+      }
+    });
+    refreshRef.current = promise;
+    try { await promise; }
+    catch { lastActivityRef.current = 0; }
+    finally { if (refreshRef.current === promise) refreshRef.current = null; }
+  }, [endSession, scheduleExpiry, unauthorized, validateExpiry]);
+
   const logout = useCallback(async () => {
+    if (signingOutRef.current) return;
+    signingOutRef.current = true;
     try {
-      await portalApi.post('/api/assessment-portal/logout', {});
+      await refreshRef.current?.catch(() => {});
+      await withPortalSessionLock(async () => {
+        const shared = readPortalSession();
+        if (shared && shared.sessionId !== sessionRef.current?.sessionId) {
+          endSession({ publish: false }); return;
+        }
+        await portalApi.post('/api/assessment-portal/logout', {});
+        endSession();
+      });
     } catch {
       window.alert('Unable to sign out of the assessment portal. Check your network connection and try again.');
-      return;
+    } finally {
+      signingOutRef.current = false;
+      scheduleExpiry();
     }
-    portalSocket.disconnect();
-    setUser(null);
-    navigate(`${ROOT}/login`, { replace: true });
-  }, [navigate]);
-  const unauthorized = useCallback(() => {
-    portalSocket.disconnect();
-    setUser(null);
-    navigate(`${ROOT}/login`, { replace: true });
-  }, [navigate]);
+  }, [endSession, scheduleExpiry]);
+
   useEffect(() => {
     let current = true;
+    const interceptor = portalApi.interceptors.response.use(response => response, error => {
+      const url = String(error?.config?.url || '');
+      if (isPortalAuthFailure(error) && !/\/(login|logout|refresh|me)$/.test(url)) unauthorized();
+      return Promise.reject(error);
+    });
     void portalApi.get('/api/assessment-portal/me').then(response => {
-      if (current) setUser(response.data?.data?.user || null);
+      if (current) acceptSession(response.data?.data);
     }).catch(() => { if (current) setUser(null); }).finally(() => {
       if (current) setChecking(false);
     });
-    return () => { current = false; };
-  }, []);
+    return () => { current = false; stopTimer(); portalApi.interceptors.response.eject(interceptor); };
+  }, [acceptSession, stopTimer, unauthorized]);
+
+  useEffect(() => {
+    if (!user) return;
+    const onFocus = () => { void validateExpiry(); };
+    const onVisibility = () => { if (document.visibilityState === 'visible') onFocus(); };
+    const onStorage = event => {
+      if (event.key !== PORTAL_SESSION_KEY && event.key !== null) return;
+      const session = sessionRef.current;
+      if (!session) return;
+      const shared = readPortalSession();
+      if (!shared || shared.sessionId !== session.sessionId) { endSession({ publish: false }); return; }
+      if (shared.expiresAt > session.expiresAt) sessionRef.current = shared;
+      void validateExpiry();
+    };
+    PORTAL_ACTIVITY_EVENTS.forEach(name => window.addEventListener(name, refreshFromActivity, { passive: true }));
+    window.addEventListener('focus', onFocus);
+    window.addEventListener('storage', onStorage);
+    document.addEventListener('visibilitychange', onVisibility);
+    scheduleExpiry();
+    return () => {
+      PORTAL_ACTIVITY_EVENTS.forEach(name => window.removeEventListener(name, refreshFromActivity));
+      window.removeEventListener('focus', onFocus);
+      window.removeEventListener('storage', onStorage);
+      document.removeEventListener('visibilitychange', onVisibility);
+      stopTimer();
+    };
+  }, [user, endSession, refreshFromActivity, scheduleExpiry, stopTimer, validateExpiry]);
+  // Match HRIS navigation activity; background polling and clock ticks do not renew sessions.
+  useEffect(() => { if (user) void refreshFromActivity(); }, [user, location.pathname, location.search, refreshFromActivity]);
+
   if (checking) return <div className="flex min-h-dvh items-center justify-center bg-[#f2f6fb] text-sm font-semibold text-[#092e52]">Checking assessment portal access…</div>;
-  if (!user) return location.pathname === `${ROOT}/login` ? <AdminLogin onLogin={next => {
-    setUser(next);
-    navigate(`${ROOT}/public-assessment`, { replace: true });
+  if (!user) return location.pathname === `${ROOT}/login` ? <AdminLogin onLogin={data => {
+    if (acceptSession(data)) navigate(`${ROOT}/public-assessment`, { replace: true });
   }}/> : <Navigate to={`${ROOT}/login`} replace/>;
   if (location.pathname === `${ROOT}/login`) return <Navigate to={`${ROOT}/public-assessment`} replace/>;
   return <Shell user={user} logout={logout} onUnauthorized={unauthorized}/>;
