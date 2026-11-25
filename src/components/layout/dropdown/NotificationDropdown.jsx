@@ -82,24 +82,16 @@ export default function NotificationDropdown() {
   } = useSidebarNotifications() || {};
 
   const [open, setOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
+  const [rendered, setRendered] = useState(false);
 
   useEffect(() => {
-    let timer;
-    let frame;
-    if (open) {
-      frame = requestAnimationFrame(() => setMounted(true));
-    } else {
-      timer = setTimeout(() => setMounted(false), 200);
-    }
-    return () => {
-      if (frame) cancelAnimationFrame(frame);
-      if (timer) clearTimeout(timer);
-    };
+    if (open) return undefined;
+    const timer = setTimeout(() => setRendered(false), 200);
+    return () => clearTimeout(timer);
   }, [open]);
 
-  const notifMounted = open || mounted;
-  const notifActive = open && mounted;
+  const notifMounted = open || rendered;
+  const notifActive = open;
   const [activeCategory, setActiveCategory] = useState("all");
   const [expanded, setExpanded] = useState(false);
   const [dropdownPosition, setDropdownPosition] = useState({
@@ -151,6 +143,7 @@ export default function NotificationDropdown() {
     if (!open) {
       calculatePosition();
       setExpanded(false);
+      setRendered(true);
     }
     setOpen((prev) => !prev);
   };

@@ -7,7 +7,18 @@ import React, {
   useState,
 } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { ChevronDown, Loader2 } from "lucide-react";
+import {
+  AlertCircle,
+  BarChart3,
+  CheckCircle2,
+  ChevronDown,
+  ChevronUp,
+  ClipboardList,
+  ExternalLink,
+  LayoutDashboard,
+  Loader2,
+  Sparkles,
+} from "lucide-react";
 import CandidatePipelineContext from "../../../services/context/CandidatePipelineContext";
 
 import {
@@ -22,7 +33,10 @@ import {
   getFinalInterviewForms,
 } from "../../../lib/axios/getRecruitmentSettings";
 import StatusModal from "../../../components/modals/StatusModal";
+import ConfirmModal from "../../../components/ui/ConfirmModal";
 import RichTextViewer from "../../../components/modals/jobDescription/RichTextViewer";
+import FinalInterviewStandardWorkspace from "./FinalInterviewStandardWorkspace";
+import FinalInterviewAiWorkspace from "./FinalInterviewAiWorkspace";
 import {
   findMatchingFinalInterviewForm,
   getFinalInterviewFormFields,
@@ -31,6 +45,12 @@ import {
   getFinalInterviewFormPositionTitle,
   getRecruitmentSettingsSnapshot,
 } from "../../../lib/utils/recruitment/finalInterviewFormMatching";
+import {
+  buildAuthorizedResumeDocumentUrl,
+  getFinalInterviewResumeIntelligence,
+  regenerateApplicationResumeIntelligence,
+  reviewResumeIntelligenceQuestions,
+} from "../../../lib/axios/resumeIntelligenceClient";
 
 const RECRUITMENT_SETTINGS_STORAGE_KEY = "sibs_recruitment_settings_temp";
 const DEFAULT_JOB_EVALUATION_FORM_ID = "default-job-evaluation";
@@ -1076,12 +1096,12 @@ function SummaryMetricCard({
 
   return (
     <div
-      className={`rounded-[22px] border ${styles.border} bg-white px-6 py-5 shadow-[0_1px_6px_rgba(16,24,40,0.04)]`}
+      className={`rounded-xl border ${styles.border} bg-white p-4 shadow-2xs`}
     >
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <p className="text-[13px] font-extrabold uppercase tracking-[0.02em] text-sibs-navy">
+            <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-muted">
               {title}
             </p>
 
@@ -1091,36 +1111,37 @@ function SummaryMetricCard({
           </div>
 
           <p
-            className={`mt-3 text-[30px] font-extrabold leading-none ${styles.value}`}
+            className={`mt-2 text-2xl font-extrabold leading-none ${styles.value}`}
           >
             {value}
           </p>
 
-          <p className="mt-3 text-[14px] font-semibold leading-5 text-sibs-navy">
+          <p className="mt-1.5 text-xs font-semibold text-sibs-text-secondary">
             {subtext}
           </p>
         </div>
 
         <div
-          className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-[18px] ${styles.iconWrap}`}
+          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${styles.iconWrap}`}
+          aria-hidden="true"
         >
-          <div className="h-5 w-5 rounded-full border-2 border-sibs-navy" />
+          <BarChart3 size={18} />
         </div>
       </div>
 
       {hasProgress && (
-        <div className="mt-5">
-          <div className="mb-2 flex items-center justify-between">
-            <span className="text-[11px] font-extrabold uppercase tracking-[0.04em] text-sibs-text-secondary">
+        <div className="mt-3.5">
+          <div className="mb-1.5 flex items-center justify-between">
+            <span className="text-[10.5px] font-bold uppercase tracking-wide text-sibs-muted">
               Progress
             </span>
 
-            <span className={`text-xs font-extrabold ${styles.value}`}>
+            <span className={`text-[11px] font-extrabold ${styles.value}`}>
               {Number(progressValue).toFixed(0)}%
             </span>
           </div>
 
-          <div className="h-2.5 overflow-hidden rounded-full bg-slate-200">
+          <div className="h-1.5 overflow-hidden rounded-full bg-slate-200">
             <div
               className={`h-full rounded-full transition-all duration-300 ${styles.progress}`}
               style={{
@@ -1136,42 +1157,42 @@ function SummaryMetricCard({
 
 function BreakdownPanel({ title, subtitle, children }) {
   return (
-    <div className="rounded-[22px] border border-sibs-border bg-white p-5 shadow-[0_1px_6px_rgba(16,24,40,0.04)]">
-      <div className="mb-5">
-        <h3 className="text-[16px] font-extrabold text-sibs-primary-1">{title}</h3>
+    <div className="rounded-xl border border-sibs-border bg-sibs-surface/60 p-4">
+      <div className="mb-3">
+        <h3 className="text-[13px] font-extrabold text-sibs-navy">{title}</h3>
 
         {subtitle && (
-          <p className="mt-1 text-[14px] font-medium leading-6 text-sibs-navy">
+          <p className="mt-0.5 text-[11.5px] font-medium leading-snug text-sibs-muted">
             {subtitle}
           </p>
         )}
       </div>
 
-      <div className="space-y-3">{children}</div>
+      <div className="space-y-2">{children}</div>
     </div>
   );
 }
 
 function BreakdownScoreLine({ label, subtext = "", value = 0, suffix = "pts" }) {
   return (
-    <div className="rounded-[18px] bg-sibs-canvas px-4 py-4">
-      <div className="flex items-start justify-between gap-4">
+    <div className="rounded-xl border border-sibs-border bg-white px-3.5 py-2.5">
+      <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-[12px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
+          <p className="text-[10.5px] font-extrabold uppercase tracking-wide text-sibs-muted">
             {label}
           </p>
 
           {subtext && (
-            <p className="mt-1 break-words text-sm font-semibold leading-6 text-sibs-navy">
+            <p className="mt-0.5 break-words text-[11.5px] font-semibold leading-snug text-sibs-text-secondary">
               {subtext}
             </p>
           )}
         </div>
 
-        <p className="shrink-0 text-right text-[18px] font-extrabold text-sibs-primary-1">
+        <p className="shrink-0 text-right text-sm font-extrabold text-sibs-navy">
           {value}
           {suffix && (
-            <span className="ml-1 text-[14px] font-bold text-sibs-primary-1">
+            <span className="ml-1 text-[11px] font-bold text-sibs-muted">
               {suffix}
             </span>
           )}
@@ -1183,13 +1204,13 @@ function BreakdownScoreLine({ label, subtext = "", value = 0, suffix = "pts" }) 
 
 function BreakdownTextLine({ label, value = "—" }) {
   return (
-    <div className="rounded-[18px] bg-sibs-canvas px-4 py-4">
-      <div className="grid grid-cols-[minmax(90px,0.8fr)_minmax(0,1.6fr)] items-start gap-4">
-        <p className="min-w-0 break-words text-[12px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
+    <div className="rounded-xl border border-sibs-border bg-white px-3.5 py-2.5">
+      <div className="grid grid-cols-[minmax(90px,0.8fr)_minmax(0,1.6fr)] items-center gap-3">
+        <p className="min-w-0 break-words text-[10.5px] font-extrabold uppercase tracking-wide text-sibs-muted">
           {label}
         </p>
 
-        <p className="min-w-0 break-words text-right text-[15px] font-extrabold leading-5 text-sibs-primary-1">
+        <p className="min-w-0 break-words text-right text-xs font-extrabold leading-snug text-sibs-navy">
           {value || "—"}
         </p>
       </div>
@@ -1199,12 +1220,12 @@ function BreakdownTextLine({ label, value = "—" }) {
 
 function BreakdownResultLine({ label, value = "—" }) {
   return (
-    <div className="rounded-[18px] border border-sibs-border bg-sibs-canvas px-4 py-4">
-      <p className="text-[12px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
+    <div className="rounded-xl border border-sibs-border bg-white px-3.5 py-2.5">
+      <p className="text-[10.5px] font-extrabold uppercase tracking-wide text-sibs-muted">
         {label}
       </p>
 
-      <p className="mt-2 text-[16px] font-extrabold text-sibs-primary-1">
+      <p className="mt-1 text-xs font-extrabold text-sibs-navy">
         {value || "—"}
       </p>
     </div>
@@ -1264,18 +1285,18 @@ function ScoreSummaryCard({
   );
 
   return (
-    <section className="rounded-[24px] border border-sibs-border bg-white p-6 shadow-[0_2px_10px_rgba(16,24,40,0.04)]">
-      <div className="mb-6">
-        <h2 className="text-[18px] font-extrabold text-sibs-primary-1">
+    <section className="sibs-card p-5">
+      <div className="mb-4 border-b border-sibs-border pb-3">
+        <h2 className="sibs-card-title text-sibs-navy">
           Evaluation Performance Summary
         </h2>
 
-        <p className="mt-1 text-[14px] font-medium text-sibs-navy">
+        <p className="sibs-card-subtitle mt-0.5">
           Combined overview of Job Evaluation and Final Interview results.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+      <div className="grid grid-cols-1 gap-3.5 xl:grid-cols-2">
         <SummaryMetricCard
           title="Job Evaluation Score"
           value={`${jobEvaluationScore.percentageScore.toFixed(0)}%`}
@@ -1648,19 +1669,19 @@ function RecruitmentStyleDropdown({
           if (disabled) return;
           setOpen((previous) => !previous);
         }}
-        className="flex h-12 w-full items-center justify-between rounded-xl border border-sibs-border-subtle bg-white px-4 text-left text-sm font-bold text-sibs-text-secondary outline-none transition-all duration-200 hover:border-sibs-primary-1/40 hover:bg-sibs-canvas focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400"
+        className="flex h-9 2xl:h-10 w-full items-center justify-between rounded-xl border border-sibs-border-subtle bg-[#F8FAFC] px-3 text-left text-[11.5px] 2xl:text-[12px] font-semibold text-sibs-navy outline-none transition-all duration-200 hover:border-sibs-orange/40 hover:bg-white focus:border-sibs-orange focus:bg-white focus:ring-4 focus:ring-sibs-orange/10 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400"
       >
         <span
           className={`truncate ${
-            selectedOption ? "text-sibs-text-secondary" : "text-sibs-muted"
+            selectedOption ? "text-sibs-navy" : "text-sibs-faint"
           }`}
         >
           {selectedOption?.label || placeholder}
         </span>
 
         <ChevronDown
-          size={18}
-          className={`shrink-0 text-sibs-tertiary-5 transition-transform duration-300 ${
+          size={16}
+          className={`shrink-0 text-sibs-muted transition-transform duration-300 ${
             isOpen ? "rotate-180" : ""
           }`}
         />
@@ -1670,7 +1691,7 @@ function RecruitmentStyleDropdown({
         <div
           role="listbox"
           aria-label={ariaLabel}
-          className="max-h-64 overflow-y-auto py-2 sibs-scrollbar"
+          className="max-h-60 overflow-y-auto py-1.5 sibs-scrollbar"
         >
           {options.length > 0 ? (
             options.map((option) => {
@@ -1687,10 +1708,10 @@ function RecruitmentStyleDropdown({
                     onChange?.(option.value, option);
                     setOpen(false);
                   }}
-                  className={`block w-full px-4 py-3 text-left text-sm transition ${
+                  className={`block w-full px-3 py-2 text-left text-[11.5px] 2xl:text-[12px] transition ${
                     selected
-                      ? "bg-sibs-canvas font-bold text-sibs-primary-1"
-                      : "text-sibs-text-secondary hover:bg-sibs-canvas"
+                      ? "bg-sibs-canvas font-bold text-sibs-navy"
+                      : "font-medium text-sibs-text-secondary hover:bg-sibs-canvas"
                   }`}
                 >
                   <span className="block truncate">
@@ -1700,7 +1721,7 @@ function RecruitmentStyleDropdown({
               );
             })
           ) : (
-            <div className="px-4 py-3 text-sm font-bold text-sibs-tertiary-5">
+            <div className="px-3 py-2 text-[11.5px] font-semibold text-sibs-muted">
               No options available.
             </div>
           )}
@@ -1904,10 +1925,10 @@ function QuestionRatingInput({
   const remarkValue = answers[remarkKey] || "";
 
   return (
-    <div className="mt-5 rounded-2xl border border-sibs-border bg-sibs-canvas p-4">
+    <div className="mt-4 rounded-xl border border-sibs-border bg-sibs-surface p-3.5">
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[220px_minmax(0,1fr)]">
         <div>
-          <label className="block text-sm font-extrabold text-sibs-primary-1">
+          <label className="sibs-field-label block">
             Interviewer Rating
             <span className="ml-1 text-red-500">*</span>
           </label>
@@ -1919,28 +1940,32 @@ function QuestionRatingInput({
             options={FINAL_INTERVIEW_RATING_OPTIONS}
             placeholder="Select rating"
             ariaLabel="Select interviewer rating"
-            className="mt-2"
+            className="mt-1.5"
           />
 
           {ratingValue && (
-            <p className="mt-2 text-xs font-extrabold text-blue-700">
+            <p className="mt-1.5 text-[11px] font-bold text-sibs-navy">
               {ratingValue} out of 5 points
             </p>
           )}
         </div>
 
         <div>
-          <label className="block text-sm font-extrabold text-sibs-primary-1">
+          <label
+            htmlFor={`remark-${remarkKey}`}
+            className="sibs-field-label block"
+          >
             Interviewer Remarks
           </label>
 
           <AutoResizeTextarea
+            id={`remark-${remarkKey}`}
             minRows={3}
             value={remarkValue}
             readOnly={readOnly}
             onChange={(value) => onChange(remarkKey, value)}
             placeholder="Enter remarks about the applicant's response..."
-            className="mt-2 min-h-[96px] rounded-xl border border-sibs-border-subtle bg-white px-3 py-3 text-sm font-semibold leading-6 text-sibs-text-secondary outline-none transition placeholder:text-sibs-muted focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 disabled:cursor-not-allowed disabled:bg-sibs-canvas disabled:text-sibs-text-secondary"
+            className="sibs-modal-textarea mt-1.5 min-h-[84px] text-[11.5px] 2xl:text-[12px]"
           />
         </div>
       </div>
@@ -1963,7 +1988,7 @@ function JobEvaluationSelect({
 
   return (
     <div className="min-w-0">
-      <label className="block truncate text-sm font-extrabold text-sibs-primary-1">
+      <label className="sibs-field-label block truncate">
         {label}
       </label>
 
@@ -1974,7 +1999,7 @@ function JobEvaluationSelect({
         options={dropdownOptions}
         placeholder={`Select ${label.toLowerCase()}`}
         ariaLabel={`Select ${label.toLowerCase()}`}
-        className="mt-2"
+        className="mt-1.5"
       />
     </div>
   );
@@ -1992,23 +2017,23 @@ function JobEvaluationCheckboxGroup({
 
   return (
     <div>
-      <h4 className="text-sm font-extrabold text-sibs-primary-1">{title}</h4>
+      <h4 className="sibs-field-label">{title}</h4>
 
-      <div className="mt-3 space-y-2">
+      <div className="mt-2 space-y-1.5">
         {options.map((option) => {
           const checked = safeValues.includes(option.label);
 
           return (
             <label
               key={option.label}
-              className={`flex gap-3 rounded-xl border p-3 text-sm font-semibold leading-6 transition ${
+              className={`flex items-start gap-2.5 rounded-xl border px-3 py-2 text-[11.5px] 2xl:text-[12px] font-semibold leading-relaxed transition ${
                 checked
-                  ? "border-blue-100 bg-blue-50 text-sibs-primary-1"
-                  : "border-sibs-border bg-white text-sibs-text-secondary"
+                  ? "border-blue-200 bg-blue-50/70 text-sibs-navy"
+                  : "border-sibs-border bg-[#F8FAFC] text-sibs-text-secondary"
               } ${
                 readOnly
                   ? "cursor-not-allowed opacity-80"
-                  : "cursor-pointer hover:border-blue-100 hover:bg-blue-50"
+                  : "cursor-pointer hover:border-sibs-orange/40 hover:bg-white"
               }`}
             >
               <input
@@ -2016,12 +2041,12 @@ function JobEvaluationCheckboxGroup({
                 checked={checked}
                 disabled={readOnly}
                 onChange={() => onToggle(fieldKey, option.label)}
-                className="mt-1 h-4 w-4 shrink-0 accent-sibs-primary-1 disabled:cursor-not-allowed"
+                className="mt-0.5 h-4 w-4 shrink-0 accent-[#042C51] disabled:cursor-not-allowed"
               />
 
               <span className="min-w-0 flex-1">
                 {option.label}
-                <span className="ml-2 whitespace-nowrap text-xs font-extrabold text-sibs-tertiary-5">
+                <span className="ml-2 whitespace-nowrap text-[10.5px] font-extrabold text-sibs-muted">
                   ({option.score} pts)
                 </span>
               </span>
@@ -2762,8 +2787,186 @@ export default function FinalInterviewForms({ publicMode = false }) {
   ]);
 
   const pageShellClass = publicMode
-    ? "fixed inset-0 z-[99999] min-h-screen overflow-y-auto bg-sibs-canvas px-4 py-8 font-jakarta text-sibs-primary-1"
-    : "min-h-screen bg-sibs-canvas px-4 py-8 font-jakarta text-sibs-primary-1";
+    ? "fixed inset-0 z-[99999] min-h-screen overflow-y-auto bg-sibs-canvas px-3 py-5 sm:px-6 sm:py-6 font-jakarta text-sibs-primary-1"
+    : "min-h-screen bg-sibs-canvas px-3 py-5 sm:px-6 sm:py-6 font-jakarta text-sibs-primary-1";
+
+  // Workspace navigation & presentation state
+  const [activeWorkspaceTab, setActiveWorkspaceTab] = useState("overview");
+  const [activeStandardQuestionKey, setActiveStandardQuestionKey] = useState("");
+  const [activeAiQuestionId, setActiveAiQuestionId] = useState("");
+  const [resumeAlignmentExpanded, setResumeAlignmentExpanded] = useState(false);
+  const [submitConfirmOpen, setSubmitConfirmOpen] = useState(false);
+
+  // Resume Intelligence & Dynamic Final Interview state (internal authenticated HR/Interviewer view only)
+  const [resumeIntelPayload, setResumeIntelPayload] = useState(null);
+  const [resumeIntelPermissions, setResumeIntelPermissions] = useState({
+    canView: false,
+    canReviewQuestions: false,
+  });
+  const [resumeIntelLoading, setResumeIntelLoading] = useState(false);
+  const [resumeIntelReviewBusy, setResumeIntelReviewBusy] = useState(false);
+
+  const resumeIntelLookupIdentifier = useMemo(() => {
+    if (publicMode) return "";
+    const appId = cleanText(effectiveCandidateApplicationId);
+    if (appId && appId !== "—") return appId;
+    const candId = cleanText(candidateId);
+    if (candId && candId !== "—") return candId;
+    return "";
+  }, [publicMode, effectiveCandidateApplicationId, candidateId]);
+
+  useEffect(() => {
+    if (publicMode || !resumeIntelLookupIdentifier) {
+      setResumeIntelPayload(null);
+      return undefined;
+    }
+
+    let cancelled = false;
+    setResumeIntelLoading(true);
+
+    getFinalInterviewResumeIntelligence(resumeIntelLookupIdentifier)
+      .then((res) => {
+        if (cancelled) return;
+        if (res?.success) {
+          setResumeIntelPayload(res.data || null);
+          if (res.permissions) {
+            setResumeIntelPermissions(res.permissions);
+          }
+        }
+      })
+      .catch(() => {
+        // Keep standard Final Interview Form fully operational if Resume Intelligence is unavailable
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setResumeIntelLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [publicMode, resumeIntelLookupIdentifier]);
+
+  useEffect(() => {
+    const status = resumeIntelPayload?.overallStatus;
+    if (
+      publicMode ||
+      !resumeIntelLookupIdentifier ||
+      !["queued", "extracting", "analyzing", "generating"].includes(status)
+    ) {
+      return undefined;
+    }
+
+    const timer = window.setInterval(() => {
+      getFinalInterviewResumeIntelligence(resumeIntelLookupIdentifier)
+        .then((res) => {
+          if (res?.success) {
+            setResumeIntelPayload(res.data || null);
+            if (res.permissions) {
+              setResumeIntelPermissions(res.permissions);
+            }
+          }
+        })
+        .catch(() => {});
+    }, 4000);
+
+    return () => window.clearInterval(timer);
+  }, [publicMode, resumeIntelLookupIdentifier, resumeIntelPayload?.overallStatus]);
+
+  const handleInlineAiQuestionReview = async ({
+    questionIds = [],
+    reviewAll = false,
+    decision,
+  }) => {
+    if (!resumeIntelLookupIdentifier || resumeIntelReviewBusy) return;
+    setResumeIntelReviewBusy(true);
+    try {
+      await reviewResumeIntelligenceQuestions(resumeIntelLookupIdentifier, {
+        questionSetId:
+          resumeIntelPayload?.questionSetSummary?.questionSetId || null,
+        questionIds,
+        reviewAll,
+        decision,
+      });
+      const refreshed = await getFinalInterviewResumeIntelligence(
+        resumeIntelLookupIdentifier
+      );
+      if (refreshed?.success) {
+        setResumeIntelPayload(refreshed.data || null);
+      }
+    } catch {
+      // Ignore inline review errors; main form remains usable
+    } finally {
+      setResumeIntelReviewBusy(false);
+    }
+  };
+
+  const handleInlineRegenerateAiQuestions = async () => {
+    if (!resumeIntelLookupIdentifier || resumeIntelReviewBusy) return;
+    setResumeIntelReviewBusy(true);
+    try {
+      await regenerateApplicationResumeIntelligence(
+        resumeIntelLookupIdentifier,
+        {
+          forceRegenerate: true,
+          waitForCompletion: true,
+        }
+      );
+      const refreshed = await getFinalInterviewResumeIntelligence(
+        resumeIntelLookupIdentifier
+      );
+      if (refreshed?.success) {
+        setResumeIntelPayload(refreshed.data || null);
+      }
+    } catch {
+      // Ignore inline regenerate errors; main form remains usable
+    } finally {
+      setResumeIntelReviewBusy(false);
+    }
+  };
+
+  // Resolve the active AI question set snapshot:
+  // If viewing a completed historical submission that recorded an `aiQuestionSetSnapshot`,
+  // preserve that exact historical snapshot so subsequent resume updates never alter completed interviews.
+  const activeAiQuestionSetSnapshot = useMemo(() => {
+    if (
+      isSubmittedView &&
+      savedSubmission?.aiQuestionSetSnapshot &&
+      Array.isArray(savedSubmission.aiQuestionSetSnapshot.approvedQuestions)
+    ) {
+      return savedSubmission.aiQuestionSetSnapshot;
+    }
+    if (!resumeIntelPayload) return null;
+    return {
+      questionSetSummary: resumeIntelPayload.questionSetSummary || null,
+      approvedQuestions: Array.isArray(resumeIntelPayload.approvedQuestions)
+        ? resumeIntelPayload.approvedQuestions
+        : [],
+    };
+  }, [isSubmittedView, savedSubmission, resumeIntelPayload]);
+
+  const activeApprovedAiQuestions = useMemo(
+    () => activeAiQuestionSetSnapshot?.approvedQuestions || [],
+    [activeAiQuestionSetSnapshot]
+  );
+
+  const aiQuestionResponsesSnapshot = useMemo(() => {
+    const map = {};
+    for (const q of activeApprovedAiQuestions) {
+      const qId = q.questionId || q.id;
+      if (!qId) continue;
+      map[qId] = {
+        questionId: qId,
+        questionText: q.questionText,
+        category: q.category,
+        sourceType: q.sourceType,
+        interviewerRemarks: cleanText(answers[`ai_q_remarks_${qId}`] || ""),
+        supplementaryNote: cleanText(answers[`ai_q_note_${qId}`] || ""),
+      };
+    }
+    return map;
+  }, [activeApprovedAiQuestions, answers]);
 
   const scoreSummary = useMemo(() => {
     const jobEvaluationPassed =
@@ -3053,6 +3256,84 @@ export default function FinalInterviewForms({ publicMode = false }) {
     });
   }
 
+  const standardQuestionsList = useMemo(() => {
+    const items = [];
+    let runningNumber = 0;
+    groupedFields.forEach((group, groupIndex) => {
+      safeArray(group.questions).forEach((field, fieldIndex) => {
+        runningNumber += 1;
+        const questionId = getFinalInterviewQuestionId(field, runningNumber - 1);
+        const questionKey = field.id || `${group.section}-${groupIndex}-${fieldIndex}`;
+        const isRatingQuestion =
+          String(field.type || "").trim().toLowerCase() === "rating";
+        const ratingKey = getQuestionRatingKey(questionId);
+        const ratingVal = Number(answers[ratingKey]);
+        const hasRating = Number.isFinite(ratingVal) && ratingVal >= 1 && ratingVal <= 5;
+        const answerVal = answers[field.id];
+        const hasAnswer = Array.isArray(answerVal)
+          ? answerVal.length > 0
+          : Boolean(cleanText(answerVal));
+        const isCompleted = publicMode ? hasAnswer : hasRating;
+
+        items.push({
+          questionKey,
+          questionNumber: runningNumber,
+          questionId,
+          sectionTitle: group.section || "General Interview Questions",
+          field,
+          isRatingQuestion,
+          ratingValue: hasRating ? ratingVal : null,
+          isCompleted,
+          previewText: richTextToPlainText(field.label || ""),
+        });
+      });
+    });
+    return items;
+  }, [groupedFields, answers, publicMode]);
+
+  const workspaceTabs = useMemo(() => {
+    const completedStd = standardQuestionsList.filter((q) => q.isCompleted).length;
+    const totalStd = standardQuestionsList.length;
+    const tabs = [
+      {
+        id: "overview",
+        label: "Overview",
+        badge: null,
+        icon: LayoutDashboard,
+      },
+      {
+        id: "standard",
+        label: "Standard Questions",
+        badge: totalStd > 0 ? `${completedStd}/${totalStd}` : "0",
+        incomplete: totalStd > 0 && completedStd < totalStd,
+        icon: ClipboardList,
+      },
+    ];
+    if (!publicMode) {
+      tabs.push({
+        id: "ai",
+        label: "AI Interview Questions",
+        badge: String(activeApprovedAiQuestions.length),
+        incomplete: false,
+        icon: Sparkles,
+      });
+    }
+    tabs.push({
+      id: "summary",
+      label: "Evaluation & Summary",
+      badge: finalInterviewRatingScore?.answeredRatingFields > 0
+        ? `${Number(finalInterviewRatingScore.percentageScore || 0).toFixed(0)}%`
+        : null,
+      icon: BarChart3,
+    });
+    return tabs;
+  }, [
+    standardQuestionsList,
+    publicMode,
+    activeApprovedAiQuestions.length,
+    finalInterviewRatingScore,
+  ]);
+
   function validateQuestionRatings() {
     if (publicMode) return true;
 
@@ -3060,7 +3341,7 @@ export default function FinalInterviewForms({ publicMode = false }) {
       (field) => field.enabled !== false,
     );
 
-    const unratedField = enabledFields.find((field, index) => {
+    const unratedIndex = enabledFields.findIndex((field, index) => {
       const questionId = getFinalInterviewQuestionId(field, index);
       const ratingKey = getQuestionRatingKey(questionId);
       const rating = Number(answers[ratingKey]);
@@ -3068,12 +3349,22 @@ export default function FinalInterviewForms({ publicMode = false }) {
       return !Number.isFinite(rating) || rating < 1 || rating > 5;
     });
 
-    if (unratedField) {
+    if (unratedIndex >= 0) {
+      const unratedField = enabledFields[unratedIndex];
+      const matchingItem = standardQuestionsList.find(
+        (item) =>
+          (item.field?.id && item.field.id === unratedField?.id) ||
+          item.questionNumber === unratedIndex + 1,
+      );
+      setActiveWorkspaceTab("standard");
+      if (matchingItem?.questionKey) {
+        setActiveStandardQuestionKey(matchingItem.questionKey);
+      }
       showStatusModal({
         type: "error",
         title: "Missing Question Rating",
         message: `Please rate: ${
-          unratedField.label || "Untitled Final Interview question"
+          richTextToPlainText(unratedField.label) || "Untitled Final Interview question"
         }`,
       });
 
@@ -3143,6 +3434,8 @@ export default function FinalInterviewForms({ publicMode = false }) {
           answers,
           fieldsSnapshot: finalInterviewFields,
           scoreSummary,
+          aiQuestionSetSnapshot: activeAiQuestionSetSnapshot,
+          aiQuestionResponses: aiQuestionResponsesSnapshot,
           interviewNotes: "Final Interview ratings and remarks updated.",
           remarks: "Final Interview ratings and remarks updated.",
         },
@@ -3294,6 +3587,8 @@ export default function FinalInterviewForms({ publicMode = false }) {
         answers,
         fieldsSnapshot: finalInterviewFields,
         scoreSummary,
+        aiQuestionSetSnapshot: activeAiQuestionSetSnapshot,
+        aiQuestionResponses: aiQuestionResponsesSnapshot,
       });
 
       if (!submissionResponse?.success) {
@@ -3317,6 +3612,7 @@ export default function FinalInterviewForms({ publicMode = false }) {
 
       setSubmittedSuccessfully(true);
       setHasUserChangedAnswers(false);
+      setIsSubmitting(false);
 
       const failedFinalInterview =
         submissionResponse?.outcome === "final-interview-failed" ||
@@ -3361,6 +3657,41 @@ export default function FinalInterviewForms({ publicMode = false }) {
     }
   }
 
+  const candidateDisplayName =
+    resumeIntelPayload?.candidateName ||
+    currentCandidate?.name ||
+    currentCandidate?.fullName ||
+    "—";
+  const appliedPositionDisplay =
+    positionTitleFromUrl ||
+    getCandidatePositionName(currentCandidate) ||
+    activeFormPositionTitle ||
+    resumeIntelPayload?.appliedPosition ||
+    "—";
+  const recruitmentStageDisplay =
+    currentCandidate?.stage ||
+    currentCandidate?.status ||
+    (isSubmittedView ? "Submitted" : "Active Evaluation");
+  const interviewScheduleDisplay =
+    currentCandidate?.interviewDate || currentCandidate?.interview_date
+      ? formatFinalInterviewDateTime(
+          currentCandidate.interviewDate || currentCandidate.interview_date,
+        )
+      : "Not scheduled";
+  const assignedInterviewerDisplay =
+    currentCandidate?.interviewerName ||
+    currentCandidate?.interviewer ||
+    currentCandidate?.assignedInterviewer ||
+    savedSubmission?.submittedBy ||
+    "—";
+  const completedStandardCount = standardQuestionsList.filter(
+    (q) => q.isCompleted,
+  ).length;
+  const allStandardCompleted =
+    publicMode ||
+    standardQuestionsList.length === 0 ||
+    completedStandardCount >= standardQuestionsList.length;
+
   return (
     <>
       <div
@@ -3369,446 +3700,648 @@ export default function FinalInterviewForms({ publicMode = false }) {
         className={pageShellClass}
         style={{ overflowAnchor: "none" }}
       >
-      {isSubmitting && (
-        <div
-          className="fixed inset-0 z-[24000] cursor-wait bg-transparent"
-          aria-hidden="true"
-        />
-      )}
-<div className="mx-auto max-w-[1180px] space-y-5">
-          <section className="rounded-2xl border border-sibs-border bg-white p-6 shadow-sm">
-            <div className="inline-flex rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
-              {isSubmittedView ? "Finished Assessment" : "Job Evaluation"}
+        {isSubmitting && (
+          <div
+            className="fixed inset-0 z-[24000] cursor-wait bg-transparent"
+            aria-hidden="true"
+          />
+        )}
+
+        <div className="mx-auto max-w-[1380px] space-y-3.5">
+          {/* 1. Interview Header & Candidate Identity */}
+          <header className="sibs-card px-5 py-4">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h1 className="sibs-page-title text-sibs-navy">
+                    {isSubmittedView
+                      ? "Final Interview Evaluation · Submitted"
+                      : "Final Interview Evaluation"}
+                  </h1>
+                  <span
+                    className={
+                      isSubmittedView
+                        ? "sibs-badge-success"
+                        : requestedViewMode
+                          ? "sibs-badge-neutral"
+                          : "sibs-badge-info"
+                    }
+                  >
+                    {recruitmentStageDisplay}
+                  </span>
+                </div>
+
+                <p className="mt-1 text-[13px] 2xl:text-sm font-bold text-sibs-navy">
+                  {candidateDisplayName}{" "}
+                  <span className="font-normal text-slate-400">|</span>{" "}
+                  <span className="font-semibold text-sibs-text-secondary">
+                    {appliedPositionDisplay}
+                  </span>
+                </p>
+
+                <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11.5px] text-sibs-muted">
+                  <span>
+                    Candidate ID:{" "}
+                    <strong className="font-bold text-sibs-navy">
+                      {candidateId || "—"}
+                    </strong>
+                  </span>
+                  <span>
+                    App ID:{" "}
+                    <strong className="font-bold text-sibs-navy">
+                      {effectiveCandidateApplicationId || "—"}
+                    </strong>
+                  </span>
+                  <span>
+                    Interview Date:{" "}
+                    <strong className="font-bold text-sibs-navy">
+                      {interviewScheduleDisplay}
+                    </strong>
+                  </span>
+                  {assignedInterviewerDisplay !== "—" && (
+                    <span>
+                      Interviewer:{" "}
+                      <strong className="font-bold text-sibs-navy">
+                        {assignedInterviewerDisplay}
+                      </strong>
+                    </span>
+                  )}
+                  <span>
+                    Form:{" "}
+                    <strong className="font-bold text-sibs-navy">
+                      {activeForm?.name ||
+                        activeForm?.formName ||
+                        activeForm?.form_name ||
+                        jobEvaluationFormName ||
+                        "Job Evaluation Form"}
+                    </strong>
+                  </span>
+                  {!publicMode && (
+                    <span>
+                      Passing:{" "}
+                      <strong className="font-bold text-sibs-navy">
+                        {passingScore}%
+                      </strong>
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2 shrink-0">
+                {!isSubmittedView && draftSaveStatus && (
+                  <span
+                    className={`text-xs font-bold ${
+                      draftSaveStatus.includes("failed")
+                        ? "text-red-600"
+                        : draftSaveStatus.includes("Saving")
+                          ? "text-amber-600"
+                          : "text-emerald-700"
+                    }`}
+                  >
+                    {draftSaveStatus}
+                  </span>
+                )}
+                {!publicMode && resumeIntelPayload?.resumeDocument ? (
+                  <a
+                    href={buildAuthorizedResumeDocumentUrl(
+                      resumeIntelPayload.applicationId ||
+                        resumeIntelLookupIdentifier,
+                    )}
+                    target="_blank"
+                    rel="noreferrer"
+                    data-testid="final-interview-open-resume-link"
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-sibs-border bg-sibs-canvas px-3 py-1.5 text-xs font-bold text-sibs-primary-1 transition hover:bg-slate-100"
+                  >
+                    <ExternalLink size={13} className="text-[#FF5C28]" />
+                    Open Resume
+                  </a>
+                ) : null}
+              </div>
             </div>
-
-            <h1 className="mt-4 text-2xl font-extrabold text-sibs-primary-1">
-              {jobEvaluationFormName || "Job Evaluation Form"}
-            </h1>
-
-            <p className="mt-2 text-sm font-semibold text-sibs-primary-1">
-              Candidate ID: {candidateId} · Application ID:{" "}
-              {effectiveCandidateApplicationId}
-            </p>
-
-            {(currentCandidate ||
-              positionTitleFromUrl ||
-              activeForm) && (
-              <p className="mt-2 text-xs font-bold text-sibs-tertiary-5">
-                Position:{" "}
-                {positionTitleFromUrl ||
-                  getCandidatePositionName(
-                    currentCandidate,
-                  ) ||
-                  activeFormPositionTitle ||
-                  "—"}
-              </p>
-            )}
-
-            {activeForm && (
-              <p className="mt-1 text-xs font-bold text-emerald-700">
-                Final Interview Form matched from Recruitment Settings:{" "}
-                {activeForm.name ||
-                  activeForm.formName ||
-                  activeForm.form_name ||
-                  "Final Interview Form"}
-              </p>
-            )}
 
             {publicError && (
               <p className="mt-2 text-xs font-bold text-red-600">
                 {publicError}
               </p>
             )}
-
             {publicMode && publicLoading && (
               <p className="mt-2 text-xs font-bold text-sibs-tertiary-5">
                 Loading applicant assessment...
               </p>
             )}
-
             {openedWithoutSavedSubmission && (
-              <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
-                <p className="text-sm font-extrabold text-amber-800">
-                  No saved Final Interview submission was found for this link.
-                  The candidate's active interview form is displayed below in
-                  read-only mode.
-                </p>
+              <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3.5 py-2 text-xs font-bold text-amber-800">
+                No saved Final Interview submission was found for this link. The
+                active interview form is displayed in read-only mode.
               </div>
             )}
-
             {isSubmittedView && (
-              <div className="mt-4 rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3">
-                <p className="text-sm font-extrabold text-emerald-700">
-                  This assessment has already been submitted. The finished
-                  assessment is displayed below as read-only.
-                </p>
-
-                {draftSavedAt && (
-                  <p className="mt-1 text-xs font-bold text-emerald-700/80">
-                    Submitted at: {formatFinalInterviewDateTime(draftSavedAt)}
-                  </p>
-                )}
-              </div>
-            )}
-
-            {!isSubmittedView && (
-              <div className="mt-2 flex flex-wrap items-center gap-2">
-                {draftSaveStatus && (
-                  <p
-                    className={`text-xs font-bold ${
-                      draftSaveStatus.includes("failed")
-                        ? "text-red-500"
-                        : draftSaveStatus.includes("Saving")
-                          ? "text-amber-600"
-                          : "text-emerald-600"
-                    }`}
-                  >
-                    {draftSaveStatus}
-                  </p>
-                )}
-
-                {draftSavedAt && (
-                  <p className="text-xs font-bold text-sibs-tertiary-5">
-                    Last saved: {formatFinalInterviewDateTime(draftSavedAt)}
-                  </p>
-                )}
-              </div>
-            )}
-
-            {savedSubmission && (
-              <p className="mt-2 text-xs font-bold text-sibs-tertiary-5">
-                Submitted by {savedSubmission.submittedBy || "Candidate"} ·{" "}
-                {formatFinalInterviewDateTime(
-                  savedSubmission.submittedAt ||
-                    savedSubmission.submitted_at ||
-                    savedSubmission.updatedAt ||
-                    savedSubmission.updated_at,
-                )}
-              </p>
-            )}
-          </section>
-
-          {!publicMode && (
-            <ScoreSummaryCard
-              answers={answers}
-              jobEvaluationScore={jobEvaluationScore}
-              finalInterviewRatingScore={finalInterviewRatingScore}
-              passingScore={passingScore}
-            />
-          )}
-
-          <form
-            onSubmit={handleSubmit}
-            className="rounded-2xl border border-sibs-border bg-white p-8 shadow-sm"
-          >
-            <section>
-              <div>
-                <h2 className="text-base font-extrabold text-sibs-primary-1">
-                  Default Job Evaluation Contents
-                </h2>
-
-                <p className="mt-1 text-sm font-semibold text-sibs-tertiary-5">
-                  These default fields follow the standard job evaluation scoring
-                  computation.
-                </p>
-              </div>
-
-              <div className="mt-6 grid grid-cols-1 gap-5">
-                <div className="grid min-w-0 grid-cols-1 gap-5 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)]">
-                  <JobEvaluationSelect
-                    label="Education"
-                    fieldKey={JOB_EVALUATION_FIELDS.education}
-                    options={educationOptions}
-                    value={answers[JOB_EVALUATION_FIELDS.education]}
-                    onChange={handleJobEvaluationChange}
-                    readOnly={requestedViewMode || isSubmittedView}
-                  />
-
-                  <JobEvaluationSelect
-                    label="Experience"
-                    fieldKey={JOB_EVALUATION_FIELDS.experience}
-                    options={experienceOptions}
-                    value={answers[JOB_EVALUATION_FIELDS.experience]}
-                    onChange={handleJobEvaluationChange}
-                    readOnly={requestedViewMode || isSubmittedView}
-                  />
-
-                  <JobEvaluationSelect
-                    label="Location"
-                    fieldKey={JOB_EVALUATION_FIELDS.location}
-                    options={locationOptions}
-                    value={answers[JOB_EVALUATION_FIELDS.location]}
-                    onChange={handleJobEvaluationChange}
-                    readOnly={requestedViewMode || isSubmittedView}
-                  />
-                </div>
-
-                <JobEvaluationCheckboxGroup
-                  title="Duties and Responsibilities"
-                  fieldKey={JOB_EVALUATION_FIELDS.duties}
-                  options={dutiesOptions}
-                  values={answers[JOB_EVALUATION_FIELDS.duties]}
-                  onToggle={handleJobEvaluationToggle}
-                  readOnly={requestedViewMode || isSubmittedView}
-                />
-
-                <JobEvaluationCheckboxGroup
-                  title="Competencies"
-                  fieldKey={JOB_EVALUATION_FIELDS.competencies}
-                  options={competenciesOptions}
-                  values={answers[JOB_EVALUATION_FIELDS.competencies]}
-                  onToggle={handleJobEvaluationToggle}
-                  readOnly={requestedViewMode || isSubmittedView}
-                />
-
-                <JobEvaluationSelectedAnswers answers={answers} />
-              </div>
-            </section>
-
-            <section className="mt-10 border-t border-sibs-border pt-8">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                <div>
-                  <h2 className="text-base font-extrabold text-sibs-primary-1">
-                    Final Interview Questions
-                  </h2>
-
-                  <p className="mt-1 text-sm font-semibold leading-6 text-sibs-tertiary-5">
-                    Role-based questions configured in Recruitment Settings for
-                    this candidate and position.
-                  </p>
-                </div>
-
-                <span className="inline-flex w-fit rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold text-blue-700">
-                  {finalInterviewQuestionCount}{" "}
-                  {finalInterviewQuestionCount === 1
-                    ? "question"
-                    : "questions"}
+              <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3.5 py-2 text-xs font-bold text-emerald-800">
+                <span>
+                  This evaluation has been submitted (read-only assessment).
                 </span>
+                {draftSavedAt && (
+                  <span className="font-semibold">
+                    Submitted: {formatFinalInterviewDateTime(draftSavedAt)}
+                  </span>
+                )}
               </div>
+            )}
+          </header>
 
-              {!publicMode && (
-                <div className="mt-5 grid grid-cols-1 gap-3 rounded-2xl border border-blue-100 bg-blue-50 p-4 sm:grid-cols-3">
-                  <div className="rounded-xl bg-white px-4 py-3 shadow-sm">
-                    <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-text-secondary">
-                      Total Final Interview Score
-                    </p>
-                    <p className="mt-2 text-2xl font-extrabold text-sibs-primary-1">
-                      {finalInterviewRatingScore.totalScore}/
-                      {finalInterviewRatingScore.maximumScore || 0}
-                    </p>
-                  </div>
+          {/* 2. Interview Progress & Section Navigation */}
+          <nav
+            aria-label="Final Interview sections"
+            className="flex items-center gap-1.5 overflow-x-auto rounded-xl border border-sibs-border bg-white p-1.5 shadow-2xs"
+          >
+            {workspaceTabs.map((tab) => {
+              const TabIcon = tab.icon;
+              const isActive = activeWorkspaceTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setActiveWorkspaceTab(tab.id)}
+                  aria-current={isActive ? "page" : undefined}
+                  data-testid={`workspace-tab-${tab.id}`}
+                  className={`inline-flex shrink-0 items-center gap-2 rounded-lg px-3.5 py-2 text-xs font-bold transition ${
+                    isActive
+                      ? "bg-sibs-primary-1 text-white shadow-2xs"
+                      : "text-slate-700 hover:bg-sibs-canvas"
+                  }`}
+                >
+                  <TabIcon
+                    size={14}
+                    className={isActive ? "text-[#FF5C28]" : "text-slate-500"}
+                  />
+                  <span>{tab.label}</span>
+                  {tab.badge !== null && tab.badge !== undefined && (
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-[10px] font-extrabold ${
+                        isActive
+                          ? "bg-white/15 text-white"
+                          : tab.incomplete
+                            ? "bg-amber-50 text-amber-800 border border-amber-200"
+                            : "bg-slate-100 text-slate-700"
+                      }`}
+                    >
+                      {tab.badge}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </nav>
 
-                  <div className="rounded-xl bg-white px-4 py-3 shadow-sm">
-                    <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-text-secondary">
-                      Percentage
-                    </p>
-                    <p className="mt-2 text-2xl font-extrabold text-blue-700">
-                      {finalInterviewRatingScore.percentageScore.toFixed(0)}%
-                    </p>
-                  </div>
-
-                  <div className="rounded-xl bg-white px-4 py-3 shadow-sm">
-                    <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-text-secondary">
-                      Rated Questions
-                    </p>
-                    <p className="mt-2 text-2xl font-extrabold text-sibs-text-secondary">
-                      {finalInterviewRatingScore.answeredRatingFields}/
-                      {finalInterviewRatingScore.totalRatingFields}
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              {databaseFormLoading && (
-                <div className="mt-4 flex items-center gap-2 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-extrabold text-blue-700">
-                  <Loader2 size={16} className="animate-spin" />
-                  Loading the position's saved database questions...
-                </div>
-              )}
-
-              {databaseFormError && (
-                <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-bold text-amber-700">
-                  {databaseFormError} The local form snapshot is being used as a fallback.
-                </div>
-              )}
-
-              {groupedFields.length > 0 ? (
-                <div className="mt-6 space-y-6">
-                  {groupedFields.map((group, groupIndex) => {
-                    const previousQuestionCount =
-                       groupedFields
-                        .slice(0, groupIndex)
-                        .reduce(
-                          (total, previousGroup) =>
-                            total +
-                            safeArray(
-                              previousGroup.questions,
-                            ).length,
-                          0,
-                        );
-
-                    return (
-                      <section
-                        key={`${group.section}-${groupIndex}`}
-                        className="overflow-visible rounded-[20px] border border-sibs-border bg-white"
-                      >
-                        <div className="flex flex-wrap items-center justify-between gap-3 rounded-t-[20px] border-b border-sibs-border bg-sibs-canvas px-5 py-4">
-                          <h3 className="min-w-0 text-sm font-extrabold uppercase tracking-wide text-sibs-primary-1">
-                            {group.section}
-                          </h3>
-
-                          <span className="inline-flex shrink-0 items-center rounded-full border border-sibs-border bg-white px-3 py-1.5 text-xs font-extrabold text-sibs-text-secondary">
-                            {safeArray(group.questions).length}{" "}
-                            {safeArray(group.questions).length === 1
-                              ? "question"
-                              : "questions"}
+          {/* Main Evaluation Form (wraps all tabs so form state is always preserved) */}
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (isSubmittedView || isSubmitting) return;
+              if (!validateQuestionRatings()) return;
+              if (publicMode) {
+                handleSubmit(e);
+              } else {
+                setSubmitConfirmOpen(true);
+              }
+            }}
+            className="space-y-4 pb-20"
+          >
+            {/* TAB 1: OVERVIEW */}
+            {activeWorkspaceTab === "overview" && (
+              <div className="space-y-3.5" data-testid="workspace-panel-overview">
+                {/* Collapsible Resume & Job Alignment */}
+                {!publicMode && resumeIntelPayload?.analysis && (
+                  <section
+                    data-testid="final-interview-resume-analysis-section"
+                    className="sibs-card overflow-hidden"
+                  >
+                    <button
+                      type="button"
+                      aria-expanded={resumeAlignmentExpanded}
+                      onClick={() =>
+                        setResumeAlignmentExpanded((prev) => !prev)
+                      }
+                      className="flex w-full flex-wrap items-center justify-between gap-2 px-5 py-3 text-left transition hover:bg-sibs-surface"
+                    >
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="sibs-card-title text-sibs-navy">
+                          Resume & Approved Job Description Alignment
+                        </span>
+                        {resumeIntelPayload.analysis.approvedJobDescription && (
+                          <span className="sibs-badge-success">
+                            {resumeIntelPayload.analysis.approvedJobDescription
+                              .jd_code ||
+                              `JD #${resumeIntelPayload.analysis.approvedJobDescription.jd_id}`}{" "}
+                            (Rev{" "}
+                            {resumeIntelPayload.analysis.approvedJobDescription
+                              .revision || 1}
+                            )
                           </span>
+                        )}
+                      </div>
+                      <span className="inline-flex items-center gap-1 text-[11.5px] font-bold text-sibs-navy">
+                        {resumeAlignmentExpanded ? "Hide Details" : "View Details"}
+                        {resumeAlignmentExpanded ? (
+                          <ChevronUp size={15} />
+                        ) : (
+                          <ChevronDown size={15} />
+                        )}
+                      </span>
+                    </button>
+
+                    {resumeAlignmentExpanded && (
+                      <div className="grid grid-cols-1 gap-4 border-t border-sibs-border p-4 lg:grid-cols-3">
+                        <div className="rounded-lg border border-sibs-border bg-sibs-canvas/60 p-3">
+                          <p className="text-[11px] font-extrabold text-sibs-primary-1 uppercase">
+                            Work Experience & Education
+                          </p>
+                          <div className="mt-2 max-h-40 space-y-1.5 overflow-y-auto pr-1">
+                            {[
+                              ...(resumeIntelPayload.analysis
+                                .structuredExperience || []),
+                              ...(resumeIntelPayload.analysis.education || []),
+                              ...(resumeIntelPayload.analysis.qualifications ||
+                                []),
+                            ]
+                              .slice(0, 6)
+                              .map((entry, idx) => (
+                                <p
+                                  key={idx}
+                                  className="rounded border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700"
+                                >
+                                  {entry.value}
+                                </p>
+                              ))}
+                          </div>
                         </div>
 
-                        <div className="divide-y divide-sibs-border">
-                          {safeArray(group.questions).map(
-                            (field, fieldIndex) => {
-                              const questionNumber =
-                                previousQuestionCount +
-                                fieldIndex +
-                                1;
-
-                              const isRatingQuestion =
-                                String(field.type || "")
-                                  .trim()
-                                  .toLowerCase() === "rating";
-
-                              return (
-                                <div
-                                  key={
-                                    field.id ||
-                                    `${group.section}-${fieldIndex}`
-                                  }
-                                  className="px-5 py-5"
+                        <div className="rounded-lg border border-sibs-border bg-sibs-canvas/60 p-3">
+                          <p className="text-[11px] font-extrabold text-sibs-primary-1 uppercase">
+                            Skills & Clarifications
+                          </p>
+                          <div className="mt-2 flex flex-wrap gap-1.5">
+                            {(resumeIntelPayload.analysis.skills || [])
+                              .slice(0, 12)
+                              .map((sk, idx) => (
+                                <span
+                                  key={idx}
+                                  className="rounded border border-blue-200 bg-white px-2 py-0.5 text-[11px] font-bold text-sibs-primary-1"
                                 >
-                                  <div className="flex flex-wrap items-center gap-2">
-                                    <span className="inline-flex rounded-full bg-sibs-primary-1 px-3 py-1 text-xs font-extrabold text-white">
-                                      Question {questionNumber}
-                                    </span>
-
-                                    <span className="inline-flex rounded-full bg-sibs-canvas px-3 py-1 text-xs font-extrabold text-sibs-text-secondary">
-                                      {field.type || "Text"}
-                                    </span>
-
-                                  </div>
-
-                                  <div className="mt-3 text-base font-extrabold leading-8 text-sibs-primary-1">
-                                    <RichTextViewer
-                                      value={field.label}
-                                      emptyText="Untitled Final Interview question"
-                                      className="text-sibs-primary-1"
-                                    />
-                                  </div>
-
-                                  <div className="mt-4">
-                                    {(publicMode || !isRatingQuestion) && (
-                                      <>
-                                        <p className="text-xs font-extrabold uppercase tracking-wide text-sibs-text-secondary">
-                                          {publicMode
-                                            ? "Your Answer"
-                                            : "Candidate Answer / Interview Notes"}
-                                        </p>
-
-                                        <FieldInput
-                                          field={field}
-                                          value={answers[field.id]}
-                                          readOnly={requestedViewMode || isSubmittedView}
-                                          onChange={(value) =>
-                                            handleAnswerChange(field.id, value)
-                                          }
-                                        />
-                                      </>
-                                    )}
-
-                                    {!publicMode && (
-                                      <QuestionRatingInput
-                                        questionId={getFinalInterviewQuestionId(
-                                          field,
-                                          questionNumber - 1,
-                                        )}
-                                        answers={answers}
-                                        readOnly={requestedViewMode || publicMode || isSubmitting}
-                                        onChange={handleInterviewerScoringChange}
-                                      />
-                                    )}
-                                  </div>
-                                </div>
-                              );
-                            },
+                                  {sk.value}
+                                </span>
+                              ))}
+                          </div>
+                          {resumeIntelPayload.analysis.uncertainties?.length >
+                            0 && (
+                            <ul className="mt-2.5 list-disc space-y-1 border-t border-slate-200 pt-2 pl-4 text-[11px] text-amber-900">
+                              {resumeIntelPayload.analysis.uncertainties
+                                .slice(0, 3)
+                                .map((u, idx) => (
+                                  <li key={idx}>{u}</li>
+                                ))}
+                            </ul>
                           )}
                         </div>
-                      </section>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="mt-6 rounded-xl border border-dashed border-sibs-border-subtle bg-white px-4 py-10 text-center">
-                  <p className="text-sm font-extrabold text-sibs-tertiary-5">
-                    {isSubmittedView
+
+                        <div className="rounded-lg border border-sibs-border bg-sibs-canvas/60 p-3">
+                          <p className="text-[11px] font-extrabold text-sibs-primary-1 uppercase">
+                            Approved JD Requirements
+                          </p>
+                          <div className="mt-2 max-h-40 space-y-1.5 overflow-y-auto pr-1">
+                            {(
+                              resumeIntelPayload.analysis.approvedJobDescription
+                                ?.requirements || []
+                            )
+                              .slice(0, 6)
+                              .map((req) => (
+                                <div
+                                  key={req.requirement_id}
+                                  className="rounded border border-slate-200 bg-white px-2.5 py-1.5 text-xs text-slate-700"
+                                >
+                                  <span className="mr-1.5 rounded border border-emerald-200 bg-emerald-50 px-1.5 py-0.5 text-[10px] font-bold text-emerald-700">
+                                    {req.requirement_id}
+                                  </span>
+                                  <span className="font-medium">
+                                    {req.text}
+                                  </span>
+                                </div>
+                              ))}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </section>
+                )}
+
+                {/* Default Job Evaluation Criteria */}
+                <section className="sibs-card p-5">
+                  <div className="border-b border-sibs-border pb-3">
+                    <h2 className="sibs-card-title text-sibs-navy">
+                      Default Job Evaluation Criteria
+                    </h2>
+                    <p className="sibs-card-subtitle mt-0.5">
+                      Standard job evaluation scoring criteria for this position.
+                    </p>
+                  </div>
+
+                  <div className="mt-4 grid grid-cols-1 gap-4">
+                    <div className="grid min-w-0 grid-cols-1 gap-4 md:grid-cols-3">
+                      <JobEvaluationSelect
+                        label="Education"
+                        fieldKey={JOB_EVALUATION_FIELDS.education}
+                        options={educationOptions}
+                        value={answers[JOB_EVALUATION_FIELDS.education]}
+                        onChange={handleJobEvaluationChange}
+                        readOnly={requestedViewMode || isSubmittedView}
+                      />
+                      <JobEvaluationSelect
+                        label="Experience"
+                        fieldKey={JOB_EVALUATION_FIELDS.experience}
+                        options={experienceOptions}
+                        value={answers[JOB_EVALUATION_FIELDS.experience]}
+                        onChange={handleJobEvaluationChange}
+                        readOnly={requestedViewMode || isSubmittedView}
+                      />
+                      <JobEvaluationSelect
+                        label="Location"
+                        fieldKey={JOB_EVALUATION_FIELDS.location}
+                        options={locationOptions}
+                        value={answers[JOB_EVALUATION_FIELDS.location]}
+                        onChange={handleJobEvaluationChange}
+                        readOnly={requestedViewMode || isSubmittedView}
+                      />
+                    </div>
+
+                    <JobEvaluationCheckboxGroup
+                      title="Duties and Responsibilities"
+                      fieldKey={JOB_EVALUATION_FIELDS.duties}
+                      options={dutiesOptions}
+                      values={answers[JOB_EVALUATION_FIELDS.duties]}
+                      onToggle={handleJobEvaluationToggle}
+                      readOnly={requestedViewMode || isSubmittedView}
+                    />
+
+                    <JobEvaluationCheckboxGroup
+                      title="Competencies"
+                      fieldKey={JOB_EVALUATION_FIELDS.competencies}
+                      options={competenciesOptions}
+                      values={answers[JOB_EVALUATION_FIELDS.competencies]}
+                      onToggle={handleJobEvaluationToggle}
+                      readOnly={requestedViewMode || isSubmittedView}
+                    />
+                  </div>
+                </section>
+              </div>
+            )}
+
+            {/* TAB 2: STANDARD QUESTIONS */}
+            {activeWorkspaceTab === "standard" && (
+              <div data-testid="workspace-panel-standard">
+                <FinalInterviewStandardWorkspace
+                  questions={standardQuestionsList}
+                  finalInterviewRatingScore={finalInterviewRatingScore}
+                  publicMode={publicMode}
+                  isSubmittedView={isSubmittedView}
+                  databaseFormLoading={databaseFormLoading}
+                  databaseFormError={databaseFormError}
+                  activeQuestionId={activeStandardQuestionKey}
+                  onSelectQuestionId={setActiveStandardQuestionKey}
+                  emptyStateMessage={
+                    isSubmittedView
                       ? "No saved Final Interview questions were found for this submission."
                       : currentCandidate
                         ? `No Final Interview questions are configured for ${
-                            getCandidatePositionName(
-                              currentCandidate,
-                            ) || "this position"
+                            getCandidatePositionName(currentCandidate) ||
+                            "this position"
                           }. Check Recruitment Settings → Final Interview Form.`
-                        : "No matching candidate or Final Interview questions were found."}
-                  </p>
-                </div>
-              )}
-            </section>
+                        : "No matching candidate or Final Interview questions were found."
+                  }
+                  renderQuestionInputs={(item) => (
+                    <div className="space-y-4">
+                      {(publicMode || !item.isRatingQuestion) && (
+                        <div>
+                          <p className="text-xs font-bold uppercase tracking-wide text-slate-600">
+                            {publicMode
+                              ? "Your Answer"
+                              : "Candidate Answer / Interview Notes"}
+                          </p>
+                          <FieldInput
+                            field={item.field}
+                            value={answers[item.field.id]}
+                            readOnly={requestedViewMode || isSubmittedView}
+                            onChange={(value) =>
+                              handleAnswerChange(item.field.id, value)
+                            }
+                          />
+                        </div>
+                      )}
 
-            {isSubmittedView ? (
-              !publicMode && !requestedViewMode && (
-                <div className="mt-8 flex flex-col items-stretch justify-end gap-3 border-t border-sibs-border pt-6 sm:flex-row sm:items-center">
+                      {!publicMode && (
+                        <QuestionRatingInput
+                          questionId={item.questionId}
+                          answers={answers}
+                          readOnly={requestedViewMode || publicMode || isSubmitting}
+                          onChange={handleInterviewerScoringChange}
+                        />
+                      )}
+                    </div>
+                  )}
+                />
+              </div>
+            )}
+
+            {/* TAB 3: AI INTERVIEW QUESTIONS */}
+            {!publicMode && activeWorkspaceTab === "ai" && (
+              <div data-testid="workspace-panel-ai">
+                <FinalInterviewAiWorkspace
+                  approvedQuestions={activeApprovedAiQuestions}
+                  allQuestions={resumeIntelPayload?.allQuestionsForHrReview || []}
+                  approvedJd={
+                    resumeIntelPayload?.analysis?.approvedJobDescription || null
+                  }
+                  questionSetSummary={
+                    activeAiQuestionSetSnapshot?.questionSetSummary || null
+                  }
+                  resumeDocument={resumeIntelPayload?.resumeDocument || null}
+                  answers={answers}
+                  savedSubmission={savedSubmission}
+                  permissions={resumeIntelPermissions}
+                  loading={resumeIntelLoading}
+                  reviewBusy={resumeIntelReviewBusy}
+                  isSubmittedView={isSubmittedView}
+                  requestedViewMode={requestedViewMode}
+                  isSubmitting={isSubmitting}
+                  selectedQuestionId={activeAiQuestionId}
+                  onSelectQuestionId={setActiveAiQuestionId}
+                  onChangeRemarks={handleInterviewerScoringChange}
+                  onReviewDecision={handleInlineAiQuestionReview}
+                  onRegenerate={handleInlineRegenerateAiQuestions}
+                />
+              </div>
+            )}
+
+            {/* TAB 4: EVALUATION & SUMMARY */}
+            {activeWorkspaceTab === "summary" && (
+              <div className="space-y-4" data-testid="workspace-panel-summary">
+                {!publicMode && (
+                  <ScoreSummaryCard
+                    answers={answers}
+                    jobEvaluationScore={jobEvaluationScore}
+                    finalInterviewRatingScore={finalInterviewRatingScore}
+                    passingScore={passingScore}
+                    showBreakdown={true}
+                  />
+                )}
+
+                <section className="rounded-xl border border-sibs-border bg-white p-5 shadow-2xs">
+                  <h2 className="text-sm font-extrabold text-sibs-primary-1">
+                    Evaluation Readiness Check
+                  </h2>
+                  <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-sibs-border bg-sibs-canvas/60 px-4 py-3">
+                    <div className="flex items-center gap-2.5 text-xs font-semibold text-slate-700">
+                      {completedStandardCount >=
+                      standardQuestionsList.length ? (
+                        <>
+                          <CheckCircle2
+                            size={16}
+                            className="text-emerald-600 shrink-0"
+                          />
+                          <span>
+                            All {standardQuestionsList.length} standard
+                            interview questions have been completed.
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <AlertCircle
+                            size={16}
+                            className="text-amber-600 shrink-0"
+                          />
+                          <span>
+                            {standardQuestionsList.length -
+                              completedStandardCount}{" "}
+                            {publicMode
+                              ? "standard question(s) still need an answer before submission."
+                              : "standard question(s) still need a rating before final submission."}
+                          </span>
+                        </>
+                      )}
+                    </div>
+                    {completedStandardCount < standardQuestionsList.length && (
+                      <button
+                        type="button"
+                        onClick={() => setActiveWorkspaceTab("standard")}
+                        className="rounded-lg border border-sibs-border bg-white px-3 py-1.5 text-xs font-bold text-sibs-primary-1 hover:bg-slate-50"
+                      >
+                        Review Standard Questions
+                      </button>
+                    )}
+                  </div>
+                </section>
+              </div>
+            )}
+
+            {/* Sticky Action Footer */}
+            <div className="sticky bottom-0 z-30 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-sibs-border bg-white/95 px-4 py-3 shadow-md backdrop-blur-xs">
+              <div className="flex flex-wrap items-center gap-2 text-xs text-sibs-muted">
+                {!isSubmittedView && draftSaveStatus ? (
+                  <span
+                    className={`font-bold ${
+                      draftSaveStatus.includes("failed")
+                        ? "text-red-600"
+                        : draftSaveStatus.includes("Saving")
+                          ? "text-amber-600"
+                          : "text-emerald-700"
+                    }`}
+                  >
+                    {draftSaveStatus}
+                  </span>
+                ) : (
+                  <span className="font-semibold">
+                    {isSubmittedView
+                      ? "Submitted evaluation"
+                      : `${completedStandardCount} of ${standardQuestionsList.length} standard questions rated`}
+                  </span>
+                )}
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2.5">
+                {!isSubmittedView &&
+                  !requestedViewMode &&
+                  !publicMode &&
+                  !allStandardCompleted && (
+                    <span
+                      className="text-[11px] font-bold text-amber-700"
+                      data-testid="submit-readiness-hint"
+                    >
+                      Rate all standard questions ({completedStandardCount}/
+                      {standardQuestionsList.length}) to submit
+                    </span>
+                  )}
+
+                {isSubmittedView ? (
+                  !publicMode &&
+                  !requestedViewMode && (
+                    <button
+                      type="button"
+                      disabled={isSubmitting}
+                      onClick={handleSaveScoringChanges}
+                      className="sibs-modal-btn-primary gap-2 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {isSubmitting ? (
+                        <>
+                          <Loader2 size={15} className="animate-spin" />
+                          Saving...
+                        </>
+                      ) : (
+                        "Save Rating & Remarks"
+                      )}
+                    </button>
+                  )
+                ) : !requestedViewMode ? (
                   <button
-                    type="button"
+                    type="submit"
                     disabled={isSubmitting}
-                    onClick={handleSaveScoringChanges}
-                    className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-6 text-sm font-extrabold text-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0 disabled:hover:shadow-sm"
+                    aria-disabled={!allStandardCompleted || isSubmitting}
+                    data-testid="submit-final-interview-btn"
+                    className={
+                      allStandardCompleted
+                        ? "sibs-modal-btn-primary gap-2 disabled:cursor-not-allowed disabled:opacity-60"
+                        : "inline-flex h-9 items-center justify-center gap-2 rounded-xl border border-slate-300 bg-slate-200 px-4 text-xs font-bold text-slate-600 transition hover:bg-slate-200/80"
+                    }
                   >
                     {isSubmitting ? (
                       <>
-                        <Loader2 size={17} className="animate-spin" />
-                        Saving...
+                        <Loader2 size={15} className="animate-spin" />
+                        Submitting...
                       </>
                     ) : (
-                      "Save Rating & Remarks"
+                      "Submit Job Evaluation Form"
                     )}
                   </button>
-                </div>
-              )
-            ) : !requestedViewMode ? (
-              <div className="mt-8">
-                <ScoreSummaryCard
-                  answers={answers}
-                  jobEvaluationScore={jobEvaluationScore}
-                  finalInterviewRatingScore={finalInterviewRatingScore}
-                  passingScore={passingScore}
-                  showBreakdown={false}
-                />
-
-                <div className="mt-5 flex justify-end">
-                  <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="inline-flex h-11 items-center justify-center rounded-xl bg-sibs-primary-1 px-6 text-sm font-extrabold text-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0 disabled:hover:shadow-sm"
-                >
-                  {isSubmitting ? "Submitting..." : "Submit Job Evaluation Form"}
-                  </button>
-                </div>
+                ) : null}
               </div>
-            ) : null}
+            </div>
           </form>
         </div>
       </div>
 
-
+      <ConfirmModal
+        open={submitConfirmOpen}
+        onClose={() => setSubmitConfirmOpen(false)}
+        onConfirm={() => {
+          setSubmitConfirmOpen(false);
+          handleSubmit({ preventDefault: () => {} });
+        }}
+        loading={isSubmitting}
+        variant="primary"
+        closeOnEscape={true}
+        title="Submit Final Interview Evaluation?"
+        description="Once submitted, this evaluation will be recorded for the candidate's Final Interview stage. Ensure all ratings and remarks are accurate."
+        confirmLabel="Confirm & Submit"
+        cancelLabel="Review Answers"
+      />
 
       <StatusModal
         open={statusModal.open}

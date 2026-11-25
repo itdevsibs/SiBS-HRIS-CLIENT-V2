@@ -136,6 +136,19 @@ export default function RecruitmentSettingsPage({ subpanel: propSubpanel }) {
   );
 
   const isOverview = activeTab === "Overview";
+  const activeMeta = SETTING_META[activeTab] || null;
+
+  useEffect(() => {
+    if (typeof document === "undefined") return undefined;
+    const previousTitle = document.title;
+    document.title = isOverview
+      ? "Recruitment Settings | SiBS HRIS"
+      : `${activeMeta?.title || activeTab} | Recruitment Settings | SiBS HRIS`;
+
+    return () => {
+      document.title = previousTitle || "SiBS HRIS";
+    };
+  }, [activeMeta?.title, activeTab, isOverview]);
 
   return (
     <div className="sibs-dashboard-shell font-jakarta flex h-dvh min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
@@ -150,7 +163,24 @@ export default function RecruitmentSettingsPage({ subpanel: propSubpanel }) {
       >
         <div className="mx-auto flex min-h-full w-full max-w-[1700px] flex-col gap-4 sm:gap-5">
           {/* Header Hero displayed at top of Overview */}
-          {isOverview && <RecruitmentSettingsHero />}
+          {isOverview ? (
+            <RecruitmentSettingsHero />
+          ) : (
+            <section className="sibs-card relative overflow-hidden rounded-2xl border border-sibs-border bg-white p-3.5 sm:p-4 2xl:p-5 font-jakarta shadow-xs">
+              <span className="sibs-top-accent" aria-hidden="true" />
+              <div className="min-w-0 space-y-1">
+                <p className="sibs-kicker">Settings / Recruitment</p>
+                <h1 className="font-heading break-words text-lg sm:text-xl 2xl:text-2xl font-bold tracking-tight text-sibs-navy">
+                  {activeMeta?.title || activeTab}
+                </h1>
+                {activeMeta?.description ? (
+                  <p className="max-w-4xl sibs-text-xs sm:sibs-text-sm font-semibold leading-relaxed text-sibs-muted">
+                    {activeMeta.description}
+                  </p>
+                ) : null}
+              </div>
+            </section>
+          )}
 
           {/* Persistent Horizontal Module Tabs */}
           <RecruitmentSettingsTabs
@@ -163,7 +193,10 @@ export default function RecruitmentSettingsPage({ subpanel: propSubpanel }) {
               onSelectSetting={handleSelectSetting}
             />
           ) : (
-            <section className="transition-all duration-150">
+            <section
+              key={activeTab}
+              className="transition-opacity duration-150"
+            >
               <RecruitmentSettingsPanelRouter
                 activeTab={activeTab}
                 UpdateHeadcountsPanel={UpdateHeadcountsPanel}

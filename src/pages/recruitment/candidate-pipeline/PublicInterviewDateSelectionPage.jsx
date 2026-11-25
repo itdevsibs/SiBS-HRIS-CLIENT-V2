@@ -13,8 +13,12 @@ import {
   Clock3,
   Loader2,
   RotateCcw,
+  ShieldCheck,
   XCircle,
 } from "lucide-react";
+import PublicCandidateShell, {
+  PublicSectionCard,
+} from "@/components/layout/PublicCandidateShell";
 
 import {
   getPublicCandidateInterviewDate,
@@ -465,31 +469,27 @@ function PublicStateCard({
   message,
   tone = "blue",
   children,
-  showLogo = false,
+  liveRole = "status",
 }) {
   const toneClasses = {
-    blue: "border-sky-100 bg-sky-50 text-sibs-navy",
+    blue: "border-sibs-border bg-sibs-surface text-sibs-navy",
     red: "border-red-100 bg-red-50 text-red-700",
     green: "border-emerald-100 bg-emerald-50 text-emerald-700",
     amber: "border-amber-100 bg-amber-50 text-amber-700",
   };
 
   return (
-    <div className="mx-auto w-full max-w-xl rounded-[14px] border border-sibs-border bg-white p-6 text-center shadow-xl sm:p-10">
-      {showLogo && (
-        <img
-          src="/SiBSLogoNavy.png"
-          alt="SiBS Contact Center"
-          className="mx-auto h-auto w-[240px] max-w-full"
-        />
-      )}
-
+    <div
+      role={liveRole}
+      aria-live={liveRole === "alert" ? "assertive" : "polite"}
+      className="sibs-page-card-in mx-auto w-full max-w-xl rounded-2xl border border-sibs-border bg-white p-6 text-center shadow-[0_8px_24px_rgba(4,44,81,0.05)] sm:p-10"
+    >
       <div
-        className={`${showLogo ? "mt-6 " : ""}mx-auto flex h-16 w-16 items-center justify-center rounded-[10px] border ${toneClasses[tone]}`}
+        className={`mx-auto flex h-16 w-16 items-center justify-center rounded-[10px] border ${toneClasses[tone]}`}
       >
         {icon}
       </div>
-      <h1 className="mt-5 text-2xl font-extrabold text-sibs-navy">
+      <h1 className="mt-5 font-heading text-2xl font-black tracking-tight text-sibs-navy sm:text-3xl">
         {title}
       </h1>
       <p className="mx-auto mt-3 max-w-md text-sm font-semibold leading-6 text-sibs-muted">
@@ -520,41 +520,56 @@ function ReadOnlyResponse({ schedule, warning = "" }) {
       )}.`;
 
   return (
-    <main className="flex min-h-dvh items-center justify-center bg-sibs-surface px-4 py-10 font-jakarta">
-      <PublicStateCard
-        showLogo
-        icon={declined ? <XCircle size={32} /> : <CheckCircle2 size={32} />}
-        title={title}
-        message={message}
-        tone={declined ? "amber" : "green"}
-      >
-        <div className="mt-6 rounded-[10px] border border-sibs-border bg-sibs-surface p-4 text-left">
-          <p className="text-xs font-extrabold uppercase tracking-wide text-sibs-muted">
-            Response
-          </p>
-          <p className="mt-1 text-base font-extrabold text-sibs-navy">
-            {status}
-          </p>
-          {!declined && (
-            <p className="mt-3 text-sm font-bold text-sibs-navy">
-              {formatDateTime(
-                schedule?.finalInterviewDate || schedule?.selectedInterviewDate,
-              )}
+    <PublicCandidateShell
+      skipLabel="Skip to interview status"
+      subtitle="Interview scheduling"
+      statusLabel={`Response: ${status}`}
+      mobileStatusLabel={status}
+    >
+      <div className="mx-auto flex w-full max-w-[980px] flex-1 items-center justify-center px-4 py-10 sm:px-6 sm:py-14">
+        <PublicStateCard
+          icon={
+            declined ? (
+              <XCircle size={32} aria-hidden="true" />
+            ) : (
+              <CheckCircle2 size={32} aria-hidden="true" />
+            )
+          }
+          title={title}
+          message={message}
+          tone={declined ? "amber" : "green"}
+        >
+          <div className="mt-6 rounded-[10px] border border-sibs-border bg-sibs-surface p-4 text-left">
+            <p className="text-xs font-extrabold uppercase tracking-wide text-sibs-muted">
+              Response
+            </p>
+            <p className="mt-1 text-base font-extrabold text-sibs-navy">
+              {status}
+            </p>
+            {!declined && (
+              <p className="mt-3 text-sm font-bold text-sibs-navy">
+                {formatDateTime(
+                  schedule?.finalInterviewDate || schedule?.selectedInterviewDate,
+                )}
+              </p>
+            )}
+            {schedule?.responseReason && (
+              <p className="mt-3 text-sm font-semibold leading-6 text-sibs-muted">
+                {schedule.responseReason}
+              </p>
+            )}
+          </div>
+          {warning && (
+            <p
+              role="alert"
+              className="mt-4 rounded-[10px] border border-amber-100 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-700"
+            >
+              {warning}
             </p>
           )}
-          {schedule?.responseReason && (
-            <p className="mt-3 text-sm font-semibold leading-6 text-sibs-muted">
-              {schedule.responseReason}
-            </p>
-          )}
-        </div>
-        {warning && (
-          <p className="mt-4 rounded-[10px] border border-amber-100 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-700">
-            {warning}
-          </p>
-        )}
-      </PublicStateCard>
-    </main>
+        </PublicStateCard>
+      </div>
+    </PublicCandidateShell>
   );
 }
 
@@ -773,13 +788,20 @@ export default function PublicInterviewDateSelectionPage() {
 
   if (phase === "loading") {
     return (
-      <main className="flex min-h-dvh items-center justify-center bg-sibs-surface px-4 py-10 font-jakarta">
-        <PublicStateCard
-          icon={<Loader2 size={30} className="animate-spin text-sibs-navy" />}
-          title="Loading Interview Schedule"
-          message="Please wait while we verify your secure response link."
-        />
-      </main>
+      <PublicCandidateShell
+        skipLabel="Skip to interview status"
+        subtitle="Interview scheduling"
+        statusLabel="Verifying link"
+        mobileStatusLabel="Verifying"
+      >
+        <div className="mx-auto flex w-full max-w-[980px] flex-1 items-center justify-center px-4 py-12 sm:px-6">
+          <PublicStateCard
+            icon={<Loader2 size={30} className="animate-spin text-sibs-orange" aria-hidden="true" />}
+            title="Loading Interview Schedule"
+            message="Please wait while we verify your secure response link."
+          />
+        </div>
+      </PublicCandidateShell>
     );
   }
 
@@ -800,48 +822,56 @@ export default function PublicInterviewDateSelectionPage() {
           : "Response Link Unavailable";
 
     return (
-      <main className="flex min-h-dvh items-center justify-center bg-sibs-surface px-4 py-10 font-jakarta">
-        <PublicStateCard
-          icon={<AlertCircle size={32} />}
-          title={title}
-          message={
-            message ||
-            "Please contact Talent Acquisition at careers@thesiblingssolutions.com."
-          }
-          tone="red"
-        />
-      </main>
+      <PublicCandidateShell
+        skipLabel="Skip to interview status"
+        subtitle="Interview scheduling"
+        statusLabel="Link unavailable"
+        mobileStatusLabel="Unavailable"
+      >
+        <div className="mx-auto flex w-full max-w-[980px] flex-1 items-center justify-center px-4 py-12 sm:px-6">
+          <PublicStateCard
+            icon={<AlertCircle size={32} aria-hidden="true" />}
+            title={title}
+            message={
+              message ||
+              "Please contact Talent Acquisition at careers@thesiblingssolutions.com."
+            }
+            tone="red"
+            liveRole="alert"
+          />
+        </div>
+      </PublicCandidateShell>
     );
   }
 
   const isSubmitting = phase === "submitting";
 
   return (
-    <main className="min-h-dvh bg-sibs-surface px-4 py-8 font-jakarta sm:py-12">
-      <div className="mx-auto w-full max-w-6xl overflow-hidden rounded-[14px] border border-sibs-border bg-white shadow-xl">
-        <header className="flex items-center justify-center border-b border-sibs-border bg-white px-5 py-5 sm:px-8">
-          <img
-            src="/SiBSLogoNavy.png"
-            alt="SiBS Contact Center"
-            className="h-auto w-[260px] max-w-full"
-          />
-        </header>
-
-        <div className="grid grid-cols-1 lg:grid-cols-[0.78fr_1.22fr]">
-          <section className="border-b border-sibs-border bg-sibs-surface p-5 sm:p-8 lg:border-b-0 lg:border-r">
-            <span className="inline-flex rounded-full border border-sky-100 bg-sky-50 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-sibs-navy">
-              Interview Response
-            </span>
-            <h1 className="mt-4 text-2xl font-extrabold text-sibs-navy sm:text-3xl">
-              Respond to Interview Schedule
-            </h1>
-            <p className="mt-3 text-sm font-semibold leading-6 text-sibs-muted">
-              Accept the proposed schedule, choose a different date and time, or
-              decline the interview. Your response becomes final after
-              submission.
-            </p>
-
-            <div className="mt-6 space-y-3 rounded-[10px] border border-sibs-border bg-white p-5">
+    <PublicCandidateShell
+      skipLabel="Skip to interview response"
+      subtitle="Interview scheduling"
+      statusLabel="Response pending"
+      mobileStatusLabel="Pending"
+      hero={{
+        leadHighlight: "Respond",
+        titleRest: "to your interview schedule",
+        description:
+          "Accept the proposed schedule, choose a different date and time, or decline the interview. Your response becomes final after submission.",
+        badges: [
+          { icon: ShieldCheck, label: "One-time final submission" },
+          { icon: CalendarDays, label: "Working-day SLA" },
+        ],
+      }}
+    >
+      <div className="mx-auto w-full max-w-[1120px] px-4 pt-4 pb-8 sm:px-6 2xl:pt-6 2xl:pb-12">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[0.78fr_1.22fr] 2xl:gap-6">
+          <PublicSectionCard
+            icon={CalendarDays}
+            title="Proposed Interview Details"
+            description="Review your candidate and schedule details before submitting your response."
+            badgeText="Interview Response"
+          >
+            <div className="space-y-3 rounded-[10px] border border-sibs-border bg-sibs-surface p-4 sm:p-5">
               <div>
                 <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-muted">
                   Candidate
@@ -877,7 +907,7 @@ export default function PublicInterviewDateSelectionPage() {
               </div>
             </div>
 
-            <div className="mt-5 rounded-[10px] border border-amber-100 bg-amber-50 px-4 py-3 text-xs font-semibold leading-5 text-amber-700">
+            <div className="mt-5 rounded-[10px] border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-semibold leading-5 text-amber-800">
               <p>
                 Current response deadline: {formatDateTime(schedule?.responseDeadline)}
               </p>
@@ -887,282 +917,301 @@ export default function PublicInterviewDateSelectionPage() {
                 counted as working days.
               </p>
             </div>
-          </section>
+          </PublicSectionCard>
 
-          <form onSubmit={handleSubmit} className="p-5 sm:p-8">
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-              {[
-                {
-                  key: "accept",
-                  label: "Accept",
-                  description: "Use the proposed schedule",
-                  icon: Check,
-                },
-                {
-                  key: "reschedule",
-                  label: "Reschedule",
-                  description: "Choose another date and time",
-                  icon: RotateCcw,
-                },
-                {
-                  key: "decline",
-                  label: "Decline",
-                  description: "Do not continue with interview",
-                  icon: XCircle,
-                },
-              ].map((option) => {
-                const active = action === option.key;
-                const Icon = option.icon;
+          <PublicSectionCard
+            icon={CalendarClock}
+            title="Select Your Response"
+            description="Choose an option below to confirm, reschedule, or decline."
+          >
+            <form onSubmit={handleSubmit}>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                {[
+                  {
+                    key: "accept",
+                    label: "Accept",
+                    description: "Use the proposed schedule",
+                    icon: Check,
+                  },
+                  {
+                    key: "reschedule",
+                    label: "Reschedule",
+                    description: "Choose another date and time",
+                    icon: RotateCcw,
+                  },
+                  {
+                    key: "decline",
+                    label: "Decline",
+                    description: "Do not continue with interview",
+                    icon: XCircle,
+                  },
+                ].map((option) => {
+                  const active = action === option.key;
+                  const Icon = option.icon;
 
-                return (
-                  <button
-                    key={option.key}
-                    type="button"
-                    disabled={isSubmitting}
-                    onClick={() => {
-                      setAction(option.key);
-                      setMessage("");
-                    }}
-                    className={`rounded-[10px] border p-4 text-left transition ${
-                      active
-                        ? "border-sibs-orange bg-sibs-cream-light shadow-sm"
-                        : "border-sibs-border bg-white hover:border-sibs-orange/40 hover:bg-sibs-surface"
-                    } disabled:opacity-60`}
-                  >
-                    <span
-                      className={`flex h-10 w-10 items-center justify-center rounded-[10px] ${
+                  return (
+                    <button
+                      key={option.key}
+                      type="button"
+                      disabled={isSubmitting}
+                      aria-pressed={active}
+                      onClick={() => {
+                        setAction(option.key);
+                        setMessage("");
+                      }}
+                      className={`min-h-11 rounded-[10px] border p-4 text-left transition ${
                         active
-                          ? "bg-sibs-orange text-white"
-                          : "bg-sibs-surface text-sibs-navy"
-                      }`}
+                          ? "border-sibs-orange bg-sibs-cream-light shadow-sm"
+                          : "border-sibs-border bg-white hover:border-sibs-orange/40 hover:bg-sibs-surface"
+                      } disabled:opacity-60`}
                     >
-                      <Icon size={19} />
-                    </span>
-                    <span className="mt-3 block text-sm font-extrabold text-sibs-navy">
-                      {option.label}
-                    </span>
-                    <span className="mt-1 block text-xs font-semibold leading-5 text-sibs-muted">
-                      {option.description}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-
-            {action === "accept" && (
-              <div className="mt-6 rounded-[10px] border border-emerald-100 bg-emerald-50 p-5">
-                <p className="flex items-center gap-2 text-sm font-extrabold text-emerald-700">
-                  <CheckCircle2 size={18} />
-                  Accept Proposed Interview Schedule
-                </p>
-                <p className="mt-2 text-sm font-bold text-sibs-navy">
-                  {formatDateOnly(schedule?.proposedDate)} at{" "}
-                  {formatCandidateInterviewTime(schedule?.proposedTime)}
-                </p>
-              </div>
-            )}
-
-            {action === "reschedule" && (
-              <div className="mt-6">
-                <div className="flex items-center justify-between gap-4">
-                  <button
-                    type="button"
-                    disabled={isSubmitting}
-                    onClick={() =>
-                      setViewDate(
-                        (previous) =>
-                          new Date(
-                            previous.getFullYear(),
-                            previous.getMonth() - 1,
-                            1,
-                          ),
-                      )
-                    }
-                    className="flex h-10 w-10 items-center justify-center rounded-[10px] border border-sibs-border text-sibs-navy transition hover:bg-sibs-surface disabled:opacity-50"
-                  >
-                    <ChevronLeft size={18} />
-                  </button>
-                  <h2 className="text-center text-base font-extrabold text-sibs-navy">
-                    {MONTH_NAMES[viewDate.getMonth()]} {viewDate.getFullYear()}
-                  </h2>
-                  <button
-                    type="button"
-                    disabled={isSubmitting}
-                    onClick={() =>
-                      setViewDate(
-                        (previous) =>
-                          new Date(
-                            previous.getFullYear(),
-                            previous.getMonth() + 1,
-                            1,
-                          ),
-                      )
-                    }
-                    className="flex h-10 w-10 items-center justify-center rounded-[10px] border border-sibs-border text-sibs-navy transition hover:bg-sibs-surface disabled:opacity-50"
-                  >
-                    <ChevronRight size={18} />
-                  </button>
-                </div>
-
-                {availabilityError && <p className="mt-3 text-xs font-bold text-red-600">{availabilityError}</p>}
-                {!availabilityLoading && availableSlots.length === 0 && !availabilityError && <p className="mt-3 text-xs font-semibold text-sibs-muted">No available HRIS interview times this month. Please check another month or contact Talent Acquisition.</p>}
-
-                <div className="mt-4 grid grid-cols-7 gap-1">
-                  {WEEKDAY_LABELS.map((label) => (
-                    <div
-                      key={label}
-                      className="flex h-9 items-center justify-center text-xs font-extrabold text-sibs-muted"
-                    >
-                      {label}
-                    </div>
-                  ))}
-
-                  {calendarDays.map((item) => {
-                    const selectable = isSelectableCandidateInterviewDate(
-                      item.date, today, holidayDates,
-                    ) && availableDates.has(item.dateValue) && !availabilityLoading;
-                    const active =
-                      selectedDateObject &&
-                      isSameDate(item.date, selectedDateObject);
-                    const weekend = [0, 6].includes(item.date.getDay());
-                    const holiday = holidayDates.has(item.dateValue);
-
-                    return (
-                      <button
-                        key={item.dateValue}
-                        type="button"
-                        disabled={!selectable || isSubmitting}
-                        onClick={() => { setSelectedDate(item.dateValue); setSelectedTime(""); }}
-                        title={
-                          holiday
-                            ? "Configured Philippine holiday"
-                            : weekend
-                              ? "Saturday and Sunday are unavailable"
-                              : selectable
-                                ? "Select an available interview date"
-                                : "No interview availability on this date"
-                        }
-                        className={`flex h-10 items-center justify-center rounded-[10px] text-sm font-extrabold transition ${
+                      <span
+                        className={`flex h-10 w-10 items-center justify-center rounded-[10px] ${
                           active
-                            ? "bg-sibs-orange text-white shadow-sm"
-                            : selectable
-                              ? item.isCurrentMonth
-                                ? "text-sibs-navy hover:bg-sibs-cream-light hover:text-sibs-orange"
-                                : "text-sibs-muted hover:bg-sibs-surface"
-                              : holiday
-                                ? "cursor-not-allowed bg-amber-50 text-amber-300"
-                                : weekend
-                                  ? "cursor-not-allowed bg-slate-50 text-slate-300"
-                                  : "cursor-not-allowed text-slate-300 opacity-50"
+                            ? "bg-sibs-orange text-white"
+                            : "bg-sibs-surface text-sibs-navy"
                         }`}
                       >
-                        {item.dayNumber}
-                      </button>
-                    );
-                  })}
-                </div>
+                        <Icon size={19} aria-hidden="true" />
+                      </span>
+                      <span className="mt-3 block text-sm font-extrabold text-sibs-navy">
+                        {option.label}
+                      </span>
+                      <span className="mt-1 block text-xs font-semibold leading-5 text-sibs-muted">
+                        {option.description}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
 
-                <div className="mt-6 rounded-[10px] border border-sibs-border bg-sibs-surface p-5">
-                  <label className="flex items-center gap-2 text-sm font-extrabold text-sibs-navy">
-                    <Clock3 size={17} />
-                    Interview Time
-                  </label>
-                  <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
-                    {timesForSelectedDate.map((slot) => {
-                      const isCurrentSchedule = isCurrentInterviewSlot(slot.date, slot.time);
+              {action === "accept" && (
+                <div className="mt-6 rounded-[10px] border border-emerald-200 bg-emerald-50 p-5">
+                  <p className="flex items-center gap-2 text-sm font-extrabold text-emerald-700">
+                    <CheckCircle2 size={18} aria-hidden="true" />
+                    Accept Proposed Interview Schedule
+                  </p>
+                  <p className="mt-2 text-sm font-bold text-sibs-navy">
+                    {formatDateOnly(schedule?.proposedDate)} at{" "}
+                    {formatCandidateInterviewTime(schedule?.proposedTime)}
+                  </p>
+                </div>
+              )}
+
+              {action === "reschedule" && (
+                <div className="mt-6">
+                  <div className="flex items-center justify-between gap-4">
+                    <button
+                      type="button"
+                      disabled={isSubmitting}
+                      aria-label="Previous month"
+                      onClick={() =>
+                        setViewDate(
+                          (previous) =>
+                            new Date(
+                              previous.getFullYear(),
+                              previous.getMonth() - 1,
+                              1,
+                            ),
+                        )
+                      }
+                      className="flex h-10 w-10 items-center justify-center rounded-[10px] border border-sibs-border text-sibs-navy transition hover:bg-sibs-surface disabled:opacity-50"
+                    >
+                      <ChevronLeft size={18} aria-hidden="true" />
+                    </button>
+                    <h3 className="text-center text-base font-extrabold text-sibs-navy">
+                      {MONTH_NAMES[viewDate.getMonth()]} {viewDate.getFullYear()}
+                    </h3>
+                    <button
+                      type="button"
+                      disabled={isSubmitting}
+                      aria-label="Next month"
+                      onClick={() =>
+                        setViewDate(
+                          (previous) =>
+                            new Date(
+                              previous.getFullYear(),
+                              previous.getMonth() + 1,
+                              1,
+                            ),
+                        )
+                      }
+                      className="flex h-10 w-10 items-center justify-center rounded-[10px] border border-sibs-border text-sibs-navy transition hover:bg-sibs-surface disabled:opacity-50"
+                    >
+                      <ChevronRight size={18} aria-hidden="true" />
+                    </button>
+                  </div>
+
+                  {availabilityError && <p role="alert" className="mt-3 text-xs font-bold text-red-600">{availabilityError}</p>}
+                  {!availabilityLoading && availableSlots.length === 0 && !availabilityError && <p className="mt-3 text-xs font-semibold text-sibs-muted">No available HRIS interview times this month. Please check another month or contact Talent Acquisition.</p>}
+
+                  <div className="mt-4 grid grid-cols-7 gap-1">
+                    {WEEKDAY_LABELS.map((label) => (
+                      <div
+                        key={label}
+                        className="flex h-9 items-center justify-center text-xs font-extrabold text-sibs-muted"
+                      >
+                        {label}
+                      </div>
+                    ))}
+
+                    {calendarDays.map((item) => {
+                      const selectable = isSelectableCandidateInterviewDate(
+                        item.date, today, holidayDates,
+                      ) && availableDates.has(item.dateValue) && !availabilityLoading;
+                      const active =
+                        selectedDateObject &&
+                        isSameDate(item.date, selectedDateObject);
+                      const weekend = [0, 6].includes(item.date.getDay());
+                      const holiday = holidayDates.has(item.dateValue);
+
                       return (
                         <button
-                          key={slot.dateTime}
+                          key={item.dateValue}
                           type="button"
-                          disabled={isSubmitting || isCurrentSchedule}
-                          aria-label={`${formatCandidateInterviewTime(slot.time)}${isCurrentSchedule ? " - current interview schedule, unavailable for rescheduling" : ""}`}
-                          title={isCurrentSchedule ? "Current interview schedule — choose a different date or time" : undefined}
-                          onClick={() => setSelectedTime(slot.time)}
-                          className={`rounded-[9px] border px-3 py-3 text-xs font-extrabold transition ${
-                            isCurrentSchedule
-                              ? "cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400"
-                              : selectedTime === slot.time
-                                ? "border-sibs-orange bg-sibs-orange text-white"
-                                : "border-sibs-border bg-white text-sibs-navy hover:border-sibs-orange"
+                          disabled={!selectable || isSubmitting}
+                          aria-pressed={Boolean(active)}
+                          onClick={() => { setSelectedDate(item.dateValue); setSelectedTime(""); }}
+                          title={
+                            holiday
+                              ? "Configured Philippine holiday"
+                              : weekend
+                                ? "Saturday and Sunday are unavailable"
+                                : selectable
+                                  ? "Select an available interview date"
+                                  : "No interview availability on this date"
+                          }
+                          className={`flex h-10 items-center justify-center rounded-[10px] text-sm font-extrabold transition ${
+                            active
+                              ? "bg-sibs-orange text-white shadow-sm"
+                              : selectable
+                                ? item.isCurrentMonth
+                                  ? "text-sibs-navy hover:bg-sibs-cream-light hover:text-sibs-orange"
+                                  : "text-sibs-muted hover:bg-sibs-surface"
+                                : holiday
+                                  ? "cursor-not-allowed bg-amber-50 text-amber-300"
+                                  : weekend
+                                    ? "cursor-not-allowed bg-sibs-surface text-slate-300"
+                                    : "cursor-not-allowed text-slate-300 opacity-50"
                           }`}
                         >
-                          {formatCandidateInterviewTime(slot.time)}
-                          {isCurrentSchedule && (
-                            <span className="mt-1 block text-[10px] font-semibold">Current schedule</span>
-                          )}
+                          {item.dayNumber}
                         </button>
                       );
                     })}
                   </div>
-                  <p className="mt-2 text-xs font-semibold text-sibs-muted">
-                    {availabilityLoading ? "Loading available times..." : timesForSelectedDate.length ? "Select one of the available times above." : "Select a date with available interview slots."}
-                  </p>
+
+                  <div className="mt-6 rounded-[10px] border border-sibs-border bg-sibs-surface p-4 sm:p-5">
+                    <p id="interview-time-group-label" className="flex items-center gap-2 text-sm font-extrabold text-sibs-navy">
+                      <Clock3 size={17} aria-hidden="true" />
+                      Interview Time
+                    </p>
+                    <div
+                      role="group"
+                      aria-labelledby="interview-time-group-label"
+                      className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3"
+                    >
+                      {timesForSelectedDate.map((slot) => {
+                        const isCurrentSchedule = isCurrentInterviewSlot(slot.date, slot.time);
+                        return (
+                          <button
+                            key={slot.dateTime}
+                            type="button"
+                            disabled={isSubmitting || isCurrentSchedule}
+                            aria-pressed={selectedTime === slot.time}
+                            aria-label={`${formatCandidateInterviewTime(slot.time)}${isCurrentSchedule ? " - current interview schedule, unavailable for rescheduling" : ""}`}
+                            title={isCurrentSchedule ? "Current interview schedule — choose a different date or time" : undefined}
+                            onClick={() => setSelectedTime(slot.time)}
+                            className={`min-h-11 rounded-[9px] border px-3 py-3 text-xs font-extrabold transition ${
+                              isCurrentSchedule
+                                ? "cursor-not-allowed border-sibs-border bg-sibs-canvas text-sibs-muted opacity-60"
+                                : selectedTime === slot.time
+                                  ? "border-sibs-orange bg-sibs-orange text-white"
+                                  : "border-sibs-border bg-white text-sibs-navy hover:border-sibs-orange"
+                            }`}
+                          >
+                            {formatCandidateInterviewTime(slot.time)}
+                            {isCurrentSchedule && (
+                              <span className="mt-1 block text-[10px] font-semibold">Current schedule</span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <p className="mt-2 text-xs font-semibold text-sibs-muted">
+                      {availabilityLoading ? "Loading available times..." : timesForSelectedDate.length ? "Select one of the available times above." : "Select a date with available interview slots."}
+                    </p>
+                  </div>
+
+                  <div className="mt-5 rounded-[10px] border border-sibs-orange/25 bg-sibs-cream-light p-4">
+                    <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-orange">
+                      New Interview Schedule
+                    </p>
+                    <p className="mt-1 text-sm font-extrabold text-sibs-navy">
+                      {selectedDate ? formatDateOnly(selectedDate) : "No date selected"} {selectedTime ? `at ${formatCandidateInterviewTime(selectedTime)}` : ""}
+                    </p>
+                  </div>
                 </div>
-
-                <div className="mt-5 rounded-[10px] border border-sky-100 bg-sky-50 p-4">
-                  <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-navy">
-                    New Interview Schedule
-                  </p>
-                  <p className="mt-1 text-sm font-extrabold text-sibs-navy">
-                    {selectedDate ? formatDateOnly(selectedDate) : "No date selected"} {selectedTime ? `at ${formatCandidateInterviewTime(selectedTime)}` : ""}
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {action === "decline" && (
-              <div className="mt-6 rounded-[10px] border border-red-100 bg-red-50 p-5">
-                <label className="text-sm font-extrabold text-red-700">
-                  Reason for declining (optional)
-                </label>
-                <textarea
-                  rows={4}
-                  disabled={isSubmitting}
-                  value={declineReason}
-                  onChange={(event) => setDeclineReason(event.target.value)}
-                  placeholder="Share a reason when applicable."
-                  className="mt-3 w-full resize-none rounded-[10px] border border-red-100 bg-white px-4 py-3 text-sm font-semibold text-sibs-navy outline-none transition focus:border-red-300 focus:ring-4 focus:ring-red-100 disabled:opacity-60"
-                />
-                <p className="mt-2 text-xs font-semibold leading-5 text-red-600">
-                  Declining moves your application to Drop-off and the response
-                  cannot be changed.
-                </p>
-              </div>
-            )}
-
-            {message && (
-              <div className="mt-5 rounded-[10px] border border-red-100 bg-red-50 px-4 py-3 text-sm font-bold text-red-600">
-                {message}
-              </div>
-            )}
-
-            <button
-              type="submit"
-              disabled={isSubmitting || !action}
-              className="mt-6 inline-flex h-12 w-full items-center justify-center gap-2 rounded-[10px] bg-sibs-navy px-5 text-sm font-extrabold text-white transition hover:bg-sibs-navy-hover disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {isSubmitting ? (
-                <Loader2 size={17} className="animate-spin" />
-              ) : action === "decline" ? (
-                <XCircle size={17} />
-              ) : action === "reschedule" ? (
-                <CalendarClock size={17} />
-              ) : (
-                <CalendarDays size={17} />
               )}
-              {isSubmitting
-                ? "Submitting Response..."
-                : action === "decline"
-                  ? "Confirm Decline"
-                  : action === "reschedule"
-                    ? "Confirm New Schedule"
-                    : action === "accept"
-                      ? "Confirm Acceptance"
-                      : "Choose a Response"}
-            </button>
-          </form>
+
+              {action === "decline" && (
+                <div className="mt-6 rounded-[10px] border border-red-200 bg-red-50 p-5">
+                  <label htmlFor="interview-decline-reason" className="text-sm font-extrabold text-red-700">
+                    Reason for declining (optional)
+                  </label>
+                  <textarea
+                    id="interview-decline-reason"
+                    rows={4}
+                    disabled={isSubmitting}
+                    value={declineReason}
+                    onChange={(event) => setDeclineReason(event.target.value)}
+                    placeholder="Share a reason when applicable."
+                    className="mt-3 w-full resize-none rounded-[10px] border border-red-200 bg-white px-4 py-3 text-sm font-semibold text-sibs-navy transition focus:border-red-300 disabled:opacity-60"
+                  />
+                  <p className="mt-2 text-xs font-semibold leading-5 text-red-600">
+                    Declining moves your application to Drop-off and the response
+                    cannot be changed.
+                  </p>
+                </div>
+              )}
+
+              {message && (
+                <div
+                  role="alert"
+                  className="mt-5 rounded-[10px] border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-600"
+                >
+                  {message}
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={isSubmitting || !action}
+                className="mt-6 inline-flex h-12 w-full items-center justify-center gap-2 rounded-[10px] bg-sibs-navy px-5 text-sm font-extrabold text-white transition hover:bg-sibs-tertiary-2 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isSubmitting ? (
+                  <Loader2 size={17} className="animate-spin" aria-hidden="true" />
+                ) : action === "decline" ? (
+                  <XCircle size={17} aria-hidden="true" />
+                ) : action === "reschedule" ? (
+                  <CalendarClock size={17} aria-hidden="true" />
+                ) : (
+                  <CalendarDays size={17} aria-hidden="true" />
+                )}
+                {isSubmitting
+                  ? "Submitting Response..."
+                  : action === "decline"
+                    ? "Confirm Decline"
+                    : action === "reschedule"
+                      ? "Confirm New Schedule"
+                      : action === "accept"
+                        ? "Confirm Acceptance"
+                        : "Choose a Response"}
+              </button>
+            </form>
+          </PublicSectionCard>
         </div>
       </div>
-    </main>
+    </PublicCandidateShell>
   );
 }

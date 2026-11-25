@@ -64,8 +64,18 @@ const chatReceiveAudioBufferPromises = new Map();
 let chatReceiveActiveSource = null;
 let chatReceivePlayRequestId = 0;
 
+function hasUserActivationGesture() {
+  if (typeof navigator === "undefined" || !navigator.userActivation) {
+    return true;
+  }
+  return Boolean(
+    navigator.userActivation.isActive || navigator.userActivation.hasBeenActive,
+  );
+}
+
 function getChatReceiveAudioContext() {
   if (typeof window === "undefined") return null;
+  if (!hasUserActivationGesture()) return null;
 
   const AudioContextClass =
     window.AudioContext || window.webkitAudioContext;
@@ -402,13 +412,29 @@ export function ChatProvider({ children }) {
   useEffect(() => {
     if (typeof window === "undefined") return undefined;
 
+    const cleanupListeners = () => {
+      window.removeEventListener("pointerdown", unlockChatReceiveSound);
+      window.removeEventListener("keydown", unlockChatReceiveSound);
+      window.removeEventListener("touchstart", unlockChatReceiveSound);
+    };
+
     const unlockChatReceiveSound = () => {
+      if (!hasUserActivationGesture()) return;
       try {
         const audioContext = getChatReceiveAudioContext();
         if (!audioContext) return;
 
         if (audioContext.state === "suspended") {
-          void audioContext.resume().catch(() => {});
+          void audioContext
+            .resume()
+            .then(() => {
+              if (audioContext.state === "running") {
+                cleanupListeners();
+              }
+            })
+            .catch(() => {});
+        } else if (audioContext.state === "running") {
+          cleanupListeners();
         }
 
         void getChatReceiveAudioBuffer(
@@ -420,18 +446,13 @@ export function ChatProvider({ children }) {
       }
     };
 
-    window.addEventListener("pointerdown", unlockChatReceiveSound, { once: true });
-    window.addEventListener("keydown", unlockChatReceiveSound, { once: true });
+    window.addEventListener("pointerdown", unlockChatReceiveSound, { passive: true });
+    window.addEventListener("keydown", unlockChatReceiveSound, { passive: true });
     window.addEventListener("touchstart", unlockChatReceiveSound, {
-      once: true,
       passive: true,
     });
 
-    return () => {
-      window.removeEventListener("pointerdown", unlockChatReceiveSound);
-      window.removeEventListener("keydown", unlockChatReceiveSound);
-      window.removeEventListener("touchstart", unlockChatReceiveSound);
-    };
+    return cleanupListeners;
   }, []);
 
   const appendMessageToTimeline = useCallback((message) => {

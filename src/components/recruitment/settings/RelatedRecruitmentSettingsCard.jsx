@@ -22,7 +22,10 @@ const relatedSettings = [
 
 export default function RelatedRecruitmentSettingsCard() {
   return (
-    <div className="sibs-card p-4 sm:p-5 font-jakarta">
+    <div
+      className="sibs-page-card-in sibs-card p-4 sm:p-5 font-jakarta"
+      style={{ animationDelay: "180ms", animationFillMode: "both" }}
+    >
       <div className="flex items-center justify-between">
         <h3 className="font-heading text-sm sm:text-base font-bold text-sibs-navy">
           Related Recruitment Settings
