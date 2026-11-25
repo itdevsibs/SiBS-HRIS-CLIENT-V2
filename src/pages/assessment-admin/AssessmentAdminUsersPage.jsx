@@ -16,6 +16,22 @@ const PAGE_SIZE = 15;
 // and a slower safety check for tracker changes outside the observer snapshot.
 const ATTENDANCE_LIVE_REFRESH_MS = 5_000;
 const ATTENDANCE_SOCKET_FALLBACK_MS = 30_000;
+const DUTY_FRESHNESS_MS = 75_000;
+// Compare server timestamps only with other server timestamps. Elapsed client
+// time is monotonic; a workstation/server wall-clock difference is irrelevant.
+function dutyAgeAtReceipt(result) {
+  const checkedAt = Date.parse(result.checkedAt);
+  const serverTime = Date.parse(result.serverTime);
+  if (!Number.isFinite(checkedAt)) throw new Error('Invalid attendance verification timestamp.');
+  // Older server releases generate checkedAt immediately before returning the
+  // roster. The cache-busting request also supports those releases.
+  if (result.serverTime == null) return 0;
+  if (!Number.isFinite(serverTime) || serverTime < checkedAt) return Infinity;
+  return serverTime - checkedAt;
+}
+function isDutyStale(data, now) {
+  return Boolean(data && data.ageAtReceiptMs + Math.max(0, now - data.receivedAtMs) > DUTY_FRESHNESS_MS);
+}
 const ROLES = ['HR Admin', 'HR', 'Talent Acquisition', 'Super Admin'];
 // Display ordering only; the server remains responsible for access permissions.
 const accessOrder = role => {
@@ -125,8 +141,8 @@ export default function AssessmentAdminUsersPage({ onUnauthorized, onInitialLoad
   const [status, setStatus] = useState('ALL');
   const [page, setPage] = useState(1);
   const [retry, setRetry] = useState(0);
-  const [now, setNow] = useState(Date.now);
-  useEffect(() => { const timer = window.setInterval(() => setNow(Date.now()), 1000); return () => window.clearInterval(timer); }, []);
+  const [now, setNow] = useState(() => performance.now());
+  useEffect(() => { const timer = window.setInterval(() => setNow(performance.now()), 1000); return () => window.clearInterval(timer); }, []);
   useEffect(() => {
     let active = true, pending = false, queued = false;
     let subscriptionConfirmed = false, hasConnectedOnce = portalSocket.connected;
@@ -137,10 +153,12 @@ export default function AssessmentAdminUsersPage({ onUnauthorized, onInitialLoad
       if (pending) { if (queueIfPending) queued = true; return; }
       pending = true;
       try {
-        const response = await portalApi.get('/api/assessment-portal/users', { timeout: 90000, signal: controller.signal });
+        const response = await portalApi.get('/api/assessment-portal/users', { timeout: 90000, signal: controller.signal, params: { _fresh: Date.now() } });
         const result = response.data?.data;
         if (!Array.isArray(result?.items) || !result?.summary || !result.checkedAt) throw new Error('Invalid staff directory response.');
-        if (active) { setNow(Date.now()); setData(result); setError(''); }
+        const ageAtReceiptMs = dutyAgeAtReceipt(result);
+        const receivedAtMs = performance.now();
+        if (active) { setNow(receivedAtMs); setData({ ...result, ageAtReceiptMs, receivedAtMs }); setError(''); }
       } catch (cause) {
         if (!active) return;
         if ([401,403].includes(Number(cause?.response?.status))) onUnauthorized?.();
@@ -199,6 +217,7 @@ export default function AssessmentAdminUsersPage({ onUnauthorized, onInitialLoad
     }, ATTENDANCE_LIVE_REFRESH_MS);
     const visible = () => {
       if (document.visibilityState === 'visible') {
+        setNow(performance.now());
         lastFallbackCheck = Date.now();
         void load(true);
       }
@@ -219,7 +238,7 @@ export default function AssessmentAdminUsersPage({ onUnauthorized, onInitialLoad
     };
   }, [onUnauthorized, retry]);
   useEffect(() => { if (settled) onInitialLoadSettled?.(); }, [settled, onInitialLoadSettled]);
-  const stale = Boolean(data && now - Date.parse(data.checkedAt) > 75_000);
+  const stale = isDutyStale(data, now);
   const rows = useMemo(() => (data?.items || []).map(row => stale ? {...row, dutyStatus: 'UNAVAILABLE'} : row), [data, stale]);
   const summary = stale ? { total: rows.length, onDuty: 0, offDuty: 0, unavailable: rows.length } : data?.summary || EMPTY;
   const scoped = useMemo(() => rows.filter(row => (!role || row.access === role) && (!query || [row.name,row.sibsId,row.email].some(value=>String(value || '').toLowerCase().includes(query.toLowerCase())))), [rows,role,query]);
