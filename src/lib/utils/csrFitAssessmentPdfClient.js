@@ -522,7 +522,7 @@ export function buildCsrFitPdfDocument(data, JsPDF, { logoDataUrl = null, fontDa
   scoreBar(`${MODULES[1][1]} (provisional)`, data.score?.behavioralComposite);
   scoreBar(`${MODULES[6][1]} (provisional)`, data.sevenModule ? data.score?.module7Score : null,
     { accent: ORANGE });
-  paragraph('Module 1 note: Corrected PDF key is provisional; item 119 requires HR reconciliation.',
+  paragraph('Module 1 note: The current server-side answer key is provisional; final HR review is required.',
     { color: GREY, fontSize: 9, after: 9 });
   paragraph('Scores shown here are provisional, not a final hiring recommendation or pass/fail result. The report never discloses assessment answer keys.',
     { color: ORANGE, fontSize: 8.6, after: 10 });
