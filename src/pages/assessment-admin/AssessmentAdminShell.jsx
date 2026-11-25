@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { ClipboardCheck, Menu, X, Clock, CalendarDays, ChevronLeft, BookOpen } from 'lucide-react';
+import { ClipboardCheck, Menu, X, Clock, CalendarDays, ChevronLeft, BookOpen, Users } from 'lucide-react';
 import { createSystemDateTimeFormatter } from '../../lib/axios/dateFormatter';
 import PageFallback from '../../components/ui/PageFallback';
 import SibsAssessmentBrand from './SibsAssessmentBrand';
@@ -23,6 +23,7 @@ const timeFormatter = createSystemDateTimeFormatter('en-PH', {
 const NAV = [
   { title: 'Public Assessment', path: `${ROOT}/public-assessment`, icon: ClipboardCheck },
   { title: 'Question Bank', path: `${ROOT}/question-bank`, icon: BookOpen },
+  { title: 'Assessment Users', path: `${ROOT}/users`, icon: Users },
 ];
 
 export default function AssessmentAdminShell({ children, user = null, logout, checking = false }) {
