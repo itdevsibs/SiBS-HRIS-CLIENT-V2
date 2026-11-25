@@ -137,6 +137,6 @@ export default function CsrFitHermesCharts({ assessment, hermesReport, hermesSta
         {item.id==='typing_benchmarks' && <BenchmarkBars rows={chartData.typing} />}
       </ChartFrame>)}
     </div>
-    <p className="mt-3 text-[10px] leading-4 text-sibs-muted">Provisional results for authorized HR review only. Graphs do not represent population norms, validated predictions or an automatic hiring decision. Module 1 item 119 requires answer-key reconciliation.</p>
+    <p className="mt-3 text-[10px] leading-4 text-sibs-muted">Provisional results for authorized HR review only. Graphs do not represent population norms, validated predictions or an automatic hiring decision.</p>
   </section>;
 }
