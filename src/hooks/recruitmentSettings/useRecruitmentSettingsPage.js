@@ -35,11 +35,18 @@ export function useRecruitmentSettingsPage() {
 
   useLayoutEffect(() => {
     if (
-      typeof window !== "undefined" &&
-      "scrollRestoration" in window.history
+      typeof window === "undefined" ||
+      !("scrollRestoration" in window.history)
     ) {
-      window.history.scrollRestoration = "manual";
+      return undefined;
     }
+
+    const previousRestoration = window.history.scrollRestoration;
+    window.history.scrollRestoration = "manual";
+
+    return () => {
+      window.history.scrollRestoration = previousRestoration || "auto";
+    };
   }, []);
 
   return {

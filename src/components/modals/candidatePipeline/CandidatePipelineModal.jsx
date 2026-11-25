@@ -53,6 +53,7 @@ import CandidatePipelineModalShell, {
 } from "../../recruitment/candidatePipeline/CandidatePipelineModalShell";
 import CandidateModalSummary from "../../recruitment/candidatePipeline/CandidateModalSummary";
 import CandidateTalentPoolDetailsPanel from "../../recruitment/candidatePipeline/CandidateTalentPoolDetailsPanel";
+import CandidateResumeIntelligenceSection from "../../recruitment/candidatePipeline/CandidateResumeIntelligenceSection";
 import ExpandableCandidateRemark from "../../recruitment/candidatePipeline/ExpandableCandidateRemark";
 import NhoUploadModal from "./NhoUploadModal";
 import NhoGoogleCalendarMonth from "./NhoGoogleCalendarMonth";
@@ -12441,6 +12442,10 @@ const concretePreferredFinalInterviewFormId =
               <CandidateTalentPoolDetailsPanel candidate={activeCandidate} />
             </div>
           )}
+
+          <div className="sibs-page-card-in">
+            <CandidateResumeIntelligenceSection candidate={activeCandidate} />
+          </div>
 
           {hasAssessmentDetailAccess && hasCompletedAssessment && (
             <CandidateModalSection
