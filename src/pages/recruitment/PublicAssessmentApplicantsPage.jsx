@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import {
   RefreshCw, ExternalLink, Eye, Clock3,
   CheckCircle2, Users, AlertCircle, FileClock, X, UserRound,
@@ -16,6 +17,7 @@ import PublicCsrFitAssessmentResultModal from '../../components/modals/publicAss
 // Reuse the same HRIS controls used by Recruitment > Talent Pool.
 import PaginationTable from '../../services/pagination/PaginationTable';
 import StatusFilterTabs from '../../components/ui/StatusFilterTabs';
+import DirectoryAvatarCircle from '../../components/ui/DirectoryAvatarCircle';
 
 const STATUS_STYLES = {
   INVITED: 'border-slate-200 bg-slate-50 text-slate-700',
@@ -39,6 +41,109 @@ const readableDate = (value) => {
 };
 // Name comes from the public directory in HRIS surname-first format.
 // Keep avatars in the normal SiBS HRIS given-name + surname initial order.
+const applicantInitials = (name) => {
+  const text = String(name ?? '').trim();
+  if (!text) return 'A';
+
+  const comma = text.indexOf(',');
+  if (comma !== -1) {
+    const surname = text.slice(0, comma).trim();
+    const given = text.slice(comma + 1).trim();
+    return `${given.slice(0, 1)}${surname.slice(0, 1)}`.toUpperCase() || 'A';
+  }
+
+  // The current API only omits the comma when a name part is missing.
+  return text.slice(0, 1).toUpperCase();
+};
+
+// Match the Employee Directory avatar hover/focus preview. Public applicants
+// have no profile photo in the directory payload, so preview the same initials.
+function getApplicantAvatarPreviewPosition(element) {
+  if (!element || typeof window === 'undefined') return null;
+
+  const rect = element.getBoundingClientRect();
+  const previewHeight = 176;
+  const gap = 12;
+  const placeBelow = rect.top < previewHeight + gap;
+  // Keep the preview within the viewport when the first column is near an edge.
+  const halfWidth = 89;
+  const center = rect.left + rect.width / 2;
+  const left = Math.min(Math.max(center, halfWidth + 4), Math.max(halfWidth + 4, window.innerWidth - halfWidth - 4));
+
+  return {
+    left,
+    top: placeBelow ? rect.bottom + gap : rect.top - gap,
+    placeBelow,
+  };
+}
+
+function ApplicantAvatar({ applicant }) {
+  const name = applicant.name || 'Unnamed applicant';
+  const initials = applicantInitials(applicant.name);
+  const avatarRef = useRef(null);
+  const [previewVisible, setPreviewVisible] = useState(false);
+  const [previewPosition, setPreviewPosition] = useState(null);
+
+  const showPreview = () => {
+    setPreviewPosition(getApplicantAvatarPreviewPosition(avatarRef.current));
+    setPreviewVisible(true);
+  };
+  const hidePreview = () => setPreviewVisible(false);
+
+  useEffect(() => {
+    if (!previewVisible) return undefined;
+
+    const updatePreviewPosition = () => {
+      setPreviewPosition(getApplicantAvatarPreviewPosition(avatarRef.current));
+    };
+    window.addEventListener('resize', updatePreviewPosition);
+    window.addEventListener('scroll', updatePreviewPosition, true);
+    return () => {
+      window.removeEventListener('resize', updatePreviewPosition);
+      window.removeEventListener('scroll', updatePreviewPosition, true);
+    };
+  }, [previewVisible]);
+
+  const preview = previewVisible && previewPosition && typeof document !== 'undefined'
+    ? createPortal(
+        <span
+          className="employee-avatar-preview pointer-events-none fixed z-[9999] rounded-2xl border border-sibs-border bg-white p-2 shadow-[0_18px_45px_rgba(4,44,81,0.22)]"
+          style={{
+            left: previewPosition.left,
+            top: previewPosition.top,
+            transform: previewPosition.placeBelow ? 'translate(-50%, 0)' : 'translate(-50%, -100%)',
+          }}
+          aria-hidden="true"
+        >
+          <DirectoryAvatarCircle name={name} initials={initials} size="preview" />
+        </span>,
+        document.body,
+      )
+    : null;
+
+  return (
+    <>
+      <span
+        ref={avatarRef}
+        className="relative inline-flex shrink-0 outline-none"
+        tabIndex={0}
+        aria-label={`${name} avatar`}
+        onMouseEnter={showPreview}
+        onMouseLeave={hidePreview}
+        onFocus={showPreview}
+        onBlur={hidePreview}
+        onClick={event => event.stopPropagation()}
+        onKeyDown={event => {
+          event.stopPropagation();
+          if (event.key === 'Escape') hidePreview();
+        }}
+      >
+        <DirectoryAvatarCircle name={name} initials={initials} />
+      </span>
+      {preview}
+    </>
+  );
+}
 
 // This modal is read-only. All individual progress values come from the
 // authorized public applicant directory API, never browser-side guesses.
@@ -427,15 +532,20 @@ export default function PublicAssessmentApplicantsPage({ portalMode = false, onU
                           void openApplicant(applicant);
                         }
                       }}
-                      className="cursor-pointer transition hover:bg-sibs-cream-light focus-visible:bg-sibs-cream-light/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sibs-orange/25"
+                      className="group cursor-pointer transition-colors hover:bg-sibs-cream-light focus-visible:bg-sibs-cream-light focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sibs-orange/30"
                     >
                       <td className="border-b border-sibs-border px-3 py-2 align-middle 2xl:px-4 2xl:py-2.5">
-                        <p className="truncate sibs-text-xs font-extrabold tracking-tight text-sibs-navy" title={applicant.name}>
-                          {applicant.name || 'Unnamed applicant'}
-                        </p>
-                        <p className="mt-1 truncate text-[10px] font-semibold text-sibs-muted" title={applicant.email}>
-                          {applicant.email || '—'}
-                        </p>
+                        <div className="flex min-w-0 items-center gap-2.5 2xl:gap-3">
+                          <ApplicantAvatar applicant={applicant} />
+                          <div className="min-w-0 flex-1">
+                            <p className="break-words sibs-text-xs font-extrabold leading-tight text-sibs-navy transition-colors group-hover:text-sibs-orange" title={applicant.name}>
+                              {applicant.name || 'Unnamed applicant'}
+                            </p>
+                            <p className="mt-1 truncate text-[10px] font-semibold text-sibs-muted" title={applicant.email}>
+                              {applicant.email || '—'}
+                            </p>
+                          </div>
+                        </div>
                       </td>
                       <td className="border-b border-sibs-border px-3 py-2 align-middle 2xl:px-4 2xl:py-2.5">
                         <p className="truncate sibs-text-xs font-extrabold text-sibs-navy" title={applicant.desiredRole || 'Not assigned'}>

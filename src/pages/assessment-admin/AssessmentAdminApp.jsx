@@ -2,7 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import { Link, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import {
   ClipboardCheck, Menu, X, Clock, CalendarDays, AlertCircle,
-  Eye, EyeOff, ChevronLeft,
+  Eye, EyeOff, ChevronLeft, BookOpen,
 } from 'lucide-react';
 import portalApi from '../../lib/assessment-admin/portalApi';
 import { createSystemDateTimeFormatter } from '../../lib/axios/dateFormatter';
@@ -16,6 +16,7 @@ import PublicAssessmentApplicantsPage from '../recruitment/PublicAssessmentAppli
 import { GradientWave } from '../../components/ui/gradient-wave';
 import SibsAssessmentBrand from './SibsAssessmentBrand';
 import AssessmentAdminUserProfile from './AssessmentAdminUserProfile';
+import AssessmentAdminQuestionBankPage from './AssessmentAdminQuestionBankPage';
 
 const ROOT = '/assessment-admin';
 // Use the same locale, time zone and typography as the authenticated HRIS header.
@@ -30,6 +31,7 @@ const timeFormatter = createSystemDateTimeFormatter('en-PH', {
 });
 const NAV = [
   { title: 'Public Assessment', path: `${ROOT}/public-assessment`, icon: ClipboardCheck },
+  { title: 'Question Bank', path: `${ROOT}/question-bank`, icon: BookOpen },
 ];
 
 function AdminLogin({ onLogin }) {
@@ -185,7 +187,7 @@ function Shell({ user, logout, onUnauthorized }) {
               <Menu size={18}/>
             </button>
             <div className="min-w-0 flex-1">
-              <h1 className="truncate font-heading text-lg font-bold text-sibs-navy">Public Assessment</h1>
+              <h1 className="truncate font-heading text-lg font-bold text-sibs-navy">{NAV.find(item=>item.path===location.pathname)?.title || 'Public Assessment'}</h1>
               <p className="truncate text-[10px] font-medium text-sibs-muted">Administration</p>
             </div>
             <div
@@ -224,6 +226,7 @@ function Shell({ user, logout, onUnauthorized }) {
           <Routes>
             <Route path={`${ROOT}/dashboard`} element={<Navigate to={`${ROOT}/public-assessment`} replace/>}/>
             <Route path={`${ROOT}/public-assessment`} element={<PublicAssessmentApplicantsPage portalMode onUnauthorized={onUnauthorized}/>}/>
+            <Route path={`${ROOT}/question-bank`} element={<AssessmentAdminQuestionBankPage onUnauthorized={onUnauthorized}/>}/>
             <Route path="*" element={<Navigate to={`${ROOT}/public-assessment`} replace/>}/>
           </Routes>
         </main>
