@@ -25,7 +25,6 @@ import {
 } from "lucide-react";
 
 import ConfirmModal from "@/components/ui/ConfirmModal";
-import api from "@/lib/axios/api-template";
 import { formatDate, formatDateTime } from "../../layout/FormatDateTime";
 import {
   convertHeicBlobToJpeg,
@@ -39,6 +38,16 @@ import {
   canUserActOnResignationStage,
   getResignationApprovalRouteLabel,
 } from "../../../lib/utils/resignation/resignationApprovalProgress";
+import {
+  fetchEmployeeProfileCached,
+  getProfileImageUrl as getCachedProfileImageUrl,
+  hasResolvedProfileMetadata,
+} from "../../../lib/utils/resignation/profileAvatarCache";
+
+const API_URL =
+  import.meta.env.VITE_API_URL ||
+  import.meta.env.VITE_API_BASE_URL ||
+  "http://localhost:5001";
 
 const RESIGNATION_TYPES = ["Formal", "Immediate"];
 
@@ -49,11 +58,6 @@ const FIELD_HEIGHT = "h-8.5 2xl:h-10";
 const FIELD_BORDER = "border border-sibs-border";
 const FIELD_BASE =
   "w-full rounded-[10px] border border-sibs-border bg-sibs-surface px-3 2xl:px-3.5 font-jakarta sibs-text-xs font-semibold text-sibs-navy outline-none transition placeholder:text-sibs-muted hover:border-sibs-orange/40 hover:bg-white focus:border-sibs-orange focus:bg-white focus:ring-4 focus:ring-sibs-orange/10";
-
-const API_URL =
-  import.meta.env.VITE_API_URL ||
-  import.meta.env.VITE_API_BASE_URL ||
-  "http://localhost:5001";
 
 function normalizeStatus(value) {
   return String(value || "").trim().toLowerCase();
@@ -285,40 +289,10 @@ function _getEmployeePosition(item) {
   );
 }
 
-function getProfileImageUrl(item) {
-  const directUrl =
-    item?.profilePictureUrl ||
-    item?.profile_picture_url ||
-    item?.profileUrl ||
-    item?.profile_url ||
-    item?.employeeProfileUrl ||
-    item?.employee_profile_url ||
-    "";
-
-  if (directUrl) return directUrl;
-
-  const filename =
-    item?.profile_filename ||
-    item?.profileFilename ||
-    item?.profilePicture ||
-    item?.profile_picture ||
-    item?.employeeProfilePicture ||
-    item?.employee_profile_picture ||
-    item?.profileImage ||
-    item?.profile_image ||
-    "";
-
-  if (!filename) return "";
-
-  if (String(filename).startsWith("http")) return filename;
-
-  return `${API_URL}/api/employee-profile/file/${encodeURIComponent(filename)}`;
-}
-
 function ProfileAvatar({ item, size = "md" }) {
   const sibsId = getEmployeeSibsId(item);
   const anchorRef = useRef(null);
-  const [fetchedEmployee, setFetchedEmployee] = useState(null);
+  const [fetchedProfileState, setFetchedProfileState] = useState(null);
   const [failedImageKey, setFailedImageKey] = useState("");
   const [preview, setPreview] = useState({
     open: false,
@@ -326,19 +300,22 @@ function ProfileAvatar({ item, size = "md" }) {
     left: 0,
   });
 
+  const fetchedEmployee =
+    fetchedProfileState?.sibsId === sibsId ? fetchedProfileState.data : null;
+
   const mergedItem = {
     ...(item || {}),
     ...(fetchedEmployee || {}),
   };
 
-  const imageUrl = getProfileImageUrl(mergedItem);
+  const imageUrl = getCachedProfileImageUrl(mergedItem);
   const imageKey = `${sibsId || "employee"}::${imageUrl || "no-image"}`;
   const imageFailed = failedImageKey === imageKey;
 
   const shouldFetchProfile =
     sibsId &&
     sibsId !== "--" &&
-    !getProfileImageUrl(item || {}) &&
+    !hasResolvedProfileMetadata(item) &&
     !fetchedEmployee;
 
   useEffect(() => {
@@ -348,17 +325,12 @@ function ProfileAvatar({ item, size = "md" }) {
 
     async function fetchEmployeeProfile() {
       try {
-        const response = await api.get(
-          `/api/employees/${encodeURIComponent(sibsId)}`,
-          {
-            signal: controller.signal,
-          },
-        );
+        const profile = await fetchEmployeeProfileCached(sibsId, {
+          signal: controller.signal,
+        });
 
-        const result = response?.data;
-
-        if (result?.success && result?.data) {
-          setFetchedEmployee(result.data);
+        if (profile) {
+          setFetchedProfileState({ sibsId, data: profile });
         }
       } catch (error) {
         if (

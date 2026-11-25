@@ -121,15 +121,15 @@ export default function RecruitmentSettingsOverview({ onSelectSetting }) {
               : item.badge;
 
           return (
-            <div
+            <article
               key={item.key}
-              onClick={() => onSelectSetting?.(item.key)}
-              className="group relative flex flex-col justify-between rounded-2xl border border-sibs-border bg-white p-5 shadow-xs transition-all duration-150 hover:-translate-y-0.5 hover:border-sibs-orange/40 hover:shadow-md cursor-pointer"
+              className="group relative flex flex-col justify-between rounded-2xl border border-sibs-border bg-white p-5 shadow-xs transition-all duration-150 hover:-translate-y-0.5 hover:border-sibs-orange/40 hover:shadow-md focus-within:border-sibs-orange/60 focus-within:shadow-md"
             >
               <div>
                 <div className="flex items-start justify-between gap-3">
                   <div
                     className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${item.iconClass}`}
+                    aria-hidden="true"
                   >
                     <Icon size={20} strokeWidth={2.2} />
                   </div>
@@ -141,37 +141,52 @@ export default function RecruitmentSettingsOverview({ onSelectSetting }) {
                 </div>
 
                 <div className="mt-4">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-sibs-muted">
                     {item.category}
                   </p>
-                  <h3 className="mt-0.5 font-heading text-base font-bold text-sibs-navy group-hover:text-sibs-orange transition-colors">
-                    {item.title}
-                  </h3>
-                  <p className="mt-1.5 text-xs text-slate-500 leading-relaxed line-clamp-2">
+                  <h2 className="mt-0.5 font-heading text-base font-bold text-sibs-navy group-hover:text-sibs-orange transition-colors">
+                    <button
+                      type="button"
+                      onClick={() => onSelectSetting?.(item.key)}
+                      className="font-heading text-left cursor-pointer after:absolute after:inset-0 after:rounded-2xl"
+                    >
+                      {item.title}
+                    </button>
+                  </h2>
+                  <p className="mt-1.5 text-xs text-sibs-secondary leading-relaxed line-clamp-2">
                     {item.description}
                   </p>
                 </div>
               </div>
 
-              <div className="mt-5 flex items-center justify-between border-t border-slate-100 pt-3 text-xs font-bold text-sibs-navy group-hover:text-sibs-orange">
+              <div
+                aria-hidden="true"
+                className="mt-5 flex items-center justify-between border-t border-slate-100 pt-3 text-xs font-bold text-sibs-navy group-hover:text-sibs-orange"
+              >
                 <span>{item.actionLabel}</span>
                 <ChevronRight
                   size={15}
                   className="transition-transform group-hover:translate-x-1"
                 />
               </div>
-            </div>
+            </article>
           );
         })}
       </div>
 
       {/* Planned Roadmap Modules (Subtle, Compact Section) */}
-      <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/70 p-4 sm:p-5">
+      <section
+        aria-labelledby="recruitment-roadmap-heading"
+        className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/70 p-4 sm:p-5"
+      >
         <div className="flex items-center gap-2 mb-3">
-          <Clock size={14} className="text-slate-400" />
-          <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">
+          <Clock size={14} className="text-sibs-muted" aria-hidden="true" />
+          <h2
+            id="recruitment-roadmap-heading"
+            className="text-xs font-bold uppercase tracking-wider text-sibs-secondary"
+          >
             Planned Modules & Features (Roadmap)
-          </h4>
+          </h2>
         </div>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           {ROADMAP_SETTINGS.map((item) => {
@@ -179,21 +194,24 @@ export default function RecruitmentSettingsOverview({ onSelectSetting }) {
             return (
               <div
                 key={item.key}
-                className="flex items-start gap-3 rounded-xl border border-slate-200/60 bg-white/80 p-3.5"
+                className="flex items-start gap-3 rounded-xl border border-slate-200/80 bg-white p-3.5"
               >
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-400">
+                <div
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-sibs-secondary"
+                  aria-hidden="true"
+                >
                   <Icon size={16} />
                 </div>
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
-                    <h5 className="text-xs font-bold text-slate-700 truncate">
+                    <h3 className="text-xs font-bold text-sibs-navy truncate">
                       {item.title}
-                    </h5>
-                    <span className="shrink-0 rounded-sm bg-slate-100 px-1.5 py-0.2 text-[9px] font-bold text-slate-400">
+                    </h3>
+                    <span className="shrink-0 rounded-sm bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold text-sibs-secondary">
                       Coming Soon
                     </span>
                   </div>
-                  <p className="mt-0.5 text-[11px] text-slate-400 line-clamp-2">
+                  <p className="mt-0.5 text-[11px] text-sibs-muted line-clamp-2">
                     {item.description}
                   </p>
                 </div>
@@ -201,7 +219,7 @@ export default function RecruitmentSettingsOverview({ onSelectSetting }) {
             );
           })}
         </div>
-      </div>
+      </section>
     </div>
   );
 }

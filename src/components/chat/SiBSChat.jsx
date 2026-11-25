@@ -2974,16 +2974,6 @@ export default function SiBSChat({
   }, [gifPickerOpen]);
 
   useEffect(() => {
-    const textarea = textareaRef.current;
-    if (!textarea) return;
-    textarea.style.height = "auto";
-    const minH = isExpanded ? 40 : 36;
-    const nextHeight = Math.min(Math.max(textarea.scrollHeight, minH), 112);
-    textarea.style.height = `${nextHeight}px`;
-    textarea.style.overflowY = textarea.scrollHeight > 112 ? "auto" : "hidden";
-  }, [draft, isExpanded]);
-
-  useEffect(() => {
     if (!gifPickerOpen) return undefined;
 
     const controller = new AbortController();
@@ -3185,6 +3175,21 @@ export default function SiBSChat({
 
     previousActiveConversationIdRef.current = currentId || null;
   }, [activeConversation?.id, currentSibsId]);
+
+  useEffect(() => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+    const minH = isExpanded ? 40 : 36;
+    if (!draft) {
+      textarea.style.height = `${minH}px`;
+      textarea.style.overflowY = "hidden";
+      return;
+    }
+    textarea.style.height = "auto";
+    const nextHeight = Math.min(Math.max(textarea.scrollHeight, minH), 112);
+    textarea.style.height = `${nextHeight}px`;
+    textarea.style.overflowY = textarea.scrollHeight > 112 ? "auto" : "hidden";
+  }, [draft, isExpanded, activeConversation?.id]);
 
   // The selected conversation can arrive before/after the refreshed list.
   // Compare IDs instead of depending on the entire conversation object so

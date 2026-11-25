@@ -1,5 +1,9 @@
 /* eslint-disable react-refresh/only-export-components */
-import { formatHrisDateLocalized } from "@/lib/axios/dateFormatter";
+import {
+  createSystemDateTimeFormatter,
+  formatHrisDateLocalized,
+  parseHrisDateTime,
+} from "@/lib/axios/dateFormatter";
 import React, {
   useCallback,
   useEffect,
@@ -20,7 +24,6 @@ import {
   Minus,
   Paperclip,
   Plus,
-  RefreshCcw,
   RefreshCw,
   RotateCcw,
   Search,
@@ -31,8 +34,6 @@ import {
   UserRound,
   UsersRound,
   XCircle,
-  ChevronLeft,
-  ChevronRight,
 } from "lucide-react";
 
 import Header from "../../components/layout/Header";
@@ -44,8 +45,6 @@ import {
   MetricGridSkeleton,
   PageHeaderHero,
   ResponsiveTableShell,
-  SearchInput,
-  SelectDropdown,
   TablePagination,
   TableSkeletonRows,
 } from "@/components/ui";
@@ -61,7 +60,6 @@ const ViewResignationModal = React.lazy(() =>
     default: m.ViewResignationModal,
   }))
 );
-import api from "@/lib/axios/api-template";
 import {
   getManagedEmployees,
   getResignationCase,
@@ -79,15 +77,30 @@ import {
   getAttachmentCountLabel,
 } from "../../lib/utils/resignation/attachmentUtils";
 import { buildResignationApprovalStages } from "../../lib/utils/resignation/resignationApprovalProgress";
+import {
+  fetchEmployeeProfileCached,
+  getProfileImageUrl,
+  hasResolvedProfileMetadata,
+} from "../../lib/utils/resignation/profileAvatarCache";
 
 const EDGE = "rounded-[14px]";
 const PANEL_BORDER = "border border-sibs-border";
-const SOFT_PANEL_BORDER = "border border-sibs-border/60";
-const FLAT_BG = "bg-sibs-surface";
-const API_URL =
-  import.meta.env.VITE_API_URL ||
-  import.meta.env.VITE_API_BASE_URL ||
-  "http://localhost:5001";
+
+const manilaYearMonthFormatter = createSystemDateTimeFormatter("en-US", {
+  year: "numeric",
+  month: "2-digit",
+  timeZone: "Asia/Manila",
+});
+
+function getManilaYearMonthKey(date) {
+  if (!date || Number.isNaN(date.getTime())) return "";
+  const parts = Object.fromEntries(
+    manilaYearMonthFormatter
+      .formatToParts(date)
+      .map((part) => [part.type, part.value]),
+  );
+  return parts.year && parts.month ? `${parts.year}-${parts.month}` : "";
+}
 
 const DEFAULT_COUNTS = {
   total: 0,
@@ -282,61 +295,37 @@ function getEmployeePosition(item) {
   );
 }
 
-function getProfileImageUrl(item) {
-  const directUrl =
-    item?.profilePictureUrl ||
-    item?.profile_picture_url ||
-    item?.profileUrl ||
-    item?.profile_url ||
-    item?.employeeProfileUrl ||
-    item?.employee_profile_url ||
-    "";
-
-  if (directUrl) return directUrl;
-
-  const filename =
-    item?.profile_filename ||
-    item?.profileFilename ||
-    item?.profilePicture ||
-    item?.profile_picture ||
-    item?.employeeProfilePicture ||
-    item?.employee_profile_picture ||
-    item?.profileImage ||
-    item?.profile_image ||
-    "";
-
-  if (!filename) return "";
-
-  if (String(filename).startsWith("http")) return filename;
-
-  return `${String(API_URL).replace(
-    /\/$/,
-    "",
-  )}/api/employee-profile/file/${encodeURIComponent(filename)}`;
-}
-
 function getProfileAvatarPreviewPosition(element) {
   if (!element || typeof window === "undefined") return null;
 
   const rect = element.getBoundingClientRect();
   const previewHeight = 176;
+  const halfPreviewWidth = 88;
   const gap = 12;
   const placeBelow = rect.top < previewHeight + gap;
+  const centeredLeft = rect.left + rect.width / 2;
+  const clampedLeft = Math.max(
+    halfPreviewWidth,
+    Math.min(centeredLeft, window.innerWidth - halfPreviewWidth),
+  );
 
   return {
-    left: rect.left + rect.width / 2,
+    left: clampedLeft,
     top: placeBelow ? rect.bottom + gap : rect.top - gap,
     placeBelow,
   };
 }
 
-function ProfileAvatar({ item, size = "md" }) {
+function ProfileAvatar({ item, size = "md", active = true }) {
   const sibsId = getEmployeeSibsId(item);
   const avatarRef = useRef(null);
-  const [fetchedEmployee, setFetchedEmployee] = useState(null);
+  const [fetchedProfileState, setFetchedProfileState] = useState(null);
   const [failedImageKey, setFailedImageKey] = useState("");
   const [previewVisible, setPreviewVisible] = useState(false);
   const [previewPosition, setPreviewPosition] = useState(null);
+
+  const fetchedEmployee =
+    fetchedProfileState?.sibsId === sibsId ? fetchedProfileState.data : null;
 
   const mergedItem = {
     ...(item || {}),
@@ -348,9 +337,10 @@ function ProfileAvatar({ item, size = "md" }) {
   const imageFailed = failedImageKey === imageKey;
 
   const shouldFetchProfile =
+    active &&
     sibsId &&
     sibsId !== "--" &&
-    !getProfileImageUrl(item || {}) &&
+    !hasResolvedProfileMetadata(item) &&
     !fetchedEmployee;
 
   useEffect(() => {
@@ -360,17 +350,12 @@ function ProfileAvatar({ item, size = "md" }) {
 
     async function fetchEmployeeProfile() {
       try {
-        const response = await api.get(
-          `/api/employees/${encodeURIComponent(sibsId)}`,
-          {
-            signal: controller.signal,
-          },
-        );
+        const profile = await fetchEmployeeProfileCached(sibsId, {
+          signal: controller.signal,
+        });
 
-        const result = response?.data;
-
-        if (result?.success && result?.data) {
-          setFetchedEmployee(result.data);
+        if (profile) {
+          setFetchedProfileState({ sibsId, data: profile });
         }
       } catch (error) {
         if (
@@ -393,34 +378,27 @@ function ProfileAvatar({ item, size = "md" }) {
   useEffect(() => {
     if (!previewVisible) return undefined;
 
+    let frameId = null;
+
     const updatePreviewPosition = () => {
-      setPreviewPosition(
-        getProfileAvatarPreviewPosition(
-          avatarRef.current,
-        ),
-      );
+      if (frameId !== null) return;
+      frameId = window.requestAnimationFrame(() => {
+        frameId = null;
+        setPreviewPosition(
+          getProfileAvatarPreviewPosition(avatarRef.current),
+        );
+      });
     };
 
-    window.addEventListener(
-      "resize",
-      updatePreviewPosition,
-    );
-    window.addEventListener(
-      "scroll",
-      updatePreviewPosition,
-      true,
-    );
+    window.addEventListener("resize", updatePreviewPosition);
+    window.addEventListener("scroll", updatePreviewPosition, true);
 
     return () => {
-      window.removeEventListener(
-        "resize",
-        updatePreviewPosition,
-      );
-      window.removeEventListener(
-        "scroll",
-        updatePreviewPosition,
-        true,
-      );
+      if (frameId !== null) {
+        window.cancelAnimationFrame(frameId);
+      }
+      window.removeEventListener("resize", updatePreviewPosition);
+      window.removeEventListener("scroll", updatePreviewPosition, true);
     };
   }, [previewVisible]);
 
@@ -428,9 +406,7 @@ function ProfileAvatar({ item, size = "md" }) {
     if (!imageUrl || imageFailed) return;
 
     setPreviewPosition(
-      getProfileAvatarPreviewPosition(
-        avatarRef.current,
-      ),
+      getProfileAvatarPreviewPosition(avatarRef.current),
     );
     setPreviewVisible(true);
   }
@@ -503,15 +479,10 @@ function ProfileAvatar({ item, size = "md" }) {
     <>
       <span
         ref={avatarRef}
-        tabIndex={0}
-        aria-label={`${getFullName(item) || "Employee"} profile picture`}
+        aria-hidden="true"
         onMouseEnter={showPreview}
         onMouseLeave={hidePreview}
-        onFocus={showPreview}
-        onBlur={hidePreview}
-        onClick={(event) => event.stopPropagation()}
-        onKeyDown={(event) => event.stopPropagation()}
-        className={`relative inline-flex ${sizeClass} shrink-0 items-center justify-center overflow-hidden rounded-full border border-sibs-border bg-sibs-surface shadow-inner outline-none`}
+        className={`relative inline-flex ${sizeClass} shrink-0 items-center justify-center overflow-hidden rounded-full border border-sibs-border bg-sibs-surface shadow-inner`}
       >
         {avatarContent}
       </span>
@@ -561,7 +532,10 @@ function renderStatusIcon(status, size = 12) {
 }
 
 
-function ResignationSummaryCards({ stats, loading }) {
+const ResignationSummaryCards = React.memo(function ResignationSummaryCards({
+  stats,
+  loading,
+}) {
   if (loading) {
     return (
       <MetricGridSkeleton
@@ -638,7 +612,7 @@ function ResignationSummaryCards({ stats, loading }) {
       ))}
     </MetricGrid>
   );
-}
+});
 
 function ApprovalStageRow({ stage, approver, role }) {
   return (
@@ -725,7 +699,12 @@ function ResignationProcessStep({
   );
 }
 
-function ResignationAnalytics({ data = [], loading = false }) {
+const ResignationAnalytics = React.memo(function ResignationAnalytics({
+  data = [],
+  loading = false,
+}) {
+  const [selectedPointKey, setSelectedPointKey] = useState(null);
+
   const analytics = useMemo(() => {
     const total = data.length;
 
@@ -745,38 +724,52 @@ function ResignationAnalytics({ data = [], loading = false }) {
       (item) => getResignationStatus(item) === "Declined",
     ).length;
 
-    const monthLabels = [];
-    const now = new Date();
+    const monthBuckets = [];
+    const manilaNowKey = getManilaYearMonthKey(new Date());
+    const [baseYearStr, baseMonthStr] = manilaNowKey
+      ? manilaNowKey.split("-")
+      : [String(new Date().getUTCFullYear()), String(new Date().getUTCMonth() + 1)];
+    const baseYear = Number(baseYearStr);
+    const baseMonthIndex = Number(baseMonthStr) - 1;
+
     for (let i = 5; i >= 0; i--) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const label = formatHrisDateLocalized(d, "en-PH", {
-        month: "long",
+      // Anchor at mid-month 12:00 UTC (20:00 Asia/Manila) so no browser timezone shifts the month.
+      const d = new Date(Date.UTC(baseYear, baseMonthIndex - i, 15, 12, 0, 0));
+      const key = getManilaYearMonthKey(d);
+      const shortLabel = formatHrisDateLocalized(d, "en-PH", {
+        month: "short",
         timeZone: "Asia/Manila",
       });
-      monthLabels.push(label);
+      const fullLabel = formatHrisDateLocalized(d, "en-PH", {
+        month: "long",
+        year: "numeric",
+        timeZone: "Asia/Manila",
+      });
+      monthBuckets.push({ key, shortLabel, fullLabel });
     }
 
-    const monthCounts = Object.fromEntries(monthLabels.map((m) => [m, 0]));
+    const monthCounts = Object.fromEntries(monthBuckets.map((m) => [m.key, 0]));
 
     data.forEach((item) => {
       const rawDate = getItemDate(item);
       if (!rawDate) return;
 
-      const date = new Date(rawDate);
-      if (Number.isNaN(date.getTime())) return;
+      const parsedDate = parseHrisDateTime(rawDate) || parseLocalDate(rawDate);
+      if (!parsedDate || Number.isNaN(parsedDate.getTime())) return;
 
-      const label = formatHrisDateLocalized(date, "en-PH", {
-        month: "long",
-        timeZone: "Asia/Manila",
-      });
-
-      if (monthCounts[label] !== undefined) {
-        monthCounts[label] += 1;
+      const key = getManilaYearMonthKey(parsedDate);
+      if (key && monthCounts[key] !== undefined) {
+        monthCounts[key] += 1;
       }
     });
 
-    const trend = monthLabels.map((label) => [label, monthCounts[label] || 0]);
-    const maxTrendValue = Math.max(...trend.map(([, value]) => value), 1);
+    const trend = monthBuckets.map((bucket) => ({
+      key: bucket.key,
+      label: bucket.shortLabel,
+      fullLabel: bucket.fullLabel,
+      value: monthCounts[bucket.key] || 0,
+    }));
+    const maxTrendValue = Math.max(...trend.map((item) => item.value), 1);
 
     return {
       total,
@@ -790,9 +783,17 @@ function ResignationAnalytics({ data = [], loading = false }) {
     };
   }, [data]);
 
+  const activeTrendPoint = useMemo(() => {
+    if (!selectedPointKey) return null;
+    return analytics.trend.find((item) => item.key === selectedPointKey) || null;
+  }, [analytics.trend, selectedPointKey]);
+
   return (
     <section className="grid min-w-0 grid-cols-1 gap-5 xl:grid-cols-[1.4fr_0.8fr]">
-      <div className={`min-w-0 ${EDGE} ${PANEL_BORDER} bg-white p-3.5 2xl:p-5`}>
+      <div
+        className={`sibs-page-card-in min-w-0 ${EDGE} ${PANEL_BORDER} bg-white p-3.5 2xl:p-5`}
+        style={{ animationDelay: "160ms", animationFillMode: "both" }}
+      >
         <div className="flex min-w-0 flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
           <div className="space-y-1">
             <h2 className="font-heading text-sm 2xl:text-base font-bold text-sibs-navy tracking-tight">
@@ -888,13 +889,21 @@ function ResignationAnalytics({ data = [], loading = false }) {
                   </span>
                 </div>
 
-                <div className="overflow-x-auto">
+                <div
+                  tabIndex={0}
+                  role="region"
+                  aria-label={`${route.title} approval stages`}
+                  className="overflow-x-auto"
+                >
                   <table className="w-full min-w-[520px] border-collapse">
+                    <caption className="sr-only">
+                      {route.title} approval stages ({route.routeLabel})
+                    </caption>
                     <thead>
                       <tr className="bg-white text-left text-xs font-bold uppercase text-sibs-tertiary-5">
-                        <th className="px-4 py-3">Stage</th>
-                        <th className="px-4 py-3">Approver</th>
-                        <th className="px-4 py-3">Role</th>
+                        <th scope="col" className="px-4 py-3">Stage</th>
+                        <th scope="col" className="px-4 py-3">Approver</th>
+                        <th scope="col" className="px-4 py-3">Role</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -916,14 +925,22 @@ function ResignationAnalytics({ data = [], loading = false }) {
       </div>
 
       <div className="grid min-w-0 grid-cols-1 gap-5">
-        <div className={`min-w-0 ${EDGE} ${PANEL_BORDER} bg-white p-3.5 2xl:p-5`}>
+        <div
+          className={`sibs-page-card-in min-w-0 ${EDGE} ${PANEL_BORDER} bg-white p-3.5 2xl:p-5`}
+          style={{ animationDelay: "200ms", animationFillMode: "both" }}
+        >
           {(() => {
             const currentMonthValue =
-              analytics.trend[analytics.trend.length - 1]?.[1] || 0;
+              analytics.trend[analytics.trend.length - 1]?.value || 0;
             const prevMonthValue =
-              analytics.trend[analytics.trend.length - 2]?.[1] || 0;
+              analytics.trend[analytics.trend.length - 2]?.value || 0;
             const isTrendingUp = currentMonthValue > prevMonthValue;
             const isTrendingDown = currentMonthValue < prevMonthValue;
+            const trendTitle = isTrendingUp
+              ? "Trending upward compared to previous month"
+              : isTrendingDown
+                ? "Trending downward compared to previous month"
+                : "Steady compared to previous month";
 
             return (
               <div className="mb-3 2xl:mb-4 flex items-center justify-between gap-3">
@@ -934,6 +951,9 @@ function ResignationAnalytics({ data = [], loading = false }) {
 
                   <p className="sibs-text-xs font-semibold text-sibs-muted">
                     Monthly filed resignations
+                    {activeTrendPoint
+                      ? ` · ${activeTrendPoint.fullLabel}: ${activeTrendPoint.value}`
+                      : ""}
                   </p>
                 </div>
 
@@ -943,22 +963,17 @@ function ResignationAnalytics({ data = [], loading = false }) {
                       ? "bg-sibs-cream-light text-sibs-orange"
                       : isTrendingDown
                         ? "bg-emerald-50 text-emerald-600"
-                        : "bg-slate-50 text-slate-500"
+                        : "bg-slate-50 text-sibs-secondary"
                   }`}
-                  title={
-                    isTrendingUp
-                      ? "Trending upward compared to previous month"
-                      : isTrendingDown
-                        ? "Trending downward compared to previous month"
-                        : "Steady compared to previous month"
-                  }
+                  title={trendTitle}
                 >
+                  <span className="sr-only">{trendTitle}</span>
                   {isTrendingUp ? (
-                    <TrendingUp size={18} />
+                    <TrendingUp size={18} aria-hidden="true" />
                   ) : isTrendingDown ? (
-                    <TrendingDown size={18} />
+                    <TrendingDown size={18} aria-hidden="true" />
                   ) : (
-                    <Minus size={18} />
+                    <Minus size={18} aria-hidden="true" />
                   )}
                 </div>
               </div>
@@ -972,222 +987,287 @@ function ResignationAnalytics({ data = [], loading = false }) {
               <Loader2 size={26} className="animate-spin text-sibs-primary-1" />
             </div>
           ) : analytics.trend.length > 0 ? (
-            <div className="relative flex w-full aspect-[500/180] max-h-[190px] items-center justify-center overflow-hidden">
-              {(() => {
-                const width = 500;
-                const height = 180;
-                const padLeft = 40;
-                const padRight = 28;
-                const padTop = 26;
-                const padBottom = 34;
-                const plotWidth = width - padLeft - padRight;
-                const plotHeight = height - padTop - padBottom;
-                const baselineY = height - padBottom;
+            <>
+              <div className="relative flex w-full aspect-[500/190] max-h-[205px] items-center justify-center overflow-visible">
+                {(() => {
+                  const width = 500;
+                  const height = 190;
+                  const padLeft = 40;
+                  const padRight = 28;
+                  const padTop = 30;
+                  const padBottom = 34;
+                  const plotWidth = width - padLeft - padRight;
+                  const plotHeight = height - padTop - padBottom;
+                  const baselineY = height - padBottom;
 
-                // Scale domain with a minimum ceiling of 3 so a single resignation doesn't shoot to 100% height
-                const yCeiling = Math.max(analytics.maxTrendValue || 0, 3);
+                  // Scale domain with a minimum ceiling of 3 so a single resignation doesn't shoot to 100% height
+                  const yCeiling = Math.max(analytics.maxTrendValue || 0, 3);
 
-                const points = analytics.trend.map(([label, value], idx) => {
-                  const x =
-                    padLeft +
-                    (idx / Math.max(analytics.trend.length - 1, 1)) * plotWidth;
-                  const ratio = Math.max(0, Math.min(1, value / yCeiling));
-                  const y = padTop + (1 - ratio) * plotHeight;
-                  return { x, y, label, value };
-                });
+                  const points = analytics.trend.map((bucket, idx) => {
+                    const x =
+                      padLeft +
+                      (idx / Math.max(analytics.trend.length - 1, 1)) * plotWidth;
+                    const ratio = Math.max(0, Math.min(1, bucket.value / yCeiling));
+                    const y = padTop + (1 - ratio) * plotHeight;
+                    return {
+                      x,
+                      y,
+                      key: bucket.key,
+                      label: bucket.label,
+                      fullLabel: bucket.fullLabel,
+                      value: bucket.value,
+                    };
+                  });
 
-                let curvePath = "";
-                if (points.length > 0) {
-                  curvePath = `M ${points[0].x} ${points[0].y}`;
-                  for (let i = 0; i < points.length - 1; i++) {
-                    const curr = points[i];
-                    const next = points[i + 1];
-                    const cpDist = (next.x - curr.x) * 0.45;
-                    curvePath += ` C ${curr.x + cpDist} ${curr.y}, ${next.x - cpDist} ${next.y}, ${next.x} ${next.y}`;
+                  let curvePath = "";
+                  if (points.length > 0) {
+                    curvePath = `M ${points[0].x} ${points[0].y}`;
+                    for (let i = 0; i < points.length - 1; i++) {
+                      const curr = points[i];
+                      const next = points[i + 1];
+                      const cpDist = (next.x - curr.x) * 0.45;
+                      curvePath += ` C ${curr.x + cpDist} ${curr.y}, ${next.x - cpDist} ${next.y}, ${next.x} ${next.y}`;
+                    }
                   }
-                }
 
-                const areaPath =
-                  points.length > 0
-                    ? `${curvePath} L ${points[points.length - 1].x} ${baselineY} L ${points[0].x} ${baselineY} Z`
-                    : "";
+                  const areaPath =
+                    points.length > 0
+                      ? `${curvePath} L ${points[points.length - 1].x} ${baselineY} L ${points[0].x} ${baselineY} Z`
+                      : "";
 
-                return (
-                  <svg
-                    viewBox={`0 0 ${width} ${height}`}
-                    className="h-full w-full overflow-visible"
-                    preserveAspectRatio="xMidYMid meet"
-                  >
-                    <defs>
-                      <linearGradient
-                        id="resignationTrendGradient"
-                        x1="0"
-                        y1="0"
-                        x2="0"
-                        y2="1"
+                  const trendSummary = points
+                    .map((pt) => `${pt.fullLabel}: ${pt.value}`)
+                    .join(", ");
+
+                  return (
+                    <svg
+                      role="img"
+                      aria-labelledby="resignation-trend-chart-title"
+                      viewBox={`0 0 ${width} ${height}`}
+                      className="h-full w-full overflow-visible"
+                      preserveAspectRatio="xMidYMid meet"
+                    >
+                      <title id="resignation-trend-chart-title">
+                        Monthly filed resignations over the last 6 months ({trendSummary})
+                      </title>
+                      <defs>
+                        <linearGradient
+                          id="resignationTrendGradient"
+                          x1="0"
+                          y1="0"
+                          x2="0"
+                          y2="1"
+                        >
+                          <stop offset="0%" stopColor="var(--color-sibs-navy, rgb(4,44,81))" stopOpacity="0.22" />
+                          <stop offset="85%" stopColor="var(--color-sibs-navy, rgb(4,44,81))" stopOpacity="0.02" />
+                          <stop offset="100%" stopColor="var(--color-sibs-navy, rgb(4,44,81))" stopOpacity="0" />
+                        </linearGradient>
+                      </defs>
+
+                      {/* Horizontal Grid lines */}
+                      <line
+                        x1={padLeft}
+                        y1={padTop}
+                        x2={width - padRight}
+                        y2={padTop}
+                        stroke="var(--tw-colors-slate-100, rgb(242,244,247))"
+                        strokeDasharray="3 3"
+                        strokeWidth="1"
+                      />
+                      <line
+                        x1={padLeft}
+                        y1={padTop + plotHeight / 2}
+                        x2={width - padRight}
+                        y2={padTop + plotHeight / 2}
+                        stroke="var(--tw-colors-slate-100, rgb(242,244,247))"
+                        strokeDasharray="3 3"
+                        strokeWidth="1"
+                      />
+                      <line
+                        x1={padLeft}
+                        y1={baselineY}
+                        x2={width - padRight}
+                        y2={baselineY}
+                        stroke="var(--color-sibs-border, rgb(228,231,236))"
+                        strokeWidth="1.2"
+                      />
+
+                      {/* Y-axis Ticks */}
+                      <text
+                        x={padLeft - 10}
+                        y={padTop + 3.5}
+                        textAnchor="end"
+                        className="text-[9px] font-bold fill-sibs-muted"
                       >
-                        <stop offset="0%" stopColor="var(--color-sibs-navy, rgb(4,44,81))" stopOpacity="0.22" />
-                        <stop offset="85%" stopColor="var(--color-sibs-navy, rgb(4,44,81))" stopOpacity="0.02" />
-                        <stop offset="100%" stopColor="var(--color-sibs-navy, rgb(4,44,81))" stopOpacity="0" />
-                      </linearGradient>
-                    </defs>
+                        {yCeiling}
+                      </text>
+                      <text
+                        x={padLeft - 10}
+                        y={padTop + plotHeight / 2 + 3.5}
+                        textAnchor="end"
+                        className="text-[9px] font-bold fill-sibs-muted"
+                      >
+                        {Math.round(yCeiling / 2)}
+                      </text>
+                      <text
+                        x={padLeft - 10}
+                        y={baselineY + 3.5}
+                        textAnchor="end"
+                        className="text-[9px] font-bold fill-sibs-muted"
+                      >
+                        0
+                      </text>
 
-                    {/* Horizontal Grid lines */}
-                    <line
-                      x1={padLeft}
-                      y1={padTop}
-                      x2={width - padRight}
-                      y2={padTop}
-                      stroke="var(--tw-colors-slate-100, rgb(242,244,247))"
-                      strokeDasharray="3 3"
-                      strokeWidth="1"
-                    />
-                    <line
-                      x1={padLeft}
-                      y1={padTop + plotHeight / 2}
-                      x2={width - padRight}
-                      y2={padTop + plotHeight / 2}
-                      stroke="var(--tw-colors-slate-100, rgb(242,244,247))"
-                      strokeDasharray="3 3"
-                      strokeWidth="1"
-                    />
-                    <line
-                      x1={padLeft}
-                      y1={baselineY}
-                      x2={width - padRight}
-                      y2={baselineY}
-                      stroke="var(--color-sibs-border, rgb(228,231,236))"
-                      strokeWidth="1.2"
-                    />
+                      {/* Gradient Area */}
+                      {areaPath ? (
+                        <path
+                          d={areaPath}
+                          fill="url(#resignationTrendGradient)"
+                        />
+                      ) : null}
 
-                    {/* Y-axis Ticks */}
-                    <text
-                      x={padLeft - 10}
-                      y={padTop + 3.5}
-                      textAnchor="end"
-                      className="text-[9px] font-bold fill-sibs-muted"
-                    >
-                      {yCeiling}
-                    </text>
-                    <text
-                      x={padLeft - 10}
-                      y={padTop + plotHeight / 2 + 3.5}
-                      textAnchor="end"
-                      className="text-[9px] font-bold fill-sibs-muted"
-                    >
-                      {Math.round(yCeiling / 2)}
-                    </text>
-                    <text
-                      x={padLeft - 10}
-                      y={baselineY + 3.5}
-                      textAnchor="end"
-                      className="text-[9px] font-bold fill-sibs-muted"
-                    >
-                      0
-                    </text>
+                      {/* Smooth Trend Line */}
+                      {curvePath ? (
+                        <path
+                          d={curvePath}
+                          fill="none"
+                          stroke="var(--color-sibs-navy, rgb(4,44,81))"
+                          strokeWidth="2.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      ) : null}
 
-                    {/* Gradient Area */}
-                    {areaPath ? (
-                      <path
-                        d={areaPath}
-                        fill="url(#resignationTrendGradient)"
-                        className="transition-all duration-300"
-                      />
-                    ) : null}
-
-                    {/* Smooth Trend Line */}
-                    {curvePath ? (
-                      <path
-                        d={curvePath}
-                        fill="none"
-                        stroke="var(--color-sibs-navy, rgb(4,44,81))"
-                        strokeWidth="2.5"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        className="transition-all duration-300"
-                      />
-                    ) : null}
-
-                    {/* Data Points & Markers */}
-                    {points.map((pt, idx) => {
-                      const isZero = pt.value === 0;
-                      return (
-                        <g key={`${pt.label}-${idx}`} className="group cursor-pointer">
-                          {/* Vertical hover guide */}
-                          <line
-                            x1={pt.x}
-                            y1={padTop}
-                            x2={pt.x}
-                            y2={baselineY}
-                            stroke="var(--color-sibs-navy, rgb(4,44,81))"
-                            strokeOpacity="0.1"
-                            strokeDasharray="2 2"
-                            className="opacity-0 transition-opacity group-hover:opacity-100"
-                          />
-
-                          {/* Outer halo for active points */}
-                          {!isZero ? (
+                      {/* Data Points & Markers */}
+                      {points.map((pt) => {
+                        const isZero = pt.value === 0;
+                        const isSelected = selectedPointKey === pt.key;
+                        const pillWidth = Math.max(
+                          20,
+                          String(pt.value).length * 7 + 8,
+                        );
+                        return (
+                          <g
+                            key={pt.key}
+                            onClick={() =>
+                              setSelectedPointKey((current) =>
+                                current === pt.key ? null : pt.key,
+                              )
+                            }
+                            className="group cursor-pointer"
+                          >
+                            {/* Expanded touch/pointer hit area */}
                             <circle
                               cx={pt.x}
                               cy={pt.y}
-                              r="8.5"
-                              fill="var(--color-sibs-orange, rgb(255,92,40))"
-                              fillOpacity="0.16"
-                              className="animate-pulse"
+                              r="16"
+                              fill="transparent"
                             />
-                          ) : null}
 
-                          {/* Center Marker Dot */}
-                          <circle
-                            cx={pt.x}
-                            cy={pt.y}
-                            r={isZero ? "3" : "4.5"}
-                            fill={isZero ? "var(--color-sibs-border, rgb(203,213,225))" : "var(--color-sibs-orange, rgb(255,92,40))"}
-                            stroke="white"
-                            strokeWidth={isZero ? "1.5" : "2"}
-                            className="transition-transform duration-200 group-hover:scale-125"
-                          />
+                            {/* Vertical hover/selected guide */}
+                            <line
+                              x1={pt.x}
+                              y1={padTop}
+                              x2={pt.x}
+                              y2={baselineY}
+                              stroke="var(--color-sibs-navy, rgb(4,44,81))"
+                              strokeOpacity="0.16"
+                              strokeDasharray="2 2"
+                              className={`transition-opacity ${
+                                isSelected
+                                  ? "opacity-100"
+                                  : "opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100"
+                              }`}
+                            />
 
-                          {/* Active Value Badge Pill above Point */}
-                          {!isZero ? (
-                            <g className="transition-transform duration-200">
-                              <rect
-                                x={pt.x - 9}
-                                y={pt.y - 20}
-                                width="18"
-                                height="14"
-                                rx="4"
-                                fill="var(--color-sibs-navy, rgb(4,44,81))"
+                            {/* Outer halo for active points */}
+                            {!isZero ? (
+                              <circle
+                                cx={pt.x}
+                                cy={pt.y}
+                                r="8.5"
+                                fill="var(--color-sibs-orange, rgb(255,92,40))"
+                                fillOpacity="0.16"
+                                className="motion-safe:animate-pulse"
                               />
-                              <text
-                                x={pt.x}
-                                y={pt.y - 10}
-                                textAnchor="middle"
-                                className="font-heading text-[9.5px] font-extrabold fill-white tabular-nums"
-                              >
-                                {pt.value}
-                              </text>
-                            </g>
-                          ) : null}
+                            ) : null}
 
-                          {/* Month Label below baseline */}
-                          <text
-                            x={pt.x}
-                            y={baselineY + 16}
-                            textAnchor="middle"
-                            className={`text-[10px] font-bold uppercase tracking-wider ${
-                              !isZero ? "fill-sibs-navy font-extrabold" : "fill-sibs-muted"
-                            }`}
-                          >
-                            {pt.label}
-                          </text>
-                        </g>
-                      );
-                    })}
-                  </svg>
-                );
-              })()}
-            </div>
+                            {/* Center Marker Dot */}
+                            <circle
+                              cx={pt.x}
+                              cy={pt.y}
+                              r={isZero ? "3" : "4.5"}
+                              fill={
+                                isZero
+                                  ? "var(--color-sibs-border, rgb(203,213,225))"
+                                  : "var(--color-sibs-orange, rgb(255,92,40))"
+                              }
+                              stroke="white"
+                              strokeWidth={isZero ? "1.5" : "2"}
+                              className="transition-transform duration-200 group-hover:scale-125 group-focus-visible:scale-125"
+                            />
+
+                            {/* Active Value Badge Pill above Point */}
+                            {!isZero || isSelected ? (
+                              <g className="transition-transform duration-200">
+                                <rect
+                                  x={pt.x - pillWidth / 2}
+                                  y={pt.y - 21}
+                                  width={pillWidth}
+                                  height="14"
+                                  rx="4"
+                                  fill="var(--color-sibs-navy, rgb(4,44,81))"
+                                />
+                                <text
+                                  x={pt.x}
+                                  y={pt.y - 11}
+                                  textAnchor="middle"
+                                  className="font-heading text-[9.5px] font-extrabold fill-white tabular-nums"
+                                >
+                                  {pt.value}
+                                </text>
+                              </g>
+                            ) : null}
+
+                            {/* Month Label below baseline */}
+                            <text
+                              x={pt.x}
+                              y={baselineY + 16}
+                              textAnchor="middle"
+                              className={`text-[10px] font-bold uppercase tracking-wider ${
+                                !isZero || isSelected
+                                  ? "fill-sibs-navy font-extrabold"
+                                  : "fill-sibs-muted"
+                              }`}
+                            >
+                              {pt.label}
+                            </text>
+                          </g>
+                        );
+                      })}
+                    </svg>
+                  );
+                })()}
+              </div>
+
+              <table className="sr-only">
+                <caption>Monthly filed resignations over the last 6 months</caption>
+                <thead>
+                  <tr>
+                    <th scope="col">Month</th>
+                    <th scope="col">Filed Resignations</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {analytics.trend.map((bucket) => (
+                    <tr key={bucket.key}>
+                      <td>{bucket.fullLabel}</td>
+                      <td>{bucket.value}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </>
           ) : (
             <div
               className={`flex h-40 flex-col items-center justify-center ${EDGE} border border-dashed border-sibs-border bg-sibs-surface text-center`}
@@ -1219,10 +1299,10 @@ function ResignationAnalytics({ data = [], loading = false }) {
       </div>
     </section>
   );
-}
+});
 
 
-function ResignationTableCard({
+const ResignationTableCard = React.memo(function ResignationTableCard({
   data,
   loading,
   search,
@@ -1241,8 +1321,10 @@ function ResignationTableCard({
   const [draftSearch, setDraftSearch] = useState(search);
   const [draftStatusFilter, setDraftStatusFilter] = useState(statusFilter);
   const [draftTypeFilter, setDraftTypeFilter] = useState(typeFilter);
+  const hasMatchMedia =
+    typeof window !== "undefined" && typeof window.matchMedia === "function";
   const [isMobileFilterMode, setIsMobileFilterMode] = useState(() => {
-    if (typeof window === "undefined" || typeof window.matchMedia !== "function") return false;
+    if (!hasMatchMedia) return false;
     return window.matchMedia("(max-width: 1023px)")?.matches || false;
   });
   const totalPages = Math.max(Math.ceil(data.length / PAGE_LIMIT), 1);
@@ -1328,26 +1410,6 @@ function ResignationTableCard({
     onClearFilters?.();
   }
 
-  function _handlePreviousPage() {
-    setPageState((current) => ({
-      data,
-      page: Math.max(
-        (current.data === data ? current.page : currentPage) - 1,
-        1,
-      ),
-    }));
-  }
-
-  function _handleNextPage() {
-    setPageState((current) => ({
-      data,
-      page: Math.min(
-        (current.data === data ? current.page : currentPage) + 1,
-        totalPages,
-      ),
-    }));
-  }
-
   function handlePageChange(targetPage) {
     const safePage = Math.max(1, Math.min(totalPages, Number(targetPage) || 1));
     setPageState({
@@ -1355,6 +1417,9 @@ function ResignationTableCard({
       page: safePage,
     });
   }
+
+  const renderDesktopView = !hasMatchMedia || !isMobileFilterMode;
+  const renderMobileView = !hasMatchMedia || isMobileFilterMode;
 
   return (
     <section
@@ -1364,7 +1429,10 @@ function ResignationTableCard({
       <div className="border-b border-sibs-border p-4 sm:p-5 2xl:p-6 font-jakarta">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0 space-y-0.5">
-            <h2 className="font-heading text-sm 2xl:text-base font-bold text-sibs-navy tracking-tight">
+            <h2
+              id="resignation-records-heading"
+              className="font-heading text-sm 2xl:text-base font-bold text-sibs-navy tracking-tight"
+            >
               Employee Resignation Records
             </h2>
 
@@ -1475,86 +1543,98 @@ function ResignationTableCard({
         ) : null}
         <ResponsiveTableShell
           desktopContent={
-            <div className="overflow-hidden rounded-xl border border-sibs-border bg-white">
-              <div className="max-h-[620px] overflow-auto sibs-scrollbar">
-                <table className="w-full min-w-[1380px] border-collapse bg-white text-left">
-                  <thead className="sticky top-0 z-10 bg-sibs-surface">
-                    <tr className="border-b border-sibs-border">
-                      <th className="sibs-data-table-th px-2.5 py-2 2xl:px-4 2xl:py-3.5 w-[240px] whitespace-nowrap text-left">Employee Name</th>
-                      <th className="sibs-data-table-th px-2.5 py-2 2xl:px-4 2xl:py-3.5 w-[190px] whitespace-nowrap text-left">Filed By</th>
-                      <th className="sibs-data-table-th px-2.5 py-2 2xl:px-4 2xl:py-3.5 w-[110px] whitespace-nowrap text-center">Type</th>
-                      <th className="sibs-data-table-th px-2.5 py-2 2xl:px-4 2xl:py-3.5 w-[140px] whitespace-nowrap text-center">Resignation Date</th>
-                      <th className="sibs-data-table-th px-2.5 py-2 2xl:px-4 2xl:py-3.5 w-[150px] whitespace-nowrap text-center">Last Working Date</th>
-                      <th className="sibs-data-table-th px-2.5 py-2 2xl:px-4 2xl:py-3.5 w-[150px] whitespace-nowrap text-center">Status</th>
-                      <th className="sibs-data-table-th px-2.5 py-2 2xl:px-4 2xl:py-3.5 w-[220px] whitespace-nowrap text-left">Reason</th>
-                    </tr>
-                  </thead>
-
-                  <tbody>
-                    {loading ? (
-                      <TableSkeletonRows
-                        count={7}
-                        columns={7}
-                        cellClassName="px-2.5 py-2 2xl:px-4 2xl:py-3.5 align-middle"
-                      />
-                    ) : pageData.length === 0 ? (
-                      <tr>
-                        <td colSpan={7} className="px-5 py-16 text-center sibs-text-sm font-bold text-sibs-muted">
-                          <div className="flex flex-col items-center justify-center gap-2">
-                            <span className={loadError ? "text-rose-700" : ""}>
-                              {loadError || "No resignation records found."}
-                            </span>
-                            {loadError && typeof onRetry === "function" ? (
-                              <button
-                                type="button"
-                                onClick={onRetry}
-                                disabled={loading}
-                                className="inline-flex items-center gap-1.5 rounded-lg border border-rose-200 bg-white px-3 py-1.5 text-xs font-extrabold text-rose-700 shadow-2xs transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
-                              >
-                                Retry
-                              </button>
-                            ) : null}
-                          </div>
-
-                        </td>
+            renderDesktopView ? (
+              <div className="overflow-hidden rounded-xl border border-sibs-border bg-white">
+                <div
+                  tabIndex={0}
+                  role="region"
+                  aria-labelledby="resignation-records-heading"
+                  className="max-h-[620px] overflow-auto sibs-scrollbar"
+                >
+                  <table className="w-full min-w-[1120px] border-collapse bg-white text-left">
+                    <caption className="sr-only">
+                      Employee resignation records
+                    </caption>
+                    <thead className="sticky top-0 z-10 bg-sibs-surface">
+                      <tr className="border-b border-sibs-border">
+                        <th scope="col" className="sibs-data-table-th px-2.5 py-2 2xl:px-4 2xl:py-3.5 w-[230px] whitespace-nowrap text-left">Employee Name</th>
+                        <th scope="col" className="sibs-data-table-th px-2.5 py-2 2xl:px-4 2xl:py-3.5 w-[170px] whitespace-nowrap text-left">Filed By</th>
+                        <th scope="col" className="sibs-data-table-th px-2.5 py-2 2xl:px-4 2xl:py-3.5 w-[100px] whitespace-nowrap text-center">Type</th>
+                        <th scope="col" className="sibs-data-table-th px-2.5 py-2 2xl:px-4 2xl:py-3.5 w-[135px] whitespace-nowrap text-center">Resignation Date</th>
+                        <th scope="col" className="sibs-data-table-th px-2.5 py-2 2xl:px-4 2xl:py-3.5 w-[145px] whitespace-nowrap text-center">Last Working Date</th>
+                        <th scope="col" className="sibs-data-table-th px-2.5 py-2 2xl:px-4 2xl:py-3.5 w-[145px] whitespace-nowrap text-center">Status</th>
+                        <th scope="col" className="sibs-data-table-th px-2.5 py-2 2xl:px-4 2xl:py-3.5 w-[195px] whitespace-nowrap text-left">Reason</th>
                       </tr>
-                    ) : (
-                      pageData.map((item, index) => (
-                        <ResignationRow
-                          key={item?.id || item?.resignationId || index}
-                          item={item}
-                          onView={() => onView(item)}
+                    </thead>
+
+                    <tbody>
+                      {loading ? (
+                        <TableSkeletonRows
+                          count={7}
+                          columns={7}
+                          cellClassName="px-2.5 py-2 2xl:px-4 2xl:py-3.5 align-middle"
                         />
-                      ))
-                    )}
-                  </tbody>
-                </table>
+                      ) : pageData.length === 0 ? (
+                        <tr>
+                          <td colSpan={7} className="px-5 py-16 text-center sibs-text-sm font-bold text-sibs-muted">
+                            <div className="flex flex-col items-center justify-center gap-2">
+                              <span className={loadError ? "text-rose-700" : ""}>
+                                {loadError || "No resignation records found."}
+                              </span>
+                              {loadError && typeof onRetry === "function" ? (
+                                <button
+                                  type="button"
+                                  onClick={onRetry}
+                                  disabled={loading}
+                                  className="inline-flex items-center gap-1.5 rounded-lg border border-rose-200 bg-white px-3 py-1.5 text-xs font-extrabold text-rose-700 shadow-2xs transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+                                >
+                                  Retry
+                                </button>
+                              ) : null}
+                            </div>
+
+                          </td>
+                        </tr>
+                      ) : (
+                        pageData.map((item, index) => (
+                          <ResignationRow
+                            key={item?.id || item?.resignationId || index}
+                            item={item}
+                            onView={() => onView(item)}
+                          />
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
               </div>
-            </div>
+            ) : null
           }
           mobileContent={
-            <div>
-              {loading ? (
-                <DataCard.Skeleton count={4} />
-              ) : pageData.length === 0 ? (
-                <DataCard.Empty
-                  icon={<FileText size={22} />}
-                  title={loadError ? "Unable to load resignation records" : "No resignation records found"}
-                  description={loadError || "Adjust the search or filter criteria to see results."}
-                />
-              ) : (
-                <div className="space-y-3">
-                  {pageData.map((item, index) => (
-                    <ResignationMobileCard
-                      key={item?.id || item?.resignationId || index}
-                      item={item}
-                      index={index}
-                      onView={() => onView(item)}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
+            renderMobileView ? (
+              <div>
+                {loading ? (
+                  <DataCard.Skeleton count={4} />
+                ) : pageData.length === 0 ? (
+                  <DataCard.Empty
+                    icon={<FileText size={22} />}
+                    title={loadError ? "Unable to load resignation records" : "No resignation records found"}
+                    description={loadError || "Adjust the search or filter criteria to see results."}
+                  />
+                ) : (
+                  <div className="space-y-3">
+                    {pageData.map((item, index) => (
+                      <ResignationMobileCard
+                        key={item?.id || item?.resignationId || index}
+                        item={item}
+                        index={index}
+                        onView={() => onView(item)}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : null
           }
         />
 
@@ -1573,7 +1653,7 @@ function ResignationTableCard({
       </div>
     </section>
   );
-}
+});
 
 function ResignationRow({ item, onView }) {
   const status = getResignationStatus(item);
@@ -1605,45 +1685,36 @@ function ResignationRow({ item, onView }) {
     item?.type ||
     "—";
 
-  function handleRowKeyDown(event) {
-    if (event.key === "Enter" || event.key === " ") {
-      event.preventDefault();
-      onView?.();
+  function handleRowClick(event) {
+    if (event.target.closest("button, a, input, select, textarea")) {
+      return;
     }
+    onView?.();
   }
 
   return (
     <tr
-      role="button"
-      tabIndex={0}
-      onClick={onView}
-      onKeyDown={handleRowKeyDown}
-      title="Open resignation details"
+      onClick={handleRowClick}
       className="sibs-data-table-row"
     >
       <td className="whitespace-nowrap px-3 py-2 2xl:px-4 2xl:py-2.5">
         <div className="flex min-w-0 items-center gap-2.5">
-          <div
-            className="shrink-0"
-            onClick={(event) =>
-              event.stopPropagation()
-            }
-            onKeyDown={(event) =>
-              event.stopPropagation()
-            }
-          >
+          <div className="shrink-0">
             <ProfileAvatar item={item} />
           </div>
 
           <div className="min-w-0">
-            <p
+            <button
+              type="button"
+              onClick={onView}
               title={employeeName}
-              className="m-0 max-w-[300px] truncate sibs-text-xs font-extrabold text-sibs-navy"
+              aria-label={`Open resignation details for ${employeeName}`}
+              className="m-0 block max-w-[260px] truncate text-left sibs-text-xs font-extrabold text-sibs-navy transition-colors hover:text-sibs-orange focus-visible:text-sibs-orange cursor-pointer"
             >
               {employeeName}
-            </p>
+            </button>
 
-            <p className="mt-0.5 max-w-[300px] truncate sibs-text-micro font-bold text-sibs-muted">
+            <p className="mt-0.5 max-w-[260px] truncate sibs-text-micro font-bold text-sibs-muted">
               <span className="font-extrabold text-sibs-orange">
                 {getEmployeeSibsId(item)}
               </span>
@@ -1705,79 +1776,88 @@ function ResignationRow({ item, onView }) {
 
 function ResignationMobileCard({ item, index = 0, onView, onOpenAttachments }) {
   const status = getResignationStatus(item);
+  const employeeName = getFullName(item);
   const attachmentCount = getAttachmentCount(item);
   const reason = item?.reason || item?.remarks || "";
 
   return (
-    <DataCard
-      onClick={onView}
-      index={index}
-      title="Open resignation details"
+    <div
+      onClick={(event) => {
+        if (event.target.closest("button, a, input, select, textarea")) {
+          return;
+        }
+        onView?.();
+      }}
     >
-      <DataCard.Header
-        avatar={<ProfileAvatar item={item} size="md" />}
-        title={getFullName(item)}
-        subtitle={
-          <span className="truncate">
-            <span className="font-extrabold text-sibs-orange">{getEmployeeSibsId(item)}</span> · {getEmployeeDepartment(item)}
-          </span>
-        }
-        badge={
-          <span className={`inline-flex shrink-0 items-center justify-center gap-1 whitespace-nowrap rounded-full border px-2.5 py-0.5 text-[10px] font-extrabold ${getStatusClass(status)}`}>
-            {renderStatusIcon(status, 11)}
-            {status}
-          </span>
-        }
-      />
+      <DataCard interactive index={index}>
+        <DataCard.Header
+          avatar={<ProfileAvatar item={item} size="md" />}
+          title={
+            <button
+              type="button"
+              onClick={onView}
+              aria-label={`Open resignation details for ${employeeName}`}
+              className="block max-w-full truncate text-left transition-colors hover:text-sibs-orange focus-visible:text-sibs-orange cursor-pointer"
+            >
+              {employeeName}
+            </button>
+          }
+          subtitle={
+            <span className="truncate">
+              <span className="font-extrabold text-sibs-orange">{getEmployeeSibsId(item)}</span> · {getEmployeeDepartment(item)}
+            </span>
+          }
+          badge={
+            <span className={`inline-flex shrink-0 items-center justify-center gap-1 whitespace-nowrap rounded-full border px-2.5 py-0.5 text-[10px] font-extrabold ${getStatusClass(status)}`}>
+              {renderStatusIcon(status, 11)}
+              {status}
+            </span>
+          }
+        />
 
-      <DataCard.Metrics cols={2} className="mt-3">
-        <DataCard.MetricItem label="Type" value={item?.resignationType || item?.type || "—"} />
-        <DataCard.MetricItem label="Date" value={formatDate(item?.resignationDate || getItemDate(item))} />
-        <DataCard.MetricItem label="Last Working" value={formatDate(item?.lastWorkingDate || item?.last_working_date)} />
-        <DataCard.MetricItem label="Filed By" value={item?.filedByName || item?.supervisorName || "TL / OM"} />
-      </DataCard.Metrics>
+        <DataCard.Metrics cols={2} className="mt-3">
+          <DataCard.MetricItem label="Type" value={item?.resignationType || item?.type || "—"} />
+          <DataCard.MetricItem label="Date" value={formatDate(item?.resignationDate || getItemDate(item))} />
+          <DataCard.MetricItem label="Last Working" value={formatDate(item?.lastWorkingDate || item?.last_working_date)} />
+          <DataCard.MetricItem label="Filed By" value={item?.filedByName || item?.supervisorName || "TL / OM"} />
+        </DataCard.Metrics>
 
-      {reason ? (
-        <div className="mt-2.5 rounded-[10px] border border-sibs-border bg-sibs-surface px-2.5 py-1.5 text-left">
-          <p className="text-[9.5px] font-bold uppercase tracking-wider text-slate-400">Reason</p>
-          <p className="mt-0.5 line-clamp-2 text-xs font-semibold text-sibs-navy">
-            {reason}
-          </p>
-        </div>
-      ) : null}
+        {reason ? (
+          <div className="mt-2.5 rounded-[10px] border border-sibs-border bg-sibs-surface px-2.5 py-1.5 text-left">
+            <p className="text-[9.5px] font-bold uppercase tracking-wider text-sibs-muted">Reason</p>
+            <p className="mt-0.5 line-clamp-2 text-xs font-semibold text-sibs-navy">
+              {reason}
+            </p>
+          </div>
+        ) : null}
 
-      <div className="mt-3">
-        <button
-          type="button"
-          onClick={(event) => {
-            event.stopPropagation();
-            if (onOpenAttachments) {
-              onOpenAttachments(item);
-            } else {
-              onView?.();
-            }
-          }}
-          disabled={attachmentCount === 0}
-          className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-[10px] bg-sibs-navy px-4 text-xs font-extrabold text-white transition hover:bg-sibs-orange disabled:cursor-not-allowed disabled:bg-sibs-border disabled:text-sibs-muted"
-        >
-          <Paperclip size={14} />
-          {getAttachmentCountLabel(item)}
-        </button>
-      </div>
-    </DataCard>
-  );
-}
+        <DataCard.Actions>
+          <button
+            type="button"
+            onClick={onView}
+            className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-[10px] border border-sibs-border bg-white px-4 text-xs font-extrabold text-sibs-navy transition hover:border-sibs-orange/40 hover:bg-sibs-cream-light hover:text-sibs-orange sm:flex-1 cursor-pointer"
+          >
+            View Details
+          </button>
 
-function MobileMetric({ label, value }) {
-  return (
-    <div className={`${EDGE} bg-sibs-surface p-3`}>
-      <p className="text-[10px] font-bold uppercase text-sibs-tertiary-5">
-        {label}
-      </p>
-
-      <p className="mt-1 truncate text-sm font-extrabold text-sibs-primary-1">
-        {value || "--"}
-      </p>
+          <button
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation();
+              if (onOpenAttachments) {
+                onOpenAttachments(item);
+              } else {
+                onView?.();
+              }
+            }}
+            disabled={attachmentCount === 0}
+            className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-[10px] bg-sibs-navy px-4 text-xs font-extrabold text-white transition hover:bg-sibs-orange disabled:cursor-not-allowed disabled:bg-sibs-border disabled:text-sibs-muted sm:flex-1 cursor-pointer"
+          >
+            <Paperclip size={14} aria-hidden="true" />
+            {getAttachmentCountLabel(item)}
+          </button>
+        </DataCard.Actions>
+      </DataCard>
     </div>
   );
 }
@@ -2106,6 +2186,15 @@ export default function ResignationManagementPage() {
     },
     [fetchResignations],
   );
+
+  useEffect(() => {
+    if (typeof document === "undefined") return undefined;
+    const previousTitle = document.title;
+    document.title = "Resignation Management | SiBS HRIS";
+    return () => {
+      document.title = previousTitle || "SiBS HRIS";
+    };
+  }, []);
 
   useEffect(() => {
     fetchResignations();
@@ -2572,7 +2661,10 @@ export default function ResignationManagementPage() {
             kicker={
               <div className="flex flex-wrap items-center gap-2">
                 <span className="inline-flex items-center gap-1.5 rounded-[10px] border border-sibs-border bg-sibs-surface px-2 py-0.5 2xl:px-2.5 2xl:py-1 sibs-text-micro font-extrabold uppercase tracking-wide text-sibs-navy">
-                  <span className="h-1.5 w-1.5 animate-sibs-pulse rounded-full bg-sibs-orange" />
+                  <span
+                    className="h-1.5 w-1.5 animate-sibs-pulse rounded-full bg-sibs-orange"
+                    aria-hidden="true"
+                  />
                   Core HR View
                 </span>
 
@@ -2596,9 +2688,11 @@ export default function ResignationManagementPage() {
                   onClick={handleRefresh}
                   disabled={resignationLoading}
                   title="Refresh Resignation Data"
+                  aria-label="Refresh resignation data"
                   className="sibs-btn-icon"
                 >
                   <RefreshCw
+                    aria-hidden="true"
                     className={`h-3.5 w-3.5 2xl:h-4 2xl:w-4 ${
                       resignationLoading ? "animate-spin text-sibs-orange" : ""
                     }`}
