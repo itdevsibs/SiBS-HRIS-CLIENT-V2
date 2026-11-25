@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { AlertCircle, BookOpen, CheckCircle2, FileClock, FilePlus2, FileText, Plus, RefreshCw, Upload, UploadCloud, X } from 'lucide-react';
+import { AlertCircle, BookOpen, CheckCircle2, ClipboardList, Eye, FileClock, FilePlus2, FileText, FolderOpen, Headphones, Keyboard, MessagesSquare, Monitor, Plus, RefreshCw, Upload, UploadCloud, X } from 'lucide-react';
 import portalApi from '../../lib/assessment-admin/portalApi';
 import ModalShell from '../../components/ui/ModalShell';
 import TablePagination from '../../components/ui/TablePagination';
@@ -13,6 +13,15 @@ import './AssessmentAdminQuestionBankPage.css';
 const KEYS = ['A','B','C','D'];
 const PAGE_SIZE = 10;
 const MODULE_KEYS = Array.from({length:7},(_,index)=>`module${index+1}`);
+const MODULE_DISPLAY = [
+  {title:'Cognitive & Logic Abilities',icon:BookOpen},
+  {title:'Work Attitudes, Habits & Behavioral-Cognitive',icon:ClipboardList},
+  {title:'Real-Time Coaching & Active Listening Challenge',icon:MessagesSquare},
+  {title:'Administrative Task Simulation',icon:FolderOpen},
+  {title:'Typing & Data Entry Test',icon:Keyboard},
+  {title:'Audio Comprehension & Logging',icon:Headphones},
+  {title:'Computer Literacy & Essential Tools',icon:Monitor},
+];
 const BEHAVIOR_TYPES=['frequency','comfort','truth','agreement','self-image','scenario'];
 const toOptions=values=>values.map(value=>({value,label:value}));
 const emptyForm = (module='module1') => ({module,category:'',stem:'',title:'',section:'',pillar:'',instructions:'',scores:{},options:KEYS.map(key=>({key,text:''})),correctKey:''});
@@ -27,8 +36,14 @@ const secondary = 'inline-flex min-h-9 items-center justify-center gap-2 rounded
 const statusTone = {DRAFT:'border-orange-200 bg-orange-50 text-orange-800',PUBLISHED:'border-emerald-200 bg-emerald-50 text-emerald-800',EXCLUDED:'border-slate-200 bg-slate-50 text-slate-600'};
 const getError = error => error?.response?.data?.message || 'Unable to complete the request. Please try again.';
 const BANK_API = '/api/assessment-portal/questions';
-function QuestionStatus({status}) {
-  return <span className={`inline-flex rounded-md border px-2 py-1 text-[10px] font-extrabold ${statusTone[status] || statusTone.EXCLUDED}`}>{status === 'PUBLISHED' ? 'Published' : status === 'DRAFT' ? 'Draft' : 'Excluded'}</span>;
+function QuestionStatus({status, table = false}) {
+  const label = status === 'PUBLISHED' ? 'Published' : status === 'DRAFT' ? 'Draft' : 'Excluded';
+  const tone = statusTone[status] || statusTone.EXCLUDED;
+  if (table) return <span className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-md border px-2.5 py-1 text-[11px] font-bold ${tone}`}>
+    <span aria-hidden="true" className={`h-1.5 w-1.5 shrink-0 rounded-full ${status === 'PUBLISHED' ? 'bg-emerald-600' : status === 'DRAFT' ? 'bg-sibs-orange' : 'bg-slate-500'}`} />
+    {label}
+  </span>;
+  return <span className={`inline-flex rounded-md border px-2 py-1 text-[10px] font-extrabold ${tone}`}>{label}</span>;
 }
 
 // Resolve the creator only when reviewing a saved question; never substitute
@@ -96,10 +111,17 @@ export default function AssessmentAdminQuestionBankPage({onUnauthorized}) {
     } finally {if (!signal?.aborted) setLoading(false);}
   },[onUnauthorized]);
   useEffect(()=>{const controller=new AbortController();void load(controller.signal);return ()=>controller.abort();},[load]);
-  const items = useMemo(()=>(bank?.items || []).filter(q=>q.module===module),[bank,module]);
+  const items = useMemo(()=>(bank?.items || [])
+    .filter(q=>q.module===module)
+    .sort((a,b)=>Number(a.id)-Number(b.id)),[bank,module]);
   const moduleOptions=(bank?.modules||[]).map(m=>({value:m.key,label:m.name}));
-  const activeModuleName=moduleOptions.find(option=>option.value===module)?.label||moduleLabel(module);
-  const moduleTabs=useMemo(()=>MODULE_KEYS.map(key=>({key,label:moduleLabel(key),icon:BookOpen,count:bank?(bank.items||[]).filter(q=>q.module===key).length:null})),[bank]);
+  const moduleTabs=useMemo(()=>MODULE_KEYS.map((key,index)=>({
+    key,
+    label:moduleLabel(key),
+    title:bank?.modules?.find(m=>m.key===key)?.name?.replace(/^Module\s+\d+\s*[-–—:]\s*/i,'') || MODULE_DISPLAY[index].title,
+    icon:MODULE_DISPLAY[index].icon,
+    count:bank?(bank.items||[]).filter(q=>q.module===key).length:null,
+  })),[bank]);
   const categoryOptions = toOptions([...new Set(items.map(q=>q.category).filter(Boolean))]);
   const formCategoryOptions=toOptions(form?.module==='module2'?BEHAVIOR_TYPES:form?.module==='module7'?(bank?.knowledgeCategories||[]):(bank?.categories||[]));
   const changeModule=value=>{
@@ -192,11 +214,25 @@ export default function AssessmentAdminQuestionBankPage({onUnauthorized}) {
           <p className="sibs-card-subtitle">Select an assessment module to review its original and added questions.</p>
         </div>
         <div className="mt-4 rounded-lg border border-blue-100 bg-blue-50/50 p-3 text-xs leading-relaxed"><strong>All seven assessment modules</strong><p className="mt-1 text-sibs-muted">New items are saved as drafts. HR Admin or Super Admin can publish Modules 1, 2, 5 and 7 for future public attempts. Modules 3, 4 and 6 require media or simulation integration and are draft-only. Existing attempts are unchanged.</p></div>
-        <div className="mt-4 overflow-hidden rounded-xl border border-sibs-border" aria-label="Assessment module selection">
-          <StatusFilterTabs tabs={moduleTabs} activeValue={module} onChange={changeModule} layoutId="assessmentQuestionBankModuleTabIndicator" />
-          <div className="flex flex-wrap items-center justify-between gap-2 bg-white px-3 py-3 sm:px-4">
-            <p className="text-xs font-extrabold text-sibs-navy">{activeModuleName}</p>
-            <span className="text-xs font-semibold text-sibs-muted">{bank?`${items.length} ${items.length===1?'item':'items'}`:'Loading module…'}</span>
+        <div className="sibs-question-bank-module-picker mt-4">
+          <h3 className="mb-2 text-xs font-extrabold text-sibs-navy">Assessment Modules</h3>
+          <div className="sibs-question-bank-module-grid" role="group" aria-label="Select assessment module">
+            {moduleTabs.map(({key,label,title,icon:Icon,count})=>{
+              const selected=module===key;
+              return (
+                <button key={key} type="button" className="sibs-question-bank-module-card" aria-pressed={selected}
+                  aria-label={`${label}: ${title}${count===null?'':`, ${count} ${count===1?'item':'items'}`}`}
+                  onClick={()=>changeModule(key)}>
+                  <span className="sibs-question-bank-module-card-top">
+                    <span className="sibs-question-bank-module-icon"><Icon size={17} aria-hidden="true"/></span>
+                    <span className="sibs-question-bank-module-number">{label}</span>
+                    {selected&&<CheckCircle2 size={15} className="sibs-question-bank-module-check" aria-hidden="true"/>}
+                  </span>
+                  <span className="sibs-question-bank-module-title">{title}</span>
+                  <span className="sibs-question-bank-module-count">{count===null?'Loading…':`${count} ${count===1?'item':'items'}`}</span>
+                </button>
+              );
+            })}
           </div>
         </div>
         <div className="sibs-question-bank-filter-row">
@@ -229,15 +265,64 @@ export default function AssessmentAdminQuestionBankPage({onUnauthorized}) {
           </button>
         </div>
       </div>
-      <div className="p-4 sm:p-5">
+      <div className="flex flex-1 flex-col p-4 sm:p-5 2xl:p-6">
         {error&&<div role="alert" className="mb-3 flex items-start gap-2 rounded-lg border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700"><AlertCircle size={15}/>{error}</div>}
         {message&&<div role="status" className="mb-3 flex items-start gap-2 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-800"><CheckCircle2 size={15}/>{message}</div>}
-        <div className="overflow-hidden rounded-xl border border-sibs-border">
+        <div className="flex flex-1 flex-col overflow-hidden rounded-[14px] border border-sibs-border bg-white shadow-xs">
           <StatusFilterTabs tabs={tabs} activeValue={status} onChange={value=>{setStatus(value);setPage(1);}} layoutId="assessmentQuestionBankTabIndicator"/>
-          <div className="overflow-x-auto sibs-scrollbar"><table className="w-full min-w-[840px] text-left text-xs"><thead className="bg-sibs-surface text-[10px] font-extrabold uppercase tracking-wide text-sibs-muted"><tr>{['Module','Item No.','Question','Category','Source','Status','Actions'].map(t=><th key={t} scope="col" className="px-3 py-3">{t}</th>)}</tr></thead>
-            <tbody className="divide-y divide-sibs-border">{loading?<tr><td colSpan={7} className="p-8 text-center text-sibs-muted">Loading questions…</td></tr>:visible.length===0?<tr><td colSpan={7} className="p-8 text-center text-sibs-muted">{error?'Question bank unavailable.':`No matching questions in ${moduleLabel(module)}.`}</td></tr>:visible.map(q=><tr key={`${q.module}:${q.source}:${q.id}`} className="group transition-colors hover:bg-sibs-cream-light"><td className="whitespace-nowrap px-3 py-3 font-extrabold text-sibs-orange">{moduleLabel(q.module)}</td><td className="whitespace-nowrap px-3 py-3 font-extrabold text-sibs-orange tabular-nums">{q.id}</td><td className="max-w-[420px] px-3 py-3 font-bold break-words group-hover:text-sibs-orange">{q.stem}</td><td className="px-3 py-3 font-semibold text-sibs-muted">{q.category}</td><td className="px-3 py-3">{q.source==='ORIGINAL'?'Original':'Added'}</td><td className="px-3 py-3"><QuestionStatus status={q.status}/></td><td className="px-3 py-3"><button type="button" className={secondary} onClick={()=>{setView(q);setModalError('');}}>View question</button></td></tr>)}</tbody>
-          </table></div>
-          <div className="px-3 py-4"><TablePagination currentPage={currentPage} totalPages={pages} totalRecords={filtered.length} pageSize={PAGE_SIZE} loadedCount={visible.length} onPageChange={setPage} recordLabel="questions" loading={loading}/></div>
+          <div className="max-h-[480px] overflow-x-auto overflow-y-auto bg-white sibs-scrollbar 2xl:max-h-[640px]">
+            <table className="w-full min-w-[1160px] table-fixed border-separate border-spacing-0 text-left 2xl:min-w-[1250px]">
+              <thead className="sibs-data-table-head">
+                <tr className="sibs-data-table-head-row">
+                  {[
+                    ['Module', 'w-[8%] text-left'],
+                    ['Item No.', 'w-[7%] text-left'],
+                    ['Question', 'w-[34%] text-left'],
+                    ['Category', 'w-[21%] text-left'],
+                    ['Source', 'w-[8%] text-left'],
+                    ['Status', 'w-[10%] text-center'],
+                    ['Actions', 'w-[12%] text-center'],
+                  ].map(([heading, width]) => <th key={heading} scope="col"
+                    className={`sibs-data-table-th ${width} px-3 py-2.5 sibs-text-micro font-black uppercase tracking-wider text-sibs-navy 2xl:px-4 2xl:py-3.5`}>
+                    {heading}
+                  </th>)}
+                </tr>
+              </thead>
+              <tbody aria-busy={loading}>
+                {loading ? <tr><td colSpan={7} className="px-5 py-12 text-center sibs-text-xs font-semibold text-sibs-secondary">Loading questions…</td></tr>
+                  : visible.length === 0 ? <tr><td colSpan={7} className="px-5 py-12 text-center sibs-text-xs font-semibold text-sibs-secondary">{error ? 'Question bank unavailable.' : `No matching questions in ${moduleLabel(module)}.`}</td></tr>
+                  : visible.map(q => <tr key={`${q.module}:${q.source}:${q.id}`} className="group transition-colors hover:bg-sibs-cream-light">
+                    <td className="border-b border-sibs-border px-3 py-2 align-middle 2xl:px-4 2xl:py-2.5">
+                      <p className="whitespace-nowrap sibs-text-xs font-extrabold text-sibs-orange">{moduleLabel(q.module)}</p>
+                    </td>
+                    <td className="border-b border-sibs-border px-3 py-2 align-middle 2xl:px-4 2xl:py-2.5">
+                      <p className="break-words sibs-text-xs font-extrabold tabular-nums text-sibs-orange">{q.id}</p>
+                    </td>
+                    <td className="border-b border-sibs-border px-3 py-2 align-middle 2xl:px-4 2xl:py-2.5">
+                      <p className="break-words sibs-text-xs font-extrabold leading-tight text-sibs-navy transition-colors group-hover:text-sibs-orange">{q.stem}</p>
+                    </td>
+                    <td className="border-b border-sibs-border px-3 py-2 align-middle 2xl:px-4 2xl:py-2.5">
+                      <p className="break-words sibs-text-xs font-semibold text-sibs-secondary">{q.category}</p>
+                    </td>
+                    <td className="border-b border-sibs-border px-3 py-2 align-middle 2xl:px-4 2xl:py-2.5">
+                      <p className="sibs-text-xs font-semibold text-sibs-secondary">{q.source === 'ORIGINAL' ? 'Original' : 'Added'}</p>
+                    </td>
+                    <td className="border-b border-sibs-border px-3 py-2 text-center align-middle 2xl:px-4 2xl:py-2.5">
+                      <QuestionStatus status={q.status} table />
+                    </td>
+                    <td className="border-b border-sibs-border px-3 py-2 text-center align-middle 2xl:px-4 2xl:py-2.5">
+                      <button type="button" onClick={()=>{setView(q);setModalError('');}}
+                        className="sibs-btn-secondary inline-flex h-8 items-center justify-center gap-1.5 whitespace-nowrap px-2.5 sibs-text-micro">
+                        <Eye size={14} aria-hidden="true"/>View question
+                      </button>
+                    </td>
+                  </tr>)}
+              </tbody>
+            </table>
+          </div>
+          <div className="mt-auto px-4 pb-4 sm:px-5 sm:pb-5">
+            <TablePagination currentPage={currentPage} totalPages={pages} totalRecords={filtered.length} pageSize={PAGE_SIZE} loadedCount={visible.length} onPageChange={setPage} recordLabel="questions" loading={loading} className="mt-3 2xl:mt-5 pt-2.5 2xl:pt-4"/>
+          </div>
         </div>
       </div>
     </section>
@@ -255,7 +340,7 @@ export default function AssessmentAdminQuestionBankPage({onUnauthorized}) {
         <p className="text-xs text-sibs-muted">Drafts are not included in candidate assessments.</p>
       </form>
     </ModalShell>}
-    {view&&!publishing&&<ModalShell open onClose={close} title={`${view.module==='module5'?'Passage': ['module4','module6'].includes(view.module)?'Task':'Question'} #${view.id}`} subtitle={`${moduleLabel(view.module)} · ${view.category}`} icon={BookOpen} maxWidth={['module4','module5','module6'].includes(view.module)?"max-w-[820px]":"max-w-[720px]"} autoDetectDirty={false} footer={<><button type="button" className="sibs-modal-btn-secondary" onClick={close}>Close</button>{view.status==='DRAFT'&&bank?.canPublish&&bank?.publishable?.includes(view.module)&&<button type="button" className="sibs-modal-btn-primary" onClick={()=>{setPublishing(view);setModalError('');}}>Publish Question</button>}</>}><div className="space-y-3"><QuestionStatus status={view.status}/>{['module4','module5','module6'].includes(view.module)?<AssessmentAdminPracticalQuestionDetails key={`${view.module}:${view.id}`} question={view}/>:<><p className="whitespace-pre-wrap break-words text-sm font-extrabold">{view.stem}</p>{view.options?.map(o=><div key={o.key} className={`rounded-lg border p-3 text-xs ${o.key===view.correctKey?'border-emerald-200 bg-emerald-50 text-emerald-800':'border-sibs-border bg-white'}`}><strong>{o.key}. </strong>{o.text}{o.key===view.correctKey&&<span className="ml-2 font-bold">✓ Correct answer</span>}</div>)}{view.metadata?.title&&<p className="text-xs font-bold">Title: {view.metadata.title}</p>}{view.metadata?.pillar&&<div className="rounded-lg border border-sibs-border p-3 text-xs"><p>Section: {view.metadata.section} · Pillar: {view.metadata.pillar}</p><p>Scoring: {Object.entries(view.metadata.scores||{}).map(([k,v])=>`${k}: ${v}`).join(' · ')}</p></div>}{view.metadata?.instructions&&<p className="whitespace-pre-wrap break-words rounded-lg border border-sibs-border p-3 text-xs">{view.metadata.instructions}</p>}</>}{view.status==='DRAFT'&&!bank?.publishable?.includes(view.module)&&<p className="text-xs font-semibold text-orange-700">Draft only — media/simulation validation required.</p>}{view.createdBy&&<QuestionCreator key={`${view.module}:${view.id}:${view.createdBy}`} question={view}/>}</div></ModalShell>}
+    {view&&!publishing&&<ModalShell open onClose={close} closeOnBackdrop={false} title={`${view.module==='module5'?'Passage': ['module4','module6'].includes(view.module)?'Task':'Question'} #${view.id}`} subtitle={`${moduleLabel(view.module)} · ${view.category}`} icon={BookOpen} maxWidth={['module4','module5','module6'].includes(view.module)?"max-w-[820px]":"max-w-[720px]"} autoDetectDirty={false} footer={view.status==='DRAFT'&&bank?.canPublish&&bank?.publishable?.includes(view.module)?<button type="button" className="sibs-modal-btn-primary" onClick={()=>{setPublishing(view);setModalError('');}}>Publish Question</button>:null}><div className="space-y-3"><QuestionStatus status={view.status}/>{['module4','module5','module6'].includes(view.module)?<AssessmentAdminPracticalQuestionDetails key={`${view.module}:${view.id}`} question={view}/>:<><p className="whitespace-pre-wrap break-words text-sm font-extrabold">{view.stem}</p>{view.options?.map(o=><div key={o.key} className={`rounded-lg border p-3 text-xs ${o.key===view.correctKey?'border-emerald-200 bg-emerald-50 text-emerald-800':'border-sibs-border bg-white'}`}><strong>{o.key}. </strong>{o.text}{o.key===view.correctKey&&<span className="ml-2 font-bold">✓ Correct answer</span>}</div>)}{view.metadata?.title&&<p className="text-xs font-bold">Title: {view.metadata.title}</p>}{view.metadata?.pillar&&<div className="rounded-lg border border-sibs-border p-3 text-xs"><p>Section: {view.metadata.section} · Pillar: {view.metadata.pillar}</p><p>Scoring: {Object.entries(view.metadata.scores||{}).map(([k,v])=>`${k}: ${v}`).join(' · ')}</p></div>}{view.metadata?.instructions&&<p className="whitespace-pre-wrap break-words rounded-lg border border-sibs-border p-3 text-xs">{view.metadata.instructions}</p>}</>}{view.status==='DRAFT'&&!bank?.publishable?.includes(view.module)&&<p className="text-xs font-semibold text-orange-700">Draft only — media/simulation validation required.</p>}{view.createdBy&&<QuestionCreator key={`${view.module}:${view.id}:${view.createdBy}`} question={view}/>}</div></ModalShell>}
     {publishing&&<ModalShell open onClose={close} title="Publish Question?" subtitle={`Question #${publishing.id}`} icon={CheckCircle2} maxWidth="max-w-[520px]" autoDetectDirty={false} closeDisabled={working} closeOnBackdrop={false} footer={<><button type="button" disabled={working} className="sibs-modal-btn-secondary" onClick={()=>{setPublishing(null);setModalError('');}}>Cancel</button><button type="button" disabled={working} className="sibs-modal-btn-primary" onClick={()=>void publish()}>{working?'Publishing…':'Confirm Publish'}</button></>}><p className="text-sm leading-relaxed">Confirm the question and its correct answer have been reviewed. Published questions are immutable and eligible for future public assessment draws. Existing attempts will not change.</p>{modalError&&<p role="alert" className="mt-3 rounded-lg bg-rose-50 p-3 text-xs text-rose-700">{modalError}</p>}</ModalShell>}
     {importState&&<ModalShell open onClose={close} title="Import Questions" subtitle="PDF or Word document · review before saving" icon={Upload} maxWidth="max-w-[900px]" closeDisabled={working} closeOnBackdrop={false} isDirty={Boolean(importState.text)} footer={<><button type="button" disabled={working} className="sibs-modal-btn-secondary" onClick={close}>Cancel</button><button type="button" disabled={working||!importReady} className="sibs-modal-btn-primary" onClick={()=>void saveImport()}>{working?'Processing…':'Save All Drafts'}</button></>}><div className="space-y-4">
       {modalError&&<p role="alert" className="rounded-lg bg-rose-50 p-3 text-xs text-rose-700">{modalError}</p>}

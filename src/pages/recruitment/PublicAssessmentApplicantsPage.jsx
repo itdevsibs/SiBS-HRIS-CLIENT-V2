@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import {
   RefreshCw, ExternalLink, Eye, Clock3,
   CheckCircle2, Users, AlertCircle, FileClock, X, UserRound,
-  BriefcaseBusiness,
+  BriefcaseBusiness, Copy, Check,
 } from 'lucide-react';
 import Header from '../../components/layout/Header';
 import api from '../../lib/axios/api-template';
@@ -142,6 +142,61 @@ function ApplicantAvatar({ applicant }) {
       </span>
       {preview}
     </>
+  );
+}
+
+// Keep the copy action separate from the clickable applicant row.
+function ApplicantEmail({ email }) {
+  const address = String(email ?? '').trim();
+  const [copiedEmail, setCopiedEmail] = useState('');
+  const resetTimerRef = useRef(null);
+  const mountedRef = useRef(false);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      if (resetTimerRef.current !== null) window.clearTimeout(resetTimerRef.current);
+    };
+  }, []);
+  const copied = Boolean(address) && copiedEmail === address;
+
+  async function copyEmail(event) {
+    event.stopPropagation();
+    if (!address) return;
+    try {
+      await navigator.clipboard.writeText(address);
+      if (!mountedRef.current) return;
+      if (resetTimerRef.current !== null) window.clearTimeout(resetTimerRef.current);
+      setCopiedEmail(address);
+      resetTimerRef.current = window.setTimeout(() => {
+        resetTimerRef.current = null;
+        setCopiedEmail('');
+      }, 2000);
+    } catch {
+      // Match the portal's existing manual-copy fallback for blocked clipboard access.
+      if (mountedRef.current) window.prompt('Copy applicant email:', address);
+    }
+  }
+
+  return (
+    <div className="mt-1 flex min-w-0 items-center gap-1">
+      <span className="min-w-0 truncate text-[10px] font-semibold text-sibs-muted" title={address || undefined}>
+        {address || '—'}
+      </span>
+      {address && (
+        <button
+          type="button"
+          onClick={copyEmail}
+          onKeyDown={event => event.stopPropagation()}
+          title={copied ? 'Email copied' : 'Copy email'}
+          aria-label={copied ? 'Email copied' : `Copy email ${address}`}
+          className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-sibs-muted transition-colors hover:bg-white hover:text-sibs-navy focus-visible:ring-2 focus-visible:ring-sibs-orange/30"
+        >
+          {copied ? <Check size={13} className="text-emerald-600" aria-hidden="true" /> : <Copy size={13} aria-hidden="true" />}
+        </button>
+      )}
+      <span role="status" className="sr-only">{copied ? 'Email copied to clipboard.' : ''}</span>
+    </div>
   );
 }
 
@@ -541,9 +596,7 @@ export default function PublicAssessmentApplicantsPage({ portalMode = false, onU
                             <p className="break-words sibs-text-xs font-extrabold leading-tight text-sibs-navy transition-colors group-hover:text-sibs-orange" title={applicant.name}>
                               {applicant.name || 'Unnamed applicant'}
                             </p>
-                            <p className="mt-1 truncate text-[10px] font-semibold text-sibs-muted" title={applicant.email}>
-                              {applicant.email || '—'}
-                            </p>
+                            <ApplicantEmail email={applicant.email} />
                           </div>
                         </div>
                       </td>

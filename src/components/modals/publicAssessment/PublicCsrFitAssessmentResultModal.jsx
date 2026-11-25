@@ -290,7 +290,6 @@ export default function PublicCsrFitAssessmentResultModal({ open, data, onClose 
           {pdfBusy ? <Loader2 size={15} className="animate-spin"/> : <Download size={15}/>}
           {pdfBusy ? 'Generating PDF…' : 'Download Answered Assessment (PDF)'}
         </button>
-        <button type="button" onClick={onClose} className="sibs-modal-btn-secondary">Close Results</button>
       </div>}>
       <div className="space-y-4">
         {pdfError && <div role="alert" className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-2 text-xs font-semibold text-rose-700">{pdfError}</div>}
