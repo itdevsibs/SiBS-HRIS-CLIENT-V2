@@ -1,0 +1,33 @@
+/* Scoped to Question Bank, including all module/category selectors and import modal. */
+@layer base {
+  .sibs-question-bank-category-filter input[role="combobox"],
+  .sibs-question-bank-category-filter input[role="combobox"]:focus,
+  .sibs-question-bank-category-filter input[role="combobox"]:focus-visible {
+    border: 0 !important;
+    outline: none !important;
+    outline-offset: 0 !important;
+    box-shadow: none !important;
+    --tw-ring-shadow: 0 0 #0000 !important;
+  }
+  .sibs-question-bank-category-filter:focus-within {
+    border-color: #ff5c28;
+  }
+}
+
+/* Match the Employee Directory's horizontal filter alignment on desktop.
+   A scoped grid avoids dependence on generated responsive utility classes. */
+.sibs-question-bank-filter-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: end;
+  gap: 12px;
+  margin-top: 16px;
+}
+.sibs-question-bank-filter-row > * {
+  min-width: 0;
+}
+@media (min-width: 1024px) {
+  .sibs-question-bank-filter-row {
+    grid-template-columns: minmax(0, 1fr) clamp(210px, 20vw, 300px) auto;
+  }
+}

@@ -22,6 +22,7 @@ import {
   getEmployeePdsPreviewUrl,
 } from "@/lib/axios/getEmployee";
 import ConfirmModal from "@/components/ui/ConfirmModal";
+import DirectoryAvatarCircle from "@/components/ui/DirectoryAvatarCircle";
 import { useUser } from "@/services/context/UserContext";
 import { sanitizeDisplayFullName, sanitizeMiddleName } from "@/lib/utils/employees/employeeNameDisplay.js";
 import { usePagination } from "@/services/context/PaginationContext";
@@ -55,14 +56,6 @@ const defaultDirectoryTabs = [
     icon: UserRoundCheck,
     description: "Employee master records",
   },
-];
-
-const AVATAR_TONES = [
-  "border-orange-100 bg-orange-50 text-sibs-orange",
-  "border-emerald-100 bg-emerald-50 text-emerald-700",
-  "border-blue-100 bg-blue-50 text-sibs-navy",
-  "border-pink-100 bg-pink-50 text-pink-700",
-  "border-violet-100 bg-violet-50 text-violet-700",
 ];
 
 function getCleanValue(...values) {
@@ -250,14 +243,6 @@ function getInitials(employee = {}) {
     .filter(Boolean);
 
   return `${tokens[0]?.[0] || "E"}${tokens[1]?.[0] || ""}`.toUpperCase();
-}
-
-function getAvatarTone(employee = {}) {
-  const seed = getEmployeeName(employee)
-    .split("")
-    .reduce((total, character) => total + character.charCodeAt(0), 0);
-
-  return AVATAR_TONES[seed % AVATAR_TONES.length];
 }
 
 function getSibsId(employee = {}) {
@@ -592,7 +577,6 @@ function getEmployeeAvatarPreviewPosition(element) {
 }
 
 function EmployeeAvatar({ employee, size = "md" }) {
-  const sizeClass = size === "lg" ? "h-11 w-11" : "h-9 w-9";
   const profilePictureUrl = getEmployeeProfilePictureUrl(employee);
   const [failedImageUrl, setFailedImageUrl] = useState("");
   const [previewVisible, setPreviewVisible] = useState(false);
@@ -642,13 +626,7 @@ function EmployeeAvatar({ employee, size = "md" }) {
             }}
             aria-hidden="true"
           >
-            <span
-              className={`relative flex h-40 w-40 items-center justify-center overflow-hidden rounded-xl border text-[24px] font-extrabold ${getAvatarTone(
-                employee,
-              )}`}
-            >
-              <span>{initials}</span>
-
+            <DirectoryAvatarCircle name={employeeName} initials={initials} size="preview">
               {canShowProfilePicture ? (
                 <img
                   src={profilePictureUrl}
@@ -657,7 +635,7 @@ function EmployeeAvatar({ employee, size = "md" }) {
                   onError={() => setFailedImageUrl(profilePictureUrl)}
                 />
               ) : null}
-            </span>
+            </DirectoryAvatarCircle>
           </span>,
           document.body,
         )
@@ -677,13 +655,7 @@ function EmployeeAvatar({ employee, size = "md" }) {
         onClick={(event) => event.stopPropagation()}
         onKeyDown={(event) => event.stopPropagation()}
       >
-        <span
-          className={`relative inline-flex ${sizeClass} shrink-0 items-center justify-center overflow-hidden rounded-full border text-xs font-extrabold shadow-inner ${getAvatarTone(
-            employee,
-          )}`}
-        >
-          <span aria-hidden="true">{initials}</span>
-
+        <DirectoryAvatarCircle name={employeeName} initials={initials} size={size}>
           {canShowProfilePicture ? (
             <img
               src={profilePictureUrl}
@@ -693,7 +665,7 @@ function EmployeeAvatar({ employee, size = "md" }) {
               onError={() => setFailedImageUrl(profilePictureUrl)}
             />
           ) : null}
-        </span>
+        </DirectoryAvatarCircle>
       </span>
       {preview}
     </>
