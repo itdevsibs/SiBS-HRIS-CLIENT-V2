@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { AlertCircle, BookOpen, CheckCircle2, ClipboardList, Eye, FileClock, FilePlus2, FileText, FolderOpen, Headphones, Keyboard, MessagesSquare, Monitor, Plus, RefreshCw, Upload, UploadCloud, X } from 'lucide-react';
 import portalApi from '../../lib/assessment-admin/portalApi';
 import ModalShell from '../../components/ui/ModalShell';
@@ -7,6 +7,8 @@ import StatusFilterTabs from '../../components/ui/StatusFilterTabs';
 import SelectDropdown from '../../components/ui/SelectDropdown';
 import SearchInput from '../../components/ui/SearchInput';
 import PageHeaderHero from '../../components/ui/PageHeaderHero';
+import PageFallback from '../../components/ui/PageFallback';
+import { TableSkeletonRows } from '../../components/ui/TableSkeleton';
 import AssessmentAdminPracticalQuestionDetails from './AssessmentAdminPracticalQuestionDetails';
 import './AssessmentAdminQuestionBankPage.css';
 
@@ -77,9 +79,10 @@ function QuestionCreator({question}) {
   );
 }
 
-export default function AssessmentAdminQuestionBankPage({onUnauthorized}) {
+export default function AssessmentAdminQuestionBankPage({onUnauthorized, onInitialLoadSettled}) {
   const [bank,setBank] = useState(null);
   const [loading,setLoading] = useState(true);
+  const [initialLoadSettled,setInitialLoadSettled] = useState(false);
   const [error,setError] = useState('');
   const [message,setMessage] = useState('');
   const [searchInput,setSearchInput] = useState('');
@@ -108,9 +111,17 @@ export default function AssessmentAdminQuestionBankPage({onUnauthorized}) {
       if (signal?.aborted) return;
       if ([401,403].includes(failure?.response?.status)) onUnauthorized?.();
       else {setBank(null);setError(getError(failure));}
-    } finally {if (!signal?.aborted) setLoading(false);}
+    } finally {if (!signal?.aborted) {setInitialLoadSettled(true);setLoading(false);}}
   },[onUnauthorized]);
-  useEffect(()=>{const controller=new AbortController();void load(controller.signal);return ()=>controller.abort();},[load]);
+  useEffect(() => {
+    const controller = new AbortController();
+    // A replayed StrictMode effect is cleaned up before its microtask runs.
+    queueMicrotask(() => { if (!controller.signal.aborted) void load(controller.signal); });
+    return () => controller.abort();
+  }, [load]);
+  useLayoutEffect(() => {
+    if (initialLoadSettled) onInitialLoadSettled?.();
+  }, [initialLoadSettled, onInitialLoadSettled]);
   const items = useMemo(()=>(bank?.items || [])
     .filter(q=>q.module===module)
     .sort((a,b)=>Number(a.id)-Number(b.id)),[bank,module]);
@@ -181,6 +192,8 @@ export default function AssessmentAdminQuestionBankPage({onUnauthorized}) {
   }
   async function saveImport(){if(working||!importState?.preview?.items?.length||importState.preview.errors.length||importState.text!==importState.validatedText||importState.defaultModule!==importState.validatedModule)return;setWorking(true);setModalError('');try{const result=await portalApi.post(`${BANK_API}/import`,{text:importState.text,defaultModule:importState.defaultModule},{timeout:60000});const importedModules=MODULE_KEYS.filter(key=>result.data.data.items?.some(item=>item.module===key));setImportState(null);setModule(importedModules.includes(module)?module:(importedModules[0]||module));setCategory('');setSearchInput('');setSearch('');setStatus('DRAFT');setPage(1);setMessage(`${result.data.data.count} questions/tasks imported as drafts.${importedModules.length>1?' Switch module tabs to review the other imported drafts.':''}`);await load();}catch(failure){if(failure?.response?.status===401)onUnauthorized?.();else setModalError(getError(failure));}finally{setWorking(false);}}
   const importReady=Boolean(importState?.preview?.items?.length&&!importState.preview.errors.length&&importState.text===importState.validatedText&&importState.defaultModule===importState.validatedModule);
+  // Use the HRIS page skeleton only for the initial load; preserve open forms and filters on refresh.
+  if (loading && !initialLoadSettled) return onInitialLoadSettled ? null : <PageFallback />;
   return <div className="w-full px-1 py-1 font-jakarta text-sibs-navy">
     <div className="mx-auto flex w-full max-w-[1700px] flex-col gap-4 sm:gap-5">
     <PageHeaderHero
@@ -289,7 +302,7 @@ export default function AssessmentAdminQuestionBankPage({onUnauthorized}) {
                 </tr>
               </thead>
               <tbody aria-busy={loading}>
-                {loading ? <tr><td colSpan={7} className="px-5 py-12 text-center sibs-text-xs font-semibold text-sibs-secondary">Loading questions…</td></tr>
+                {loading ? <TableSkeletonRows count={6} columns={7} />
                   : visible.length === 0 ? <tr><td colSpan={7} className="px-5 py-12 text-center sibs-text-xs font-semibold text-sibs-secondary">{error ? 'Question bank unavailable.' : `No matching questions in ${moduleLabel(module)}.`}</td></tr>
                   : visible.map(q => <tr key={`${q.module}:${q.source}:${q.id}`} className="group transition-colors hover:bg-sibs-cream-light">
                     <td className="border-b border-sibs-border px-3 py-2 align-middle 2xl:px-4 2xl:py-2.5">

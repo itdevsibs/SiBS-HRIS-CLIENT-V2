@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
   RefreshCw, ExternalLink, Eye, Clock3,
@@ -12,6 +12,8 @@ import portalSocket from '../../lib/assessment-admin/portalSocket';
 import portalApi from '../../lib/assessment-admin/portalApi';
 import ModalShell from '../../components/ui/ModalShell';
 import { PageHeaderHero } from '../../components/ui';
+import PageFallback from '../../components/ui/PageFallback';
+import { TableSkeletonRows } from '../../components/ui/TableSkeleton';
 import CsrFitAssessmentResultModal from '../../components/modals/candidatePipeline/CsrFitAssessmentResultModal';
 import PublicCsrFitAssessmentResultModal from '../../components/modals/publicAssessment/PublicCsrFitAssessmentResultModal';
 // Reuse the same HRIS controls used by Recruitment > Talent Pool.
@@ -325,7 +327,7 @@ function PendingApplicantModal({ applicant, onClose }) {
   </ModalShell>;
 }
 
-export default function PublicAssessmentApplicantsPage({ portalMode = false, onUnauthorized }) {
+export default function PublicAssessmentApplicantsPage({ portalMode = false, onUnauthorized, onInitialLoadSettled }) {
   const assessmentApi = portalMode ? portalApi : api;
   const liveSocket = portalMode ? portalSocket : socket;
   const [items, setItems] = useState([]);
@@ -335,6 +337,7 @@ export default function PublicAssessmentApplicantsPage({ portalMode = false, onU
   const [query, setQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [loading, setLoading] = useState(true);
+  const [initialLoadSettled, setInitialLoadSettled] = useState(false);
   const [error, setError] = useState('');
   const [selectedApplicant, setSelectedApplicant] = useState(null);
   const [assessmentResult, setAssessmentResult] = useState(null);
@@ -378,7 +381,10 @@ export default function PublicAssessmentApplicantsPage({ portalMode = false, onU
       if (sequence === requestSequenceRef.current)
         setError(cause?.response?.data?.message || 'Unable to retrieve public assessment applicants.');
     } finally {
-      if (sequence === requestSequenceRef.current) setLoading(false);
+      if (sequence === requestSequenceRef.current) {
+        setInitialLoadSettled(true);
+        setLoading(false);
+      }
     }
   }, [page, query, statusFilter, portalMode, onUnauthorized, assessmentApi]);
 
@@ -458,6 +464,13 @@ export default function PublicAssessmentApplicantsPage({ portalMode = false, onU
       window.prompt('Copy public assessment URL:', url);
     }
   }
+
+  // Signal the persistent portal skeleton before the browser paints the results.
+  useLayoutEffect(() => {
+    if (portalMode && initialLoadSettled) onInitialLoadSettled?.();
+  }, [portalMode, initialLoadSettled, onInitialLoadSettled]);
+  // The portal owns initial loading; retain the standalone fallback if embedded elsewhere.
+  if (portalMode && loading && !initialLoadSettled) return onInitialLoadSettled ? null : <PageFallback />;
 
   return <div className={portalMode ? 'w-full' : 'sibs-dashboard-shell'}>
     {!portalMode && <div className="shrink-0"><Header /></div>}
@@ -573,8 +586,10 @@ export default function PublicAssessmentApplicantsPage({ portalMode = false, onU
                       </th>)}
                     </tr>
                   </thead>
-                  <tbody>
-                    {loading && items.length === 0 && <tr><td colSpan={7} className="px-5 py-12 text-center sibs-text-xs font-semibold text-sibs-secondary">Loading applicants…</td></tr>}
+                  <tbody aria-busy={loading}>
+                    {loading && items.length === 0 && (portalMode
+                      ? <TableSkeletonRows count={6} columns={7} />
+                      : <tr><td colSpan={7} className="px-5 py-12 text-center sibs-text-xs font-semibold text-sibs-secondary">Loading applicants…</td></tr>)}
                     {!loading && items.length === 0 && <tr><td colSpan={7} className="px-5 py-12 text-center sibs-text-xs font-semibold text-sibs-secondary">No public assessment applicants found.</td></tr>}
                     {items.map(applicant => <tr
                       key={applicant.id}

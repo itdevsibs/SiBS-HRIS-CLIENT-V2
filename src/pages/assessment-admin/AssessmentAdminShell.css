@@ -1,0 +1,4 @@
+/* PageFallback already supplies the main HRIS content padding. */
+.assessment-admin-content:has(> [aria-label="Loading page content"]) {
+  padding: 0;
+}
