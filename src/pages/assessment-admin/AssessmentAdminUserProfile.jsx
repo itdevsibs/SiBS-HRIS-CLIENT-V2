@@ -2,6 +2,33 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import { createPortal } from 'react-dom';
 import { ChevronDown, Loader2, LogOut } from 'lucide-react';
 import portalApi from '../../lib/assessment-admin/portalApi';
+import { readPortalPhoto, writePortalPhoto, clearPortalPhoto } from '../../lib/assessment-admin/portalHeaderCache';
+import { readPortalSession } from '../../lib/assessment-admin/portalSession';
+
+// Resize the authenticated response for the header and its 152px hover preview.
+async function createPortalPhotoThumbnail(blob) {
+  if (!blob?.size || !/^image\/(jpeg|png|webp|gif)$/i.test(blob.type)) return '';
+  const url = URL.createObjectURL(blob);
+  try {
+    const image = new Image();
+    await new Promise((resolve, reject) => {
+      image.onload = resolve;
+      image.onerror = reject;
+      image.src = url;
+    });
+    const scale = Math.min(1, 320 / Math.max(image.naturalWidth, image.naturalHeight));
+    if (!Number.isFinite(scale) || scale <= 0) return '';
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+    canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+    const context = canvas.getContext('2d');
+    if (!context) return '';
+    context.fillStyle = '#042C51';
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    context.drawImage(image, 0, 0, canvas.width, canvas.height);
+    return canvas.toDataURL('image/jpeg', 0.85);
+  } finally { URL.revokeObjectURL(url); }
+}
 import { getActiveCollectibleProfile } from '../../config/developerBorders';
 import CollectibleAvatarFrame from '../../components/layout/dropdown/CollectibleAvatarFrame';
 import { sanitizeMiddleName } from '../../lib/utils/employees/employeeNameDisplay.js';
@@ -9,7 +36,7 @@ import { sanitizeMiddleName } from '../../lib/utils/employees/employeeNameDispla
 /** Portal-specific counterpart of the HRIS header profile.
  * It deliberately does not depend on the main HRIS UserContext or sign-out API.
  */
-export default function AssessmentAdminUserProfile({ user, logout }) {
+export default function AssessmentAdminUserProfile({ user, logout, displayOnly = false }) {
   const [open, setOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
   const logoutInFlight = useRef(false);
@@ -17,8 +44,9 @@ export default function AssessmentAdminUserProfile({ user, logout }) {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewPosition, setPreviewPosition] = useState(null);
   const [menuPosition, setMenuPosition] = useState(null);
-  const [photoFailed, setPhotoFailed] = useState(false);
-  const [photoAvailable, setPhotoAvailable] = useState(false);
+  const sibsId = String(user?.sibsId || '');
+  const sessionId = readPortalSession()?.sessionId || '';
+  const [photoUrl, setPhotoUrl] = useState(() => readPortalPhoto(sibsId, sessionId));
   const wrapperRef = useRef(null);
   const avatarRef = useRef(null);
   const menuRef = useRef(null);
@@ -33,20 +61,37 @@ export default function AssessmentAdminUserProfile({ user, logout }) {
   const initials = [user?.firstName?.[0], user?.lastName?.[0]].filter(Boolean).join('').toUpperCase() || 'S';
   const email = user?.email || user?.role || '';
   const collectible = getActiveCollectibleProfile(user);
-  const photoUrl = `${portalApi.defaults.baseURL}/api/assessment-portal/profile-photo`;
-  const showPhoto = photoAvailable && !photoFailed;
+  const showPhoto = Boolean(photoUrl);
+  const onPhotoError = () => {
+    clearPortalPhoto();
+    setPhotoUrl('');
+  };
 
-  // Profile picture is fetched through the portal's own HttpOnly session,
-  // not through the regular HRIS cookie (which may belong to another user).
+  // Keep the last authenticated thumbnail during session verification and
+  // refresh it only after authentication. No extra <img> network request.
   useEffect(() => {
+    if (displayOnly || !sibsId || !sessionId) return;
     let alive = true;
-    setPhotoFailed(false);
-    setPhotoAvailable(false);
-    portalApi.get('/api/assessment-portal/profile-photo', { responseType: 'blob' })
-      .then(response => { if (alive) setPhotoAvailable(response.data?.size > 0); })
-      .catch(() => { if (alive) setPhotoAvailable(false); });
-    return () => { alive = false; };
-  }, [user?.sibsId]);
+    const controller = new AbortController();
+    const isCurrent = () => alive && readPortalSession()?.sessionId === sessionId &&
+      readPortalSession()?.expiresAt > Date.now();
+    portalApi.get('/api/assessment-portal/profile-photo', { responseType: 'blob', signal: controller.signal })
+      .then(async response => {
+        if (!isCurrent()) return;
+        const src = await createPortalPhotoThumbnail(response.data);
+        if (!isCurrent() || !src) return;
+        writePortalPhoto(sibsId, sessionId, src);
+        setPhotoUrl(src);
+      })
+      .catch(error => {
+        // Keep an existing portrait through transient network failures.
+        if (isCurrent() && Number(error?.response?.status) === 404) {
+          clearPortalPhoto();
+          setPhotoUrl('');
+        }
+      });
+    return () => { alive = false; controller.abort(); };
+  }, [sibsId, sessionId, displayOnly]);
 
   const placePreview = useCallback(() => {
     const anchor = avatarRef.current;
@@ -72,11 +117,12 @@ export default function AssessmentAdminUserProfile({ user, logout }) {
   }, []);
 
   const onEnter = () => {
-    if (open) return;
+    if (displayOnly || open) return;
     const next = placePreview();
     if (next) { setPreviewPosition(next); setPreviewOpen(true); }
   };
   const toggle = () => {
+    if (displayOnly) return;
     setPreviewOpen(false);
     if (!open) setMenuPosition(placeMenu());
     setOpen(current => !current);
@@ -108,7 +154,7 @@ export default function AssessmentAdminUserProfile({ user, logout }) {
   }, [previewOpen, open, placePreview, placeMenu]);
 
   const onLogout = async () => {
-    if (logoutInFlight.current) return;
+    if (displayOnly || logoutInFlight.current) return;
     logoutInFlight.current = true;
     setLoggingOut(true);
     try { await logout(); setOpen(false); }
@@ -117,20 +163,20 @@ export default function AssessmentAdminUserProfile({ user, logout }) {
 
   const avatar = variant => collectible ? (
     <CollectibleAvatarFrame collectible={collectible} photoUrl={showPhoto ? photoUrl : ''} fallback={initials}
-      variant={variant} onPhotoError={() => setPhotoFailed(true)}/>
+      variant={variant} onPhotoError={onPhotoError}/>
   ) : variant === 'preview' ? (
     <div className="flex h-full w-full items-center justify-center overflow-hidden rounded-xl bg-sibs-primary-1 text-4xl font-extrabold text-white">
-      {showPhoto ? <img src={photoUrl} alt="" className="h-full w-full object-cover" onError={() => setPhotoFailed(true)}/> : initials}
+      {showPhoto ? <img src={photoUrl} alt="" className="h-full w-full object-cover" onError={onPhotoError}/> : initials}
     </div>
   ) : (
     <span className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-sibs-primary-1 text-[11px] font-extrabold text-white shadow-[0_6px_16px_rgba(0,48,142,0.24)] 2xl:h-9 2xl:w-9 2xl:text-xs">
-      {showPhoto ? <img src={photoUrl} alt="" className="h-full w-full object-cover" onError={() => setPhotoFailed(true)}/> : initials}
+      {showPhoto ? <img src={photoUrl} alt="" className="h-full w-full object-cover" onError={onPhotoError}/> : initials}
     </span>
   );
 
   return <div ref={wrapperRef} className="relative z-[90] min-w-0 font-jakarta">
     <button ref={triggerRef} type="button" aria-label={`User menu: ${name}`} aria-haspopup="menu" aria-expanded={open}
-      onClick={toggle}
+      disabled={displayOnly} onClick={toggle}
       className="group flex min-w-0 max-w-[290px] cursor-pointer items-center gap-2 rounded-xl border border-transparent bg-transparent px-2 py-1 text-left transition-colors duration-150 hover:bg-sibs-tertiary-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sibs-primary-1/30 xl:max-w-[320px] 2xl:max-w-[360px] 2xl:gap-2.5 2xl:py-1.5">
       <span ref={avatarRef} onMouseEnter={onEnter} onMouseLeave={() => setPreviewOpen(false)}
         className="relative flex shrink-0 items-center justify-center">{avatar('header')}</span>
@@ -140,10 +186,10 @@ export default function AssessmentAdminUserProfile({ user, logout }) {
       </span>
       <ChevronDown size={14} strokeWidth={2} className={`hidden shrink-0 text-sibs-tertiary-6 transition-transform duration-200 group-hover:text-sibs-primary-1 sm:block ${open ? 'rotate-180 text-sibs-primary-1' : ''}`}/>
     </button>
-    {!open && previewOpen && previewPosition && createPortal(
+    {!displayOnly && !open && previewOpen && previewPosition && createPortal(
       <div aria-hidden="true" className="pointer-events-none fixed z-[2147483631] h-[152px] w-[152px] rounded-2xl border border-sibs-border-subtle bg-white p-1.5 shadow-[0_18px_50px_rgba(4,44,81,0.28)]"
         style={previewPosition}>{avatar('preview')}</div>, document.body)}
-    {open && menuPosition && createPortal(
+    {!displayOnly && open && menuPosition && createPortal(
       <div ref={menuRef} role="menu" aria-label="User actions" className="sibs-animated-dropdown open fixed z-[2147483630] font-jakarta" style={menuPosition}>
         <div className="sibs-animated-dropdown-inner">
           <div className="sibs-animated-dropdown-box overflow-hidden rounded-xl border border-sibs-border-subtle bg-white shadow-[0_18px_50px_rgba(4,44,81,0.20)]">

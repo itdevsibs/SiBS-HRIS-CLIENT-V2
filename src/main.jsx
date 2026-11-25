@@ -9,6 +9,7 @@ import {
 
 import App from "./App.jsx";
 import PublicRouteFallback from "./components/ui/PublicRouteFallback.jsx";
+import AssessmentAdminApp from "./pages/assessment-admin/AssessmentAdminApp.jsx";
 import { isStandalonePublicRoute, isPublicApplicationHostname, normalizePath } from "./config/publicRoutes";
 import "./index.css";
 import { startAnimatedHrisFavicon } from "./lib/utils/animatedFavicon.js";
@@ -63,9 +64,6 @@ const PublicCsrFitAssessmentPage = lazyWithRetry(() =>
 );
 const PublicApplicantPortalPage = lazyWithRetry(() =>
   import("./pages/public/PublicApplicantPortalPage.jsx")
-);
-const AssessmentAdminApp = lazyWithRetry(() =>
-  import("./pages/assessment-admin/AssessmentAdminApp.jsx")
 );
 
 /* =====================================================
@@ -284,7 +282,7 @@ createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <BrowserRouter>
       {isAssessmentAdminPortal ? (
-        <Suspense fallback={<PublicRouteFallback />}><AssessmentAdminApp /></Suspense>
+        <AssessmentAdminApp />
       ) : isCandidateStandalonePublic ? <StandalonePublicApp /> : <App />}
     </BrowserRouter>
   </React.StrictMode>,
