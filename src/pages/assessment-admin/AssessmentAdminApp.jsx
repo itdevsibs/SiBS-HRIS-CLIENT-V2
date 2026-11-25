@@ -18,6 +18,8 @@ const ROOT = '/assessment-admin';
 const PublicAssessmentApplicantsPage = lazy(() => import('../recruitment/PublicAssessmentApplicantsPage'));
 const AssessmentAdminQuestionBankPage = lazy(() => import('./AssessmentAdminQuestionBankPage'));
 
+const AssessmentAdminUsersPage = lazy(() => import('./AssessmentAdminUsersPage'));
+
 // Keep the same skeleton DOM mounted from session verification through the
 // lazy page import and first data request. Never mount a protected page while
 // checking authentication, even if a cached display profile is present.
@@ -313,6 +315,7 @@ export default function AssessmentAdminApp() {
           <Route path={`${ROOT}/dashboard`} element={<Navigate to={`${ROOT}/public-assessment`} replace/>}/>
           <Route path={`${ROOT}/public-assessment`} element={<PublicAssessmentApplicantsPage portalMode onUnauthorized={unauthorized} onInitialLoadSettled={onInitialLoadSettled}/>}/>
           <Route path={`${ROOT}/question-bank`} element={<AssessmentAdminQuestionBankPage onUnauthorized={unauthorized} onInitialLoadSettled={onInitialLoadSettled}/>}/>
+          <Route path={`${ROOT}/users`} element={<AssessmentAdminUsersPage onUnauthorized={unauthorized} onInitialLoadSettled={onInitialLoadSettled}/>}/>
           <Route path="*" element={<Navigate to={`${ROOT}/public-assessment`} replace/>}/>
         </Routes>}
       </AssessmentAdminContentLoading>
