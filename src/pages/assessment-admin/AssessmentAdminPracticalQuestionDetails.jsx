@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
-import { CheckCircle2, FileText, Folder, Headphones, Keyboard, Play } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { CheckCircle2, FileText, Folder, Headphones, Keyboard, Play, Video } from 'lucide-react';
 import portalApi from '../../lib/assessment-admin/portalApi';
 
 const sectionClass = 'space-y-3 rounded-xl border border-sibs-border bg-white p-4';
@@ -29,37 +29,66 @@ function Expected({ children }) {
   </div>;
 }
 
+// The original Module 3 briefing is the same static asset used in both candidate flows.
+export function AssessmentAdminCoachingVideoPreview() {
+  const [failed, setFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+  return <Section title="Supervisor briefing video" icon={Video}>
+    <video key={attempt} controls playsInline preload="metadata" controlsList="nodownload"
+      src="/assessment/csr-fit-supervisor-briefing.mp4"
+      aria-label="Module 3 supervisor briefing video"
+      className="aspect-video w-full max-h-[420px] rounded-lg bg-sibs-navy object-contain"
+      onError={() => setFailed(true)} />
+    {failed && <div className="space-y-2" role="alert">
+      <p className="text-xs font-semibold text-rose-700">Unable to play the briefing video. Please try again.</p>
+      <button type="button" className="sibs-btn-secondary" onClick={() => { setFailed(false); setAttempt(value => value + 1); }}>Retry video</button>
+    </div>}
+    <p className="text-xs text-sibs-muted">Reviewer preview only. Playback does not affect candidate assessment progress.</p>
+  </Section>;
+}
+
 function VoicemailPreview() {
-  const [audioUrl, setAudioUrl] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const request = useRef(null);
-  const objectUrl = useRef('');
-  useEffect(() => () => {
-    request.current?.abort();
-    if (objectUrl.current) URL.revokeObjectURL(objectUrl.current);
-  }, []);
-  async function loadAudio() {
-    if (request.current || audioUrl) return;
+  const [attempt, setAttempt] = useState(0);
+  const [preview, setPreview] = useState({ loading: true, url: '', error: '' });
+  useEffect(() => {
     const controller = new AbortController();
-    request.current = controller;
-    setLoading(true); setError('');
-    try {
-      const response = await portalApi.get('/api/assessment-portal/questions/module6/voicemail', { responseType: 'blob', signal: controller.signal });
-      if (controller.signal.aborted) return;
-      if (!response.data?.size || !String(response.data.type).startsWith('audio/')) throw new Error('Invalid audio response');
-      objectUrl.current = URL.createObjectURL(response.data);
-      setAudioUrl(objectUrl.current);
-    } catch (failure) {
-      if (!controller.signal.aborted) setError(failure?.response?.status === 401 || failure?.response?.status === 403 ? 'Sign in again to preview the recording.' : 'Unable to load the recording. Please try again.');
-    } finally {
-      if (request.current === controller) request.current = null;
-      if (!controller.signal.aborted) setLoading(false);
+    let objectUrl = '';
+    async function loadAudio() {
+      try {
+        const response = await portalApi.get('/api/assessment-portal/questions/module6/voicemail', { responseType: 'blob', signal: controller.signal });
+        if (controller.signal.aborted) return;
+        if (!response.data?.size || !String(response.data.type).startsWith('audio/')) throw new Error('Invalid audio response');
+        objectUrl = URL.createObjectURL(response.data);
+        setPreview({ loading: false, url: objectUrl, error: '' });
+      } catch (failure) {
+        if (controller.signal.aborted) return;
+        const error = [401, 403].includes(failure?.response?.status)
+          ? 'Sign in again to preview the recording.'
+          : 'Unable to load the recording. Please try again.';
+        setPreview({ loading: false, url: '', error });
+      }
     }
+    void loadAudio();
+    return () => {
+      controller.abort();
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [attempt]);
+
+  function retry() {
+    setPreview({ loading: true, url: '', error: '' });
+    setAttempt(value => value + 1);
   }
+
   return <Section title="Voicemail recording" icon={Headphones}>
-    {audioUrl ? <audio controls preload="metadata" src={audioUrl} className="w-full" onError={()=>setError('The recording could not be played.')} aria-label="Reviewer voicemail preview" /> : <button type="button" className="sibs-btn-secondary inline-flex items-center gap-2 disabled:opacity-50" disabled={loading} onClick={loadAudio}><Play size={15}/>{loading ? 'Loading recording…' : 'Load audio preview'}</button>}
-    {error && <p role="alert" className="text-xs font-semibold text-rose-700">{error}</p>}
+    {preview.loading && <p role="status" className="animate-pulse rounded-lg bg-sibs-surface p-3 text-xs font-semibold text-sibs-muted">Loading recording…</p>}
+    {preview.url && <audio controls preload="metadata" controlsList="nodownload" src={preview.url} className="w-full"
+      onError={() => setPreview(previous => ({ ...previous, error: 'The recording could not be played. Please try again.' }))}
+      aria-label="Module 6 reviewer voicemail preview" />}
+    {preview.error && <div className="space-y-2" role="alert">
+      <p className="text-xs font-semibold text-rose-700">{preview.error}</p>
+      <button type="button" className="sibs-btn-secondary inline-flex items-center gap-2" onClick={retry}><Play size={15}/> Retry audio</button>
+    </div>}
     <p className="text-xs text-sibs-muted">Reviewer preview only. Candidate playback remains limited to one listen.</p>
   </Section>;
 }
