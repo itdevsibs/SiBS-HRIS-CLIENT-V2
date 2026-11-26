@@ -103,7 +103,7 @@ export default function StatusModal({
     target?.focus({ preventScroll: true });
     return () => {
       if (previouslyFocusedRef.current?.isConnected) {
-        previouslyFocusedRef.current.focus();
+        previouslyFocusedRef.current.focus({ preventScroll: Boolean(previouslyFocusedRef.current.closest?.("[data-assessment-admin-scroll]")) });
       }
     };
   }, [open, initialFocus]);

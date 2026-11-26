@@ -1,3 +1,9 @@
+/* Keep the portal's page scroll independent from document-level modal locks. */
+.assessment-admin-content {
+  overscroll-behavior-y: contain;
+  scrollbar-gutter: stable;
+}
+
 /* PageFallback already supplies the main HRIS content padding. */
 .assessment-admin-content:has(> [aria-label="Loading page content"]) {
   padding: 0;
