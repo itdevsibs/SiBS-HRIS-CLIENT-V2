@@ -1,3 +1,4 @@
+import CsrFitActivityLog from '../../assessment/CsrFitActivityLog';
 import { createSystemDateTimeFormatter, formatHrisDateLocalized, formatHrisDateTimeLocalized } from "@/lib/axios/dateFormatter";
 import React, {
   useEffect,
@@ -53,7 +54,6 @@ import CandidatePipelineModalShell, {
 } from "../../recruitment/candidatePipeline/CandidatePipelineModalShell";
 import CandidateModalSummary from "../../recruitment/candidatePipeline/CandidateModalSummary";
 import CandidateTalentPoolDetailsPanel from "../../recruitment/candidatePipeline/CandidateTalentPoolDetailsPanel";
-import CandidateResumeIntelligenceSection from "../../recruitment/candidatePipeline/CandidateResumeIntelligenceSection";
 import ExpandableCandidateRemark from "../../recruitment/candidatePipeline/ExpandableCandidateRemark";
 import NhoUploadModal from "./NhoUploadModal";
 import NhoGoogleCalendarMonth from "./NhoGoogleCalendarMonth";
@@ -6793,6 +6793,7 @@ function CsrFitProgressPanel({ progress, loading, error }) {
           {(inProgress || moduleExpired) && <p className="mt-2 text-[10px] text-sibs-muted">Based on saved assessment activity; this does not confirm the candidate is currently online.</p>}
         </div>
       )}
+      {progress?.activityLog && <div className="mt-3"><CsrFitActivityLog log={progress.activityLog}/></div>}
       {error && <p role="status" className="pt-2 text-[11px] text-rose-700">Could not refresh assessment progress. The last recorded status may be outdated.</p>}
     </section>
   );
@@ -12442,10 +12443,6 @@ const concretePreferredFinalInterviewFormId =
               <CandidateTalentPoolDetailsPanel candidate={activeCandidate} />
             </div>
           )}
-
-          <div className="sibs-page-card-in">
-            <CandidateResumeIntelligenceSection candidate={activeCandidate} />
-          </div>
 
           {hasAssessmentDetailAccess && hasCompletedAssessment && (
             <CandidateModalSection

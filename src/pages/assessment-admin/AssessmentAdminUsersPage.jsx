@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { Users, Clock3, CheckCircle2, HelpCircle, MapPin, ShieldCheck, AlertCircle, RefreshCw } from 'lucide-react';
+import { Users, Clock3, CheckCircle2, MapPin, ShieldCheck, AlertCircle, RefreshCw } from 'lucide-react';
 import portalApi from '../../lib/assessment-admin/portalApi';
 import portalSocket from '../../lib/assessment-admin/portalSocket';
 import PageFallback from '../../components/ui/PageFallback';
@@ -38,9 +38,15 @@ const accessOrder = role => {
   const index = ROLES.indexOf(role === 'TA' ? 'Talent Acquisition' : role);
   return index === -1 ? ROLES.length : index;
 };
-const compareAccessRows = (a, b) => accessOrder(a.access) - accessOrder(b.access);
 const EMPTY = { total: 0, onDuty: 0, offDuty: 0, unavailable: 0 };
 const statusOf = row => row.dutyStatus === 'CLOCKED_IN' ? 'ON_DUTY' : ['CLOCKED_OUT','NO_CLOCK_IN'].includes(row.dutyStatus) ? 'OFF_DUTY' : 'UNAVAILABLE';
+// Duty is the primary display order, with access priority inside each status.
+const DUTY_ORDER = { ON_DUTY: 0, OFF_DUTY: 1, UNAVAILABLE: 2 };
+const compareDirectoryRows = (a, b) =>
+  DUTY_ORDER[statusOf(a)] - DUTY_ORDER[statusOf(b)] ||
+  accessOrder(a.access) - accessOrder(b.access) ||
+  String(a.name ?? '').localeCompare(String(b.name ?? '')) ||
+  String(a.sibsId ?? '').localeCompare(String(b.sibsId ?? ''));
 const cell = 'border-b border-sibs-border px-3 py-2 align-middle 2xl:px-4 2xl:py-2.5';
 function DutyBadge({ row }) {
   const status = statusOf(row);
@@ -242,19 +248,19 @@ export default function AssessmentAdminUsersPage({ onUnauthorized, onInitialLoad
   const rows = useMemo(() => (data?.items || []).map(row => stale ? {...row, dutyStatus: 'UNAVAILABLE'} : row), [data, stale]);
   const summary = stale ? { total: rows.length, onDuty: 0, offDuty: 0, unavailable: rows.length } : data?.summary || EMPTY;
   const scoped = useMemo(() => rows.filter(row => (!role || row.access === role) && (!query || [row.name,row.sibsId,row.email].some(value=>String(value || '').toLowerCase().includes(query.toLowerCase())))), [rows,role,query]);
-  // Stable sort preserves the existing duty/name order within each access role.
-  const filtered = scoped.filter(row => status === 'ALL' || statusOf(row) === status).sort(compareAccessRows);
+  // Sort all matching users before pagination, using the effective verified status.
+  const filtered = scoped.filter(row => status === 'ALL' || statusOf(row) === status).sort(compareDirectoryRows);
   const pages = Math.max(1,Math.ceil(filtered.length/PAGE_SIZE));
   const currentPage = Math.min(page,pages);
   const visible = filtered.slice((currentPage-1)*PAGE_SIZE,currentPage*PAGE_SIZE);
   const photos = useDirectoryPhotos(visible);
   const photoFor = row => photos[JSON.stringify([String(row.sibsId), row.photoVersion])];
-  const tabs = [ ['ALL','All',Users], ['ON_DUTY','On duty',CheckCircle2], ['OFF_DUTY','Off duty',Clock3], ['UNAVAILABLE','Unavailable',HelpCircle] ].map(([value,label,icon])=>({ value,label,icon,count:scoped.filter(row=>value==='ALL'||statusOf(row)===value).length }));
+  const tabs = [ ['ALL','All',Users], ['ON_DUTY','On duty',CheckCircle2], ['OFF_DUTY','Off duty',Clock3] ].map(([value,label,icon])=>({ value,label,icon,count:scoped.filter(row=>value==='ALL'||statusOf(row)===value).length }));
   if (!settled) return onInitialLoadSettled ? null : <PageFallback/>;
   return <div className="space-y-4 font-jakarta">
     <PageHeaderHero kicker="Assessment Administration" title="Assessment Users" description="Review staff with Assessment Administration access and their verified current duty status."/>
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-      {[[Users,'Authorized users','total'],[CheckCircle2,'On duty','onDuty'],[Clock3,'Off duty','offDuty'],[HelpCircle,'Unavailable','unavailable']].map(([Icon,label,key])=><div key={key} className="flex items-center gap-3 rounded-xl border border-sibs-border bg-white px-4 py-3.5 shadow-sm">
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      {[[Users,'Authorized users','total'],[CheckCircle2,'On duty','onDuty'],[Clock3,'Off duty','offDuty']].map(([Icon,label,key])=><div key={key} className="flex items-center gap-3 rounded-xl border border-sibs-border bg-white px-4 py-3.5 shadow-sm">
         <div className="rounded-lg bg-[#ecf3fa] p-2.5 text-sibs-navy"><Icon size={19}/></div><div><p className="text-[11px] font-bold text-sibs-secondary">{label}</p><p className="mt-0.5 text-2xl font-extrabold tabular-nums text-sibs-navy">{data ? summary[key] : '—'}</p><p className="text-[10px] text-sibs-muted">Assessment portal staff</p></div>
       </div>)}
     </div>

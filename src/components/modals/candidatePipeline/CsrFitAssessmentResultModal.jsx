@@ -1,3 +1,4 @@
+import CsrFitActivityLog from '../../assessment/CsrFitActivityLog';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { ClipboardCheck, Eye, FileQuestion, CheckCircle2, Download, Loader2, BrainCircuit, RefreshCw, Mail, AlertCircle } from 'lucide-react';
 import ModalShell from '@/components/ui/ModalShell';
@@ -299,8 +300,8 @@ export default function CsrFitAssessmentResultModal({ open, data, onClose, porta
                   {emailDelivery?.status === 'SENT' ? 'Accepted by SMTP for delivery. Check recipient inbox or spam folder.' :
                     emailDelivery?.status === 'SENDING' ? 'Email delivery in progress.' :
                     emailDelivery?.status === 'FAILED' ? `Delivery failed after ${emailDelivery.attempts ?? 0} attempt(s).` :
-                    emailDelivery?.status === 'PENDING' ? 'Queued for delivery; please check status.' :
-                    'No delivery job found for this submitted assessment.'}
+                    emailDelivery?.status === 'PENDING' ? 'Previously queued; automatic delivery is disabled. Send the report manually if needed.' :
+                    'Automatic email delivery is disabled. A report can be sent manually if needed.'}
                 </p>
                 {emailDelivery?.status === 'FAILED' && emailDelivery?.error &&
                   <p className="mt-1 max-w-[720px] break-words text-[11px] text-rose-700">Server response: {emailDelivery.error}</p>}
@@ -312,7 +313,7 @@ export default function CsrFitAssessmentResultModal({ open, data, onClose, porta
                 className="inline-flex items-center gap-1.5 rounded-lg border border-sibs-border px-3 py-2 text-[11px] font-bold text-sibs-navy disabled:opacity-50">
                 {emailBusy ? <Loader2 size={13} className="animate-spin"/> : <RefreshCw size={13}/>} Check status
               </button>
-              {['FAILED','NOT_QUEUED'].includes(emailDelivery?.status) &&
+              {['FAILED','NOT_QUEUED','PENDING'].includes(emailDelivery?.status) &&
                 <button type="button" disabled={emailBusy} onClick={() => void checkEmailStatus(true)}
                   className="inline-flex items-center gap-1.5 rounded-lg bg-sibs-navy px-3 py-2 text-[11px] font-bold text-white disabled:opacity-50">
                   <Mail size={13}/> Send report PDF
@@ -395,7 +396,7 @@ export default function CsrFitAssessmentResultModal({ open, data, onClose, porta
                 <div className="h-full rounded-full bg-sibs-navy" style={{width:`${completionPercent}%`}}/>
               </div>
               <p className="mt-2 text-[11px] leading-4 text-sibs-muted">
-                Completion, not a grade · Result email: {data.email?.status === 'SENT' ? 'Sent' : data.email?.status === 'FAILED' ? 'Retry scheduled' : 'Queued'}
+                Completion, not a grade · Result email: {emailDelivery?.status === 'SENT' ? 'Sent' : emailDelivery?.status === 'FAILED' ? 'Failed' : emailDelivery?.status === 'SENDING' ? 'Sending' : emailDelivery?.status === 'PENDING' ? 'Awaiting manual send' : 'Not sent'}
               </p>
             </div>
           </div>
@@ -460,6 +461,7 @@ export default function CsrFitAssessmentResultModal({ open, data, onClose, porta
             </section>
           </>
         )}
+        {data.sevenModule && <CsrFitActivityLog key={data.attemptId} log={data.activityLog}/>}
         <section ref={responsesSectionRef} className="overflow-hidden rounded-xl border border-sibs-border bg-white">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-sibs-border px-4 py-3">
             <div>
