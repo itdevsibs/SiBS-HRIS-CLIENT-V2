@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { AlertCircle, BookOpen, CheckCircle2, ClipboardList, Eye, FileClock, FilePlus2, FileText, FolderOpen, Headphones, Keyboard, MessagesSquare, Monitor, Plus, RefreshCw, Upload, UploadCloud, X } from 'lucide-react';
+import { AlertCircle, BookOpen, CheckCircle2, ClipboardList, FileClock, FilePlus2, FileText, FolderOpen, Headphones, Keyboard, MessagesSquare, Monitor, Plus, RefreshCw, Upload, UploadCloud, X } from 'lucide-react';
 import portalApi from '../../lib/assessment-admin/portalApi';
 import ModalShell from '../../components/ui/ModalShell';
 import TablePagination from '../../components/ui/TablePagination';
@@ -224,7 +224,7 @@ export default function AssessmentAdminQuestionBankPage({onUnauthorized, onIniti
       <div className="border-b border-sibs-border p-4 sm:p-5 2xl:p-6">
         <div className="flex flex-col gap-0.5">
           <h2 className="sibs-card-title">Question Directory</h2>
-          <p className="sibs-card-subtitle">Select an assessment module to review its original and added questions.</p>
+          <p className="sibs-card-subtitle">Select an assessment module, then click any question row to view its details.</p>
         </div>
         <div className="mt-4 rounded-lg border border-blue-100 bg-blue-50/50 p-3 text-xs leading-relaxed"><strong>All seven assessment modules</strong><p className="mt-1 text-sibs-muted">New items are saved as drafts. HR Admin or Super Admin can publish Modules 1, 2, 5 and 7 for future public attempts. Modules 3, 4 and 6 require media or simulation integration and are draft-only. Existing attempts are unchanged.</p></div>
         <div className="sibs-question-bank-module-picker mt-4">
@@ -284,17 +284,16 @@ export default function AssessmentAdminQuestionBankPage({onUnauthorized, onIniti
         <div className="flex flex-1 flex-col overflow-hidden rounded-[14px] border border-sibs-border bg-white shadow-xs">
           <StatusFilterTabs tabs={tabs} activeValue={status} onChange={value=>{setStatus(value);setPage(1);}} layoutId="assessmentQuestionBankTabIndicator"/>
           <div className="max-h-[480px] overflow-x-auto overflow-y-auto bg-white sibs-scrollbar 2xl:max-h-[640px]">
-            <table className="w-full min-w-[1160px] table-fixed border-separate border-spacing-0 text-left 2xl:min-w-[1250px]">
+            <table className="w-full min-w-[1020px] table-fixed border-separate border-spacing-0 text-left 2xl:min-w-[1100px]">
               <thead className="sibs-data-table-head">
                 <tr className="sibs-data-table-head-row">
                   {[
                     ['Module', 'w-[8%] text-left'],
                     ['Item No.', 'w-[7%] text-left'],
-                    ['Question', 'w-[34%] text-left'],
-                    ['Category', 'w-[21%] text-left'],
-                    ['Source', 'w-[8%] text-left'],
-                    ['Status', 'w-[10%] text-center'],
-                    ['Actions', 'w-[12%] text-center'],
+                    ['Question', 'w-[42%] text-left'],
+                    ['Category', 'w-[23%] text-left'],
+                    ['Source', 'w-[9%] text-left'],
+                    ['Status', 'w-[11%] text-center'],
                   ].map(([heading, width]) => <th key={heading} scope="col"
                     className={`sibs-data-table-th ${width} px-3 py-2.5 sibs-text-micro font-black uppercase tracking-wider text-sibs-navy 2xl:px-4 2xl:py-3.5`}>
                     {heading}
@@ -302,9 +301,10 @@ export default function AssessmentAdminQuestionBankPage({onUnauthorized, onIniti
                 </tr>
               </thead>
               <tbody aria-busy={loading}>
-                {loading ? <TableSkeletonRows count={6} columns={7} />
-                  : visible.length === 0 ? <tr><td colSpan={7} className="px-5 py-12 text-center sibs-text-xs font-semibold text-sibs-secondary">{error ? 'Question bank unavailable.' : `No matching questions in ${moduleLabel(module)}.`}</td></tr>
-                  : visible.map(q => <tr key={`${q.module}:${q.source}:${q.id}`} className="group transition-colors hover:bg-sibs-cream-light">
+                {loading ? <TableSkeletonRows count={6} columns={6} />
+                  : visible.length === 0 ? <tr><td colSpan={6} className="px-5 py-12 text-center sibs-text-xs font-semibold text-sibs-secondary">{error ? 'Question bank unavailable.' : `No matching questions in ${moduleLabel(module)}.`}</td></tr>
+                  : visible.map(q => <tr key={`${q.module}:${q.source}:${q.id}`} className="group cursor-pointer transition-colors hover:bg-sibs-cream-light focus-within:bg-sibs-cream-light"
+                      onClick={()=>{setView(q);setModalError('');}}>
                     <td className="border-b border-sibs-border px-3 py-2 align-middle 2xl:px-4 2xl:py-2.5">
                       <p className="whitespace-nowrap sibs-text-xs font-extrabold text-sibs-orange">{moduleLabel(q.module)}</p>
                     </td>
@@ -312,7 +312,11 @@ export default function AssessmentAdminQuestionBankPage({onUnauthorized, onIniti
                       <p className="break-words sibs-text-xs font-extrabold tabular-nums text-sibs-orange">{q.id}</p>
                     </td>
                     <td className="border-b border-sibs-border px-3 py-2 align-middle 2xl:px-4 2xl:py-2.5">
-                      <p className="break-words sibs-text-xs font-extrabold leading-tight text-sibs-navy transition-colors group-hover:text-sibs-orange">{q.stem}</p>
+                      <button type="button"
+                        aria-label={`View ${moduleLabel(q.module)} question ${q.id}: ${q.stem}`}
+                        className="block min-h-8 w-full cursor-pointer break-words rounded-sm text-left sibs-text-xs font-extrabold leading-tight text-sibs-navy transition-colors group-hover:text-sibs-orange focus-visible:outline-2 focus-visible:outline-sibs-orange focus-visible:outline-offset-2">
+                        {q.stem}
+                      </button>
                     </td>
                     <td className="border-b border-sibs-border px-3 py-2 align-middle 2xl:px-4 2xl:py-2.5">
                       <p className="break-words sibs-text-xs font-semibold text-sibs-secondary">{q.category}</p>
@@ -322,12 +326,6 @@ export default function AssessmentAdminQuestionBankPage({onUnauthorized, onIniti
                     </td>
                     <td className="border-b border-sibs-border px-3 py-2 text-center align-middle 2xl:px-4 2xl:py-2.5">
                       <QuestionStatus status={q.status} table />
-                    </td>
-                    <td className="border-b border-sibs-border px-3 py-2 text-center align-middle 2xl:px-4 2xl:py-2.5">
-                      <button type="button" onClick={()=>{setView(q);setModalError('');}}
-                        className="sibs-btn-secondary inline-flex h-8 items-center justify-center gap-1.5 whitespace-nowrap px-2.5 sibs-text-micro">
-                        <Eye size={14} aria-hidden="true"/>View question
-                      </button>
                     </td>
                   </tr>)}
               </tbody>

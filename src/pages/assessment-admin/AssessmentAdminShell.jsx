@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { ClipboardCheck, Menu, X, Clock, CalendarDays, ChevronLeft, BookOpen, Users } from 'lucide-react';
 import { createSystemDateTimeFormatter } from '../../lib/axios/dateFormatter';
@@ -28,6 +28,11 @@ const NAV = [
 
 export default function AssessmentAdminShell({ children, user = null, logout, checking = false }) {
   const location = useLocation();
+  const contentScrollRef = useRef(null);
+  // Reset only on actual page navigation, never on modal or table state changes.
+  useLayoutEffect(() => {
+    if (contentScrollRef.current) contentScrollRef.current.scrollTop = 0;
+  }, [location.pathname]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [now, setNow] = useState(() => new Date());
@@ -59,7 +64,7 @@ export default function AssessmentAdminShell({ children, user = null, logout, ch
   }, []);
 
   return (
-    <div className="min-h-dvh bg-sibs-tertiary-10 font-jakarta text-sibs-navy">
+    <div className="h-dvh min-h-0 overflow-hidden bg-sibs-tertiary-10 font-jakarta text-sibs-navy">
       <aside inert={checking || undefined} className={`fixed inset-y-0 left-0 z-[80] flex h-dvh flex-col border-r border-sibs-tertiary-2 bg-sibs-primary-1 text-white shadow-xl transition-[width,transform] duration-300 ${collapsed ? 'lg:w-[84px] 2xl:lg:w-[90px]' : 'lg:w-[245px] 2xl:lg:w-[260px]'} w-[245px] ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
         <div className={`relative flex h-[74px] min-h-[74px] shrink-0 items-center border-b border-sibs-tertiary-2 transition-all duration-300 2xl:h-[86px] 2xl:min-h-[86px] ${collapsed ? 'lg:justify-center lg:px-0' : 'justify-between px-3.5 py-3 2xl:px-4'}`}>
           {collapsed ? (
@@ -98,7 +103,7 @@ export default function AssessmentAdminShell({ children, user = null, logout, ch
         </div>
       </aside>
       {sidebarOpen && <button type="button" aria-label="Close navigation" className="fixed inset-0 z-[75] bg-black/50 backdrop-blur-xs lg:hidden" onClick={() => setSidebarOpen(false)} />}
-      <div className={`min-h-dvh transition-[padding] duration-300 ${collapsed ? 'lg:pl-[84px] 2xl:lg:pl-[90px]' : 'lg:pl-[245px] 2xl:lg:pl-[260px]'}`}>
+      <div className={`flex h-full min-h-0 min-w-0 flex-col transition-[padding] duration-300 ${collapsed ? 'lg:pl-[84px] 2xl:lg:pl-[90px]' : 'lg:pl-[245px] 2xl:lg:pl-[260px]'}`}>
         <header inert={checking || undefined} className="sibs-dashboard-header font-jakarta">
           <div className="sibs-dashboard-header-inner">
             <button type="button" onClick={() => setSidebarOpen(true)} aria-label="Open sidebar"
@@ -148,7 +153,7 @@ export default function AssessmentAdminShell({ children, user = null, logout, ch
             </div>
           </div>
         </header>
-        <main className="assessment-admin-content min-w-0 bg-sibs-tertiary-10 px-4 py-5 sm:px-6 lg:px-7">
+        <main ref={contentScrollRef} data-assessment-admin-scroll className="assessment-admin-content min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-sibs-tertiary-10 px-4 py-5 sm:px-6 lg:px-7">
           {children}
         </main>
       </div>
