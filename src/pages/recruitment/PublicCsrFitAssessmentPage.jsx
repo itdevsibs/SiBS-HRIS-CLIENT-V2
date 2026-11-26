@@ -14,6 +14,7 @@ import CsrFitAdministrativeSimulation from '../../components/assessment/CsrFitAd
 import CsrFitTypingGame from '../../components/assessment/CsrFitTypingGame';
 import CsrFitOneTimeAudio from '../../components/assessment/CsrFitOneTimeAudio';
 import CsrFitAssessmentLoading from '../../components/assessment/CsrFitAssessmentLoading';
+import CsrFitCompletionCloseButton from '../../components/assessment/CsrFitCompletionCloseButton';
 import { useCsrFitExamProtection, CsrFitExamProtectionOverlay } from '../../components/assessment/CsrFitExamProtection';
 import PublicCsrFitModuleTransition from '../../components/assessment/PublicCsrFitModuleTransition';
 import { rememberPublicCsrFitSession } from '../../utils/assessment/csrFitResumeStorageClient';
@@ -460,7 +461,7 @@ function PublicCsrFitAssessmentPageContent(){
     {loading?<CsrFitAssessmentLoading mode="skeleton" />:
     error&&!data?<div role="alert" className="mt-5 rounded-xl border border-rose-200 bg-white p-6 text-sm text-rose-700">{error}</div>:
     data?.legacy?<div role="alert" className="mt-5 rounded-xl border border-rose-200 bg-white p-6 text-sm text-rose-700">This link is not a Public Assessment session. Contact SiBS Recruitment for the correct public assessment access.</div>:
-    data?.status==='SUBMITTED'?<section className="mt-5 rounded-xl border border-sibs-border bg-white p-12 text-center"><CheckCircle2 size={46} className="mx-auto text-emerald-600"/><h2 className="mt-3 text-xl font-extrabold">Assessment submitted</h2><p className="mt-2 text-sm text-sibs-muted">Your responses are saved for Talent Acquisition review.</p></section>:
+    data?.status==='SUBMITTED'?<section className="mt-5 rounded-xl border border-sibs-border bg-white p-12 text-center"><CheckCircle2 size={46} className="mx-auto text-emerald-600"/><h2 className="mt-3 text-xl font-extrabold">Assessment submitted</h2><p className="mt-2 text-sm text-sibs-muted">Your responses are saved for Talent Acquisition review.</p><CsrFitCompletionCloseButton /></section>:
     data?.status==='NOT_STARTED'?<CsrFitCandidateWelcome candidate={data.candidate}
       busy={busy} error={error} mobile={mobile} overallLimitMinutes={data.overallLimitMinutes || CSR_FIT_OVERALL_LIMIT_MINUTES}
       onStart={() => void start()} />:
