@@ -1,4 +1,4 @@
-import CsrFitActivityLog from '../../assessment/CsrFitActivityLog';
+import CsrFitActivityLog from '../../components/assessment/CsrFitActivityLog';
 import { createSystemDateTimeFormatter, formatHrisDateLocalized, formatHrisDateTimeLocalized } from "@/lib/axios/dateFormatter";
 import React, {
   useEffect,
@@ -45,30 +45,30 @@ import {
   UserCheck,
 } from "lucide-react";
 
-import DetailRow from "../../layout/common/DetailRow";
-import { useConfirmDialog } from "../../layout/common/ConfirmationModal";
+import DetailRow from "../../components/layout/common/DetailRow";
+import { useConfirmDialog } from "../../components/layout/common/ConfirmationModal";
 import CandidatePipelineModalShell, {
   CandidateModalPrimaryButton,
   CandidateModalSecondaryButton,
   CandidateModalSection,
-} from "../../recruitment/candidatePipeline/CandidatePipelineModalShell";
-import CandidateModalSummary from "../../recruitment/candidatePipeline/CandidateModalSummary";
-import CandidateTalentPoolDetailsPanel from "../../recruitment/candidatePipeline/CandidateTalentPoolDetailsPanel";
-import ExpandableCandidateRemark from "../../recruitment/candidatePipeline/ExpandableCandidateRemark";
-import NhoUploadModal from "./NhoUploadModal";
-import NhoGoogleCalendarMonth from "./NhoGoogleCalendarMonth";
-import CsrFitAssessmentResultModal from "./CsrFitAssessmentResultModal";
+} from "../../components/recruitment/candidatePipeline/CandidatePipelineModalShell";
+import CandidateModalSummary from "../../components/recruitment/candidatePipeline/CandidateModalSummary";
+import CandidateTalentPoolDetailsPanel from "../../components/recruitment/candidatePipeline/CandidateTalentPoolDetailsPanel";
+import ExpandableCandidateRemark from "../../components/recruitment/candidatePipeline/ExpandableCandidateRemark";
+import NhoUploadModal from "../../components/modals/candidatePipeline/NhoUploadModal";
+import NhoGoogleCalendarMonth from "../../components/modals/candidatePipeline/NhoGoogleCalendarMonth";
+import CsrFitAssessmentResultModal from "../../components/modals/candidatePipeline/CsrFitAssessmentResultModal";
 
 import {
   offerApprovers,
   offerDecisionOptions,
   pipelineStages,
-} from "../../../lib/utils/candidatePipeline/candidatePipelineConstants";
+} from "../../lib/utils/candidatePipeline/candidatePipelineConstants";
 
 import {
   formatDateTime,
   formatCurrency,
-} from "../../../lib/utils/candidatePipeline/candidatePipelineFormatters";
+} from "../../lib/utils/candidatePipeline/candidatePipelineFormatters";
 
 import {
   getNextStage,
@@ -85,7 +85,7 @@ import {
   getOfferApprovalSummary,
   isOfferApproved,
   buildOfferContractLink,
-} from "../../../lib/utils/candidatePipeline/candidatePipelineHelpers";
+} from "../../lib/utils/candidatePipeline/candidatePipelineHelpers";
 
 import {
   getVisibleCandidateTimeline,
@@ -93,29 +93,29 @@ import {
   isPipelineStageAtOrAfter,
   normalizePipelineStageForVisibility,
   shouldShowAssessmentArtifactsForTimelineEntry,
-} from "../../../lib/utils/candidatePipeline/candidatePipelineStageVisibility";
+} from "../../lib/utils/candidatePipeline/candidatePipelineStageVisibility";
 
 import {
   getNhoSaveResultAction,
-} from "../../../lib/utils/candidatePipeline/nhoRequirementRouting";
+} from "../../lib/utils/candidatePipeline/nhoRequirementRouting";
 
 import {
   getCandidatePipelineIdentityKey,
   getCandidatePipelineRecordId,
   isSameCandidatePipelineRecord,
   mergeCandidatePipelineRecord,
-} from "../../../lib/utils/candidatePipeline/candidatePipelineIdentity";
+} from "../../lib/utils/candidatePipeline/candidatePipelineIdentity";
 
 import { useNavigate } from "react-router-dom";
-import { useCandidatePipeline } from "../../../services/context/CandidatePipelineContext";
-import { useUser } from "../../../services/context/UserContext";
-import GetAssessmentTimelineFiles from "../../../lib/utils/candidatePipeline/react-utils/GetAssessmentTimelineFiles";
-import StatusModal from "../StatusModal";
-import RevisedOfferModal from "./RevisedOfferModal";
-import EmploymentOfferPdfPreviewModal from "../common/EmploymentOfferPdfPreviewModal";
-import api from "../../../lib/axios/api-template";
-import assessmentActivitySocket from "../../../lib/axios/socket";
-import { getFinalInterviewForms } from "../../../lib/axios/getRecruitmentSettings";
+import { useCandidatePipeline } from "../../services/context/CandidatePipelineContext";
+import { useUser } from "../../services/context/UserContext";
+import GetAssessmentTimelineFiles from "../../lib/utils/candidatePipeline/react-utils/GetAssessmentTimelineFiles";
+import StatusModal from "../../components/modals/StatusModal";
+import RevisedOfferModal from "../../components/modals/candidatePipeline/RevisedOfferModal";
+import EmploymentOfferPdfPreviewModal from "../../components/modals/common/EmploymentOfferPdfPreviewModal";
+import api from "../../lib/axios/api-template";
+import assessmentActivitySocket from "../../lib/axios/socket";
+import { getFinalInterviewForms } from "../../lib/axios/getRecruitmentSettings";
 import {
   findMatchingFinalInterviewForm,
   getCandidateAppliedPositionId,
@@ -123,7 +123,7 @@ import {
   getFinalInterviewFormId,
   getFinalInterviewFormPositionId,
   getFinalInterviewFormPositionTitle,
-} from "../../../lib/utils/recruitment/finalInterviewFormMatching";
+} from "../../lib/utils/recruitment/finalInterviewFormMatching";
 
 const INCOMPLETE_ONBOARDING_STAGE = "For Onboarding - Incomplete Requirements";
 const ONBOARDING_STAGE = "Onboarding";
