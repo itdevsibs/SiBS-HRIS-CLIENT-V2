@@ -14,6 +14,7 @@ import CsrFitAdministrativeSimulation from '../../components/assessment/CsrFitAd
 import CsrFitTypingGame from '../../components/assessment/CsrFitTypingGame';
 import CsrFitOneTimeAudio from '../../components/assessment/CsrFitOneTimeAudio';
 import CsrFitAssessmentLoading from '../../components/assessment/CsrFitAssessmentLoading';
+import { useCsrFitExamProtection, CsrFitExamProtectionOverlay } from '../../components/assessment/CsrFitExamProtection';
 import PublicCsrFitModuleTransition from '../../components/assessment/PublicCsrFitModuleTransition';
 import { rememberPublicCsrFitSession } from '../../utils/assessment/csrFitResumeStorageClient';
 import { CSR_FIT_MODULE_NAMES, CSR_FIT_MODULE_LIMITS, CSR_FIT_OVERALL_LIMIT_MINUTES } from '../../components/assessment/csrFitModuleGuides';
@@ -129,24 +130,24 @@ function PublicCsrFitAssessmentPageContent(){
   const forwardSelectionCommitted=Boolean(pendingForward && pendingForward.status!=='draft');
   const typingRoundWaiting=activeModule===5&&!typingStartedAt;
   const typingRoundFinished=activeModule===5&&typingStartedAt&&typingLeft<=0;
-  const canChange=data?.status==='IN_PROGRESS'&&!busy&&!expiredNotice&&!moduleExpired&&!overallExpired&&
+  const record=useCallback((type,options)=>{
+    if(!token||data?.status!=='IN_PROGRESS')return;
+    const url=`/api/public-assessment/session/${token}/integrity-event`;
+    if(options?.keepalive){
+      // Best effort during document departure; do not wait or block navigation.
+      try { void fetch(api.getUri({url}),{method:'POST',body:new URLSearchParams({type}),credentials:'omit',keepalive:true}).catch(()=>{}); } catch {}
+      return;
+    }
+    void api.post(url,{type},{withCredentials:false}).catch(()=>{});
+  },[data?.status,token]);
+  const examProtection = useCsrFitExamProtection({ active: data?.status==='IN_PROGRESS' && !data?.legacy, moduleNumber: activeModule, record });
+  const canChange=data?.status==='IN_PROGRESS'&&!examProtection.locked&&!busy&&!expiredNotice&&!moduleExpired&&!overallExpired&&
     !(forwardOnly&&(alreadyAnswered||forwardSelectionCommitted||forwardSaveInFlight.current));
   const answerSaving=forwardOnly&&(pendingForward?.status==='saving'||saved==='Saving…');
   const showModule5Next=activeModule===5&&typingDone&&alreadyAnswered;
 
-  const record=useCallback((type)=>{
-    if(!token||!data||data.status!=='IN_PROGRESS')return;
-    void api.post(`/api/public-assessment/session/${token}/integrity-event`,{type},{withCredentials:false}).catch(()=>{});
-  },[data,token]);
   useEffect(()=>{const tick=setInterval(()=>setNow(Date.now()),1000);const resize=()=>setMobile(window.innerWidth<760);
     resize();window.addEventListener('resize',resize);return()=>{clearInterval(tick);window.removeEventListener('resize',resize);};},[]);
-  useEffect(()=>{
-    if(data?.status!=='IN_PROGRESS')return undefined;
-    const visible=()=>{if(document.visibilityState==='hidden')record('TAB_HIDDEN');};
-    const blur=()=>record('WINDOW_BLUR');
-    document.addEventListener('visibilitychange',visible);window.addEventListener('blur',blur);
-    return()=>{document.removeEventListener('visibilitychange',visible);window.removeEventListener('blur',blur);};
-  },[data?.status,record]);
   const hydrate=useCallback(payload=>{
     const source=payload?.data?.status?payload.data:payload;
     if (!/^PA-\d+$/.test(String(source?.candidate?.candidateId || ''))) {
@@ -184,8 +185,13 @@ function PublicCsrFitAssessmentPageContent(){
   useEffect(()=>{void retrieve();},[retrieve]);
   async function start(){
     if(busy)return;setBusy(true);setBusyLabel('Preparing your assessment…');setError('');try{
+      if (!await examProtection.enterFullscreen()) {
+        setError('Fullscreen is required. Allow fullscreen in your desktop browser, then click Begin assessment again.');
+        examProtection.leaveFullscreen();
+        return;
+      }
       const r=await api.post(`/api/public-assessment/session/${token}/start`,{intake},{withCredentials:false});hydrate(r.data);
-    }catch(e){setError(errorLabel(e));}finally{setBusy(false);}
+    }catch(e){examProtection.leaveFullscreen();setError(errorLabel(e));}finally{setBusy(false);}
   }
   function persist(keyValue,value){
     // The voicemail response is final after the first confirmed save. Do not
@@ -233,7 +239,7 @@ function PublicCsrFitAssessmentPageContent(){
     }
   }
   async function commitForwardAndNext(){
-    if(!forwardOnly||busy||moduleExpired||overallExpired||forwardSaveInFlight.current)return;
+    if(examProtection.locked||!forwardOnly||busy||moduleExpired||overallExpired||forwardSaveInFlight.current)return;
     // Supports resuming an older attempt with a confirmed final response.
     if(alreadyAnswered){
       if(index===items.length-1){await advance();}
@@ -318,7 +324,7 @@ function PublicCsrFitAssessmentPageContent(){
   // eslint-disable-next-line react-hooks/exhaustive-deps
   },[activeModule,question?.id,typingStartedAt,typingLeft<2500]);
   async function beginModule(){
-    if(busy)return;setBusy(true);setBusyLabel('Starting the module…');setError('');
+    if(busy||examProtection.locked)return;setBusy(true);setBusyLabel('Starting the module…');setError('');
     try{
       await api.post(`/api/public-assessment/session/${token}/begin-module`,{moduleNumber:activeModule},{withCredentials:false});
       const response=await api.get(`/api/public-assessment/session/${token}`,{withCredentials:true});
@@ -448,12 +454,13 @@ function PublicCsrFitAssessmentPageContent(){
   // screen share the full available browser width. The previous live-exam
   // 1340px cap left unused space and made the question area unnecessarily narrow.
   // This is layout-only; server-owned timers, question order and answers do not change.
-  return <main className="min-h-screen w-full bg-[#f5f7fa] px-3 py-4 font-jakarta text-sibs-navy sm:px-5 sm:py-5 lg:px-7 lg:py-6"><div className="mx-auto w-full min-w-0 max-w-none"> 
+  return <main className="min-h-screen w-full bg-[#f5f7fa] px-3 py-4 font-jakarta text-sibs-navy sm:px-5 sm:py-5 lg:px-7 lg:py-6"><div inert={examProtection.locked} aria-hidden={examProtection.locked || undefined} className="mx-auto w-full min-w-0 max-w-none"> 
     {sectionTitle}
+    {data?.status!=='SUBMITTED' && !data?.legacy && <p className="mt-2 px-1 text-[11px] text-sibs-secondary">Assessment activity such as tab changes, fullscreen exits, page departures and blocked browser actions is recorded for authorized HR review.</p>}
     {loading?<CsrFitAssessmentLoading mode="skeleton" />:
     error&&!data?<div role="alert" className="mt-5 rounded-xl border border-rose-200 bg-white p-6 text-sm text-rose-700">{error}</div>:
     data?.legacy?<div role="alert" className="mt-5 rounded-xl border border-rose-200 bg-white p-6 text-sm text-rose-700">This link is not a Public Assessment session. Contact SiBS Recruitment for the correct public assessment access.</div>:
-    data?.status==='SUBMITTED'?<section className="mt-5 rounded-xl border border-sibs-border bg-white p-12 text-center"><CheckCircle2 size={46} className="mx-auto text-emerald-600"/><h2 className="mt-3 text-xl font-extrabold">Assessment submitted</h2><p className="mt-2 text-sm text-sibs-muted">Your responses are saved for Talent Acquisition review. A copy of your CSR-Fit assessment report (PDF) will be emailed to the address used for your assessment. Delivery may take a few minutes.</p></section>:
+    data?.status==='SUBMITTED'?<section className="mt-5 rounded-xl border border-sibs-border bg-white p-12 text-center"><CheckCircle2 size={46} className="mx-auto text-emerald-600"/><h2 className="mt-3 text-xl font-extrabold">Assessment submitted</h2><p className="mt-2 text-sm text-sibs-muted">Your responses are saved for Talent Acquisition review.</p></section>:
     data?.status==='NOT_STARTED'?<CsrFitCandidateWelcome candidate={data.candidate}
       busy={busy} error={error} mobile={mobile} overallLimitMinutes={data.overallLimitMinutes || CSR_FIT_OVERALL_LIMIT_MINUTES}
       onStart={() => void start()} />:
@@ -677,7 +684,7 @@ function PublicCsrFitAssessmentPageContent(){
           nextModuleNumber={moduleTransition.to} phase={moduleTransition.phase} />
       : <CsrFitAssessmentLoading mode="overlay" label={busyLabel} />)}
     <p className="py-5 text-center text-[11px] text-sibs-muted">SiBS HRIS · Public CSR-Fit Assessment · Registered applicants only</p>
-  </div></main>;
+  </div><CsrFitExamProtectionOverlay protection={examProtection}/></main>;
 }
 
 // Guard direct/cross-app mounts, as well as the public router route. The exam

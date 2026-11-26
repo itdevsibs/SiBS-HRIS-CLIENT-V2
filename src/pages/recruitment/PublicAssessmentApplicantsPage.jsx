@@ -1,3 +1,4 @@
+import CsrFitActivityLog from '../../components/assessment/CsrFitActivityLog';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
@@ -255,7 +256,73 @@ function ProvisionalResults({ row }) {
   </div>;
 }
 
-function PendingApplicantModal({ applicant, onClose }) {
+function PendingApplicantModal({ applicant, onClose, assessmentApi, portalMode, onUnauthorized, liveSocket }) {
+  const [activity,setActivity]=useState(null);
+  const [activityLoading,setActivityLoading]=useState(false);
+  const [activityError,setActivityError]=useState('');
+  const [activityVerified,setActivityVerified]=useState(false);
+  const id=applicant?.id;
+  const statusValue=applicant?.status;
+  const unauthorizedRef=useRef(onUnauthorized);
+  unauthorizedRef.current=onUnauthorized;
+  useEffect(()=>{
+    setActivity(null); setActivityError(''); setActivityLoading(false); setActivityVerified(false);
+  },[id]);
+  useEffect(()=>{
+    if(!id||!['IN_PROGRESS','SUBMITTED'].includes(statusValue))return;
+    let active=true, inFlight=false, queued=false, denied=false, finished=false, debounce=null;
+    const controller=new AbortController();
+    const visible=()=>document.visibilityState==='visible'&&!document.hidden;
+    const path=portalMode?`/api/assessment-portal/applicants/${encodeURIComponent(id)}/activity`:`/api/assessment/public-applicants/${encodeURIComponent(id)}/activity`;
+    const refresh=async (force=false,queue=false)=>{
+      if(!active||denied||finished||(!force&&!visible()))return;
+      if(inFlight){if(queue)queued=true;return;}
+      inFlight=true;
+      try {
+        const response=await assessmentApi.get(path,{signal:controller.signal});
+        if(!active)return;
+        const log=response.data?.data;
+        if(!Array.isArray(log?.events))throw new Error('Invalid activity response.');
+        setActivity(log);setActivityError('');setActivityVerified(true);
+        finished=statusValue==='SUBMITTED'||log.events.some(event=>event.type==='ASSESSMENT_SUBMITTED');
+      } catch(cause) {
+        if(!active)return;
+        setActivityVerified(false);
+        if([401,403].includes(Number(cause?.response?.status))){
+          denied=true;setActivity(null);
+          if(portalMode)unauthorizedRef.current?.();
+        }
+        setActivityError('Could not refresh activity logs. The last recorded activity may be outdated.');
+      } finally {
+        inFlight=false;
+        if(active){
+          setActivityLoading(false);
+          if(queued){queued=false;void refresh();}
+        }
+      }
+    };
+    const invalidate=()=>{
+      if(!active||denied||finished||!visible()||debounce!==null)return;
+      debounce=window.setTimeout(()=>{debounce=null;void refresh(false,true);},150);
+    };
+    const onVisible=()=>{if(visible())void refresh(false,true);};
+    setActivityLoading(true);void refresh(true);
+    // The directory owns the authenticated room subscription. The modal only
+    // listens for invalidations; it never disconnects the shared socket.
+    liveSocket.on('assessment-activity:changed',invalidate);
+    liveSocket.on('connect',onVisible);
+    document.addEventListener('visibilitychange',onVisible);
+    window.addEventListener('focus',onVisible);
+    const recovery=window.setInterval(()=>void refresh(),5000);
+    return ()=>{
+      active=false;controller.abort();window.clearInterval(recovery);
+      if(debounce!==null)window.clearTimeout(debounce);
+      liveSocket.off('assessment-activity:changed',invalidate);
+      liveSocket.off('connect',onVisible);
+      document.removeEventListener('visibilitychange',onVisible);
+      window.removeEventListener('focus',onVisible);
+    };
+  },[id,statusValue,assessmentApi,portalMode,liveSocket]);
   if (!applicant) return null;
   const { completed, current, status } = applicantProgress(applicant);
   const isInProgress = status === 'IN_PROGRESS';
@@ -320,6 +387,7 @@ function PendingApplicantModal({ applicant, onClose }) {
           })}
         </div>
       </section>
+      {(isInProgress || status === 'SUBMITTED') && <CsrFitActivityLog key={id} log={activity} loading={activityLoading} error={activityError} live={isInProgress && !activity?.events?.some(event=>event.type==='ASSESSMENT_SUBMITTED')} verified={activityVerified}/>}
       <p className="text-[11px] leading-5 text-sibs-secondary">
         This view reflects the applicant's saved assessment status. Scores and detailed results become available after final submission.
       </p>
@@ -668,7 +736,7 @@ export default function PublicAssessmentApplicantsPage({ portalMode = false, onU
         <p className="text-[11px] text-sibs-muted">Assessment scores are provisional and intended for authorized HR review. They do not determine hiring outcomes automatically.</p>
       </div>
     </main>
-    <PendingApplicantModal applicant={selectedApplicant} onClose={() => setSelectedApplicant(null)}/>
+    <PendingApplicantModal key={selectedApplicant?.id||'none'} applicant={selectedApplicant} onClose={() => setSelectedApplicant(null)} assessmentApi={assessmentApi} portalMode={portalMode} onUnauthorized={onUnauthorized} liveSocket={liveSocket}/>
     {portalMode ?
       <PublicCsrFitAssessmentResultModal open={Boolean(assessmentResult)} data={assessmentResult} onClose={() => setAssessmentResult(null)}/> :
       <CsrFitAssessmentResultModal open={Boolean(assessmentResult)} data={assessmentResult} onClose={() => setAssessmentResult(null)}/>}

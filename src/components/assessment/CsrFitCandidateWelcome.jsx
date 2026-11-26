@@ -8,7 +8,7 @@ import {
 const readinessRules = [
   { title: 'I am using a desktop or laptop', detail: 'I have a working physical keyboard.', icon: Keyboard },
   { title: 'My equipment and surroundings are ready', detail: 'I have working audio, a quiet space and stable internet.', icon: Headphones },
-  { title: 'I understand the assessment rules', detail: 'The overall timer cannot be paused; questions cannot be skipped.', icon: Clock3 },
+  { title: 'I understand the assessment rules', detail: 'The overall timer cannot be paused; questions cannot be skipped. Fullscreen is required. Leaving the assessment window is recorded and you must return to fullscreen to continue. Browser copy, cut, paste and right-click are disabled; simulated file operations in Module 4 remain available.', icon: Clock3 },
   { title: 'I will complete the assessment independently', detail: 'Only permitted calculator/scratch paper in Module 1; no AI tools, solvers or other assistance.', icon: ShieldCheck },
 ];
 
