@@ -218,7 +218,7 @@ export default function ChatAudioPlayer({ attachment, mine = false }) {
 
   return (
     <div
-      className={`font-jakarta min-w-[270px] sm:min-w-[310px] max-w-[360px] rounded-xl border p-2.5 shadow-xs transition ${
+      className={`font-jakarta w-full min-w-0 max-w-full rounded-xl border p-2.5 shadow-xs transition ${
         mine
           ? "border-orange-200/80 bg-white text-sibs-navy"
           : "border-sibs-border bg-white text-sibs-navy"
@@ -282,7 +282,7 @@ export default function ChatAudioPlayer({ attachment, mine = false }) {
           <Music size={15} />
         </span>
         <div className="min-w-0 flex-1">
-          <p className="truncate text-xs font-bold text-sibs-navy" title={fileName}>
+          <p className="text-xs font-bold leading-4 text-sibs-navy [overflow-wrap:anywhere]" title={fileName}>
             {fileName}
           </p>
           {fileSizeLabel ? (
@@ -291,15 +291,15 @@ export default function ChatAudioPlayer({ attachment, mine = false }) {
             </p>
           ) : null}
         </div>
-        {error ? (
-          <span className="text-[10px] font-bold text-red-600 shrink-0">
-            {error}
-          </span>
-        ) : null}
       </div>
+      {error ? (
+        <p role="alert" className="mb-2 break-words text-[10px] font-semibold text-red-600 [overflow-wrap:anywhere]">
+          {error}
+        </p>
+      ) : null}
 
       {/* Controls Bar: Play Button + Scrubber + Time + Mute */}
-      <div className="flex items-center gap-2">
+      <div className="flex min-w-0 items-center gap-2">
         <button
           type="button"
           disabled={loading || Boolean(error)}
@@ -317,23 +317,25 @@ export default function ChatAudioPlayer({ attachment, mine = false }) {
           )}
         </button>
 
-        {/* Scrubber slider */}
-        <input
-          type="range"
-          min="0"
-          max={safeDuration || 0}
-          step="0.05"
-          value={safeDuration ? safeCurrentTime : 0}
-          onChange={handleSeek}
-          disabled={loading || !safeDuration || Boolean(error)}
-          aria-label="Audio playback progress"
-          className="h-1.5 flex-1 cursor-pointer rounded-lg bg-slate-200 accent-sibs-orange disabled:cursor-default disabled:opacity-60"
-        />
+        <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+          {/* Scrubber slider */}
+          <input
+            type="range"
+            min="0"
+            max={safeDuration || 0}
+            step="0.05"
+            value={safeDuration ? safeCurrentTime : 0}
+            onChange={handleSeek}
+            disabled={loading || !safeDuration || Boolean(error)}
+            aria-label="Audio playback progress"
+            className="h-1.5 w-full min-w-0 cursor-pointer rounded-lg bg-slate-200 accent-sibs-orange disabled:cursor-default disabled:opacity-60"
+          />
 
-        {/* Elapsed / Total Duration */}
-        <span className="shrink-0 text-[10px] font-bold tabular-nums text-sibs-muted">
-          {formatAudioTime(safeCurrentTime)} / {formatAudioTime(safeDuration)}
-        </span>
+          {/* Elapsed / Total Duration */}
+          <span className="text-[10px] font-semibold leading-none tabular-nums text-sibs-muted">
+            {formatAudioTime(safeCurrentTime)} / {formatAudioTime(safeDuration)}
+          </span>
+        </div>
 
         {/* Mute Button */}
         <button

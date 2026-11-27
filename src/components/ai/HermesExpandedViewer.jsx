@@ -28,6 +28,7 @@ export default function HermesExpandedViewer({
       if (event.key === "Escape") {
         event.preventDefault();
         event.stopPropagation();
+        event.stopImmediatePropagation?.();
         onClose?.();
       }
     };
@@ -40,6 +41,7 @@ export default function HermesExpandedViewer({
 
   const modalContent = (
     <div
+      data-hermes-expanded-view="true"
       role="dialog"
       aria-modal="true"
       aria-label={title}

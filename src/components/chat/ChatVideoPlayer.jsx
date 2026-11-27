@@ -219,7 +219,7 @@ export default function ChatVideoPlayer({ attachment }) {
 
   if (loading) {
     return (
-      <div className="flex min-h-[210px] w-full items-center justify-center rounded-xl bg-black px-6 text-center text-white">
+      <div className="flex min-h-[140px] w-full min-w-0 items-center justify-center rounded-xl bg-black px-6 text-center text-white">
         <div>
           <Loader2 className="mx-auto h-6 w-6 animate-spin" />
           <p className="mt-2 text-[10px] font-bold text-white/75">
@@ -232,7 +232,7 @@ export default function ChatVideoPlayer({ attachment }) {
 
   if (error || !videoUrl) {
     return (
-      <div className="flex min-h-[180px] w-full items-center justify-center rounded-xl bg-black px-6 text-center text-white">
+      <div className="flex min-h-[140px] w-full min-w-0 items-center justify-center rounded-xl bg-black px-6 text-center text-white">
         <div>
           <p className="text-[10px] font-bold leading-4 text-white/80">
             {error || "Unable to load this video."}
@@ -259,48 +259,52 @@ export default function ChatVideoPlayer({ attachment }) {
       className={`group/video-player relative overflow-hidden bg-black shadow-sm ${
         isFullscreen
           ? "flex h-screen w-screen items-center justify-center rounded-none"
-          : "rounded-xl"
+          : "w-full min-w-0 rounded-xl"
       }`}
     >
-      <video
-        ref={videoRef}
-        src={videoUrl}
-        playsInline
-        preload="auto"
-        className={
-          isFullscreen
-            ? "h-screen w-screen max-h-none max-w-none bg-black object-contain"
-            : "max-h-72 w-full bg-black object-contain"
-        }
-        onClick={() => void togglePlayback()}
-        onLoadedMetadata={(event) => {
-          const nextDuration = Number(event.currentTarget.duration || 0);
-          setDuration(Number.isFinite(nextDuration) ? nextDuration : 0);
-          setMuted(Boolean(event.currentTarget.muted));
-        }}
-        onDurationChange={(event) => {
-          const nextDuration = Number(event.currentTarget.duration || 0);
-          setDuration(Number.isFinite(nextDuration) ? nextDuration : 0);
-        }}
-        onTimeUpdate={(event) => setCurrentTime(event.currentTarget.currentTime || 0)}
-        onPlay={() => setPlaying(true)}
-        onPause={() => setPlaying(false)}
-        onEnded={() => setPlaying(false)}
-        onVolumeChange={(event) => setMuted(Boolean(event.currentTarget.muted))}
-      />
-
-      {!playing ? (
-        <button
-          type="button"
+      <div className={isFullscreen ? "relative w-full" : "relative w-full min-w-0"}>
+        <video
+          ref={videoRef}
+          src={videoUrl}
+          playsInline
+          preload="auto"
+          className={
+            isFullscreen
+              ? "h-screen w-screen max-h-none max-w-none bg-black object-contain"
+              : "block max-h-72 w-full min-w-0 bg-black object-contain"
+          }
           onClick={() => void togglePlayback()}
-          aria-label={currentTime > 0 ? "Resume video" : "Play video"}
-          className="absolute left-1/2 top-1/2 inline-flex h-12 w-12 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-black/65 text-white shadow-lg backdrop-blur-sm transition hover:scale-105 hover:bg-black/75"
-        >
-          <Play size={22} className="ml-0.5" fill="currentColor" />
-        </button>
-      ) : null}
+          onLoadedMetadata={(event) => {
+            const nextDuration = Number(event.currentTarget.duration || 0);
+            setDuration(Number.isFinite(nextDuration) ? nextDuration : 0);
+            setMuted(Boolean(event.currentTarget.muted));
+          }}
+          onDurationChange={(event) => {
+            const nextDuration = Number(event.currentTarget.duration || 0);
+            setDuration(Number.isFinite(nextDuration) ? nextDuration : 0);
+          }}
+          onTimeUpdate={(event) => setCurrentTime(event.currentTarget.currentTime || 0)}
+          onPlay={() => setPlaying(true)}
+          onPause={() => setPlaying(false)}
+          onEnded={() => setPlaying(false)}
+          onVolumeChange={(event) => setMuted(Boolean(event.currentTarget.muted))}
+        />
 
-      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/45 to-transparent px-3 pb-2 pt-8 text-white">
+        {!playing ? (
+          <button
+            type="button"
+            onClick={() => void togglePlayback()}
+            aria-label={currentTime > 0 ? "Resume video" : "Play video"}
+            className="absolute left-1/2 top-1/2 inline-flex h-12 w-12 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-black/65 text-white shadow-lg backdrop-blur-sm transition hover:scale-105 hover:bg-black/75"
+          >
+            <Play size={22} className="ml-0.5" fill="currentColor" />
+          </button>
+        ) : null}
+      </div>
+
+      <div className={`min-w-0 px-2.5 pb-2 pt-2 text-white ${
+        isFullscreen ? "absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/45 to-transparent pt-8" : "bg-black/90"
+      }`}>
         <input
           type="range"
           min="0"
@@ -310,29 +314,29 @@ export default function ChatVideoPlayer({ attachment }) {
           onChange={seekVideo}
           disabled={!safeDuration}
           aria-label="Video progress"
-          className="h-1.5 w-full cursor-pointer accent-sibs-orange disabled:cursor-default"
+          className="block h-1.5 w-full min-w-0 cursor-pointer accent-sibs-orange disabled:cursor-default"
         />
 
-        <div className="mt-1.5 flex items-center gap-2">
+        <div className="mt-1.5 flex min-w-0 flex-wrap items-center gap-x-1 gap-y-1">
           <button
             type="button"
             onClick={() => void togglePlayback()}
-            className="inline-flex h-7 w-7 items-center justify-center rounded-full text-white transition hover:bg-white/15"
+            className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-white transition hover:bg-white/15"
             aria-label={playing ? "Pause video" : "Play video"}
           >
             {playing ? <Pause size={16} fill="currentColor" /> : <Play size={16} fill="currentColor" />}
           </button>
 
-          <span className="text-[10px] font-bold tabular-nums text-white/90">
+          <span className="whitespace-nowrap text-[10px] font-bold tabular-nums text-white/90">
             {formatMediaTime(safeCurrentTime)} / {formatMediaTime(safeDuration)}
           </span>
 
-          <div className="flex-1" />
+          <div className="min-w-0 flex-1" />
 
           <button
             type="button"
             onClick={toggleMute}
-            className="inline-flex h-7 w-7 items-center justify-center rounded-full text-white transition hover:bg-white/15"
+            className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-white transition hover:bg-white/15"
             aria-label={muted ? "Unmute video" : "Mute video"}
           >
             {muted ? <VolumeX size={16} /> : <Volume2 size={16} />}
@@ -341,7 +345,7 @@ export default function ChatVideoPlayer({ attachment }) {
           <button
             type="button"
             onClick={() => void enterFullscreen()}
-            className="inline-flex h-7 w-7 items-center justify-center rounded-full text-white transition hover:bg-white/15"
+            className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-white transition hover:bg-white/15"
             aria-label="Fullscreen video"
           >
             <Maximize2 size={15} />
