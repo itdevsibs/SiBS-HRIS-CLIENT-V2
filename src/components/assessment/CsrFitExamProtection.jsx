@@ -3,8 +3,22 @@ import { LockKeyhole, Monitor } from 'lucide-react';
 
 // Fullscreen the document (not a question element), so portaled dropdowns and
 // dialogs remain visible. A browser always retains control over leaving fullscreen.
-const isExamFullscreen = () => document.fullscreenElement === document.documentElement ||
-  Boolean(document.documentElement.matches(':fullscreen'));
+// Only document-element fullscreen qualifies. macOS native window fullscreen
+// is not the same as DOM fullscreen. Do not infer it from screen dimensions.
+const isExamFullscreen = () => {
+  const root = document.documentElement;
+  const element = document.fullscreenElement || document.webkitFullscreenElement || document.webkitCurrentFullScreenElement;
+  return element === root;
+};
+const fullscreenEvents = ['fullscreenchange', 'webkitfullscreenchange'];
+const fullscreenErrorEvents = ['fullscreenerror', 'webkitfullscreenerror'];
+const waitForFullscreen = async () => {
+  // Older WebKit request methods return void before the transition finishes.
+  for (let attempt = 0; attempt < 20 && !isExamFullscreen(); attempt += 1) {
+    await new Promise(resolve => window.setTimeout(resolve, 100));
+  }
+  return isExamFullscreen();
+};
 const isForeground = () => document.visibilityState !== 'hidden' && document.hasFocus();
 const isEditable = target => Boolean(target?.closest?.('input, textarea, [contenteditable="true"], [role="textbox"]'));
 const inSimulation = target => Boolean(target?.closest?.('.swin-shell'));
@@ -15,6 +29,7 @@ export function useCsrFitExamProtection({ active, moduleNumber, record }) {
   const [message, setMessage] = useState('');
   const [requesting, setRequesting] = useState(false);
   const ownsFullscreen = useRef(false);
+  const wasFullscreen = useRef(false);
   const mounted = useRef(false);
   const requestingRef = useRef(false);
   const activeRef = useRef(active);
@@ -25,14 +40,15 @@ export function useCsrFitExamProtection({ active, moduleNumber, record }) {
   activeRef.current = active;
   reportRef.current = record;
   moduleRef.current = moduleNumber;
-  const locked = active && (!fullscreen || interrupted);
+  const locked = active && (!fullscreen || interrupted || !isExamFullscreen());
   lockedRef.current = locked;
 
   const leaveFullscreen = useCallback(() => {
     if (!ownsFullscreen.current) return;
     ownsFullscreen.current = false;
-    if (document.fullscreenElement && isExamFullscreen()) {
-      void document.exitFullscreen().catch(() => {});
+    if (isExamFullscreen()) {
+      const exit = document.exitFullscreen || document.webkitExitFullscreen || document.webkitCancelFullScreen;
+      try { if (exit) void Promise.resolve(exit.call(document)).catch(() => {}); } catch { /* Already exited. */ }
     }
   }, []);
 
@@ -49,23 +65,30 @@ export function useCsrFitExamProtection({ active, moduleNumber, record }) {
     setMessage('');
     try {
       if (!isExamFullscreen()) {
-        if (!document.fullscreenEnabled || !document.documentElement.requestFullscreen) {
+        const root = document.documentElement;
+        const request = (document.fullscreenEnabled !== false && root.requestFullscreen) ||
+          (document.webkitFullscreenEnabled !== false && (root.webkitRequestFullscreen || root.webkitRequestFullScreen));
+        if (!request) {
           throw new Error('Fullscreen is not available in this browser. Use a supported desktop browser and allow fullscreen.');
         }
-        await document.documentElement.requestFullscreen();
+        await Promise.resolve(request.call(root));
+        if (!await waitForFullscreen()) throw new Error('Fullscreen was not activated. Please try again.');
         ownsFullscreen.current = true;
       }
       if (!mounted.current) { leaveFullscreen(); return false; }
       const full = isExamFullscreen();
       const focused = isForeground();
+      if (full) wasFullscreen.current = true;
       setFullscreen(full);
       const returning = activeRef.current && lockedRef.current && full && focused;
-      setInterrupted(!focused);
+      lockedRef.current = !full || !focused;
+      setInterrupted(!full || !focused);
       if (returning) reportRef.current?.('FULLSCREEN_RESUMED');
       if (!full || !focused) throw new Error('Return to the assessment window and enable fullscreen to continue.');
       return true;
     } catch (error) {
       if (mounted.current) {
+        lockedRef.current = true;
         setFullscreen(isExamFullscreen());
         setInterrupted(true);
         setMessage(error?.name === 'TypeError' || error?.name === 'NotAllowedError'
@@ -82,7 +105,7 @@ export function useCsrFitExamProtection({ active, moduleNumber, record }) {
   useEffect(() => {
     if (!active) { setInterrupted(false); return undefined; }
     lastEvents.current.clear();
-    let wasFullscreen = isExamFullscreen();
+    wasFullscreen.current = isExamFullscreen();
     // Progressive enhancement: capture only Escape, not the entire keyboard.
     // Permission may be denied, and a browser-controlled emergency exit remains.
     const keyboard = navigator.keyboard;
@@ -101,11 +124,11 @@ export function useCsrFitExamProtection({ active, moduleNumber, record }) {
       escapeLockRequested = false;
       try { keyboard?.unlock?.(); } catch { /* Browser already released the lock. */ }
     };
-    setFullscreen(wasFullscreen);
-    if (!wasFullscreen || !isForeground()) setInterrupted(true);
+    setFullscreen(wasFullscreen.current);
+    if (!wasFullscreen.current || !isForeground()) setInterrupted(true);
     const report = (type, options) => {
       const now = Date.now();
-      if (now - (lastEvents.current.get(type) || 0) < 1500) return;
+      if (type !== 'FULLSCREEN_EXIT' && now - (lastEvents.current.get(type) || 0) < 1500) return;
       lastEvents.current.set(type, now);
       reportRef.current?.(type, options);
     };
@@ -115,20 +138,41 @@ export function useCsrFitExamProtection({ active, moduleNumber, record }) {
       report(type, options);
     };
     const onFullscreen = () => {
+      if (!activeRef.current) return;
       const full = isExamFullscreen();
       setFullscreen(full);
       if (full) requestEscapeLock();
       else {
         releaseEscapeLock();
-        if (wasFullscreen && activeRef.current) interrupt('FULLSCREEN_EXIT');
+        // Latch the interruption even if the browser missed its exit event.
+        // Merely returning to fullscreen cannot clear this interruption.
+        lockedRef.current = true;
+        setInterrupted(true);
+        if (wasFullscreen.current) interrupt('FULLSCREEN_EXIT');
       }
-      wasFullscreen = full;
+      wasFullscreen.current = full;
     };
-    const onVisibility = () => { if (document.visibilityState === 'hidden') interrupt('TAB_HIDDEN', { keepalive: true }); else report('TAB_VISIBLE'); };
-    const onBlur = () => { interrupt('WINDOW_BLUR'); };
-    const onFocus = () => { report('WINDOW_FOCUS'); };
+    const onFullscreenError = () => { onFullscreen(); };
+    const verifyAccess = () => {
+      onFullscreen();
+      if (!isForeground()) {
+        lockedRef.current = true;
+        setInterrupted(true);
+      }
+    };
+    const onVisibility = () => {
+      if (document.visibilityState === 'hidden') interrupt('TAB_HIDDEN', { keepalive: true });
+      else report('TAB_VISIBLE');
+      onFullscreen();
+    };
+    const onBlur = () => { interrupt('WINDOW_BLUR'); onFullscreen(); };
+    const onFocus = () => { verifyAccess(); report('WINDOW_FOCUS'); };
+    // macOS fullscreen animations and browser UI exits may not dispatch the
+    // standard event. Resize/focus and polling are fallback checks, not proof
+    // of fullscreen. Each interaction also verifies the live DOM state.
+    const fullscreenWatchdog = window.setInterval(verifyAccess, 200);
     const onPageHide = () => { if (activeRef.current) report('PAGE_DEPARTURE', { keepalive: true }); };
-    const onPageShow = event => { if (event.persisted) report('EXAM_VIEW_OPENED'); };
+    const onPageShow = event => { verifyAccess(); if (event.persisted) report('EXAM_VIEW_OPENED'); };
     // Defer initial view logging so Strict Mode's disposable effect cannot duplicate it.
     const initialReport = window.setTimeout(() => {
       const nav = performance.getEntriesByType?.('navigation')?.[0];
@@ -141,6 +185,7 @@ export function useCsrFitExamProtection({ active, moduleNumber, record }) {
     };
     const onClipboard = event => block(event, event.type === 'paste' ? 'PASTE_BLOCKED' : 'COPY_BLOCKED');
     const onContextMenu = event => {
+      verifyAccess();
       // A virtual Windows context menu is a tested Module 4 skill. Suppress
       // the browser menu, but let its simulated event handler run.
       event.preventDefault();
@@ -149,11 +194,15 @@ export function useCsrFitExamProtection({ active, moduleNumber, record }) {
       report('CONTEXT_MENU_BLOCKED');
     };
     const onDrop = event => {
+      verifyAccess();
       const types = Array.from(event.dataTransfer?.types || []);
       if (moduleRef.current === 4 && !lockedRef.current && inSimulation(event.target) && types.includes('application/x-sibs-virtual-file')) return;
       block(event, 'PASTE_BLOCKED');
     };
-    const outsideProtection = event => lockedRef.current && !event.target?.closest?.('[data-csr-fit-protection]');
+    const outsideProtection = event => {
+      verifyAccess();
+      return lockedRef.current && !event.target?.closest?.('[data-csr-fit-protection]');
+    };
     const onLockedInteraction = event => {
       if (outsideProtection(event)) { event.preventDefault(); event.stopImmediatePropagation(); }
     };
@@ -163,9 +212,9 @@ export function useCsrFitExamProtection({ active, moduleNumber, record }) {
       event.stopImmediatePropagation();
       return true;
     };
-    const onKeyUp = event => { onEscapeKey(event); };
+    const onKeyUp = event => { if (!onEscapeKey(event)) onLockedInteraction(event); else verifyAccess(); };
     const onKeyDown = event => {
-      if (onEscapeKey(event)) { if (!event.repeat) report('ESCAPE_BLOCKED'); return; }
+      if (onEscapeKey(event)) { verifyAccess(); if (!event.repeat) report('ESCAPE_BLOCKED'); return; }
       if (outsideProtection(event)) {
         event.preventDefault(); event.stopImmediatePropagation();
         document.getElementById('csr-fit-resume-fullscreen')?.focus();
@@ -197,11 +246,14 @@ export function useCsrFitExamProtection({ active, moduleNumber, record }) {
       }
     };
     const onFocusIn = event => {
-      if (lockedRef.current && !event.target?.closest?.('[data-csr-fit-protection]')) {
+      if (outsideProtection(event)) {
         document.getElementById('csr-fit-resume-fullscreen')?.focus();
       }
     };
-    document.addEventListener('fullscreenchange', onFullscreen);
+    for (const type of fullscreenEvents) document.addEventListener(type, onFullscreen);
+    for (const type of fullscreenErrorEvents) document.addEventListener(type, onFullscreenError);
+    window.addEventListener('resize', verifyAccess);
+    const interactionEvents = ['pointerdown', 'pointerup', 'click', 'dblclick', 'touchstart', 'touchend', 'beforeinput', 'input', 'change', 'submit', 'dragstart'];
     document.addEventListener('visibilitychange', onVisibility);
     window.addEventListener('blur', onBlur);
     window.addEventListener('focus', onFocus);
@@ -212,14 +264,16 @@ export function useCsrFitExamProtection({ active, moduleNumber, record }) {
     window.addEventListener('drop', onDrop, true);
     window.addEventListener('keydown', onKeyDown, true);
     window.addEventListener('keyup', onKeyUp, true);
-    window.addEventListener('pointerdown', onLockedInteraction, true);
-    window.addEventListener('click', onLockedInteraction, true);
+    for (const type of interactionEvents) window.addEventListener(type, onLockedInteraction, { capture: true, passive: false });
     window.addEventListener('keydown', onVirtualKeyDefault);
     document.addEventListener('focusin', onFocusIn);
     // The start button may have entered fullscreen before the attempt became active.
     requestEscapeLock();
     return () => {
-      document.removeEventListener('fullscreenchange', onFullscreen);
+      for (const type of fullscreenEvents) document.removeEventListener(type, onFullscreen);
+      for (const type of fullscreenErrorEvents) document.removeEventListener(type, onFullscreenError);
+      window.removeEventListener('resize', verifyAccess);
+      window.clearInterval(fullscreenWatchdog);
       document.removeEventListener('visibilitychange', onVisibility);
       window.removeEventListener('blur', onBlur);
       window.removeEventListener('focus', onFocus);
@@ -231,8 +285,7 @@ export function useCsrFitExamProtection({ active, moduleNumber, record }) {
       window.removeEventListener('drop', onDrop, true);
       window.removeEventListener('keydown', onKeyDown, true);
       window.removeEventListener('keyup', onKeyUp, true);
-      window.removeEventListener('pointerdown', onLockedInteraction, true);
-      window.removeEventListener('click', onLockedInteraction, true);
+      for (const type of interactionEvents) window.removeEventListener(type, onLockedInteraction, true);
       window.removeEventListener('keydown', onVirtualKeyDefault);
       document.removeEventListener('focusin', onFocusIn);
       releaseEscapeLock();

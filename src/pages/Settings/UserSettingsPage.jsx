@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 
 import Header from "../../components/layout/Header";
+import StatusModal from "../../components/modals/StatusModal";
 import DropdownPortal from "@/components/ui/DropdownPortal";
 import { useUser } from "../../services/context/UserContext";
 import {
@@ -1304,74 +1305,118 @@ export function AccessModal({
 
 function DeleteAccessModal({ target, onClose, onDeleted, openStatus }) {
   const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
+  const deletingRef = useRef(false);
+  const accounts = Array.isArray(target?.assignedAccounts)
+    ? target.assignedAccounts
+    : null;
+  const sibsId = safeText(target?.sibsId ?? target?.sibs_id) || "—";
+  const assignmentId = safeText(target?.id ?? target?.assignedAccountId);
+  const employeeName = formatEmployeeName(target || {});
 
   async function handleDelete() {
-    try {
-      setDeleting(true);
-      const result = await deleteUserSettingsUser(target.id);
-
-      openStatus(
-        "success",
-        "Access Removed",
-        result?.message || "User account access was removed successfully.",
-      );
-
-      onClose();
-      await onDeleted();
-    } catch (error) {
-      openStatus("error", "Delete Failed", error.message);
-    } finally {
-      setDeleting(false);
+    if (deletingRef.current) return;
+    if (!assignmentId || !accounts?.length) {
+      setDeleteError("The access record is incomplete. Close this dialog and refresh the user list before trying again.");
+      return;
     }
+
+    deletingRef.current = true;
+    setDeleting(true);
+    setDeleteError("");
+
+    try {
+      await deleteUserSettingsUser(assignmentId);
+    } catch (error) {
+      setDeleteError(error?.message || "Unable to remove account access.");
+      deletingRef.current = false;
+      setDeleting(false);
+      return;
+    }
+
+    onClose();
+    openStatus("success", "Access Removed", "The employee's assigned account access was removed successfully. Employee information was not changed.");
+    await onDeleted();
   }
 
   return (
-    <ModalShell
+    <ConfirmModal
       open={Boolean(target)}
       variant="danger"
-      maxWidth="max-w-md"
+      maxWidth="max-w-lg"
       icon={Trash2}
       title="Remove User Account Access"
-      subtitle="This removes all account access assigned to the selected employee. Employee information will not be changed."
+      subtitle="User Settings"
+      description="This removes all assigned account access for the selected employee. Their employee profile will not be deleted."
+      confirmLabel="Remove Access"
+      cancelLabel="Cancel"
+      loading={deleting}
+      onConfirm={handleDelete}
       onClose={() => {
-        if (!deleting) onClose();
+        if (!deletingRef.current) onClose();
       }}
-      footer={
-        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={deleting}
-            className="sibs-btn-secondary h-10 px-5 text-sm"
-          >
-            Cancel
-          </button>
-
-          <button
-            type="button"
-            onClick={handleDelete}
-            disabled={deleting}
-            className="inline-flex h-10 items-center justify-center gap-2 rounded-[10px] bg-red-600 px-5 text-sm font-extrabold text-white shadow-xs transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {deleting ? (
-              <Loader2 size={17} className="animate-spin" />
-            ) : (
-              <Trash2 size={17} />
-            )}
-            Remove Access
-          </button>
-        </div>
-      }
     >
-      <div className="rounded-2xl border border-red-100 bg-red-50 p-5">
-        <p className="text-sm font-extrabold text-red-800">
-          {formatEmployeeName(target || {})}
+      <section className="mt-4 overflow-hidden rounded-xl border border-sibs-border bg-white">
+        <div className="flex items-start gap-3 bg-sibs-surface p-3 sm:p-4">
+          <ProfileAvatar employee={target || {}} />
+          <div className="min-w-0 flex-1">
+            <p className="break-words text-sm font-extrabold text-sibs-navy">
+              {employeeName}
+            </p>
+            <p className="mt-1 break-words text-xs font-semibold text-sibs-muted">
+              SIBS ID: {sibsId}
+            </p>
+            {target?.email && (
+              <p className="mt-1 break-all text-xs font-semibold text-sibs-muted">{target.email}</p>
+            )}
+            <div className="mt-2 flex flex-wrap items-center gap-1.5">
+              <RolePill role={target?.role} adminAccess={target?.adminAccess} />
+              <StatusPill status={target?.status} />
+            </div>
+          </div>
+        </div>
+        <div className="border-t border-sibs-border p-3 sm:p-4">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-xs font-extrabold text-sibs-navy">Assigned Accounts to Remove</p>
+            <span className="rounded-full border border-sibs-border bg-sibs-surface px-2 py-0.5 text-[10px] font-bold text-sibs-navy">
+              {accounts ? `${accounts.length} ${accounts.length === 1 ? "assignment" : "assignments"}` : "Unavailable"}
+            </span>
+          </div>
+          {accounts?.length ? (
+            <ul className="mt-2 max-h-48 divide-y divide-sibs-border overflow-y-auto sibs-scrollbar">
+              {accounts.map((account, index) => {
+                const accountId = getAccountId(account);
+                const accountName = getAccountName(account);
+                const departmentName = getDepartmentName(account);
+                const access = account?.adminAccess ?? account?.admin_access;
+                return (
+                  <li key={`${account?.id ?? accountId}-${index}`} className="flex flex-wrap items-start justify-between gap-2 py-2.5">
+                    <div className="min-w-0 flex-1">
+                      <p className="break-words text-xs font-bold text-sibs-navy">
+                        {accountName !== "—" ? accountName : accountId ? `Account #${accountId}` : "Account name unavailable"}
+                      </p>
+                      <p className="mt-0.5 break-words text-[10px] font-semibold text-sibs-muted">
+                        {departmentName !== "—" ? departmentName : "Department unavailable"}
+                      </p>
+                    </div>
+                    {access != null && access !== "" && <RolePill adminAccess={access} />}
+                  </li>
+                );
+              })}
+            </ul>
+          ) : (
+            <p className="mt-2 text-xs font-semibold text-sibs-muted">
+              {accounts ? "No assigned accounts found." : "Assigned account details are unavailable. Refresh the user list."}
+            </p>
+          )}
+        </div>
+      </section>
+      {deleteError && (
+        <p role="alert" className="mt-3 break-words rounded-lg border border-red-200 bg-red-50 p-3 text-xs font-semibold text-red-700">
+          {deleteError}
         </p>
-        <p className="mt-1 text-sm font-semibold text-red-700">
-          {target?.sibsId} · {target?.assignedAccounts?.length || 0} assigned account(s)
-        </p>
-      </div>
-    </ModalShell>
+      )}
+    </ConfirmModal>
   );
 }
 
@@ -2604,20 +2649,22 @@ export default function UserSettingsPage({ embedded = false }) {
         openStatus={openStatus}
       />
 
-      <DeleteAccessModal
-        target={deleteTarget}
-        onClose={() => setDeleteTarget(null)}
-        onDeleted={handleMutationCompleted}
-        openStatus={openStatus}
-      />
+      {deleteTarget && (
+        <DeleteAccessModal
+          key={deleteTarget.id ?? deleteTarget.assignedAccountId}
+          target={deleteTarget}
+          onClose={() => setDeleteTarget(null)}
+          onDeleted={handleMutationCompleted}
+          openStatus={openStatus}
+        />
+      )}
 
-      <ConfirmModal
+      <StatusModal
         open={Boolean(statusModal.open)}
-        variant={statusModal.type === "error" ? "danger" : "primary"}
+        type={statusModal.type}
+        subtitle="User Settings"
         title={statusModal.title}
-        description={statusModal.message}
-        confirmLabel="OK"
-        onConfirm={closeStatus}
+        message={statusModal.message}
         onClose={closeStatus}
       />
     </>
