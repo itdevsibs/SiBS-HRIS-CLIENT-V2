@@ -15,6 +15,7 @@ import CsrFitAdministrativeSimulation from '../../components/assessment/CsrFitAd
 import CsrFitTypingGame from '../../components/assessment/CsrFitTypingGame';
 import CsrFitOneTimeAudio from '../../components/assessment/CsrFitOneTimeAudio';
 import CsrFitAssessmentLoading from '../../components/assessment/CsrFitAssessmentLoading';
+import PublicCsrFitModuleTransition from '../../components/assessment/PublicCsrFitModuleTransition';
 import CsrFitCompletionCloseButton from '../../components/assessment/CsrFitCompletionCloseButton';
 import { useCsrFitExamProtection, CsrFitExamProtectionOverlay } from '../../components/assessment/CsrFitExamProtection';
 import { rememberPublicCsrFitSession } from '../../utils/assessment/csrFitResumeStorageClient';
@@ -330,12 +331,11 @@ function CsrFitAssessmentPageContent(){
       window.scrollTo({top:0,behavior:'smooth'});
     }catch(e){setError(errorLabel(e));}finally{setBusy(false);}
   }
-  // Keep the completion loader visible for at least five seconds after each module, including
-  // a module advanced automatically when its deadline expires. The Server is
-  // authoritative for completion and progression; this overlay never advances
-  // the candidate locally or resets any assessment timer.
-  const allowTransitionToRender = async startedAt => {
-    const remaining = 5000 - (Date.now() - startedAt);
+  // Match Public Assessment: five seconds minimum for the transition and
+  // at least 1.2 seconds for the server-confirmed success animation.
+  // Timers and progression remain server-authoritative.
+  const allowTransitionToRender = async (startedAt, verifiedAt) => {
+    const remaining = Math.max(5000 - (Date.now() - startedAt), 1200 - (Date.now() - verifiedAt));
     if (remaining > 0) await new Promise(resolve => setTimeout(resolve, remaining));
   };
   async function advance(){
@@ -350,8 +350,9 @@ function CsrFitAssessmentPageContent(){
       const r=await api.post(`/api/assessment/public/${token}/advance`,{}, {withCredentials:false});
       if(r.data?.success===false)throw new Error(r.data.message);
       const next=await api.get(`/api/assessment/public/${token}`,{withCredentials:false});
+      const verifiedAt=Date.now();
       setModuleTransition({from:previous,to:nextNumber,phase:'ready'});
-      await allowTransitionToRender(startedAt);
+      await allowTransitionToRender(startedAt,verifiedAt);
       hydrate(next.data);
       window.scrollTo({top:0,behavior:'instant'});
       return true;
@@ -368,8 +369,9 @@ function CsrFitAssessmentPageContent(){
       await writeQueue.current;
       const r=await api.post(`/api/assessment/public/${token}/submit`,{}, {withCredentials:false});
       if(r.data?.success===false)throw new Error(r.data.message);
+      const verifiedAt=Date.now();
       setModuleTransition({from:7,to:null,phase:'ready'});
-      await allowTransitionToRender(startedAt);
+      await allowTransitionToRender(startedAt,verifiedAt);
       setData(old=>({...old,status:'SUBMITTED'}));
       window.scrollTo({top:0,behavior:'instant'});
       return true;
@@ -677,7 +679,7 @@ function CsrFitAssessmentPageContent(){
       </section>
     </div>}
     {busy && (moduleTransition
-      ? <CsrFitAssessmentLoading mode="module-transition" moduleNumber={moduleTransition.from}
+      ? <PublicCsrFitModuleTransition assessmentLabel="SiBS CSR-Fit Online Assessment" moduleNumber={moduleTransition.from}
           nextModuleNumber={moduleTransition.to} phase={moduleTransition.phase} />
       : <CsrFitAssessmentLoading mode="overlay" label={busyLabel} />)}
     <p className="py-5 text-center text-[11px] text-sibs-muted">SiBS HRIS · CSR-Fit Assessment · Authorized candidates only</p>
