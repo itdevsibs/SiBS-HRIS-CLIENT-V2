@@ -6,6 +6,7 @@ import { readCachedAuthSession } from "./services/auth/auth-session-cache";
 import AppShell from "./AppShell";
 import Router from "./router";
 import AppErrorBoundary from "./components/ui/AppErrorBoundary";
+import LoginEntrance from "./components/ui/LoginEntrance";
 import "./index.css";
 
 export default function App() {
@@ -27,21 +28,21 @@ export default function App() {
     (isLoginRoute && !hasActiveSession) ||
     (!isLoginRoute && isStandalonePublicRoute(location.pathname, hostname));
 
-  if (shouldBypassShell) {
-    return (
-      <AppErrorBoundary resetKey={location.pathname}>
-        <UserProvider>
-          <Router />
-        </UserProvider>
-      </AppErrorBoundary>
-    );
-  }
-
   return (
-    <AppErrorBoundary resetKey={location.pathname}>
-      <AppShell>
-        <Router />
-      </AppShell>
-    </AppErrorBoundary>
+    <>
+      <AppErrorBoundary resetKey={location.pathname}>
+        {shouldBypassShell ? (
+          <UserProvider>
+            <Router />
+          </UserProvider>
+        ) : (
+          <AppShell>
+            <Router />
+          </AppShell>
+        )}
+      </AppErrorBoundary>
+      {/* Remain mounted across the login-to-AppShell transition. */}
+      <LoginEntrance enabled={!isLoginRoute && !shouldBypassShell} />
+    </>
   );
 }

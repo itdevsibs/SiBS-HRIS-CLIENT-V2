@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { AlertCircle, Building2, MapPin, RefreshCw, UsersRound } from "lucide-react";
+import { AlertCircle, Building2, CheckCircle2, Clock3, MapPin, RefreshCw, UsersRound } from "lucide-react";
 
 import Header from "../../components/layout/Header";
 import {
@@ -50,108 +50,122 @@ function getAnimationStyle(delay = 0) {
   };
 }
 
+const locationCardClass = "flex min-h-[300px] flex-col overflow-hidden rounded-[14px] border border-sibs-border bg-white font-jakarta shadow-xs";
+
 function LocationCardSkeleton({ index = 0 }) {
   return (
     <article
       data-testid="location-card-skeleton"
       aria-busy="true"
-      className="sibs-card relative overflow-hidden rounded-[14px] border border-sibs-border bg-white p-5 sm:p-6"
-      style={getAnimationStyle(120 + index * 60)}
+      className={locationCardClass}
+      style={getAnimationStyle(Math.min(index, 12) * 50)}
     >
-      <div className="sibs-top-accent opacity-40" />
-
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex min-w-0 items-center gap-3">
-          <Skeleton className="h-11 w-11 shrink-0 rounded-[10px]" />
+      <div className="flex flex-1 flex-col p-5">
+        <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 space-y-2">
-            <Skeleton className="h-2.5 w-20" />
-            <Skeleton className="h-5 w-32" />
-            <Skeleton className="h-3 w-48" />
+            <Skeleton className="h-3 w-24" />
+            <Skeleton className="h-6 w-32" />
           </div>
+          <Skeleton className="h-6 w-20 rounded-full" />
+        </div>
+        <div className="mt-4 flex min-h-[86px] items-center gap-3 rounded-[10px] border border-sibs-border bg-sibs-surface p-3">
+          <Skeleton className="h-10 w-10 shrink-0 rounded-full" />
+          <div className="min-w-0 flex-1 space-y-2">
+            <Skeleton className="h-2.5 w-20" />
+            <Skeleton className="h-3 w-full" />
+            <Skeleton className="h-3 w-3/4" />
+          </div>
+        </div>
+        <div className="mt-4 space-y-2">
+          <Skeleton className="h-3.5 w-28" />
+          <Skeleton className="h-8 w-16" />
         </div>
       </div>
-
-      <div className="mt-6 border-t border-sibs-border pt-5">
-        <div className="flex items-end justify-between gap-4">
-          <div className="space-y-2">
-            <Skeleton className="h-3 w-24" />
-            <Skeleton className="h-8 w-16" />
-          </div>
-          <Skeleton className="h-10 w-10 rounded-[10px]" />
-        </div>
+      <div className="flex items-center justify-between gap-3 border-t border-sibs-border bg-sibs-surface px-5 py-3">
+        <Skeleton className="h-4 w-24" />
+        <Skeleton className="h-4 w-20" />
       </div>
     </article>
   );
 }
 
-function LocationCard({ location, loading, index = 0 }) {
+function LocationCard({ location, index = 0 }) {
   const comingSoon = Boolean(location.comingSoon);
+  const sharedCount = safeCount(location.sharedSiteAllocatedCount);
 
   return (
     <article
-      className="sibs-card sibs-page-card-in relative overflow-hidden rounded-[14px] border border-sibs-border bg-white p-5 sm:p-6 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
-      style={getAnimationStyle(120 + index * 60)}
+      className={`sibs-page-card-in ${locationCardClass} transition hover:-translate-y-0.5 hover:border-sibs-orange/40 hover:shadow-lg`}
+      style={getAnimationStyle(Math.min(index, 12) * 50)}
     >
-      <div className="sibs-top-accent" />
-
-      <div className="relative flex items-start justify-between gap-4">
-        <div className="flex min-w-0 items-center gap-3">
-          <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] bg-sibs-cream-light text-sibs-orange shadow-xs">
-            <MapPin size={20} strokeWidth={2.2} />
-          </span>
-
+      <div className="flex flex-1 flex-col p-5">
+        <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <p className="sibs-kpi-kicker text-[10px] font-extrabold uppercase tracking-[0.12em] text-sibs-faint">
-              Office Location
+            <p className="font-mono text-[10px] font-bold uppercase tracking-wider text-sibs-faint">
+              Office Location · KRONOS
             </p>
-            <h2 className="font-heading mt-0.5 truncate text-base 2xl:text-lg font-bold text-sibs-navy tracking-tight">
+            <h3 className="mt-1 font-heading text-lg font-bold leading-tight text-sibs-orange">
               {location.name}
-            </h2>
-            {location.address ? (
-              <p className="font-jakarta mt-1 max-w-md sibs-text-xs font-semibold leading-5 text-sibs-muted">
-                {location.address}
-              </p>
-            ) : null}
+            </h3>
+          </div>
+          <span className={`inline-flex shrink-0 items-center gap-1 rounded-full border px-2.5 py-1 text-[9px] font-extrabold uppercase ${comingSoon ? "border-amber-200 bg-amber-50 text-amber-700" : "border-emerald-200 bg-emerald-50 text-emerald-700"}`}>
+            {comingSoon ? <Clock3 className="h-3 w-3" /> : <CheckCircle2 className="h-3 w-3" />}
+            {comingSoon ? "Coming Soon" : "Active"}
+          </span>
+        </div>
+
+        <div className="mt-4 flex min-h-[86px] items-center gap-3 rounded-[10px] border border-sibs-border bg-sibs-surface p-3">
+          <span className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-sibs-navy text-white">
+            <MapPin className="h-5 w-5" aria-hidden="true" />
+          </span>
+          <div className="min-w-0">
+            <p className="text-[8px] font-extrabold uppercase tracking-wide text-sibs-faint">
+              Site Address
+            </p>
+            <p className="mt-0.5 break-words text-xs font-semibold leading-relaxed text-sibs-navy">
+              {location.address || "Address unavailable"}
+            </p>
           </div>
         </div>
-      </div>
 
-      <div className="relative mt-6 border-t border-sibs-border pt-5">
         {comingSoon ? (
-          <div>
-            <div className="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-3 py-0.5 sibs-text-micro font-extrabold text-amber-700">
-              Coming Soon
-            </div>
-            <p className="font-jakarta mt-3 sibs-text-xs font-semibold leading-5 text-sibs-muted">
+          <div className="mt-4">
+            <p className="flex items-center gap-1.5 text-[10px] font-extrabold text-sibs-navy">
+              <UsersRound className="h-3.5 w-3.5" aria-hidden="true" />
+              Active Employees
+            </p>
+            <p className="mt-1 font-heading text-3xl font-bold text-sibs-faint" aria-label="Not available">—</p>
+            <p className="mt-1 text-[10px] font-semibold leading-relaxed text-sibs-muted">
               Employee location data is not yet available in Kronos for {location.name}.
             </p>
           </div>
         ) : (
-          <div className="flex items-end justify-between gap-4">
-            <div>
-              <p className="font-jakarta sibs-text-xs font-bold text-sibs-muted">Active Employees</p>
-              <div className="mt-1 flex min-h-10 items-center">
-                {loading ? (
-                  <div className="h-8 w-20 animate-pulse rounded bg-slate-100" />
-                ) : (
-                  <span className="font-heading text-3xl 2xl:text-4xl font-bold tabular-nums tracking-tight text-sibs-navy">
-                    {safeCount(location.employeeCount).toLocaleString()}
-                  </span>
-                )}
-              </div>
-              {safeCount(location.sharedSiteAllocatedCount) > 0 ? (
-                <p className="mt-1 text-[11px] font-semibold text-sibs-muted">
-                  Includes {safeCount(location.sharedSiteAllocatedCount).toLocaleString()} Both Sites
-                  {safeCount(location.sharedSiteAllocatedCount) === 1 ? " employee" : " employees"} for reporting
-                </p>
-              ) : null}
-            </div>
-
-            <span className="inline-flex h-10 w-10 items-center justify-center rounded-[10px] bg-sibs-surface text-sibs-navy">
-              <UsersRound size={19} />
-            </span>
+          <div className="mt-4">
+            <p className="flex items-center gap-1.5 text-[10px] font-extrabold text-sibs-navy">
+              <UsersRound className="h-3.5 w-3.5" aria-hidden="true" />
+              Active Employees
+            </p>
+            <p className="mt-1 font-heading text-3xl font-bold tabular-nums tracking-tight text-sibs-navy">
+              {safeCount(location.employeeCount).toLocaleString()}
+            </p>
+            {sharedCount > 0 ? (
+              <p className="mt-1 text-[10px] font-semibold leading-relaxed text-sibs-muted">
+                Includes {sharedCount.toLocaleString()} Both Sites
+                {sharedCount === 1 ? " employee" : " employees"} for reporting
+              </p>
+            ) : null}
           </div>
         )}
+      </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-sibs-border bg-sibs-surface px-5 py-3">
+        <span className="inline-flex items-center gap-2 text-[10px] font-extrabold text-sibs-muted">
+          <Building2 className="h-4 w-4 text-emerald-600" aria-hidden="true" />
+          Kronos Site
+        </span>
+        <span className="text-[10px] font-extrabold text-sibs-secondary">
+          {comingSoon ? "Data not available" : "Employee headcount"}
+        </span>
       </div>
     </article>
   );
@@ -208,8 +222,6 @@ export default function OfficeLocationsPage() {
     [locations, summary],
   );
   const otherHeadcount = safeCount(summary?.otherHeadcount);
-  const sharedAllocatedCount = safeCount(summary?.bothSitesAllocatedCount);
-  const allocatedSiteName = summary?.bothSitesAllocatedTo === "davao" ? "Davao" : "Tagum";
   const otherBreakdown = summary?.otherBreakdown ?? {};
   const otherLabels = [
     ["Both sites", otherBreakdown.bothSites],
@@ -292,13 +304,6 @@ export default function OfficeLocationsPage() {
             </div>
           ) : null}
 
-          {!loading && !errorMessage && sharedAllocatedCount > 0 ? (
-            <div role="status" className="rounded-[12px] border border-blue-200 bg-blue-50 px-4 py-3 text-xs font-semibold text-sibs-navy">
-              {sharedAllocatedCount.toLocaleString()} {sharedAllocatedCount === 1 ? "employee is" : "employees are"} assigned to Both Sites in Kronos and counted under {allocatedSiteName} for reporting only.
-              The underlying Kronos site assignments are unchanged.
-            </div>
-          ) : null}
-
           {!loading && !errorMessage && otherHeadcount > 0 ? (
             <div
               role="status"
@@ -317,30 +322,41 @@ export default function OfficeLocationsPage() {
           ) : null}
 
           <section
-            aria-label="Office locations directory"
-            className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:gap-5"
+            aria-labelledby="office-locations-directory-title"
+            className="sibs-page-card-in sibs-card mt-5 overflow-hidden rounded-[14px] border border-sibs-border bg-white font-jakarta shadow-xs"
+            style={getAnimationStyle(240)}
           >
-            {loading
-              ? Array.from({ length: 3 }).map((_, idx) => (
-                  <LocationCardSkeleton key={idx} index={idx} />
-                ))
-              : locations.length === 0
-                ? (
-                  <div className="col-span-full">
-                    <EmptyStatePanel
-                      title="No office locations found"
-                      description="No active or pending office locations are registered in Kronos."
-                    />
-                  </div>
-                )
-                : locations.map((location, index) => (
-                    <LocationCard
-                      key={location.id}
-                      location={location}
-                      loading={loading && !location.comingSoon}
-                      index={index}
-                    />
+            <div className="flex flex-col gap-3 border-b border-sibs-border px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+              <div>
+                <h2 id="office-locations-directory-title" className="sibs-card-title">
+                  Office Locations Directory
+                </h2>
+                <p className="sibs-card-subtitle">
+                  Review office addresses, site status, and active employee headcount.
+                </p>
+              </div>
+              <span className="self-start rounded-[10px] border border-sibs-border bg-sibs-surface px-3 py-1.5 text-[10px] font-extrabold text-sibs-secondary sm:self-auto">
+                {locations.length} {locations.length === 1 ? "site" : "sites"} configured
+              </span>
+            </div>
+            <div className="grid gap-4 p-4 sm:p-5 md:grid-cols-2 xl:grid-cols-3">
+              {loading
+                ? Array.from({ length: 3 }).map((_, idx) => (
+                    <LocationCardSkeleton key={idx} index={idx} />
+                  ))
+                : locations.length === 0
+                  ? (
+                    <div className="col-span-full">
+                      <EmptyStatePanel
+                        title="No office locations found"
+                        description="No active or pending office locations are registered in Kronos."
+                      />
+                    </div>
+                  )
+                  : locations.map((location, index) => (
+                    <LocationCard key={location.id} location={location} index={index} />
                   ))}
+            </div>
           </section>
         </div>
       </main>

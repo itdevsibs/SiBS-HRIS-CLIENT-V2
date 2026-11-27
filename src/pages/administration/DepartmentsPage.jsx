@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 
 import {
@@ -6,6 +6,7 @@ import {
   Building2,
   CheckCircle2,
   Loader2,
+  Layers3,
   Plus,
   RefreshCw,
 } from "lucide-react";
@@ -21,7 +22,7 @@ import DepartmentDetailsModal from "@/components/departments/DepartmentDetailsMo
 import DepartmentFilters from "@/components/departments/DepartmentFilters";
 import DepartmentSummaryCards from "@/components/departments/DepartmentSummaryCards";
 import Header from "@/components/layout/Header";
-import { ConfirmModal, PageHeaderHero } from "@/components/ui";
+import { ConfirmModal, ModalShell, PageHeaderHero } from "@/components/ui";
 import useDepartments from "@/hooks/departments/useDepartments";
 import {
   approveDepartmentRequest,
@@ -67,7 +68,11 @@ function DepartmentsPageContent() {
     }, { replace: true });
   }, [setSearchParams]);
   const [selectedDepartment, setSelectedDepartment] = useState(null);
-  const [loadingDepartmentId, setLoadingDepartmentId] = useState("");
+  const [pendingDepartment, setPendingDepartment] = useState(null);
+  const [departmentDetailsError, setDepartmentDetailsError] = useState("");
+  const departmentRequestRef = useRef(null);
+  const departmentPrefetchRef = useRef(null);
+  const departmentPrefetchTimerRef = useRef(null);
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [addAccountModalOpen, setAddAccountModalOpen] = useState(false);
   const [submittingAccount, setSubmittingAccount] = useState(false);
@@ -188,34 +193,97 @@ function DepartmentsPageContent() {
     loadApprovalData();
   }, [loadApprovalData]);
 
+  // Only prefetch one likely selection. Never retain completed department
+  // data in the browser; the click either joins the in-flight authorized
+  // request or fetches current data from the server.
+  function cancelDepartmentPrefetch() {
+    clearTimeout(departmentPrefetchTimerRef.current);
+    departmentPrefetchTimerRef.current = null;
+    departmentPrefetchRef.current?.controller.abort();
+    departmentPrefetchRef.current = null;
+  }
+
+  function handleDepartmentIntent(department) {
+    const id = String(department?.id ?? "").trim();
+    if (!id || departmentRequestRef.current || pendingDepartment || selectedDepartment) return;
+    if (departmentPrefetchRef.current?.id === id) return;
+    cancelDepartmentPrefetch();
+    departmentPrefetchTimerRef.current = setTimeout(() => {
+      departmentPrefetchTimerRef.current = null;
+      if (departmentRequestRef.current) return;
+      const controller = new AbortController();
+      const request = { id, controller, promise: null };
+      departmentPrefetchRef.current = request;
+      request.promise = getDepartmentDetails(id, { signal: controller.signal });
+      // Handle speculative failures, without changing the visible UI.
+      // Both branches discard the prefetch after completion.
+      const clear = () => {
+        if (departmentPrefetchRef.current === request) departmentPrefetchRef.current = null;
+      };
+      request.promise.then(clear, clear);
+    }, 150);
+  }
+
+  // Cancel on close, navigation, or a newer selection. A late response must
+  // never reopen the modal or replace another department's details.
+  useEffect(() => () => {
+    clearTimeout(departmentPrefetchTimerRef.current);
+    departmentPrefetchRef.current?.controller.abort();
+    departmentPrefetchRef.current = null;
+    departmentRequestRef.current?.abort();
+    departmentRequestRef.current = null;
+  }, []);
+
+  function handleCloseDepartment() {
+    cancelDepartmentPrefetch();
+    departmentRequestRef.current?.abort();
+    departmentRequestRef.current = null;
+    setPendingDepartment(null);
+    setSelectedDepartment(null);
+    setDepartmentDetailsError("");
+  }
+
   async function handleViewDepartment(department) {
     const departmentId = String(department?.id ?? "").trim();
-    if (!departmentId || loadingDepartmentId) return;
+    if (!departmentId) return;
 
-    setLoadingDepartmentId(departmentId);
+    departmentRequestRef.current?.abort();
+    clearTimeout(departmentPrefetchTimerRef.current);
+    departmentPrefetchTimerRef.current = null;
+    const prefetched = departmentPrefetchRef.current;
+    departmentPrefetchRef.current = null;
+    const matchingPrefetch = prefetched?.id === departmentId && !prefetched.controller.signal.aborted;
+    if (!matchingPrefetch) prefetched?.controller.abort();
+    const controller = matchingPrefetch ? prefetched.controller : new AbortController();
+    departmentRequestRef.current = controller;
+    // Open the shell immediately using the already loaded card metadata.
+    // Do not display placeholder leadership data as verified information.
+    setSelectedDepartment(null);
+    setPendingDepartment(department);
+    setDepartmentDetailsError("");
 
     try {
-      const payload = await getDepartmentDetails(departmentId);
-      setSelectedDepartment(
-        normalizeDepartmentDetailsResponse(payload),
-      );
+      const payload = await (matchingPrefetch
+        ? prefetched.promise
+        : getDepartmentDetails(departmentId, { signal: controller.signal }));
+      if (controller.signal.aborted || departmentRequestRef.current !== controller) return;
+      const details = normalizeDepartmentDetailsResponse(payload);
+      if (String(details.id) !== departmentId) {
+        throw new Error("The server returned details for a different department.");
+      }
+      setSelectedDepartment(details);
+      setPendingDepartment(null);
     } catch (error) {
+      if (controller.signal.aborted || departmentRequestRef.current !== controller) return;
       console.error("LOAD DEPARTMENT DETAILS ERROR:", error);
-
-      showStatus(
-        "error",
-        "Department Details Unavailable",
-        errorMessage(
-          error,
-          "Failed to load the selected department details.",
-        ),
-      );
+      setDepartmentDetailsError(errorMessage(error, "Failed to load the selected department details."));
     } finally {
-      setLoadingDepartmentId("");
+      if (departmentRequestRef.current === controller) departmentRequestRef.current = null;
     }
   }
 
   async function handleRefresh() {
+    cancelDepartmentPrefetch();
     departments.refresh();
     await loadApprovalData();
   }
@@ -512,6 +580,8 @@ function DepartmentsPageContent() {
                   key={department.id}
                   department={department}
                   onView={handleViewDepartment}
+                  onIntent={handleDepartmentIntent}
+                  onIntentEnd={cancelDepartmentPrefetch}
                   index={index}
                 />
               ))}
@@ -530,11 +600,53 @@ function DepartmentsPageContent() {
         </section>
       </main>
 
-      <DepartmentDetailsModal
-        department={selectedDepartment}
-        canManageLobs={canManageLobs}
-        onClose={() => setSelectedDepartment(null)}
-      />
+      {pendingDepartment ? (
+        <ModalShell
+          open
+          onClose={handleCloseDepartment}
+          title={pendingDepartment.name}
+          subtitle={pendingDepartment.description}
+          icon={Layers3}
+          badge={`${pendingDepartment.code} · HRIS Department`}
+          maxWidth="max-w-6xl"
+          variant="navy"
+          className="rounded-[14px]"
+          headerClassName="bg-sibs-navy"
+          bodyClassName="max-h-[75vh] overflow-y-auto bg-sibs-surface p-4 sm:p-5"
+          closeOnBackdrop={false}
+          footer={
+            <div className="flex w-full justify-end">
+              <button type="button" className="sibs-modal-btn-secondary px-5" onClick={handleCloseDepartment}>
+                Close Directory
+              </button>
+            </div>
+          }
+        >
+          {departmentDetailsError ? (
+            <div role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-8 text-center text-rose-700">
+              <AlertTriangle className="mx-auto h-7 w-7" />
+              <h3 className="mt-3 text-sm font-extrabold">Department Details Unavailable</h3>
+              <p className="mt-1 text-xs font-semibold">{departmentDetailsError}</p>
+              <button type="button" className="sibs-btn-secondary mt-4" onClick={() => handleViewDepartment(pendingDepartment)}>
+                Retry
+              </button>
+            </div>
+          ) : (
+            <div role="status" aria-live="polite" aria-busy="true" className="flex min-h-[300px] flex-col items-center justify-center gap-3 rounded-xl border border-sibs-border bg-white p-8 text-center">
+              <Loader2 className="h-8 w-8 animate-spin text-sibs-orange" aria-hidden="true" />
+              <h3 className="text-sm font-extrabold text-sibs-navy">Loading department details</h3>
+              <p className="text-xs font-semibold text-sibs-muted">Retrieving current accounts and reporting hierarchy.</p>
+            </div>
+          )}
+        </ModalShell>
+      ) : selectedDepartment ? (
+        <DepartmentDetailsModal
+          key={selectedDepartment.id}
+          department={selectedDepartment}
+          canManageLobs={canManageLobs}
+          onClose={handleCloseDepartment}
+        />
+      ) : null}
 
       {canManageDepartments ? (
         <AddDepartmentModal

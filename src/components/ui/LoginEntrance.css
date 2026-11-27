@@ -1,0 +1,120 @@
+/* Decorative only: the dashboard remains mounted and usable throughout. */
+.sibs-login-entrance {
+  position: fixed;
+  inset: 0;
+  z-index: 2100; /* Below the existing birthday celebration (9999). */
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  pointer-events: none;
+  user-select: none;
+  isolation: isolate;
+  background: radial-gradient(ellipse at center, rgba(11, 48, 82, .88), rgba(5, 26, 48, .92) 72%);
+  animation: sibsLoginEntranceFade var(--entrance-duration, 1450ms) ease both;
+}
+.sibs-login-entrance__halo,
+.sibs-login-entrance__ring,
+.sibs-login-entrance__spark {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+}
+.sibs-login-entrance__halo {
+  width: 74vmin;
+  height: 74vmin;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 87, 34, .21), rgba(255, 151, 75, .05) 45%, transparent 68%);
+  animation: sibsLoginHalo 1150ms ease-out both;
+}
+.sibs-login-entrance__ring {
+  width: min(52vmin, 450px);
+  height: min(52vmin, 450px);
+  border: 1px solid rgba(255, 146, 79, .75);
+  border-radius: 50%;
+  box-shadow: 0 0 20px rgba(255, 87, 34, .25), inset 0 0 14px rgba(255, 87, 34, .16);
+  animation: sibsLoginRing 1050ms cubic-bezier(.16, 1, .3, 1) both;
+}
+.sibs-login-entrance__ring--inner {
+  width: min(37vmin, 320px);
+  height: min(37vmin, 320px);
+  border-color: rgba(255, 226, 187, .75);
+  animation-delay: 100ms;
+}
+.sibs-login-entrance__spark {
+  width: var(--spark-size);
+  height: var(--spark-size);
+  background: var(--spark-color);
+  clip-path: polygon(50% 0, 64% 36%, 100% 50%, 64% 64%, 50% 100%, 36% 64%, 0 50%, 36% 36%);
+  animation: sibsLoginSpark 900ms cubic-bezier(.15, .8, .3, 1) var(--spark-delay) both;
+}
+.sibs-login-entrance__wordmark {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  color: #fff;
+  font-family: var(--font-jakarta, "Plus Jakarta Sans", system-ui, sans-serif);
+  text-align: center;
+  animation: sibsLoginWordmark 1250ms cubic-bezier(.2, .75, .25, 1) both;
+}
+.sibs-login-entrance__eyebrow {
+  font-family: var(--font-jakarta, "Plus Jakarta Sans", system-ui, sans-serif);
+  color: #ffe4d1;
+  font-size: clamp(10px, 1.5vmin, 14px);
+  font-weight: 700;
+  letter-spacing: .28em;
+}
+.sibs-login-entrance__brand {
+  font-family: var(--font-jakarta, "Plus Jakarta Sans", system-ui, sans-serif);
+  font-size: clamp(32px, 6.6vmin, 70px);
+  font-weight: 800;
+  letter-spacing: -.015em;
+  line-height: 1.1;
+  text-shadow: 0 0 28px rgba(255, 255, 255, .2);
+}
+.sibs-login-entrance__brand > span {
+  font-family: inherit;
+  color: #ff6938;
+}
+.sibs-login-entrance__underline {
+  width: 52%;
+  height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, transparent, #ff6835, #ffe4c2, transparent);
+  animation: sibsLoginUnderline 700ms ease-out both;
+}
+@keyframes sibsLoginEntranceFade {
+  0% { opacity: 0; }
+  13%, 48% { opacity: 1; }
+  100% { opacity: 0; }
+}
+@keyframes sibsLoginHalo {
+  0% { transform: translate(-50%, -50%) scale(.45); opacity: 0; }
+  25% { opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(1.35); opacity: 0; }
+}
+@keyframes sibsLoginRing {
+  0% { transform: translate(-50%, -50%) scale(.2); opacity: 0; }
+  24% { opacity: .85; }
+  100% { transform: translate(-50%, -50%) scale(1.65); opacity: 0; }
+}
+@keyframes sibsLoginSpark {
+  0% { transform: translate(-50%, -50%) scale(.3); opacity: 0; }
+  24% { opacity: .95; }
+  70% { opacity: .7; }
+  100% { transform: translate(calc(-50% + var(--spark-x)), calc(-50% + var(--spark-y))) rotate(75deg) scale(.6); opacity: 0; }
+}
+@keyframes sibsLoginWordmark {
+  0% { transform: translateY(12px) scale(.94); opacity: 0; }
+  24%, 67% { transform: translateY(0) scale(1); opacity: 1; }
+  100% { transform: translateY(-8px) scale(1.03); opacity: 0; }
+}
+@keyframes sibsLoginUnderline {
+  from { transform: scaleX(.1); opacity: 0; }
+  to { transform: scaleX(1); opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sibs-login-entrance { display: none !important; animation: none !important; }
+  .sibs-login-entrance * { animation: none !important; }
+}

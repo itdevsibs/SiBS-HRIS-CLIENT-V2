@@ -14,9 +14,10 @@ export async function getDepartments({ page = 1, limit = 6, search = "", status 
   return response.data;
 }
 
-export async function getDepartmentDetails(departmentId) {
-  const response = await api.get(`/api/departments/${departmentId}`, {
+export async function getDepartmentDetails(departmentId, { signal } = {}) {
+  const response = await api.get(`/api/departments/${encodeURIComponent(departmentId)}`, {
     withCredentials: true,
+    signal,
   });
 
   return response.data;
