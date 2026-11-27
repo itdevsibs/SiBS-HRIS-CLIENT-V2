@@ -2,7 +2,7 @@ import { Activity, Clock3 } from 'lucide-react';
 import { useState } from 'react';
 
 const LABELS = {
-  ASSESSMENT_STARTED:'Assessment session created', MODULE_STARTED:'Module started', MODULE_COMPLETED:'Module completed', MODULE_TIMED_OUT:'Module timed out', ASSESSMENT_SUBMITTED:'Assessment submitted',
+  ASSESSMENT_VOIDED:'Assessment automatically voided', ASSESSMENT_STARTED:'Assessment session created', MODULE_STARTED:'Module started', MODULE_COMPLETED:'Module completed', MODULE_TIMED_OUT:'Module timed out', ASSESSMENT_SUBMITTED:'Assessment submitted',
   EXAM_VIEW_OPENED:'Assessment page opened', PAGE_RELOADED:'Assessment page refreshed', PAGE_DEPARTURE:'Assessment page left (closed, refreshed or navigated away)',
   TAB_HIDDEN:'Assessment tab hidden', TAB_VISIBLE:'Assessment tab visible again', WINDOW_BLUR:'Assessment window lost focus', WINDOW_FOCUS:'Assessment window regained focus',
   FULLSCREEN_EXIT:'Fullscreen exited', FULLSCREEN_RESUMED:'Returned to fullscreen', ESCAPE_BLOCKED:'Escape key blocked', BROWSER_SHORTCUT_BLOCKED:'Browser shortcut blocked',
@@ -10,7 +10,7 @@ const LABELS = {
 };
 const attention = new Set(['PAGE_DEPARTURE','PAGE_RELOADED','TAB_HIDDEN','WINDOW_BLUR','FULLSCREEN_EXIT','ESCAPE_BLOCKED','BROWSER_SHORTCUT_BLOCKED','COPY_BLOCKED','PASTE_BLOCKED','CONTEXT_MENU_BLOCKED']);
 const format = new Intl.DateTimeFormat('en-US',{timeZone:'Asia/Manila',dateStyle:'medium',timeStyle:'medium'});
-export default function CsrFitActivityLog({ log, loading=false, error='', onRefresh, live=false, verified=false }) {
+export default function CsrFitActivityLog({ log, loading=false, error='', onRefresh, live=false, verified=false, publicAssessment=false }) {
   // Page 1 always contains the newest events. Sort a filtered copy, not the input log.
   const [page,setPage]=useState(1);
   const events=Array.isArray(log?.events)?log.events.filter(event=>LABELS[event?.type]&&Number.isFinite(event.atMs)&&event.atMs>0).reverse().sort((a,b)=>b.atMs-a.atMs):[];
@@ -22,8 +22,9 @@ export default function CsrFitActivityLog({ log, loading=false, error='', onRefr
       {!live && onRefresh && <button type="button" disabled={loading} onClick={onRefresh} className="rounded-lg border border-sibs-border px-3 py-2 text-[11px] font-bold text-sibs-navy disabled:opacity-50">{loading?'Checking…':'Check latest'}</button>}
     </header>
     {error && <p role="alert" className="px-4 py-3 text-xs text-rose-700">{error}</p>}
+    {publicAssessment && <div className="border-b border-red-100 bg-red-50 px-4 py-2 text-xs font-bold text-red-700">Recorded violations: {Number(log?.violationCount)||0}/5 · Five violations void the assessment.</div>}
     <div className="overflow-x-auto"><table className="w-full text-left text-xs"><thead className="bg-sibs-surface text-[10px] font-extrabold uppercase text-sibs-navy"><tr><th scope="col" className="px-4 py-3">Date &amp; Time</th><th scope="col" className="px-4 py-3">Module</th><th scope="col" className="px-4 py-3">Activity</th><th scope="col" className="px-4 py-3">Source</th></tr></thead><tbody className="divide-y divide-sibs-border">
-    {events.slice((current-1)*10,current*10).map((event,index)=><tr key={`${event.atMs}-${event.type}-${index}`} className="hover:bg-orange-50/40"><td className="whitespace-nowrap px-4 py-3 text-sibs-secondary"><span className="inline-flex items-center gap-1.5"><Clock3 size={12}/>{format.format(event.atMs)}</span></td><td className="whitespace-nowrap px-4 py-3 font-bold text-sibs-navy">{event.module?`Module ${event.module}`:'—'}</td><td className="min-w-[180px] px-4 py-3"><span className={`font-bold ${attention.has(event.type)?'text-amber-700':'text-sibs-navy'}`}>{LABELS[event.type]}</span></td><td className="px-4 py-3 text-sibs-secondary">{event.source==='SERVER'?'Server':'Browser'}</td></tr>)}
+    {events.slice((current-1)*10,current*10).map((event,index)=><tr key={`${event.atMs}-${event.type}-${index}`} className="hover:bg-orange-50/40"><td className="whitespace-nowrap px-4 py-3 text-sibs-secondary"><span className="inline-flex items-center gap-1.5"><Clock3 size={12}/>{format.format(event.atMs)}</span></td><td className="whitespace-nowrap px-4 py-3 font-bold text-sibs-navy">{event.module?`Module ${event.module}`:'—'}</td><td className="min-w-[180px] px-4 py-3"><span className={`font-bold ${event.type==='ASSESSMENT_VOIDED'||(publicAssessment&&attention.has(event.type))?'text-red-700':attention.has(event.type)?'text-amber-700':'text-sibs-navy'}`}>{LABELS[event.type]}</span></td><td className="px-4 py-3 text-sibs-secondary">{event.source==='SERVER'?'Server':'Browser'}</td></tr>)}
     {!events.length && <tr><td colSpan={4} className="px-4 py-7 text-center text-sibs-muted">{loading?'Loading activity logs…':error?'Activity could not be verified.':'No activity records available.'}</td></tr>}
     </tbody></table></div>
     <div className="flex flex-wrap items-center justify-between gap-2 border-t border-sibs-border px-4 py-3 text-[11px] text-sibs-secondary"><span>{events.length} recorded events</span>{pageCount>1&&<div className="flex items-center gap-2"><button type="button" disabled={current===1} onClick={()=>setPage(current-1)} className="rounded-lg border border-sibs-border px-2 py-1 disabled:opacity-40">Previous</button><span>Page {current} of {pageCount}</span>{live&&current!==1&&<button type="button" onClick={()=>setPage(1)} className="rounded-lg border border-sibs-border px-2 py-1 font-bold text-sibs-navy">Latest</button>}<button type="button" disabled={current===pageCount} onClick={()=>setPage(current+1)} className="rounded-lg border border-sibs-border px-2 py-1 disabled:opacity-40">Next</button></div>}</div>
