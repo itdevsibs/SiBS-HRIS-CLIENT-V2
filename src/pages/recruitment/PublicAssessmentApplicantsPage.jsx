@@ -2,7 +2,7 @@ import CsrFitActivityLog from '../../components/assessment/CsrFitActivityLog';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
-  RefreshCw, ExternalLink, Eye, Clock3,
+  RefreshCw, ExternalLink, Clock3,
   CheckCircle2, Users, AlertCircle, FileClock, X, UserRound,
   BriefcaseBusiness, Copy, Check,
 } from 'lucide-react';
@@ -641,13 +641,12 @@ export default function PublicAssessmentApplicantsPage({ portalMode = false, onU
                   <thead className="sibs-data-table-head">
                     <tr className="sibs-data-table-head-row">
                       {[
-                        ['Applicant', 'w-[21%] text-left'],
-                        ['Position', 'w-[15%] text-left'],
-                        ['Registered', 'w-[14%] text-center'],
-                        ['Status', 'w-[12%] text-center'],
-                        ['Current stage', 'w-[13%] text-center'],
-                        ['Assessment results', 'w-[15%] text-left'],
-                        ['View', 'w-[10%] text-center'],
+                        ['Applicant', 'w-[23%] text-left'],
+                        ['Position', 'w-[17%] text-left'],
+                        ['Registered', 'w-[15%] text-center'],
+                        ['Status', 'w-[13%] text-center'],
+                        ['Current stage', 'w-[14%] text-center'],
+                        ['Assessment results', 'w-[18%] text-left'],
                       ].map(([heading, width]) => <th key={heading}
                         className={`sibs-data-table-th ${width} px-3 py-2.5 sibs-text-micro font-black uppercase tracking-wider text-sibs-navy 2xl:px-4 2xl:py-3.5`}>
                         {heading}
@@ -656,13 +655,14 @@ export default function PublicAssessmentApplicantsPage({ portalMode = false, onU
                   </thead>
                   <tbody aria-busy={loading}>
                     {loading && items.length === 0 && (portalMode
-                      ? <TableSkeletonRows count={6} columns={7} />
-                      : <tr><td colSpan={7} className="px-5 py-12 text-center sibs-text-xs font-semibold text-sibs-secondary">Loading applicants…</td></tr>)}
-                    {!loading && items.length === 0 && <tr><td colSpan={7} className="px-5 py-12 text-center sibs-text-xs font-semibold text-sibs-secondary">No public assessment applicants found.</td></tr>}
+                      ? <TableSkeletonRows count={6} columns={6} />
+                      : <tr><td colSpan={6} className="px-5 py-12 text-center sibs-text-xs font-semibold text-sibs-secondary">Loading applicants…</td></tr>)}
+                    {!loading && items.length === 0 && <tr><td colSpan={6} className="px-5 py-12 text-center sibs-text-xs font-semibold text-sibs-secondary">No public assessment applicants found.</td></tr>}
                     {items.map(applicant => <tr
                       key={applicant.id}
                       role="button"
                       tabIndex={0}
+                      aria-busy={resultLoadingId === applicant.id}
                       onClick={() => void openApplicant(applicant)}
                       onKeyDown={event => {
                         if (event.key === 'Enter' || event.key === ' ') {
@@ -670,7 +670,7 @@ export default function PublicAssessmentApplicantsPage({ portalMode = false, onU
                           void openApplicant(applicant);
                         }
                       }}
-                      className="group cursor-pointer transition-colors hover:bg-sibs-cream-light focus-visible:bg-sibs-cream-light focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sibs-orange/30"
+                      className={`group ${resultLoadingId !== null ? 'cursor-wait' : 'cursor-pointer'} transition-colors hover:bg-sibs-cream-light focus-visible:bg-sibs-cream-light focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sibs-orange/30`}
                     >
                       <td className="border-b border-sibs-border px-3 py-2 align-middle 2xl:px-4 2xl:py-2.5">
                         <div className="flex min-w-0 items-center gap-2.5 2xl:gap-3">
@@ -703,13 +703,6 @@ export default function PublicAssessmentApplicantsPage({ portalMode = false, onU
                       </td>
                       <td className="border-b border-sibs-border px-3 py-2 align-middle 2xl:px-4 2xl:py-2.5">
                         <ProvisionalResults row={applicant}/>
-                      </td>
-                      <td className="border-b border-sibs-border px-3 py-2 text-center align-middle 2xl:px-4 2xl:py-2.5">
-                        <button type="button" disabled={resultLoadingId !== null}
-                          onClick={event => { event.stopPropagation(); void openApplicant(applicant); }}
-                          className="sibs-btn-secondary inline-flex h-8 items-center justify-center gap-1.5 whitespace-nowrap px-2.5 sibs-text-micro disabled:cursor-wait disabled:opacity-50">
-                          <Eye size={14}/>{resultLoadingId === applicant.id ? 'Opening…' : applicant.status === 'SUBMITTED' ? 'View results' : 'View details'}
-                        </button>
                       </td>
                     </tr>)}
                   </tbody>
