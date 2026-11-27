@@ -59,7 +59,7 @@ import CandidateTalentPoolDetailsPanel from "../../recruitment/candidatePipeline
 import ExpandableCandidateRemark from "../../recruitment/candidatePipeline/ExpandableCandidateRemark";
 import NhoUploadModal from "./NhoUploadModal";
 import NhoGoogleCalendarMonth from "./NhoGoogleCalendarMonth";
-import CsrFitAssessmentResultModal from "./CsrFitAssessmentResultModal";
+import PublicCsrFitAssessmentResultModal from "../publicAssessment/PublicCsrFitAssessmentResultModal";
 
 import {
   offerApprovers,
@@ -6716,7 +6716,7 @@ function CandidateDetailItem({
 }
 
 /** Read-only HRIS session progress. "In progress" is not a live-presence indicator. */
-function CsrFitProgressPanel({ progress, loading, error }) {
+function CsrFitProgressPanel({ progress, loading, error, children }) {
   const status = String(progress?.status || 'UNKNOWN');
   const inProgress = status === 'IN_PROGRESS';
   const moduleExpired = status === 'MODULE_TIME_EXPIRED';
@@ -6754,7 +6754,7 @@ function CsrFitProgressPanel({ progress, loading, error }) {
   const total = Number.isInteger(progress?.totalQuestionsInModule) ? progress.totalQuestionsInModule : null;
 
   return (
-    <section className="sibs-card min-w-0 overflow-hidden p-3.5 sm:p-4" aria-label="Candidate online assessment progress" aria-live="polite">
+    <section className="sibs-card min-w-0 overflow-hidden p-3.5 sm:p-4" aria-label="Candidate online assessment progress">
       <div className="flex flex-wrap items-start justify-between gap-2 border-b border-sibs-border pb-3">
         <div className="flex min-w-0 items-center gap-2.5">
           <span className="sibs-tone-navy-icon inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px]"><ClipboardCheck size={16}/></span>
@@ -6766,7 +6766,7 @@ function CsrFitProgressPanel({ progress, loading, error }) {
         {loading && !progress ? (
           <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-sibs-muted"><Loader2 size={13} className="animate-spin"/> Checking progress</span>
         ) : progress ? (
-          <span className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-[10px] font-extrabold ${toneStyle}`}>
+          <span role="status" className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-[10px] font-extrabold ${toneStyle}`}>
             {inProgress || moduleExpired ? <CirclePlay size={13}/> : submitted ? <CheckCircle2 size={13}/> : <ClipboardCheck size={13}/>}
             {label}
           </span>
@@ -6819,6 +6819,7 @@ function CsrFitProgressPanel({ progress, loading, error }) {
       )}
       {progress?.activityLog && <div className="mt-3"><CsrFitActivityLog log={progress.activityLog}/></div>}
       {error && <p role="status" className="pt-2 text-[11px] text-rose-700">Could not refresh assessment progress. The last recorded status may be outdated.</p>}
+      {children && <div className="mt-4 border-t border-sibs-border pt-4">{children}</div>}
     </section>
   );
 }
@@ -7214,7 +7215,6 @@ rawOpenedCandidate || {},
   const [csrFitProgressError, setCsrFitProgressError] = useState(false);
   const [csrFitResultLoading, setCsrFitResultLoading] = useState(false);
   const [csrFitResultError, setCsrFitResultError] = useState('');
-  const [showCsrFitResultModal, setShowCsrFitResultModal] = useState(false);
   const [showRevisedOfferModal, setShowRevisedOfferModal] = useState(false);
   const [isSubmittingRevisedOffer, setIsSubmittingRevisedOffer] = useState(false);
   const [loadedOfferVersions, setLoadedOfferVersions] = useState([]);
@@ -7997,12 +7997,15 @@ rawOpenedCandidate || {},
   // The candidate_pipeline primary key is deliberately distinct from the
   // applicant's external candidateId (which may contain the same number).
   const csrFitPipelineId = getCandidatePipelineRecordId(activeCandidate);
+  const progressSubmitted = csrFitProgress?.status === 'SUBMITTED';
+  // Never display the preceding candidate's response during a record switch.
+  const currentCsrFitResult = csrFitResult?.available && csrFitPipelineId &&
+    String(csrFitResult.candidatePipelineId) === String(csrFitPipelineId) ? csrFitResult : null;
   useEffect(() => {
     if (!open || !hasAssessmentDetailAccess || !csrFitPipelineId) {
       setCsrFitResult(null);
       setCsrFitResultLoading(false);
       setCsrFitResultError('');
-      setShowCsrFitResultModal(false);
       return undefined;
     }
     let live = true;
@@ -8020,8 +8023,10 @@ rawOpenedCandidate || {},
           setCsrFitResultError('');
         }
       } catch (error) {
-        if (live && Number(error?.response?.status) !== 404) {
-          setCsrFitResultError(error?.response?.data?.message || 'Unable to load submitted exam results.');
+        if (live) {
+          const status = Number(error?.response?.status);
+          if ([401, 403, 404].includes(status)) setCsrFitResult(null);
+          if (status !== 404) setCsrFitResultError(error?.response?.data?.message || 'Unable to load submitted exam results.');
         }
       } finally {
         inFlight = false;
@@ -8038,7 +8043,7 @@ rawOpenedCandidate || {},
       window.clearInterval(poll);
       window.removeEventListener('focus', refresh);
     };
-  }, [open, hasAssessmentDetailAccess, csrFitPipelineId]);
+  }, [open, hasAssessmentDetailAccess, csrFitPipelineId, progressSubmitted]);
 
   // Only authorized HR viewers receive a status-only, token-free progress summary.
   // Does not request or expose candidate answers, scores, or question bank data.
@@ -12002,7 +12007,7 @@ const concretePreferredFinalInterviewFormId =
     </div>
   );
 
-  const isCsrFitSubmitted = Boolean(csrFitResult?.available) ||
+  const isCsrFitSubmitted = Boolean(currentCsrFitResult) || progressSubmitted ||
     cleanText(activeCandidate.assessmentResult || activeCandidate.assessment_result).toLowerCase() === 'submitted';
   // Only show results after completion. The submitted server attempt is the
   // authoritative CSR-Fit signal; legacy records use Taken / Completed.
@@ -12015,8 +12020,8 @@ const concretePreferredFinalInterviewFormId =
   const hasCompletedAssessment = isCsrFitSubmitted ||
     ['taken', 'completed', 'submitted'].includes(assessmentCompletionStatus) ||
     ['taken', 'completed', 'submitted'].includes(assessmentCompletionResult);
-  const csrFitComposite = csrFitResult?.score?.behavioralComposite;
-  const assessmentSummaryScore = isCsrFitSubmitted && csrFitResult?.available
+  const csrFitComposite = currentCsrFitResult?.score?.behavioralComposite;
+  const assessmentSummaryScore = isCsrFitSubmitted && currentCsrFitResult
     ? (csrFitComposite == null ? 'Pending review' : `${Number(csrFitComposite).toFixed(2)}%`)
     : formatAssessmentScoreDisplay(
       activeCandidate.assessmentScore ?? activeCandidate.assessment_score,
@@ -12281,7 +12286,6 @@ const concretePreferredFinalInterviewFormId =
         }
         onClose={onClose}
         closeDisabled={isCandidateProcessRunning}
-        suspendFocusTrap={showCsrFitResultModal}
         maxWidth="max-w-[1180px]"
         zIndex="z-[9999]"
         movementHistoryCandidate={activeCandidate}
@@ -12339,8 +12343,18 @@ const concretePreferredFinalInterviewFormId =
           </div>
 
           <CandidateStageJourney currentStage={currentStage} />
-          {hasAssessmentDetailAccess && (isOnlineAssessment || ['IN_PROGRESS', 'MODULE_TIME_EXPIRED', 'TIME_EXPIRED'].includes(csrFitProgress?.status)) && !(hasCompletedAssessment && csrFitProgress?.status === 'NOT_INVITED') && (
-            <CsrFitProgressPanel progress={csrFitProgress} loading={csrFitProgressLoading} error={csrFitProgressError}/>
+          {hasAssessmentDetailAccess && (currentCsrFitResult || progressSubmitted ||
+            (isOnlineAssessment || ['IN_PROGRESS', 'MODULE_TIME_EXPIRED', 'TIME_EXPIRED'].includes(csrFitProgress?.status)) &&
+            !(hasCompletedAssessment && csrFitProgress?.status === 'NOT_INVITED')) && (
+            <CsrFitProgressPanel progress={csrFitProgress} loading={csrFitProgressLoading} error={csrFitProgressError}>
+              {currentCsrFitResult ? (
+                <PublicCsrFitAssessmentResultModal key={`candidate-${currentCsrFitResult.attemptId}`} open={open}
+                  data={currentCsrFitResult} candidateMode inline />
+              ) : isCsrFitSubmitted ? (
+                csrFitResultLoading ? <p role="status" className="flex items-center gap-2 text-xs text-sibs-muted"><Loader2 size={13} className="animate-spin"/>Loading submitted assessment results…</p>
+                  : <p role="status" className="text-xs text-sibs-muted">{csrFitResultError || 'Submitted assessment results are not available yet. Results refresh automatically.'}</p>
+              ) : null}
+            </CsrFitProgressPanel>
           )}
 
 
@@ -12599,17 +12613,6 @@ const concretePreferredFinalInterviewFormId =
                   </div>
                 </div>
               </div>
-              {csrFitResult?.available && (
-                <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-sibs-border bg-sibs-surface px-3 py-2.5">
-                  <p className="text-[11px] font-semibold text-sibs-muted">Submitted exam · Read-only questions, answers and pillar results</p>
-                  <button type="button" onClick={() => setShowCsrFitResultModal(true)}
-                    className="sibs-modal-btn-secondary inline-flex items-center gap-2">
-                    <Eye size={14}/> View Exam Results
-                  </button>
-                </div>
-              )}
-              {csrFitResultLoading && isCsrFitSubmitted && <p className="mt-2 flex items-center gap-2 text-xs text-sibs-muted"><Loader2 size={13} className="animate-spin"/>Loading submitted assessment results…</p>}
-              {csrFitResultError && isCsrFitSubmitted && <p role="alert" className="mt-2 text-xs text-rose-700">{csrFitResultError}</p>}
             </CandidateModalSection>
           )}
 
@@ -13290,13 +13293,6 @@ const concretePreferredFinalInterviewFormId =
           }
         }}
         onSubmit={handleConfirmNhoReschedule}
-      />
-
-      <CsrFitAssessmentResultModal
-        key={showCsrFitResultModal ? `view-${csrFitResult?.attemptId}` : 'closed'}
-        open={showCsrFitResultModal}
-        data={csrFitResult}
-        onClose={() => setShowCsrFitResultModal(false)}
       />
 
       <UpdateAssessmentModal
