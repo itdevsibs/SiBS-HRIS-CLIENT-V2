@@ -11,6 +11,8 @@ import {
   TrendingUp,
 } from "lucide-react";
 import HermesExpandedViewer from "./HermesExpandedViewer";
+import StatusBadge from "../ui/StatusBadge.jsx";
+import { formatAiDisplayDates } from "../../lib/utils/ai/aiDateDisplayClient.js";
 
 /**
  * AIReportHeader
@@ -23,19 +25,19 @@ export function AIReportHeader({
   source = {},
   onExpand,
 }) {
-  const { system = "HRIS", verified = true, scope, period, asOf } = source;
+  const { system = "HRIS", verified = false, scope, period, asOf } = source;
 
   return (
     <div className="flex items-start justify-between gap-3 border-b border-sibs-border pb-3">
       <div className="space-y-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
-          <h4 className="font-heading text-sm font-bold text-sibs-navy truncate">
-            {title}
+          <h4 className="font-heading text-lg font-bold text-sibs-navy break-words">
+            {formatAiDisplayDates(title)}
           </h4>
           {verified ? (
             <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700 border border-emerald-200">
               <ShieldCheck size={11} className="text-emerald-600" />
-              Verified {system}
+              Verified {formatAiDisplayDates(system)}
             </span>
           ) : (
             <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-700 border border-amber-200">
@@ -47,15 +49,15 @@ export function AIReportHeader({
 
         <div className="flex items-center gap-2 text-[11px] text-sibs-muted flex-wrap">
           {scope ? (
-            <span className="font-semibold text-sibs-secondary">Scope: {scope}</span>
+            <span className="font-semibold text-sibs-secondary">Scope: {formatAiDisplayDates(scope)}</span>
           ) : null}
-          {period ? (
-            <span className="inline-flex items-center gap-1 font-mono text-[10px]">
+          {period?.dateFrom && period?.dateTo ? (
+            <span className="inline-flex min-w-0 flex-wrap items-center gap-1 text-[10px] [overflow-wrap:anywhere]">
               <Calendar size={10} className="text-sibs-orange" />
-              {period.dateFrom} → {period.dateTo}
+              {formatAiDisplayDates(period.dateFrom)} → {formatAiDisplayDates(period.dateTo)}
             </span>
           ) : asOf ? (
-            <span className="text-[10px]">As of: {asOf}</span>
+            <span className="text-[10px]">As of: {formatAiDisplayDates(asOf)}</span>
           ) : null}
         </div>
       </div>
@@ -94,35 +96,28 @@ export function AIMetricCard({
     neutral: "border-sibs-border-subtle bg-white text-sibs-navy",
   };
 
-  const badgeStyles = {
-    normal: "bg-emerald-100 text-emerald-800",
-    warning: "bg-amber-100 text-amber-800",
-    alert: "bg-rose-100 text-rose-800",
-    neutral: "bg-sibs-surface text-sibs-muted",
-  };
-
   return (
     <div
-      className={`flex flex-col justify-between rounded-xl border p-2.5 transition shadow-xs ${
+      className={`flex flex-col min-w-0 rounded-xl border p-3 transition shadow-xs ${
         statusStyles[status] || statusStyles.normal
       }`}
     >
-      <span className="text-[11px] font-semibold text-sibs-muted truncate mb-1">
-        {label}
+      <span className="text-xs font-semibold text-sibs-muted break-words mb-2">
+        {formatAiDisplayDates(label)}
       </span>
-      <div className="flex items-baseline gap-1.5">
-        <span className="font-mono text-base font-extrabold tracking-tight tabular-nums text-sibs-navy">
-          {value != null ? value : "--"}
+      <div className="flex flex-wrap items-baseline gap-1.5">
+        <span className="text-2xl font-bold tracking-tight tabular-nums text-sibs-navy">
+          {value != null ? formatAiDisplayDates(value, label) : "--"}
         </span>
         {unit ? (
           <span className="text-[10px] font-medium text-sibs-faint uppercase tracking-wider">
-            {unit}
+            {formatAiDisplayDates(unit)}
           </span>
         ) : null}
       </div>
       {subtext ? (
-        <p className="mt-1 text-[10px] font-medium text-sibs-muted line-clamp-2">
-          {subtext}
+        <p className="mt-1 text-xs font-medium text-sibs-muted">
+          {formatAiDisplayDates(subtext)}
         </p>
       ) : null}
     </div>
@@ -130,16 +125,26 @@ export function AIMetricCard({
 }
 
 /**
- * AIReportTable
- *
- * Tabular component with horizontally scrollable container and right-aligned numbers.
+ * Each record is displayed in a labelled, wrapping card instead of a wide
+ * table. The grid adapts to the actual available container width (not the
+ * viewport), including the original 430px assistant drawer.
+ * Labels and values can be React nodes so Markdown formatting is preserved.
  */
-export function AIReportTable({
-  columns = [],
-  rows = [],
-  compact = false,
-}) {
-  if (!rows || rows.length === 0) {
+// Use the same badge styling as HRIS attendance. Only explicit status
+// values are styled; missing values or richer Markdown nodes stay intact.
+function renderRecordValue(label, value) {
+  const labelText = typeof label === "string" ? label : Array.isArray(label) && label.every((part) => typeof part === "string") ? label.join("") : "";
+  const valueText = typeof value === "string" ? value : Array.isArray(value) && value.every((part) => typeof part === "string") ? value.join("") : "";
+  if (!/\b(?:status|punctuality)\b/i.test(labelText) || !valueText.trim() || ["--", "—", "-"].includes(valueText.trim())) {
+    return value ?? "--";
+  }
+  const normalized = valueText.trim().toLowerCase().replace(/_/g, " ");
+  const badgeStatus = /^(?:on[- ]time)$/.test(normalized) ? "on-time" : normalized === "late" ? "late" : normalized === "early-out" ? "early-out" : valueText.trim();
+  return <StatusBadge status={badgeStatus} className="max-w-full whitespace-normal [overflow-wrap:anywhere]" />;
+}
+
+export function AIRecordList({ columns = [], rows = [] }) {
+  if (!rows.length) {
     return (
       <div className="rounded-xl border border-dashed border-sibs-border p-4 text-center text-xs font-medium text-sibs-muted">
         No records found for this period.
@@ -147,48 +152,54 @@ export function AIReportTable({
     );
   }
 
+  const renderField = (row, index) => {
+    const label = columns[index];
+    const labelText = typeof label === "string" ? label : Array.isArray(label) && label.every((part) => typeof part === "string") ? label.join("") : "";
+    const emphasizeValue = /^(?:(?:scheduled|actual)\s+login|sibs\s+id|account|department)$/i.test(labelText.trim());
+    return (
+      <div key={index} className="min-w-0">
+        <dt className="text-[11px] font-semibold leading-4 text-sibs-muted [overflow-wrap:anywhere]">
+          {columns[index] ?? `Column ${index + 1}`}
+        </dt>
+        <dd className={`mt-0.5 min-w-0 text-sm ${emphasizeValue ? "font-bold" : "font-medium"} leading-5 text-sibs-navy [overflow-wrap:anywhere]`}>
+          {renderRecordValue(columns[index], row[index])}
+        </dd>
+      </div>
+    );
+  };
+
   return (
-    <div className="overflow-x-auto rounded-xl border border-sibs-border bg-white shadow-xs">
-      <table className="w-full border-collapse text-left text-xs">
-        <thead className="border-b border-sibs-border bg-sibs-surface/80">
-          <tr>
-            {columns.map((col) => (
-              <th
-                key={col.key}
-                className={`px-3 py-2 text-[10px] font-extrabold uppercase tracking-wider text-sibs-muted ${
-                  col.align === "right" || col.isNumeric ? "text-right" : "text-left"
-                }`}
+    <div role="list" className="min-w-0 w-full space-y-2">
+      {rows.map((row, rowIndex) => (
+        <div role="listitem" key={rowIndex} className="min-w-0 rounded-xl border border-sibs-border bg-white shadow-xs">
+          <dl className="min-w-0">
+            <div className="rounded-t-xl border-b border-sibs-border-subtle bg-sibs-surface/80 px-3 py-2 [&_dd]:font-bold">
+              {renderField(row, 0)}
+            </div>
+            {Math.max(columns.length, row.length) > 1 ? (
+              <div
+                className="grid min-w-0 gap-x-3 gap-y-2.5 px-3 py-2.5"
+                style={{ gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 110px), 1fr))" }}
               >
-                {col.label}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-sibs-border-subtle">
-          {rows.map((row, rowIndex) => (
-            <tr
-              key={rowIndex}
-              className="hover:bg-sibs-cream-light/40 transition-colors"
-            >
-              {columns.map((col) => {
-                const cellValue = row[col.key];
-                const isNumeric = col.align === "right" || col.isNumeric;
-                return (
-                  <td
-                    key={col.key}
-                    className={`px-3 py-2 text-xs text-sibs-navy ${
-                      isNumeric ? "text-right font-mono tabular-nums font-semibold" : "font-medium"
-                    }`}
-                  >
-                    {cellValue != null ? String(cellValue) : "--"}
-                  </td>
-                );
-              })}
-            </tr>
-          ))}
-        </tbody>
-      </table>
+                {Array.from({ length: Math.max(columns.length, row.length) - 1 }, (_, index) => renderField(row, index + 1))}
+              </div>
+            ) : null}
+          </dl>
+        </div>
+      ))}
     </div>
+  );
+}
+
+/** Structured report tables use the same readable records as Markdown. */
+export function AIReportTable({ columns = [], rows = [] }) {
+  return (
+    <AIRecordList
+      columns={columns.map((col) => formatAiDisplayDates(col.label))}
+      rows={(rows || []).map((row) => columns.map((col) =>
+        row[col.key] != null ? formatAiDisplayDates(String(row[col.key]), col.label) : "--"
+      ))}
+    />
   );
 }
 
@@ -201,8 +212,8 @@ export function AIReportSection({ title, children }) {
   return (
     <section className="space-y-2">
       {title ? (
-        <h5 className="font-heading text-xs font-bold text-sibs-navy">
-          {title}
+        <h5 className="font-heading text-base font-bold text-sibs-navy">
+          {formatAiDisplayDates(title)}
         </h5>
       ) : null}
       {children}
@@ -216,20 +227,20 @@ export function AIReportSection({ title, children }) {
  * Footer card identifying the official system of record and verified timestamp.
  */
 export function AISourceReference({ source = {} }) {
-  const { system = "HRIS", service, verified = true, scope, asOf } = source;
+  const { system = "HRIS", service, verified = false, scope, asOf } = source;
 
   return (
-    <div className="flex items-center justify-between gap-2 rounded-xl border border-sibs-border-subtle bg-sibs-surface/50 px-3 py-2 text-[10px] text-sibs-muted">
-      <div className="flex items-center gap-1.5 truncate">
+    <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-sibs-border-subtle bg-sibs-surface/50 px-3 py-2 text-[10px] text-sibs-muted">
+      <div className="flex min-w-0 items-center gap-1.5">
         <Database size={12} className="text-sibs-orange shrink-0" />
-        <span className="truncate">
-          Source: <strong className="font-semibold text-sibs-navy">{system} Official Records</strong>
-          {service ? ` · ${service}` : ""}
+        <span className="break-words">
+          Source: <strong className="font-semibold text-sibs-navy">{formatAiDisplayDates(system)}{verified ? " Official Records" : " (unverified)"}</strong>
+          {service ? ` · ${formatAiDisplayDates(service)}` : ""}
         </span>
       </div>
       {asOf ? (
         <span className="shrink-0 font-mono text-[10px] text-sibs-faint">
-          Verified: {asOf}
+          As of: {formatAiDisplayDates(asOf)}
         </span>
       ) : null}
     </div>
@@ -251,7 +262,7 @@ export default function HermesReportView({ report }) {
   const { title, source, metrics = [], sections = [] } = report;
 
   const renderReportBody = (isModal = false) => (
-    <div className="space-y-3.5">
+    <div className="min-w-0 space-y-3.5">
       {/* Metric Cards Grid */}
       {metrics.length > 0 ? (
         <div
@@ -259,10 +270,10 @@ export default function HermesReportView({ report }) {
             metrics.length === 1
               ? "grid-cols-1"
               : metrics.length === 2
-              ? "grid-cols-2"
+              ? "grid-cols-1 min-[380px]:grid-cols-2"
               : isModal
               ? "grid-cols-2 sm:grid-cols-4"
-              : "grid-cols-2"
+              : "grid-cols-1 min-[380px]:grid-cols-2"
           }`}
         >
           {metrics.map((m) => (
@@ -281,11 +292,20 @@ export default function HermesReportView({ report }) {
       {/* Sections & Tables */}
       {sections.map((section) => (
         <AIReportSection key={section.id} title={section.title}>
+          {section.type === "details" && Array.isArray(section.items) ? (
+            <dl className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {section.items.map((item) => (
+                <div key={item.label} className="min-w-0 rounded-xl border border-sibs-border-subtle bg-white p-3">
+                  <dt className="text-xs font-semibold text-sibs-muted">{formatAiDisplayDates(item.label)}</dt>
+                  <dd className="mt-1 break-words text-sm font-bold text-sibs-navy">{formatAiDisplayDates(item.value, item.label)}</dd>
+                </div>
+              ))}
+            </dl>
+          ) : null}
           {section.type === "table" && section.table ? (
             <AIReportTable
               columns={section.table.columns}
               rows={section.table.rows}
-              compact={!isModal}
             />
           ) : null}
         </AIReportSection>
@@ -297,9 +317,9 @@ export default function HermesReportView({ report }) {
   );
 
   return (
-    <div className="my-2 rounded-2xl border border-sibs-border bg-white p-3.5 shadow-xs space-y-3">
+    <div className="my-2 min-w-0 rounded-2xl border border-sibs-border bg-sibs-surface/40 p-2.5 space-y-4">
       <AIReportHeader
-        title={title}
+        title={formatAiDisplayDates(title)}
         source={source}
         onExpand={() => setExpanded(true)}
       />
@@ -309,11 +329,11 @@ export default function HermesReportView({ report }) {
       {/* Expanded Modal Viewer */}
       <HermesExpandedViewer
         open={expanded}
-        title={title}
-        subtitle={source?.period ? `Period: ${source.period.dateFrom} to ${source.period.dateTo}` : undefined}
+        title={formatAiDisplayDates(title)}
+        subtitle={source?.period?.dateFrom && source?.period?.dateTo ? formatAiDisplayDates(`Period: ${source.period.dateFrom} to ${source.period.dateTo}`) : undefined}
         verified={source?.verified}
-        system={source?.system}
-        scope={source?.scope}
+        system={formatAiDisplayDates(source?.system)}
+        scope={formatAiDisplayDates(source?.scope)}
         onClose={() => setExpanded(false)}
       >
         {renderReportBody(true)}

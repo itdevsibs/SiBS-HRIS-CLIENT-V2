@@ -1,8 +1,9 @@
 import React, { memo, useMemo, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { Maximize2, ShieldCheck } from "lucide-react";
-import HermesReportView from "./HermesReportView";
+import { remarkFormatAiDisplayDates } from "../../lib/utils/ai/aiDateDisplayClient.js";
+import { Maximize2 } from "lucide-react";
+import HermesReportView, { AIRecordList } from "./HermesReportView";
 import HermesExpandedViewer from "./HermesExpandedViewer";
 
 /**
@@ -23,9 +24,18 @@ function preprocessMarkdown(content) {
   const lines = text.replace(/\r\n/g, "\n").split("\n");
   const processed = [];
 
+  let fence = null;
   for (let i = 0; i < lines.length; i += 1) {
     const raw = lines[i];
     const trimmed = raw.trim();
+    const marker = trimmed.match(/^(`{3,}|~{3,})/);
+    if (marker) {
+      if (!fence) fence = marker[1];
+      else if (marker[1][0] === fence[0] && marker[1].length >= fence.length) fence = null;
+      processed.push(raw);
+      continue;
+    }
+    if (fence) { processed.push(raw); continue; }
 
     // Check for bold title line like "**Employment:**" or "Your profile:"
     const boldHeading = trimmed.match(/^\*\*([^*]+):\*\*$/);
@@ -44,19 +54,50 @@ function preprocessMarkdown(content) {
 }
 
 /**
- * Custom table wrapper with horizontal scroll and expandable viewer modal
+ * Extract the rendered Markdown table's header and row cells while keeping
+ * inline React elements (links, emphasis, dates) intact.
+ * ReactMarkdown supplies the original HAST node on custom components.
  */
+function tableElements(children) {
+  return React.Children.toArray(children).filter(React.isValidElement);
+}
+
+function tableTag(element) {
+  return element.props.node?.tagName || element.type;
+}
+
 function MarkdownTableWrapper({ children }) {
   const [modalOpen, setModalOpen] = useState(false);
+  const sections = tableElements(children);
+  const headerRows = sections.filter((section) => tableTag(section) === "thead")
+    .flatMap((section) => tableElements(section.props.children));
+  const bodyRows = sections.flatMap((section) => {
+    const tag = tableTag(section);
+    if (tag === "tbody" || tag === "tfoot") return tableElements(section.props.children);
+    if (tag === "tr") return [section];
+    return [];
+  });
+  const cellContents = (row) => tableElements(row.props.children).map((cell) => cell.props.children);
+  const columns = headerRows.length ? cellContents(headerRows[0]) : [];
+  const rows = bodyRows.map(cellContents);
+  const hasRecords = rows.length > 0;
+
+  // A regular GFM table always has one header and a body. If a future
+  // Markdown plugin returns another shape, keep its content rather than
+  // silently dropping the table.
+  const renderRecords = () => hasRecords ? (
+    <AIRecordList columns={columns} rows={rows} />
+  ) : (
+    <div className="min-w-0 rounded-xl border border-sibs-border bg-white">
+      <table className="w-full table-fixed border-collapse text-left text-xs [overflow-wrap:anywhere]">
+        {children}
+      </table>
+    </div>
+  );
 
   return (
-    <div className="relative my-3 group">
-      <div className="overflow-x-auto rounded-xl border border-sibs-border bg-white shadow-xs max-w-full">
-        <table className="w-full border-collapse text-left text-xs">
-          {children}
-        </table>
-      </div>
-
+    <div className="my-3 min-w-0 max-w-full">
+      {renderRecords()}
       <div className="mt-1 flex justify-end">
         <button
           type="button"
@@ -67,18 +108,9 @@ function MarkdownTableWrapper({ children }) {
           <span>Expand Table</span>
         </button>
       </div>
-
       {modalOpen ? (
-        <HermesExpandedViewer
-          open={modalOpen}
-          title="Data Table View"
-          onClose={() => setModalOpen(false)}
-        >
-          <div className="overflow-x-auto rounded-xl border border-sibs-border bg-white p-2">
-            <table className="w-full border-collapse text-left text-sm">
-              {children}
-            </table>
-          </div>
+        <HermesExpandedViewer open={modalOpen} title="Data Table View" onClose={() => setModalOpen(false)}>
+          {renderRecords()}
         </HermesExpandedViewer>
       ) : null}
     </div>
@@ -94,7 +126,6 @@ function MarkdownTableWrapper({ children }) {
 function HermesResponseRendererComponent({
   content,
   report = null,
-  verifiedData = null,
   status = "completed",
   finishReason = "stop",
   onContinue = null,
@@ -104,22 +135,22 @@ function HermesResponseRendererComponent({
   // Markdown component mappings
   const components = useMemo(() => ({
     h1: ({ children }) => (
-      <h1 className="border-b border-sibs-border pb-2 pt-2.5 font-heading text-base font-extrabold text-sibs-navy mb-2">
+      <h1 className="border-b border-sibs-border pb-2 pt-2.5 font-heading text-xl font-bold text-sibs-navy mb-2">
         {children}
       </h1>
     ),
     h2: ({ children }) => (
-      <h2 className="border-b border-sibs-border-subtle pb-1.5 pt-2 font-heading text-sm font-bold text-sibs-navy mb-2">
+      <h2 className="border-b border-sibs-border-subtle pb-1.5 pt-2 font-heading text-lg font-bold text-sibs-navy mb-2">
         {children}
       </h2>
     ),
     h3: ({ children }) => (
-      <h3 className="border-b border-sibs-border-subtle pb-1 pt-1.5 font-heading text-xs font-bold text-sibs-navy mb-1.5">
+      <h3 className="border-b border-sibs-border-subtle pb-1 pt-1.5 font-heading text-base font-bold text-sibs-navy mb-1.5">
         {children}
       </h3>
     ),
     h4: ({ children }) => (
-      <h4 className="pt-1 font-heading text-xs font-bold text-sibs-navy mb-1">
+      <h4 className="pt-1 font-heading text-base font-bold text-sibs-navy mb-1">
         {children}
       </h4>
     ),
@@ -134,7 +165,7 @@ function HermesResponseRendererComponent({
       </h6>
     ),
     p: ({ children }) => (
-      <p className="sibs-text-xs font-medium leading-5 text-sibs-navy mb-2 last:mb-0">
+      <p className="text-sm font-normal leading-6 text-sibs-secondary mb-3 last:mb-0">
         {children}
       </p>
     ),
@@ -145,22 +176,16 @@ function HermesResponseRendererComponent({
       <em className="italic">{children}</em>
     ),
     ul: ({ children }) => (
-      <ul className="space-y-1 my-2 pl-0 list-none">{children}</ul>
+      <ul className="space-y-2 my-3 pl-5 list-disc marker:text-sibs-orange">{children}</ul>
     ),
     ol: ({ children }) => (
-      <ol className="space-y-1 my-2 pl-4 list-decimal marker:font-bold marker:text-sibs-muted sibs-text-xs font-medium">
+      <ol className="space-y-2 my-3 pl-5 list-decimal marker:font-bold marker:text-sibs-secondary text-sm">
         {children}
       </ol>
     ),
-    li: ({ children, node }) => {
-      // If list item is inside an ordered list, let standard decimal handle it
-      return (
-        <li className="flex items-start gap-2 sibs-text-xs font-medium text-sibs-navy">
-          <span aria-hidden="true" className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-sibs-orange" />
-          <span className="min-w-0 flex-1">{children}</span>
-        </li>
-      );
-    },
+    li: ({ children }) => (
+      <li className="pl-1 text-sm leading-6 text-sibs-secondary [&>p]:mb-1">{children}</li>
+    ),
     blockquote: ({ children }) => (
       <blockquote className="my-2 rounded-r-lg border-l-3 border-sibs-orange bg-sibs-surface/70 px-3 py-2 text-xs italic text-sibs-muted">
         {children}
@@ -188,7 +213,7 @@ function HermesResponseRendererComponent({
       const isNumeric = /count|number|total|headcount|rate|percent|%|hours|days/i.test(text);
       return (
         <th
-          className={`px-3 py-2 text-[10px] font-extrabold uppercase tracking-wider text-sibs-muted ${
+          className={`px-3 py-2 text-[11px] font-bold uppercase tracking-wide text-sibs-secondary ${
             isNumeric ? "text-right" : "text-left"
           }`}
         >
@@ -201,8 +226,8 @@ function HermesResponseRendererComponent({
       const isNumeric = /^\s*[\d,.-]+%?\s*$/.test(text);
       return (
         <td
-          className={`px-3 py-2 text-xs text-sibs-navy ${
-            isNumeric ? "text-right font-mono tabular-nums font-semibold" : "font-medium"
+          className={`px-3 py-2.5 text-sm text-sibs-navy ${
+            isNumeric ? "text-right tabular-nums font-semibold" : "font-medium"
           }`}
         >
           {children}
@@ -210,7 +235,7 @@ function HermesResponseRendererComponent({
       );
     },
     pre: ({ children }) => (
-      <pre className="my-2.5 overflow-x-auto rounded-xl bg-sibs-navy p-3 text-[11px] font-mono leading-relaxed text-white shadow-xs">
+      <pre className="my-2.5 whitespace-pre-wrap [overflow-wrap:anywhere] rounded-xl bg-sibs-navy p-3 text-[11px] font-mono leading-relaxed text-white shadow-xs">
         {children}
       </pre>
     ),
@@ -235,7 +260,7 @@ function HermesResponseRendererComponent({
           href={href}
           target="_blank"
           rel="noopener noreferrer"
-          className="font-semibold text-sibs-orange hover:underline inline-flex items-center gap-0.5"
+          className="font-semibold text-sibs-orange hover:underline [overflow-wrap:anywhere]"
         >
           {children}
         </a>
@@ -246,15 +271,15 @@ function HermesResponseRendererComponent({
   const isComplete = status !== "incomplete";
 
   return (
-    <div className="space-y-3 break-words sibs-text-xs leading-5 text-sibs-navy [overflow-wrap:anywhere]">
+    <div className="min-w-0 space-y-4 break-words text-sm leading-6 text-sibs-navy [overflow-wrap:anywhere]">
       {/* If verified structured report is present and response is completed, render it first */}
       {isComplete && report ? <HermesReportView report={report} /> : null}
 
       {/* Render Markdown prose */}
       {cleanMarkdown ? (
-        <div className="prose-container">
+        <div className="min-w-0 max-w-full [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
           <ReactMarkdown
-            remarkPlugins={[remarkGfm]}
+            remarkPlugins={[remarkGfm, remarkFormatAiDisplayDates]}
             components={components}
           >
             {cleanMarkdown}

@@ -1,5 +1,5 @@
 /**
- * SiBS HRIS - Hermes Development Chat API
+ * SiBS HRIS - Hermes Chat API
  *
  * Reuses the existing authenticated Axios client.
  * No Hermes credentials are exposed to the browser.
@@ -11,6 +11,9 @@ export const sendHermesAgentChat = async ({
   conversation = [],
   includeReport = false,
   uatScenarioId,
+  expectedSibsId,
+  expectedEmployeeId,
+  expectedTokenType,
   signal,
 }) => {
   const cleanedMessage = message?.trim();
@@ -26,15 +29,18 @@ export const sendHermesAgentChat = async ({
   const payload = {
     message: cleanedMessage,
     conversation,
+    ...(expectedSibsId ? { expectedSibsId } : {}),
+    ...(expectedEmployeeId ? { expectedEmployeeId } : {}),
+    ...(expectedTokenType ? { expectedTokenType } : {}),
     ...(includeReport ? { includeReport: true } : {}),
     ...(uatScenarioId ? { uatScenarioId } : {}),
   };
 
   const response = await apiClient.post(
-    "/api/dev-ai/chat",
+    uatScenarioId ? "/api/dev-ai/chat" : "/api/ai/chat",
     payload,
     {
-      timeout: 180000,
+      timeout: uatScenarioId ? 180000 : 300000,
       signal,
     }
   );

@@ -3,7 +3,6 @@ import { createPortal } from "react-dom";
 import {
   AlertTriangle,
   Bot,
-  CheckCircle2,
   LoaderCircle,
   MessageCircleMore,
   RefreshCw,
@@ -12,18 +11,11 @@ import {
   X,
 } from "lucide-react";
 
-import { AI_CHAT_TIMEOUT_MS, askSibsAi } from "@/lib/axios/ai";
-import AiResultCardsClient from "@/components/ai/AiResultCardsClient";
+import { AI_CHAT_TIMEOUT_MS } from "@/lib/axios/ai";
 import { formatAiDisplayDates } from "@/lib/utils/ai/aiDateDisplayClient";
-import {
-  readAiConversationClient,
-  writeAiConversationClient,
-} from "@/lib/utils/ai/aiConversationStorageClient";
-import { toPublicAiAnswerClient } from "@/lib/utils/ai/aiPublicAnswerClient";
 import {
   buildConversationPayload,
   getAiErrorMessage,
-  normalizeAiAnswerPayload,
 } from "@/lib/utils/ai/aiAssistantHelpers";
 import { useUser } from "@/services/context/UserContext";
 import HermesResponseRenderer from "./HermesResponseRenderer";
@@ -36,6 +28,7 @@ const SUGGESTED_PROMPTS = [
   "Summarize the recent applicant leads.",
 ];
 
+const HERMES_CHAT_TIMEOUT_MS = 300_000;
 const VIEWPORT_PADDING = 16;
 const DRAG_THRESHOLD = 6;
 
@@ -43,96 +36,23 @@ function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max);
 }
 
-function InsightList({ title, items, icon, tone = "default" }) {
-  const visibleItems = (items || []).map(toPublicAiAnswerClient).filter(Boolean);
-  if (!visibleItems.length) return null;
-
-  const Icon = icon;
-
-  const toneClass = {
-    default: "border-sibs-border bg-sibs-surface text-sibs-secondary",
-    risk: "border-amber-200 bg-amber-50 text-amber-900",
-    recommendation: "border-blue-200 bg-blue-50 text-sibs-navy",
-  }[tone];
-
+function AssistantMessage({ message, onContinue = null }) {
   return (
-    <section className={`rounded-xl border px-3 py-3 ${toneClass}`}>
-      <div className="mb-2 flex items-center gap-2 sibs-kicker">
-        <Icon size={14} />
-        {title}
+    <article className="min-w-0 w-full space-y-4 rounded-2xl border border-sibs-border bg-white p-4 sm:p-5 shadow-xs">
+      <div className="flex items-center gap-2.5 border-b border-sibs-border-subtle pb-3">
+        <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-sibs-navy text-white"><Bot size={17} /></span>
+        <div className="min-w-0"><p className="font-heading text-sm font-bold text-sibs-navy">SiBS AI</p><p className="text-[11px] text-sibs-muted">HRIS assistant</p></div>
       </div>
-
-      <ul className="grid gap-2">
-        {visibleItems.map((item, index) => (
-          <li
-            key={`${title}-${index}`}
-            className="flex items-start gap-2.5 rounded-xl border border-current/15 bg-white/75 px-3 py-2.5 sibs-text-xs font-semibold leading-5 text-sibs-secondary"
-          >
-            <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md border border-current/20 bg-white/70 text-current"><CheckCircle2 size={12} aria-hidden="true" /></span>
-            <span>{formatAiDisplayDates(item)}</span>
-          </li>
-        ))}
-      </ul>
-    </section>
-  );
-}
-
-function AssistantMessage({ message, hermes = false, onContinue = null }) {
-  return (
-    <div className="flex justify-start">
-      <div className="min-w-0 w-full max-w-[96%] space-y-2.5 rounded-2xl rounded-bl-md border border-sibs-border bg-white px-3.5 py-3 shadow-xs">
-        <div className="flex items-center gap-2 sibs-kicker text-sibs-muted">
-          <span className="inline-flex h-6 w-6 items-center justify-center rounded-lg bg-sibs-navy text-white">
-            <Bot size={13} />
-          </span>
-          {hermes ? "SiBS AI · Hermes" : "SiBS AI · n8n"}
-        </div>
-
-        {hermes ? (
-          <HermesResponseRenderer
-            content={message.content}
-            report={message.report}
-            verifiedData={message.verifiedData}
-            status={message.status}
-            finishReason={message.finishReason}
-            onContinue={onContinue}
-          />
-        ) : (
-          <AiResultCardsClient content={message.content} />
-        )}
-
-        <InsightList
-          title="Highlights"
-          items={message.highlights}
-          icon={CheckCircle2}
-        />
-        <InsightList
-          title="Risks"
-          items={message.risks}
-          icon={AlertTriangle}
-          tone="risk"
-        />
-        <InsightList
-          title="Recommendations"
-          items={message.recommendations}
-          icon={Sparkles}
-          tone="recommendation"
-        />
-
-        {hermes && message.responseMs != null ? (
-          <p className="border-t border-sibs-border pt-2 sibs-text-micro font-semibold text-sibs-faint">
-            Response time: {message.responseMs} ms
-          </p>
-        ) : null}
-      </div>
-    </div>
+      <HermesResponseRenderer content={message.content} report={message.report}
+        status={message.status} finishReason={message.finishReason} onContinue={onContinue} />
+    </article>
   );
 }
 
 function UserMessage({ message }) {
   return (
     <div className="flex justify-end">
-      <div className="max-w-[86%] rounded-2xl rounded-br-md bg-sibs-orange px-3.5 py-2.5 sibs-text-xs font-semibold leading-5 text-white shadow-xs">
+      <div className="max-w-[85%] break-words rounded-2xl rounded-br-md bg-sibs-orange px-3.5 py-2.5 text-sm font-medium leading-6 text-white shadow-xs">
         {formatAiDisplayDates(message.content)}
       </div>
     </div>
@@ -140,14 +60,12 @@ function UserMessage({ message }) {
 }
 
 export default function SiBSAIAssistant({
-  variant = "n8n",
   enabled = true,
   isOpen: controlledOpen,
   onOpenChange,
   hideTrigger = false,
 }) {
-  const hermes = variant === "hermes";
-  const assistantName = hermes ? "Ask SiBS AI (Hermes)" : "Ask SiBS AI";
+  const assistantName = "Ask SiBS AI";
   const { user, loading: userLoading } = useUser() || {};
   const [internalOpen, setInternalOpen] = useState(false);
   const isControlled = controlledOpen !== undefined;
@@ -170,17 +88,11 @@ export default function SiBSAIAssistant({
   const loggedInEmployeeKey = String(
     user?.sibs_id || user?.sibsId || user?.username || user?.gy_user_code || "",
   ).trim();
-  // Restore on mount (including a page refresh) before the first chat render.
-  const initialConversationRef = useRef(null);
-  if (initialConversationRef.current === null) {
-    initialConversationRef.current = hermes
-      ? { messages: [], conversationId: "" }
-      : readAiConversationClient(loggedInEmployeeKey);
-  }
+  const sessionKey = JSON.stringify([loggedInEmployeeKey, user?.tokenType, user?.role, user?.adminAccess, user?.gy_emp_id]);
+  // Keep sensitive Hermes results in memory for the signed-in account.
   const [question, setQuestion] = useState("");
-  const [messages, setMessages] = useState(initialConversationRef.current.messages);
-  const [conversationId, setConversationId] = useState(initialConversationRef.current.conversationId);
-  const [hydratedEmployeeKey, setHydratedEmployeeKey] = useState(loggedInEmployeeKey);
+  const [messages, setMessages] = useState([]);
+  const [hydratedEmployeeKey, setHydratedEmployeeKey] = useState(sessionKey);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [uatSession, setUatSession] = useState(0);
@@ -206,30 +118,23 @@ export default function SiBSAIAssistant({
   }, []);
 
   // Hide the previous account's messages until the next account is hydrated.
-  const visible = enabled && !userLoading && Boolean(user) && Boolean(loggedInEmployeeKey) && (!hermes || import.meta.env.DEV) &&
-    hydratedEmployeeKey === loggedInEmployeeKey;
+  const visible = enabled && !userLoading && Boolean(user) && Boolean(loggedInEmployeeKey) &&
+    hydratedEmployeeKey === sessionKey;
   const canSend = Boolean(question.trim()) && !submitting;
-  const activeEmployeeKeyRef = useRef(loggedInEmployeeKey);
-  activeEmployeeKeyRef.current = loggedInEmployeeKey;
+  const activeEmployeeKeyRef = useRef(sessionKey);
+  activeEmployeeKeyRef.current = sessionKey;
 
   useEffect(() => {
-    if (hydratedEmployeeKey === loggedInEmployeeKey) return;
-    const saved = hermes ? { messages: [], conversationId: "" } : readAiConversationClient(loggedInEmployeeKey);
-    setMessages(saved.messages);
-    setConversationId(saved.conversationId);
+    if (hydratedEmployeeKey === sessionKey) return;
+    activeRequestControllerRef.current?.abort();
+    activeRequestControllerRef.current = null;
+    requestInFlightRef.current = false;
+    setSubmitting(false);
+    setMessages([]);
     setQuestion("");
     setError("");
-    setHydratedEmployeeKey(loggedInEmployeeKey);
-  }, [hydratedEmployeeKey, loggedInEmployeeKey]);
-
-  useEffect(() => {
-    // Never overwrite the incoming account's history with the previous user's
-    // messages during React's account-switch render.
-    if (!loggedInEmployeeKey || hydratedEmployeeKey !== loggedInEmployeeKey) return;
-    // Hermes is a separate dev-only agent; keep its history out of SiBS AI storage.
-    if (hermes) return;
-    writeAiConversationClient(loggedInEmployeeKey, { messages, conversationId });
-  }, [hermes, loggedInEmployeeKey, hydratedEmployeeKey, messages, conversationId]);
+    setHydratedEmployeeKey(sessionKey);
+  }, [hydratedEmployeeKey, sessionKey]);
 
   const welcomeName = useMemo(() => {
     const rawName =
@@ -256,7 +161,7 @@ export default function SiBSAIAssistant({
       openerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     }
     const handleKeyDown = (event) => {
-      if (event.key === "Escape") {
+      if (event.key === "Escape" && !document.querySelector("[data-hermes-expanded-view]")) {
         event.preventDefault();
         event.stopPropagation();
         event.stopImmediatePropagation?.();
@@ -417,9 +322,9 @@ export default function SiBSAIAssistant({
 
   function handleNewChat() {
     activeRequestControllerRef.current?.abort();
+    activeRequestControllerRef.current = null;
     requestInFlightRef.current = false;
     setMessages([]);
-    setConversationId("");
     setQuestion("");
     setError("");
     setSubmitting(false);
@@ -430,10 +335,10 @@ export default function SiBSAIAssistant({
   async function submitQuestion(value = question, uatScenario = null) {
     const cleanQuestion = String(value || "").trim();
     if (!cleanQuestion || submitting || requestInFlightRef.current || !loggedInEmployeeKey ||
-        hydratedEmployeeKey !== loggedInEmployeeKey) return;
+        hydratedEmployeeKey !== sessionKey) return;
     requestInFlightRef.current = true;
 
-    const requestEmployeeKey = loggedInEmployeeKey;
+    const requestEmployeeKey = sessionKey;
     const conversation = uatScenario ? [] : buildConversationPayload(messages);
     const userMessage = {
       id: `user-${Date.now()}`,
@@ -452,9 +357,9 @@ export default function SiBSAIAssistant({
     const deadlineTimer = window.setTimeout(() => {
       deadlineExpired = true;
       controller.abort();
-    }, AI_CHAT_TIMEOUT_MS);
+    }, uatScenario ? AI_CHAT_TIMEOUT_MS : HERMES_CHAT_TIMEOUT_MS);
     try {
-      if (hermes && import.meta.env.DEV) {
+      {
         const startedAt = performance.now();
         const [{ default: api }, { sendHermesAgentChat }] = await Promise.all([
           import("@/lib/axios/api-template"),
@@ -465,10 +370,13 @@ export default function SiBSAIAssistant({
           message: cleanQuestion,
           conversation,
           includeReport: true,
+          expectedSibsId: loggedInEmployeeKey,
+          expectedEmployeeId: user?.gy_emp_id,
+          expectedTokenType: user?.tokenType,
           ...(uatScenario ? { uatScenarioId: uatScenario.id } : {}),
           signal: controller.signal,
         });
-        if (controller.signal.aborted) return;
+        if (controller.signal.aborted || activeEmployeeKeyRef.current !== requestEmployeeKey) return;
         const responseMs = Math.round(performance.now() - startedAt);
         setMessages((current) => [...current, {
           id: `assistant-${Date.now()}`,
@@ -481,7 +389,6 @@ export default function SiBSAIAssistant({
           actualCapability: response.actualCapability,
           uatScenarioId: uatScenario?.id || null,
           report: response.report,
-          verifiedData: response.verifiedData,
         }]);
         return {
           correlationId: response.requestId || "",
@@ -492,48 +399,12 @@ export default function SiBSAIAssistant({
           executionRecordId: response.uatExecution?.recordId || null,
         };
       }
-      const response = await askSibsAi({
-        message: cleanQuestion,
-        conversation,
-        conversationId,
-        signal: controller.signal,
-        expectedSibsId: requestEmployeeKey,
-        expectedEmployeeId: user?.gy_emp_id || user?.gyEmpId || "",
-        context: {
-          source: "global_assistant",
-        },
-      });
-
-      if (!response?.success) {
-        throw new Error(response?.message || "SiBS AI could not complete the request.");
-      }
-
-      if (activeEmployeeKeyRef.current !== requestEmployeeKey) return;
-      // Do not render or persist any response that was not bound to the
-      // account visible in this tab. Cookies may be replaced in another tab.
-      if (String(response.authenticatedSibsId ?? "").trim().toLowerCase() !== requestEmployeeKey.toLowerCase()) {
-        throw new Error("SiBS AI could not verify your signed-in account. Please sign out and sign in again.");
-      }
-      const normalized = normalizeAiAnswerPayload(response);
-      setConversationId(normalized.conversationId || conversationId);
-      setMessages((current) => [
-        ...current,
-        {
-          id: `assistant-${Date.now()}`,
-          role: "assistant",
-          content: normalized.answer || "No answer was returned.",
-          highlights: normalized.highlights,
-          risks: normalized.risks,
-          recommendations: normalized.recommendations,
-          toolsUsed: normalized.toolsUsed,
-        },
-      ]);
     } catch (requestError) {
-      if (activeEmployeeKeyRef.current === requestEmployeeKey) {
+      if (activeEmployeeKeyRef.current === requestEmployeeKey && activeRequestControllerRef.current === controller) {
         const isTimeout = deadlineExpired || requestError?.code === "ECONNABORTED" ||
           requestError?.response?.data?.code === "AI_REQUEST_TIMEOUT";
         setError(isTimeout
-          ? "This request exceeded the 60-second limit and was stopped. Please try again or ask a more specific question."
+          ? `This request exceeded the ${uatScenario ? 60 : 300}-second limit and was stopped. Please try again or ask a more specific question.`
           : getAiErrorMessage(requestError));
       }
       const failedReceipt = requestError?.response?.data?.uatExecution;
@@ -542,8 +413,11 @@ export default function SiBSAIAssistant({
       }
     } finally {
       window.clearTimeout(deadlineTimer);
-      requestInFlightRef.current = false;
-      setSubmitting(false);
+      if (activeRequestControllerRef.current === controller) {
+        activeRequestControllerRef.current = null;
+        requestInFlightRef.current = false;
+        setSubmitting(false);
+      }
     }
   }
 
@@ -654,7 +528,7 @@ export default function SiBSAIAssistant({
               </div>
 
               <div className="flex items-center gap-1">
-                {hermes ? (
+                {(
                   <button
                     type="button"
                     onClick={handleNewChat}
@@ -664,7 +538,7 @@ export default function SiBSAIAssistant({
                   >
                     <RefreshCw size={15} />
                   </button>
-                ) : null}
+                )}
                 <button
                   type="button"
                   onClick={handleClose}
@@ -683,7 +557,7 @@ export default function SiBSAIAssistant({
             ref={scrollRef}
             className="sibs-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain bg-sibs-surface px-4 py-4 sm:px-5"
           >
-            {hermes && import.meta.env.DEV && open ? (
+            {import.meta.env.DEV && open ? (
               <HrisUatPanel
                 key={`${user?.sibsId || user?.sibs_id || user?.username || user?.id || "session"}:${user?.adminAccess || user?.admin_access || ""}:${user?.role || ""}:${uatSession}`}
                 submitting={submitting}
@@ -739,7 +613,6 @@ export default function SiBSAIAssistant({
                     <AssistantMessage
                       key={message.id}
                       message={message}
-                      hermes={hermes}
                       onContinue={handleContinue}
                     />
                   ),
@@ -751,7 +624,7 @@ export default function SiBSAIAssistant({
               <div className="mt-3 flex justify-start">
                 <div className="inline-flex items-center gap-2 rounded-2xl rounded-bl-md border border-sibs-border bg-white px-3.5 py-3 sibs-text-xs font-semibold text-sibs-muted shadow-xs">
                   <LoaderCircle size={15} className="animate-spin text-sibs-orange" />
-                  {hermes ? "Hermes is preparing an answer..." : "n8n AI is checking authorized HRIS data..."}
+                  SiBS AI is checking authorized HRIS data...
                 </div>
               </div>
             ) : null}
@@ -762,7 +635,7 @@ export default function SiBSAIAssistant({
                   <AlertTriangle className="mt-0.5 shrink-0 text-rose-600" size={15} />
                   <div>
                     <p className="sibs-text-xs font-extrabold text-rose-700">
-                      {hermes ? "Hermes could not complete that request" : "n8n AI could not complete that request"}
+                      SiBS AI could not complete that request
                     </p>
                     <p className="mt-1 sibs-text-micro font-semibold leading-5 text-rose-600">
                       {formatAiDisplayDates(error)}
@@ -779,7 +652,7 @@ export default function SiBSAIAssistant({
               <textarea
                 ref={inputRef}
                 value={question}
-                onChange={(event) => setQuestion(event.target.value.slice(0, hermes ? 2000 : 4000))}
+                onChange={(event) => setQuestion(event.target.value.slice(0, 2000))}
                 onKeyDown={(event) => {
                   if (event.key === "Enter" && !event.shiftKey) {
                     event.preventDefault();
@@ -788,7 +661,7 @@ export default function SiBSAIAssistant({
                 }}
                 disabled={submitting}
                 rows={2}
-                maxLength={hermes ? 2000 : 4000}
+                maxLength={2000}
                 placeholder="Ask about your authorized HRIS data..."
                 className="sibs-ai-composer-textarea max-h-32 min-h-[52px] w-full resize-none border-0 bg-transparent px-2 py-1.5 sibs-text-xs font-medium leading-5 text-sibs-navy outline-none shadow-none ring-0 placeholder:text-sibs-faint disabled:cursor-not-allowed disabled:opacity-60"
               />

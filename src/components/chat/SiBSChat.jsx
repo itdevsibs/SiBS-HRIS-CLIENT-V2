@@ -6012,6 +6012,9 @@ export default function SiBSChat({
                         !gifOnly &&
                         !message.attachments?.length &&
                         isEmojiOnlyMessage(message.messageText);
+                      const hasPlayableMedia = !unsent && message.attachments?.some((attachment) =>
+                        /^(audio|video)\//i.test(cleanText(attachment.mimeType)),
+                      );
                       const seenMembers =
                         seenMembersByMessageId.get(Number(message.id)) || [];
                       const senderEmployee =
@@ -6096,7 +6099,7 @@ export default function SiBSChat({
                             ) : null}
 
                             {/* Message content container */}
-                            <div className={`max-w-[88%] sm:max-w-[68%] flex flex-col ${mine ? "items-end" : "items-start"}`}>
+                            <div className={`flex min-w-0 flex-col ${hasPlayableMedia ? "w-full max-w-[440px]" : "max-w-[88%] sm:max-w-[68%]"} ${mine ? "items-end" : "items-start"}`}>
                               {showSender ? (
                                 <div className={`mb-1 flex max-w-full flex-wrap items-center gap-1.5 ${mine ? "justify-end" : "justify-start"}`}>
                                   <span
@@ -6150,7 +6153,7 @@ export default function SiBSChat({
                               ) : null}
 
                               {/* Bubble + Actions Flex Row */}
-                              <div className={`flex items-center gap-1.5 ${mine ? "justify-end" : "justify-start"}`}>
+                              <div className={`flex items-center gap-1.5 ${hasPlayableMedia ? "w-full min-w-0" : "max-w-full"} ${mine ? "justify-end" : "justify-start"}`}>
                                 {/* Actions on LEFT for outgoing messages */}
                                 {mine && (canReact || canReply || canUnsend) ? (
                                   <div
@@ -6332,7 +6335,7 @@ export default function SiBSChat({
                               ) : (
                                 <div
                                   title={formatMessageTime(message.createdAt, chatClockMs)}
-                                  className={`overflow-hidden min-w-[34px] ${getMessageBubbleRadiusClass({
+                                  className={`overflow-hidden ${hasPlayableMedia ? "w-full min-w-0 flex-1" : "min-w-[34px] max-w-full"} ${getMessageBubbleRadiusClass({
                                     mine,
                                     groupStart,
                                     groupEnd,
@@ -6343,7 +6346,7 @@ export default function SiBSChat({
                                   } ${message.attachments?.length ? "p-1.5" : "px-3 py-2"}`}
                                 >
                                   {message.attachments?.length ? (
-                                    <div className={`grid gap-1 ${message.attachments.length > 1 ? "grid-cols-2" : "grid-cols-1"}`}>
+                                    <div className={`grid min-w-0 gap-1 ${message.attachments.length > 1 && !hasPlayableMedia ? "grid-cols-2" : "grid-cols-1"}`}>
                                       {message.attachments.map((attachment) => {
                                         const attachmentUrl = getChatAttachmentUrl(attachment.url);
                                         const attachmentMimeType = cleanText(attachment.mimeType)
