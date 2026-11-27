@@ -12,7 +12,7 @@ import {
 import DepartmentProfileAvatar from "./DepartmentProfileAvatar";
 import { Skeleton } from "@/components/ui/skeleton";
 
-export default function DepartmentCard({ department, onView, index = 0 }) {
+export default function DepartmentCard({ department, onView, onIntent, onIntentEnd, index = 0 }) {
   const active = department.status === "active";
   const visibleAccounts = department.accounts.slice(0, 2);
   const remainingAccounts = Math.max(
@@ -36,6 +36,10 @@ export default function DepartmentCard({ department, onView, index = 0 }) {
       role="button"
       tabIndex={0}
       onClick={openDepartment}
+      onPointerEnter={(event) => { if (event.pointerType !== "touch") onIntent?.(department); }}
+      onPointerLeave={() => onIntentEnd?.()}
+      onFocus={(event) => { if (event.target === event.currentTarget) onIntent?.(department); }}
+      onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) onIntentEnd?.(); }}
       onKeyDown={handleKeyDown}
       title={`View ${department.name} details`}
       className="sibs-page-card-in group flex min-h-[440px] cursor-pointer flex-col overflow-hidden rounded-[14px] border border-sibs-border bg-white font-jakarta shadow-xs transition hover:-translate-y-0.5 hover:border-sibs-orange/40 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-sibs-orange/20"

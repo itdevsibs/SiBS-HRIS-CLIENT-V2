@@ -5,6 +5,7 @@ import { GradientWave } from "@/components/ui/gradient-wave";
 import { useUser } from "../../services/context/UserContext";
 import { getLogin } from "../../lib/axios/getLogin";
 import { getDefaultDashboardPath } from "../../config/accessControl";
+import { announceSuccessfulLogin } from "../../lib/utils/loginEntrance.js";
 
 function getResponseUser(result) {
   return (
@@ -137,6 +138,7 @@ export default function LoginPage() {
       const destinationPath = redirectPath || getDashboardPath(user);
 
       navigate(destinationPath, { replace: true });
+      announceSuccessfulLogin();
     } catch {
       sessionStorage.removeItem("accessTokenExpiresAt");
       localStorage.removeItem("token_expires_at");
