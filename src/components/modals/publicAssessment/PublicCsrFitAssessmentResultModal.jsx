@@ -3,6 +3,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { ClipboardCheck, Eye, FileQuestion, CheckCircle2, Download, Loader2, BrainCircuit, RefreshCw, Mail, AlertCircle, LayoutDashboard, Layers, BarChart3, ListChecks, FileText } from 'lucide-react';
 import ModalShell from '@/components/ui/ModalShell';
 import portalApi from '@/lib/assessment-admin/portalApi';
+import api from '@/lib/axios/api-template';
 import SelectDropdown from '@/components/ui/SelectDropdown';
 import { downloadCsrFitAssessmentPdf } from '@/lib/utils/csrFitAssessmentPdfClient';
 import { CSR_FIT_MODULE_NAMES } from '@/components/assessment/csrFitModuleGuides';
@@ -115,7 +116,14 @@ function QuantityGraph({ label, value, scale, unit = '', benchmark = null, note 
 }
 
 /** Submitted candidate answers only — no editable inputs or server write actions. */
-export default function PublicCsrFitAssessmentResultModal({ open, data, onClose }) {
+export default function PublicCsrFitAssessmentResultModal({ open, data, onClose, candidateMode = false, inline = false }) {
+  // Use the authenticated candidate route, never a public-applicant ID, for pipeline records.
+  const assessmentId = Number(candidateMode ? data?.candidatePipelineId : data?.publicApplicantId);
+  const assessmentApi = candidateMode ? api : portalApi;
+  const interpretationPath = candidateMode
+    ? `/api/assessment/candidate/${assessmentId}/result/hermes-interpretation`
+    : `/api/assessment-portal/applicants/${assessmentId}/hermes-interpretation`;
+  const emailBase = candidateMode ? '/api/assessment' : '/api/assessment-portal';
   const [activeTab, setActiveTab] = useState('overview');
   const [module, setModule] = useState('module1');
   const [filter, setFilter] = useState('all');
@@ -148,8 +156,7 @@ export default function PublicCsrFitAssessmentResultModal({ open, data, onClose 
   // Poll only while the candidate result is open. Never silently spin forever:
   // after repeated transport failures, offer an explicit Check status action.
   useEffect(() => {
-    const id = Number(data?.publicApplicantId);
-    if (!open || !Number.isSafeInteger(id) || id < 1) return;
+    if (!open || !Number.isSafeInteger(assessmentId) || assessmentId < 1) return;
     let cancelled = false;
     let timer;
     let refreshing = false;
@@ -159,7 +166,7 @@ export default function PublicCsrFitAssessmentResultModal({ open, data, onClose 
       refreshing = true;
       let terminal = false;
       try {
-        const response = await portalApi.get(`/api/assessment-portal/applicants/${id}/hermes-interpretation`);
+        const response = await assessmentApi.get(interpretationPath);
         if (cancelled) return;
         const next = response?.data?.data;
         if (!next || typeof next.status !== 'string') throw new Error('Invalid status response');
@@ -175,7 +182,7 @@ export default function PublicCsrFitAssessmentResultModal({ open, data, onClose 
           terminal = true;
           setHermesState(current => current?.status === 'READY' ? current : { status: 'UNAVAILABLE' });
           setHermesError(code === 403 ? 'Your account is not authorized to view this interpretation.'
-            : code === 401 ? 'Your Assessment Administration session has expired. Sign in to view the interpretation.'
+            : code === 401 ? `Your ${candidateMode ? 'HRIS' : 'Assessment Administration'} session has expired. Sign in to view the interpretation.`
             : 'Could not refresh the SiBS AI status. Check the server connection, then select Check status.');
         }
       } finally {
@@ -185,7 +192,7 @@ export default function PublicCsrFitAssessmentResultModal({ open, data, onClose 
     };
     void refresh();
     return () => { cancelled = true; clearTimeout(timer); };
-  }, [open, data?.publicApplicantId, data?.attemptId, hermesPollCycle]);
+  }, [open, assessmentId, assessmentApi, interpretationPath, candidateMode, data?.attemptId, hermesPollCycle]);
 
   const checkEmailStatus = async (retry = false) => {
     const id = Number(data?.attemptId);
@@ -193,8 +200,8 @@ export default function PublicCsrFitAssessmentResultModal({ open, data, onClose 
     setEmailBusy(true);
     setEmailError('');
     try {
-      const url = `/api/assessment-portal/completion-email/${id}/${retry ? 'retry' : 'status'}`;
-      const response = retry ? await portalApi.post(url) : await portalApi.get(url);
+      const url = `${emailBase}/completion-email/${id}/${retry ? 'retry' : 'status'}`;
+      const response = retry ? await assessmentApi.post(url) : await assessmentApi.get(url);
       setEmailDelivery(response?.data?.data || {status:'NOT_QUEUED'});
     } catch (error) {
       setEmailError(error?.response?.data?.message || 'Could not check report email delivery.');
@@ -207,12 +214,13 @@ export default function PublicCsrFitAssessmentResultModal({ open, data, onClose 
     // Re-analysis is a fresh, staff-authorized model request against the SAME
     // submitted attempt. No scoring, answers or candidate records are changed.
     if (['PENDING', 'RUNNING'].includes(hermesState?.status)) return;
-    const id = Number(data?.publicApplicantId);
-    if (!Number.isSafeInteger(id) || id < 1 || hermesRetryBusy) return;
+    // Candidate endpoint only retries failed reports; public portal also supports re-analysis.
+    if (candidateMode && hermesState?.status !== 'FAILED') return;
+    if (!Number.isSafeInteger(assessmentId) || assessmentId < 1 || hermesRetryBusy) return;
     setHermesRetryBusy(true);
     setHermesError('');
     try {
-      const response = await portalApi.post(`/api/assessment-portal/applicants/${id}/hermes-interpretation`, { retry: true });
+      const response = await assessmentApi.post(interpretationPath, { retry: true });
       setHermesState(response?.data?.data || { status: 'PENDING' });
       // A previous polling cycle may have stopped on FAILED; restart it now.
       setHermesPollCycle(value => value + 1);
@@ -281,18 +289,14 @@ export default function PublicCsrFitAssessmentResultModal({ open, data, onClose 
   const answered = data?.answered || {};
   if (!open || !data?.available) return null;
 
-  return (
-    <ModalShell open={open} onClose={onClose} closeOnBackdrop={false} autoDetectDirty={false}
-      title="CSR-Fit Assessment Results" subtitle={`${data.candidate?.name || 'Candidate'} · Submitted exam`}
-      icon={ClipboardCheck} maxWidth="max-w-[1050px]" zIndex="z-[15000]"
-      bodyClassName="bg-sibs-surface px-4 py-4 sm:px-6" 
-      footer={<div className="flex flex-wrap items-center justify-end gap-2">
+  const pdfAction = (
         <button type="button" disabled={pdfBusy} onClick={handlePdfDownload}
           className="sibs-modal-btn-primary inline-flex items-center justify-center gap-2 disabled:cursor-wait disabled:opacity-60">
           {pdfBusy ? <Loader2 size={15} className="animate-spin"/> : <Download size={15}/>}
           {pdfBusy ? 'Generating PDF…' : 'Download Answered Assessment (PDF)'}
         </button>
-      </div>}>
+  );
+  const reportBody = (
       <div className="space-y-4">
         {pdfError && <div role="alert" className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-2 text-xs font-semibold text-rose-700">{pdfError}</div>}
         <nav className="flex flex-wrap items-center gap-1.5 rounded-xl border border-sibs-border bg-white p-2" role="tablist" aria-label="CSR-Fit results sections">
@@ -377,7 +381,7 @@ export default function PublicCsrFitAssessmentResultModal({ open, data, onClose 
                   {hermesProcessing && <Loader2 size={15} className="shrink-0 animate-spin text-sibs-orange"/>}
                   <span>{hermesState?.status === 'UNAVAILABLE' ? 'The interpretation status could not be refreshed. Your stored assessment scores remain available.' :
                     hermesState?.status === 'FAILED' ? (brandAssessmentMessage(hermesState?.message) || 'SiBS AI could not complete the interpretation.') :
-                    hermesState?.status === 'NOT_SUBMITTED' ? 'No submitted public assessment was found for this applicant.' :
+                    hermesState?.status === 'NOT_SUBMITTED' ? (candidateMode ? 'No submitted assessment was found for this candidate.' : 'No submitted public assessment was found for this applicant.') :
                     hermesState?.status === 'RUNNING' ? 'SiBS AI is interpreting the completed assessment. Analysis continues until the agent responds; you can close this window and check again later.' :
                     'SiBS AI analysis is queued. Verified scores are available below.'}</span>
                 </div>
@@ -389,16 +393,16 @@ export default function PublicCsrFitAssessmentResultModal({ open, data, onClose 
               </div>}
             {['READY','FAILED','DISABLED','NOT_SUBMITTED','UNAVAILABLE'].includes(hermesState?.status) &&
               <div className="flex flex-wrap items-center gap-2 border-t border-sibs-border pt-3">
-                <button type="button" onClick={retryHermes} disabled={hermesRetryBusy || ['PENDING','RUNNING','DISABLED','NOT_SUBMITTED'].includes(hermesState?.status)}
+                {(!candidateMode || hermesState?.status === 'FAILED') && <button type="button" onClick={retryHermes} disabled={hermesRetryBusy || ['PENDING','RUNNING','DISABLED','NOT_SUBMITTED'].includes(hermesState?.status)}
                   className="inline-flex items-center gap-2 rounded-lg bg-sibs-navy px-3 py-2 text-[11px] font-bold text-white disabled:cursor-not-allowed disabled:opacity-50">
                   {hermesRetryBusy ? <Loader2 size={13} className="animate-spin" /> : <RefreshCw size={13} />}
-                  {hermesRetryBusy ? 'Requesting analysis…' : 'Re-analyze results'}
-                </button>
+                  {hermesRetryBusy ? 'Requesting analysis…' : candidateMode ? 'Retry analysis' : 'Re-analyze results'}
+                </button>}
                 <button type="button" onClick={refreshHermes} disabled={hermesRetryBusy}
                   className="inline-flex items-center gap-1.5 rounded-lg border border-sibs-border bg-white px-3 py-2 text-[11px] font-bold text-sibs-navy disabled:opacity-50">
                   <RefreshCw size={13} /> Check status
                 </button>
-                <p className="text-[10px] leading-4 text-sibs-muted">A new SiBS AI report uses the same saved answers and does not change HRIS scores or resend emails.</p>
+                <p className="text-[10px] leading-4 text-sibs-muted">{candidateMode ? 'Checking or retrying analysis does not change the saved scores or resend emails.' : 'A new SiBS AI report uses the same saved answers and does not change HRIS scores or resend emails.'}</p>
               </div>}
             {Array.isArray(hermesState?.history) && hermesState.history.length > 0 &&
               <details className="rounded-lg border border-sibs-border bg-sibs-surface p-3">
@@ -593,6 +597,26 @@ export default function PublicCsrFitAssessmentResultModal({ open, data, onClose 
         </div>
         <p className="text-[11px] leading-5 text-sibs-muted">Module 1 and behavioral scores are provisional pending HR validation. Practical modules are summarized separately. These results do not constitute an automatic hiring decision.</p>
       </div>
+  );
+  if (inline) return (
+    <div className="min-w-0 space-y-3" aria-label="Submitted candidate assessment results">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-sibs-border pb-3">
+        <div className="min-w-0">
+          <h3 className="text-sm font-extrabold text-sibs-navy">CSR-Fit Assessment Results</h3>
+          <p className="mt-0.5 text-[11px] text-sibs-muted">Latest submitted attempt · Read only</p>
+        </div>
+        {pdfAction}
+      </div>
+      {reportBody}
+    </div>
+  );
+  return (
+    <ModalShell open={open} onClose={onClose} closeOnBackdrop={false} autoDetectDirty={false}
+      title="CSR-Fit Assessment Results" subtitle={`${data.candidate?.name || 'Candidate'} · Submitted exam`}
+      icon={ClipboardCheck} maxWidth="max-w-[1050px]" zIndex="z-[15000]"
+      bodyClassName="bg-sibs-surface px-4 py-4 sm:px-6"
+      footer={<div className="flex flex-wrap items-center justify-end gap-2">{pdfAction}</div>}>
+      {reportBody}
     </ModalShell>
   );
 }
