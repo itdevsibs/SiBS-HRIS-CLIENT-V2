@@ -23,6 +23,7 @@ import {
 import Header from "../../../components/layout/Header";
 import { useUser } from "../../../services/context/UserContext";
 import { useAdmin } from "../../../services/context/AdminContext";
+import { isBodAccountAccess } from "../../../config/accessControl";
 import { useSidebarNotifications } from "../../../services/context/SidebarNotificationContext";
 import {
   getHrDashboardActivities,
@@ -474,7 +475,8 @@ export default function AdminDashboardPage() {
       }`.trim() || "User"
   ).toUpperCase();
 
-  const dashboardTitle = dashboardTitleMap[userRole] || "Admin Dashboard";
+  const isBodDashboard = userRole === "executive" && isBodAccountAccess(user);
+  const dashboardTitle = isBodDashboard ? "BOD Dashboard" : dashboardTitleMap[userRole] || "Admin Dashboard";
 
   const notifications = useMemo(
     () => buildScopedDashboardNotifications({
@@ -632,7 +634,7 @@ export default function AdminDashboardPage() {
           <AdminDashboardWelcome
             title={dashboardTitle}
             fullName={fullName}
-            badge={userRole === "super_admin" ? "Super Admin View" : "HR Admin View"}
+            badge={isBodDashboard ? "BOD View" : userRole === "super_admin" ? "Super Admin View" : "HR Admin View"}
             onOpenEmployees={() => navigate(EXISTING_ADMIN_ROUTES.employees)}
             onRefresh={() => refreshOverview({ manual: true, forceRefresh: true })}
             isManualRefreshing={overviewRefreshing}

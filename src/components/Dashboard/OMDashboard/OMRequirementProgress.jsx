@@ -1,7 +1,7 @@
 import { Target } from "lucide-react";
 import { safePercentage } from "../../../lib/utils/Dashboards/OMDashboard/omDashboardHelpers.js";
 
-export default function OMRequirementProgress({ roles = [], delay = 0 }) {
+export default function OMRequirementProgress({ roles = [], delay = 0, isTeamLeader = false }) {
   const totalReq = roles.reduce((sum, r) => sum + (Number(r.req) || 0), 0);
   const totalFilled = roles.reduce((sum, r) => sum + (Number(r.filled) || 0), 0);
   const overallPercentage = safePercentage(totalFilled, totalReq);
@@ -16,7 +16,7 @@ export default function OMRequirementProgress({ roles = [], delay = 0 }) {
           Approved Requirement vs Filled Progress
         </h3>
         <p className="sibs-card-subtitle mt-1">
-          Current hiring progress for manager-accessible roles
+          {isTeamLeader ? "Current hiring progress for your operational accounts" : "Current hiring progress for manager-accessible roles"}
         </p>
       </div>
 

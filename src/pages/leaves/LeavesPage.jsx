@@ -209,15 +209,24 @@ export default function LeavesPage() {
           setAccountFilter(res.selectedAccount || "All");
         }
 
-        setPagination(
-          res.pagination || {
-            currentPage: pageValue,
-            limit: PAGE_LIMIT,
-            returned: res.data.length,
-            hasPreviousPage: pageValue > 1,
-            hasNextPage: false,
-          },
-        );
+        // PaginationContext merges metadata. Explicitly clear totals omitted by
+        // the fast leave API so the initial total=0/totalPages=1 cannot persist.
+        const responsePagination = res.pagination || {};
+        setPagination({
+          currentPage: pageValue,
+          limit: PAGE_LIMIT,
+          returned: res.data.length,
+          hasPreviousPage: pageValue > 1,
+          hasNextPage: false,
+          ...responsePagination,
+          total: responsePagination.total ?? null,
+          totalRecords: responsePagination.totalRecords ?? null,
+          totalPages: responsePagination.totalPages ?? null,
+        });
+        // The last page can disappear after a refresh or a change in records.
+        if (res.data.length === 0 && pageValue > 1 && !responsePagination.hasNextPage) {
+          setPage(1);
+        }
       } else {
         setLoadError(res?.message || "Unable to load leave records. Please try again.");
       }
@@ -519,7 +528,7 @@ export default function LeavesPage() {
             </div>
           ) : null}
 
-          <section className="flex flex-1 flex-col min-w-0">
+          <section className="min-w-0">
             <LeavesTable
               leaves={paginatedLeaves}
               loading={loading}

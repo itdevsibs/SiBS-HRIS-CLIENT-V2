@@ -53,7 +53,7 @@ function getErrorMessage(error, fallback) {
   );
 }
 
-export default function OMDashboardPage() {
+export default function OMDashboardPage({ isTeamLeader = false }) {
   const navigate = useNavigate();
   const cachedRef = useRef(readCachedDashboard());
   const cached = cachedRef.current;
@@ -101,7 +101,7 @@ export default function OMDashboardPage() {
       return true;
     } catch (loadError) {
       if (requestId !== requestIdRef.current) return false;
-      setError(getErrorMessage(loadError, "Unable to load manager-scoped hiring data."));
+      setError(getErrorMessage(loadError, isTeamLeader ? "Unable to load team-scoped hiring data." : "Unable to load manager-scoped hiring data."));
       return false;
     } finally {
       if (requestId === requestIdRef.current) {
@@ -110,7 +110,7 @@ export default function OMDashboardPage() {
       }
       loadingRef.current = false;
     }
-  }, []);
+  }, [isTeamLeader]);
 
   useEffect(() => {
     loadDashboard({ background: hasDataRef.current });
@@ -155,9 +155,11 @@ export default function OMDashboardPage() {
   const scopeDepartments = Array.isArray(scope.departmentNames) ? scope.departmentNames : [];
   const scopeAccounts = Array.isArray(scope.accountNames) ? scope.accountNames : [];
   const departmentBadge = scopeDepartments[0] || "Assigned Scope";
-  const scopeText = [scopeDepartments.join(", "), scopeAccounts.join(", ")]
-    .filter(Boolean)
-    .join(" · ");
+  const hierarchyAccountOnly = scope.rule === "department-hierarchy-account-only";
+  const scopeText = isTeamLeader && hierarchyAccountOnly
+    ? scopeAccounts.join(", ")
+    : [scopeDepartments.join(", "), scopeAccounts.join(", ")].filter(Boolean).join(" · ");
+  const teamScopeMissing = isTeamLeader && hierarchyAccountOnly && !initialLoading && !error && scopeAccounts.length === 0;
 
   const metricCards = [
     { label: "Staffing Requirement vs Filled", value: `${formatNumber(metrics.totalFilled)} / ${formatNumber(metrics.totalRequirement)}`, description: `${Math.round(metrics.filledPercentage)}% filled`, icon: Target, tone: "navy" },
@@ -178,6 +180,7 @@ export default function OMDashboardPage() {
       <OMDashboardSkeleton
         hero={
           <OMDashboardWelcome
+            isTeamLeader={isTeamLeader}
             departmentBadge={departmentBadge}
             scopeText={scopeText}
             onOpenHiringPlan={() => navigate(HIRING_PLAN_ROUTE)}
@@ -192,7 +195,8 @@ export default function OMDashboardPage() {
   if (error && roles.length === 0) {
     return (
       <OMDashboardError
-        error={error}
+        isTeamLeader={isTeamLeader}
+        message={error}
         onRetry={() => loadDashboard({ forceRefresh: true })}
       />
     );
@@ -204,12 +208,19 @@ export default function OMDashboardPage() {
       <main className={MAIN_SHELL_CLASS}>
         <div className="mx-auto flex min-h-full w-full max-w-[1700px] flex-1 flex-col space-y-4 2xl:space-y-5">
           <OMDashboardWelcome
+            isTeamLeader={isTeamLeader}
             departmentBadge={departmentBadge}
             scopeText={scopeText}
             onOpenHiringPlan={() => navigate(HIRING_PLAN_ROUTE)}
             onRefresh={() => loadDashboard({ forceRefresh: true, background: true })}
             isManualRefreshing={refreshing}
           />
+
+          {teamScopeMissing ? (
+            <section className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-semibold text-amber-900">
+              No verified operational account was found for this Team Leader. Hiring data is restricted until a reporting relationship is available.
+            </section>
+          ) : null}
 
           {error ? (
             <section className="flex items-center justify-between gap-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-semibold text-amber-900">
@@ -227,20 +238,21 @@ export default function OMDashboardPage() {
           {refreshing ? (
             <div className="flex items-center justify-end gap-2 text-xs font-bold text-sibs-muted">
               <LoaderCircle className="h-3.5 w-3.5 animate-spin text-sibs-orange" />
-              Refreshing manager-scoped data...
+              {isTeamLeader ? "Refreshing team-scoped data..." : "Refreshing manager-scoped data..."}
             </div>
           ) : null}
 
           <OMDashboardStats metrics={metricCards} />
 
           <section className="grid grid-cols-1 items-stretch gap-5 xl:grid-cols-2">
-            <OMRequirementProgress roles={roles} delay={120} />
-            <OMWeeklyMovement movement={metrics.funnel} delay={180} />
+            <OMRequirementProgress roles={roles} delay={120} isTeamLeader={isTeamLeader} />
+            <OMWeeklyMovement movement={metrics.funnel} delay={180} isTeamLeader={isTeamLeader} />
           </section>
 
           <section className="grid grid-cols-1 items-stretch gap-5 2xl:grid-cols-12">
             <div className="2xl:col-span-8">
               <OMRoleHiringStatus
+                isTeamLeader={isTeamLeader}
                 roles={paginatedRoles}
                 totalRoles={filteredRoles.length}
                 scopeText={scopeText}
@@ -271,6 +283,7 @@ export default function OMDashboardPage() {
       </main>
 
       <OMRoleDetailsModal
+        isTeamLeader={isTeamLeader}
         role={selectedRole}
         onClose={() => setSelectedRole(null)}
       />

@@ -123,6 +123,15 @@ function PrivateRoute({ children }) {
   return <ProtectedRoute>{children}</ProtectedRoute>;
 }
 
+// Keep old Operations Manager links working for Team Leader sessions.
+function OperationsDashboardRoute() {
+  const { user } = useUser();
+  if (getRawAdminAccess(user) === 8) {
+    return <Navigate to="/dashboard/team-leader" replace />;
+  }
+  return <OMDashboardPage key="operations-manager-dashboard" />;
+}
+
 function DashboardRedirect() {
   const { user } = useUser();
   const targetPath = getDefaultDashboardPath(user);
@@ -342,7 +351,16 @@ function MainApplicationRoutes() {
         path="/recruitment/om-dashboard"
         element={
           <PrivateRoute>
-            <OMDashboardPage />
+            <OperationsDashboardRoute />
+          </PrivateRoute>
+        }
+      />
+
+      <Route
+        path="/dashboard/team-leader"
+        element={
+          <PrivateRoute>
+            <OMDashboardPage key="team-leader-dashboard" isTeamLeader />
           </PrivateRoute>
         }
       />

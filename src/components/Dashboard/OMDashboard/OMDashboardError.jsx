@@ -1,6 +1,6 @@
 import { AlertCircle, RefreshCw } from "lucide-react";
 
-export default function OMDashboardError({ message, onRetry }) {
+export default function OMDashboardError({ message, onRetry, isTeamLeader = false }) {
   return (
     <div className="sibs-dashboard-shell">
       <main className="sibs-dashboard-main flex min-h-screen items-center justify-center">
@@ -9,7 +9,7 @@ export default function OMDashboardError({ message, onRetry }) {
             <AlertCircle className="h-6 w-6" />
           </div>
           <h2 className="mt-4 text-lg font-extrabold text-sibs-navy">
-            Unable to load OM Dashboard
+            {isTeamLeader ? "Unable to load Team Leaders Dashboard" : "Unable to load OM Dashboard"}
           </h2>
           <p className="mt-2 text-sm font-medium leading-6 text-sibs-muted">
             {message}

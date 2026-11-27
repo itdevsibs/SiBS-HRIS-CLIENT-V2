@@ -1244,7 +1244,14 @@ export default function Sidebar() {
       icon: LayoutDashboard,
       path: "/recruitment/om-dashboard",
       allowedUsers: DASHBOARD_ACCESS.OM,
-      excludeRawAdminAccess: [9, 10],
+      excludeRawAdminAccess: [8, 9, 10],
+    },
+    {
+      name: "Dashboard",
+      icon: LayoutDashboard,
+      path: "/dashboard/team-leader",
+      allowedUsers: DASHBOARD_ACCESS.TEAM_LEADER,
+      useRawAdminAccess: true,
     },
     {
       name: "Dashboard",

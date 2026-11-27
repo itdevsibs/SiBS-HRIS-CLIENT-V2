@@ -27,7 +27,7 @@ import { getSomDashboardBootstrap } from "../../../lib/axios/getSomDashboard";
 const PAGE_SHELL_CLASS = "sibs-dashboard-shell";
 const MAIN_SHELL_CLASS = "sibs-dashboard-main-wide";
 const AUTO_REFRESH_INTERVAL_MS = 60_000;
-const CACHE_KEY = "sibs.som-dashboard.bootstrap.v1";
+const CACHE_KEY = "sibs.som-dashboard.bootstrap.v2";
 const CACHE_TTL_MS = 10 * 60_000;
 const HIRING_OVERVIEW_ROUTE = "/recruitment/workforce-hiring-overview";
 const HIRING_NEEDS_ROUTE = "/recruitment/hiring-needs";
@@ -230,7 +230,6 @@ export default function SOMDashboardPage() {
   const [metrics, setMetrics] = useState(() =>
     cached ? normalizeMetrics(cached) : EMPTY_METRICS,
   );
-  const [scope, setScope] = useState(cached?.scope || {});
   const [initialLoading, setInitialLoading] = useState(!cached);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
@@ -262,7 +261,6 @@ export default function SOMDashboardPage() {
             : [],
         );
         setMetrics(normalizeMetrics(payload));
-        setScope(payload?.scope || {});
         setError("");
         writeCachedDashboard(payload);
         hasDataRef.current = true;
@@ -333,23 +331,11 @@ export default function SOMDashboardPage() {
     [recruiters],
   );
 
-  const scopeDepartments = Array.isArray(scope?.departmentNames)
-    ? scope.departmentNames
-    : [];
-  const scopeAccounts = Array.isArray(scope?.accountNames)
-    ? scope.accountNames
-    : [];
-  const scopeText = [scopeDepartments.join(", "), scopeAccounts.join(", ")]
-    .filter(Boolean)
-    .join(" · ");
-
   const dashboardHero = (
     <PageHeaderHero
       kicker="Senior Operations Manager View"
       title="Senior Operations Dashboard"
-      description={`Senior operations workforce and hiring visibility across your assigned departments and accounts${
-        scopeText ? `: ${scopeText}.` : "."
-      }`}
+      description="Workforce and hiring visibility across all departments and accounts."
       actions={
         <div className="flex shrink-0 items-center gap-2 2xl:gap-2.5 max-sm:w-full">
           <button
@@ -404,7 +390,7 @@ export default function SOMDashboardPage() {
     {
       label: "At-Risk Hiring Roles",
       value: formatNumber(metrics.atRiskRoles),
-      description: "Roles requiring attention in assigned scope",
+      description: "Roles requiring attention across all accounts",
       icon: AlertCircle,
       tone: "amber",
       path: HIRING_OVERVIEW_ROUTE,
@@ -433,7 +419,7 @@ export default function SOMDashboardPage() {
   const quickLinks = [
     {
       label: "Employee Directory",
-      description: "Employee records within your accessible scope",
+      description: "Employee records across all accounts",
       path: "/employee",
       icon: Users,
     },
@@ -445,7 +431,7 @@ export default function SOMDashboardPage() {
     },
     {
       label: "Leaves",
-      description: "Leave records within your accessible scope",
+      description: "Review employee leave records",
       path: "/leaves",
       icon: CalendarDays,
     },
@@ -457,7 +443,7 @@ export default function SOMDashboardPage() {
     },
     {
       label: "Workforce & Hiring",
-      description: "Headcount and hiring within your accessible scope",
+      description: "Headcount and hiring across all accounts",
       path: HIRING_OVERVIEW_ROUTE,
       icon: Target,
     },
@@ -512,16 +498,16 @@ export default function SOMDashboardPage() {
                 <div>
                   <h2 className="sibs-section-title font-heading">Requirement vs Filled Progress</h2>
                   <p className="sibs-section-subtitle">
-                    Largest approved hiring requirements within your assigned SOM scope.
+                    Largest approved hiring requirements across all accounts.
                   </p>
                 </div>
                 <button
                   type="button"
                   onClick={() => navigate("/departments")}
                   className="group inline-flex items-center gap-1 rounded border border-blue-200 bg-blue-50 px-2.5 py-1 text-[9px] font-black uppercase text-sibs-navy transition hover:border-sibs-orange/35 hover:bg-sibs-cream-light hover:text-sibs-orange focus:outline-none focus:ring-2 focus:ring-sibs-orange/20"
-                  title="View assigned departments, accounts, and LOBs"
+                  title="View departments, accounts, and LOBs"
                 >
-                  Assigned Scope
+                  All Accounts
                   <ArrowRight className="h-3 w-3 transition group-hover:translate-x-0.5" />
                 </button>
               </div>
@@ -585,7 +571,7 @@ export default function SOMDashboardPage() {
             <article className="sibs-page-card-in sibs-card p-5 sm:p-6 font-jakarta" style={{ animationDelay: "240ms", animationFillMode: "both" }}>
               <h2 className="sibs-section-title font-heading">Weekly Movement Pipeline</h2>
               <p className="sibs-section-subtitle">
-                Candidate progression within your assigned SOM scope.
+                Candidate progression across all accounts.
               </p>
               <p className="mt-2 text-xs font-semibold text-sibs-muted">Candidate drop-offs: {formatNumber(metrics.dropOffs)}</p>
 
@@ -615,7 +601,7 @@ export default function SOMDashboardPage() {
                 title="Open Weekly Reports"
               >
                 <span>
-                  Conversion from Sourced to Hired within your assigned SOM scope is{" "}
+                  Conversion from Sourced to Hired across all accounts is{" "}
                   <strong className="text-sibs-navy">
                     {metrics.funnel.sourced > 0
                       ? Math.round((metrics.funnel.hired / metrics.funnel.sourced) * 100)
@@ -673,7 +659,7 @@ export default function SOMDashboardPage() {
                 <div>
                   <h2 className="sibs-section-title font-heading">Role Hiring Status</h2>
                   <p className="sibs-section-subtitle">
-                    Highest-priority open and aging hiring roles within your SOM scope.
+                    Highest-priority open and aging hiring roles across all accounts.
                   </p>
                 </div>
                 <button
@@ -704,7 +690,7 @@ export default function SOMDashboardPage() {
                     {topRoles.length === 0 ? (
                       <tr>
                         <td colSpan={8} className="p-10 text-center font-semibold text-sibs-muted">
-                          No hiring roles are available within your assigned SOM scope.
+                          No hiring roles are available across all accounts.
                         </td>
                       </tr>
                     ) : (
@@ -749,7 +735,7 @@ export default function SOMDashboardPage() {
             <aside className="sibs-page-card-in sibs-card p-5 sm:p-6 2xl:col-span-4 font-jakarta" style={{ animationDelay: "400ms", animationFillMode: "both" }}>
               <h2 className="sibs-section-title font-heading">Recruiter Load</h2>
               <p className="sibs-section-subtitle">
-                Active roles versus recruiter output within your assigned SOM scope.
+                Active roles versus recruiter output across all accounts.
               </p>
 
               <div className="mt-4 space-y-3">
@@ -813,7 +799,7 @@ export default function SOMDashboardPage() {
           </section>
 
           <footer className="sibs-page-card-in rounded-[10px] border border-sibs-border bg-sibs-surface px-4 py-3 text-center text-[10px] font-black uppercase tracking-wide text-sibs-muted" style={{ animationDelay: "440ms", animationFillMode: "both" }}>
-            Senior Operations Dashboard: assigned-scope visibility for operational workforce and hiring oversight.
+            Senior Operations Dashboard: company-wide workforce and hiring oversight.
           </footer>
         </div>
       </main>
