@@ -14,7 +14,7 @@ import { useUser } from "../../../services/context/UserContext";
 import { useHeader } from "../../../services/context/HeaderContext";
 import { useAdmin } from "../../../services/context/AdminContext";
 import { getActiveCollectibleProfile } from "../../../config/developerBorders";
-import { getDefaultDashboardPath } from "../../../config/accessControl";
+import { getDefaultDashboardPath, isBodAccountAccess } from "../../../config/accessControl";
 import CollectibleAvatarFrame from "./CollectibleAvatarFrame.jsx";
 import DeveloperEasterEgg from "./DeveloperEasterEgg.jsx";
 
@@ -310,13 +310,13 @@ export default function UserDropdown({
     [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].includes(adminAccess);
 
   const switchToAdminLabel = `Switch to ${
-    typeof getAccessLabel === "function"
+    isBodAccountAccess(user) ? "BOD" : typeof getAccessLabel === "function"
       ? getAccessLabel(adminAccess)
       : ADMIN_ACCESS_LABELS[adminAccess] || "Admin"
   }`;
 
   const currentAdminRoleLabel =
-    ADMIN_ACCESS_LABELS[adminAccess] || "Talent Acquisition";
+    isBodAccountAccess(user) ? "BOD" : ADMIN_ACCESS_LABELS[adminAccess] || "Talent Acquisition";
 
   const showAvatarPreview = () => {
     if (open || !avatarPreviewAnchorRef.current) return;

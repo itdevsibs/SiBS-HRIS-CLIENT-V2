@@ -19,7 +19,7 @@ function getStatusClass(status) {
   return "border-emerald-200 bg-emerald-50 text-emerald-700";
 }
 
-export default function OMRoleDetailsModal({ role, onClose }) {
+export default function OMRoleDetailsModal({ role, onClose, isTeamLeader = false }) {
   if (!role) return null;
 
   const progress = safePercentage(role.filled, role.req);
@@ -31,7 +31,7 @@ export default function OMRoleDetailsModal({ role, onClose }) {
       variant="navy"
       icon={Target}
       title="Role KPI Details"
-      subtitle="Manager-accessible recruitment analytics"
+      subtitle={isTeamLeader ? "Team-scoped recruitment analytics" : "Manager-accessible recruitment analytics"}
       maxWidth="max-w-[700px] 2xl:max-w-3xl"
       className="flex flex-col max-h-[88vh]"
       bodyClassName="flex-1 space-y-2.5 2xl:space-y-3.5 overflow-y-auto p-3.5 2xl:p-5 text-sibs-navy"

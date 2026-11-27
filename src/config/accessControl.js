@@ -42,6 +42,7 @@ export const DASHBOARD_ACCESS = {
   ],
   FINANCE: [ADMIN_ACCESS.FINANCE],
   OM: [ADMIN_ACCESS.MANAGER],
+  TEAM_LEADER: [ADMIN_ACCESS.TEAM_LEADER],
   WFM: [ADMIN_ACCESS.WFM],
   SOM: [ADMIN_ACCESS.SOM],
   QDS: [],
@@ -63,6 +64,12 @@ export function getRawAdminAccess(user = {}) {
   );
 
   return Number.isFinite(access) ? access : 0;
+}
+
+// BOD uses the existing Executive access level; the label does not grant access.
+export function isBodAccountAccess(user = {}) {
+  return getRawAdminAccess(user) === ADMIN_ACCESS.EXECUTIVE &&
+    cleanRole(user?.account) === "bod";
 }
 
 export function getAdminAccess(user = {}) {
@@ -87,6 +94,9 @@ export function getDefaultDashboardPath(user = {}) {
   const rawAccess = getRawAdminAccess(user);
   if (role === "qds" || role === "quality_development_specialist") {
     return "/dashboard/qds";
+  }
+  if (rawAccess === ADMIN_ACCESS.TEAM_LEADER) {
+    return "/dashboard/team-leader";
   }
   if (rawAccess === ADMIN_ACCESS.WFM || role === "wfm" || role === "workforce_management") {
     return "/dashboard/wfm";
@@ -377,6 +387,10 @@ export function canAccessPath(user, pathname) {
       rawAccess === ADMIN_ACCESS.FINANCE ||
       ["finance", "finance_admin"].includes(role)
     );
+  }
+
+  if (pathMatches(pathname, "/dashboard/team-leader")) {
+    return rawAccess === ADMIN_ACCESS.TEAM_LEADER;
   }
 
   if (pathMatches(pathname, "/dashboard/wfm")) {

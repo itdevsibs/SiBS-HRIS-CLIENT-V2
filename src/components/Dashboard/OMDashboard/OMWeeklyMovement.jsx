@@ -14,7 +14,7 @@ const stageTone = {
   Hired: "border-emerald-200 bg-emerald-50 text-emerald-700",
 };
 
-export default function OMWeeklyMovement({ movement = {}, delay = 0 }) {
+export default function OMWeeklyMovement({ movement = {}, delay = 0, isTeamLeader = false }) {
   const stages = [
     ["Sourced", Number(movement.sourced || 0)],
     ["Screened", Number(movement.screened || 0)],
@@ -36,7 +36,7 @@ export default function OMWeeklyMovement({ movement = {}, delay = 0 }) {
           Weekly Movement Pipeline
         </h2>
         <p className="sibs-card-subtitle mt-0.5">
-          Candidate progression for the manager&apos;s accessible hiring scope
+          {isTeamLeader ? "Candidate progression for your operational accounts" : "Candidate progression for the manager’s accessible hiring scope"}
         </p>
 
         <div className="mt-4 grid grid-cols-2 gap-2 text-center sm:grid-cols-3 xl:grid-cols-6">

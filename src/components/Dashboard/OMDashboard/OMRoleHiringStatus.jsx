@@ -76,6 +76,7 @@ function RoleMobileCard({ role, onViewRole, delay = 0 }) {
 }
 
 export default function OMRoleHiringStatus({
+  isTeamLeader = false,
   roles = [],
   totalRoles = 0,
   scopeText,
@@ -113,12 +114,12 @@ export default function OMRoleHiringStatus({
           </div>
 
           <span className="w-fit rounded border border-amber-300 bg-amber-50 px-2.5 py-1 sibs-text-micro font-extrabold uppercase tracking-wide text-amber-800">
-            Manager Restricted View
+            {isTeamLeader ? "Team Leader Restricted View" : "Manager Restricted View"}
           </span>
         </div>
 
         <div className="mt-3 rounded-xl border border-blue-100 bg-blue-50/70 px-3.5 py-2.5 sibs-text-xs font-semibold text-sibs-navy">
-          Viewing only: <strong className="font-extrabold text-sibs-navy">{scopeText || "manager-assigned scope"}</strong>
+          Viewing only: <strong className="font-extrabold text-sibs-navy">{scopeText || (isTeamLeader ? "No operational account available" : "manager-assigned scope")}</strong>
         </div>
 
         <div className="mt-4 flex flex-col gap-3 xl:flex-row xl:items-end">

@@ -144,6 +144,16 @@ const SEARCHABLE_MODULES = [
     keywords: ["operations manager", "operations dashboard", "om"],
   },
   {
+    label: "Team Leaders Dashboard",
+    group: "Core HR",
+    description: "Team Leader hiring overview",
+    path: "/dashboard/team-leader",
+    scope: "admin",
+    allowedUsers: [8],
+    icon: LayoutDashboard,
+    keywords: ["dashboard", "team leader", "team leaders", "tl"],
+  },
+  {
     label: "Employees",
     group: "Core HR",
     description: "Employee Directory and employee records",
@@ -471,6 +481,7 @@ function canAccessModule(moduleItem, user) {
   const adminUser = isAdminUser(user);
 
   if (moduleItem.scope === "employee" && role !== "employee") return false;
+  if (moduleItem.path === "/dashboard/team-leader" && role === "employee") return false;
   if (moduleItem.scope === "admin" && !adminUser) return false;
 
   if (

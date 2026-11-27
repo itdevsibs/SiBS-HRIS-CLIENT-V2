@@ -2,6 +2,7 @@ import { ArrowRight, FileSpreadsheet, RefreshCw } from "lucide-react";
 import { PageHeaderHero } from "@/components/ui";
 
 export default function OMDashboardWelcome({
+  isTeamLeader = false,
   departmentBadge,
   scopeText,
   onOpenHiringPlan,
@@ -10,13 +11,13 @@ export default function OMDashboardWelcome({
 }) {
   return (
     <PageHeaderHero
-      kicker="Operations Manager View"
-      title="Operations Manager Dashboard"
+      kicker={isTeamLeader ? "Team Leader View" : "Operations Manager View"}
+      title={isTeamLeader ? "Team Leaders Dashboard" : "Operations Manager Dashboard"}
       description={
         <>
-          Hiring overview filtered by your department and assigned accounts:{" "}
+          {isTeamLeader ? "Hiring overview for your operational accounts:" : "Hiring overview filtered by your department and assigned accounts:"}{" "}
           <strong className="font-extrabold text-sibs-navy">
-            {scopeText || "No scope label available"}
+            {scopeText || (isTeamLeader ? (isManualRefreshing ? "Checking account scope" : "No operational account available") : "No scope label available")}
           </strong>
           .
         </>

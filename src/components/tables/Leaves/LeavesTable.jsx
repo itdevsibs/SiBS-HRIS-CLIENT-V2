@@ -787,6 +787,36 @@ function LeaveDetailsModal({
 
 export { LeaveDetailsModal };
 
+// The Kronos-backed endpoint uses fast, next-page pagination and may omit
+// an exact total. Only infer a total on a nonempty final page (or empty page 1).
+function resolveLeavePagination(pagination, page, loadedCount) {
+  const currentPage = Math.max(1, Math.floor(Number(pagination.currentPage || page) || 1));
+  const limit = Math.max(1, Math.floor(Number(pagination.limit) || PAGE_LIMIT));
+  const offset = (currentPage - 1) * limit;
+  const hasNextPage = typeof pagination.hasNextPage === "boolean"
+    ? pagination.hasNextPage
+    : Number(pagination.totalPages) > currentPage;
+  const rawTotal = pagination.totalRecords ?? pagination.total;
+  const reportedTotal = rawTotal == null || rawTotal === "" ? NaN : Number(rawTotal);
+  const minimumTotal = offset + loadedCount + (hasNextPage ? 1 : 0);
+  const validReportedTotal = Number.isSafeInteger(reportedTotal) && reportedTotal >= minimumTotal;
+  const totalRecords = validReportedTotal
+    ? reportedTotal
+    : !hasNextPage && (loadedCount > 0 || currentPage === 1)
+      ? offset + loadedCount
+      : undefined;
+  return {
+    currentPage,
+    limit,
+    hasNextPage,
+    totalRecords,
+    unknownTotal: totalRecords === undefined,
+    totalPages: totalRecords === undefined
+      ? currentPage + (hasNextPage ? 1 : 0)
+      : Math.max(currentPage, Math.ceil(totalRecords / limit), 1),
+  };
+}
+
 export default function LeavesTable({
   leaves = [],
   loading = false,
@@ -939,23 +969,19 @@ export default function LeavesTable({
     allDatesView,
   ]);
 
-  const currentPaginationPage = Number(pagination.currentPage || page || 1);
-  const totalPages = pagination.totalPages
-    ? Number(pagination.totalPages)
-    : pagination.hasNextPage
-      ? currentPaginationPage + 1
-      : currentPaginationPage;
-  const totalRecords =
-    pagination.totalRecords !== undefined
-      ? Number(pagination.totalRecords)
-      : pagination.total !== undefined
-        ? Number(pagination.total)
-        : (pagination.hasNextPage ? undefined : (currentPaginationPage - 1) * PAGE_LIMIT + leaves.length);
+  const {
+    currentPage: currentPaginationPage,
+    totalPages,
+    totalRecords,
+    unknownTotal,
+    hasNextPage,
+    limit: paginationLimit,
+  } = resolveLeavePagination(pagination, page, leaves.length);
 
   return (
     <>
       <section
-        className="sibs-page-card-in sibs-card flex min-h-full flex-1 flex-col justify-between min-w-0 overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-xs font-jakarta"
+        className="sibs-page-card-in sibs-card flex flex-col min-w-0 overflow-hidden rounded-2xl border border-sibs-border bg-white shadow-xs font-jakarta"
         style={{ animationDelay: "240ms", animationFillMode: "both" }}
       >
         <div className="border-b border-sibs-border p-4 sm:p-5 2xl:p-6 font-jakarta">
@@ -1400,8 +1426,10 @@ export default function LeavesTable({
               currentPage={currentPaginationPage}
               totalPages={totalPages}
               totalRecords={totalRecords}
+              unknownTotal={unknownTotal}
+              hasNextPage={hasNextPage}
               loadedCount={leaves.length}
-              pageSize={PAGE_LIMIT}
+              pageSize={paginationLimit}
               onPageChange={(nextPage) => setPage(nextPage)}
               recordLabel="leave records"
               loading={loading}
