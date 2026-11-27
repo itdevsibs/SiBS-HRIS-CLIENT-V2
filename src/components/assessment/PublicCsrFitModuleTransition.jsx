@@ -8,13 +8,14 @@ const stages = [
 ];
 
 /**
- * Public Assessment only. The page controls phase based on actual API responses;
+ * Shared by Public and Online Assessment. The page controls phase based on actual API responses;
  * this is a visual transition, not a second timer or a source of progress truth.
  */
 export default function PublicCsrFitModuleTransition({
   moduleNumber = 1,
   nextModuleNumber = null,
   phase = 'saving',
+  assessmentLabel = 'SiBS CSR-Fit Public Assessment',
 }) {
   const from = Math.min(7, Math.max(1, Number(moduleNumber) || 1));
   const next = Number(nextModuleNumber);
@@ -39,7 +40,7 @@ export default function PublicCsrFitModuleTransition({
           <div aria-hidden="true" className="pointer-events-none absolute -left-12 -top-16 h-44 w-44 rounded-full bg-white/5 blur-2xl" />
           <div aria-hidden="true" className="pointer-events-none absolute -bottom-20 -right-12 h-48 w-48 rounded-full bg-[#ff5c28]/15 blur-2xl" />
           <p className="relative text-[10px] font-extrabold uppercase tracking-[.16em] text-white/70">
-            SiBS CSR-Fit Public Assessment
+            {assessmentLabel}
           </p>
           <div className="relative mx-auto mt-5 flex h-[94px] w-[94px] items-center justify-center" aria-hidden="true">
             {!ready && (
