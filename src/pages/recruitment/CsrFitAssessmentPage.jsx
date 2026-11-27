@@ -219,7 +219,7 @@ function CsrFitAssessmentPageContent(){
     writeQueue.current=work.catch(e=>{setSaved('Not saved');setError(`Unable to save: ${errorLabel(e)}`);});return work;
   }
   function select(value){
-    if(!canChange) return;
+    if(!canChange || !examProtection.checkAccess()) return;
     const existing=answers[key];
     const next=activeModule===3?(Array.isArray(existing)?existing:[]).includes(value)?existing.filter(x=>x!==value):[...(Array.isArray(existing)?existing:[]),value]:value;
     if(activeModule===3&&next.length===0){setAnswers(prev=>{const copy={...prev};delete copy[key];return copy;});return;}
@@ -238,7 +238,7 @@ function CsrFitAssessmentPageContent(){
     }
   }
   async function commitForwardAndNext(){
-    if(examProtection.locked||!forwardOnly||busy||moduleExpired||overallExpired||forwardSaveInFlight.current)return;
+    if(!examProtection.checkAccess()||!forwardOnly||busy||moduleExpired||overallExpired||forwardSaveInFlight.current)return;
     // Supports resuming an older attempt with a confirmed final response.
     if(alreadyAnswered){
       if(index===items.length-1){await advance();}
@@ -280,10 +280,10 @@ function CsrFitAssessmentPageContent(){
     }
   }
   const formData=useMemo(()=>{const from=answers[key];return from&&typeof from==='object'&&!Array.isArray(from)?{...makeEmpty(),...from}:draft;},[answers,key,draft]);
-  function changeDraft(name,value){draftTouched.current.add(name);setDraft(prev=>({...prev,[name]:value}));}
+  function changeDraft(name,value){if(!examProtection.checkAccess())return;draftTouched.current.add(name);setDraft(prev=>({...prev,[name]:value}));}
   function formValue(name){return draftTouched.current.has(name)?draft[name]:(formData[name]||'');}
   async function submitTask(){
-    if(saveBusy.current || alreadyAnswered || !canChange)return;
+    if(saveBusy.current || alreadyAnswered || !canChange || !examProtection.checkAccess())return;
     const fields=bank.module6.fields || [],choices=bank.module6.choices || [];
     const value=Object.fromEntries([...fields.map(f=>f.id),...choices.map(c=>c.id)].map(k=>[k,formValue(k)]));
     const incomplete=fields.some(f=>!String(value[f.id]??'').trim()) ||
@@ -304,7 +304,7 @@ function CsrFitAssessmentPageContent(){
       setData(old=>({...old,session:{...old.session,typingStarts:{...old.session.typingStarts,[passageId]:r.data.startedAtMs}}}));
     }catch(e){startedTyping.current.delete(passageId);setError(errorLabel(e));}
   }
-  function onType(value){if(!canChange||typingDone)return;
+  function onType(value){if(!canChange||typingDone||!examProtection.checkAccess())return;
     setTyping(value);lastTyped.current=value;
     if(!typingStartedAt&&!startedTyping.current.has(question.id))void ensureTypingStarted(question.id);
   }
@@ -323,7 +323,7 @@ function CsrFitAssessmentPageContent(){
   // eslint-disable-next-line react-hooks/exhaustive-deps
   },[activeModule,question?.id,typingStartedAt,typingLeft<2500]);
   async function beginModule(){
-    if(busy||examProtection.locked)return;setBusy(true);setBusyLabel('Starting the module…');setError('');
+    if(busy||!examProtection.checkAccess())return;setBusy(true);setBusyLabel('Starting the module…');setError('');
     try{
       await api.post(`/api/assessment/public/${token}/begin-module`,{moduleNumber:activeModule},{withCredentials:false});
       const response=await api.get(`/api/assessment/public/${token}`,{withCredentials:false});
@@ -339,7 +339,7 @@ function CsrFitAssessmentPageContent(){
     if (remaining > 0) await new Promise(resolve => setTimeout(resolve, remaining));
   };
   async function advance(){
-    if(busy || transitionInFlight.current)return;
+    if(busy || transitionInFlight.current || !examProtection.checkAccess())return;
     transitionInFlight.current=true;
     const previous=activeModule, nextNumber=previous+1, startedAt=Date.now();
     setModuleTransition({from:previous,to:nextNumber,phase:'saving'});
@@ -360,7 +360,7 @@ function CsrFitAssessmentPageContent(){
     finally{setModuleTransition(null);setBusy(false);transitionInFlight.current=false;}
   }
   async function submit(){
-    if(busy || transitionInFlight.current)return;
+    if(busy || transitionInFlight.current || !examProtection.checkAccess())return;
     transitionInFlight.current=true;
     const startedAt=Date.now();
     setModuleTransition({from:7,to:null,phase:'saving'});
@@ -411,7 +411,7 @@ function CsrFitAssessmentPageContent(){
   useEffect(()=>{if(expiredNotice)expiryActionRef.current?.focus();},[expiredNotice?.key]);
 
   async function acknowledgeExpiredNotice(){
-    if(!expiredNotice||expiryBusy.current||busy)return;
+    if(!expiredNotice||expiryBusy.current||busy||!examProtection.checkAccess())return;
     // The typing passage finishes on its own clock, but is not a module timeout.
     // Preserve the existing save/Next behavior after explaining the expired round.
     if(expiredNotice.kind==='typing'){
@@ -429,12 +429,12 @@ function CsrFitAssessmentPageContent(){
     }
   }
   function goNext(){
-    if(index>=items.length-1||(forwardOnly&&(!alreadyAnswered||forwardSaveInFlight.current)))return;
+    if(!examProtection.checkAccess()||index>=items.length-1||(forwardOnly&&(!alreadyAnswered||forwardSaveInFlight.current)))return;
     forwardSelectionRef.current=null;setForwardSelection(null);
     setCursor(n=>Math.min(n+1,maxAllowed));setSaved('');setDraft(makeEmpty());draftTouched.current.clear();setTyping(null);lastTyped.current='';pendingTyping.current=null;
   }
   function goPrev(){
-    if(forwardOnly)return;
+    if(forwardOnly||!examProtection.checkAccess())return;
     setCursor(n=>Math.max(0,n-1));setDraft(makeEmpty());draftTouched.current.clear();setTyping(null);lastTyped.current='';pendingTyping.current=null;
   }
   const sectionTitle=<header className="flex w-full flex-wrap items-center justify-between gap-3 rounded-2xl bg-[#082e53] px-5 py-3 text-white shadow-sm sm:px-7 sm:py-4">
@@ -453,7 +453,7 @@ function CsrFitAssessmentPageContent(){
   // screen share the full available browser width. The previous live-exam
   // 1340px cap left unused space and made the question area unnecessarily narrow.
   // This is layout-only; server-owned timers, question order and answers do not change.
-  return <main className="min-h-screen w-full bg-[#f5f7fa] px-3 py-4 font-jakarta text-sibs-navy sm:px-5 sm:py-5 lg:px-7 lg:py-6"><div inert={examProtection.locked} aria-hidden={examProtection.locked || undefined} className="mx-auto w-full min-w-0 max-w-none"> 
+  return <main className="min-h-screen w-full bg-[#f5f7fa] px-3 py-4 font-jakarta text-sibs-navy sm:px-5 sm:py-5 lg:px-7 lg:py-6"><div inert={examProtection.locked} aria-hidden={examProtection.locked || undefined} style={examProtection.locked ? { visibility: 'hidden', pointerEvents: 'none' } : undefined} className="mx-auto w-full min-w-0 max-w-none"> 
     {sectionTitle}
     {data?.status!=='SUBMITTED' && !data?.legacy && <p className="mt-2 px-1 text-[11px] text-sibs-secondary">Assessment activity such as tab changes, fullscreen exits, page departures and blocked browser actions is recorded for authorized HR review.</p>}
     {loading?<CsrFitAssessmentLoading mode="skeleton" />:
@@ -557,7 +557,7 @@ function CsrFitAssessmentPageContent(){
           <CsrFitAdministrativeSimulation
             key={`${token}:${data?.attemptId || data?.attempt?.id || 'new'}:${module}:${question.id}`} taskIndex={index} bank={bank.module4}
             answer={currentAnswer} disabled={!canChange} saving={busy}
-            onSave={value=>canChange ? persist(key,value) : Promise.reject(new Error("Module is no longer accepting answers."))}/>
+            onSave={value=>canChange && examProtection.checkAccess() ? persist(key,value) : Promise.reject(new Error("Module is no longer accepting answers."))}/>
         )):null}
         {activeModule===5&&question?<CsrFitTypingGame
           key={`${module}:${question.id}`}
@@ -608,7 +608,7 @@ function CsrFitAssessmentPageContent(){
             aria-label={`Question ${i+1}: ${i===index?'current':completed?'completed and locked':'not yet available'}`}
             className={`flex h-8 items-center justify-center rounded-md border text-[11px] font-extrabold ${i===index?'border-sibs-orange bg-orange-50 text-sibs-orange':completed?'border-sibs-navy bg-sibs-navy text-white':'border-sibs-border bg-sibs-surface text-sibs-muted/60'}`}>{i+1}</span>;
           const locked=i>maxAllowed || (activeModule===5 && i>0 && !passageFinished(items[i-1]));
-          return <button key={`${module}-${q.id}`} type="button" disabled={locked} onClick={()=>{setCursor(i);setDraft(makeEmpty());draftTouched.current.clear();setTyping(null);lastTyped.current='';pendingTyping.current=null;}}
+          return <button key={`${module}-${q.id}`} type="button" disabled={locked} onClick={()=>{if(!examProtection.checkAccess())return;setCursor(i);setDraft(makeEmpty());draftTouched.current.clear();setTyping(null);lastTyped.current='';pendingTyping.current=null;}}
             aria-label={`Item ${i+1}${locked?', locked':''}`} title={locked?'Complete earlier items first':''}
             className={`h-8 rounded-md border text-[11px] font-extrabold ${i===index?'border-sibs-orange bg-orange-50 text-sibs-orange':completed?'border-sibs-navy bg-sibs-navy text-white':'border-sibs-border bg-sibs-surface text-sibs-muted'} disabled:cursor-not-allowed disabled:opacity-35`}>{i+1}</button>;
         })}</div><p className="mt-3 text-[11px] leading-5 text-sibs-muted">{forwardOnly?'Progress only. Question numbers cannot be clicked; saved answers are final.':'You may review earlier answers, but cannot jump ahead to unanswered questions.'}</p></div></aside></div>
