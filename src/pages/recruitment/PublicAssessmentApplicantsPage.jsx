@@ -26,11 +26,13 @@ const STATUS_STYLES = {
   INVITED: 'border-slate-200 bg-slate-50 text-slate-700',
   IN_PROGRESS: 'border-orange-200 bg-orange-50 text-orange-800',
   SUBMITTED: 'border-emerald-200 bg-emerald-50 text-emerald-800',
+  VOID: 'border-red-200 bg-red-50 text-red-700',
 };
 const STATUS_LABELS = {
   INVITED: 'Not started',
   IN_PROGRESS: 'In progress',
   SUBMITTED: 'Submitted',
+  VOID: 'Void',
 };
 const safeScore = (value) => value !== null && value !== undefined && value !== '' &&
   Number.isFinite(Number(value)) && Number(value) >= 0 && Number(value) <= 100
@@ -231,10 +233,10 @@ const readableTimestamp = (value) => {
 };
 const applicantProgress = (applicant) => {
   const status = applicant?.status;
-  const completed = status === 'SUBMITTED' ? 7 : status === 'IN_PROGRESS'
+  const completed = status === 'SUBMITTED' ? 7 : ['IN_PROGRESS','VOID'].includes(status)
     ? Math.max(0, Math.min(7, Math.trunc(Number(applicant?.completedModules) || 0))) : 0;
   const savedModule = Number(applicant?.currentModule);
-  const current = status === 'IN_PROGRESS' && Number.isInteger(savedModule)
+  const current = ['IN_PROGRESS','VOID'].includes(status) && Number.isInteger(savedModule)
     && savedModule >= 1 && savedModule <= 7 ? savedModule : null;
   return { completed, current, status };
 };
@@ -242,12 +244,13 @@ const applicantProgress = (applicant) => {
 
 function StatusLabel({ value }) {
   return <span className={`inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-[11px] font-bold ${STATUS_STYLES[value] || STATUS_STYLES.INVITED}`}>
-    <span aria-hidden="true" className={`h-1.5 w-1.5 rounded-full ${value === 'SUBMITTED' ? 'bg-emerald-600' : value === 'IN_PROGRESS' ? 'bg-sibs-orange' : 'bg-slate-500'}`} />
+    <span aria-hidden="true" className={`h-1.5 w-1.5 rounded-full ${value === 'SUBMITTED' ? 'bg-emerald-600' : value === 'IN_PROGRESS' ? 'bg-sibs-orange' : value==='VOID'?'bg-red-600':'bg-slate-500'}`} />
     {STATUS_LABELS[value] || 'Not started'}
   </span>;
 }
 
 function ProvisionalResults({ row }) {
+  if(row.status==='VOID')return <span className="text-xs font-bold text-red-700">Void · No valid result</span>;
   if (row.status !== 'SUBMITTED') return <span className="text-[11px] text-sibs-muted">Available after submission</span>;
   return <div className="grid grid-cols-[auto_auto] gap-x-3 gap-y-1 text-[11px] tabular-nums">
     <span className="text-sibs-secondary">Cognitive</span><span className="text-right font-extrabold text-sibs-navy">{safeScore(row.results?.cognitive)}</span>
@@ -269,7 +272,7 @@ function PendingApplicantModal({ applicant, onClose, assessmentApi, portalMode, 
     setActivity(null); setActivityError(''); setActivityLoading(false); setActivityVerified(false);
   },[id]);
   useEffect(()=>{
-    if(!id||!['IN_PROGRESS','SUBMITTED'].includes(statusValue))return;
+    if(!id||!['IN_PROGRESS','SUBMITTED','VOID'].includes(statusValue))return;
     let active=true, inFlight=false, queued=false, denied=false, finished=false, debounce=null;
     const controller=new AbortController();
     const visible=()=>document.visibilityState==='visible'&&!document.hidden;
@@ -284,7 +287,7 @@ function PendingApplicantModal({ applicant, onClose, assessmentApi, portalMode, 
         const log=response.data?.data;
         if(!Array.isArray(log?.events))throw new Error('Invalid activity response.');
         setActivity(log);setActivityError('');setActivityVerified(true);
-        finished=statusValue==='SUBMITTED'||log.events.some(event=>event.type==='ASSESSMENT_SUBMITTED');
+        finished=['SUBMITTED','VOID'].includes(statusValue)||log.events.some(event=>['ASSESSMENT_SUBMITTED','ASSESSMENT_VOIDED'].includes(event.type));
       } catch(cause) {
         if(!active)return;
         setActivityVerified(false);
@@ -324,7 +327,7 @@ function PendingApplicantModal({ applicant, onClose, assessmentApi, portalMode, 
     };
   },[id,statusValue,assessmentApi,portalMode,liveSocket]);
   if (!applicant) return null;
-  const { completed, current, status } = applicantProgress(applicant);
+  const { completed, current, status } = applicantProgress(activity?.voidedAtMs?{...applicant,status:'VOID'}:applicant);
   const isInProgress = status === 'IN_PROGRESS';
   const currentTitle = current ? MODULE_NAMES[current - 1] : 'Not started';
 
@@ -342,7 +345,7 @@ function PendingApplicantModal({ applicant, onClose, assessmentApi, portalMode, 
         <StatusLabel value={status}/>
       </section>
 
-      <section aria-label="Applicant registration information" className="grid gap-3 sm:grid-cols-3">
+      <section aria-label="Applicant registration information" className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {[
           [BriefcaseBusiness, 'Position', displayValue(applicant.desiredRole, 'Not assigned')],
           [FileClock, 'Registered', readableDate(applicant.createdAt)],
@@ -359,7 +362,7 @@ function PendingApplicantModal({ applicant, onClose, assessmentApi, portalMode, 
             <h4 className="text-sm font-extrabold text-sibs-navy">Assessment progress</h4>
             <p className="mt-1 text-xs text-sibs-secondary">{isInProgress
               ? `Module ${current ?? '—'} of 7 · ${currentTitle}`
-              : status === 'SUBMITTED' ? 'All seven modules submitted' : 'Assessment not started'}</p>
+              : status === 'SUBMITTED' ? 'All seven modules submitted' : status==='VOID'?'Assessment void · No valid result':'Assessment not started'}</p>
           </div>
           <span className="whitespace-nowrap rounded-md bg-sibs-surface px-2.5 py-1 text-xs font-extrabold tabular-nums text-sibs-navy">
             {completed} of 7 completed
@@ -375,9 +378,10 @@ function PendingApplicantModal({ applicant, onClose, assessmentApi, portalMode, 
             const moduleNumber = index + 1;
             const done = moduleNumber <= completed;
             const active = isInProgress && moduleNumber === current;
-            const stage = done ? 'Completed' : active ? 'Current module' : 'Not started';
+            const voided = status==='VOID' && moduleNumber===current;
+            const stage = done ? 'Completed' : voided?'Voided here':active ? 'Current module' : 'Not started';
             return <div key={moduleNumber}
-              className={`flex min-w-0 items-start gap-2 rounded-lg border px-3 py-2.5 ${active ? 'border-orange-200 bg-orange-50/60' : 'border-sibs-border bg-sibs-surface'}`}>
+              className={`flex min-w-0 items-start gap-2 rounded-lg border px-3 py-2.5 ${voided?'border-red-200 bg-red-50':active ? 'border-orange-200 bg-orange-50/60' : 'border-sibs-border bg-sibs-surface'}`}>
               <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md text-[10px] font-extrabold ${active ? 'bg-sibs-orange text-white' : done ? 'bg-emerald-100 text-emerald-800' : 'bg-white text-sibs-muted'}`}>{moduleNumber}</span>
               <div className="min-w-0">
                 <p className="text-[11px] font-bold leading-4 text-sibs-navy">{name}</p>
@@ -387,7 +391,8 @@ function PendingApplicantModal({ applicant, onClose, assessmentApi, portalMode, 
           })}
         </div>
       </section>
-      {(isInProgress || status === 'SUBMITTED') && <CsrFitActivityLog key={id} log={activity} loading={activityLoading} error={activityError} live={isInProgress && !activity?.events?.some(event=>event.type==='ASSESSMENT_SUBMITTED')} verified={activityVerified}/>}
+      {(status==='VOID'||activity?.voidedAtMs) && <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-xs font-bold text-red-700">Assessment void · {activity?.violationCount??applicant.violationCount??5} recorded violations. { (activity?.reapplyAtMs||applicant.reapplyAtMs) ? `Reapply after ${readableDate(activity?.reapplyAtMs||applicant.reapplyAtMs)}.` : 'Six-month waiting period.'}</div>}
+      {(isInProgress || status === 'SUBMITTED' || status==='VOID') && <CsrFitActivityLog publicAssessment key={id} log={activity} loading={activityLoading} error={activityError} live={isInProgress && !activity?.events?.some(event=>event.type==='ASSESSMENT_SUBMITTED')} verified={activityVerified}/>}
       <p className="text-[11px] leading-5 text-sibs-secondary">
         This view reflects the applicant's saved assessment status. Scores and detailed results become available after final submission.
       </p>
@@ -412,12 +417,13 @@ export default function PublicAssessmentApplicantsPage({ portalMode = false, onU
   const [resultLoadingId, setResultLoadingId] = useState(null);
   const [resultError, setResultError] = useState('');
   const pageCount = Math.max(1, Math.ceil(total / 20));
-  const [summary, setSummary] = useState({ registered: 0, inProgress: 0, submitted: 0 });
+  const [summary, setSummary] = useState({ registered: 0, inProgress: 0, submitted: 0, voided:0 });
   const statusTabs = [
     { value: 'ALL', label: 'All', icon: Users },
     { value: 'INVITED', label: 'Not started', icon: FileClock },
     { value: 'IN_PROGRESS', label: 'In progress', icon: Clock3, count: summary.inProgress },
     { value: 'SUBMITTED', label: 'Submitted', icon: CheckCircle2, count: summary.submitted },
+    { value:'VOID',label:'Void',icon:AlertCircle,count:summary.voided,tone:'danger' },
   ];
   const requestSequenceRef = useRef(0);
   const debounceRef = useRef(null);
@@ -442,6 +448,7 @@ export default function PublicAssessmentApplicantsPage({ portalMode = false, onU
         registered: Number(result.summary.registered) || 0,
         inProgress: Number(result.summary.inProgress) || 0,
         submitted: Number(result.summary.submitted) || 0,
+        voided: Number(result.summary.voided)||0,
       });
       setError('');
     } catch (cause) {
@@ -561,15 +568,16 @@ export default function PublicAssessmentApplicantsPage({ portalMode = false, onU
           </div>}
         />
 
-        <div className="grid gap-3 sm:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {[
             [Users, 'Registered applicants', summary.registered, 'All matching records'],
             [Clock3, 'In progress', summary.inProgress, 'All matching records'],
             [CheckCircle2, 'Submitted', summary.submitted, 'All matching records'],
+            [AlertCircle,'Void',summary.voided,'Five activity violations'],
           ].map(([Icon, label, value, note]) => <div key={label} className="flex items-center gap-3 rounded-xl border border-sibs-border bg-white px-4 py-3.5 shadow-sm">
-            <div className="rounded-lg bg-[#ecf3fa] p-2.5 text-sibs-navy"><Icon size={19} /></div>
+            <div className={`rounded-lg p-2.5 ${label==='Void'?'bg-red-50 text-red-700':'bg-[#ecf3fa] text-sibs-navy'}`}><Icon size={19} /></div>
             <div><p className="text-[11px] font-bold text-sibs-secondary">{label}</p>
-              <p className="mt-0.5 text-2xl font-extrabold tabular-nums text-sibs-navy">{value}</p>
+              <p className={`mt-0.5 text-2xl font-extrabold tabular-nums ${label==='Void'?'text-red-700':'text-sibs-navy'}`}>{value}</p>
               <p className="text-[10px] text-sibs-muted">{note}</p></div>
           </div>)}
         </div>
@@ -670,13 +678,13 @@ export default function PublicAssessmentApplicantsPage({ portalMode = false, onU
                           void openApplicant(applicant);
                         }
                       }}
-                      className={`group ${resultLoadingId !== null ? 'cursor-wait' : 'cursor-pointer'} transition-colors hover:bg-sibs-cream-light focus-visible:bg-sibs-cream-light focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sibs-orange/30`}
+                      className={`group ${resultLoadingId !== null ? 'cursor-wait' : 'cursor-pointer'} transition-colors ${applicant.status==='VOID'?'bg-red-50 hover:bg-red-100 text-red-700':'hover:bg-sibs-cream-light'} focus-visible:bg-sibs-cream-light focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sibs-orange/30`}
                     >
                       <td className="border-b border-sibs-border px-3 py-2 align-middle 2xl:px-4 2xl:py-2.5">
                         <div className="flex min-w-0 items-center gap-2.5 2xl:gap-3">
                           <ApplicantAvatar applicant={applicant} />
                           <div className="min-w-0 flex-1">
-                            <p className="break-words sibs-text-xs font-extrabold leading-tight text-sibs-navy transition-colors group-hover:text-sibs-orange" title={applicant.name}>
+                            <p className={`break-words sibs-text-xs font-extrabold leading-tight ${applicant.status==='VOID'?'text-red-700':'text-sibs-navy group-hover:text-sibs-orange'} transition-colors`} title={applicant.name}>
                               {applicant.name || 'Unnamed applicant'}
                             </p>
                             <ApplicantEmail email={applicant.email} />
@@ -697,8 +705,9 @@ export default function PublicAssessmentApplicantsPage({ portalMode = false, onU
                       <td className="border-b border-sibs-border px-3 py-2 text-center align-middle 2xl:px-4 2xl:py-2.5">
                         <p className="sibs-text-xs font-semibold text-sibs-secondary">
                           {applicant.status === 'IN_PROGRESS' ? `Module ${applicant.currentModule || 1} of 7`
-                            : applicant.status === 'SUBMITTED' ? '7 of 7 completed' : 'Not started'}
+                            : applicant.status === 'SUBMITTED' ? '7 of 7 completed' : applicant.status==='VOID'?`Voided at module ${applicant.currentModule||'—'}`:'Not started'}
                         </p>
+                        {applicant.status==='VOID' && <p className="mt-1 text-[10px] font-bold text-red-700">{applicant.violationCount||5} violations</p>}
                         {applicant.status === 'IN_PROGRESS' && <p className="mt-1 text-[10px] text-sibs-muted">{applicant.completedModules || 0} completed</p>}
                       </td>
                       <td className="border-b border-sibs-border px-3 py-2 align-middle 2xl:px-4 2xl:py-2.5">

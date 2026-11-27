@@ -31,6 +31,61 @@ const elapsedLabel = ms => {
 const makeEmpty = () => ({filename:'',folder:'',customerName:'',accountNumber:'',callbackNumber:'',category:'',notes:'',product:'',issue:'',action:''});
 const btn = 'inline-flex h-10 items-center justify-center gap-2 rounded-lg px-4 text-xs font-extrabold transition disabled:cursor-not-allowed disabled:opacity-40';
 const optionCls = selected => `flex min-h-11 cursor-pointer items-start gap-3 rounded-lg border px-3 py-3 text-left text-sm transition ${selected ? 'border-[#1d5480] bg-blue-50 text-sibs-navy' : 'border-sibs-border bg-white text-sibs-secondary hover:border-slate-400'}`;
+// The same server-confirmed counter is used on instructions and in the live exam sidebar.
+function PublicAssessmentViolationCounter({ violationCount, sidebar = false }) {
+  const count = Math.min(5, Math.max(0, Number(violationCount) || 0));
+  return <div role="status" aria-live="polite" aria-atomic="true" aria-label={`Activity violations: ${count} of 5`} className={`rounded-lg border border-red-200 bg-red-50 text-red-700 ${sidebar ? 'px-3 py-2.5' : 'px-3 py-1.5'}`}>
+    <div className="flex items-center justify-between gap-2">
+      <span className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide"><AlertCircle size={14} aria-hidden="true"/> Violations</span>
+      <span className={`${sidebar ? 'text-xl' : 'text-sm'} font-extrabold tabular-nums`}>{count}/5</span>
+    </div>
+    <div aria-hidden="true" className={`mt-1.5 grid grid-cols-5 ${sidebar ? 'gap-1' : 'gap-0.5'}`}>
+      {Array.from({length:5},(_,i)=><span key={i} className={`h-1.5 rounded-full ${sidebar ? '' : 'w-3'} ${i<count?'bg-red-600':'bg-red-100'}`}/>)}
+    </div>
+    {sidebar && <p className="mt-2 text-[10px] font-semibold leading-4">Five violations automatically void the assessment.</p>}
+  </div>;
+}
+// Applicant-facing rules mirror the server's public violation vocabulary.
+function PublicAssessmentRules({ violationCount, expandedInitially, showCounter = true }) {
+  const [expanded, setExpanded] = useState(expandedInitially);
+  const rules = [
+    ['Stay in fullscreen', 'Do not exit fullscreen or use Escape, F11, Fn + F, or other browser shortcuts to leave or interrupt the exam.'],
+    ['Keep the exam in focus', 'Do not switch tabs, windows, or applications, or minimize the assessment.'],
+    ['Do not refresh or leave', 'Reloading, closing, or navigating away during an active attempt may be recorded as a violation.'],
+    ['Do not copy or paste', 'Copying, cutting, pasting, and browser right-click actions are prohibited. Use only the controls permitted inside a module simulation.'],
+    ['Work independently', 'Do not use AI, search engines, external assistance, or tools not expressly allowed in the module instructions.'],
+    ['Follow module instructions', 'Complete the seven modules in sequence, follow the timers, and answer using the available exam controls.'],
+  ];
+  return <section aria-labelledby="public-assessment-rules-heading" className="mt-3 overflow-hidden rounded-xl border border-sibs-border bg-white shadow-sm">
+    <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-5">
+      <div className="flex min-w-0 flex-1 items-start gap-3">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-sibs-cream-light text-sibs-orange"><ShieldCheck size={19}/></span>
+        <div className="min-w-0">
+          <h2 id="public-assessment-rules-heading" className="text-sm font-extrabold text-sibs-navy">Assessment Rules &amp; Guidelines</h2>
+          <p className="mt-0.5 text-[11px] leading-5 text-sibs-secondary">Activity is recorded. Five recorded violations automatically void and permanently lock your assessment.</p>
+        </div>
+      </div>
+      <div className="flex shrink-0 items-center gap-3">
+        {showCounter && <PublicAssessmentViolationCounter violationCount={violationCount}/>}
+        <button type="button" aria-expanded={expanded} aria-controls="public-assessment-rules-content" onClick={()=>setExpanded(value=>!value)} className="inline-flex items-center gap-1.5 rounded-lg border border-sibs-border bg-white px-3 py-2 text-xs font-bold text-sibs-navy hover:bg-sibs-cream-light focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sibs-orange">
+          {expanded?'Hide rules':'View rules'}<ChevronRight size={14} className={`transition-transform ${expanded?'rotate-90':''}`}/>
+        </button>
+      </div>
+    </div>
+    <div id="public-assessment-rules-content" hidden={!expanded} className="border-t border-sibs-border px-4 py-4 sm:px-5">
+      <ul className="grid gap-x-7 gap-y-3 md:grid-cols-2 xl:grid-cols-3">
+        {rules.map(([title,description])=><li key={title} className="flex items-start gap-2.5">
+          <span aria-hidden="true" className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-sibs-orange"/>
+          <div><p className="text-xs font-extrabold text-sibs-navy">{title}</p><p className="mt-0.5 text-[11px] leading-5 text-sibs-secondary">{description}</p></div>
+        </li>)}
+      </ul>
+      <div className="mt-4 flex items-start gap-2.5 rounded-lg border border-sibs-border bg-sibs-cream-light px-3 py-2.5">
+        <AlertCircle size={16} className="mt-0.5 shrink-0 text-sibs-orange"/>
+        <div className="text-[11px] leading-5 text-sibs-navy"><p><strong>Five-violation rule:</strong> Recorded violations accumulate across all modules, including after a reload. At five, the attempt becomes void and answers can no longer be changed or submitted.</p><p className="mt-1">The reapplication waiting period is six months. Contact HR regarding your assessment and reapplication eligibility. The registered email cannot be used for a new assessment.</p></div>
+      </div>
+    </div>
+  </section>;
+}
 function FormText({label,value,onChange,placeholder='',required=true,readOnly=false}) {
   return <label className="block min-w-0"><span className="mb-1.5 block text-[11px] font-extrabold text-sibs-navy">{label}{required?' *':''}</span>
     <input required={required} value={value||''} placeholder={placeholder} readOnly={readOnly} onChange={e=>{if(!readOnly)onChange(e.target.value);}}
@@ -78,6 +133,7 @@ function PublicCsrFitAssessmentPageContent(){
     [mobile,setMobile]=useState(false),[moduleTransition,setModuleTransition]=useState(null),
     [forwardSelection,setForwardSelection]=useState(null),[expiredNotice,setExpiredNotice]=useState(null);
   const writeQueue=useRef(Promise.resolve()),saveBusy=useRef(false),clockOffset=useRef(0),expiryBusy=useRef(false),transitionInFlight=useRef(false);
+  const voidRef=useRef(false);
   const expiredNoticeKeys=useRef(new Set()),expiryActionRef=useRef(null);
   const startedTyping=useRef(new Set()),lastTyped=useRef(''),pendingTyping=useRef(null),draftTouched=useRef(new Set());
   const activeModule=Number(data?.session?.current||1),module=`module${activeModule}`;
@@ -131,16 +187,23 @@ function PublicCsrFitAssessmentPageContent(){
   const forwardSelectionCommitted=Boolean(pendingForward && pendingForward.status!=='draft');
   const typingRoundWaiting=activeModule===5&&!typingStartedAt;
   const typingRoundFinished=activeModule===5&&typingStartedAt&&typingLeft<=0;
+  const applyVoid=useCallback(source=>{
+    voidRef.current=true;setConfirm(false);setExpiredNotice(null);setBusy(false);setModuleTransition(null);
+    setData(old=>({...old,...source,status:'VOID',questions:undefined,answers:undefined}));setAnswers({});
+  },[]);
   const record=useCallback((type,options)=>{
-    if(!token||data?.status!=='IN_PROGRESS')return;
+    if(!token||voidRef.current||data?.status!=='IN_PROGRESS')return;
     const url=`/api/public-assessment/session/${token}/integrity-event`;
     if(options?.keepalive){
       // Best effort during document departure; do not wait or block navigation.
       try { void fetch(api.getUri({url}),{method:'POST',body:new URLSearchParams({type}),credentials:'omit',keepalive:true}).catch(()=>{}); } catch {}
       return;
     }
-    void api.post(url,{type},{withCredentials:false}).catch(()=>{});
-  },[data?.status,token]);
+    void api.post(url,{type},{withCredentials:false}).then(({data:result})=>{
+      if(result?.status==='VOID')applyVoid(result);
+      else if(Number.isFinite(result?.violationCount))setData(old=>old?.status==='IN_PROGRESS'?{...old,session:{...old.session,violationCount:Math.max(old.session?.violationCount||0,result.violationCount)}}:old);
+    }).catch(error=>{if(error?.response?.status===423)applyVoid({});});
+  },[data?.status,token,applyVoid]);
   const examProtection = useCsrFitExamProtection({ active: data?.status==='IN_PROGRESS' && !data?.legacy, moduleNumber: activeModule, record });
   const canChange=data?.status==='IN_PROGRESS'&&!examProtection.locked&&!busy&&!expiredNotice&&!moduleExpired&&!overallExpired&&
     !(forwardOnly&&(alreadyAnswered||forwardSelectionCommitted||forwardSaveInFlight.current));
@@ -154,6 +217,8 @@ function PublicCsrFitAssessmentPageContent(){
     if (!/^PA-\d+$/.test(String(source?.candidate?.candidateId || ''))) {
       throw new Error('This assessment link is not for public registration. Please use the Candidate Pipeline invitation you received.');
     }
+    if(source.status==='VOID'){applyVoid(source);return;}
+    if(voidRef.current)return;
     if(source.serverNowMs)clockOffset.current=Date.now()-Number(source.serverNowMs);
     setData(source);setAnswers(source?.answers||{});
     // Recover public attempts from the same browser only. Internal candidate
@@ -176,7 +241,7 @@ function PublicCsrFitAssessmentPageContent(){
     forwardSelectionRef.current=null;
     setForwardSelection(null);
     setVideoDone(Boolean(source?.session?.videoComplete));setTyping(null);setDraft(makeEmpty());draftTouched.current.clear();setSaved('');
-  },[token]);
+  },[token,applyVoid]);
   const retrieve=useCallback(async()=>{
     setLoading(true);setError('');
     try{if(!/^[a-f0-9]{64}$/.test(token))throw new Error('Open your existing assessment session, or return to Public Assessment to register or resume.');
@@ -184,6 +249,15 @@ function PublicCsrFitAssessmentPageContent(){
     }catch(e){setError(errorLabel(e));}finally{setLoading(false);}
   },[token,hydrate]);
   useEffect(()=>{void retrieve();},[retrieve]);
+  useEffect(()=>{
+    if(data?.status!=='IN_PROGRESS')return;
+    let alive=true,checking=false;
+    const check=async()=>{if(checking||voidRef.current)return;checking=true;
+      try{const {data:state}=await api.get(`/api/public-assessment/session/${token}/violation-status`,{withCredentials:true});if(alive&&state?.status==='VOID')applyVoid(state);else if(alive&&Number.isFinite(state?.violationCount))setData(old=>old?.status==='IN_PROGRESS'?{...old,session:{...old.session,violationCount:Math.max(old.session?.violationCount||0,state.violationCount)}}:old);}catch(error){if(alive&&error?.response?.status===423)applyVoid({});}finally{checking=false;}
+    };
+    const timer=setInterval(check,5000);window.addEventListener('focus',check);
+    return()=>{alive=false;clearInterval(timer);window.removeEventListener('focus',check);};
+  },[data?.status,token,applyVoid]);
   async function start(){
     if(busy)return;setBusy(true);setBusyLabel('Preparing your assessment…');setError('');try{
       if (!await examProtection.enterFullscreen()) {
@@ -370,11 +444,12 @@ function PublicCsrFitAssessmentPageContent(){
     try{
       await writeQueue.current;
       const r=await api.post(`/api/public-assessment/session/${token}/submit`,{}, {withCredentials:false});
+      if(r.data?.status==='VOID'){applyVoid(r.data);return false;}
       if(r.data?.success===false)throw new Error(r.data.message);
       const verifiedAt=Date.now();
       setModuleTransition({from:7,to:null,phase:'ready'});
       await allowTransitionToRender(startedAt,verifiedAt);
-      setData(old=>({...old,status:'SUBMITTED'}));
+      setData(old=>voidRef.current?old:({...old,status:'SUBMITTED'}));
       window.scrollTo({top:0,behavior:'instant'});
       return true;
     }catch(e){setError(errorLabel(e));return false;}
@@ -455,9 +530,12 @@ function PublicCsrFitAssessmentPageContent(){
   // screen share the full available browser width. The previous live-exam
   // 1340px cap left unused space and made the question area unnecessarily narrow.
   // This is layout-only; server-owned timers, question order and answers do not change.
+  if(data?.status==='VOID')return <main className="min-h-screen bg-sibs-canvas p-5 font-jakarta text-sibs-navy">{sectionTitle}<section role="alert" className="mx-auto mt-12 max-w-xl rounded-2xl border border-sibs-border-subtle bg-white p-8 text-center shadow-sm"><div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-sibs-cream-light"><LockKeyhole size={36} className="text-sibs-orange"/></div><h2 className="mt-4 text-2xl font-extrabold text-sibs-navy">Assessment void</h2><p className="mt-3 text-sm leading-6">The assessment has been permanently locked after five recorded activity violations. Your answers cannot be changed or submitted.</p><p className="mt-3 text-sm font-bold text-sibs-navy">Please contact HR regarding your assessment and reapplication eligibility.</p><p className="mt-2 text-xs text-sibs-secondary">The registered email cannot be used for a new assessment.</p><CsrFitCompletionCloseButton status="VOID"/></section></main>;
   return <main className="min-h-screen w-full bg-[#f5f7fa] px-3 py-4 font-jakarta text-sibs-navy sm:px-5 sm:py-5 lg:px-7 lg:py-6"><div inert={examProtection.locked} aria-hidden={examProtection.locked || undefined} style={examProtection.locked ? { visibility: 'hidden', pointerEvents: 'none' } : undefined} className="mx-auto w-full min-w-0 max-w-none"> 
     {sectionTitle}
-    {data?.status!=='SUBMITTED' && !data?.legacy && <p className="mt-2 px-1 text-[11px] text-sibs-secondary">Assessment activity such as tab changes, fullscreen exits, page departures and blocked browser actions is recorded for authorized HR review.</p>}
+    {!loading && !data?.legacy && (data?.status==='NOT_STARTED' || data?.status==='IN_PROGRESS') &&
+      <PublicAssessmentRules key={data.status==='NOT_STARTED'?'welcome':showingModuleInstructions?`instructions-${activeModule}`:'exam'}
+        violationCount={data?.session?.violationCount} expandedInitially={data.status==='NOT_STARTED'||showingModuleInstructions} showCounter={data.status==='NOT_STARTED'||showingModuleInstructions}/>}
     {loading?<CsrFitAssessmentLoading mode="skeleton" />:
     error&&!data?<div role="alert" className="mt-5 rounded-xl border border-rose-200 bg-white p-6 text-sm text-rose-700">{error}</div>:
     data?.legacy?<div role="alert" className="mt-5 rounded-xl border border-rose-200 bg-white p-6 text-sm text-rose-700">This link is not a Public Assessment session. Contact SiBS Recruitment for the correct public assessment access.</div>:
@@ -580,7 +658,7 @@ function PublicCsrFitAssessmentPageContent(){
           {bank.module6.choices.map(f=><FormChoice key={f.id} label={f.label} options={f.options} value={formValue(f.id)} onChange={v=>changeDraft(f.id,v)} disabled={alreadyAnswered||saved==='Saving…'||!canChange}/>)}
           {!alreadyAnswered&&<button type="button" disabled={!canChange || !data.session?.audioStartedAtMs || saved==='Saving…'} onClick={()=>void submitTask()} className={`${btn} bg-sibs-navy text-white`}>{saved==='Saving…'?<Loader2 size={14} className="animate-spin"/>:<Check size={14}/>} {saved==='Saving…'?'Saving response…':'Save response form'}</button>}</div>:null}
       </div>
-      <aside className="order-first min-w-0 space-y-5 lg:order-last lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:self-start lg:overflow-y-auto lg:border-l lg:border-sibs-border lg:pl-5 lg:pr-1" aria-label="Assessment timers and question navigator">
+      <aside className="order-first min-w-0 space-y-5 lg:order-last lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:self-start lg:overflow-y-auto lg:border-l lg:border-sibs-border lg:pl-5 lg:pr-1" aria-label="Assessment timers, activity violations and question navigator">
         {/* Prominent timers belong beside the active question, not in the narrow candidate strip. */}
         <div className={`sticky top-3 z-10 rounded-xl border p-4 shadow-sm ${!typingRoundWaiting && !typingRoundFinished && limitMs <= 60000 ? 'border-rose-300 bg-rose-50' : !typingRoundWaiting && !typingRoundFinished && limitMs <= 300000 ? 'border-amber-300 bg-amber-50' : 'border-sibs-border bg-slate-50'}`}>
           <div className="flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-wide text-sibs-secondary">
@@ -599,6 +677,9 @@ function PublicCsrFitAssessmentPageContent(){
               className={`mt-1 text-center text-2xl font-extrabold tabular-nums ${totalMs <= 300000 ? 'text-rose-700' : 'text-sibs-navy'}`}>
               {elapsedLabel(totalMs)}
             </div>
+          </div>
+          <div className="mt-3 border-t border-slate-200 pt-3">
+            <PublicAssessmentViolationCounter violationCount={data?.session?.violationCount} sidebar/>
           </div>
         </div>
         <div><h3 className="text-xs font-extrabold uppercase text-sibs-muted">Question navigator</h3><div className="mt-3 grid grid-cols-8 gap-1.5 sm:grid-cols-12 lg:grid-cols-5">

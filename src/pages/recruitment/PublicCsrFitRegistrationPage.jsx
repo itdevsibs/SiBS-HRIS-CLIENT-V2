@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useHref } from 'react-router-dom';
 import {
   AlertCircle,
   ArrowRight,
@@ -13,7 +13,7 @@ import PublicAssessmentDesktopOnly from '../../components/assessment/PublicAsses
 import { getPublicCsrFitResumeSession, rememberPublicCsrFitSession, forgetPublicCsrFitResumeSession } from '../../utils/assessment/csrFitResumeStorageClient';
 
 // The public assessment collects candidate identity only. The HRIS server
-// creates and begins the attempt, then returns a same-browser exam URL.
+// creates and begins the attempt, then returns an exam URL for a dedicated tab.
 const fields = [
   { key: 'firstName', label: 'First name', required: true, autoComplete: 'given-name' },
   { key: 'middleName', label: 'Middle name', required: false, autoComplete: 'additional-name' },
@@ -40,7 +40,9 @@ async function publicAssessmentApiMounted() {
 }
 
 function PublicCsrFitRegistrationPageContent() {
-  const navigate = useNavigate();
+  const sessionPath = useHref('/public-assessment/session');
+  const assessmentTabRef = useRef(null);
+  const [launchNotice, setLaunchNotice] = useState('');
   const [form, setForm] = useState(initial);
   const [submitting, setSubmitting] = useState(false);
   const submitLock = useRef(false);
@@ -51,9 +53,39 @@ function PublicCsrFitRegistrationPageContent() {
   async function submit(event) {
     event.preventDefault();
     if (submitLock.current) return;
+    if (assessmentTabRef.current && !assessmentTabRef.current.closed) {
+      try { assessmentTabRef.current.focus(); } catch { /* focus may be restricted */ }
+      setLaunchNotice('An assessment tab is already open. Continue in that tab.');
+      return;
+    }
     submitLock.current = true;
     setError('');
+    setLaunchNotice('');
     setSubmitting(true);
+    // Create the exam tab during the submit gesture, before any network await.
+    // Browsers normally permit script-created tabs to close themselves later.
+    let assessmentTab = null;
+    try {
+      assessmentTab = window.open('about:blank', '_blank');
+      if (assessmentTab) {
+        assessmentTab.opener = null;
+        assessmentTab.document.title = 'SiBS CSR-Fit Public Assessment';
+        assessmentTab.document.body.textContent = 'Preparing your SiBS assessment…';
+      }
+    } catch {
+      if (assessmentTab && !assessmentTab.closed) {
+        try { assessmentTab.close(); } catch { /* browser controls tab closing */ }
+      }
+      assessmentTab = null;
+    }
+    // Do not create or resume an attempt if the required exam tab cannot open.
+    // Same-tab navigation would defeat the Close Page workflow.
+    if (!assessmentTab || assessmentTab.closed) {
+      setError('Allow pop-ups for this website, then click Start or continue assessment again. The assessment must open in its own tab.');
+      submitLock.current = false;
+      setSubmitting(false);
+      return;
+    }
     try {
       // The database decides whether this email has a public applicant record.
       // New applicants never need a token or an attempted resume/restore call.
@@ -78,6 +110,7 @@ function PublicCsrFitRegistrationPageContent() {
           if (recovery?.reason === 'expired') {
             throw new Error('The original assessment access period has expired. Contact SiBS Recruitment; saved answers are not reset.');
           }
+          if (recovery?.reason === 'void') throw new Error('This assessment is void. Please contact HR regarding your assessment and reapplication eligibility.');
           if (recovery?.reason === 'already_submitted') {
             throw new Error('This public assessment has already been submitted. Contact SiBS Recruitment for assistance.');
           }
@@ -96,8 +129,25 @@ function PublicCsrFitRegistrationPageContent() {
       }
 
       rememberPublicCsrFitSession(nextToken, form);
-      navigate(`/public-assessment/session?token=${encodeURIComponent(nextToken)}`, { replace: true });
+      const query = `?token=${encodeURIComponent(nextToken)}`;
+      if (assessmentTab && !assessmentTab.closed) {
+        try {
+          assessmentTab.location.replace(new URL(sessionPath + query, window.location.origin).href);
+          assessmentTabRef.current = assessmentTab;
+          setForm(initial);
+          setLaunchNotice('Your assessment opened in a new tab. Continue there and close it when finished.');
+          return;
+        } catch {
+          try { assessmentTab.close(); } catch { /* browser controls tab closing */ }
+        }
+      }
+      // The attempt already exists and its recovery credential has been saved.
+      // Retain the form so the applicant can resume without creating another attempt.
+      setError('The assessment tab was closed or could not load. Your attempt is saved. Allow pop-ups, then click Start or continue assessment again using the same details.');
     } catch (e) {
+      if (assessmentTab && !assessmentTab.closed) {
+        try { assessmentTab.close(); } catch { /* browser controls tab closing */ }
+      }
       const code = Number(e?.response?.status || 0);
       let message = e?.response?.data?.message || e.message || 'Unable to begin the public assessment.';
       if (code === 404) {
@@ -210,13 +260,18 @@ function PublicCsrFitRegistrationPageContent() {
                     </label>
                   </div>
 
+                  {launchNotice && (
+                    <div role="status" className="mt-4 flex items-start gap-2 rounded-lg border border-[#cbdceb] bg-[#f4f9fe] px-4 py-3 text-xs text-[#082e53]">
+                      <ShieldCheck size={16} className="shrink-0" aria-hidden="true" /> {launchNotice}
+                    </div>
+                  )}
                   {error && (
                     <div role="alert" className="mt-4 flex items-start gap-2 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-xs text-rose-800">
                       <AlertCircle size={16} className="shrink-0" aria-hidden="true" /> {error}
                     </div>
                   )}
                   <footer className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-[#dbe5ee] pt-5">
-                    <p className="max-w-xl text-[11px] leading-5 text-slate-500">Click below to begin or resume your saved attempt. Previously saved answers remain; the original assessment timer continues even after closing the browser.</p>
+                    <p className="max-w-xl text-[11px] leading-5 text-slate-500">Click below to begin or resume your saved attempt in a new tab. Allow pop-ups for this site. Five recorded activity violations permanently void the exam. Reapplication is allowed after six months; an email with an existing record cannot register again. Your original timer continues even after closing the browser.</p>
                     <button
                       type="submit"
                       disabled={submitting}

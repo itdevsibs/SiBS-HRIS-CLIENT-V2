@@ -1,18 +1,19 @@
 import { useState } from 'react';
 import { X } from 'lucide-react';
 
-export default function CsrFitCompletionCloseButton() {
+export default function CsrFitCompletionCloseButton({ status = 'SUBMITTED' }) {
   const [closeRequested, setCloseRequested] = useState(false);
 
   function closePage() {
     // Browsers may refuse to close tabs that were not opened by script.
-    // Leave the successful submission screen intact if closing is denied.
+    // Public assessments can leave the exam even when the browser denies closing.
     setCloseRequested(true);
     try {
       window.close();
     } catch {
       // The manual-close instructions below remain available.
     }
+
   }
 
   return <div className="mt-6">
@@ -21,7 +22,7 @@ export default function CsrFitCompletionCloseButton() {
       <X size={16} aria-hidden="true"/> Close Page
     </button>
     {closeRequested && <p role="status" className="mt-3 text-xs leading-relaxed text-sibs-muted">
-      Your assessment is submitted. If this tab remains open, you can safely close it using your browser's close tab button.
+      {status === 'VOID' ? 'Your assessment is void and remains locked.' : 'Your assessment is submitted.'} If the tab stays open, use Ctrl+W (Windows) or Command+W (Mac) to close it.
     </p>}
   </div>;
 }

@@ -533,7 +533,7 @@ export default function PublicCsrFitAssessmentResultModal({ open, data, onClose,
           </>
         )}
         </div>
-        {activeTab === 'activity' && <div id="public-csrfit-results-activity" role="tabpanel" aria-labelledby="public-csrfit-results-tab-activity"><CsrFitActivityLog key={data.attemptId} log={data.activityLog}/></div>}
+        {activeTab === 'activity' && <div id="public-csrfit-results-activity" role="tabpanel" aria-labelledby="public-csrfit-results-tab-activity"><CsrFitActivityLog publicAssessment={!candidateMode} key={data.attemptId} log={data.activityLog}/></div>}
         <div id="public-csrfit-results-answers" role="tabpanel" aria-labelledby="public-csrfit-results-tab-answers" className={activeTab === 'answers' ? 'space-y-4' : 'hidden'}>
         <section ref={responsesSectionRef} className="overflow-hidden rounded-xl border border-sibs-border bg-white">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-sibs-border px-4 py-3">
