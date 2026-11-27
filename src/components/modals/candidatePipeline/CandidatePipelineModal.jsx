@@ -1,4 +1,5 @@
 import CsrFitActivityLog from '../../assessment/CsrFitActivityLog';
+import { CSR_FIT_MODULE_NAMES, CSR_FIT_MODULE_LIMITS } from '../../assessment/csrFitModuleGuides';
 import { createSystemDateTimeFormatter, formatHrisDateLocalized, formatHrisDateTimeLocalized } from "@/lib/axios/dateFormatter";
 import React, {
   useEffect,
@@ -21,6 +22,7 @@ import {
   UserX,
   Eye,
   ClipboardCheck,
+  Clock3,
   Mail,
   CirclePlay,
   CheckCircle2,
@@ -6724,7 +6726,6 @@ function CsrFitProgressPanel({ progress, loading, error }) {
   const expiredInvite = status === 'INVITATION_EXPIRED';
   const completedModules = Math.max(0, Math.min(7, Number(progress?.completedModules) || 0));
   const totalModules = Number(progress?.totalModules) || 7;
-  const percent = Math.round(completedModules / Math.max(1, totalModules) * 100);
   const moduleNumber = Number(progress?.moduleNumber);
   const hasModule = moduleNumber >= 1 && moduleNumber <= 7 && !progress?.legacy;
   const tone = submitted ? 'emerald' : (timedOut || expiredInvite) ? 'rose' : (inProgress || moduleExpired) ? 'orange' : 'slate';
@@ -6785,8 +6786,31 @@ function CsrFitProgressPanel({ progress, loading, error }) {
               <div className="mb-1.5 flex items-center justify-between text-[10px] font-semibold text-sibs-secondary">
                 <span>Completed modules</span><span className="tabular-nums">{completedModules}/{totalModules}</span>
               </div>
-              <div className="h-2 overflow-hidden rounded-full bg-slate-100" role="progressbar" aria-label="Completed assessment modules" aria-valuemin={0} aria-valuemax={totalModules} aria-valuenow={completedModules}>
-                <div className="h-full rounded-full bg-sibs-orange transition-[width]" style={{width:`${percent}%`}}/>
+              <div className="min-w-0 overflow-x-auto pb-1" aria-label="Assessment progress, left to right">
+                <ol className="grid w-full min-w-[980px] list-none grid-cols-7 gap-1.5 p-0" aria-label="Assessment modules in order">
+                  {CSR_FIT_MODULE_NAMES.map((name, index) => {
+                    const number = index + 1;
+                    const active = number === moduleNumber && !submitted;
+                    const completed = number <= completedModules && !active;
+                    const theme = active ? 'bg-[#082e53] text-white' : completed ? 'bg-[#dcfce7] text-[#166534]' : 'bg-[#eaf2fa] text-[#082e53]';
+                    const clipPath = index === 0
+                      ? 'polygon(0 0, calc(100% - 15px) 0, 100% 50%, calc(100% - 15px) 100%, 0 100%)'
+                      : 'polygon(0 0, calc(100% - 15px) 0, 100% 50%, calc(100% - 15px) 100%, 0 100%, 15px 50%)';
+                    return <li key={name} aria-current={active ? 'step' : undefined}
+                      aria-label={`Step ${number}: ${name}, ${active ? (timedOut || moduleExpired ? 'time expired' : 'current module') : completed ? 'completed' : 'upcoming'}`}
+                      style={{ clipPath }}
+                      className={`relative flex min-h-[136px] min-w-0 flex-col justify-center py-3 pr-[19px] ${index === 0 ? 'pl-3' : 'pl-[22px]'} ${theme}`}>
+                      {active && <span aria-hidden="true" className="absolute inset-x-0 top-0 h-[5px] bg-[#ff5c28]" />}
+                      <span className={`flex items-center gap-1 text-[10px] font-extrabold uppercase ${active ? 'text-[#ffad87]' : completed ? 'text-[#166534]' : 'text-[#ec5825]'}`}>
+                        {completed && <CheckCircle2 size={12} aria-hidden="true" />} Step {number}
+                      </span>
+                      <h4 className="mt-1.5 break-words text-[11px] font-extrabold leading-[1.4]">{name}</h4>
+                      <span className={`mt-2 flex items-center gap-1 text-[10px] font-semibold ${active ? 'text-white/90' : completed ? 'text-[#166534]' : 'text-[#36546e]'}`}>
+                        <Clock3 size={12} className="shrink-0" aria-hidden="true" /> {index === 4 ? '1 min × 2 rounds' : `${CSR_FIT_MODULE_LIMITS[index]} min`}
+                      </span>
+                    </li>;
+                  })}
+                </ol>
               </div>
             </div>
           )}
